@@ -1,7 +1,10 @@
 const ENEMY_ART: Record<string, string> = {
-  skeleton: '/assets/enemies/skeleton-v2.png',
-  bat: '/assets/enemies/cave-bat-v2.png',
-  slime: '/assets/enemies/toxic-slime-v2.png',
+  goblin: '/assets/enemies/v4/goblin.png', skeleton: '/assets/enemies/v4/skeleton.png',
+  bat: '/assets/enemies/v4/bat.png', slime: '/assets/enemies/v4/slime.png',
+  wolf: '/assets/enemies/v4/wolf.png', ghost: '/assets/enemies/v4/ghost.png',
+  spider: '/assets/enemies/v4/spider.png', orc: '/assets/enemies/v4/orc.png',
+  'boss-ogre': '/assets/enemies/v4/boss-ogre.png', 'boss-lich': '/assets/enemies/v4/boss-lich.png',
+  'boss-dragon': '/assets/enemies/v4/boss-dragon.png', 'boss-titan': '/assets/enemies/v4/boss-titan.png',
 };
 
 const ITEM_ATLAS_IDS = [
@@ -16,26 +19,43 @@ const ITEM_ATLAS_IDS = [
 ];
 
 const ITEM_ATLAS_INDEX = new Map(ITEM_ATLAS_IDS.map((id, index) => [id, index]));
+const PRODUCT_RARITIES = '(common|uncommon|rare|epic|legendary|mythic|cosmic|divine|celestial|cursed|immortal|god)';
+const OFFHAND_ART: Record<string, string> = {
+  mage: 'spellbook', assassin: 'throwing-set', warrior: 'shield', druid: 'totem', crossbowman: 'quiver',
+};
+
+function productItemPath(itemId: string): string | null {
+  let match = itemId.match(new RegExp(`^weapon-(mage|assassin|warrior|druid|crossbowman)-${PRODUCT_RARITIES}$`));
+  if (match) return `/assets/items/v4/${match[1]}-${match[2]}.png`;
+  match = itemId.match(new RegExp(`^offhand-(mage|assassin|warrior|druid|crossbowman)-${PRODUCT_RARITIES}$`));
+  if (match) return `/assets/items/v4/${OFFHAND_ART[match[1]]}-${match[2]}.png`;
+  match = itemId.match(new RegExp(`^(helmet|armor|gloves|boots|ring|amulet)-${PRODUCT_RARITIES}$`));
+  return match ? `/assets/items/v4/${match[1]}-${match[2]}.png` : null;
+}
 
 export function enemyArtSrc(unitUid: string): string | null {
   const id = unitUid.replace(/^e\d+-/, '');
-  return ENEMY_ART[id] ?? null;
+  const bossBase = id.match(/^(boss-(?:ogre|lich|dragon|titan))/)?.[1];
+  return ENEMY_ART[id] ?? (bossBase ? ENEMY_ART[bossBase] : null) ?? null;
 }
 
 export function itemArtSrc(itemId: string): string | null {
+  const productPath = productItemPath(itemId);
+  if (productPath) return productPath;
   return ITEM_ATLAS_INDEX.has(itemId) ? '/assets/items/item-atlas-v2.png' : null;
 }
 
 export function itemArtStyle(itemId: string): Record<string, string> | null {
+  if (productItemPath(itemId)) return { inset: '0', width: '100%', height: '100%', objectFit: 'contain' };
   const index = ITEM_ATLAS_INDEX.get(itemId);
   if (index === undefined) return null;
   const col = index % 8;
   const row = Math.floor(index / 8);
   return {
-    width: '897.143%',
-    height: '897.143%',
+    width: '966.154%',
+    height: '966.154%',
     maxWidth: 'none',
-    left: `${-((8 + col * 149) / 140) * 100}%`,
-    top: `${-((8 + row * 149) / 140) * 100}%`,
+    left: `${-((13 + col * 149) / 130) * 100}%`,
+    top: `${-((13 + row * 149) / 130) * 100}%`,
   };
 }

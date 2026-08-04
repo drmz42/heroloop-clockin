@@ -1,60 +1,45 @@
-import { Coins, X, Package, Star } from 'lucide-react';
+import { CheckCircle2, Coins, X, Package, Star } from 'lucide-react';
 import { formatNum } from '@/game/state';
+import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
 export function OfflineModal({
-  gold, seconds, chests, xp, onClose,
+  gold, seconds, tokens, chests, xp, onClose,
 }: {
-  gold: number; seconds: number; chests?: number; xp?: number; onClose: () => void;
+  gold: number; seconds: number; tokens?: number; chests?: number; xp?: number; onClose: () => void;
 }) {
   const hours = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/90 p-4 anim-fade" style={{ zIndex: 9999 }}>
-      <div className="relative w-full max-w-sm px-panel-raised p-5 text-center anim-slide-up" style={{ zIndex: 9999 }}>
+    <div className="fixed inset-0 flex items-center justify-center bg-black/75 p-4 backdrop-blur-[5px] anim-fade" style={{ zIndex: 9999 }}>
+      <div className="offline-vault relative w-full max-w-[400px] overflow-visible rounded-xl p-4 text-center anim-slide-up" style={{ zIndex: 9999 }}>
+        <span className="offline-coin-cloud offline-coin-cloud-left" aria-hidden="true">● ● ●</span>
+        <span className="offline-coin-cloud offline-coin-cloud-right" aria-hidden="true">● ●</span>
         <button onClick={onClose} className="absolute -top-2 -right-2 p-1.5 bg-px-panel border-2 border-px-border"><X size={16} className="text-px-text" /></button>
 
-        <div className="text-4xl mb-2">🏰</div>
-        <h3 className="font-vt text-2xl font-bold text-gold-glow mb-1">Welcome Back!</h3>
-        <p className="font-vt text-px-dim text-sm mb-3">
-          Heroes fought for <span className="text-px-text font-bold">{timeStr}</span> while you were away.
+        <h3 className="mb-1 font-pixel text-base text-gold-glow">WHILE YOU WERE AWAY</h3>
+        <p className="mb-2 font-vt text-sm text-px-dim">
+          Your hero fought for <span className="font-bold text-px-text">{timeStr}</span>.
         </p>
-
-        {/* Gold — always shown */}
-        <div className="px-panel p-3 mb-2 border-2 border-px-gold">
-          <div className="flex items-center justify-center gap-2">
-            <Coins size={28} className="text-px-bright" />
-            <span className="font-vt text-4xl font-bold text-px-bright tabular-nums">+{formatNum(gold)}</span>
-          </div>
-          <div className="font-vt text-sm text-px-dim mt-0.5 uppercase tracking-wide">Gold Earned</div>
+        <div className="offline-afk-total mb-3">
+          <span>+{formatNum(tokens ?? 0)}</span> <HeroTokenIcon size={15} /> $HERO
+        </div>
+        <div className="mb-2 grid grid-cols-2 gap-2">
+          {[
+            { icon: <Coins size={16} />, value: `+${formatNum(gold)}`, label: 'Gold' },
+            { icon: <Star size={16} />, value: `+${formatNum(xp ?? 0)}`, label: 'Account XP' },
+            { icon: <Package size={16} />, value: `+${formatNum(chests ?? 0)}`, label: 'Chests' },
+          ].map((reward) => (
+            <div key={reward.label} className="offline-reward-tile flex min-h-[54px] items-center gap-2 px-3 py-2 text-left">
+              <span className="text-px-bright">{reward.icon}</span>
+              <div><div className="font-vt text-lg font-bold tabular-nums text-px-bright">{reward.value}</div><div className="text-[10px] text-px-dim">{reward.label}</div></div>
+            </div>
+          ))}
         </div>
 
-        {/* XP — always shown */}
-        <div className={`px-panel p-2.5 mb-2 border-2 ${(xp ?? 0) > 0 ? 'border-emerald-500 bg-emerald-900/20' : 'border-px-border opacity-50'}`}>
-          <div className="flex items-center justify-center gap-2">
-            <Star size={20} className={(xp ?? 0) > 0 ? 'text-emerald-400' : 'text-px-dim'} />
-            <span className="font-vt text-2xl font-bold tabular-nums" style={{ color: (xp ?? 0) > 0 ? '#4ade80' : '#5c3f08' }}>
-              {(xp ?? 0) > 0 ? `+${formatNum(xp!)}` : '+0'}
-            </span>
-          </div>
-          <div className="font-vt text-xs text-px-dim">Account XP</div>
-        </div>
-
-        {/* Chests — always shown */}
-        <div className={`px-panel p-2.5 mb-3 border-2 ${(chests ?? 0) > 0 ? 'border-amber-500 bg-amber-900/20' : 'border-px-border opacity-50'}`}>
-          <div className="flex items-center justify-center gap-2">
-            <Package size={20} className={(chests ?? 0) > 0 ? 'text-amber-300' : 'text-px-dim'} />
-            <span className="font-vt text-2xl font-bold tabular-nums" style={{ color: (chests ?? 0) > 0 ? '#fbbf24' : '#5c3f08' }}>
-              {(chests ?? 0) > 0 ? `+${chests}` : '+0'}
-            </span>
-          </div>
-          <div className="font-vt text-xs text-px-dim">Chests Banked · 500 max</div>
-        </div>
-
-        <button onClick={onClose} className="w-full py-3 px-btn text-lg font-bold">
-          Collect
-        </button>
+        <p className="mb-3 text-[10px] font-bold text-emerald-300"><CheckCircle2 size={12} className="mr-1 inline" />Already added to your balance</p>
+        <button onClick={onClose} className="w-full px-btn py-2 text-sm font-bold">CLAIM</button>
       </div>
     </div>
   );

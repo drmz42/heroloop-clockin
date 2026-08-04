@@ -17,12 +17,28 @@ export function heroPortraitSrc(heroId: string, heroClass: HeroClass, rarity: Ra
     shepherd: HERO_ART.acolyte,
     druid: HERO_ART.shrubmage,
   };
+  if (/^(shepherd|assassin|knight|druid|archer)-(common|uncommon|rare|epic|legendary|mythic|cosmic|divine|celestial|cursed|immortal|god)$/.test(heroId)) return `/assets/heroes/v4/${heroId}.png`;
   return HERO_ART[heroId] ?? classFallback[heroClass] ?? buildHeroSvg(heroClass, rarity, color);
+}
+
+export function heroPortraitStyle(heroId: string | undefined, heroClass: HeroClass): Record<string, string> | undefined {
+  if (!heroId || !/^(shepherd|assassin|knight|druid|archer)-/.test(heroId)) return undefined;
+  void heroClass;
+  const isWarrior = heroId.startsWith('knight-');
+  return {
+    position: 'absolute',
+    inset: '0',
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    objectPosition: '50% 24%',
+    ...(isWarrior ? { transform: 'scale(0.94)' } : {}),
+  };
 }
 
 export function buildHeroSvg(heroClass: HeroClass, rarity: Rarity, color: string): string {
   const rc = RARITY_COLORS[rarity];
-  const lvl = RARITY_INDEX[rarity]; // 0-9
+  const lvl = RARITY_INDEX[rarity]; // 0-11 (legacy Relic shares index 5)
 
   const defs = `<defs>
     <radialGradient id="bg" cx="50%" cy="40%" r="55%">

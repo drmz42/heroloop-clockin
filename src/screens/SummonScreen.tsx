@@ -1,38 +1,69 @@
-import { useState } from 'react';
-import { Sparkles, Zap, X } from 'lucide-react';
-import { HERO_MAP, RARITY_COLORS, RARITY_GLOW, RARITY_LABEL, RARITY_WEIGHT } from '@/game/heroes';
-import { summonCostHero, formatNum } from '@/game/state';
-import { heroPortraitSrc } from '@/game/portraits';
+import { useEffect, useState } from 'react';
+import { Sparkles, X } from 'lucide-react';
+import { HERO_MAP, RARITY_COLORS, RARITY_GLOW, RARITY_INDEX, RARITY_LABEL, RARITY_WEIGHT } from '@/game/heroes';
+import { summonCostHero, formatNum, MAX_HEROES } from '@/game/state';
+import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import type { OwnedHero, Rarity } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
+import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
 function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () => void }) {
-  const [revealed, setRevealed] = useState(0);
-  const revealNext = () => { if (revealed < heroes.length) setRevealed(r => r + 1); };
-  const allRevealed = revealed >= heroes.length;
-  const order: Record<Rarity, number> = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4, mythic: 5, relic: 6, cursed: 7, cosmic: 8, divine: 9 };
-  const best = heroes.reduce((b, h) => { const r = HERO_MAP[h.heroId]?.rarity ?? 'common'; return order[r] > order[b] ? r : b; }, 'common' as Rarity);
+  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const [phase, setPhase] = useState<'charge' | 'ready' | 'revealing' | 'revealed'>(reducedMotion ? 'ready' : 'charge');
+  const order: Record<Rarity, number> = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4, mythic: 5, relic: 5, cosmic: 6, divine: 7, celestial: 8, cursed: 9, immortal: 10, god: 11 };
+  const displayHeroes = [...heroes].sort((a, b) => order[HERO_MAP[b.heroId]?.rarity ?? 'common'] - order[HERO_MAP[a.heroId]?.rarity ?? 'common']);
+  const best = HERO_MAP[displayHeroes[0]?.heroId]?.rarity ?? 'common';
+  const screenWow = order[best] >= order.rare;
+  const revealed = phase === 'revealing' || phase === 'revealed';
+
+  useEffect(() => {
+    if (phase !== 'charge') return;
+    const timer = window.setTimeout(() => setPhase('ready'), 2100);
+    return () => window.clearTimeout(timer);
+  }, [phase]);
+
+  const reveal = () => {
+    if (reducedMotion) { setPhase('revealed'); return; }
+    setPhase('revealing');
+    window.setTimeout(() => setPhase('revealed'), 950);
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur p-4 anim-fade">
-      <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(circle at 50% 50%, ${RARITY_COLORS[best]}22, transparent 60%)` }} />
-      <div className="relative w-full max-w-lg">
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-          {heroes.map((h, i) => {
-            const base = HERO_MAP[h.heroId]; const isRevealed = i < revealed; if (!base) return null;
+    <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur p-4 anim-fade${revealed && screenWow ? ' summon-rarity-burst' : ''}${phase === 'revealing' ? ' summon-rupture' : ''}`} style={{ '--summon-best': RARITY_COLORS[best] } as React.CSSProperties}>
+      {revealed && screenWow && <div className="summon-screen-rays" aria-hidden="true" />}
+      {phase === 'revealing' && <i className="summon-flash" aria-hidden="true" />}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(circle at 50% 50%, ${RARITY_COLORS[best]}26, transparent 62%)` }} />
+      {phase === 'charge' ? (
+        <div className="summon-ritual-charge relative z-10 grid place-items-center text-center">
+          <div className="summon-charge-orb"><Sparkles size={42} /></div>
+          <div className="mt-7 text-[10px] font-black uppercase tracking-[.38em] text-[#d9b9ff]">The Covenant Answers</div>
+          <div className="mt-2 text-xs text-[#8d8196]">Fate is gathering beyond the veil…</div>
+        </div>
+      ) : <div className="relative w-full max-w-4xl">
+        {revealed && <div className="summon-best-banner mb-3 text-center" style={{ color: RARITY_COLORS[best] }}><span>{RARITY_LABEL[best]}</span><strong>{displayHeroes.length === 1 ? HERO_MAP[displayHeroes[0].heroId]?.name : `Best of ${displayHeroes.length} summons`}</strong></div>}
+        <div className={`no-scrollbar max-h-[72vh] overflow-y-auto rounded-xl ${heroes.length > 20 ? 'p-1' : ''}`}>
+        <div className={`mx-auto grid gap-3 ${displayHeroes.length === 1 ? 'w-[210px] grid-cols-1' : displayHeroes.length > 20 ? 'grid-cols-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8' : 'grid-cols-3 sm:grid-cols-5'}`}>
+          {displayHeroes.map((h, index) => {
+            const base = HERO_MAP[h.heroId]; if (!base) return null;
             const rc = RARITY_COLORS[base.rarity]; const svg = heroPortraitSrc(base.id, base.heroClass, base.rarity, base.color);
+            const isWow = RARITY_INDEX[base.rarity] >= RARITY_INDEX.rare;
             return (
-              <button key={h.uid} onClick={revealNext} className="relative aspect-[3/4] rounded-xl flex flex-col items-center justify-center overflow-hidden border-2 transition" style={{ borderColor: isRevealed ? rc : '#334155', background: isRevealed ? `radial-gradient(circle at 50% 30%, ${base.color}33, ${rc}18)` : 'linear-gradient(160deg, #1e293b, #0f172a)', boxShadow: isRevealed ? `0 0 20px ${RARITY_GLOW[base.rarity]}` : 'none' }}>
-                {isRevealed ? <div className="anim-reveal flex flex-col items-center gap-1"><img src={svg} alt="" className="w-14 h-14 rounded-lg" /><span className="text-[9px] font-bold text-center px-1 leading-tight" style={{ color: rc }}>{base.name}</span><span className="text-[7px] uppercase tracking-wide" style={{ color: rc + 'cc' }}>{RARITY_LABEL[base.rarity]}</span></div> : <div className="relative"><Sparkles size={24} className="text-slate-600" /><div className="absolute inset-0 anim-pulse-ring rounded-full border border-slate-600/50" /></div>}
-              </button>
+              <div key={h.uid} className={`relative aspect-[3/4] rounded-xl flex flex-col items-center justify-center overflow-hidden border-2 transition ${revealed ? 'summon-card-unseal' : 'summon-card-sealed'} ${revealed && isWow ? 'summon-wow summon-rarity-card' : ''}`} style={{ borderColor: revealed ? rc : '#5b4770', background: revealed ? `radial-gradient(circle at 50% 30%, ${base.color}33, ${rc}18)` : 'linear-gradient(145deg,#23172f,#09070d 68%)', boxShadow: revealed ? `0 0 24px ${RARITY_GLOW[base.rarity]}` : 'inset 0 0 28px rgba(176,91,255,.18),0 0 12px rgba(115,65,150,.25)', '--summon-color': rc, '--reveal-delay': `${Math.min(index, 12) * 55}ms` } as React.CSSProperties}>
+                {revealed && isWow && <div className="summon-card-rays" aria-hidden="true" />}
+                {revealed && isWow && <i className="summon-card-shine" aria-hidden="true" />}
+                {revealed && isWow && Array.from({ length: 7 }, (_, spark) => <i key={spark} className="summon-spark" style={{ '--spark-index': spark } as React.CSSProperties} />)}
+                {revealed ? <div className="absolute inset-0"><img src={svg} alt="" className="h-full w-full object-cover" style={{ ...heroPortraitStyle(base.id, base.heroClass), transform: 'none' }} /><span className="absolute inset-x-0 bottom-0 px-1.5 pb-1 pt-4 bg-gradient-to-t from-black/80 to-transparent text-center"><span className="block text-[10px] font-bold leading-tight" style={{ color: rc }}>{base.name}</span><span className="block text-[7px] uppercase tracking-wide" style={{ color: rc + 'cc' }}>{RARITY_LABEL[base.rarity]}</span></span></div> : <div className="summon-seal-glyph relative"><Sparkles size={28} /><div className="absolute inset-0 anim-pulse-ring rounded-full border border-violet-400/50" /></div>}
+              </div>
             );
           })}
         </div>
+        </div>
         <div className="mt-5 flex flex-col items-center gap-3">
-          {!allRevealed ? <button onClick={revealNext} className="px-6 py-2.5 rounded-full bg-amber-500/20 border border-amber-500/50 text-amber-300 font-bold text-sm hover:bg-amber-500/30 transition">Reveal ({revealed}/{heroes.length})</button> : <button onClick={onClose} className="px-6 py-2.5 rounded-full bg-slate-800 border border-white/20 text-slate-200 font-bold text-sm hover:bg-slate-700 transition">Continue</button>}
+          {phase === 'ready' ? <button type="button" onClick={reveal} className="summon-break-seal px-7 py-2.5 rounded-full border text-sm font-black uppercase tracking-wider">Break the seal · Reveal {heroes.length}</button> : phase === 'revealing' ? <div className="text-[10px] font-black uppercase tracking-[.3em] text-white">Fate Unbound</div> : <button type="button" onClick={onClose} className="px-6 py-2.5 rounded-full bg-slate-800 border border-white/20 text-slate-200 font-bold text-sm hover:bg-slate-700 transition">Continue</button>}
         </div>
       </div>
-      <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full bg-slate-800/80 border border-white/10"><X size={18} className="text-slate-400" /></button>
+      }
+      <button type="button" onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full bg-slate-800/80 border border-white/10"><X size={18} className="text-slate-400" /></button>
     </div>
   );
 }
@@ -40,36 +71,70 @@ function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () =>
 export function SummonScreen({ game }: { game: GameApi }) {
   const { state } = game;
   const [results, setResults] = useState<OwnedHero[] | null>(null);
+  const [promotionNotice, setPromotionNotice] = useState('');
   const cost = summonCostHero();
-  const canSingle = state.hero >= cost;
-  const canTen = state.hero >= cost * 10;
-  const doSingle = () => { const r = game.summon(); if (r) setResults([r]); };
-  const doTen = () => { const r = game.summonTen(); if (r.length > 0) setResults(r); };
-  const rarities: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'relic', 'cursed', 'cosmic', 'divine'];
+  const singleHasSpace = state.ownedHeroes.length < MAX_HEROES;
+  const tenHasSpace = state.ownedHeroes.length + 10 <= MAX_HEROES;
+  const hundredHasSpace = state.ownedHeroes.length + 100 <= MAX_HEROES;
+  const canSingle = singleHasSpace;
+  const canTen = tenHasSpace;
+  const canHundred = hundredHasSpace;
+  const doSingle = async () => { const r = await game.summon(); if (r) setResults([r]); };
+  const doTen = async () => { const r = await game.summonTen(); if (r.length > 0) setResults(r); };
+  const doHundred = async () => { const r = await game.summonHundred(); if (r.length > 0) setResults(r); };
+  const promoteAll = async () => { const summary = await game.promoteAllHeroes(); setPromotionNotice(summary.length ? summary.map((entry) => `${entry.heroName} +${entry.starsAdded}★`).join(' · ') : 'No eligible duplicate upgrades'); window.setTimeout(() => setPromotionNotice(''), 3500); };
+  const rarities: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
 
   return (
-    <div className="flex flex-col h-full bg-fantasy overflow-y-auto no-scrollbar">
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center py-8">
-        <div className="relative mb-5"><div className="w-32 h-32 rounded-full anim-glow" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.3), rgba(59,130,246,0.15), transparent)', '--glow': 'rgba(168,85,247,0.6)' } as React.CSSProperties} /><div className="absolute inset-0 flex items-center justify-center"><Sparkles size={44} className="text-purple-300 anim-bob" /></div></div>
-        <h2 className="text-2xl font-black text-white mb-1"><span className="text-purple-300">Hero</span> Summon</h2>
+    <div className="summon-sanctum relative flex h-full flex-col overflow-y-auto bg-black bg-cover bg-center no-scrollbar" style={{ backgroundImage: "linear-gradient(rgba(3,3,5,.18),rgba(3,3,5,.72)),url('/assets/summon/ritual-sanctum-v1.png')" }}>
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(163,74,255,.12),transparent_38%),linear-gradient(90deg,rgba(0,0,0,.55),transparent_30%,transparent_70%,rgba(0,0,0,.55))]" />
+      <div className="relative flex min-h-full flex-1 flex-col items-center justify-center px-4 py-5 text-center">
+        <div className="summon-portal relative mb-3 grid h-24 w-24 shrink-0 place-items-center rounded-full"><i className="summon-rune-ring" /><i className="summon-rune-ring summon-rune-ring-inner" /><Sparkles size={34} className="relative z-10 text-[#f2c96e] drop-shadow-[0_0_14px_rgba(212,126,255,.9)]" />{Array.from({ length: 8 }, (_, index) => <i key={index} className="summon-portal-mote" style={{ '--mote-index': index } as React.CSSProperties} />)}</div>
+        <div className="flex w-full max-w-2xl flex-col items-center rounded-xl border border-[#8c6231]/60 bg-[#08070a]/72 px-6 py-4 shadow-[0_16px_50px_rgba(0,0,0,.65),inset_0_1px_rgba(255,224,165,.08)] backdrop-blur-[2px]">
+        <div className="section-kicker">The Obsidian Covenant</div>
+        <h2 className="mb-1 mt-1 text-2xl font-black text-white"><span className="text-[#d7a9ff]">Hero</span> Summon</h2>
         <p className="text-slate-400 text-sm max-w-sm mb-1">Summon heroes using $HERO tokens. All heroes are unique and tradeable.</p>
-        <p className="text-slate-500 text-[11px] mb-4 flex items-center gap-1"><Zap size={12} className="text-violet-300" /> {formatNum(state.hero)} $HERO · {state.summons} summons</p>
+        <p className="mb-4 flex items-center justify-center gap-1 text-[11px] text-slate-500"><HeroTokenIcon size={12} /> {formatNum(state.hero)} · {state.summons} summons · {state.ownedHeroes.length}/{MAX_HEROES} heroes</p>
 
-        <div className="flex flex-wrap items-center justify-center gap-1.5 mb-5 text-[9px] max-w-lg">
+        <div className="mb-5 flex min-h-[48px] w-full max-w-xl flex-wrap content-center items-center justify-center gap-1.5 text-[9px]">
           {rarities.map(r => <span key={r} className="px-1.5 py-0.5 rounded-full border font-semibold uppercase tracking-wide" style={{ color: RARITY_COLORS[r], borderColor: RARITY_COLORS[r] + '55', background: RARITY_COLORS[r] + '11' }}>{RARITY_LABEL[r]} {RARITY_WEIGHT[r]}%</span>)}
         </div>
 
-        <div className="flex flex-col gap-3 w-full max-w-xs">
-          <button onClick={doSingle} disabled={!canSingle} className="flex items-center justify-between px-5 py-3 rounded-xl bg-gradient-to-r from-purple-600/30 to-blue-600/30 border border-purple-500/40 hover:from-purple-600/40 hover:to-blue-600/40 disabled:opacity-40 transition">
-            <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-purple-300" /> Summon x1</span>
-            <span className="flex items-center gap-1 text-violet-300 text-sm font-bold"><Zap size={13} /> {cost}</span>
-          </button>
-          <button onClick={doTen} disabled={!canTen} className="flex items-center justify-between px-5 py-3 rounded-xl bg-gradient-to-r from-amber-600/30 to-purple-600/30 border border-amber-500/40 hover:from-amber-600/40 hover:to-purple-600/40 disabled:opacity-40 transition anim-glow" style={{ '--glow': 'rgba(245,158,11,0.4)' } as React.CSSProperties}>
-            <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-amber-300" /> Summon x10</span>
-            <span className="flex items-center gap-1 text-violet-300 text-sm font-bold"><Zap size={13} /> {cost * 10}</span>
-          </button>
+        <div className="mb-4 grid w-full max-w-xl grid-cols-2 gap-1.5 sm:grid-cols-4">
+          {([
+            ['Legendary', game.summonPity.legendary, 100, 'legendary'],
+            ['Mythic', game.summonPity.mythic, 500, 'mythic'],
+            ['Cosmic', game.summonPity.cosmic, 2500, 'cosmic'],
+            ['Divine', game.summonPity.divine, 10000, 'divine'],
+          ] as const).map(([label, current, target, rarity]) => (
+            <div key={rarity} className="rounded-md border bg-black/35 px-2 py-1.5 text-left" style={{ borderColor: RARITY_COLORS[rarity] + '55' }}>
+              <div className="flex items-center justify-between gap-1 text-[8px] font-black uppercase" style={{ color: RARITY_COLORS[rarity] }}><span>{label} Pity</span><span>{current}/{target}</span></div>
+              <div className="mt-1 h-1 overflow-hidden rounded-full bg-black/60"><div className="h-full rounded-full transition-[width]" style={{ width: `${Math.min(100, current / target * 100)}%`, backgroundColor: RARITY_COLORS[rarity] }} /></div>
+              {rarity === 'mythic' && current >= 200 && <div className="mt-1 text-[7px] font-bold uppercase text-red-300">Soft pity active</div>}
+            </div>
+          ))}
         </div>
-        <p className="text-slate-600 text-[10px] mt-4">Earn $HERO by winning battles in locations (when not overpowered).</p>
+        <p className="mb-4 max-w-xl rounded-md border border-violet-500/20 bg-violet-950/20 px-3 py-2 text-[9px] leading-relaxed text-[#aaa0b4]"><strong className="text-violet-200">How Pity works:</strong> counters track summons without that rarity or higher. A qualifying hero resets its counter and all lower counters, then the guarantee starts again. Mythic chance begins increasing after 200 misses. Celestial remains a pure rare roll.</p>
+
+        <div className="flex w-full max-w-sm flex-col gap-2.5">
+          <button type="button" onClick={doSingle} disabled={!canSingle} className="flex h-[46px] items-center justify-between rounded-xl border border-purple-500/40 bg-gradient-to-r from-purple-600/30 to-blue-600/30 px-5 transition hover:from-purple-600/40 hover:to-blue-600/40 disabled:opacity-40">
+            <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-purple-300" /> {singleHasSpace ? 'Summon x1' : 'Hero storage full'}</span>
+            <span className="flex items-center gap-1 text-cyan-300 text-sm font-bold"><HeroTokenIcon size={13} /> {cost}</span>
+          </button>
+          <button type="button" onClick={doTen} disabled={!canTen} className="anim-glow flex h-[46px] items-center justify-between rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-600/30 to-purple-600/30 px-5 transition hover:from-amber-600/40 hover:to-purple-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(245,158,11,0.4)' } as React.CSSProperties}>
+            <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-amber-300" /> {tenHasSpace ? 'Summon x10' : 'Need 10 free slots'}</span>
+            <span className="flex items-center gap-1 text-cyan-300 text-sm font-bold"><HeroTokenIcon size={13} /> {cost * 10}</span>
+          </button>
+          <button type="button" onClick={doHundred} disabled={!canHundred} className="anim-glow flex h-[46px] items-center justify-between rounded-xl border border-fuchsia-500/40 bg-gradient-to-r from-fuchsia-600/30 to-cyan-600/30 px-5 transition hover:from-fuchsia-600/40 hover:to-cyan-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(217,70,239,0.4)' } as React.CSSProperties}>
+            <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-fuchsia-300" /> {hundredHasSpace ? 'Summon x100' : 'Need 100 free slots'}</span>
+            <span className="flex items-center gap-1 text-cyan-300 text-sm font-bold"><HeroTokenIcon size={13} /> {cost * 100}</span>
+          </button>
+          <div className="mt-2 h-px bg-gradient-to-r from-transparent via-[#8c6231]/65 to-transparent" />
+          <button type="button" onClick={() => void promoteAll()} className="game-control flex h-[46px] items-center justify-center gap-1.5 px-3 text-[9px] font-black uppercase"><Sparkles size={13} className="text-amber-300" /> Promote all heroes · Free space for Summon</button>
+        </div>
+        {promotionNotice && <div className="mt-2 max-w-sm rounded border border-violet-500/50 bg-violet-950/55 px-3 py-2 text-[10px] font-bold text-violet-100">{promotionNotice}</div>}
+        <p className="mt-4 text-[10px] text-[#7f7887]">Earn $HERO by winning battles in locations.</p>
+        </div>
       </div>
       {results && <SummonResult heroes={results} onClose={() => setResults(null)} />}
     </div>

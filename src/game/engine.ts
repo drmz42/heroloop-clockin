@@ -1,6 +1,7 @@
-import type { Enemy, Location, CombatUnit, OwnedHero, OwnedItem } from './types';
+import type { Enemy, Location, CombatUnit, OwnedHero, OwnedItem, Rarity } from './types';
 import { HERO_MAP } from './heroes';
 import { ITEM_MAP, enchantedStats, maxChestRarityForLocation } from './items';
+import { recommendedTeamPower } from './balance';
 
 export interface HeroFullStats {
   hp: number; atk: number; def: number; speed: number;
@@ -12,18 +13,39 @@ const HP_PER_LEVEL = 0.06;
 const ATK_PER_LEVEL = 0.05;
 const BASE_STAT_SCALE = 0.2;
 
+export const SET_BONUS_PERCENT: Record<Rarity, number> = {
+  common: 2, uncommon: 4, rare: 6, epic: 8, legendary: 10, mythic: 12,
+  relic: 12, cosmic: 14, divine: 16, celestial: 18, cursed: 20, immortal: 22, god: 25,
+};
+
+export function equippedSetBonus(equippedItems: OwnedItem[]): { rarity: Rarity; percent: number } | null {
+  if (equippedItems.length !== 8) return null;
+  const rarities = equippedItems.map((item) => ITEM_MAP[item.itemId]?.rarity).filter((rarity): rarity is Rarity => Boolean(rarity));
+  if (rarities.length !== 8 || !rarities.every((rarity) => rarity === rarities[0])) return null;
+  return { rarity: rarities[0], percent: SET_BONUS_PERCENT[rarities[0]] };
+}
+
+export function heroStarMultiplier(stars: number): number {
+  const safeStars = Math.max(0, Math.min(20, stars));
+  const gold = Math.min(5, safeStars);
+  const purple = Math.min(5, Math.max(0, safeStars - 5));
+  const red = Math.min(5, Math.max(0, safeStars - 10));
+  const pink = Math.min(5, Math.max(0, safeStars - 15));
+  return 1 + gold * 0.22 + purple * 0.15 + red * 0.12 + pink * 0.10;
+}
+
 export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
   const base = HERO_MAP[owned.heroId];
   if (!base) return null;
   const lvl = owned.level;
-  const starMul = 1 + owned.stars * 0.22;
+  const starMul = heroStarMultiplier(owned.stars);
   const hpLvlMul = 1 + (lvl - 1) * HP_PER_LEVEL;
   const atkLvlMul = 1 + (lvl - 1) * ATK_PER_LEVEL;
 
   let hp = base.baseHp * BASE_STAT_SCALE * hpLvlMul * starMul;
   let atk = base.baseAtk * BASE_STAT_SCALE * atkLvlMul * starMul;
   let def = base.baseDef * BASE_STAT_SCALE * starMul;
-  let speed = base.baseSpeed + owned.stars * 4;
+  const speed = base.baseSpeed + owned.stars * 4;
   let critChance = base.critChance;
   let critDamage = base.critDamage;
   let dodge = 0;
@@ -32,19 +54,21 @@ export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
   let atkSpeed = 0;
 
   if (equippedItems) {
+    const setBonusMultiplier = 1 + (equippedSetBonus(equippedItems)?.percent ?? 0) / 100;
     for (const item of equippedItems) {
       const effectiveStats = enchantedStats(item.stats, item.enchantLevel);
       for (const s of effectiveStats) {
+        const value = s.value * setBonusMultiplier;
         switch (s.key) {
-          case 'hp': hp += s.value; break;
-          case 'atk': atk += s.value; break;
-          case 'def': def += s.value; break;
-          case 'atkSpeed': atkSpeed += s.value; break;
-          case 'critChance': critChance += s.value; break;
-          case 'critDamage': critDamage += s.value; break;
-          case 'dodge': dodge += s.value; break;
-          case 'goldBonus': goldBonus += s.value; break;
-          case 'xpBonus': xpBonus += s.value; break;
+          case 'hp': hp += value; break;
+          case 'atk': atk += value; break;
+          case 'def': def += value; break;
+          case 'atkSpeed': atkSpeed += value; break;
+          case 'critChance': critChance += value; break;
+          case 'critDamage': critDamage += value; break;
+          case 'dodge': dodge += value; break;
+          case 'goldBonus': goldBonus += value; break;
+          case 'xpBonus': xpBonus += value; break;
         }
       }
     }
@@ -141,35 +165,45 @@ export function isLocationUnlocked(locationId: number, accountLevel: number, hig
   return accountLevel >= locationUnlockLevel(locationId);
 }
 
-// Tokens mined only when NOT overpowered for the location
-export function canMineTokens(locationId: number, accountLevel: number): boolean {
-  return accountLevel >= locationUnlockLevel(locationId);
+export function latestTokenLocation(accountLevel: number, highestLocation: number): number {
+  const discoveredCap = Math.max(1, Math.min(LOCATION_RANGES.length, highestLocation));
+  let latest = 1;
+  for (let locationId = 1; locationId <= discoveredCap; locationId += 1) {
+    if (accountLevel >= locationUnlockLevel(locationId)) latest = locationId;
+  }
+  return latest;
 }
 
-export function buildLocation(id: number, teamSize: number = 1): Location {
-  const isBoss = id % 5 === 0;  // boss every 5 locations
+export function canMineTokens(locationId: number, accountLevel: number, highestLocation: number): boolean {
+  const latest = latestTokenLocation(accountLevel, highestLocation);
+  return locationId <= latest && locationId >= Math.max(1, latest - 1);
+}
+
+export function buildLocation(id: number, teamSize: number = 1, forceBoss = false): Location {
+  const isBoss = forceBoss;
   const enemyCount = Math.max(1, Math.min(teamSize, 3));
   const scale = 1 + (id - 1) * 0.35;
-  // Required power scales with location tier ranges
-  const tierPower = [20, 100, 220, 450, 800, 1400, 2400, 4000, 6500, 10000];
-  const requiredPower = tierPower[Math.min(id - 1, tierPower.length - 1)] * (1 + (id > 10 ? (id - 10) * 0.4 : 0));
+  const difficultyRamp = id === 1 ? 1 : 1.45 + (id - 2) * 0.18;
+  // Power is guidance, not an unlock gate. Each active hero creates one enemy lane,
+  // so compare the formation against a per-lane recommendation.
+  const requiredPower = recommendedTeamPower(id, enemyCount);
 
   let enemies: Enemy[];
   if (isBoss) {
-    const bossBase = BOSS_POOL[Math.floor(id / 5 - 1) % BOSS_POOL.length];
+    const bossBase = BOSS_POOL[(id - 1) % BOSS_POOL.length];
     enemies = Array.from({ length: enemyCount }).map((_, i) => i === 0 ? {
         ...bossBase,
-        hp: Math.round(700 * scale * 2.0 * 0.2),
-        atk: Math.round(42 * scale * 1.3 * 0.24),
-        def: Math.round(22 * scale * 1.1 * 0.2),
+        hp: Math.round(700 * scale * 2.0 * 0.33 * difficultyRamp),
+        atk: Math.round(42 * scale * 1.3 * 0.32 * difficultyRamp),
+        def: Math.round(22 * scale * 1.1 * 0.25 * difficultyRamp),
         speed: 80,
       } : {
         ...ENEMY_POOL[(id + i) % ENEMY_POOL.length],
         id: `${bossBase.id}-guard-${i}`,
         name: `${bossBase.name} Guard`,
-        hp: Math.round(300 * scale * (0.9 + i * 0.08) * 0.2),
-        atk: Math.round(30 * scale * 0.24),
-        def: Math.round(12 * scale * 0.2),
+        hp: Math.round(300 * scale * (0.9 + i * 0.08) * 0.33 * difficultyRamp),
+        atk: Math.round(30 * scale * 0.32 * difficultyRamp),
+        def: Math.round(12 * scale * 0.25 * difficultyRamp),
         speed: 72 + i * 3,
       });
   } else {
@@ -177,17 +211,15 @@ export function buildLocation(id: number, teamSize: number = 1): Location {
       const e = ENEMY_POOL[(id + i) % ENEMY_POOL.length];
       return {
         ...e,
-        hp: Math.round(300 * scale * (0.85 + i * 0.08) * 0.2),
-        atk: Math.round(32 * scale * (0.8 + i * 0.05) * 0.24),
-        def: Math.round(10 * scale * 0.2),
+        hp: Math.round(300 * scale * (0.85 + i * 0.08) * 0.33 * difficultyRamp),
+        atk: Math.round(32 * scale * (0.8 + i * 0.05) * 0.32 * difficultyRamp),
+        def: Math.round(10 * scale * 0.25 * difficultyRamp),
         speed: 65 + i * 3 + Math.min(id * 1.5, 50),
       };
     });
   }
 
-  // Gold matches screenshot: 17g, 22g, 27g, 32g, 37g, 52g, 210g, 727g...
-  const goldBase = [17, 22, 27, 32, 37, 52, 120, 210, 500, 1250];
-  const goldReward = Math.max(1, Math.round((goldBase[Math.min(id - 1, goldBase.length - 1)] ?? (id * 8)) * 0.28 * (isBoss ? 3 : 1)));
+  const goldReward = Math.max(1, (5 + id) * (isBoss ? 3 : 1));
   const xpReward = Math.max(1, Math.round((4 + id * 1.2) * 0.55 * (isBoss ? 2 : 1)));
   const tokenReward = 0;
 
@@ -216,13 +248,13 @@ export function makeUnit(
   dodge?: number,
 ): CombatUnit {
   // Attack interval: minimum 900ms at base, scaling down with speed
-  // Slower base combat overall
-  const interval = 1400 - Math.min(speed * 2.2, 700);
+  // Slower base combat overall (base interval raised 10% = base attack speed -10%)
+  const interval = 1540 - Math.min(speed * 2.2, 700);
   return {
     uid, name, side, hp, maxHp: hp, atk, def, speed,
     combatSpeed: speed,
     critChance, critDamage, color, icon,
-    attackTimer: (1400 - speed * 1.5) * 0.4,
+    attackTimer: ((1540 - speed * 1.5) * 0.4),
     attackInterval: Math.max(interval, 600),
     heroClass, alive: true, dodge: dodge ?? 0, regenTimer: 0,
   };

@@ -2,11 +2,14 @@ export type HeroClass = 'knight' | 'archer' | 'assassin' | 'shepherd' | 'druid';
 
 export type Rarity =
   | 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
-  | 'mythic' | 'relic' | 'cursed' | 'cosmic' | 'divine';
+  | 'mythic' | 'cosmic' | 'divine' | 'celestial' | 'cursed' | 'immortal' | 'god'
+  | 'relic'; // legacy save compatibility; never generated
 
 export type Faction = 'light' | 'dark' | 'nature' | 'fire' | 'water' | 'void' | 'cosmic';
 
-export type ItemSlot = 'weapon' | 'helmet' | 'armor' | 'gloves' | 'boots' | 'ring1' | 'ring2' | 'amulet';
+export type ItemSlot =
+  | 'class_weapon' | 'offhand' | 'helmet' | 'chest' | 'gloves' | 'boots' | 'ring' | 'amulet'
+  | 'weapon' | 'armor' | 'ring1' | 'ring2'; // legacy save compatibility
 
 export interface HeroBase {
   id: string;
@@ -36,6 +39,7 @@ export interface OwnedHero {
   respawnAt?: number;
   xp: number;
   locked?: boolean;
+  isNew?: boolean;
 }
 
 // ── Items ──────────────────────────────────────────────────────────────────
@@ -58,6 +62,8 @@ export interface ItemBase {
   rarity: Rarity;
   icon: string;
   flavor: string;
+  /** Only weapons use this. Non-weapons are shared by every class. */
+  heroClass?: HeroClass;
 }
 
 export interface OwnedItem {
@@ -68,6 +74,7 @@ export interface OwnedItem {
   power: number;
   locked?: boolean;
   enchantLevel: number;   // 0–10, each +1 boosts all stats by +10%
+  enchantStatsVersion?: 2; // v2 keeps original rolled stats; missing legacy values stored compounded stats
   rerollCount: number;    // how many times rerolled (affects cost)
 }
 
@@ -87,6 +94,8 @@ export interface PotionDef {
 export interface Chest {
   id: string;
   stage: number;
+  boss?: boolean;
+  tutorial?: boolean;
 }
 
 // ── Enemy / Location ───────────────────────────────────────────────────────
@@ -146,6 +155,8 @@ export interface FloatingNumber {
   crit: boolean;
   heal: boolean;
   miss?: boolean;
+  rewardGold?: number;
+  rewardXp?: number;
   born: number;
 }
 
@@ -154,9 +165,12 @@ export interface FloatingNumber {
 export interface DailyQuest {
   id: string;
   label: string;
+  kind?: 'daily' | 'milestone';
+  chain?: string;
+  tier?: number;
   target: number;
   progress: number;
-  reward: { gold: number; hero: number };
+  reward: { gold: number; hero: number; bossKeys?: number };
   claimed: boolean;
 }
 
@@ -175,6 +189,31 @@ export interface AutoPotConfig {
   threshold: number;
 }
 
+export interface TutorialState {
+  welcomeCompleted: boolean;
+  autoPotCompleted: boolean;
+  chestGranted: boolean;
+  chestCompleted: boolean;
+}
+
+export type TrainingBoostKey = '2x-1h' | '2x-4h' | '4x-1h' | '4x-4h';
+
+export interface TrainingBoostQueueEntry {
+  key: TrainingBoostKey;
+  multiplier: 2 | 4;
+  durationMs: number;
+}
+
+export interface TrainingCampState {
+  heroUids: Array<string | null>;
+  unlockedSlots: number;
+  boostMultiplier: 1 | 2 | 4;
+  boostEndsAt: number;
+  activeBoostKey: TrainingBoostKey | null;
+  boostQueue: TrainingBoostQueueEntry[];
+  lastTick: number;
+}
+
 export interface RotatingShopItem {
   itemId: string;
   price: number;
@@ -187,6 +226,43 @@ export interface SessionStats {
   chestsOpened: number;
   goldToday: number;
   heroToday: number;
+}
+
+export interface BalanceCohort {
+  locationId: number;
+  teamSize: number;
+  powerBand: number;
+  boss: boolean;
+  attempts: number;
+  wins: number;
+  totalClearSeconds: number;
+  totalPower: number;
+  heroDeaths: number;
+  totalEquippedStatLines: number;
+}
+
+export interface BalanceTelemetry {
+  version: string;
+  cohorts: Record<string, BalanceCohort>;
+}
+
+export interface MarketOwnedListing {
+  id: string;
+  kind: 'item' | 'hero';
+  price: number;
+  createdAt: number;
+  item?: OwnedItem;
+  hero?: OwnedHero;
+}
+
+export interface MarketHistoryRecord {
+  id: string;
+  kind: 'item' | 'hero';
+  sourceId: string;
+  name: string;
+  price: number;
+  createdAt: number;
+  action: 'bought' | 'sold';
 }
 
 // ── User Profile ─────────────────────────────────────────────────────────
@@ -216,26 +292,39 @@ export interface GameState {
   team: string[];
   inventory: OwnedItem[];
   chests: Chest[];
+  bossKeys: number;
+  bossBattleActive: boolean;
   chestsOpenedToday: number;
   lastChestReset: number;       // date timestamp for daily chest cap reset
   currentLocation: number;
   highestLocation: number;
   lastSeen: number;
+  activeUntil: number;           // ordinary Active reward window; Boost Max bypasses this cap
   totalGoldEarned: number;
   totalTokensEarned: number;
+  tokensEarnedToday: number;
+  tokenDayKey: string;
   totalKills: number;
+  totalBossKills: number;
   summons: number;
   potions: PotionInventory;
   autoPot: AutoPotConfig;
+  tutorial: TutorialState;
+  trainingCamp: TrainingCampState;
   rotatingShop: RotatingShopItem[];
   rotatingShopRefreshAt: number;
   session: SessionStats;
   dailyQuests: DailyQuest[];
+  milestoneQuests: DailyQuest[];
   lastQuestReset: number;
   referral: ReferralData;
   username: string;
   walletAddress: string;
+  avatarHeroId: string;
   boost: BoostState;
+  balanceTelemetry: BalanceTelemetry;
+  marketListings: MarketOwnedListing[];
+  marketHistory: MarketHistoryRecord[];
   starterBalanceV2: boolean;
 }
 
@@ -243,6 +332,7 @@ export interface BoostState {
   active: boolean;          // true when progress reaches 100%
   progress: number;         // 0–100
   bonusPct: number;         // 100 when active
+  chestProgressSeconds: number; // active reward time carried toward the next timed chest
   conditions: {
     connectTelegram: boolean;
     connectTwitter: boolean;

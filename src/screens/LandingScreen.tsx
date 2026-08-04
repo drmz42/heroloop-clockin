@@ -4,18 +4,32 @@ import {
   Gem, Menu, Shield, Sparkles, Swords, Wallet, X, Zap,
 } from 'lucide-react';
 import type { useGame } from '@/game/useGame';
-import { heroPortraitSrc } from '@/game/portraits';
+import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { HERO_MAP } from '@/game/heroes';
+import { playerSync } from '@/game/backend';
+import { hasBlockedUsernameLanguage } from '@/game/username';
 
 type GameApi = ReturnType<typeof useGame>;
-type StarterId = 'ironfoot' | 'greenscout' | 'cutpurse' | 'acolyte' | 'shrubmage';
+type StarterId = 'shepherd-common' | 'assassin-common' | 'knight-common' | 'druid-common' | 'archer-common';
+
+async function accountRequest<T>(request: Promise<T | null>): Promise<T | null> {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<null>((resolve) => {
+    timeoutId = setTimeout(() => resolve(null), 12_000);
+  });
+  try {
+    return await Promise.race([request, timeout]);
+  } finally {
+    clearTimeout(timeoutId!);
+  }
+}
 
 const STARTERS: { id: StarterId; role: string; tagline: string; stat: string }[] = [
-  { id: 'ironfoot', role: 'Knight', tagline: 'Hold the line', stat: 'High HP & DEF' },
-  { id: 'greenscout', role: 'Archer', tagline: 'Strike from afar', stat: 'Fast critical hits' },
-  { id: 'cutpurse', role: 'Assassin', tagline: 'Move through shadows', stat: 'Burst & criticals' },
-  { id: 'acolyte', role: 'Shepherd', tagline: 'Keep allies alive', stat: 'Healing & support' },
-  { id: 'shrubmage', role: 'Druid Mage', tagline: 'Command wild magic', stat: 'Regen & control' },
+  { id: 'shepherd-common', role: 'Mage', tagline: 'Unleash arcane bursts', stat: 'Mana & runes' },
+  { id: 'assassin-common', role: 'Assassin', tagline: 'Move through shadows', stat: 'Burst & criticals' },
+  { id: 'knight-common', role: 'Warrior', tagline: 'Hold the line', stat: 'High HP & DEF' },
+  { id: 'druid-common', role: 'Druid', tagline: 'Command living magic', stat: 'Regen & sustain' },
+  { id: 'archer-common', role: 'Crossbowman', tagline: 'Keep relentless tempo', stat: 'Fast bolt attacks' },
 ];
 
 const LOOP = [
@@ -38,9 +52,8 @@ export function LandingScreen({ game }: { game: GameApi }) {
     <div className="landing min-h-screen overflow-x-hidden bg-[#070711] text-slate-100">
       <header className="fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-[#070711]/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <a href="#top" className="flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center border border-amber-300/70 bg-amber-400 text-sm font-black text-[#100b03] shadow-[3px_3px_0_#7c3aed]">H</span>
-            <span className="font-pixel text-[11px] tracking-tight text-white">HERO<span className="text-amber-300">LOOP</span></span>
+          <a href="#top" className="flex items-center">
+            <img src="/assets/brand/heroloop-logo.png" alt="HeroLoop" width={180} height={52} className="h-11 w-auto max-w-[180px] object-contain drop-shadow-[0_0_10px_rgba(226,170,61,.25)]" />
           </a>
 
           <nav className="hidden items-center gap-8 text-xs font-bold uppercase tracking-[.16em] text-slate-400 md:flex">
@@ -76,9 +89,9 @@ export function LandingScreen({ game }: { game: GameApi }) {
       <main>
         <section id="top" className="relative flex min-h-[760px] items-end overflow-hidden pt-16 lg:min-h-screen">
           <img
-            src="/assets/heroloop-landing-hero.png"
-            alt="Three HeroLoop adventurers face a dungeon monster"
-            className="absolute inset-0 h-full w-full object-cover object-[62%_center]"
+            src="/assets/heroes/hero-classes-v3.png"
+            alt="The five HeroLoop classes"
+            className="absolute inset-0 h-full w-full object-cover object-center"
           />
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,5,14,.98)_0%,rgba(5,5,14,.86)_32%,rgba(5,5,14,.12)_72%),linear-gradient(0deg,#070711_0%,transparent_45%)]" />
           <div className="absolute inset-0 opacity-30 landing-grid" />
@@ -114,8 +127,8 @@ export function LandingScreen({ game }: { game: GameApi }) {
         <section id="game" className="border-y border-white/10 bg-[#0b0a16]">
           <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-y divide-white/10 px-5 md:grid-cols-4 md:divide-y-0 lg:px-8">
             {[
-              ['32', 'Heroes'],
-              ['10', 'Rarities'],
+              ['5', 'Hero classes'],
+              ['9', 'Rarities'],
               ['10', 'Regions'],
               ['24/7', 'With Boost Max'],
             ].map(([value, label]) => (
@@ -161,19 +174,19 @@ export function LandingScreen({ game }: { game: GameApi }) {
                   <button
                     key={id}
                     onClick={start}
-                    className="landing-card group overflow-hidden p-3 text-left transition hover:-translate-y-1 hover:border-amber-300/40"
+                    className="landing-card group grid grid-rows-[auto_auto_1fr] overflow-hidden p-3 text-left transition hover:-translate-y-1 hover:border-amber-300/40"
                   >
                     <div className="relative aspect-square overflow-hidden bg-black/30">
                       <img
                         src={portrait}
                         alt={`${hero.name}, ${role}`}
                         className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                        style={heroPortraitStyle(hero.id, hero.heroClass)}
                       />
                       <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#090811] to-transparent" />
                     </div>
                     <div className="px-2 pb-2 pt-4">
-                      <div className="text-[9px] font-bold uppercase tracking-[.2em] text-violet-300">{role}</div>
-                      <div className="mt-2 font-pixel text-[8px] leading-relaxed text-white">{hero.name}</div>
+                      <div className="min-h-6 text-[9px] font-bold uppercase tracking-[.2em] text-violet-300">{role}</div>
                       <div className="mt-2 text-xs text-slate-500">{tagline}</div>
                     </div>
                   </button>
@@ -263,27 +276,53 @@ function Benefit({ title, text }: { title: string; text: string }) {
   );
 }
 
-function Onboarding({ game, onClose }: { game: GameApi; onClose: () => void }) {
+export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => void }) {
   const [step, setStep] = useState(1);
-  const [starter, setStarter] = useState<StarterId>('ironfoot');
+  const [starter, setStarter] = useState<StarterId>('shepherd-common');
   const [username, setUsername] = useState('');
-  const [walletType, setWalletType] = useState<'phantom' | 'solflare' | null>(null);
+  const [walletReady, setWalletReady] = useState(false);
   const [connecting, setConnecting] = useState(false);
-  const validName = /^[a-zA-Z0-9_]{3,16}$/.test(username);
+  const [accountId, setAccountId] = useState('');
+  const [error, setError] = useState('');
+  const blockedName = hasBlockedUsernameLanguage(username);
+  const validName = /^[a-zA-Z0-9_]{3,16}$/.test(username) && !blockedName;
 
   const heroCards = useMemo(() => STARTERS.map(s => {
     const hero = HERO_MAP[s.id];
     return { ...s, hero, svg: heroPortraitSrc(hero.id, hero.heroClass, hero.rarity, hero.color) };
   }), []);
 
-  const finish = () => {
-    if (!validName || !walletType) return;
-    setConnecting(true);
-    window.setTimeout(() => {
-      const fakeAddress = `${walletType.slice(0, 3)}-${Math.random().toString(36).slice(2, 8)}...${Math.random().toString(36).slice(2, 6)}`;
-      game.setUserProfile(username.trim(), fakeAddress, starter);
+  const connectAndCheck = async () => {
+    setWalletReady(true); setConnecting(true); setError('');
+    try {
+      const account = await accountRequest(playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status'));
+      if (!account) { setError('Account service is unavailable. Please try again.'); return; }
+      const address = `game-${account.account_id}`;
+      if (account.exists && account.username) {
+        game.setUserProfile(account.username, address);
+        return;
+      }
+      setAccountId(address);
+      setStep(2);
+    } catch {
+      setError('Account service is unavailable. Please try again.');
+    } finally {
       setConnecting(false);
-    }, 900);
+    }
+  };
+
+  const finish = async () => {
+    if (!validName || !walletReady || !accountId) return;
+    setConnecting(true); setError('');
+    try {
+      const account = await accountRequest(playerSync<{ created: boolean; username: string; account_id: string }>('account_register', { username: username.trim() }));
+      if (!account) { setError('Registration failed. Please try again.'); return; }
+      game.setUserProfile(account.username, `game-${account.account_id}`, starter);
+    } catch {
+      setError('Registration failed. Please try again.');
+    } finally {
+      setConnecting(false);
+    }
   };
 
   return (
@@ -293,7 +332,7 @@ function Onboarding({ game, onClose }: { game: GameApi; onClose: () => void }) {
           <X size={20} />
         </button>
         <div className="border-b border-white/10 px-6 py-5 sm:px-8">
-          <div className="text-[10px] uppercase tracking-[.25em] text-violet-300">Create your account</div>
+          <div className="text-[10px] uppercase tracking-[.25em] text-violet-300">{step === 1 ? 'Connect and check account' : 'Create your account'}</div>
           <div className="mt-3 flex items-center gap-2">
             {[1, 2, 3].map(n => (
               <div key={n} className={`h-1.5 flex-1 ${n <= step ? 'bg-amber-300' : 'bg-white/10'}`} />
@@ -303,6 +342,20 @@ function Onboarding({ game, onClose }: { game: GameApi; onClose: () => void }) {
 
         <div className="min-h-[470px] p-6 sm:p-8">
           {step === 1 && (
+            <div className="mx-auto max-w-xl py-5">
+              <div className="mx-auto grid h-14 w-14 place-items-center border border-violet-400/40 bg-violet-400/10 text-violet-300"><Wallet size={26} /></div>
+              <h2 className="mt-6 text-center font-pixel text-sm text-white sm:text-lg">CONNECT SOLANA WALLET</h2>
+              <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-slate-400">One wallet sign-in checks for an existing HeroLoop account. New players continue to registration.</p>
+              <div className="mx-auto mt-7 w-fit border border-emerald-400/25 bg-emerald-400/[.06] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-emerald-300"><Shield size={12} className="mr-1.5 inline" /> Secure wallet sign-in</div>
+              <button onClick={connectAndCheck} disabled={connecting} className="landing-cta mx-auto mt-4 flex w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em] disabled:cursor-wait disabled:opacity-60">
+                <Wallet size={19} /> {connecting ? 'Checking account…' : 'Connect Solana Wallet to Play'}
+              </button>
+              {error && <div className="mt-5 border border-rose-400/30 bg-rose-400/10 p-3 text-center text-sm text-rose-300">{error}</div>}
+              <div className="mx-auto mt-6 flex max-w-md items-start gap-3 border border-emerald-400/20 bg-emerald-400/[.05] p-4 text-xs leading-5 text-emerald-200/70"><Shield size={16} className="mt-0.5 shrink-0" /><span>Signing is free. Production wallet sign-in will use a message signature to prove ownership; it will never move funds, cost gas or ask for a seed phrase or private key.</span></div>
+            </div>
+          )}
+
+          {step === 2 && (
             <div>
               <h2 className="font-pixel text-sm text-white sm:text-lg">CHOOSE YOUR FIRST HERO</h2>
               <p className="mt-3 text-sm text-slate-400">Your starter defines the opening playstyle. You can summon every other class later.</p>
@@ -310,15 +363,12 @@ function Onboarding({ game, onClose }: { game: GameApi; onClose: () => void }) {
                 {heroCards.map(({ id, role, tagline, stat, hero, svg }) => {
                   const active = starter === id;
                   return (
-                    <button key={id} onClick={() => setStarter(id)} className={`relative overflow-hidden border p-4 text-left transition ${active ? 'border-amber-300 bg-amber-300/10 shadow-[0_0_30px_rgba(251,191,36,.12)]' : 'border-white/10 bg-white/[.025] hover:border-violet-400/50'}`}>
+                    <button key={id} onClick={() => setStarter(id)} className={`relative grid grid-rows-[auto_auto_auto_1fr] overflow-hidden border p-4 text-left transition ${active ? 'border-amber-300 bg-amber-300/10 shadow-[0_0_30px_rgba(251,191,36,.12)]' : 'border-white/10 bg-white/[.025] hover:border-violet-400/50'}`}>
                       {active && <span className="absolute right-3 top-3 grid h-6 w-6 place-items-center bg-amber-300 text-black"><Check size={14} strokeWidth={3} /></span>}
-                      <img
-                        src={svg}
-                        alt={`${hero.name}, ${role}`}
-                        className="mx-auto aspect-square w-full max-w-36 object-cover"
-                      />
-                      <div className="mt-3 text-[10px] font-bold uppercase tracking-[.2em] text-violet-300">{role}</div>
-                      <div className="mt-1 font-pixel text-[9px] text-white">{hero.name}</div>
+                      <div className="relative mx-auto aspect-square w-full max-w-36 overflow-hidden bg-black/30">
+                        <img src={svg} alt={`${hero.name}, ${role}`} style={heroPortraitStyle(hero.id, hero.heroClass)} />
+                      </div>
+                      <div className="mt-3 min-h-6 text-[10px] font-bold uppercase tracking-[.2em] text-violet-300">{role}</div>
                       <div className="mt-3 text-sm text-slate-300">{tagline}</div>
                       <div className="mt-1 text-xs text-slate-500">{stat}</div>
                     </button>
@@ -328,7 +378,7 @@ function Onboarding({ game, onClose }: { game: GameApi; onClose: () => void }) {
             </div>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <div className="mx-auto max-w-lg py-8">
               <h2 className="font-pixel text-sm text-white sm:text-lg">CLAIM YOUR NAME</h2>
               <p className="mt-3 text-sm leading-6 text-slate-400">This is your permanent public identity in leaderboards, marketplace listings and guilds.</p>
@@ -341,47 +391,28 @@ function Onboarding({ game, onClose }: { game: GameApi; onClose: () => void }) {
                 className="mt-3 w-full border border-white/15 bg-black/40 px-5 py-4 text-lg text-white outline-none transition placeholder:text-slate-700 focus:border-amber-300"
               />
               <div className="mt-3 flex justify-between text-xs">
-                <span className={username.length > 0 && !validName ? 'text-rose-400' : 'text-slate-600'}>3–16 letters, numbers or _</span>
+                <span className={username.length > 0 && !validName ? 'text-rose-400' : 'text-slate-600'}>{blockedName ? 'Choose a respectful player name' : '3–16 letters, numbers or _'}</span>
                 <span className="text-slate-600">{username.length}/16</span>
               </div>
+              {error && <div className="mt-5 border border-rose-400/30 bg-rose-400/10 p-3 text-sm text-rose-300">{error}</div>}
             </div>
           )}
 
-          {step === 3 && (
-            <div className="mx-auto max-w-xl py-5">
-              <div className="mx-auto grid h-14 w-14 place-items-center border border-violet-400/40 bg-violet-400/10 text-violet-300"><Wallet size={26} /></div>
-              <h2 className="mt-6 text-center font-pixel text-sm text-white sm:text-lg">CONNECT SOLANA WALLET</h2>
-              <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-slate-400">Your wallet will be linked to this account. The beta currently uses a safe simulated connection—real signing comes next.</p>
-              <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                <button onClick={() => setWalletType('phantom')} className={`flex items-center gap-4 border p-4 text-left transition ${walletType === 'phantom' ? 'border-violet-400 bg-violet-400/10' : 'border-white/10 bg-white/[.025] hover:border-violet-400/40'}`}>
-                  <span className="h-9 w-9 rounded-xl bg-gradient-to-br from-violet-400 to-purple-700" />
-                  <span><b className="block text-sm text-white">Phantom</b><small className="text-slate-500">Recommended</small></span>
-                </button>
-                <button onClick={() => setWalletType('solflare')} className={`flex items-center gap-4 border p-4 text-left transition ${walletType === 'solflare' ? 'border-orange-400 bg-orange-400/10' : 'border-white/10 bg-white/[.025] hover:border-orange-400/40'}`}>
-                  <span className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-300 to-orange-600" />
-                  <span><b className="block text-sm text-white">Solflare</b><small className="text-slate-500">Solana wallet</small></span>
-                </button>
-              </div>
-              <div className="mt-6 flex items-start gap-3 border border-emerald-400/20 bg-emerald-400/[.05] p-4 text-xs leading-5 text-emerald-200/70">
-                <Shield size={16} className="mt-0.5 shrink-0" /> HeroLoop will never ask for your seed phrase or private key.
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="flex items-center justify-between border-t border-white/10 bg-black/20 px-6 py-5 sm:px-8">
           <button onClick={() => step === 1 ? onClose() : setStep(step - 1)} className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white">
             {step === 1 ? 'Cancel' : 'Back'}
           </button>
-          {step < 3 ? (
-            <button onClick={() => setStep(step + 1)} disabled={step === 2 && !validName} className="landing-cta flex items-center gap-2 px-6 py-3 disabled:cursor-not-allowed disabled:opacity-30">
+          {step === 2 ? (
+            <button onClick={() => setStep(3)} className="landing-cta flex items-center gap-2 px-6 py-3 disabled:cursor-not-allowed disabled:opacity-30">
               Continue <ArrowRight size={15} />
             </button>
-          ) : (
-            <button onClick={finish} disabled={!walletType || connecting} className="landing-cta flex items-center gap-2 px-6 py-3 disabled:cursor-not-allowed disabled:opacity-30">
-              {connecting ? 'Connecting…' : 'Enter the game'} <Gamepad2 size={16} />
+          ) : step === 3 ? (
+            <button onClick={finish} disabled={!validName || connecting} className="landing-cta flex items-center gap-2 px-6 py-3 disabled:cursor-not-allowed disabled:opacity-30">
+              {connecting ? 'Creating…' : 'Create account'} <Gamepad2 size={16} />
             </button>
-          )}
+          ) : <span />}
         </div>
       </div>
     </div>

@@ -1,0 +1,56 @@
+import { createClient } from '@supabase/supabase-js';
+
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+export const tokenomicsEnabled = import.meta.env.VITE_ENABLE_TOKENOMICS !== 'false';
+// Client-side token accrual is never safe for a value-bearing economy.
+export const demoTokenomicsEnabled = import.meta.env.VITE_DEMO_TOKENOMICS === 'true';
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export async function authHeaders(refresh = false): Promise<Record<string, string> | null> {
+  let { data: { session } } = await supabase.auth.getSession();
+  if (refresh && session) {
+    const refreshed = await supabase.auth.refreshSession();
+    session = refreshed.data.session;
+  }
+  if (!session) {
+    if (refresh) return null;
+    const { data } = await supabase.auth.signInAnonymously();
+    session = data.session;
+  }
+  return session ? {
+    'Content-Type': 'application/json',
+    apikey: supabaseAnonKey,
+    Authorization: `Bearer ${session.access_token}`,
+  } : null;
+}
+
+export async function playerSync<T>(action: string, payload: Record<string, unknown> = {}): Promise<T | null> {
+  try {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const headers = await authHeaders(attempt === 1);
+      if (!headers) return null;
+      const response = await fetch(`${supabaseUrl}/functions/v1/player-sync`, {
+        method: 'POST', headers, body: JSON.stringify({ action, ...payload }),
+      });
+      if (response.status === 401 && attempt === 0) continue;
+      if (!response.ok) {
+        if (action === 'hero_ascend' && payload.repeat === true) return null;
+        if (action === 'spend_tokens' || action === 'hero_summon' || action === 'hero_ascend') {
+          const detail = await response.json().catch(() => ({ error: `HTTP ${response.status}` })) as { error?: string };
+          const label = action === 'hero_summon' ? 'Summon' : action === 'hero_ascend' ? 'Ascension' : '$HERO purchase';
+          window.alert(`${label} failed: ${detail.error ?? `HTTP ${response.status}`}`);
+        }
+        return null;
+      }
+      return response.json() as Promise<T>;
+    }
+  } catch (error) {
+    if (action === 'spend_tokens' || action === 'hero_summon' || action === 'hero_ascend') {
+      const label = action === 'hero_summon' ? 'Summon' : action === 'hero_ascend' ? 'Ascension' : '$HERO purchase';
+      window.alert(`${label} failed: ${error instanceof Error ? error.message : 'network_error'}`);
+    }
+  }
+  return null;
+}

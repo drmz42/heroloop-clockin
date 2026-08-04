@@ -1,172 +1,84 @@
-import { useState, useMemo } from 'react';
-import { Search, Zap, ShoppingCart, Tag, X, TrendingUp } from 'lucide-react';
-import { ITEM_MAP, formatStatValue, sellValue, STAT_LABEL } from '@/game/items';
-import { RARITY_COLORS, RARITY_LABEL, RARITY_INDEX, HERO_MAP, CLASS_LABEL } from '@/game/heroes';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { BarChart3, Clock3, Coins, List, Lock, PackageSearch, Search, ShieldCheck, ShoppingCart, Swords, Shield, Gem, PawPrint, Users } from 'lucide-react';
+import { HeroPortrait } from '@/components/HeroPortrait';
+import { HeroTokenIcon } from '@/components/HeroTokenIcon';
+import { ItemArtwork } from '@/components/ItemArtwork';
+import { HEROES, HERO_MAP, RARITY_COLORS, RARITY_LABEL } from '@/game/heroes';
+import { ITEMS, ITEM_MAP, formatStatValue, sellValue, rollItem } from '@/game/items';
 import { formatNum } from '@/game/state';
-import type { Rarity, OwnedItem, OwnedHero } from '@/game/types';
+import type { MarketOwnedListing, OwnedHero, OwnedItem, Rarity } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
+import type { TokenomicsApi } from '@/game/useTokenomics';
 
-type Category = 'all' | 'items' | 'heroes';
-type ViewTab = 'browse' | 'sell';
+type MarketTab = 'browse' | 'activity' | 'history' | 'stats' | 'supply' | 'listings' | 'sell';
+type Category = 'all' | 'weapons' | 'armor' | 'accessories' | 'heroes' | 'pets';
+type LevelFilter = 'all' | 'my' | 'usable' | 'upgrades' | 'endgame';
+type Listing = { id: string; kind: 'item' | 'hero'; sourceId: string; name: string; rarity: Rarity; level: number; enchantLevel: number; power: number; price: number; seller: string; createdAt: number; stats: string[]; owned?: OwnedItem | OwnedHero };
 
-interface Listing {
-  uid: string;
-  name: string;
-  rarity: Rarity;
-  icon: string;
-  subtitle: string;
-  stats?: { key: string; value: string }[];
-  power: number;
-  level: number;
-  price: number;
-  seller: string;
-  owner: boolean;
+const TABS: { id: MarketTab; label: string }[] = [
+  { id: 'browse', label: 'Browse' }, { id: 'activity', label: 'Activity' }, { id: 'history', label: 'History' },
+  { id: 'stats', label: 'Stats' }, { id: 'supply', label: 'Supply' }, { id: 'listings', label: 'My Listings' }, { id: 'sell', label: 'Sell' },
+];
+
+function demoListings(): Listing[] {
+  const itemRows = ITEMS.filter((item) => !['cursed', 'immortal', 'god'].includes(item.rarity)).slice(7, 25).map((item, index) => { const level = 3 + index * 5; const rolled = rollItem(item.id, level); const enchantLevel = [0, 3, 5, 7, 10][index % 5]; return { id: `demo-item-${index}`, kind: 'item' as const, sourceId: item.id, name: item.name, rarity: item.rarity, level, enchantLevel, power: rolled.power, price: 3 + (index % 7) * 3, seller: ['BrassWolf', 'AshenFox', 'RuneSmith'][index % 3], createdAt: Date.now() - index * 61_000, stats: rolled.stats.map(formatStatValue) }; });
+  const heroRows = HEROES.slice(0, 9).map((hero, index) => ({ id: `demo-hero-${index}`, kind: 'hero' as const, sourceId: hero.id, name: hero.name, rarity: hero.rarity, level: 2 + index * 2, enchantLevel: 0, power: 70 + index * 35, price: 8 + index * 4, seller: ['NightVale', 'IronHearth'][index % 2], createdAt: Date.now() - (index + 18) * 61_000, stats: [hero.skillName, hero.passiveName] }));
+  return [...itemRows, ...heroRows].sort((a, b) => b.createdAt - a.createdAt);
 }
 
-// Mock marketplace listings (other players)
-function generateMockListings(): Listing[] {
-  const mockItems: { itemId: string; price: number; seller: string }[] = [
-    { itemId: 'w-starcall',  price: 15,  seller: 'DragonSlayer' },
-    { itemId: 'h-dragonscale', price: 8, seller: 'FrostQueen' },
-    { itemId: 'a-voidshroud', price: 12, seller: 'ShadowKing' },
-    { itemId: 'g-storm',     price: 20,  seller: 'ThunderGod' },
-    { itemId: 'w-soulblade', price: 35,  seller: 'VoidWalker' },
-    { itemId: 'am-soulstone',price: 18,  seller: 'MysticSage' },
-    { itemId: 'r-signet',    price: 10,  seller: 'RoyalGuard' },
-    { itemId: 'b-void',      price: 14,  seller: 'WindRider' },
-  ];
-  return mockItems.map((m, i) => {
-    const base = ITEM_MAP[m.itemId];
-    if (!base) return null;
-    const fakeStats = base.rarity === 'epic' ? [{ key: 'atk', value: '+25' }, { key: 'critChance', value: '+4.0%' }] : [{ key: 'hp', value: '+150' }];
-    return {
-      uid: `mock-${i}`, name: base.name, rarity: base.rarity, icon: base.icon,
-      subtitle: STAT_LABEL[base.slot === 'ring1' || base.slot === 'ring2' ? 'atk' : 'atk'] || base.slot,
-      stats: fakeStats, power: 100 + i * 50, level: 5 + i, price: m.price, seller: m.seller, owner: false,
-    };
-  }).filter(Boolean) as Listing[];
+function ownedRows(game: GameApi): Listing[] {
+  const equipped = new Set(game.state.ownedHeroes.flatMap((hero) => Object.values(hero.equipped)).filter(Boolean));
+  const items = game.state.inventory.flatMap((item) => { const base = ITEM_MAP[item.itemId]; return base ? [{ id: item.uid, kind: 'item' as const, sourceId: item.itemId, name: base.name, rarity: base.rarity, level: item.level, enchantLevel: item.enchantLevel, power: item.power, price: Math.max(1, sellValue(item) * 2), seller: item.locked ? 'Locked' : equipped.has(item.uid) ? 'Equipped' : 'Ready', createdAt: 0, stats: item.stats.map(formatStatValue), owned: item }] : []; });
+  const heroes = game.state.ownedHeroes.flatMap((hero) => { const base = HERO_MAP[hero.heroId]; return base ? [{ id: hero.uid, kind: 'hero' as const, sourceId: hero.heroId, name: base.name, rarity: base.rarity, level: hero.level, enchantLevel: 0, power: hero.level * 50 + hero.stars * 100, price: 6 + hero.level + hero.stars * 3, seller: hero.locked ? 'Locked' : game.state.team.includes(hero.uid) ? 'Active team' : 'Ready', createdAt: 0, stats: [base.skillName, `${hero.stars}★`], owned: hero }] : []; });
+  return [...items, ...heroes];
 }
 
-export function MarketplaceScreen({ game }: { game: GameApi }) {
-  const { state } = game;
-  const [viewTab, setViewTab] = useState<ViewTab>('browse');
-  const [category, setCategory] = useState<Category>('all');
-  const [rarityFilter, setRarityFilter] = useState<Rarity | 'all'>('all');
-  const [search, setSearch] = useState('');
-  const [maxPrice, setMaxPrice] = useState<number>(0);
-  const [sortBy, setSortBy] = useState<'price' | 'power' | 'rarity'>('rarity');
+function listingFromMine(entry: MarketOwnedListing): Listing | null {
+  const sourceId = entry.item?.itemId ?? entry.hero?.heroId; if (!sourceId) return null;
+  const item = entry.item ? ITEM_MAP[sourceId] : null; const hero = entry.hero ? HERO_MAP[sourceId] : null; const base = item ?? hero; if (!base) return null;
+  return { id: entry.id, kind: entry.kind, sourceId, name: base.name, rarity: base.rarity, level: entry.item?.level ?? entry.hero?.level ?? 1, enchantLevel: entry.item?.enchantLevel ?? 0, power: entry.item?.power ?? ((entry.hero?.level ?? 1) * 50), price: entry.price, seller: 'You', createdAt: entry.createdAt, stats: entry.item?.stats.map(formatStatValue) ?? (hero ? [hero.skillName, hero.passiveName] : []) };
+}
 
-  const mockListings = useMemo(() => generateMockListings(), []);
-
-  // Player's own listings from inventory (for Sell tab)
-  const myListings = useMemo(() => {
-    return state.inventory.map(item => {
-      const b = ITEM_MAP[item.itemId];
-      if (!b) return null;
-      return {
-        uid: item.uid, name: b.name, rarity: b.rarity, icon: b.icon,
-        subtitle: b.slot, stats: item.stats.map(s => ({ key: s.key, value: formatStatValue(s) })),
-        power: item.power, level: item.level, price: Math.round(sellValue(item) * 3),
-        seller: 'You', owner: true,
-      } as Listing;
-    }).filter(Boolean) as Listing[];
-  }, [state.inventory]);
-
-  const heroListings = useMemo(() => {
-    return state.ownedHeroes.map(hero => {
-      const b = HERO_MAP[hero.heroId];
-      if (!b) return null;
-      const rv: Record<string, number> = { common: 3, uncommon: 8, rare: 20, epic: 50, legendary: 150, mythic: 400, relic: 1200, cursed: 3500, cosmic: 10000, divine: 30000 };
-      return { uid: hero.uid, name: b.name, rarity: b.rarity, icon: b.heroClass === 'knight' ? '⚔️' : b.heroClass === 'archer' ? '🏹' : b.heroClass === 'assassin' ? '🗡️' : b.heroClass === 'shepherd' ? '✨' : '🌿', subtitle: `${CLASS_LABEL[b.heroClass]} Lv${hero.level} ★${hero.stars}`, power: hero.level * 100, level: hero.level, price: Math.round((rv[b.rarity] ?? 3) * (1 + hero.stars * 0.5)), seller: 'You', owner: true } as Listing;
-    }).filter(Boolean) as Listing[];
-  }, [state.ownedHeroes]);
-
-  const browseListings = category === 'heroes' ? [] : mockListings;
-  const sellListings = category === 'heroes' ? heroListings : myListings;
-
-  const active = viewTab === 'browse' ? browseListings : sellListings;
-
-  const filtered = active.filter(l => {
-    if (rarityFilter !== 'all' && l.rarity !== rarityFilter) return false;
-    if (search && !l.name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (maxPrice > 0 && l.price > maxPrice) return false;
+export function MarketplaceScreen({ game, tokenomics }: { game: GameApi; tokenomics: TokenomicsApi }) {
+  const [tab, setTab] = useState<MarketTab>('browse'); const [query, setQuery] = useState(''); const [selectedId, setSelectedId] = useState<string | null>(null); const [price, setPrice] = useState(10); const [notice, setNotice] = useState('');
+  const [category, setCategory] = useState<Category>('all'); const [rarity, setRarity] = useState<Rarity | 'all'>('all'); const [enchant, setEnchant] = useState(0); const [levelFilter, setLevelFilter] = useState<LevelFilter>('all'); const [comparisonHeroUid, setComparisonHeroUid] = useState(game.state.team[0] ?? game.state.ownedHeroes[0]?.uid ?? '');
+  const fetchSupply = tokenomics.fetchStatus;
+  useEffect(() => { if (tab !== 'supply') return; void fetchSupply(); const timer = window.setInterval(() => void fetchSupply(), 60_000); return () => window.clearInterval(timer); }, [tab, fetchSupply]);
+  const browse = useMemo(demoListings, []); const mine = game.state.marketListings.map(listingFromMine).filter((row): row is Listing => Boolean(row)).sort((a, b) => b.createdAt - a.createdAt); const sellable = ownedRows(game);
+  const comparisonHero = game.state.ownedHeroes.find((hero) => hero.uid === comparisonHeroUid) ?? game.state.ownedHeroes[0];
+  const comparisonLevel = comparisonHero?.level ?? 1;
+  const heroRarities: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
+  const allRarities: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial', 'cursed', 'immortal', 'god'];
+  const matchesCategory = (row: Listing) => { if (category === 'all') return true; if (category === 'heroes') return row.kind === 'hero'; if (category === 'pets') return false; if (row.kind !== 'item') return false; const slot = ITEM_MAP[row.sourceId]?.slot; if (category === 'weapons') return ['class_weapon', 'offhand', 'weapon', 'ring2'].includes(slot ?? ''); if (category === 'armor') return ['helmet', 'chest', 'gloves', 'boots', 'armor'].includes(slot ?? ''); return ['ring', 'amulet', 'ring1'].includes(slot ?? ''); };
+  const rows = (tab === 'browse' ? browse : tab === 'listings' ? mine : tab === 'sell' ? sellable : []).filter((row) => {
+    if (query && !row.name.toLowerCase().includes(query.toLowerCase())) return false;
+    if (!matchesCategory(row) || (rarity !== 'all' && row.rarity !== rarity)) return false;
+    if (row.kind === 'item' && row.enchantLevel < enchant) return false;
+    if (row.kind === 'item' && levelFilter === 'my' && Math.abs(row.level - comparisonLevel) > 3) return false;
+    if (row.kind === 'item' && levelFilter === 'usable' && row.level > comparisonLevel) return false;
+    if (row.kind === 'item' && levelFilter === 'upgrades' && row.level <= comparisonLevel) return false;
+    if (row.kind === 'item' && levelFilter === 'endgame' && row.level < 80) return false;
     return true;
-  }).sort((a, b) => {
-    if (sortBy === 'price') return a.price - b.price;
-    if (sortBy === 'power') return b.power - a.power;
-    return RARITY_INDEX[b.rarity] - RARITY_INDEX[a.rarity];
   });
-
-  const rarities: (Rarity | 'all')[] = ['all', 'common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'relic', 'cursed', 'cosmic', 'divine'];
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="px-4 py-2 border-b border-white/10 bg-slate-950/60 shrink-0">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-bold text-white flex items-center gap-1.5"><ShoppingCart size={17} className="text-violet-300" /> Marketplace</h2>
-          <span className="flex items-center gap-1 text-xs text-violet-300"><Zap size={12} /> {formatNum(state.hero)} $HERO</span>
-        </div>
-
-        {/* Browse / Sell tabs */}
-        <div className="flex gap-1 mb-2">
-          <button onClick={() => setViewTab('browse')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${viewTab === 'browse' ? 'bg-violet-500/20 text-violet-300 border border-violet-500/40' : 'bg-slate-800 text-slate-500 border border-white/5'}`}>Browse</button>
-          <button onClick={() => setViewTab('sell')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${viewTab === 'sell' ? 'bg-violet-500/20 text-violet-300 border border-violet-500/40' : 'bg-slate-800 text-slate-500 border border-white/5'}`}>My Listings</button>
-        </div>
-
-        {/* Category + filters */}
-        <div className="flex items-center gap-2 flex-wrap mb-2">
-          <div className="flex gap-1">
-            {(['all', 'items', 'heroes'] as Category[]).map(c => <button key={c} onClick={() => setCategory(c)} className={`px-2.5 py-1 rounded-full text-[10px] font-bold capitalize transition ${category === c ? 'bg-violet-500/20 text-violet-300 border border-violet-500/40' : 'bg-slate-800 text-slate-500 border border-white/5'}`}>{c}</button>)}
-          </div>
-          <div className="relative flex-1 min-w-[100px]"><Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-600" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." className="w-full pl-6 pr-2 py-1 rounded-lg bg-slate-800/60 border border-white/10 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/40" /></div>
-          <select value={sortBy} onChange={e => setSortBy(e.target.value as 'price' | 'power' | 'rarity')} className="px-2 py-1 rounded-lg bg-slate-800/60 border border-white/10 text-xs text-slate-300 focus:outline-none"><option value="rarity">Rarity</option><option value="power">Power</option><option value="price">Price</option></select>
-        </div>
-
-        {/* Rarity chips */}
-        <div className="flex gap-1 flex-wrap">
-          {rarities.map(r => <button key={r} onClick={() => setRarityFilter(r)} className={`px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase transition ${rarityFilter === r ? 'border' : 'bg-slate-800/60 text-slate-500 border border-white/5'}`} style={rarityFilter === r ? { borderColor: r === 'all' ? '#94a3b8' : RARITY_COLORS[r as Rarity] + '88', color: r === 'all' ? '#94a3b8' : RARITY_COLORS[r as Rarity], background: (r === 'all' ? '#94a3b8' : RARITY_COLORS[r as Rarity]) + '15' } : undefined}>{r === 'all' ? 'All' : RARITY_LABEL[r as Rarity]}</button>)}
-        </div>
-      </div>
-
-      {/* Listings grid */}
-      <div className="flex-1 overflow-y-auto no-scrollbar p-3">
-        {viewTab === 'browse' && (
-          <div className="text-[10px] text-slate-500 mb-2 flex items-center gap-1"><TrendingUp size={11} /> Live listings from other players</div>
-        )}
-        {viewTab === 'sell' && (
-          <div className="text-[10px] text-slate-500 mb-2">List your items/heroes for $HERO. (Listing UI — buyers will see these when the game launches.)</div>
-        )}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-          {filtered.map(l => {
-            const rc = RARITY_COLORS[l.rarity];
-            return (
-              <div key={l.uid} className="rounded-xl border p-2.5" style={{ borderColor: rc + '44', background: rc + '0a' }}>
-                <div className="flex items-start gap-2">
-                  <div className="text-xl shrink-0">{l.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-bold truncate" style={{ color: rc }}>{l.name}</div>
-                    <div className="text-[8px] text-slate-500 uppercase">{RARITY_LABEL[l.rarity]}</div>
-                    <div className="text-[8px] text-slate-400">Lv{l.level} · ⚡{l.power}</div>
-                  </div>
-                </div>
-                {l.stats && l.stats.length > 0 && <div className="text-[8px] text-emerald-300/80 mt-1 truncate">{l.stats.map(s => s.value).join(' ')}</div>}
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="flex items-center gap-0.5 text-violet-300 text-xs font-bold"><Zap size={9} /> {l.price}</span>
-                  {viewTab === 'browse' ? <button className="px-2 py-1 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-300 text-[10px] font-bold hover:bg-violet-500/25 transition">Buy</button> : <button className="px-2 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold hover:bg-amber-500/25 transition">List</button>}
-                </div>
-                <div className="text-[7px] text-slate-600 mt-0.5 text-center">{l.seller}</div>
-              </div>
-            );
-          })}
-        </div>
-        {filtered.length === 0 && <div className="text-slate-600 text-sm text-center py-8">No listings match your filters.</div>}
-      </div>
-
-      <div className="px-4 py-2 border-t border-white/10 bg-slate-950/60 text-center shrink-0">
-        <span className="text-[10px] text-slate-500 flex items-center justify-center gap-1.5"><Tag size={10} /> On-chain trading via Solana + Phantom wallet coming soon</span>
-      </div>
-    </div>
-  );
+  const selected = rows.find((row) => row.id === selectedId) ?? rows[0] ?? null;
+  const flash = (value: string) => { setNotice(value); window.setTimeout(() => setNotice(''), 2400); };
+  const buy = async (row: Listing) => flash(await game.buyMarketAsset({ kind: row.kind, sourceId: row.sourceId, name: row.name, level: row.level, price: row.price }) ? `Purchased ${row.name}` : 'Purchase unavailable: check balance and storage');
+  const list = (row: Listing) => flash(game.createMarketListing(row.kind, row.id, price) ? `${row.name} listed for ${price} $HERO` : 'Unlock/remove from team or change avatar first');
+  return <div className="premium-screen themed-screen themed-screen-market game-scrollbar h-full overflow-y-auto p-2"><div className="market-shell mx-auto flex min-h-full max-w-6xl flex-col overflow-hidden"><header className="market-header flex flex-wrap items-center justify-between gap-3 px-4 py-3"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-lg border border-[#a8762d] bg-black/25 text-[#efbd52]"><ShoppingCart size={20} /></span><div><div className="text-lg font-black text-[#f1e5d0]">Marketplace</div><div className="text-[9px] text-[#92897b]">Newest first · test settlement uses your game balance</div></div></div><Balance icon={<HeroTokenIcon size={13} />} value={formatNum(game.state.hero)} label="$HERO" /></header>
+  <nav className="market-tabs flex gap-1 overflow-x-auto px-4 pt-2">{TABS.map((item) => <button key={item.id} type="button" onClick={() => { setTab(item.id); setSelectedId(null); }} className={`market-tab whitespace-nowrap ${tab === item.id ? 'market-tab-active' : ''}`}>{item.label}</button>)}</nav>
+  {notice && <div className="mx-4 mt-2 rounded border border-emerald-700/50 bg-emerald-950/45 px-3 py-2 text-center text-xs text-emerald-200">{notice}</div>}
+  {(tab === 'browse' || tab === 'sell' || tab === 'listings') && <><section className="border-y border-[#44331d] bg-black/15 px-4 py-2"><div className="flex flex-wrap gap-1.5">{([{ id: 'all', label: 'All', icon: <List size={11} /> }, { id: 'weapons', label: 'Weapons', icon: <Swords size={11} /> }, { id: 'armor', label: 'Armor', icon: <Shield size={11} /> }, { id: 'accessories', label: 'Accessories', icon: <Gem size={11} /> }, { id: 'heroes', label: 'Heroes', icon: <Users size={11} /> }] as { id: Category; label: string; icon: ReactNode }[]).map((item) => <button type="button" key={item.id} onClick={() => { setCategory(item.id); setRarity('all'); }} className={`market-chip flex items-center gap-1 ${category === item.id ? 'market-chip-active' : ''}`}>{item.icon}{item.label}</button>)}<button type="button" disabled className="market-chip flex items-center gap-1 opacity-40"><PawPrint size={11} />Pets · Soon</button></div><div className="mt-2 grid gap-1.5 md:grid-cols-[minmax(150px,1fr)_130px_110px_130px_150px]"><label className="relative"><Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#756b5c]" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search..." className="market-input h-9 w-full pl-8 pr-3" /></label><select value={rarity} onChange={(event) => setRarity(event.target.value as Rarity | 'all')} className="market-input h-9 px-2"><option value="all">All Rarities</option>{(category === 'heroes' ? heroRarities : allRarities).map((value) => <option key={value} value={value}>{RARITY_LABEL[value]}</option>)}</select><select value={enchant} onChange={(event) => setEnchant(Number(event.target.value))} disabled={category === 'heroes'} className="market-input h-9 px-2 disabled:opacity-40"><option value={0}>Any +Level</option><option value={3}>+3 or more</option><option value={5}>+5 or more</option><option value={7}>+7 or more</option><option value={10}>+10 only</option></select><select value={levelFilter} onChange={(event) => setLevelFilter(event.target.value as LevelFilter)} disabled={category === 'heroes'} className="market-input h-9 px-2 disabled:opacity-40"><option value="all">All Levels</option><option value="my">My Level ±3</option><option value="usable">Usable Now</option><option value="upgrades">Upgrades</option><option value="endgame">Endgame 80+</option></select>{category !== 'heroes' ? <select value={comparisonHeroUid} onChange={(event) => setComparisonHeroUid(event.target.value)} className="market-input h-9 px-2"><option value="" disabled>Compare hero</option>{game.state.ownedHeroes.map((hero) => <option key={hero.uid} value={hero.uid}>{HERO_MAP[hero.heroId]?.name ?? 'Hero'} · Lv {hero.level}</option>)}</select> : <div className="market-input grid h-9 place-items-center text-[9px] text-[#777064]">Hero filters need no comparison</div>}</div></section><main className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_320px]"><section className="space-y-1.5 border-r border-[#44331d] p-3">{rows.map((row) => <Row key={row.id} row={row} active={selected?.id === row.id} onClick={() => setSelectedId(row.id)} />)}{rows.length === 0 && <Empty text={tab === 'listings' ? 'You have no active listings' : 'Nothing available'} />}</section><aside className="bg-black/15 p-3">{selected ? <Detail row={selected}>{tab === 'browse' ? <button onClick={() => buy(selected)} className="game-control game-primary mt-3 w-full px-3 text-xs font-black">Buy for {selected.price} $HERO</button> : tab === 'sell' ? <div className="mt-3 flex gap-2"><input type="number" min={1} value={price} onChange={(event) => setPrice(Math.max(1, Number(event.target.value)))} className="market-input min-w-0 flex-1 px-2" /><button onClick={() => list(selected)} disabled={selected.seller !== 'Ready'} className="game-control game-primary px-3 text-xs font-black disabled:opacity-35">List</button></div> : <div className="mt-3 grid grid-cols-2 gap-2"><button onClick={() => game.cancelMarketListing(selected.id)} className="game-control text-xs font-bold">Cancel</button><button onClick={() => game.completeMarketListing(selected.id)} className="game-control game-primary text-xs font-bold">Test sale</button></div>}</Detail> : <Empty text="Select an asset" />}</aside></main></>}
+  {tab === 'activity' && <Records title="Recent market activity" rows={[...game.state.marketHistory, ...browse.slice(0, 8).map((row) => ({ id: `activity-${row.id}`, kind: row.kind, sourceId: row.sourceId, name: row.name, price: row.price, createdAt: row.createdAt, action: 'bought' as const }))].sort((a, b) => b.createdAt - a.createdAt)} />}
+  {tab === 'history' && <Records title="Your sales history" rows={game.state.marketHistory.filter((row) => row.action === 'sold')} />}
+  {tab === 'stats' && <section className="grid gap-3 p-4 sm:grid-cols-4"><Metric icon={<BarChart3 />} label="24h volume" value={`${browse.reduce((sum, row) => sum + row.price, 0)} $HERO`} /><Metric icon={<ShoppingCart />} label="24h trades" value={String(browse.length)} /><Metric icon={<Coins />} label="Average price" value={`${Math.round(browse.reduce((sum, row) => sum + row.price, 0) / browse.length)} $HERO`} /><Metric icon={<List />} label="Active listings" value={String(browse.length + mine.length)} /></section>}
+  {tab === 'supply' && <section className="p-4"><div className="mb-3 flex items-center justify-between"><div><div className="section-kicker">Live server supply</div><div className="text-[9px] text-[#81796c]">Automatically refreshed every minute</div></div><Clock3 size={15} className="text-[#c3974e]" /></div><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{([['divine', 'Divine', 10_000], ['celestial', 'Celestial', 5_000], ['cursed', 'Cursed', 2_500], ['immortal', 'Immortal', 1_000], ['god', 'God', 500]] as const).map(([key, name, fallbackMax]) => { const supply = tokenomics.status?.rarity_supply?.[key]; return <div key={key} className="stat-tile p-3"><div className="text-xs font-black text-[#ead9ba]">{name}</div><div className="mt-1 text-lg font-black text-[#e9bd61]">{supply ? formatNum(supply.existing) : '—'} / {formatNum(supply?.max ?? fallbackMax)}</div><div className="text-[9px] text-[#81796c]">Existing / maximum</div></div>; })}</div></section>}
+  <footer className="mt-auto flex items-center gap-2 border-t border-[#44331d] px-4 py-2 text-[9px] text-[#81786b]"><ShieldCheck size={12} /> Test market changes only this player's browser save. Production player-to-player trading still requires server escrow.</footer></div></div>;
 }
 
-void X;
+function Row({ row, active, onClick }: { row: Listing; active: boolean; onClick: () => void }) { return <button type="button" onClick={onClick} className={`market-row rarity-${row.rarity} flex w-full text-left ${active ? 'market-row-selected' : ''}`}><Artwork row={row} compact /><span className="min-w-0 flex-1"><b className="block truncate text-xs" style={{ color: RARITY_COLORS[row.rarity] }}>{row.name}{row.kind === 'item' && row.enchantLevel > 0 ? ` +${row.enchantLevel}` : ''}</b><span className="text-[9px] text-[#8d8374]">Lv {row.level} · {formatNum(row.power)} PWR · {row.seller}</span></span>{row.seller === 'Locked' || row.seller === 'Equipped' || row.seller === 'Active team' ? <Lock size={13} className="text-amber-300" /> : <span className="flex items-center gap-1 font-black text-[#efff9f]"><HeroTokenIcon size={12} />{row.price}</span>}</button>; }
+function Detail({ row, children }: { row: Listing; children: ReactNode }) { const item = row.kind === 'item' ? ITEM_MAP[row.sourceId] : null; const hero = row.kind === 'hero' ? HERO_MAP[row.sourceId] : null; return <div><h3 className={`rarity-title rarity-${row.rarity} text-center text-lg font-black`} style={{ color: RARITY_COLORS[row.rarity] }}>{row.name}</h3><div className={`market-detail-art rarity-${row.rarity} mx-auto mt-3`}><Artwork row={row} /></div><div className="stat-tile mt-3 space-y-1 p-3 text-[10px]"><div className="flex justify-between"><span className="text-[#81796c]">Owner</span><b>{row.seller}</b></div><div className="flex justify-between"><span className="text-[#81796c]">Type</span><b>{item?.slot.replace('_', ' ') ?? hero?.heroClass ?? row.kind}</b></div><div className="flex justify-between"><span className="text-[#81796c]">Rarity</span><b style={{ color: RARITY_COLORS[row.rarity] }}>{RARITY_LABEL[row.rarity]}</b></div><div className="flex justify-between"><span className="text-[#81796c]">Level / Upgrade</span><b>{row.level} / +{row.enchantLevel}</b></div><div className="flex justify-between"><span className="text-[#81796c]">Power</span><b>{formatNum(row.power)}</b></div><div className="mt-2 border-t border-[#473a28] pt-2 text-[9px] font-bold uppercase text-[#8d816f]">All properties</div>{row.stats.map((stat, index) => <div key={`${stat}-${index}`} className="text-[#c4b8a6]">• {stat}</div>)}</div>{children}</div>; }
+function Artwork({ row, compact = false }: { row: Listing; compact?: boolean }) { const cls = compact ? 'h-11 w-11' : 'h-36 w-36'; if (row.kind === 'hero') { const hero = HERO_MAP[row.sourceId]; return hero ? <span className={`${cls} grid shrink-0 place-items-center overflow-hidden rounded-lg`}><HeroPortrait heroId={hero.id} heroClass={hero.heroClass} rarity={hero.rarity} color={hero.color} size={compact ? 42 : 136} /></span> : null; } const item = ITEM_MAP[row.sourceId]; return item ? <span className={`${cls} block shrink-0 overflow-hidden rounded-lg bg-black/25`}><ItemArtwork itemId={item.id} name={item.name} fallback={item.icon} /></span> : null; }
+function Records({ title, rows }: { title: string; rows: { id: string; name: string; price: number; createdAt: number; action: 'bought' | 'sold' }[] }) { return <section className="p-4"><h3 className="mb-3 text-sm font-black text-[#e8dcc8]">{title}</h3><div className="space-y-1.5">{rows.map((row) => <div key={row.id} className="market-row flex items-center"><Clock3 size={13} className="text-[#8c806e]" /><span className="ml-2 flex-1 text-xs text-[#d8cdbb]">{row.name}</span><span className="text-[9px] uppercase text-[#8d8374]">{row.action}</span><span className="ml-3 flex items-center gap-1 text-xs font-black text-[#efff9f]"><HeroTokenIcon size={11} />{row.price}</span></div>)}{rows.length === 0 && <Empty text="No records yet" />}</div></section>; }
+function Metric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) { return <div className="stat-tile p-4 text-center"><span className="mx-auto block w-fit text-[#bd9147]">{icon}</span><div className="mt-2 text-lg font-black text-[#eadabf]">{value}</div><div className="text-[9px] uppercase text-[#81796c]">{label}</div></div>; }
+function Empty({ text }: { text: string }) { return <div className="market-empty"><PackageSearch size={23} /><b>{text}</b></div>; }
+function Balance({ icon, value, label }: { icon: ReactNode; value: string; label: string }) { return <span className="stat-tile flex min-w-[98px] items-center gap-2 px-3 py-1.5 text-[#e7b858]">{icon}<span><small className="block text-[7px] uppercase text-[#7f7669]">{label}</small><b className="block text-xs text-[#eee3d2]">{value}</b></span></span>; }

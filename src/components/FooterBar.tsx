@@ -1,6 +1,7 @@
-import { Zap, MessageCircle, BookOpen, LogOut, Globe, Send, Twitter } from 'lucide-react';
+import { MessageCircle, BookOpen, LogOut, Globe, Send, Twitter } from 'lucide-react';
 import { useState } from 'react';
 import type { GameApi } from '@/game/useGame';
+import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
 export function FooterBar({ game }: { game: GameApi }) {
   const [copied, setCopied] = useState(false);
@@ -17,10 +18,10 @@ export function FooterBar({ game }: { game: GameApi }) {
   };
 
   return (
-    <div className="flex items-center gap-1 px-2 py-1 bg-px-panel border-t-2 border-px-border shrink-0 text-sm overflow-x-auto no-scrollbar">
+    <div className="flex min-h-9 shrink-0 items-center gap-1 overflow-x-auto border-t border-[#51422e] bg-[linear-gradient(180deg,#181815,#0d0f0e)] px-2 py-1 text-xs shadow-[0_-8px_24px_rgba(0,0,0,.24)] no-scrollbar">
       {/* Token contract */}
-      <button onClick={copyCA} className="flex items-center gap-1 px-2 py-1 border-2 border-purple-700/60 bg-px-panel2 hover:border-purple-500 transition-none font-vt whitespace-nowrap" title="Copy token contract">
-        <Zap size={13} className="text-purple-300" />
+      <button onClick={copyCA} className="game-control flex min-h-7 items-center gap-1 whitespace-nowrap px-2 py-1 font-vt" title="Copy token contract">
+        <HeroTokenIcon size={13} />
         <span className="text-px-dim text-xs">CA:</span>
         <span className="text-purple-200 font-bold text-xs">{copied ? 'COPIED!' : tokenCA}</span>
       </button>
@@ -34,11 +35,13 @@ export function FooterBar({ game }: { game: GameApi }) {
       <FooterLink icon={<Globe size={13} />} label="Website" href="#" />
       <FooterLink icon={<BookOpen size={13} />} label="Guides" href="#" />
 
+      <div className="mx-1 h-5 w-px bg-px-border" />
+
       <div className="flex-1" />
 
       {/* Support + logout */}
       <FooterLink icon={<MessageCircle size={13} />} label="Support" href="#" />
-      <button onClick={logout} className="flex items-center gap-1 px-2 py-1 border-2 border-px-border bg-px-panel2 hover:border-px-red transition-none font-vt text-sm text-px-dim hover:text-px-red whitespace-nowrap">
+      <button onClick={logout} className="game-control game-danger flex min-h-7 items-center gap-1 whitespace-nowrap px-2 py-1 font-vt text-xs">
         <LogOut size={13} /> Logout
       </button>
     </div>
@@ -47,7 +50,7 @@ export function FooterBar({ game }: { game: GameApi }) {
 
 function FooterLink({ icon, label, href }: { icon: React.ReactNode; label: string; href: string }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2 py-1 border-2 border-transparent hover:border-px-border hover:bg-px-panel2 transition-none font-vt text-sm text-px-dim hover:text-px-text whitespace-nowrap">
+    <a href={href} target="_blank" rel="noopener noreferrer" className="flex min-h-7 items-center gap-1 whitespace-nowrap rounded-md border border-transparent px-2 py-1 font-vt text-xs text-[#777870] transition hover:border-[#4d4231] hover:bg-white/[.025] hover:text-[#d6d0c4]">
       {icon} <span className="hidden sm:inline">{label}</span>
     </a>
   );

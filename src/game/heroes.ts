@@ -1,6 +1,6 @@
 import type { HeroClass, HeroBase, Rarity, Faction } from './types';
 
-// ── 10-tier rarity system ─────────────────────────────────────────────────
+// ── 12-tier product rarity system (+ legacy save compatibility) ───────────
 
 export const RARITY_COLORS: Record<Rarity, string> = {
   common:    '#9ca3af',
@@ -13,6 +13,9 @@ export const RARITY_COLORS: Record<Rarity, string> = {
   cursed:    '#9f1239',
   cosmic:    '#7c3aed',
   divine:    '#fbbf24',
+  celestial: '#d9fbff',
+  immortal:  '#d8dce8',
+  god:       '#fff7d6',
 };
 
 export const RARITY_GLOW: Record<Rarity, string> = {
@@ -26,6 +29,9 @@ export const RARITY_GLOW: Record<Rarity, string> = {
   cursed:    'rgba(159,18,57,0.75)',
   cosmic:    'rgba(124,58,237,0.8)',
   divine:    'rgba(251,191,36,0.9)',
+  celestial: 'rgba(217,251,255,0.95)',
+  immortal:  'rgba(216,220,232,0.9)',
+  god:       'rgba(255,247,214,0.95)',
 };
 
 export const RARITY_LABEL: Record<Rarity, string> = {
@@ -39,41 +45,48 @@ export const RARITY_LABEL: Record<Rarity, string> = {
   cursed:    'Cursed',
   cosmic:    'Cosmic',
   divine:    'Divine',
+  celestial: 'Celestial',
+  immortal:  'Immortal',
+  god:       'God',
 };
 
-// Gacha weight — higher tiers are rarer
+// Server-authoritative hero summon percentages. Keep total at exactly 100.
 export const RARITY_WEIGHT: Record<Rarity, number> = {
-  common:    35,
-  uncommon:  22,
-  rare:      18,
-  epic:      11,
-  legendary: 7,
-  mythic:    4,
-  relic:     1.5,
-  cursed:    0.8,
-  cosmic:    0.4,
-  divine:    0.1,
+  common:    55,
+  uncommon:  27,
+  rare:      12,
+  epic:      4,
+  legendary: 1.5,
+  mythic:    0.4,
+  relic:     0,
+  cursed:    0,
+  cosmic:    0.08,
+  divine:    0.018,
+  celestial: 0.002,
+  immortal:  0,
+  god:       0,
 };
 
 // Rarity index for comparisons
 export const RARITY_INDEX: Record<Rarity, number> = {
   common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4,
-  mythic: 5, relic: 6, cursed: 7, cosmic: 8, divine: 9,
+  mythic: 5, relic: 5, cosmic: 6, divine: 7, celestial: 8,
+  cursed: 9, immortal: 10, god: 11,
 };
 
 export const CLASS_ICON: Record<HeroClass, string> = {
-  knight:   '⚔️',
+  knight:   '🛡️',
   archer:   '🏹',
   assassin: '🗡️',
-  shepherd: '✨',
+  shepherd: '🪄',
   druid:    '🌿',
 };
 
 export const CLASS_LABEL: Record<HeroClass, string> = {
-  knight:   'Knight',
-  archer:   'Archer',
+  knight:   'Warrior',
+  archer:   'Crossbowman',
   assassin: 'Assassin',
-  shepherd: 'Shepherd',
+  shepherd: 'Mage',
   druid:    'Druid',
 };
 
@@ -89,7 +102,7 @@ export const FACTION_COLORS: Record<Faction, string> = {
 
 // ── Hero definitions ──────────────────────────────────────────────────────
 
-export const HEROES: HeroBase[] = [
+const LEGACY_HEROES: HeroBase[] = [
   // ── COMMON ──
   {
     id: 'ironfoot', name: 'Ironfoot Guard', heroClass: 'knight', rarity: 'common', faction: 'light',
@@ -335,6 +348,47 @@ export const HEROES: HeroBase[] = [
   },
 ];
 
-export const HERO_MAP: Record<string, HeroBase> = Object.fromEntries(
-  HEROES.map((h) => [h.id, h])
+const CANONICAL_RARITIES: Exclude<Rarity, 'relic' | 'cursed'>[] = [
+  'common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial',
+];
+const RARITY_SCALE = [1, 1.5, 2.2, 3.2, 4.6, 6.5, 9, 13, 18];
+const HERO_ARCHETYPES: Omit<HeroBase, 'id' | 'name' | 'rarity'>[] = [
+  { heroClass: 'shepherd', faction: 'water', baseHp: 360, baseAtk: 72, baseDef: 14, baseSpeed: 108, critChance: .12, critDamage: 1.8, skillName: 'Mana Burst', skillDesc: 'Detonates gathered runes around the target', passiveName: 'Arcane Overflow', passiveDesc: 'Every fifth attack releases a second spell', color: '#3b82f6' },
+  { heroClass: 'assassin', faction: 'dark', baseHp: 320, baseAtk: 82, baseDef: 12, baseSpeed: 128, critChance: .22, critDamage: 2, skillName: 'Backstab', skillDesc: 'A precise strike from the shadows', passiveName: 'Critical Rhythm', passiveDesc: 'Critical hits briefly increase attack speed', color: '#14b8a6' },
+  { heroClass: 'knight', faction: 'fire', baseHp: 520, baseAtk: 55, baseDef: 28, baseSpeed: 92, critChance: .08, critDamage: 1.6, skillName: 'Shield Breaker', skillDesc: 'A crushing sword and shield combination', passiveName: 'Bulwark', passiveDesc: 'Reduces damage while below half health', color: '#ef4444' },
+  { heroClass: 'druid', faction: 'nature', baseHp: 430, baseAtk: 62, baseDef: 20, baseSpeed: 102, critChance: .1, critDamage: 1.7, skillName: 'Living Roots', skillDesc: 'Roots the enemy and restores health', passiveName: 'Wild Growth', passiveDesc: 'Regenerates health during sustained combat', color: '#84cc16' },
+  { heroClass: 'archer', faction: 'light', baseHp: 350, baseAtk: 68, baseDef: 15, baseSpeed: 122, critChance: .16, critDamage: 1.85, skillName: 'Rapid Bolts', skillDesc: 'Fires a fast mechanical crossbow volley', passiveName: 'Tempo', passiveDesc: 'Consecutive attacks become faster', color: '#f59e0b' },
+];
+const CANONICAL_CLASS_NAME: Record<HeroClass, string> = {
+  shepherd: 'Mage', assassin: 'Assassin', knight: 'Warrior', druid: 'Druid', archer: 'Crossbowman',
+};
+
+export const HEROES: HeroBase[] = HERO_ARCHETYPES.flatMap((hero) =>
+  CANONICAL_RARITIES.map((rarity, tier) => {
+    const scale = RARITY_SCALE[tier];
+    const className = CANONICAL_CLASS_NAME[hero.heroClass];
+    return {
+      ...hero,
+      id: `${hero.heroClass}-${rarity}`,
+      name: tier === 0 ? className : `${RARITY_LABEL[rarity]} ${className}`,
+      rarity,
+      baseHp: Math.round(hero.baseHp * scale),
+      baseAtk: Math.round(hero.baseAtk * scale),
+      baseDef: Math.round(hero.baseDef * scale),
+      baseSpeed: Math.round(hero.baseSpeed * (1 + tier * .025)),
+    };
+  })
 );
+
+void LEGACY_HEROES;
+
+export const HERO_MAP: Record<string, HeroBase> = Object.fromEntries(
+  [...LEGACY_HEROES, ...HEROES].map((h) => [h.id, h])
+);
+
+export function canonicalHeroId(heroId: string): string {
+  const hero = HERO_MAP[heroId];
+  if (!hero || HEROES.some((candidate) => candidate.id === heroId)) return heroId;
+  const rarity = hero.rarity === 'relic' || hero.rarity === 'cursed' ? 'mythic' : hero.rarity;
+  return `${hero.heroClass}-${rarity}`;
+}

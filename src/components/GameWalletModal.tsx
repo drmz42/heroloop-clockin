@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, Copy, ShieldCheck, WalletCards, X, Zap } from 'lucide-react';
+import { Check, Copy, ShieldCheck, WalletCards, X } from 'lucide-react';
 import { formatNum } from '@/game/state';
+import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
 export function GameWalletModal({
   address,
@@ -40,7 +41,7 @@ export function GameWalletModal({
           <div className="rounded-xl border border-violet-400/20 bg-violet-400/[.06] p-5">
             <div className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Available balance</div>
             <div className="mt-2 flex items-center gap-2 text-3xl font-extrabold text-violet-200">
-              <Zap size={24} className="text-violet-400" /> {formatNum(balance)}
+              <HeroTokenIcon size={24} /> {formatNum(balance)}
               <span className="text-sm font-semibold text-slate-500">$HERO</span>
             </div>
           </div>

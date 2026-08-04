@@ -1,14 +1,15 @@
 import type { HeroClass, ItemBase, ItemSlot, OwnedItem, ItemStatRoll, ItemStatKey, Rarity, PotionDef, PotionTier } from './types';
-import { RARITY_COLORS, RARITY_INDEX, RARITY_WEIGHT } from './heroes';
+import { RARITY_COLORS, RARITY_INDEX } from './heroes';
 
 export const SLOT_LABEL: Record<ItemSlot, string> = {
-  weapon: 'Weapon', helmet: 'Helmet', armor: 'Armor', gloves: 'Gloves',
-  boots: 'Boots', ring1: 'Ring', ring2: 'Ring', amulet: 'Amulet',
+  class_weapon: 'Class Weapon', offhand: 'Off-hand', helmet: 'Helmet', chest: 'Chest Armor',
+  gloves: 'Gloves', boots: 'Boots', ring: 'Ring', amulet: 'Amulet',
+  weapon: 'Class Weapon', armor: 'Chest Armor', ring1: 'Ring', ring2: 'Off-hand',
 };
 
 export const SLOT_ICON: Record<ItemSlot, string> = {
-  weapon: '⚔️', helmet: '⛑️', armor: '🛡️', gloves: '🧤',
-  boots: '👢', ring1: '💍', ring2: '💍', amulet: '📿',
+  class_weapon: '⚔️', offhand: '🛡️', helmet: '⛑️', chest: '🛡️', gloves: '🧤',
+  boots: '👢', ring: '💍', amulet: '📿', weapon: '⚔️', armor: '🛡️', ring1: '💍', ring2: '🛡️',
 };
 
 export const STAT_LABEL: Record<ItemStatKey, string> = {
@@ -19,16 +20,16 @@ export const STAT_LABEL: Record<ItemStatKey, string> = {
 
 // How many stats per rarity
 const RARITY_STAT_COUNT: Record<Rarity, [number, number]> = {
-  common: [1, 1], uncommon: [1, 2], rare: [2, 2], epic: [2, 3],
-  legendary: [3, 3], mythic: [3, 4], relic: [4, 4], cursed: [4, 5],
-  cosmic: [5, 5], divine: [5, 6],
+  common: [1, 1], uncommon: [1, 1], rare: [2, 2], epic: [2, 2],
+  legendary: [3, 3], mythic: [3, 3], cosmic: [4, 4], divine: [4, 4], celestial: [5, 5],
+  cursed: [5, 5], immortal: [6, 6], god: [6, 6], relic: [3, 3],
 };
 
 // HEAVILY NERFED — items give small bonuses at low rarity, only significant at late game
 const RARITY_MULT: Record<Rarity, number> = {
   common: 0.3, uncommon: 0.7, rare: 1.4, epic: 2.8,
-  legendary: 5.5, mythic: 11, relic: 22, cursed: 45,
-  cosmic: 90, divine: 180,
+  legendary: 4.6, mythic: 6.5, cosmic: 9, divine: 13, celestial: 18,
+  cursed: 0, immortal: 0, god: 0, relic: 6.5,
 };
 
 // Base stat ranges at level 1 (NERFED)
@@ -45,22 +46,26 @@ const STAT_BASES: Record<ItemStatKey, [number, number]> = {
 };
 
 const SLOT_STATS: Record<ItemSlot, ItemStatKey[]> = {
-  weapon:  ['atk', 'critChance', 'critDamage', 'atkSpeed', 'hp'],
-  helmet:  ['hp', 'def', 'critChance', 'xpBonus', 'atk'],
-  armor:   ['hp', 'def', 'atk', 'goldBonus', 'dodge'],
-  gloves:  ['atk', 'critChance', 'critDamage', 'def', 'atkSpeed'],
-  boots:   ['atkSpeed', 'dodge', 'def', 'hp', 'goldBonus'],
-  ring1:   ['goldBonus', 'xpBonus', 'critChance', 'hp', 'atk'],
-  ring2:   ['critDamage', 'atk', 'goldBonus', 'critChance', 'def'],
-  amulet:  ['xpBonus', 'goldBonus', 'hp', 'critDamage', 'dodge'],
+  class_weapon: ['atk', 'critChance', 'critDamage', 'atkSpeed', 'hp', 'goldBonus'],
+  offhand: ['def', 'hp', 'critChance', 'critDamage', 'dodge', 'xpBonus'],
+  chest: ['hp', 'def', 'atk', 'goldBonus', 'dodge', 'critDamage'],
+  ring: ['goldBonus', 'xpBonus', 'critChance', 'hp', 'atk', 'dodge'],
+  weapon:  ['atk', 'critChance', 'critDamage', 'atkSpeed', 'hp', 'goldBonus'],
+  helmet:  ['hp', 'def', 'critChance', 'xpBonus', 'atk', 'dodge'],
+  armor:   ['hp', 'def', 'atk', 'goldBonus', 'dodge', 'critDamage'],
+  gloves:  ['atk', 'critChance', 'critDamage', 'def', 'atkSpeed', 'hp'],
+  boots:   ['atkSpeed', 'dodge', 'def', 'hp', 'goldBonus', 'critChance'],
+  ring1:   ['goldBonus', 'xpBonus', 'critChance', 'hp', 'atk', 'dodge'],
+  ring2:   ['critDamage', 'atk', 'goldBonus', 'critChance', 'def', 'xpBonus'],
+  amulet:  ['xpBonus', 'goldBonus', 'hp', 'critDamage', 'dodge', 'def'],
 };
 
 // Max chest rarity per location tier
 export const LOCATION_CHEST_RARITY: Record<number, Rarity> = {
   1: 'common', 2: 'uncommon', 3: 'rare', 4: 'rare',
   5: 'epic', 6: 'epic', 7: 'legendary', 8: 'legendary',
-  9: 'mythic', 10: 'mythic', 11: 'relic', 12: 'relic',
-  13: 'cursed', 14: 'cosmic', 15: 'divine',
+  9: 'mythic', 10: 'mythic', 11: 'cosmic', 12: 'cosmic',
+  13: 'divine', 14: 'divine', 15: 'celestial',
 };
 
 export function maxChestRarityForLocation(locationId: number): Rarity {
@@ -70,7 +75,7 @@ export function maxChestRarityForLocation(locationId: number): Rarity {
 
 // ── Items catalog ──────────────────────────────────────────────────────────
 
-export const ITEMS: ItemBase[] = [
+const LEGACY_ITEMS: ItemBase[] = [
   // Weapons
   { id: 'w-rusty',     name: 'Rusty Blade',        slot: 'weapon',  rarity: 'common',    icon: '🗡️', flavor: 'A worn blade that still bites.' },
   { id: 'w-shortbow',  name: 'Short Bow',           slot: 'weapon',  rarity: 'common',    icon: '🏹', flavor: 'Carved from young ash wood.' },
@@ -134,25 +139,87 @@ export const ITEMS: ItemBase[] = [
   { id: 'am-divine',   name: 'Heart of God',        slot: 'amulet',  rarity: 'divine',    icon: '❤️‍🔥', flavor: 'A piece of divinity.' },
 ];
 
-export const ITEM_MAP: Record<string, ItemBase> = Object.fromEntries(ITEMS.map((i) => [i.id, i]));
+export const RANDOM_DROP_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
+export const ALL_PRODUCT_RARITIES: Rarity[] = [...RANDOM_DROP_RARITIES, 'cursed', 'immortal', 'god'];
+const RARITY_NAMES = ['Worn', 'Verdant', 'Sapphire', 'Amethyst', 'Legendary', 'Mythic', 'Cosmic', 'Divine', 'Celestial', 'Cursed', 'Immortal', 'God'];
+const WEAPON_TYPES: { key: string; label: string; heroClass: HeroClass; icon: string }[] = [
+  { key: 'mage', label: 'Arcane Staff', heroClass: 'shepherd', icon: '🪄' },
+  { key: 'assassin', label: 'Single Dagger', heroClass: 'assassin', icon: '🗡️' },
+  { key: 'warrior', label: 'One-handed Sword', heroClass: 'knight', icon: '⚔️' },
+  { key: 'druid', label: 'Nature Staff', heroClass: 'druid', icon: '🌿' },
+  { key: 'crossbowman', label: 'Crossbow', heroClass: 'archer', icon: '🏹' },
+];
+const OFFHAND_TYPES: { key: string; label: string; heroClass: HeroClass; icon: string }[] = [
+  { key: 'mage', label: 'Spellbook', heroClass: 'shepherd', icon: '📘' },
+  { key: 'assassin', label: 'Throwing Weapon Set', heroClass: 'assassin', icon: '✦' },
+  { key: 'warrior', label: 'Shield', heroClass: 'knight', icon: '🛡️' },
+  { key: 'druid', label: 'Nature Totem', heroClass: 'druid', icon: '🗿' },
+  { key: 'crossbowman', label: 'Quiver', heroClass: 'archer', icon: '➶' },
+];
+const SHARED_TYPES: { key: string; label: string; slot: ItemSlot; icon: string }[] = [
+  { key: 'helmet', label: 'Helmet', slot: 'helmet', icon: '⛑️' },
+  { key: 'armor', label: 'Chest Armor', slot: 'chest', icon: '🛡️' },
+  { key: 'gloves', label: 'Gloves', slot: 'gloves', icon: '🧤' },
+  { key: 'boots', label: 'Boots', slot: 'boots', icon: '👢' },
+  { key: 'amulet', label: 'Amulet', slot: 'amulet', icon: '📿' },
+  { key: 'ring', label: 'Ring', slot: 'ring', icon: '💍' },
+];
+
+export const ITEMS: ItemBase[] = [
+  ...WEAPON_TYPES.flatMap((weapon) => ALL_PRODUCT_RARITIES.map((rarity, tier) => ({
+    id: `weapon-${weapon.key}-${rarity}`,
+    name: `${RARITY_NAMES[tier]} ${weapon.label}`,
+    slot: 'class_weapon' as const,
+    rarity,
+    icon: weapon.icon,
+    flavor: `Tier ${tier + 1} ${weapon.label.toLowerCase()}, forged for its class.`,
+    heroClass: weapon.heroClass,
+  }))),
+  ...OFFHAND_TYPES.flatMap((offhand) => ALL_PRODUCT_RARITIES.map((rarity, tier) => ({
+    id: `offhand-${offhand.key}-${rarity}`,
+    name: `${RARITY_NAMES[tier]} ${offhand.label}`,
+    slot: 'offhand' as const,
+    rarity,
+    icon: offhand.icon,
+    flavor: `Tier ${tier + 1} ${offhand.label.toLowerCase()}, fixed to its class identity.`,
+    heroClass: offhand.heroClass,
+  }))),
+  ...SHARED_TYPES.flatMap((gear) => ALL_PRODUCT_RARITIES.map((rarity, tier) => ({
+    id: `${gear.key}-${rarity}`,
+    name: `${RARITY_NAMES[tier]} ${gear.label}`,
+    slot: gear.slot,
+    rarity,
+    icon: gear.icon,
+    flavor: `Tier ${tier + 1} equipment usable by every class.`,
+  }))),
+];
+
+void LEGACY_ITEMS;
+
+export const ITEM_MAP: Record<string, ItemBase> = Object.fromEntries([...LEGACY_ITEMS, ...ITEMS].map((i) => [i.id, i]));
 
 export function canClassEquipItem(heroClass: HeroClass, item: ItemBase): boolean {
-  if (item.slot !== 'weapon') return true;
+  if (item.slot !== 'class_weapon' && item.slot !== 'offhand' && item.slot !== 'weapon') return true;
+  if (item.heroClass) return item.heroClass === heroClass;
   if (/bow/i.test(item.id + item.name)) return heroClass === 'archer';
   if (/staff|wand/i.test(item.id + item.name)) return heroClass === 'druid' || heroClass === 'shepherd';
   if (/dagger|shadow|bloodcurse/i.test(item.id + item.name)) return heroClass === 'assassin';
   return heroClass === 'knight';
 }
 
+export function meetsItemLevelRequirement(item: OwnedItem, accountLevel: number): boolean {
+  return item.level <= accountLevel;
+}
+
 // ── Potions ────────────────────────────────────────────────────────────────
 
 export const POTIONS: PotionDef[] = [
-  { tier: 'xs',  name: 'Minor Tonic',     hpRestore: 20,   cost: 15   },
-  { tier: 'sm',  name: 'Healing Draught', hpRestore: 50,   cost: 50   },
-  { tier: 'md',  name: 'Greater Potion',  hpRestore: 120,  cost: 150  },
-  { tier: 'lg',  name: 'Superior Elixir', hpRestore: 300,  cost: 450  },
-  { tier: 'xl',  name: 'Mythic Flask',    hpRestore: 700,  cost: 1200 },
-  { tier: 'xxl', name: 'Divine Nectar',   hpRestore: 1600, cost: 3000 },
+  { tier: 'xs',  name: 'Minor Tonic',     hpRestore: 50,    cost: 15   },
+  { tier: 'sm',  name: 'Healing Draught', hpRestore: 200,   cost: 50   },
+  { tier: 'md',  name: 'Greater Potion',  hpRestore: 1000,  cost: 150  },
+  { tier: 'lg',  name: 'Superior Elixir', hpRestore: 4000,  cost: 450  },
+  { tier: 'xl',  name: 'Mythic Flask',    hpRestore: 15000, cost: 1200 },
+  { tier: 'xxl', name: 'Divine Nectar',   hpRestore: 40000, cost: 3000 },
 ];
 
 export const POTION_MAP: Record<PotionTier, PotionDef> = Object.fromEntries(
@@ -197,7 +264,8 @@ export function enchantedStats(stats: ItemStatRoll[], enchantLevel: number): Ite
 export function rerollCost(rarity: Rarity, rerollCount: number): number {
   const base: Record<Rarity, number> = {
     common: 1, uncommon: 2, rare: 4, epic: 8, legendary: 15,
-    mythic: 25, relic: 40, cursed: 60, cosmic: 90, divine: 150,
+    mythic: 25, relic: 40, cursed: 60, cosmic: 90, divine: 150, celestial: 300,
+    immortal: 600, god: 1200,
   };
   const cost = base[rarity] ?? 1;
   return Math.round(cost * (1 + rerollCount * 1.5));
@@ -236,7 +304,7 @@ function rollStats(slot: ItemSlot, rarity: Rarity, level: number): ItemStatRoll[
   });
 }
 
-function calcPower(stats: ItemStatRoll[], enchantLevel = 0): number {
+export function itemPower(stats: ItemStatRoll[], enchantLevel = 0): number {
   const mult = 1 + enchantLevel * 0.10;
   return Math.round(stats.reduce((acc, s) => {
     const w: Record<ItemStatKey, number> = {
@@ -250,11 +318,15 @@ function calcPower(stats: ItemStatRoll[], enchantLevel = 0): number {
 let itemUid = 0;
 export function rollItem(itemId: string, level: number): OwnedItem {
   const base = ITEM_MAP[itemId];
+  if (!base) throw new Error(`Unknown item base: ${itemId}`);
+  if (base.rarity === 'cursed' || base.rarity === 'immortal' || base.rarity === 'god') {
+    throw new Error(`Craft-only rarity cannot be rolled: ${base.rarity}`);
+  }
   const stats = rollStats(base.slot, base.rarity, level);
   return {
-    uid: `it-${Date.now().toString(36)}-${itemUid++}`,
-    itemId, level, stats, power: calcPower(stats),
-    enchantLevel: 0, rerollCount: 0,
+    uid: globalThis.crypto?.randomUUID?.() ?? `it-${Date.now().toString(36)}-${itemUid++}-${Math.random().toString(36).slice(2)}`,
+    itemId, level, stats, power: itemPower(stats),
+    enchantLevel: 0, enchantStatsVersion: 2, rerollCount: 0,
   };
 }
 
@@ -264,49 +336,58 @@ export function rerollItemStats(item: OwnedItem): OwnedItem {
   return {
     ...item,
     stats: newStats,
-    power: calcPower(newStats, item.enchantLevel),
+    power: itemPower(newStats, item.enchantLevel),
+    enchantStatsVersion: 2,
     rerollCount: item.rerollCount + 1,
   };
 }
 
 // ── Drop rates ────────────────────────────────────────────────────────────
 
-// Daily chest cap: max 1500 chests per day per player
-export const MAX_CHESTS_PER_DAY = 1500;
+// Daily timed-reward cap: max 1000 chests per Moscow day per player.
+export const MAX_CHESTS_PER_DAY = 1000;
 
 // Drop chance: 12% per battle win (reduced from 35%)
 const BASE_DROP_CHANCE = 0.12;
-// Chest drop: 3% chance per win (reduced from 8%)
-const BASE_CHEST_CHANCE = 0.03;
 
-export function rollDropForStage(stageNum: number, maxRarity?: Rarity): OwnedItem | null {
-  if (Math.random() > BASE_DROP_CHANCE) return null;
-  const bias = Math.min(stageNum / 60, 1);
-  const weights: Record<Rarity, number> = {
-    common:    RARITY_WEIGHT.common    * Math.max(1 - bias * 0.5, 0.1),
-    uncommon:  RARITY_WEIGHT.uncommon  * (1 - bias * 0.1),
-    rare:      RARITY_WEIGHT.rare      * (1 + bias * 0.3),
-    epic:      RARITY_WEIGHT.epic      * (1 + bias * 0.8),
-    legendary: RARITY_WEIGHT.legendary * (1 + bias * 1.5),
-    mythic:    RARITY_WEIGHT.mythic    * (1 + bias * 2.0),
-    relic:     RARITY_WEIGHT.relic     * (1 + bias * 2.5),
-    cursed:    RARITY_WEIGHT.cursed    * (1 + bias * 3.0),
-    cosmic:    RARITY_WEIGHT.cosmic    * (1 + bias * 4.0),
-    divine:    RARITY_WEIGHT.divine    * (1 + bias * 5.0),
-  };
-  // Cap to maxRarity if specified
-  if (maxRarity) {
-    const maxIdx = RARITY_INDEX[maxRarity];
-    const rarities: Rarity[] = ['common','uncommon','rare','epic','legendary','mythic','relic','cursed','cosmic','divine'];
-    for (const r of rarities) {
-      if (RARITY_INDEX[r] > maxIdx) weights[r] = 0;
-    }
-  }
+type LimitedAvailability = Partial<Record<'divine' | 'celestial', boolean>>;
+
+const STANDARD_LOOT_TABLE: { min: number; max: number; weights: Partial<Record<Rarity, number>> }[] = [
+  { min: 1, max: 9, weights: { common: 75, uncommon: 20, rare: 5 } },
+  { min: 10, max: 19, weights: { common: 53, uncommon: 29, rare: 14, epic: 4 } },
+  { min: 20, max: 29, weights: { common: 39, uncommon: 29, rare: 20, epic: 9, legendary: 3 } },
+  { min: 30, max: 39, weights: { common: 29, uncommon: 25, rare: 22, epic: 14, legendary: 7, mythic: 3 } },
+  { min: 40, max: 54, weights: { common: 23, uncommon: 21, rare: 22, epic: 17, legendary: 10, mythic: 5, cosmic: 2 } },
+  { min: 55, max: 79, weights: { common: 17, uncommon: 19, rare: 20, epic: 18, legendary: 13, mythic: 7, cosmic: 3.5, divine: 2.5 } },
+  { min: 80, max: Number.POSITIVE_INFINITY, weights: { common: 12, uncommon: 15, rare: 19, epic: 19, legendary: 15, mythic: 10, cosmic: 5, divine: 3, celestial: 2 } },
+];
+
+export function standardLootWeights(playerLevel: number, availability: LimitedAvailability = {}): Record<Rarity, number> {
+  const row = STANDARD_LOOT_TABLE.find((entry) => playerLevel >= entry.min && playerLevel <= entry.max) ?? STANDARD_LOOT_TABLE[0];
+  const weights = Object.fromEntries(Object.keys(RARITY_INDEX).map((rarity) => [rarity, row.weights[rarity as Rarity] ?? 0])) as Record<Rarity, number>;
+  weights.relic = 0;
+  weights.cursed = 0;
+  weights.immortal = 0;
+  weights.god = 0;
+  if (!availability.divine) weights.divine = 0;
+  if (!availability.celestial) weights.celestial = 0;
+  return weights;
+}
+
+function rollItemLevel(playerLevel: number): number {
+  return Math.max(1, playerLevel + Math.floor(Math.random() * 5) - 2);
+}
+
+function rollFromWeights(weights: Record<Rarity, number>, playerLevel: number): OwnedItem | null {
   const chosen = weightedRarity(weights);
-  const pool = ITEMS.filter((i) => i.rarity === chosen);
-  if (pool.length === 0) return null;
-  const dropLevel = Math.max(1, Math.floor(stageNum * 0.6 + Math.random() * stageNum * 0.3));
-  return rollItem(pool[Math.floor(Math.random() * pool.length)].id, dropLevel);
+  const pool = ITEMS.filter((item) => item.rarity === chosen && RANDOM_DROP_RARITIES.includes(item.rarity));
+  if (!pool.length) return null;
+  return rollItem(pool[Math.floor(Math.random() * pool.length)].id, rollItemLevel(playerLevel));
+}
+
+export function rollStandardMonsterDrop(playerLevel: number, availability: LimitedAvailability = {}): OwnedItem | null {
+  if (Math.random() > BASE_DROP_CHANCE) return null;
+  return rollFromWeights(standardLootWeights(playerLevel, availability), playerLevel);
 }
 
 export function weightedRarity(weights: Record<Rarity, number>): Rarity {
@@ -321,40 +402,23 @@ export function weightedRarity(weights: Record<Rarity, number>): Rarity {
   return 'common';
 }
 
-export function rollChestDrop(stageNum: number, chestsToday: number): boolean {
-  if (chestsToday >= MAX_CHESTS_PER_DAY) return false;
-  return Math.random() < chestDropChance(stageNum);
-}
-
-export function chestDropChance(stageNum: number): number {
-  return BASE_CHEST_CHANCE + Math.min(stageNum / 500, 0.02);
-}
-
 // Open a chest — capped by location's max rarity
-export function openChest(stageNum: number, maxRarity: Rarity): OwnedItem {
-  const maxIdx = RARITY_INDEX[maxRarity];
-  const bias = Math.min(stageNum / 40, 1);
-  const weights: Record<Rarity, number> = {
-    common:    RARITY_WEIGHT.common    * Math.max(1 - bias * 0.5, 0.1),
-    uncommon:  RARITY_WEIGHT.uncommon  * (1 - bias * 0.2),
-    rare:      RARITY_WEIGHT.rare      * (1 + bias * 0.5),
-    epic:      RARITY_WEIGHT.epic      * (1 + bias * 1.0),
-    legendary: RARITY_WEIGHT.legendary * (1 + bias * 2.0),
-    mythic:    RARITY_WEIGHT.mythic    * (1 + bias * 2.5),
-    relic:     RARITY_WEIGHT.relic     * (1 + bias * 3.0),
-    cursed:    RARITY_WEIGHT.cursed    * (1 + bias * 3.5),
-    cosmic:    RARITY_WEIGHT.cosmic    * (1 + bias * 4.0),
-    divine:    RARITY_WEIGHT.divine    * (1 + bias * 5.0),
-  };
-  const rarities: Rarity[] = ['common','uncommon','rare','epic','legendary','mythic','relic','cursed','cosmic','divine'];
-  for (const r of rarities) {
-    if (RARITY_INDEX[r] > maxIdx) weights[r] = 0;
+export function openStandardChest(playerLevel: number, availability: LimitedAvailability = {}): OwnedItem {
+  const weights = standardLootWeights(playerLevel, availability);
+  const transferable = 10;
+  const higherTotal = RANDOM_DROP_RARITIES.slice(1).reduce((sum, rarity) => sum + weights[rarity], 0);
+  weights.common = Math.max(0, weights.common - transferable);
+  if (higherTotal > 0) {
+    for (const rarity of RANDOM_DROP_RARITIES.slice(1)) weights[rarity] += transferable * (weights[rarity] / higherTotal);
   }
-  const chosen = weightedRarity(weights);
-  const pool = ITEMS.filter((i) => i.rarity === chosen);
-  if (pool.length === 0) return rollItem(ITEMS[0].id, stageNum);
-  const dropLevel = Math.max(1, Math.floor(stageNum * 0.7 + Math.random() * stageNum * 0.4));
-  return rollItem(pool[Math.floor(Math.random() * pool.length)].id, dropLevel);
+  return rollFromWeights(weights, playerLevel) ?? rollItem('helmet-common', rollItemLevel(playerLevel));
+}
+
+export function openBossChest(playerLevel: number, availability: LimitedAvailability = {}): OwnedItem {
+  const weights = standardLootWeights(playerLevel, availability);
+  const floorIndex = playerLevel >= 10 ? RARITY_INDEX.epic : RARITY_INDEX.rare;
+  for (const rarity of RANDOM_DROP_RARITIES) if (RARITY_INDEX[rarity] < floorIndex) weights[rarity] = 0;
+  return rollFromWeights(weights, playerLevel) ?? rollItem('helmet-rare', rollItemLevel(playerLevel));
 }
 
 // ── Rotating shop ─────────────────────────────────────────────────────────
@@ -367,7 +431,8 @@ export function generateRotatingShop(): { itemId: string; price: number }[] {
     const base = pool[Math.floor(Math.random() * pool.length)];
     const priceBase: Record<Rarity, number> = {
       common: 80, uncommon: 250, rare: 800, epic: 2500, legendary: 8000,
-      mythic: 25000, relic: 80000, cursed: 250000, cosmic: 700000, divine: 3000000,
+      mythic: 25000, relic: 80000, cursed: 250000, cosmic: 700000, divine: 3000000, celestial: 9000000,
+      immortal: 18000000, god: 36000000,
     };
     return { itemId: base.id, price: priceBase[rarity] + Math.floor(Math.random() * priceBase[rarity] * 0.4) };
   });

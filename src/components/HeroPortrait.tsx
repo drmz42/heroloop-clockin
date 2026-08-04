@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { HeroClass, Rarity } from '@/game/types';
-import { buildHeroSvg, heroPortraitSrc } from '@/game/portraits';
+import { buildHeroSvg, heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { RARITY_COLORS, RARITY_GLOW } from '@/game/heroes';
 
 interface HeroPortraitProps {
@@ -28,13 +28,15 @@ export function HeroPortrait({
     () => heroId ? heroPortraitSrc(heroId, heroClass, rarity, color) : buildHeroSvg(heroClass, rarity, color),
     [heroId, heroClass, rarity, color]
   );
+  const fallbackSrc = useMemo(() => buildHeroSvg(heroClass, rarity, color), [heroClass, rarity, color]);
 
   const isDead = respawn !== undefined && respawn > 0;
 
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`relative shrink-0 flex items-center justify-center rounded-xl overflow-hidden transition-transform active:scale-95 select-none ${className}`}
+      className={`hero-portrait-rarity rarity-${rarity} relative shrink-0 flex items-center justify-center rounded-xl overflow-hidden transition-transform active:scale-95 select-none ${className}`}
       style={{
         width: size, height: size,
         border: `2px solid ${active ? rc : rc + '66'}`,
@@ -43,11 +45,14 @@ export function HeroPortrait({
       }}
     >
       <img
-        src={imgError ? svgSrc : svgSrc}
+        src={imgError ? fallbackSrc : svgSrc}
         alt=""
         width={size}
         height={size}
+        loading="lazy"
+        decoding="async"
         className="w-full h-full object-cover"
+        style={imgError ? undefined : heroPortraitStyle(heroId, heroClass)}
         onError={() => setImgError(true)}
       />
 
@@ -61,11 +66,8 @@ export function HeroPortrait({
 
       {/* badge (level) */}
       {badge !== undefined && !isDead && (
-        <div
-          className="absolute bottom-0 right-0 text-[9px] font-black text-white px-1 rounded-tl-md"
-          style={{ background: rc }}
-        >
-          {badge}
+        <div className="hero-level-badge absolute bottom-0 right-0 rounded-tl-md px-1 font-black text-white">
+          Lv {badge}
         </div>
       )}
 
