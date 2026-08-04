@@ -26,11 +26,5 @@ dist-ssr
 dist.permission-backup/
 /*.png
 todo/.htpasswd
-public/assets/landing2/
-src/screens/Landing2Screen.tsx
-test/landing3/
-upload/qwen/landing2/
-upload/qwen/landing3/
-
 # Large reference files
 *.pdf
