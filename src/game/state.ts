@@ -82,7 +82,7 @@ const MILESTONE_TARGETS: Record<string, { label: string; targets: number[] }> = 
   chest: { label: 'Open {n} chests', targets: [1_000, 5_000, 25_000] },
   kill: { label: 'Defeat {n} enemies', targets: [50_000, 250_000, 1_000_000] },
   boss: { label: 'Defeat {n} bosses', targets: [25, 100, 500] },
-  summon: { label: 'Summon {n} heroes', targets: [100, 500, 2_500] },
+  summon: { label: 'Summon {n} heroes', targets: [1, 10, 50, 100] },
   'token-earned': { label: 'Earn {n} $HERO', targets: [1_000, 10_000, 100_000] },
   'token-spent': { label: 'Spend {n} $HERO', targets: [500, 5_000, 50_000] },
   'gold-earned': { label: 'Earn {n} Gold', targets: [100_000, 1_000_000, 10_000_000] },
@@ -345,7 +345,11 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
       activeUntil: parsed.activeUntil ?? ((parsed.lastSeen ?? now) + ACTIVE_SESSION_MS),
       session: parsed.session ?? base.session,
       dailyQuests: questSameDay && parsed.dailyQuests?.some((quest) => quest.id === 'kill-1000') ? parsed.dailyQuests : generateDailyQuests(),
-      milestoneQuests: parsed.milestoneQuests ?? generateMilestoneQuests(),
+      milestoneQuests: (parsed.milestoneQuests ?? generateMilestoneQuests()).map((quest) =>
+        quest.kind === 'milestone' && quest.chain
+          ? milestoneQuest(quest.chain, quest.tier ?? 0, quest.progress) ?? quest
+          : quest
+      ),
       lastQuestReset: questSameDay ? (parsed.lastQuestReset ?? now) : now,
       referral: parsed.referral ?? base.referral,
       boost: {

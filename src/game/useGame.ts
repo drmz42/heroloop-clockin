@@ -160,7 +160,7 @@ function updateQuestProgress(quests: DailyQuest[], type: string, amount: number)
   const chain = type.replace(/-$/, '');
   return quests.map(q => {
     if ((q.id.startsWith(type) || q.chain === chain) && !q.claimed) {
-      return { ...q, progress: Math.min(q.target, q.progress + amount) };
+      return { ...q, progress: q.kind === 'milestone' ? q.progress + amount : Math.min(q.target, q.progress + amount) };
     }
     return q;
   });
@@ -617,7 +617,8 @@ export function useGame() {
           return stats ? { gold: acc.gold + stats.goldBonus, xp: acc.xp + stats.xpBonus } : acc;
         }, { gold: 0, xp: 0 });
         const gold = Math.round(battles * loc.goldReward * (1 + teamBonuses.gold));
-        const xp = Math.round(battles * loc.xpReward * (1 + teamBonuses.xp));
+        const heroXp = Math.round(battles * loc.xpReward * (1 + teamBonuses.xp));
+        const accountXp = heroXp * loc.enemies.length;
         const kills = battles * loc.enemies.length;
         const progress = base.boost.chestProgressSeconds + activeSeconds;
         const earned = Math.floor(progress / ACTIVE_CHEST_SECONDS);
@@ -629,7 +630,7 @@ export function useGame() {
           : base.chests;
         const penalty = trainingTokenPenalty(base.trainingCamp.heroUids.filter(Boolean).length);
         const tokens = canMineTokens(base.currentLocation, base.accountLevel, base.highestLocation) ? Math.floor((activeSeconds / 86400) * 20_000 * (1 - penalty)) : 0;
-        const nextAccountXp = base.accountXp + xp;
+        const nextAccountXp = base.accountXp + accountXp;
         const dayKey = moscowDayKey();
         return {
           ...base,
@@ -645,7 +646,7 @@ export function useGame() {
           accountLevel: accountLevelFromXp(nextAccountXp),
           ownedHeroes: base.ownedHeroes.map((hero) => {
             if (!base.team.includes(hero.uid)) return hero;
-            const advanced = advanceHeroXp(hero.level, hero.xp, xp);
+            const advanced = advanceHeroXp(hero.level, hero.xp, heroXp);
             return { ...hero, level: advanced.level, xp: advanced.remaining };
           }),
           chests,
@@ -684,7 +685,8 @@ export function useGame() {
         return stats ? { gold: acc.gold + stats.goldBonus, xp: acc.xp + stats.xpBonus } : acc;
       }, { gold: 0, xp: 0 });
       const gold = Math.round(battles * loc.goldReward * (1 + teamBonuses.gold));
-      const xp = Math.round(battles * loc.xpReward * (1 + teamBonuses.xp));
+      const heroXp = Math.round(battles * loc.xpReward * (1 + teamBonuses.xp));
+      const accountXp = heroXp * loc.enemies.length;
       const penalty = trainingTokenPenalty(st.trainingCamp.heroUids.filter(Boolean).length);
       const tokens = canMineTokens(st.currentLocation, st.accountLevel, st.highestLocation)
         ? Math.floor((activeElapsed / 86400) * 20_000 * (1 - penalty))
@@ -703,12 +705,12 @@ export function useGame() {
           hero: p.hero + tokens,
           totalTokensEarned: p.totalTokensEarned + tokens,
           tokensEarnedToday: p.tokensEarnedToday + tokens,
-          accountXp: p.accountXp + xp,
-          accountLevel: accountLevelFromXp(p.accountXp + xp),
+          accountXp: p.accountXp + accountXp,
+          accountLevel: accountLevelFromXp(p.accountXp + accountXp),
           totalKills: p.totalKills + kills,
           ownedHeroes: p.ownedHeroes.map((h) => {
             if (!p.team.includes(h.uid)) return h;
-            const leveled = advanceHeroXp(h.level, h.xp, xp);
+            const leveled = advanceHeroXp(h.level, h.xp, heroXp);
             return { ...h, xp: leveled.remaining, level: Math.max(h.level, leveled.level) };
           }),
           chests: chests > 0 ? [...p.chests, ...Array.from({ length: chests }, (_, i) => ({ id: `active-offline-${now}-${i}`, stage: p.currentLocation }))] : p.chests,
@@ -716,7 +718,7 @@ export function useGame() {
           boost: { ...p.boost, chestProgressSeconds: chestProgress >= ACTIVE_CHEST_SECONDS ? chestProgress % ACTIVE_CHEST_SECONDS : chestProgress },
           milestoneQuests: updateQuestProgress(updateQuestProgress(p.milestoneQuests, 'gold-earned-', gold), 'token-earned-', tokens),
         }));
-      setOfflineEarnings({ gold, seconds: activeElapsed, tokens: tokens || undefined, chests: chests || undefined, xp: xp || undefined });
+      setOfflineEarnings({ gold, seconds: activeElapsed, tokens: tokens || undefined, chests: chests || undefined, xp: accountXp || undefined });
     }
   }, []);
 
@@ -1394,7 +1396,8 @@ export function useGame() {
     setState((prev) => {
       const q = prev.dailyQuests.find((q) => q.id === questId) ?? prev.milestoneQuests.find((q) => q.id === questId);
       if (!q || q.claimed || q.progress < q.target) return prev;
-      const nextMilestone = q.kind === 'milestone' && q.chain ? milestoneQuest(q.chain, (q.tier ?? 0) + 1) : null;
+      const overflow = Math.max(0, q.progress - q.target);
+      const nextMilestone = q.kind === 'milestone' && q.chain ? milestoneQuest(q.chain, (q.tier ?? 0) + 1, overflow) : null;
       return {
         ...prev,
         gold: prev.gold + q.reward.gold,

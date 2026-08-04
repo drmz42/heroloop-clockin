@@ -1,12 +1,12 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
-import { Package, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Hammer, Sparkles } from 'lucide-react';
+import { Fragment, useEffect, useState, useMemo, useRef } from 'react';
+import { Package, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Hammer, Sparkles, Info } from 'lucide-react';
 import { Arena } from '@/components/Arena';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
 import { buildLocation, canMineTokens, equippedSetBonus, getEquippedItems, heroStats, locationUnlockLevel, locationLevelRange, LOCATION_RANGES, SET_BONUS_PERCENT, teamPower as calculateHeroPower } from '@/game/engine';
 import { formatNum, accountXpForLevel, accountXpProgress, heroXpForLevel } from '@/game/state';
-import { ITEM_MAP, SLOT_LABEL, POTIONS, sellValue, meetsItemLevelRequirement, canClassEquipItem } from '@/game/items';
-import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, CLASS_LABEL } from '@/game/heroes';
+import { ITEM_MAP, SLOT_LABEL, POTIONS, sellValue, meetsItemLevelRequirement, canClassEquipItem, standardChestWeights } from '@/game/items';
+import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, CLASS_LABEL, RARITY_INDEX } from '@/game/heroes';
 import type { TokenomicsApi } from '@/game/useTokenomics';
 import type { TokenomicsStatus } from '@/game/useTokenomics';
 import type { GameApi } from '@/game/useGame';
@@ -40,12 +40,14 @@ function emptySlotArtworkId(slot: ItemSlot, heroClass: HeroClass): string {
 
 export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: TokenomicsApi }) {
   const { state, units, floaters, battleResult, potionFx, respawnCountdowns } = game;
+  const tok = tokenomics;
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
   const [banner, setBanner] = useState<string | null>(null);
   const [showPotSettings, setShowPotSettings] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [showBulkSellConfirm, setShowBulkSellConfirm] = useState(false);
+  const [showDropRates, setShowDropRates] = useState(false);
   const [selectedHeroUid, setSelectedHeroUid] = useState<string | null>(state.team[0] ?? null);
   const [selectedItem, setSelectedItem] = useState<OwnedItem | null>(null);
   const [selectedItemSource, setSelectedItemSource] = useState<'bag' | 'hero' | null>(null);
@@ -107,6 +109,15 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
     .reduce((acc, i) => acc + sellValue(i), 0);
   const selectedEquippedCount = selectedHero ? Object.values(selectedHero.equipped).filter(Boolean).length : 0;
   const canUnequipAll = selectedEquippedCount > 0 && bagItems.length + selectedEquippedCount <= GRID_SIZE;
+  const selectedBagIndex = selectedItemSource === 'bag' && liveSelectedItem
+    ? visiblePotions.length + bagItems.findIndex((item) => item.uid === liveSelectedItem.uid)
+    : -1;
+  const selectedBagRowEnd = selectedBagIndex >= 0 ? Math.floor(selectedBagIndex / 8) * 8 + 7 : -1;
+  const chestWeights = standardChestWeights(state.accountLevel, tok.status?.rarity_capacity ?? {});
+  const chestWeightTotal = Object.values(chestWeights).reduce((sum, weight) => sum + weight, 0);
+  const chestRateRows = Object.entries(chestWeights)
+    .filter(([, weight]) => weight > 0)
+    .sort(([left], [right]) => RARITY_INDEX[left as keyof typeof RARITY_INDEX] - RARITY_INDEX[right as keyof typeof RARITY_INDEX]);
 
   const selectedEquipReason: string | undefined = (() => {
     if (selectedItemSource !== 'bag' || !selectedHero || !liveSelectedItem) return undefined;
@@ -129,7 +140,6 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
     locationRailRef.current?.scrollBy({ left: direction * 360, behavior: 'smooth' });
   };
 
-  const tok = tokenomics;
   const serverBossKeys = tok.status?.boss_keys;
   const syncBossKeys = game.syncBossKeys;
 
@@ -277,16 +287,25 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
             <BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}
           </button>
           <TestControls game={game} />
-          <button
-            onClick={() => game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem)}
-            disabled={state.chests.length === 0}
-            className={`reward-cta game-control absolute bottom-3 right-3 z-30 flex h-8 items-center gap-1 px-2 py-0.5 text-[9px] font-black disabled:opacity-55 ${state.tutorial.chestGranted && !state.tutorial.chestCompleted ? 'chest-tutorial-guide' : ''}`}
-            title={state.tutorial.chestGranted && !state.tutorial.chestCompleted ? 'Tutorial: open your first chest' : 'Open chests'}
-          >
-            <ChestCollectIcon size={34} />
-            <span>OPEN · {state.chests.length}</span>
-            {state.tutorial.chestGranted && !state.tutorial.chestCompleted && <span className="chest-tutorial-badge">+1</span>}
-          </button>
+          <div className="absolute bottom-3 right-3 z-30 flex items-end gap-1.5">
+            {showDropRates && <div className="absolute bottom-full right-0 mb-2 w-56 rounded-lg border border-[#80683f] bg-[#11130f]/95 p-2.5 shadow-2xl backdrop-blur-sm">
+              <div className="flex items-center justify-between gap-2"><strong className="text-[10px] uppercase tracking-wider text-[#efd18a]">Chest drop rate</strong><button type="button" onClick={() => setShowDropRates(false)} aria-label="Close drop rates"><X size={13} /></button></div>
+              <p className="mt-1 text-[9px] text-[#978f81]">Current Account Level {state.accountLevel}. Rates update with account level and global rarity availability.</p>
+              <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">{chestRateRows.map(([rarity, weight]) => <Fragment key={rarity}><span className="text-[9px] font-bold" style={{ color: RARITY_COLORS[rarity as keyof typeof RARITY_COLORS] }}>{RARITY_LABEL[rarity as keyof typeof RARITY_LABEL]}</span><span className="text-right text-[9px] tabular-nums text-[#ddd4c4]">{(weight / chestWeightTotal * 100).toFixed(2).replace(/\.?0+$/, '')}%</span></Fragment>)}</div>
+              {state.chests.some((chest) => chest.boss) && <p className="mt-2 border-t border-white/10 pt-2 text-[9px] text-rose-200">Boss Chests use the same level table with a Rare/Epic minimum.</p>}
+            </div>}
+            <button type="button" onClick={() => setShowDropRates((value) => !value)} className="game-control grid h-8 w-8 place-items-center" aria-label="Show chest drop rates" aria-expanded={showDropRates}><Info size={15} /></button>
+            <button
+              onClick={() => game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem)}
+              disabled={state.chests.length === 0}
+              className={`reward-cta game-control flex h-8 items-center gap-1 px-2 py-0.5 text-[9px] font-black disabled:opacity-55 ${state.tutorial.chestGranted && !state.tutorial.chestCompleted ? 'chest-tutorial-guide' : ''}`}
+              title={state.tutorial.chestGranted && !state.tutorial.chestCompleted ? 'Tutorial: open your first chest' : 'Open chests'}
+            >
+              <ChestCollectIcon size={34} />
+              <span>OPEN · {state.chests.length}</span>
+              {state.tutorial.chestGranted && !state.tutorial.chestCompleted && <span className="chest-tutorial-badge">+1</span>}
+            </button>
+          </div>
           <TokenEarningsPanel status={tok.status} today={game.state.tokensEarnedToday} clientPower={ownPower} eligible={canMineTokens(state.currentLocation, state.accountLevel, state.highestLocation)} />
         </div>
 
@@ -438,9 +457,10 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
               const itemBase = item ? ITEM_MAP[item.itemId] : null;
               const rarity = itemBase?.rarity ?? (item ? 'common' : null);
               const rc = rarity ? RARITY_COLORS[rarity] : null;
+              const gridIndex = visiblePotions.length + i;
               return (
+                <Fragment key={item ? item.uid : `e${i}`}>
                 <button
-                  key={item ? item.uid : `e${i}`}
                   onClick={item ? () => { setSelectedItem(item); setSelectedItemSource('bag'); setSelectedItemSlot(null); } : undefined}
                   className={`item-slot aspect-square min-w-0 w-full flex items-center justify-center overflow-hidden text-xl border transition hover:-translate-y-0.5 relative ${item && rarity ? `rarity-${rarity}` : ''} ${selectedItem?.uid === item?.uid ? 'ring-1 ring-[#d9ad5b]' : ''}`}
                   style={item ? { borderColor: rc ? `${rc}99` : 'rgba(255,255,255,0.08)' } : { borderColor: 'rgba(128,119,100,0.11)', background: 'linear-gradient(145deg,#151612,#0c0e0d)' }}
@@ -451,12 +471,14 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
                   {itemBase?.heroClass && <div className="item-class-badge absolute right-0 top-0" title={`${CLASS_LABEL[itemBase.heroClass]} only`}>{CLASS_SHORT_LABEL[itemBase.heroClass]}</div>}
                   {item && <div className="absolute bottom-0 right-0 rounded-tl bg-black/75 px-1 text-[11px] font-bold leading-tight text-slate-200">{item.level}</div>}
                 </button>
+                {gridIndex === selectedBagRowEnd && liveSelectedItem && selectedItemSource === 'bag' && <div className="col-span-8 rounded-lg border border-[#6e5837] bg-[#10120f] p-2 shadow-inner"><ItemActionPanel item={liveSelectedItem} game={game} equippedSlot={null} comparisonItem={comparisonItem} equipDisabledReason={selectedEquipReason} onEquip={(slot) => { if (selectedHero) { game.equipItem(selectedHero.uid, liveSelectedItem.uid, slot); setSelectedItem(null); } }} onBeforeSell={async (selected) => { const selectedRarity = ITEM_MAP[selected.itemId]?.rarity; return selectedRarity === 'divine' || selectedRarity === 'celestial' ? tok.removeLimitedItem(selected.uid) : true; }} onClose={() => setSelectedItem(null)} /></div>}
+                </Fragment>
               );
             })}
           </div>
         </div>
 
-        {liveSelectedItem && (
+        {liveSelectedItem && selectedItemSource === 'hero' && (
           <div className="border-t-2 border-px-border p-2 shrink-0 max-h-[45%] overflow-y-auto no-scrollbar">
             <ItemActionPanel
               item={liveSelectedItem}
@@ -464,7 +486,6 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
               equippedSlot={selectedItemSource === 'hero' ? selectedItemSlot : null}
               comparisonItem={comparisonItem}
               equipDisabledReason={selectedEquipReason}
-              onEquip={selectedItemSource === 'bag' ? (slot) => { if (selectedHero) { game.equipItem(selectedHero.uid, liveSelectedItem.uid, slot); setSelectedItem(null); } } : undefined}
               onUnequip={selectedItemSource === 'hero' && selectedItemSlot ? () => { if (selectedHero) { game.unequipItem(selectedHero.uid, selectedItemSlot); setSelectedItem(null); } } : undefined}
               onBeforeSell={async (item) => {
                 const rarity = ITEM_MAP[item.itemId]?.rarity;

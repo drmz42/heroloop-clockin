@@ -374,6 +374,17 @@ export function standardLootWeights(playerLevel: number, availability: LimitedAv
   return weights;
 }
 
+export function standardChestWeights(playerLevel: number, availability: LimitedAvailability = {}): Record<Rarity, number> {
+  const weights = standardLootWeights(playerLevel, availability);
+  const transferable = 10;
+  const higherTotal = RANDOM_DROP_RARITIES.slice(1).reduce((sum, rarity) => sum + weights[rarity], 0);
+  weights.common = Math.max(0, weights.common - transferable);
+  if (higherTotal > 0) {
+    for (const rarity of RANDOM_DROP_RARITIES.slice(1)) weights[rarity] += transferable * (weights[rarity] / higherTotal);
+  }
+  return weights;
+}
+
 function rollItemLevel(playerLevel: number): number {
   return Math.max(1, playerLevel + Math.floor(Math.random() * 5) - 2);
 }
@@ -404,13 +415,7 @@ export function weightedRarity(weights: Record<Rarity, number>): Rarity {
 
 // Open a chest — capped by location's max rarity
 export function openStandardChest(playerLevel: number, availability: LimitedAvailability = {}): OwnedItem {
-  const weights = standardLootWeights(playerLevel, availability);
-  const transferable = 10;
-  const higherTotal = RANDOM_DROP_RARITIES.slice(1).reduce((sum, rarity) => sum + weights[rarity], 0);
-  weights.common = Math.max(0, weights.common - transferable);
-  if (higherTotal > 0) {
-    for (const rarity of RANDOM_DROP_RARITIES.slice(1)) weights[rarity] += transferable * (weights[rarity] / higherTotal);
-  }
+  const weights = standardChestWeights(playerLevel, availability);
   return rollFromWeights(weights, playerLevel) ?? rollItem('helmet-common', rollItemLevel(playerLevel));
 }
 

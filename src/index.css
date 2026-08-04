@@ -347,8 +347,8 @@ html { scroll-behavior: smooth; }
 .training-select select { height:30px;appearance:none;border:0;background:transparent;padding:0 23px 0 6px;color:inherit;font-size:10px;font-weight:800;outline:0; }
 .training-select svg { position:absolute;right:7px;pointer-events:none; }
 .training-select option { background:#11130f;color:#d8cfbf; }
-.training-roster-card { min-width:0;height:120px;border:1px solid #4b402e;border-radius:8px;background:linear-gradient(160deg,#24241e,#0d100e);padding:7px 6px;text-align:center;box-shadow:inset 0 1px rgba(255,255,255,.04); }
-.training-roster-portrait { position:relative;width:64px;height:64px;margin:0 auto; }
+.training-roster-card { min-width:0;height:142px;border:1px solid #4b402e;border-radius:8px;background:linear-gradient(160deg,#24241e,#0d100e);padding:7px 6px;text-align:center;box-shadow:inset 0 1px rgba(255,255,255,.04); }
+.training-roster-portrait { position:relative;width:80px;height:80px;margin:0 auto; }
 .training-in-formation-badge { position:absolute;left:50%;bottom:4px;z-index:5;transform:translateX(-50%);white-space:nowrap;border:1px solid #d3a958;border-radius:4px;background:linear-gradient(180deg,rgba(79,54,22,.97),rgba(29,23,13,.98));padding:2px 5px;color:#ffe2a0;font-size:7px;font-weight:900;letter-spacing:.08em;line-height:1.15;box-shadow:0 2px 7px rgba(0,0,0,.75),0 0 8px rgba(211,169,88,.22); }
 .training-roster-card:hover:not(:disabled) { cursor:pointer;border-color:#c0924a;transform:translateY(-2px);box-shadow:0 7px 16px rgba(0,0,0,.32),0 0 13px rgba(195,139,51,.12); }
 .training-roster-card>strong,.training-roster-card>span,.training-roster-card>small { display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
