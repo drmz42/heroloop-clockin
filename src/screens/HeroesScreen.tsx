@@ -131,21 +131,21 @@ export function HeroesScreen({ game }: { game: GameApi }) {
   return (
     <div className="premium-screen themed-screen themed-screen-heroes flex h-full flex-col overflow-hidden">
       <header className="material-panel m-2 mb-0 shrink-0 p-3">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="min-w-0">
             <div className="section-kicker">Hall of Champions</div>
             <h2 className="mt-0.5 text-xl font-black text-[#eee4d3]">My Heroes <span className="text-sm text-[#8f897e]">{state.ownedHeroes.length}/{MAX_HEROES}</span></h2>
             <div className="mt-3 flex flex-wrap items-start gap-2">
-              <div className="grid w-[200px] shrink-0 grid-rows-2 gap-1.5"><label className="relative block h-[42px]"><Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#736d62]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search heroes" className="game-control h-[42px] w-full bg-transparent pl-8 pr-2 text-xs outline-none" /></label><button type="button" onClick={() => void promoteAll()} className="game-control game-primary flex h-[42px] w-full items-center justify-center gap-1 px-2 text-[9px] font-black uppercase"><Sparkles size={12} /> Promote All</button></div>
-              <div className="grid min-w-[440px] flex-1 grid-rows-2 gap-1.5">
-                <div className="grid h-[42px] grid-cols-3 gap-1.5">
+              <div className="grid w-[170px] shrink-0 grid-rows-2 gap-1"><label className="relative block h-8"><Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#736d62]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search heroes" className="game-control h-8 w-full bg-transparent pl-7 pr-2 text-[10px] outline-none" /></label><button type="button" onClick={() => void promoteAll()} className="game-control game-primary flex h-8 w-full items-center justify-center gap-1 px-2 text-[8px] font-black uppercase"><Sparkles size={11} /> Promote All</button></div>
+              <div className="grid min-w-[360px] flex-1 grid-rows-2 gap-1">
+                <div className="grid h-8 grid-cols-3 gap-1">
                   <Filter value={classFilter} onChange={setClassFilter} label="Class" options={['all', 'knight', 'archer', 'assassin', 'shepherd', 'druid']} />
                   <Filter value={rarityFilter} onChange={setRarityFilter} label="Rarity" options={['all', ...FILTER_RARITIES]} />
                   <Filter value={levelFilter} onChange={(value) => setLevelFilter(value as typeof levelFilter)} label="Level" options={['all', '1-9', '10+']} />
                 </div>
-                <div className="grid h-[42px] grid-cols-3 gap-1.5">
-                  {(['power', 'level'] as const).map((value) => <button type="button" key={value} onClick={() => setSort(value)} className={`game-control h-[42px] px-3 text-[9px] font-bold uppercase ${sort === value ? 'game-primary' : ''}`}>{value}</button>)}
-                  <button type="button" onClick={() => { setSelectionMode((value) => !value); setSelectedUids(new Set()); }} className={`game-control h-[42px] px-3 text-[9px] font-black uppercase ${selectionMode ? 'game-primary' : ''}`}>{selectionMode ? 'Cancel selection' : 'Select heroes'}</button>
+                <div className="grid h-8 grid-cols-3 gap-1">
+                  {(['power', 'level'] as const).map((value) => <button type="button" key={value} onClick={() => setSort(value)} className={`game-control h-8 px-2 text-[8px] font-bold uppercase ${sort === value ? 'game-primary' : ''}`}>{value}</button>)}
+                  <button type="button" onClick={() => { setSelectionMode((value) => !value); setSelectedUids(new Set()); }} className={`game-control h-8 px-2 text-[8px] font-black uppercase ${selectionMode ? 'game-primary' : ''}`}>{selectionMode ? 'Cancel selection' : 'Select heroes'}</button>
                 </div>
               </div>
             </div>
@@ -154,9 +154,9 @@ export function HeroesScreen({ game }: { game: GameApi }) {
             <Swords size={54} className="absolute -left-3 -top-3 rotate-[-18deg] text-[#8d6a37]/20" />
             <Shield size={58} className="absolute -bottom-4 -right-2 text-[#8d6a37]/20" />
             <div className="relative flex items-center justify-between"><span className="flex items-center gap-2 text-xs font-black uppercase tracking-[.15em] text-[#efc875]"><Users size={15} /> Active Team</span><b className="text-sm text-[#f5d98e]">{state.team.length}/3</b></div>
-            <div className="relative mt-2 flex min-h-[64px] items-center justify-center gap-3">
-              {state.team.map((uid) => { const hero = state.ownedHeroes.find((candidate) => candidate.uid === uid); const base = hero ? HERO_MAP[hero.heroId] : null; return hero && base ? <HeroPortrait key={uid} heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={58} active badge={hero.level} respawn={respawnCountdowns[uid] ?? 0} onClick={() => openHero(hero)} /> : null; })}
-              {Array.from({ length: 3 - state.team.length }, (_, index) => <div key={index} className="grid h-[58px] w-[58px] place-items-center rounded-lg border border-dashed border-[#665333] bg-black/20"><Shield size={18} className="text-[#5c4b31]" /></div>)}
+            <div className="relative mt-3 flex min-h-[96px] items-center justify-center gap-4">
+              {state.team.map((uid) => { const hero = state.ownedHeroes.find((candidate) => candidate.uid === uid); const base = hero ? HERO_MAP[hero.heroId] : null; return hero && base ? <HeroPortrait key={uid} heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={88} active badge={hero.level} respawn={respawnCountdowns[uid] ?? 0} onClick={() => openHero(hero)} /> : null; })}
+              {Array.from({ length: 3 - state.team.length }, (_, index) => <div key={index} className="grid h-[88px] w-[88px] place-items-center rounded-xl border border-dashed border-[#665333] bg-black/20"><Shield size={24} className="text-[#5c4b31]" /></div>)}
             </div>
             <div className="relative mt-1 text-center text-[9px] text-[#8f887b]">Your primary combat formation</div>
           </section>
@@ -171,4 +171,4 @@ export function HeroesScreen({ game }: { game: GameApi }) {
   );
 }
 
-function Filter({ value, onChange, label, options }: { value: string; onChange: (value: string) => void; label: string; options: string[] }) { return <label className="flex min-w-0 items-stretch"><span className="sr-only">{label}</span><select value={value} onChange={(event) => onChange(event.target.value)} className="game-control h-[42px] w-full min-w-0 bg-[#171915] px-3 text-[10px] font-bold capitalize text-[#d1c8b9] outline-none" style={{ colorScheme: 'dark' }}>{options.map((option) => <option key={option} value={option} style={{ backgroundColor: '#171915', color: '#d1c8b9' }}>{option === 'all' ? `All ${label}` : option}</option>)}</select></label>; }
+function Filter({ value, onChange, label, options }: { value: string; onChange: (value: string) => void; label: string; options: string[] }) { return <label className="flex min-w-0 items-stretch"><span className="sr-only">{label}</span><select value={value} onChange={(event) => onChange(event.target.value)} className="game-control h-8 w-full min-w-0 bg-[#171915] px-2 text-[9px] font-bold capitalize text-[#d1c8b9] outline-none" style={{ colorScheme: 'dark' }}>{options.map((option) => <option key={option} value={option} style={{ backgroundColor: '#171915', color: '#d1c8b9' }}>{option === 'all' ? `All ${label}` : option}</option>)}</select></label>; }

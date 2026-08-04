@@ -1,17 +1,18 @@
 import { useState, type CSSProperties } from 'react';
 import { ArrowUp, Dice5, ShieldCheck, Trash2, Lock, Unlock, X, Coins } from 'lucide-react';
-import { ITEM_MAP, SLOT_LABEL, formatStatValue, STAT_LABEL, sellValue, enchantSuccessChance, enchantGoldCost, enchantCharmCost, rerollCost } from '@/game/items';
+import { ITEM_MAP, SLOT_LABEL, enchantedStats, formatStatValue, STAT_LABEL, sellValue, enchantSuccessChance, enchantGoldCost, enchantCharmCost, rerollCost } from '@/game/items';
 import { CLASS_LABEL, RARITY_COLORS, RARITY_LABEL } from '@/game/heroes';
 import { formatNum } from '@/game/state';
 import { ItemArtwork } from '@/components/ItemArtwork';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import type { GameApi } from '@/game/useGame';
-import type { OwnedItem, ItemSlot } from '@/game/types';
+import type { ItemStatKey, OwnedItem, ItemSlot } from '@/game/types';
 
 interface Props {
   item: OwnedItem;
   game: GameApi;
   equippedSlot?: ItemSlot | null;
+  comparisonItem?: OwnedItem | null;
   onEquip?: (slot: ItemSlot) => void;
   onUnequip?: () => void;
   onBeforeSell?: (item: OwnedItem) => Promise<boolean>;
@@ -19,7 +20,7 @@ interface Props {
   onClose: () => void;
 }
 
-export function ItemActionPanel({ item, game, equippedSlot, onEquip, onUnequip, onBeforeSell, equipDisabledReason, onClose }: Props) {
+export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEquip, onUnequip, onBeforeSell, equipDisabledReason, onClose }: Props) {
   const [showEnchant, setShowEnchant] = useState(false);
   const [showReroll, setShowReroll] = useState(false);
   const [showSellConfirm, setShowSellConfirm] = useState(false);
@@ -32,6 +33,9 @@ export function ItemActionPanel({ item, game, equippedSlot, onEquip, onUnequip, 
   const charmCost = enchantCharmCost(item.enchantLevel);
   const canEnchant = item.enchantLevel < 10;
   const rCost = rerollCost(base.rarity, item.rerollCount);
+  const candidateStats = new Map(enchantedStats(item.stats, item.enchantLevel).map((stat) => [stat.key, stat]));
+  const equippedStats = new Map((comparisonItem ? enchantedStats(comparisonItem.stats, comparisonItem.enchantLevel) : []).map((stat) => [stat.key, stat]));
+  const comparisonKeys = [...new Set([...candidateStats.keys(), ...equippedStats.keys()])] as ItemStatKey[];
 
   return (
     <div className="item-action-panel rounded-xl border p-2" style={{ '--item-rarity': rc } as CSSProperties}>
@@ -58,6 +62,22 @@ export function ItemActionPanel({ item, game, equippedSlot, onEquip, onUnequip, 
           </div>
         ))}
       </div>
+
+      {comparisonItem && (
+        <div className="mb-1.5 rounded-md border border-[#665233] bg-black/30 px-2 py-1.5">
+          <div className="mb-1 flex items-center justify-between gap-2 text-[9px] font-black uppercase tracking-wide text-[#d8c59f]"><span>Compared with equipped</span><span>{item.power - comparisonItem.power >= 0 ? '+' : ''}{item.power - comparisonItem.power} Power</span></div>
+          <div className="mb-1 truncate text-[9px] text-[#8f887b]">{ITEM_MAP[comparisonItem.itemId]?.name ?? 'Equipped item'}</div>
+          <div className="grid gap-0.5">
+            {comparisonKeys.map((key) => {
+              const candidate = candidateStats.get(key);
+              const equipped = equippedStats.get(key);
+              const delta = (candidate?.value ?? 0) - (equipped?.value ?? 0);
+              const isPercent = candidate?.isPercent ?? equipped?.isPercent ?? false;
+              return <div key={key} className="flex items-center justify-between text-[10px]"><span className="text-[#9f9789]">{STAT_LABEL[key]}</span><span className={delta > 0 ? 'text-emerald-300' : delta < 0 ? 'text-rose-300' : 'text-slate-300'}>{delta > 0 ? '▲ +' : delta < 0 ? '▼ −' : '= '}{formatStatValue({ key, value: Math.abs(delta), isPercent })}</span></div>;
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="space-y-1">

@@ -94,6 +94,10 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
   const liveSelectedItem = selectedItem
     ? state.inventory.find((item) => item.uid === selectedItem.uid) ?? null
     : null;
+  const liveSelectedBase = liveSelectedItem ? ITEM_MAP[liveSelectedItem.itemId] : null;
+  const comparisonItem = selectedItemSource === 'bag' && selectedHero && liveSelectedBase
+    ? state.inventory.find((item) => item.uid === selectedHero.equipped[liveSelectedBase.slot]) ?? null
+    : null;
   const visiblePotions = POTIONS.filter((p) => state.potions[p.tier] > 0);
   const potionsEmpty = POTIONS.every((potion) => state.potions[potion.tier] <= 0);
   const showAutoPotGuide = potionsEmpty && !state.autoPot.autoBuy;
@@ -456,6 +460,7 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
               item={liveSelectedItem}
               game={game}
               equippedSlot={selectedItemSource === 'hero' ? selectedItemSlot : null}
+              comparisonItem={comparisonItem}
               equipDisabledReason={selectedEquipReason}
               onEquip={selectedItemSource === 'bag' ? (slot) => { if (selectedHero) { game.equipItem(selectedHero.uid, liveSelectedItem.uid, slot); setSelectedItem(null); } } : undefined}
               onUnequip={selectedItemSource === 'hero' && selectedItemSlot ? () => { if (selectedHero) { game.unequipItem(selectedHero.uid, selectedItemSlot); setSelectedItem(null); } } : undefined}
@@ -559,6 +564,7 @@ function TokenEarningsPanel({ status, today, clientPower, eligible }: { status: 
     : serverDaily;
   const rate = daily / 24;
   const pool = status?.pool_amount ?? DAILY_POOL;
+  const poolSharePct = pool > 0 ? (daily / pool) * 100 : 0;
   const fmt = (value: number) => value < 1 ? value.toFixed(3) : formatNum(value);
   const usd = (tokens: number) => {
     const v = tokens * TOKEN_PRICE_USD;
@@ -580,6 +586,7 @@ function TokenEarningsPanel({ status, today, clientPower, eligible }: { status: 
         <>
           <Row label="Per hour" value={`${fmt(rate)} ($ ${usd(rate)})`} valueClass="text-[#7ee787]" />
           <Row label="Per day" value={`${fmt(daily)} ($ ${usd(daily)})`} valueClass="text-[#e5bd68]" />
+          <Row label="Pool share" value={`${poolSharePct.toFixed(poolSharePct < 0.01 ? 4 : 2)}%`} valueClass="text-[#9ed7ff]" />
           <Row label="Today" value={`${formatNum(today)} ($ ${usd(today)})`} valueClass="text-[#ffd36e]" />
           <Row label="Daily pool" value={`${formatNum(pool)} $HERO`} valueClass="text-[#c8b3f0]" />
         </>
