@@ -284,6 +284,10 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
       }
       return equipped !== hero.equipped ? { ...hero, equipped } : hero;
     });
+    const validHeroUids = new Set(sanitizedHeroes.map((hero) => hero.uid));
+    const team = [...new Set(parsed.team ?? [])]
+      .filter((uid): uid is string => typeof uid === 'string' && validHeroUids.has(uid))
+      .slice(0, MAX_TEAM);
     const base = makeInitialState();
     const now = Date.now();
     // reset daily counters
@@ -293,6 +297,7 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
       ...base,
       ...parsed,
       ownedHeroes: sanitizedHeroes,
+      team,
       inventory,
       chests: parsed.chests ?? [],
       bossKeys: parsed.bossKeys ?? 0,
