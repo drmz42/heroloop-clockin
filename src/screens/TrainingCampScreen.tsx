@@ -45,13 +45,14 @@ export function TrainingCampScreen({ game }: { game: Game }) {
   const [sort, setSort] = useState<SortKey>('power');
   const [classFilter, setClassFilter] = useState<'all' | HeroClass>('all');
   const locationId = latestTokenLocation(state.accountLevel, state.highestLocation);
-  const xpPerHour = Math.floor(buildLocation(locationId, 1).xpReward * 300 * 1.6);
+  const baseXpPerHour = Math.floor(buildLocation(locationId, 1).xpReward * 300 * 1.6);
   const trainingHeroCount = state.trainingCamp.heroUids.filter(Boolean).length;
   const currentPenalty = Math.round(trainingTokenPenalty(trainingHeroCount) * 100);
   const firstEmpty = state.trainingCamp.heroUids.findIndex((uid, index) => index < state.trainingCamp.unlockedSlots && !uid);
   const assignmentSlot = selectedSlot !== null && selectedSlot < state.trainingCamp.unlockedSlots && !state.trainingCamp.heroUids[selectedSlot] ? selectedSlot : firstEmpty;
   const activeBoost = state.trainingCamp.boostMultiplier > 1 && state.trainingCamp.boostEndsAt > now;
   const boostTime = formatBoostTime(state.trainingCamp.boostEndsAt - now);
+  const xpPerHour = baseXpPerHour * (activeBoost ? state.trainingCamp.boostMultiplier : 1);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1_000);
@@ -74,10 +75,10 @@ export function TrainingCampScreen({ game }: { game: Game }) {
     <div className="training-camp-screen min-h-full p-4 text-[#ddd4c2] sm:p-5">
       <header className="relative z-10 flex flex-wrap items-end justify-between gap-3">
         <div><div className="section-kicker">Training Grounds</div><h2 className="font-vt text-3xl font-black text-[#f5d88b]">Ironkeep War Camp</h2><p className="mt-1 text-xs text-[#aaa08c]">Prepare reserve heroes at 160% solo XP from Location {locationId}.</p></div>
-        <div className="training-status-row flex flex-wrap gap-2 text-xs font-bold">
-          <span className="game-control"><Swords size={15} /> {xpPerHour.toLocaleString()} XP/h</span>
-          <span className="game-control"><ShieldCheck size={15} /> {trainingHeroCount}/{state.trainingCamp.unlockedSlots} training</span>
-          <span className={`game-control ${activeBoost ? 'text-lime-300' : ''}`}><Clock3 size={15} /> {activeBoost ? `${state.trainingCamp.boostMultiplier}× · ${boostTime}` : 'Normal speed'}</span>
+        <div className={`training-status-row ${activeBoost ? 'training-status-boosted' : ''}`}>
+          <span className="training-status-metric"><Swords size={19} /><span><strong>{xpPerHour.toLocaleString()} XP/h</strong><small>{activeBoost ? `${baseXpPerHour.toLocaleString()} base × ${state.trainingCamp.boostMultiplier}` : 'Current training speed'}</small></span></span>
+          <span className="training-status-metric"><ShieldCheck size={19} /><span><strong>{trainingHeroCount}/{state.trainingCamp.unlockedSlots} training</strong><small>{state.trainingCamp.unlockedSlots - trainingHeroCount} posts available</small></span></span>
+          <span className="training-status-metric"><Clock3 size={19} /><span><strong>{activeBoost ? `${state.trainingCamp.boostMultiplier}× ACTIVE` : 'Normal speed'}</strong><small className="tabular-nums">{activeBoost ? `${boostTime} remaining` : 'No active boost'}</small></span></span>
         </div>
       </header>
 

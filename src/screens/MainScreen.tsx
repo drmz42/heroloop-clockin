@@ -364,7 +364,20 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
         {selectedHero && selectedHeroBase ? (
           <div className="shrink-0 border-b border-[#4f412e] px-3 py-2.5">
             <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="section-kicker">Equipped Gear</span>
+              <div className="flex items-center gap-2">
+                <span className="section-kicker">Equipped Gear</span>
+                <span className="group/set relative">
+                  <button type="button" className={`set-bonus-badge rarity-${selectedSetBonus?.rarity ?? 'common'} ${selectedSetBonus ? 'set-bonus-active' : ''}`} aria-label="Set bonus details">
+                    Set bonus {selectedSetBonus ? `+${selectedSetBonus.percent}%` : '—'}
+                  </button>
+                  <span className="set-bonus-tooltip pointer-events-none absolute left-0 top-full z-50 mt-1 hidden w-64 rounded-lg border border-[#6f5833] bg-[#10120f]/[.98] p-2 text-[9px] leading-4 text-[#bbb2a2] shadow-2xl group-hover/set:block group-focus-within/set:block">
+                    Equip all 8 item slots with one rarity to increase every stat granted by those items.
+                    <span className="mt-1 grid grid-cols-3 gap-1">
+                      {(['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial', 'cursed', 'immortal', 'god'] as const).map((rarity) => <span key={rarity} className={`set-bonus-rarity rarity-${rarity}`} style={{ color: RARITY_COLORS[rarity] }}>{RARITY_LABEL[rarity]} +{SET_BONUS_PERCENT[rarity]}%</span>)}
+                    </span>
+                  </span>
+                </span>
+              </div>
               <div className="flex items-center gap-2"><span className="text-[9px] font-vt font-black" style={{ color: RARITY_COLORS[selectedHeroBase.rarity], textShadow: `0 0 8px ${RARITY_COLORS[selectedHeroBase.rarity]}55` }}>{RARITY_LABEL[selectedHeroBase.rarity]} {CLASS_LABEL[selectedHeroBase.heroClass]}</span><button type="button" onClick={() => { if (canUnequipAll) { game.unequipAll(selectedHero.uid); setSelectedItem(null); showToast('All gear unequipped'); } }} disabled={!canUnequipAll} className="game-control px-2 text-[9px] font-black" title={selectedEquippedCount === 0 ? 'No equipped items' : canUnequipAll ? 'Move all equipped items to Inventory' : 'Not enough Inventory space'}>Unequip All</button></div>
             </div>
             <div className="grid w-full grid-cols-8 gap-1">
@@ -403,17 +416,6 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
             <div className="flex items-center gap-2">
               <span className="section-kicker">Inventory</span>
               <span className="rounded-md border border-[#493e2d] bg-black/25 px-2 py-1 text-[10px] font-bold text-[#8d887d]">{bagItems.length}/{GRID_SIZE}</span>
-              <span className="group/set relative">
-                <button type="button" className={`set-bonus-badge rarity-${selectedSetBonus?.rarity ?? 'common'} ${selectedSetBonus ? 'set-bonus-active' : ''}`} aria-label="Set bonus details">
-                  Set bonus {selectedSetBonus ? `+${selectedSetBonus.percent}%` : '—'}
-                </button>
-                <span className="set-bonus-tooltip pointer-events-none absolute left-0 top-full z-50 mt-1 hidden w-64 rounded-lg border border-[#6f5833] bg-[#10120f]/[.98] p-2 text-[9px] leading-4 text-[#bbb2a2] shadow-2xl group-hover/set:block group-focus-within/set:block">
-                  Equip all 8 item slots with one rarity to increase every stat granted by those items.
-                  <span className="mt-1 grid grid-cols-3 gap-1">
-                    {(['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial', 'cursed', 'immortal', 'god'] as const).map((rarity) => <span key={rarity} className={`set-bonus-rarity rarity-${rarity}`} style={{ color: RARITY_COLORS[rarity] }}>{RARITY_LABEL[rarity]} +{SET_BONUS_PERCENT[rarity]}%</span>)}
-                  </span>
-                </span>
-              </span>
             </div>
             <div className="mt-2 grid min-w-0 grid-cols-4 gap-1">
               <button onClick={() => { game.sortInventory(); showToast('Sorted by rarity'); }} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 text-xs font-bold" title="Sort by rarity"><ArrowUpDown size={12} /> Sort</button>
@@ -584,10 +586,10 @@ function TokenEarningsPanel({ status, today, clientPower, eligible }: { status: 
       </div>
       {status ? (
         <>
-          <Row label="Per hour" value={`${fmt(rate)} ($ ${usd(rate)})`} valueClass="text-[#7ee787]" />
-          <Row label="Per day" value={`${fmt(daily)} ($ ${usd(daily)})`} valueClass="text-[#e5bd68]" />
+          <Row label="Per hour" value={`${fmt(rate)} (${usd(rate)})`} valueClass="text-[#7ee787]" />
+          <Row label="Per day" value={`${fmt(daily)} (${usd(daily)})`} valueClass="text-[#e5bd68]" />
           <Row label="Pool share" value={`${poolSharePct.toFixed(poolSharePct < 0.01 ? 4 : 2)}%`} valueClass="text-[#9ed7ff]" />
-          <Row label="Today" value={`${formatNum(today)} ($ ${usd(today)})`} valueClass="text-[#ffd36e]" />
+          <Row label="Today" value={`${formatNum(today)} (${usd(today)})`} valueClass="text-[#ffd36e]" />
           <Row label="Daily pool" value={`${formatNum(pool)} $HERO`} valueClass="text-[#c8b3f0]" />
         </>
       ) : (
