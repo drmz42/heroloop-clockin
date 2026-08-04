@@ -24,6 +24,7 @@ import { recordBattleTelemetry } from '@/game/balance';
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
 
 const COMBAT_SPEED = 1;
+const COMBAT_RENDER_INTERVAL_MS = 50;
 const ACTIVE_CHEST_SECONDS = 86.4;
 const MAX_TRAINING_OFFLINE_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -189,6 +190,7 @@ export function useGame() {
   const resolvingRef = useRef(false);
   const heroHpRef = useRef<Map<string, number>>(new Map());
   const battleStartedAtRef = useRef(Date.now());
+  const lastCombatRenderRef = useRef(0);
 
   const hydrateServerState = useCallback((remoteState: unknown) => {
     setState(normalizeState(remoteState as Partial<GameState>));
@@ -269,6 +271,7 @@ export function useGame() {
       ...enemyUnits.map((u) => ({ ...u, attackTimer: u.attackInterval })),
     ];
     unitsRef.current = nextUnits;
+    lastCombatRenderRef.current = now;
     battleStartedAtRef.current = now;
     setUnits(nextUnits);
     setBattleResult(null);
@@ -415,7 +418,9 @@ export function useGame() {
             if (!inStock && prev.gold < cost) return prev;
             return { ...prev, gold: prev.gold - cost, potions: { ...prev.potions, [usedTier!]: Math.max(0, prev.potions[usedTier!] - (inStock ? 1 : 0)) } };
           });
-          setUnits((prev) => prev.map((u) => u.uid === hero.uid ? { ...u, hp: Math.min(u.maxHp, u.hp + def.hpRestore) } : u));
+          const healedUnits = unitsRef.current.map((unit) => unit.uid === hero.uid ? { ...unit, hp: Math.min(unit.maxHp, unit.hp + def.hpRestore) } : unit);
+          unitsRef.current = healedUnits;
+          setUnits(healedUnits);
           setFloaters((prev) => [...prev.slice(-20), { id: floaterId.current++, targetUid: hero.uid, value: def.hpRestore, crit: false, heal: true, born: performance.now() }]);
           setPotionFx({ uid: hero.uid, born: performance.now() });
           return;
@@ -505,7 +510,10 @@ export function useGame() {
             if (u.side === 'hero') heroHpRef.current.set(u.uid, u.hp);
           });
           unitsRef.current = finalUnits;
-          setUnits(finalUnits);
+          if (now - lastCombatRenderRef.current >= COMBAT_RENDER_INTERVAL_MS) {
+            lastCombatRenderRef.current = now;
+            setUnits(finalUnits);
+          }
           if (newFloaters.length > 0) setFloaters((prev) => [...prev.slice(-24), ...newFloaters]);
           tryAutoPotion();
         }
@@ -527,8 +535,6 @@ export function useGame() {
     const t = setTimeout(() => spawnBattle(stateRef.current.currentLocation, stateRef.current.team), delay);
     return () => clearTimeout(t);
   }, [battleResult, spawnBattle]);
-
-  useEffect(() => { unitsRef.current = units; }, [units]);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -1272,7 +1278,9 @@ export function useGame() {
     if (st.potions[tier] <= 0) return;
     const def = POTION_MAP[tier];
     setState((prev) => ({ ...prev, potions: { ...prev.potions, [tier]: prev.potions[tier] - 1 } }));
-    setUnits((prev) => prev.map((u) => u.uid === heroUid ? { ...u, hp: Math.min(u.maxHp, u.hp + def.hpRestore) } : u));
+    const healedUnits = unitsRef.current.map((unit) => unit.uid === heroUid ? { ...unit, hp: Math.min(unit.maxHp, unit.hp + def.hpRestore) } : unit);
+    unitsRef.current = healedUnits;
+    setUnits(healedUnits);
     setFloaters((prev) => [...prev.slice(-20), { id: floaterId.current++, targetUid: heroUid, value: def.hpRestore, crit: false, heal: true, born: performance.now() }]);
     setPotionFx({ uid: heroUid, born: performance.now() });
   }, []);

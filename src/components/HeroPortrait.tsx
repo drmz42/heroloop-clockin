@@ -31,19 +31,16 @@ export function HeroPortrait({
   const fallbackSrc = useMemo(() => buildHeroSvg(heroClass, rarity, color), [heroClass, rarity, color]);
 
   const isDead = respawn !== undefined && respawn > 0;
+  const portraitClassName = `hero-portrait-rarity rarity-${rarity} relative shrink-0 flex items-center justify-center rounded-xl overflow-hidden transition-transform active:scale-95 select-none ${className}`;
+  const portraitStyle = {
+    width: size, height: size,
+    border: `2px solid ${active ? rc : rc + '66'}`,
+    boxShadow: active ? `0 0 16px ${glow}, inset 0 0 12px ${glow}` : `0 0 6px ${rc}44`,
+    background: `radial-gradient(circle at 50% 30%, ${color}22, #0a0a14)`,
+  };
 
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`hero-portrait-rarity rarity-${rarity} relative shrink-0 flex items-center justify-center rounded-xl overflow-hidden transition-transform active:scale-95 select-none ${className}`}
-      style={{
-        width: size, height: size,
-        border: `2px solid ${active ? rc : rc + '66'}`,
-        boxShadow: active ? `0 0 16px ${glow}, inset 0 0 12px ${glow}` : `0 0 6px ${rc}44`,
-        background: `radial-gradient(circle at 50% 30%, ${color}22, #0a0a14)`,
-      }}
-    >
+  const content = (
+    <>
       <img
         src={imgError ? fallbackSrc : svgSrc}
         alt=""
@@ -75,6 +72,11 @@ export function HeroPortrait({
       {active && !isDead && (
         <div className="absolute top-0 left-0 w-2.5 h-2.5 rounded-br-lg" style={{ background: rc }} />
       )}
-    </button>
+    </>
   );
+
+  if (onClick) {
+    return <button type="button" onClick={onClick} className={portraitClassName} style={portraitStyle}>{content}</button>;
+  }
+  return <div className={portraitClassName} style={portraitStyle}>{content}</div>;
 }
