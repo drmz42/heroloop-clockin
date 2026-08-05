@@ -8,6 +8,7 @@ import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { HERO_MAP } from '@/game/heroes';
 import { playerSync } from '@/game/backend';
 import { hasBlockedUsernameLanguage } from '@/game/username';
+import { makeRegisteredStarterState } from '@/game/state';
 
 type GameApi = ReturnType<typeof useGame>;
 type StarterId = 'shepherd-common' | 'assassin-common' | 'knight-common' | 'druid-common' | 'archer-common';
@@ -205,7 +206,7 @@ export function LandingScreen({ game }: { game: GameApi }) {
                 Complete community milestones, use $HERO in-game and keep the required balance in your game wallet. Your status is checked continuously.
               </p>
               <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                <Benefit title="2× $HERO mining" text="+100% token earning rate" />
+                <Benefit title="2× mining score" text="A larger share of the same daily pool" />
                 <Benefit title="True 24/7 progress" text="No eight-hour storage cap" />
               </div>
             </div>
@@ -315,9 +316,14 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
     if (!validName || !walletReady || !accountId) return;
     setConnecting(true); setError('');
     try {
-      const account = await accountRequest(playerSync<{ created: boolean; username: string; account_id: string }>('account_register', { username: username.trim() }));
-      if (!account) { setError('Registration failed. Please try again.'); return; }
-      game.setUserProfile(account.username, `game-${account.account_id}`, starter);
+      const registrationState = makeRegisteredStarterState(username.trim(), accountId, starter);
+      const account = await accountRequest(playerSync<{ created: boolean; username: string; account_id: string; state: unknown; revision: number }>('account_register', {
+        username: username.trim(),
+        starter_hero_id: starter,
+        state: registrationState,
+      }));
+      if (!account?.state || !Number.isSafeInteger(account.revision)) { setError('Registration failed. Please try again.'); return; }
+      game.hydrateServerState(account.state);
     } catch {
       setError('Registration failed. Please try again.');
     } finally {

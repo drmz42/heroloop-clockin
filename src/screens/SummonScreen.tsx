@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Sparkles, X } from 'lucide-react';
+import { AlertTriangle, Sparkles, X } from 'lucide-react';
 import { HERO_MAP, RARITY_COLORS, RARITY_GLOW, RARITY_INDEX, RARITY_LABEL, RARITY_WEIGHT } from '@/game/heroes';
 import { summonCostHero, formatNum, MAX_HEROES } from '@/game/state';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
@@ -72,17 +72,64 @@ export function SummonScreen({ game }: { game: GameApi }) {
   const { state } = game;
   const [results, setResults] = useState<OwnedHero[] | null>(null);
   const [promotionNotice, setPromotionNotice] = useState('');
+  const [promoting, setPromoting] = useState(false);
+  const [summonNotice, setSummonNotice] = useState('');
+  const [summoning, setSummoning] = useState<1 | 10 | 100 | null>(null);
   const cost = summonCostHero();
   const singleHasSpace = state.ownedHeroes.length < MAX_HEROES;
   const tenHasSpace = state.ownedHeroes.length + 10 <= MAX_HEROES;
   const hundredHasSpace = state.ownedHeroes.length + 100 <= MAX_HEROES;
-  const canSingle = singleHasSpace;
-  const canTen = tenHasSpace;
-  const canHundred = hundredHasSpace;
-  const doSingle = async () => { const r = await game.summon(); if (r) setResults([r]); };
-  const doTen = async () => { const r = await game.summonTen(); if (r.length > 0) setResults(r); };
-  const doHundred = async () => { const r = await game.summonHundred(); if (r.length > 0) setResults(r); };
-  const promoteAll = async () => { const summary = await game.promoteAllHeroes(); setPromotionNotice(summary.length ? summary.map((entry) => `${entry.heroName} +${entry.starsAdded}★`).join(' · ') : 'No eligible duplicate upgrades'); window.setTimeout(() => setPromotionNotice(''), 3500); };
+  const canSingle = singleHasSpace && state.hero >= cost;
+  const canTen = tenHasSpace && state.hero >= cost * 10;
+  const canHundred = hundredHasSpace && state.hero >= cost * 100;
+  useEffect(() => {
+    if (!game.summonError) return;
+    const safeCode = game.summonError.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
+    const message = game.summonError.includes('insufficient_tokens')
+      ? 'Not enough $HERO in the server balance'
+      : game.summonError.includes('hero_capacity_exceeded')
+        ? 'Hero storage does not have enough free slots'
+        : game.summonError.includes('save_not_found') || game.summonError.includes('player_not_found')
+          ? 'Account save is not synchronized · Refresh the game'
+          : `Summon unavailable · No $HERO was spent · Code: ${safeCode || 'network_error'}`;
+    setSummonNotice(message);
+  }, [game.summonError]);
+  const summonError = (required: number) => setSummonNotice(
+    state.hero < required
+      ? `Not enough $HERO · Need ${formatNum(required - state.hero)} more`
+      : 'Summon is temporarily unavailable · No $HERO was spent',
+  );
+  const doSingle = async () => {
+    if (summoning !== null) return;
+    if (!canSingle) { summonError(cost); return; }
+    setSummoning(1); setSummonNotice('');
+    try { const result = await game.summon(); if (result) setResults([result]); else summonError(cost); }
+    finally { setSummoning(null); }
+  };
+  const doTen = async () => {
+    if (summoning !== null) return;
+    if (!canTen) { summonError(cost * 10); return; }
+    setSummoning(10); setSummonNotice('');
+    try { const result = await game.summonTen(); if (result.length > 0) setResults(result); else summonError(cost * 10); }
+    finally { setSummoning(null); }
+  };
+  const doHundred = async () => {
+    if (summoning !== null) return;
+    if (!canHundred) { summonError(cost * 100); return; }
+    setSummoning(100); setSummonNotice('');
+    try { const result = await game.summonHundred(); if (result.length > 0) setResults(result); else summonError(cost * 100); }
+    finally { setSummoning(null); }
+  };
+  const promoteAll = async () => {
+    if (promoting) return;
+    setPromoting(true);
+    try {
+      const summary = await game.promoteAllHeroes();
+      setPromotionNotice(summary.length ? summary.map((entry) => `${entry.heroName} +${entry.starsAdded}★`).join(' · ') : 'No eligible duplicate upgrades');
+    } finally {
+      setPromoting(false);
+    }
+  };
   const rarities: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
 
   return (
@@ -94,7 +141,7 @@ export function SummonScreen({ game }: { game: GameApi }) {
         <div className="section-kicker">The Obsidian Covenant</div>
         <h2 className="mb-1 mt-1 text-2xl font-black text-white"><span className="text-[#d7a9ff]">Hero</span> Summon</h2>
         <p className="text-slate-400 text-sm max-w-sm mb-1">Summon heroes using $HERO tokens. All heroes are unique and tradeable.</p>
-        <p className="mb-4 flex items-center justify-center gap-1 text-[11px] text-slate-500"><HeroTokenIcon size={12} /> {formatNum(state.hero)} · {state.summons} summons · {state.ownedHeroes.length}/{MAX_HEROES} heroes</p>
+        <p className="mb-4 flex items-center justify-center gap-1 rounded-lg border border-cyan-500/25 bg-cyan-950/15 px-3 py-2 text-[12px] font-black text-cyan-200"><HeroTokenIcon size={15} /> {formatNum(state.hero)} $HERO <span className="font-medium text-slate-500">· {state.summons} summons · {state.ownedHeroes.length}/{MAX_HEROES} heroes</span></p>
 
         <div className="mb-5 flex min-h-[48px] w-full max-w-xl flex-wrap content-center items-center justify-center gap-1.5 text-[9px]">
           {rarities.map(r => <span key={r} className="px-1.5 py-0.5 rounded-full border font-semibold uppercase tracking-wide" style={{ color: RARITY_COLORS[r], borderColor: RARITY_COLORS[r] + '55', background: RARITY_COLORS[r] + '11' }}>{RARITY_LABEL[r]} {RARITY_WEIGHT[r]}%</span>)}
@@ -117,22 +164,23 @@ export function SummonScreen({ game }: { game: GameApi }) {
         <p className="mb-4 max-w-xl rounded-md border border-violet-500/20 bg-violet-950/20 px-3 py-2 text-[9px] leading-relaxed text-[#aaa0b4]"><strong className="text-violet-200">How Pity works:</strong> counters track summons without that rarity or higher. A qualifying hero resets its counter and all lower counters, then the guarantee starts again. Mythic chance begins increasing after 200 misses. Celestial remains a pure rare roll.</p>
 
         <div className="flex w-full max-w-sm flex-col gap-2.5">
-          <button type="button" onClick={doSingle} disabled={!canSingle} className="flex h-[46px] items-center justify-between rounded-xl border border-purple-500/40 bg-gradient-to-r from-purple-600/30 to-blue-600/30 px-5 transition hover:from-purple-600/40 hover:to-blue-600/40 disabled:opacity-40">
-            <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-purple-300" /> {singleHasSpace ? 'Summon x1' : 'Hero storage full'}</span>
+          {summonNotice && <div role="alert" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-red-700/65 bg-[linear-gradient(135deg,rgba(75,16,22,.92),rgba(20,8,12,.96))] px-3 py-2.5 text-left shadow-[inset_0_1px_rgba(255,255,255,.06),0_8px_22px_rgba(0,0,0,.35)]"><AlertTriangle size={17} className="shrink-0 text-red-300" /><span className="flex-1 text-[11px] font-bold text-red-100">{summonNotice}</span><button type="button" onClick={() => setSummonNotice('')} aria-label="Dismiss Summon message" className="rounded p-1 text-red-300 hover:bg-white/10"><X size={14} /></button></div>}
+          <button type="button" onClick={doSingle} disabled={!canSingle || summoning !== null || promoting} className="flex h-[46px] items-center justify-between rounded-xl border border-purple-500/40 bg-gradient-to-r from-purple-600/30 to-blue-600/30 px-5 transition hover:from-purple-600/40 hover:to-blue-600/40 disabled:opacity-40">
+            <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-purple-300" /> {!singleHasSpace ? 'Hero storage full' : state.hero < cost ? `Need ${formatNum(cost - state.hero)} more $HERO` : summoning === 1 ? 'Summoning…' : 'Summon x1'}</span>
             <span className="flex items-center gap-1 text-cyan-300 text-sm font-bold"><HeroTokenIcon size={13} /> {cost}</span>
           </button>
-          <button type="button" onClick={doTen} disabled={!canTen} className="anim-glow flex h-[46px] items-center justify-between rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-600/30 to-purple-600/30 px-5 transition hover:from-amber-600/40 hover:to-purple-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(245,158,11,0.4)' } as React.CSSProperties}>
-            <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-amber-300" /> {tenHasSpace ? 'Summon x10' : 'Need 10 free slots'}</span>
+          <button type="button" onClick={doTen} disabled={!canTen || summoning !== null || promoting} className="anim-glow flex h-[46px] items-center justify-between rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-600/30 to-purple-600/30 px-5 transition hover:from-amber-600/40 hover:to-purple-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(245,158,11,0.4)' } as React.CSSProperties}>
+            <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-amber-300" /> {!tenHasSpace ? 'Need 10 free slots' : state.hero < cost * 10 ? `Need ${formatNum(cost * 10 - state.hero)} more $HERO` : summoning === 10 ? 'Summoning…' : 'Summon x10'}</span>
             <span className="flex items-center gap-1 text-cyan-300 text-sm font-bold"><HeroTokenIcon size={13} /> {cost * 10}</span>
           </button>
-          <button type="button" onClick={doHundred} disabled={!canHundred} className="anim-glow flex h-[46px] items-center justify-between rounded-xl border border-fuchsia-500/40 bg-gradient-to-r from-fuchsia-600/30 to-cyan-600/30 px-5 transition hover:from-fuchsia-600/40 hover:to-cyan-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(217,70,239,0.4)' } as React.CSSProperties}>
-            <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-fuchsia-300" /> {hundredHasSpace ? 'Summon x100' : 'Need 100 free slots'}</span>
+          <button type="button" onClick={doHundred} disabled={!canHundred || summoning !== null || promoting} className="anim-glow flex h-[46px] items-center justify-between rounded-xl border border-fuchsia-500/40 bg-gradient-to-r from-fuchsia-600/30 to-cyan-600/30 px-5 transition hover:from-fuchsia-600/40 hover:to-cyan-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(217,70,239,0.4)' } as React.CSSProperties}>
+            <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-fuchsia-300" /> {!hundredHasSpace ? 'Need 100 free slots' : state.hero < cost * 100 ? `Need ${formatNum(cost * 100 - state.hero)} more $HERO` : summoning === 100 ? 'Summoning…' : 'Summon x100'}</span>
             <span className="flex items-center gap-1 text-cyan-300 text-sm font-bold"><HeroTokenIcon size={13} /> {cost * 100}</span>
           </button>
           <div className="mt-2 h-px bg-gradient-to-r from-transparent via-[#8c6231]/65 to-transparent" />
-          <button type="button" onClick={() => void promoteAll()} className="game-control flex h-[46px] items-center justify-center gap-1.5 px-3 text-[9px] font-black uppercase"><Sparkles size={13} className="text-amber-300" /> Promote all heroes · Free space for Summon</button>
+          <button type="button" disabled={promoting || summoning !== null} onClick={() => void promoteAll()} className="game-control flex h-[46px] items-center justify-center gap-1.5 px-3 text-[9px] font-black uppercase disabled:opacity-55"><Sparkles size={13} className="text-amber-300" /> {promoting ? 'Promoting heroes…' : 'Promote all heroes · Free space for Summon'}</button>
         </div>
-        {promotionNotice && <div className="mt-2 max-w-sm rounded border border-violet-500/50 bg-violet-950/55 px-3 py-2 text-[10px] font-bold text-violet-100">{promotionNotice}</div>}
+        {promotionNotice && <div role="status" className="mt-2 flex max-w-sm items-start gap-2 rounded border border-violet-500/50 bg-violet-950/55 px-3 py-2 text-[10px] font-bold text-violet-100"><span className="flex-1">{promotionNotice}</span><button type="button" onClick={() => setPromotionNotice('')} aria-label="Dismiss promotion result"><X size={13} /></button></div>}
         <p className="mt-4 text-[10px] text-[#7f7887]">Earn $HERO by winning battles in locations.</p>
         </div>
       </div>

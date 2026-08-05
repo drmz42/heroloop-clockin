@@ -156,11 +156,12 @@ html { scroll-behavior: smooth; }
   .rarity-mythic    { --rarity:#be3730;--rarity-rgb:190,55,48;border-color:#be3730 !important;box-shadow:0 0 11px rgba(190,55,48,.22),inset 0 0 18px rgba(190,55,48,.14) !important; }
   .rarity-relic     { border-color:#2dd4bf !important; box-shadow:2px 2px 0 #0f766e !important; }
   .rarity-cursed    { --rarity:#821923;--rarity-rgb:130,25,35;border-color:#821923 !important;box-shadow:inset 0 0 0 1px #240509,0 0 12px rgba(130,25,35,.2) !important; }
-  .rarity-cosmic    { --rarity:#3897bf;--rarity-rgb:56,151,191;border-color:#3897bf !important;box-shadow:0 0 12px rgba(56,151,191,.22),inset 0 0 18px rgba(30,54,96,.24) !important; }
+  .rarity-cosmic    { --rarity:#55e6d0;--rarity-rgb:85,230,208;border-color:#55e6d0 !important;background-image:radial-gradient(circle at 50% 18%,rgba(85,230,208,.13),rgba(40,155,209,.06) 48%,transparent 72%);box-shadow:0 0 18px rgba(85,230,208,.42),inset 0 0 20px rgba(40,155,209,.22) !important;text-shadow:0 0 8px rgba(85,230,208,.68); }
   .rarity-divine    { --rarity:#be5bae;--rarity-rgb:190,91,174;border-color:#d7a25b !important;box-shadow:0 0 13px rgba(190,91,174,.22),inset 0 0 0 1px rgba(215,162,91,.38) !important; }
   .rarity-celestial { --rarity:#73dad6;--rarity-rgb:115,218,214;border-color:#a9efea !important;box-shadow:0 0 14px rgba(115,218,214,.25),inset 0 0 18px rgba(115,218,214,.12) !important; }
   .rarity-immortal  { --rarity:#aca3cd;--rarity-rgb:172,163,205;border-color:#d8dce8 !important;box-shadow:0 0 12px rgba(172,163,205,.24),inset 0 0 0 1px #44356d !important; }
   .rarity-god       { --rarity:#ecd291;--rarity-rgb:236,210,145;border-color:#fff0bd !important;box-shadow:0 0 15px rgba(236,210,145,.28),inset 0 0 0 1px #9c792e !important; }
+  :is([style*="color: rgb(85, 230, 208)"],[style*="color:#55e6d0"],[style*="color: #55e6d0"]) { text-shadow:0 0 8px rgba(85,230,208,.82),0 0 16px rgba(40,155,209,.42); }
 
   .item-slot {
     isolation:isolate;
@@ -376,6 +377,8 @@ html { scroll-behavior: smooth; }
 .premium-hero-card::after { content:'';position:absolute;inset:3px;border:1px solid rgba(var(--rarity-rgb,120,120,120),.16);border-radius:7px;pointer-events:none; }
 .premium-hero-card:hover { transform:translateY(-2px);border-color:color-mix(in srgb,var(--rarity,#8b795d) 75%,#fff); }
 .premium-hero-card-selected { box-shadow:0 0 0 1px #e0b766,0 0 18px rgba(215,166,70,.18),inset 0 1px rgba(255,244,215,.08); }
+.premium-hero-card-active-team { border:2px solid #63e6ab;box-shadow:0 0 0 2px rgba(4,24,16,.95),0 0 0 4px rgba(99,230,171,.5),0 0 24px 4px rgba(52,211,153,.34),inset 0 0 18px rgba(52,211,153,.12); }
+.premium-hero-card-active-team::after { inset:3px;border-color:rgba(167,243,208,.72);box-shadow:inset 0 0 12px rgba(52,211,153,.16); }
 .collection-silhouette { filter:grayscale(1) brightness(.28) contrast(1.1);opacity:.68; }
 .reward-scene { position:relative;overflow:hidden;border:1px solid #7e6337;border-radius:12px;background:radial-gradient(circle at 50% 55%,rgba(209,155,54,.24),transparent 46%),radial-gradient(circle at 72% 20%,rgba(92,67,155,.17),transparent 30%),linear-gradient(160deg,#29251b,#101311 70%);box-shadow:inset 0 1px rgba(255,238,187,.09),inset 0 -18px 35px rgba(0,0,0,.3); }
 .reward-object { animation:reward-orbit 3.6s ease-in-out infinite;filter:drop-shadow(0 5px 8px rgba(0,0,0,.45)); }
@@ -441,7 +444,7 @@ html { scroll-behavior: smooth; }
 @keyframes summon-button-call{0%,100%{box-shadow:0 0 12px color-mix(in srgb,var(--summon-best) 35%,transparent),inset 0 1px rgba(255,255,255,.2)}50%{box-shadow:0 0 28px 5px color-mix(in srgb,var(--summon-best) 55%,transparent),inset 0 1px rgba(255,255,255,.4)}}
 
 @media (prefers-reduced-motion: reduce) {
-  .rarity-legendary.item-slot::after,:is(.hero-portrait-rarity,.premium-hero-card,.item-slot):is(.rarity-legendary,.rarity-mythic,.rarity-cosmic,.rarity-divine,.rarity-celestial,.rarity-cursed,.rarity-immortal,.rarity-god),:is(.hero-portrait-rarity,.item-slot):is(.rarity-mythic,.rarity-cosmic,.rarity-divine,.rarity-celestial,.rarity-cursed,.rarity-immortal,.rarity-god)::after,.reward-cta,.reward-cta::before,.reward-object,.reward-mote,.anim-bob,.anim-glow,.anim-chest,.anim-boost-pulse,.anim-boost-shimmer,.boost-max-active,.boost-max-active::after,.boost-max-ready,.boost-max-ready::after,.boost-progress-active,.boost-progress-active .boost-progress-segment,.summon-wow,.summon-wow::after,.summon-spark,.summon-rune-ring,.summon-portal-mote,.summon-rarity-burst,.summon-rarity-burst::before,.summon-screen-rays,.summon-flash,.summon-card-rays,.summon-card-shine,.summon-rarity-card::before,.summon-ritual-charge,.summon-ritual-charge::before,.summon-ritual-charge::after,.summon-charge-orb,.summon-rupture::after,.summon-card-sealed::before,.summon-card-unseal,.summon-best-banner strong,.summon-break-seal,.auto-pot-guide,.crit-hit-number,.crit-label,.crit-blood { animation:none !important; }
+  .rarity-legendary.item-slot::after,:is(.hero-portrait-rarity,.premium-hero-card,.item-slot):is(.rarity-legendary,.rarity-mythic,.rarity-cosmic,.rarity-divine,.rarity-celestial,.rarity-cursed,.rarity-immortal,.rarity-god),:is(.hero-portrait-rarity,.item-slot):is(.rarity-mythic,.rarity-cosmic,.rarity-divine,.rarity-celestial,.rarity-cursed,.rarity-immortal,.rarity-god)::after,.reward-cta,.reward-cta::before,.reward-object,.reward-mote,.anim-bob,.anim-glow,.anim-chest,.anim-boost-pulse,.anim-boost-shimmer,.boost-max-active,.boost-max-active::after,.boost-max-ready,.boost-max-ready::after,.boost-progress-active,.boost-progress-active .boost-progress-segment,.summon-wow,.summon-wow::after,.summon-spark,.summon-rune-ring,.summon-portal-mote,.summon-rarity-burst,.summon-rarity-burst::before,.summon-screen-rays,.summon-flash,.summon-card-rays,.summon-card-shine,.summon-rarity-card::before,.summon-ritual-charge,.summon-ritual-charge::before,.summon-ritual-charge::after,.summon-charge-orb,.summon-rupture::after,.summon-card-sealed::before,.summon-card-unseal,.summon-best-banner strong,.summon-break-seal,.auto-pot-guide,.crit-hit-number,.crit-label,.crit-blood,.arena-spectacular-atmosphere { animation:none !important; }
   .summon-card-unseal{opacity:1;transform:none}
 }
 
@@ -512,6 +515,12 @@ html { scroll-behavior: smooth; }
 .anim-slash        { animation:slash-fx   .4s ease-out forwards; }
 .anim-heal         { animation:heal-fx    .6s ease-out forwards; }
 .anim-shake        { animation:screen-shake .3s ease-out; }
+.arena-spectacular-atmosphere { background:radial-gradient(circle at 28% 58%,rgba(83,155,255,.13),transparent 28%),radial-gradient(circle at 72% 56%,rgba(255,70,70,.13),transparent 28%),radial-gradient(ellipse at 50% 82%,rgba(246,191,79,.15),transparent 45%);animation:arena-spectacular-breathe 2.4s ease-in-out infinite;mix-blend-mode:screen; }
+.arena-mode-spectacular .arena-portrait { filter:drop-shadow(0 0 10px rgba(245,194,91,.3)); }
+.arena-mode-spectacular .anim-attack-hero,.arena-mode-spectacular .anim-attack-enemy { filter:brightness(1.25) saturate(1.2) drop-shadow(0 0 10px rgba(255,205,104,.5)); }
+.arena-mode-spectacular .anim-hit { filter:brightness(1.35) saturate(1.35) drop-shadow(0 0 12px rgba(255,63,63,.58)); }
+.arena-mode-off .arena-unit,.arena-mode-off .arena-portrait,.arena-mode-off .arena-portrait img { transition:none!important;animation:none!important;transform:none!important; }
+@keyframes arena-spectacular-breathe { 0%,100%{opacity:.55;filter:brightness(.9)}50%{opacity:1;filter:brightness(1.28)} }
 .anim-glow         { animation:glow-gold  1.8s ease-in-out infinite; }
 .anim-boost-pulse   { animation:boost-pulse   2s ease-in-out infinite; }
 .anim-boost-shimmer { animation:boost-shimmer 2.5s ease-in-out infinite; }

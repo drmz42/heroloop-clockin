@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, useMemo, useRef } from 'react';
-import { Package, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Hammer, Sparkles, Info } from 'lucide-react';
+import { Package, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Hammer, Sparkles, Info, Settings2 } from 'lucide-react';
 import { Arena } from '@/components/Arena';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
@@ -44,6 +44,7 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
   const [banner, setBanner] = useState<string | null>(null);
   const [showPotSettings, setShowPotSettings] = useState(false);
+  const [showBattleSettings, setShowBattleSettings] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [showBulkSellConfirm, setShowBulkSellConfirm] = useState(false);
@@ -196,9 +197,6 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
                 ['Attack Speed', formatNum(selectedHeroStats.speed + selectedHeroStats.atkSpeed)],
                 ['Crit', `${(selectedHeroStats.critChance * 100).toFixed(1)}%`],
                 ['Crit Damage', `+${(selectedHeroStats.critDamage * 100).toFixed(0)}%`],
-                ['Heroes', String(state.ownedHeroes.length)],
-                ['Defeated', formatNum(state.totalKills)],
-                ['Bosses', formatNum(state.totalBossKills)],
                 ['XP Bonus', `+${(activeTeamBonuses.xp * 100).toFixed(1)}%`],
                 ['Gold Bonus', `+${(activeTeamBonuses.gold * 100).toFixed(1)}%`],
               ].map(([label, value]) => (
@@ -254,15 +252,28 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
       </div>
 
       {/* ── CENTER COLUMN — responsive, max-width removed ── */}
-      <div className="game-scrollbar order-1 flex min-w-0 flex-1 flex-col overflow-y-auto lg:order-none">
+      <div className="game-scrollbar order-1 flex min-h-[464px] w-full shrink-0 flex-col overflow-hidden lg:order-none lg:min-h-0 lg:w-auto lg:min-w-0 lg:flex-1 lg:overflow-y-auto">
         {/* Arena */}
         <div className="battle-stage relative min-h-[320px] flex-1 overflow-hidden bg-arena">
-          <div className="absolute left-3 top-3 z-30">
-            <button onClick={() => setShowPotSettings(s => !s)} className={`game-control relative flex items-center gap-2 px-3 py-2 font-bold ${state.autoPot.enabled ? 'border-emerald-500/60 bg-emerald-950/30 text-emerald-300' : ''} ${showAutoPotGuide ? 'auto-pot-guide' : ''}`}>
-              <FlaskConical size={16} /> Pot-auto {state.autoPot.enabled ? 'ON' : 'OFF'}
-            </button>
-            {showAutoPotGuide && !showPotSettings && <div className="auto-pot-guide-tip">Potions empty · open Auto-pot</div>}
-            {showPotSettings && <PotionSettings game={game} guideAutoBuy={showAutoPotGuide} onClose={() => setShowPotSettings(false)} />}
+          <div className="absolute left-3 top-3 z-30 flex items-start gap-1.5">
+            <div className="relative">
+              <button onClick={() => setShowPotSettings(s => !s)} className={`game-control relative flex items-center gap-2 px-3 py-2 font-bold ${state.autoPot.enabled ? 'border-emerald-500/60 bg-emerald-950/30 text-emerald-300' : ''} ${showAutoPotGuide ? 'auto-pot-guide' : ''}`}>
+                <FlaskConical size={16} /> Pot-auto {state.autoPot.enabled ? 'ON' : 'OFF'}
+              </button>
+              {showAutoPotGuide && !showPotSettings && <div className="auto-pot-guide-tip">Potions empty · open Auto-pot</div>}
+              {showPotSettings && <PotionSettings game={game} guideAutoBuy={showAutoPotGuide} onClose={() => setShowPotSettings(false)} />}
+            </div>
+            <div className="relative">
+              <button type="button" onClick={() => setShowBattleSettings((value) => !value)} className="game-control flex h-9 items-center gap-1.5 px-2 text-[9px] font-black uppercase" aria-label="Battle animation settings" aria-expanded={showBattleSettings}><Settings2 size={15} /><span className="hidden sm:inline">{state.battleAnimationMode}</span></button>
+              {showBattleSettings && <div className="absolute left-0 top-full mt-1 w-56 rounded-lg border border-[#80683f] bg-[#11130f]/97 p-2 shadow-2xl backdrop-blur-sm">
+                <div className="mb-1.5 text-[9px] font-black uppercase tracking-[.14em] text-[#efd18a]">Battle animation</div>
+                {([
+                  ['light', 'Light', 'Current restrained movement'],
+                  ['spectacular', 'Spectacular', 'Richer local combat effects'],
+                  ['off', 'Off', 'Static units; essential feedback only'],
+                ] as const).map(([mode, label, description]) => <button key={mode} type="button" onClick={() => { game.setBattleAnimationMode(mode); setShowBattleSettings(false); }} className={`mt-1 w-full rounded-md border px-2 py-1.5 text-left ${state.battleAnimationMode === mode ? 'border-amber-400/60 bg-amber-400/12' : 'border-white/10 bg-black/25 hover:border-white/20'}`}><span className="block text-[10px] font-black text-[#e8decd]">{label}</span><span className="block text-[8px] text-[#8f887b]">{description}</span></button>)}
+              </div>}
+            </div>
           </div>
           {banner && (
             <div className="absolute inset-x-0 top-1/4 flex flex-col items-center z-30 pointer-events-none">
@@ -278,7 +289,7 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
             </div>
           )}
           {potionFx && <div key={potionFx.born} className="absolute inset-0 pointer-events-none anim-fade" style={{ background: 'radial-gradient(circle at 50% 70%, rgba(74,222,128,0.15), transparent 60%)' }} />}
-          <Arena units={units} floaters={floaters} ownedHeroes={state.ownedHeroes} inventory={state.inventory} potionFx={potionFx} respawnCountdowns={respawnCountdowns} />
+          <Arena units={units} floaters={floaters} ownedHeroes={state.ownedHeroes} inventory={state.inventory} potionFx={potionFx} respawnCountdowns={respawnCountdowns} animationMode={state.battleAnimationMode} />
           <button
             onClick={handleSummonBoss}
             disabled={state.bossKeys < 1 || state.bossBattleActive}
@@ -306,7 +317,7 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
               {state.tutorial.chestGranted && !state.tutorial.chestCompleted && <span className="chest-tutorial-badge">+1</span>}
             </button>
           </div>
-          <TokenEarningsPanel status={tok.status} today={game.state.tokensEarnedToday} clientPower={ownPower} eligible={canMineTokens(state.currentLocation, state.accountLevel, state.highestLocation)} />
+          <TokenEarningsPanel status={tok.status} today={game.state.tokensEarnedToday} clientPower={ownPower} eligible={canMineTokens(state.currentLocation, state.accountLevel, state.highestLocation)} heroes={state.ownedHeroes.length} defeated={state.totalKills} bosses={state.totalBossKills} />
         </div>
 
         {/* Location cards — redesigned like screenshot 4 */}
@@ -509,13 +520,29 @@ function TestControls({ game }: { game: GameApi }) {
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
+  const [crediting, setCrediting] = useState(false);
   const [done, setDone] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const armed = confirm.toUpperCase() === 'DELETE';
+
+  const creditTokens = async () => {
+    if (crediting) return;
+    setCrediting(true);
+    const result = await playerSync<{ claimed: number; token_balance: number }>('tester_credit_tokens');
+    if (result) game.applyServerTokenClaim(result.claimed, result.token_balance);
+    setCrediting(false);
+  };
 
   const wipe = async () => {
     if (!armed || busy) return;
     setBusy(true);
-    try { await playerSync('account_delete'); } catch { /* ignore */ }
+    setDeleteError('');
+    const deleted = await playerSync<{ deleted: boolean }>('account_delete');
+    if (!deleted?.deleted) {
+      setDeleteError('Account was not deleted. Nothing was removed locally; retry in a moment.');
+      setBusy(false);
+      return;
+    }
     try { await supabase.auth.signOut(); } catch { /* ignore */ }
     try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
     setDone(true);
@@ -527,7 +554,9 @@ function TestControls({ game }: { game: GameApi }) {
       <div className="absolute right-3 top-14 z-40 flex flex-col items-stretch gap-1">
         <span className="test-marker">TESTER</span>
         <button type="button" className="test-btn test-btn-gold" onClick={() => game.creditTestGold(10000)}>+10k Gold</button>
-        <button type="button" className="test-btn test-btn-green" onClick={() => game.creditServerTokens(10000)}>+10k $HERO</button>
+        <button type="button" className="test-btn test-btn-gold" onClick={() => game.creditTestAccountXp(2000)}>+2k Account XP</button>
+        <button type="button" className="test-btn test-btn-gold" onClick={() => game.creditTestFormationXp(2000)}>+2k Formation XP</button>
+        <button type="button" className="test-btn test-btn-green" disabled={crediting} onClick={() => void creditTokens()}>{crediting ? 'Crediting…' : '+10k $HERO'}</button>
         <button type="button" className="test-btn test-btn-reset" onClick={() => setOpen(true)}>Delete account</button>
       </div>
 
@@ -558,6 +587,7 @@ function TestControls({ game }: { game: GameApi }) {
                   onKeyDown={(e) => { if (e.key === 'Enter') void wipe(); }}
                   className="mt-2 w-full rounded-md border border-[#6b3c3a] bg-black/40 px-3 py-2 font-vt text-base text-white outline-none transition focus:border-[#a95650]"
                 />
+                {deleteError && <div role="alert" className="mt-3 rounded border border-red-500/45 bg-red-950/45 px-3 py-2 text-xs text-red-200">{deleteError}</div>}
                 <div className="mt-5 flex justify-between gap-2">
                   <button type="button" className="game-control px-4 py-2" disabled={busy} onClick={() => setOpen(false)}>Cancel</button>
                   <button type="button" className="game-control game-danger px-4 py-2 font-bold" disabled={!armed || busy} onClick={() => void wipe()}>
@@ -573,7 +603,7 @@ function TestControls({ game }: { game: GameApi }) {
   );
 }
 
-function TokenEarningsPanel({ status, today, clientPower, eligible }: { status: TokenomicsStatus | null; today: number; clientPower: number; eligible: boolean }) {
+function TokenEarningsPanel({ status, today, clientPower, eligible, heroes, defeated, bosses }: { status: TokenomicsStatus | null; today: number; clientPower: number; eligible: boolean; heroes: number; defeated: number; bosses: number }) {
   const TOKEN_PRICE_USD = 0.001;
   const DAILY_POOL = 20_000;
   // Display shares are mirrored client-side using the same efficiency share so
@@ -600,7 +630,11 @@ function TokenEarningsPanel({ status, today, clientPower, eligible }: { status: 
     </div>
   );
   return (
-    <div className="token-earnings-panel absolute bottom-3 left-3 z-30 flex flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 font-vt shadow-[0_0_34px_rgba(229,177,70,.4)]" style={{ transform: 'scale(0.7)', transformOrigin: 'left bottom' }}>
+    <div className="absolute bottom-3 left-3 z-30 flex origin-bottom-left scale-[.7] flex-col gap-2 font-vt">
+      <div className="grid grid-cols-3 gap-2 rounded-2xl border-2 border-[#80683f] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_24px_rgba(128,104,63,.28)]">
+        {[['Heroes', heroes], ['Defeated', defeated], ['Bosses', bosses]].map(([label, value]) => <div key={label} className="min-w-[92px] text-center"><span className="block text-[11px] font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span><strong className="mt-1 block text-[16px] tabular-nums text-[#e8dfc8]">{formatNum(Number(value))}</strong></div>)}
+      </div>
+      <div className="token-earnings-panel flex flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_34px_rgba(229,177,70,.4)]">
       <div className="flex items-center gap-2">
         <HeroTokenIcon size={22} />
         <span className="text-[15px] font-black uppercase tracking-[.14em] text-[#ffd36e]">$HERO Income</span>
@@ -616,6 +650,7 @@ function TokenEarningsPanel({ status, today, clientPower, eligible }: { status: 
       ) : (
         <span className="text-[12px] font-semibold text-[#9a937f]">Syncing token pool…</span>
       )}
+      </div>
     </div>
   );
 }

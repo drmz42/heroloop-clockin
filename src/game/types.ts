@@ -294,6 +294,7 @@ export interface GameState {
   chests: Chest[];
   bossKeys: number;
   bossBattleActive: boolean;
+  battleAnimationMode: 'light' | 'spectacular' | 'off';
   chestsOpenedToday: number;
   lastChestReset: number;       // date timestamp for daily chest cap reset
   currentLocation: number;

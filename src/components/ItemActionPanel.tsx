@@ -33,6 +33,8 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
   const charmCost = enchantCharmCost(item.enchantLevel);
   const canEnchant = item.enchantLevel < 10;
   const rCost = rerollCost(base.rarity, item.rerollCount);
+  const rerollAffordable = game.state.hero >= rCost;
+  const ringSlot = !equippedSlot && onEquip && (base.slot === 'ring1' || base.slot === 'ring2');
   const candidateStats = new Map(enchantedStats(item.stats, item.enchantLevel).map((stat) => [stat.key, stat]));
   const equippedStats = new Map((comparisonItem ? enchantedStats(comparisonItem.stats, comparisonItem.enchantLevel) : []).map((stat) => [stat.key, stat]));
   const comparisonKeys = [...new Set([...candidateStats.keys(), ...equippedStats.keys()])] as ItemStatKey[];
@@ -81,32 +83,43 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
 
       {/* Actions */}
       <div className="space-y-1">
-        {/* Equip / Unequip */}
-        {equippedSlot ? (
-          <button onClick={onUnequip} className="flex w-full items-center justify-center gap-1 rounded-md border border-sky-500/30 bg-sky-500/10 py-1 text-[10px] font-bold text-sky-300 transition hover:bg-sky-500/20">
-            <ArrowUp size={13} className="rotate-180" /> Unequip from {SLOT_LABEL[equippedSlot]}
-          </button>
-        ) : onEquip && (
-          <div className="grid grid-cols-2 gap-1.5">
-            {equipDisabledReason && <div className="col-span-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-2 py-1.5 text-center text-[10px] font-bold text-amber-200">{equipDisabledReason}</div>}
-            {(base.slot === 'ring1' || base.slot === 'ring2')
-              ? <>
-                <button disabled={Boolean(equipDisabledReason)} onClick={() => onEquip('ring1')} className="flex items-center justify-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 py-1 text-[10px] font-bold text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40"><ArrowUp size={11} /> Ring 1</button>
-                <button disabled={Boolean(equipDisabledReason)} onClick={() => onEquip('ring2')} className="flex items-center justify-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 py-1 text-[10px] font-bold text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40"><ArrowUp size={11} /> Ring 2</button>
-              </>
-              : <button disabled={Boolean(equipDisabledReason)} onClick={() => onEquip(base.slot)} className="col-span-2 flex items-center justify-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 py-1 text-[10px] font-bold text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40"><ArrowUp size={11} /> Equip {SLOT_LABEL[base.slot]}</button>
-            }
-          </div>
-        )}
+        {equipDisabledReason && <div className="rounded-md border border-amber-500/25 bg-amber-500/10 px-2 py-1 text-center text-[9px] font-bold text-amber-200">{equipDisabledReason}</div>}
 
-        <div className="grid grid-cols-2 gap-1.5">
-          {canEnchant && (
-            <button onClick={() => setShowEnchant(s => !s)} className="flex items-center justify-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-1 py-1 text-[10px] font-bold text-amber-300 transition hover:bg-amber-500/20">
-              <ArrowUp size={12} /> Enchant +{item.enchantLevel + 1} · {Math.round(enchChance * 100)}%
+        <div className={`grid gap-1 ${ringSlot ? 'grid-cols-6' : 'grid-cols-5'}`}>
+          {equippedSlot ? (
+            <button onClick={onUnequip} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-sky-500/30 bg-sky-500/10 px-0.5 text-[8px] font-black text-sky-300 transition hover:bg-sky-500/20" title={`Unequip from ${SLOT_LABEL[equippedSlot]}`}>
+              <ArrowUp size={13} className="rotate-180" /><span className="mt-0.5">Unequip</span>
             </button>
-          )}
-          <button onClick={() => setShowReroll(s => !s)} className={`${canEnchant ? '' : 'col-span-2'} flex items-center justify-center gap-1 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-1 py-1 text-[10px] font-bold text-cyan-300 transition hover:bg-cyan-500/20`}>
-            <Dice5 size={12} /> Reroll · <HeroTokenIcon size={10} /> {rCost}
+          ) : ringSlot ? <>
+            <button disabled={Boolean(equipDisabledReason)} onClick={() => onEquip('ring1')} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-0.5 text-[8px] font-black text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={equipDisabledReason || 'Equip in Ring 1'}><ArrowUp size={12} /><span className="mt-0.5">Ring 1</span></button>
+            <button disabled={Boolean(equipDisabledReason)} onClick={() => onEquip('ring2')} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-0.5 text-[8px] font-black text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={equipDisabledReason || 'Equip in Ring 2'}><ArrowUp size={12} /><span className="mt-0.5">Ring 2</span></button>
+          </> : onEquip ? (
+            <button disabled={Boolean(equipDisabledReason)} onClick={() => onEquip(base.slot)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-0.5 text-[8px] font-black text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={equipDisabledReason || `Equip ${SLOT_LABEL[base.slot]}`}><ArrowUp size={12} /><span className="mt-0.5">Equip</span></button>
+          ) : <div />}
+
+          <button disabled={!canEnchant} onClick={() => setShowEnchant(s => !s)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 px-0.5 text-center text-[8px] font-black text-amber-300 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={canEnchant ? `Enchant +${item.enchantLevel + 1}: ${Math.round(enchChance * 100)}% chance, ${formatNum(enchGold)} Gold` : 'Maximum enchant +10'}>
+            <ArrowUp size={12} /><span className="mt-0.5">{canEnchant ? `Enchant +${item.enchantLevel + 1}` : 'Max +10'}</span>{canEnchant && <span className="text-[7px] font-bold text-amber-100/70">{Math.round(enchChance * 100)}% · {formatNum(enchGold)} G</span>}
+          </button>
+
+          <button disabled={!rerollAffordable} onClick={() => setShowReroll(s => !s)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 px-0.5 text-[8px] font-black text-cyan-300 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={rerollAffordable ? `Reroll for ${rCost} $HERO` : `Need ${rCost - game.state.hero} more $HERO`}>
+            <Dice5 size={12} /><span className="mt-0.5">Reroll</span><span className="flex items-center gap-0.5 text-[7px] font-bold text-cyan-100/70"><HeroTokenIcon size={8} /> {rCost}</span>
+          </button>
+
+          <div className="relative min-w-0">
+            <button disabled={item.locked} onClick={() => setShowSellConfirm((value) => !value)} className="flex min-h-12 w-full min-w-0 flex-col items-center justify-center rounded-md border border-rose-500/30 bg-rose-500/10 px-0.5 text-[8px] font-black text-rose-300 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={item.locked ? 'Unlock item before selling' : `Sell for ${formatNum(refund)} Gold`}>
+              <Trash2 size={12} /><span className="mt-0.5">Sell</span><span className="text-[7px] font-bold text-rose-100/70">{formatNum(refund)} G</span>
+            </button>
+            {showSellConfirm && <div className="item-sell-confirm absolute bottom-full right-0 z-30 mb-1 w-44 rounded-md border border-[#80502d] p-2 text-left shadow-xl">
+              <p className="text-[9px] font-bold text-[#ead9bf]">Sell for {formatNum(refund)} Gold?</p>
+              <div className="mt-1.5 grid grid-cols-2 gap-1">
+                <button type="button" onClick={() => setShowSellConfirm(false)} className="game-control py-1 text-[9px] font-bold">Cancel</button>
+                <button type="button" onClick={async () => { if (!onBeforeSell || await onBeforeSell(item)) { game.sellItem(item.uid); onClose(); } }} className="rounded border border-rose-500/45 bg-rose-500/15 py-1 text-[9px] font-black text-rose-200">Sell</button>
+              </div>
+            </div>}
+          </div>
+
+          <button onClick={() => game.toggleItemLock(item.uid)} className={`flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border px-0.5 text-[8px] font-black ${item.locked ? 'border-amber-500/40 bg-amber-500/15 text-amber-200' : 'border-white/10 bg-slate-800 text-slate-300'}`} title={item.locked ? 'Unlock item' : 'Lock item'}>
+            {item.locked ? <Lock size={12} /> : <Unlock size={12} className="text-slate-400" />}<span className="mt-0.5">{item.locked ? 'Unlock' : 'Lock'}</span>
           </button>
         </div>
 
@@ -139,32 +152,13 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
             <button
               type="button"
               onClick={() => { game.rerollItem(item.uid); setShowReroll(false); }}
+              disabled={!rerollAffordable}
               className="w-full py-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-bold hover:bg-cyan-500/25 disabled:opacity-40 transition"
             >
-              Reroll for {rCost} $HERO
+              {rerollAffordable ? `Reroll for ${rCost} $HERO` : `Need ${rCost - game.state.hero} more $HERO`}
             </button>
           </div>
         )}
-
-        {/* Sell + Lock */}
-        <div className="grid grid-cols-2 gap-1.5">
-          <div className="relative">
-            <button onClick={() => setShowSellConfirm((value) => !value)} className="flex w-full items-center justify-center gap-1 rounded-md border border-rose-500/30 bg-rose-500/10 py-1 text-[10px] font-bold text-rose-300 transition hover:bg-rose-500/20">
-              <Trash2 size={11} /> Sell {formatNum(refund)}
-            </button>
-            {showSellConfirm && <div className="item-sell-confirm absolute bottom-full left-0 z-30 mb-1 w-44 rounded-md border border-[#80502d] p-2 text-left shadow-xl">
-              <p className="text-[9px] font-bold text-[#ead9bf]">Sell for {formatNum(refund)} Gold?</p>
-              <div className="mt-1.5 grid grid-cols-2 gap-1">
-                <button type="button" onClick={() => setShowSellConfirm(false)} className="game-control py-1 text-[9px] font-bold">Cancel</button>
-                <button type="button" onClick={async () => { if (!onBeforeSell || await onBeforeSell(item)) { game.sellItem(item.uid); onClose(); } }} className="rounded border border-rose-500/45 bg-rose-500/15 py-1 text-[9px] font-black text-rose-200">Sell</button>
-              </div>
-            </div>}
-          </div>
-          <button onClick={() => game.toggleItemLock(item.uid)} className={`flex items-center justify-center gap-1 rounded-md border py-1 text-[10px] font-bold ${item.locked ? 'border-amber-500/40 bg-amber-500/15 text-amber-200' : 'border-white/10 bg-slate-800 text-slate-300'}`} title={item.locked ? 'Unlock' : 'Lock'}>
-            {item.locked ? <Lock size={11} /> : <Unlock size={11} className="text-slate-400" />}
-            {item.locked ? 'Unlock' : 'Lock'}
-          </button>
-        </div>
       </div>
     </div>
   );

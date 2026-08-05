@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey } from '@/game/types';
 import {
-  loadState, normalizeState, makeInitialState, genUid, starUpCost, summonCostHero,
+  loadState, saveLegacyState, normalizeState, makeInitialState, makeRegisteredStarterState, genUid, starUpCost, summonCostHero,
   MAX_TEAM, MAX_HEROES, MAX_HERO_STARS, MAX_INVENTORY, MAX_CHESTS, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
   accountLevelFromXp, advanceHeroXp, heroSellValue, milestoneQuest, moscowDayKey,
   heroXpForLevel, TRAINING_SLOT_COSTS, TRAINING_BOOST_COSTS,
@@ -180,6 +180,7 @@ export function useGame() {
   const [enchantResult, setEnchantResult] = useState<{ success: boolean; item?: OwnedItem } | null>(null);
   const [hydrationVersion, setHydrationVersion] = useState(0);
   const [summonPity, setSummonPity] = useState({ legendary: 0, mythic: 0, cosmic: 0, divine: 0 });
+  const [summonError, setSummonError] = useState('');
   const [serverRevisionHint, setServerRevisionHint] = useState<number | null>(null);
 
   const stateRef = useRef(state); stateRef.current = state;
@@ -191,6 +192,7 @@ export function useGame() {
   const heroHpRef = useRef<Map<string, number>>(new Map());
   const battleStartedAtRef = useRef(Date.now());
   const lastCombatRenderRef = useRef(0);
+  const offlineSettlementKeyRef = useRef('');
 
   const hydrateServerState = useCallback((remoteState: unknown) => {
     setState(normalizeState(remoteState as Partial<GameState>));
@@ -271,7 +273,7 @@ export function useGame() {
       ...enemyUnits.map((u) => ({ ...u, attackTimer: u.attackInterval })),
     ];
     unitsRef.current = nextUnits;
-    lastCombatRenderRef.current = now;
+    lastCombatRenderRef.current = performance.now();
     battleStartedAtRef.current = now;
     setUnits(nextUnits);
     setBattleResult(null);
@@ -497,11 +499,13 @@ export function useGame() {
             return u;
           });
           const rewardLocation = buildLocation(stateRef.current.currentLocation, stateRef.current.team.length, stateRef.current.bossBattleActive);
-          finalUnits.forEach((unit) => {
+          const finalHeroes = finalUnits.filter((fighter) => fighter.side === 'hero');
+          const finalEnemies = finalUnits.filter((fighter) => fighter.side === 'enemy');
+          finalEnemies.forEach((unit, lane) => {
             const previous = live.find((candidate) => candidate.uid === unit.uid);
             if (unit.side === 'enemy' && previous?.alive && !unit.alive) {
               newFloaters.push({
-                id: floaterId.current++, targetUid: unit.uid, value: 0, crit: false, heal: false,
+                id: floaterId.current++, targetUid: finalHeroes[lane]?.uid ?? unit.uid, value: 0, crit: false, heal: false,
                 rewardGold: rewardLocation.goldReward, rewardXp: rewardLocation.xpReward, born: now,
               });
             }
@@ -574,7 +578,7 @@ export function useGame() {
         const earned = Math.floor(progress / ACTIVE_CHEST_SECONDS);
         const remainder = progress % ACTIVE_CHEST_SECONDS;
         if (earned === 0) {
-          return { ...base, boost: { ...base.boost, chestProgressSeconds: progress } };
+          return { ...base, lastSeen: now, boost: { ...base.boost, chestProgressSeconds: progress } };
         }
         const available = Math.max(0, MAX_CHESTS - base.chests.length);
         const dailyAvailable = Math.max(0, MAX_CHESTS_PER_DAY - base.chestsOpenedToday);
@@ -584,6 +588,7 @@ export function useGame() {
           : base.chests;
         return {
           ...base,
+          lastSeen: now,
           chests,
           chestsOpenedToday: base.chestsOpenedToday + awarded,
           boost: { ...base.boost, chestProgressSeconds: remainder },
@@ -608,14 +613,15 @@ export function useGame() {
       const now = Date.now();
       const elapsed = Math.min(7 * 24 * 60 * 60, Math.max(0, (Date.now() - hiddenSince) / 1000));
       hiddenSince = null;
-      if (elapsed < 12) return;
       setState((prev) => {
-        if (!prev.walletAddress || prev.team.length === 0) return prev;
+        if (!prev.walletAddress) return prev;
         const dayChanged = moscowDayKey(prev.lastChestReset) !== moscowDayKey(now);
         const base = dayChanged ? { ...prev, chestsOpenedToday: 0, lastChestReset: now } : prev;
+        if (base.team.length === 0) return { ...base, lastSeen: now };
+        if (elapsed < 12) return { ...base, lastSeen: now };
         const activeSeconds = base.boost.active ? elapsed : Math.min(elapsed, Math.max(0, (base.activeUntil - (now - elapsed * 1000)) / 1000));
         const battles = Math.floor(activeSeconds / 12);
-        if (activeSeconds <= 0 || battles <= 0) return base;
+        if (activeSeconds <= 0 || battles <= 0) return { ...base, lastSeen: now };
         const loc = buildLocation(base.currentLocation, base.team.length);
         const teamBonuses = base.team.reduce((acc, uid) => {
           const hero = base.ownedHeroes.find((candidate) => candidate.uid === uid);
@@ -640,6 +646,7 @@ export function useGame() {
         const dayKey = moscowDayKey();
         return {
           ...base,
+          lastSeen: now,
           gold: base.gold + gold,
           totalGoldEarned: base.totalGoldEarned + gold,
           hero: base.hero + tokens,
@@ -676,13 +683,17 @@ export function useGame() {
 
   const [offlineEarnings, setOfflineEarnings] = useState<{ gold: number; seconds: number; tokens?: number; chests?: number; xp?: number } | null>(null);
   useEffect(() => {
+    if (tokenomicsEnabled && hydrationVersion === 0) return;
     const st = stateRef.current;
     if (!st.walletAddress) return;
     const prev = st.lastSeen;
     const now = Date.now();
+    const settlementKey = `${st.walletAddress}:${prev}:${hydrationVersion}`;
+    if (offlineSettlementKeyRef.current === settlementKey) return;
+    offlineSettlementKeyRef.current = settlementKey;
     const elapsed = Math.max((now - prev) / 1000, 0);
     const activeElapsed = st.boost.active ? elapsed : Math.min(elapsed, Math.max(0, (st.activeUntil - prev) / 1000));
-    if (activeElapsed > 30) {
+    if (activeElapsed > 30 && st.team.length > 0) {
       const loc = buildLocation(st.currentLocation, st.team.length);
       const battles = Math.floor(activeElapsed / 12);
       const teamBonuses = st.team.reduce((acc, uid) => {
@@ -704,16 +715,20 @@ export function useGame() {
         Math.max(0, MAX_CHESTS_PER_DAY - st.chestsOpenedToday),
       );
       const kills = battles * loc.enemies.length;
+      const dayKey = moscowDayKey(now);
       setState((p) => ({
           ...p,
+          lastSeen: now,
           gold: p.gold + gold,
           totalGoldEarned: p.totalGoldEarned + gold,
           hero: p.hero + tokens,
           totalTokensEarned: p.totalTokensEarned + tokens,
-          tokensEarnedToday: p.tokensEarnedToday + tokens,
+          tokensEarnedToday: (p.tokenDayKey === dayKey ? p.tokensEarnedToday : 0) + tokens,
+          tokenDayKey: dayKey,
           accountXp: p.accountXp + accountXp,
           accountLevel: accountLevelFromXp(p.accountXp + accountXp),
           totalKills: p.totalKills + kills,
+          session: { ...p.session, kills: p.session.kills + kills },
           ownedHeroes: p.ownedHeroes.map((h) => {
             if (!p.team.includes(h.uid)) return h;
             const leveled = advanceHeroXp(h.level, h.xp, heroXp);
@@ -722,11 +737,18 @@ export function useGame() {
           chests: chests > 0 ? [...p.chests, ...Array.from({ length: chests }, (_, i) => ({ id: `active-offline-${now}-${i}`, stage: p.currentLocation }))] : p.chests,
           chestsOpenedToday: p.chestsOpenedToday + chests,
           boost: { ...p.boost, chestProgressSeconds: chestProgress >= ACTIVE_CHEST_SECONDS ? chestProgress % ACTIVE_CHEST_SECONDS : chestProgress },
-          milestoneQuests: updateQuestProgress(updateQuestProgress(p.milestoneQuests, 'gold-earned-', gold), 'token-earned-', tokens),
+          dailyQuests: updateQuestProgress(p.dailyQuests, 'kill-', kills),
+          milestoneQuests: updateQuestProgress(
+            updateQuestProgress(updateQuestProgress(p.milestoneQuests, 'kill-', kills), 'gold-earned-', gold),
+            'token-earned-',
+            tokens,
+          ),
         }));
       setOfflineEarnings({ gold, seconds: activeElapsed, tokens: tokens || undefined, chests: chests || undefined, xp: accountXp || undefined });
+    } else {
+      setState((p) => p.lastSeen === prev ? { ...p, lastSeen: now } : p);
     }
-  }, []);
+  }, [hydrationVersion, state.walletAddress]);
 
   // ── Actions ──────────────────────────────────────────────────────────────
 
@@ -734,6 +756,27 @@ export function useGame() {
     const safeAmount = Math.max(0, Math.floor(amount));
     if (safeAmount <= 0) return;
     setState((prev) => ({ ...prev, gold: prev.gold + safeAmount, totalGoldEarned: prev.totalGoldEarned + safeAmount }));
+  }, []);
+
+  const creditTestAccountXp = useCallback((amount: number) => {
+    const safeAmount = Math.max(0, Math.floor(amount));
+    if (safeAmount <= 0) return;
+    setState((prev) => ({ ...prev, accountXp: prev.accountXp + safeAmount, accountLevel: accountLevelFromXp(prev.accountXp + safeAmount) }));
+  }, []);
+
+  const creditTestFormationXp = useCallback((amount: number) => {
+    const safeAmount = Math.max(0, Math.floor(amount));
+    if (safeAmount <= 0) return;
+    setState((prev) => ({
+      ...prev,
+      ownedHeroes: prev.ownedHeroes.map((hero) => {
+        if (!prev.team.includes(hero.uid) || hero.level >= prev.accountLevel) return hero;
+        const advanced = advanceHeroXp(hero.level, hero.xp, safeAmount);
+        return advanced.level >= prev.accountLevel
+          ? { ...hero, level: prev.accountLevel, xp: 0 }
+          : { ...hero, level: advanced.level, xp: advanced.remaining };
+      }),
+    }));
   }, []);
 
   const creditServerTokens = useCallback((amount: number) => {
@@ -794,6 +837,7 @@ export function useGame() {
 
   const settleServerSummon = useCallback(async (count: 1 | 10 | 100) => {
     if (!tokenomicsEnabled) return null;
+    setSummonError('');
     const result = await playerSync<{
       heroes: OwnedHero[];
       token_balance: number;
@@ -802,10 +846,16 @@ export function useGame() {
       pity_mythic: number;
       pity_cosmic: number;
       pity_divine: number;
-    }>('hero_summon', { count, idempotency_key: createIdempotencyKey() });
-    if (!result || !Array.isArray(result.heroes) || result.heroes.length !== count) return null;
+    }>('hero_summon', { count, idempotency_key: createIdempotencyKey() }, setSummonError);
+    if (!result || !Array.isArray(result.heroes) || result.heroes.length !== count) {
+      if (result) setSummonError('invalid_server_response');
+      return null;
+    }
     const heroes = result.heroes.filter((hero) => hero && typeof hero.uid === 'string' && Boolean(HERO_MAP[hero.heroId]));
-    if (heroes.length !== count) return null;
+    if (heroes.length !== count) {
+      setSummonError('invalid_server_hero');
+      return null;
+    }
     setSummonPity({
       legendary: Math.max(0, Math.floor(result.pity_legendary)),
       mythic: Math.max(0, Math.floor(result.pity_mythic)),
@@ -888,24 +938,19 @@ export function useGame() {
     const st = stateRef.current;
     let heroes = [...st.ownedHeroes];
     if (tokenomicsEnabled) {
-      const latest = await playerSync<{ state: unknown; revision: number }>('game_state_load');
-      if (!latest?.state) return [];
-      const authoritative = normalizeState(latest.state as Partial<GameState>);
-      if (Number.isSafeInteger(latest.revision)) setServerRevisionHint(latest.revision);
-      heroes = [...authoritative.ownedHeroes];
-      let balance = authoritative.hero;
+      let balance = st.hero;
       let spent = 0;
       const promoted = new Map<string, PromotionSummary>();
       const heroIds = [...new Set(heroes.map((hero) => hero.heroId))];
       for (const heroId of heroIds) {
         while (true) {
           const ranked = heroes.filter((hero) => hero.heroId === heroId).map((hero, index) => ({
-            hero, index, power: teamPower([hero], authoritative.inventory),
+            hero, index, power: teamPower([hero], st.inventory),
           })).sort((a, b) => b.power - a.power || b.hero.level - a.hero.level || b.hero.stars - a.hero.stars || a.index - b.index);
           const target = ranked.find(({ hero }) => hero.stars < MAX_HERO_STARS)?.hero;
           if (!target) break;
           const cost = starUpCost(target.stars);
-          const duplicateCount = ranked.filter(({ hero }) => hero.uid !== target.uid && hero.stars === 0 && !hero.locked && !authoritative.team.includes(hero.uid) && !authoritative.trainingCamp.heroUids.includes(hero.uid)).length;
+          const duplicateCount = ranked.filter(({ hero }) => hero.uid !== target.uid && hero.stars === 0 && !hero.locked && !st.team.includes(hero.uid) && !st.trainingCamp.heroUids.includes(hero.uid)).length;
           if (duplicateCount < cost.dupes) break;
           const settled = await settleServerAscension(target.uid, true);
           if (!settled) break;
@@ -917,16 +962,13 @@ export function useGame() {
         }
       }
       const summary = [...promoted.values()];
-      if (summary.length === 0) {
-        setState(authoritative);
-        return [];
-      }
-      setState({
-        ...authoritative,
+      if (summary.length === 0) return [];
+      setState((prev) => ({
+        ...prev,
         hero: balance,
         ownedHeroes: heroes,
-        milestoneQuests: updateQuestProgress(authoritative.milestoneQuests, 'token-spent-', spent),
-      });
+        milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'token-spent-', spent),
+      }));
       return summary;
     }
     let available = tokenomicsEnabled ? Number.MAX_SAFE_INTEGER : st.hero;
@@ -1289,6 +1331,10 @@ export function useGame() {
     setState((prev) => ({ ...prev, autoPot: { ...prev.autoPot, ...cfg } }));
   }, []);
 
+  const setBattleAnimationMode = useCallback((mode: GameState['battleAnimationMode']) => {
+    setState((prev) => ({ ...prev, battleAnimationMode: mode }));
+  }, []);
+
   const setTrainingHero = useCallback((slot: number, heroUid: string | null): boolean => {
     const st = stateRef.current;
     if (slot < 0 || slot >= st.trainingCamp.unlockedSlots) return false;
@@ -1376,7 +1422,10 @@ export function useGame() {
     setState((prev) => ({
       ...prev,
       chests: prev.chests.slice(openCount),
-      inventory: [...prev.inventory, ...results.map((item) => shouldAutoLockItem(item, prev) ? { ...item, locked: true } : item)],
+      inventory: [...prev.inventory, ...results.map((item) => shouldAutoLockItem(item, prev) ? { ...item, locked: true } : item)].sort((a, b) => {
+        const rarityDelta = RARITY_INDEX[ITEM_MAP[b.itemId]?.rarity ?? 'common'] - RARITY_INDEX[ITEM_MAP[a.itemId]?.rarity ?? 'common'];
+        return rarityDelta || b.power - a.power;
+      }),
       session: { ...prev.session, chestsOpened: prev.session.chestsOpened + openCount },
       dailyQuests: updateQuestProgress(prev.dailyQuests, 'chest-', openCount),
       milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'chest-', openCount),
@@ -1422,20 +1471,12 @@ export function useGame() {
 
   const setUserProfile = useCallback((username: string, walletAddress: string, starterHeroId?: string) => {
     setState((prev) => {
-      if (!starterHeroId || prev.ownedHeroes.length !== 1) return { ...prev, username, walletAddress, activeUntil: Date.now() + ACTIVE_SESSION_MS, lastSeen: Date.now() };
-      const currentStarter = prev.ownedHeroes[0];
-      const starter = { ...currentStarter, heroId: starterHeroId };
-      return {
-        ...prev,
-        username,
-        walletAddress,
-        activeUntil: Date.now() + ACTIVE_SESSION_MS,
-        lastSeen: Date.now(),
-        ownedHeroes: [starter],
-        team: [starter.uid],
-        avatarHeroId: starterHeroId,
-        tutorial: { ...prev.tutorial, welcomeCompleted: false },
-      };
+      if (!starterHeroId) return { ...prev, username, walletAddress, activeUntil: Date.now() + ACTIVE_SESSION_MS, lastSeen: Date.now() };
+      const registeredState = makeRegisteredStarterState(username, walletAddress, starterHeroId);
+      // The new page instance imports this exact profile into player_saves,
+      // then removes the temporary browser copy after server confirmation.
+      saveLegacyState(registeredState);
+      return registeredState;
     });
   }, []);
 
@@ -1568,17 +1609,17 @@ export function useGame() {
   }, []);
 
   return {
-    state, hydrationVersion, summonPity, serverRevisionHint, units, floaters, battleResult, autoProgress, paused,
+    state, hydrationVersion, summonPity, summonError, serverRevisionHint, units, floaters, battleResult, autoProgress, paused,
     offlineEarnings, respawnCountdowns, potionFx, chestOpenResult, enchantResult,
     starUpHero, promoteAllHeroes, sellHero, sellHeroes, toggleHeroLock, markHeroSeen,
     summon, summonTen, summonHundred, summonBoss, syncBossKeys, toggleTeamMember, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, retry,
     equipItem, unequipItem, unequipAll, sellItem, toggleItemLock, sellAllUnlocked,
     enchantItem, rerollItem, dismissEnchantResult,
-    buyPotion, usePotion, setAutoPot,
+    buyPotion, usePotion, setAutoPot, setBattleAnimationMode,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
     openChests, closeChestResult, buyRotatingItem, claimQuest,
-    claimReferralReward, setUserProfile, resetAccount, hydrateServerState, completeWelcomeTutorial, setAvatarHero, buyMarketAsset, createMarketListing, cancelMarketListing, completeMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold,
+    claimReferralReward, setUserProfile, resetAccount, hydrateServerState, completeWelcomeTutorial, setAvatarHero, buyMarketAsset, createMarketListing, cancelMarketListing, completeMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
     heroStatsFor: (uid: string) => {
       const owned = state.ownedHeroes.find((h) => h.uid === uid);
       if (!owned) return null;

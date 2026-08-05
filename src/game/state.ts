@@ -126,6 +126,7 @@ export function makeInitialState(): GameState {
     chests: [],
     bossKeys: 0,
     bossBattleActive: false,
+    battleAnimationMode: 'light',
     chestsOpenedToday: 0,
     lastChestReset: now,
     currentLocation: 1,
@@ -166,6 +167,20 @@ export function makeInitialState(): GameState {
     marketListings: [],
     marketHistory: [],
     starterBalanceV2: true,
+  };
+}
+
+export function makeRegisteredStarterState(username: string, walletAddress: string, starterHeroId: string): GameState {
+  const initial = makeInitialState();
+  const starter = { ...initial.ownedHeroes[0], heroId: starterHeroId };
+  return {
+    ...initial,
+    username,
+    walletAddress,
+    ownedHeroes: [starter],
+    team: [starter.uid],
+    avatarHeroId: starterHeroId,
+    tutorial: { ...initial.tutorial, welcomeCompleted: false },
   };
 }
 
@@ -302,6 +317,7 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
       chests: parsed.chests ?? [],
       bossKeys: parsed.bossKeys ?? 0,
       bossBattleActive: false,
+      battleAnimationMode: parsed.battleAnimationMode === 'spectacular' || parsed.battleAnimationMode === 'off' ? parsed.battleAnimationMode : 'light',
       chestsOpenedToday: sameDay ? (parsed.chestsOpenedToday ?? 0) : 0,
       lastChestReset: sameDay ? (parsed.lastChestReset ?? now) : now,
       potions: {
@@ -380,6 +396,10 @@ export function loadState(): GameState {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? normalizeState(JSON.parse(raw) as Partial<GameState>) : makeInitialState();
   } catch { return makeInitialState(); }
+}
+
+export function saveLegacyState(state: GameState): void {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* server migration will report the failure */ }
 }
 
 export function clearLegacyState(): void {

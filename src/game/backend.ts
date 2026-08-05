@@ -26,7 +26,12 @@ export async function authHeaders(refresh = false): Promise<Record<string, strin
   } : null;
 }
 
-export async function playerSync<T>(action: string, payload: Record<string, unknown> = {}): Promise<T | null> {
+export async function playerSync<T>(
+  action: string,
+  payload: Record<string, unknown> = {},
+  onError?: (message: string) => void,
+  networkRetry = 0,
+): Promise<T | null> {
   try {
     for (let attempt = 0; attempt < 2; attempt++) {
       const headers = await authHeaders(attempt === 1);
@@ -36,20 +41,26 @@ export async function playerSync<T>(action: string, payload: Record<string, unkn
       });
       if (response.status === 401 && attempt === 0) continue;
       if (!response.ok) {
+        const detail = await response.json().catch(() => ({ error: `HTTP ${response.status}` })) as { error?: string };
+        const message = detail.error ?? `HTTP ${response.status}`;
+        onError?.(message);
         if (action === 'hero_ascend' && payload.repeat === true) return null;
-        if (action === 'spend_tokens' || action === 'hero_summon' || action === 'hero_ascend') {
-          const detail = await response.json().catch(() => ({ error: `HTTP ${response.status}` })) as { error?: string };
-          const label = action === 'hero_summon' ? 'Summon' : action === 'hero_ascend' ? 'Ascension' : '$HERO purchase';
-          window.alert(`${label} failed: ${detail.error ?? `HTTP ${response.status}`}`);
+        if (action === 'spend_tokens' || action === 'hero_ascend') {
+          const label = action === 'hero_ascend' ? 'Ascension' : '$HERO purchase';
+          window.alert(`${label} failed: ${message}`);
         }
         return null;
       }
       return response.json() as Promise<T>;
     }
   } catch (error) {
-    if (action === 'spend_tokens' || action === 'hero_summon' || action === 'hero_ascend') {
-      const label = action === 'hero_summon' ? 'Summon' : action === 'hero_ascend' ? 'Ascension' : '$HERO purchase';
-      window.alert(`${label} failed: ${error instanceof Error ? error.message : 'network_error'}`);
+    const message = error instanceof Error ? error.message : 'network_error';
+    const retrySafe = typeof payload.idempotency_key === 'string' && (action === 'hero_summon' || action === 'hero_ascend' || action === 'spend_tokens');
+    if (retrySafe && networkRetry < 1) return playerSync<T>(action, payload, onError, networkRetry + 1);
+    onError?.(message);
+    if (action === 'spend_tokens' || (action === 'hero_ascend' && payload.repeat !== true)) {
+      const label = action === 'hero_ascend' ? 'Ascension' : '$HERO purchase';
+      window.alert(`${label} failed: ${message}`);
     }
   }
   return null;

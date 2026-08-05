@@ -11,7 +11,7 @@ export const RARITY_COLORS: Record<Rarity, string> = {
   mythic:    '#ef4444',
   relic:     '#2dd4bf',
   cursed:    '#9f1239',
-  cosmic:    '#7c3aed',
+  cosmic:    '#55e6d0',
   divine:    '#fbbf24',
   celestial: '#d9fbff',
   immortal:  '#d8dce8',
@@ -27,7 +27,7 @@ export const RARITY_GLOW: Record<Rarity, string> = {
   mythic:    'rgba(239,68,68,0.75)',
   relic:     'rgba(45,212,191,0.7)',
   cursed:    'rgba(159,18,57,0.75)',
-  cosmic:    'rgba(124,58,237,0.8)',
+  cosmic:    'rgba(85,230,208,0.85)',
   divine:    'rgba(251,191,36,0.9)',
   celestial: 'rgba(217,251,255,0.95)',
   immortal:  'rgba(216,220,232,0.9)',
@@ -97,7 +97,7 @@ export const FACTION_COLORS: Record<Faction, string> = {
   fire:   '#f97316',
   water:  '#06b6d4',
   void:   '#ec4899',
-  cosmic: '#7c3aed',
+  cosmic: '#55e6d0',
 };
 
 // ── Hero definitions ──────────────────────────────────────────────────────

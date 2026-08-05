@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState } from 'react';
-import type { CombatUnit, FloatingNumber, OwnedHero, OwnedItem } from '@/game/types';
+import type { CombatUnit, FloatingNumber, GameState, OwnedHero, OwnedItem } from '@/game/types';
 import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { enemyArtSrc } from '@/game/art';
@@ -9,9 +9,10 @@ import { MAX_HERO_STARS } from '@/game/state';
 const STAR_COLORS = ['#fbbf24', '#a855f7', '#ef4444', '#ec4899'];
 
 function BattleHeroStars({ stars }: { stars: number }) {
-  const clamped = Math.max(0, Math.min(MAX_HERO_STARS, stars));
-  const tier = clamped === 0 ? 0 : Math.floor((clamped - 1) / 5);
-  const currentCount = clamped === 0 ? 0 : ((clamped - 1) % 5) + 1;
+  const clamped = Number.isFinite(stars) ? Math.max(0, Math.min(MAX_HERO_STARS, stars)) : 0;
+  if (clamped === 0) return null;
+  const tier = Math.floor((clamped - 1) / 5);
+  const currentCount = ((clamped - 1) % 5) + 1;
   return (
     <span className="battle-hero-stars" aria-label={`${clamped} of ${MAX_HERO_STARS} hero stars`}>
       {Array.from({ length: 5 }, (_, index) => {
@@ -30,6 +31,7 @@ interface ArenaProps {
   inventory?: OwnedItem[];
   potionFx?: { uid: string; born: number } | null;
   respawnCountdowns?: Record<string, number>;
+  animationMode: GameState['battleAnimationMode'];
 }
 
 function HealthBar({ hp, maxHp, color }: { hp: number; maxHp: number; color: string }) {
@@ -42,7 +44,7 @@ function HealthBar({ hp, maxHp, color }: { hp: number; maxHp: number; color: str
   );
 }
 
-function UnitView({ unit, floaters, side, heroData, respawnSeconds }: { unit: CombatUnit; floaters: FloatingNumber[]; side: 'hero' | 'enemy'; heroData?: OwnedHero; respawnSeconds?: number }) {
+function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAlive, animationMode }: { unit: CombatUnit; floaters: FloatingNumber[]; side: 'hero' | 'enemy'; heroData?: OwnedHero; respawnSeconds?: number; opponentAlive: boolean; animationMode: GameState['battleAnimationMode'] }) {
   const prevHp = useRef(unit.hp);
   const prevTimer = useRef(unit.attackTimer);
   const [attacking, setAttacking] = useState(false);
@@ -51,23 +53,29 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds }: { unit: Co
   const [heal, setHeal] = useState(false);
   const [artFailed, setArtFailed] = useState(false);
   const myFloaters = floaters.filter((f) => f.targetUid === unit.uid);
+  const motionEnabled = animationMode !== 'off';
 
   useEffect(() => {
-    if (!unit.alive) {
+    if (!motionEnabled || !unit.alive || !opponentAlive) {
       setAttacking(false); setHit(false); setSlash(false); setHeal(false);
       prevHp.current = unit.hp;
       prevTimer.current = unit.attackTimer;
       return undefined;
     }
-    if (prevTimer.current > unit.attackTimer && unit.attackTimer < 30 && unit.alive) {
+    if (prevTimer.current > unit.attackTimer && unit.attackTimer < 30 && unit.alive && opponentAlive) {
       setAttacking(true);
       const t = setTimeout(() => setAttacking(false), 360);
       return () => clearTimeout(t);
     }
     prevTimer.current = unit.attackTimer;
-  }, [unit.attackTimer, unit.alive, unit.hp]);
+  }, [unit.attackTimer, unit.alive, unit.hp, opponentAlive, motionEnabled]);
 
   useEffect(() => {
+    if (!motionEnabled) {
+      setHit(false); setSlash(false); setHeal(false);
+      prevHp.current = unit.hp;
+      return undefined;
+    }
     if (unit.hp < prevHp.current && unit.alive) {
       setHit(true); setSlash(true);
       const t1 = setTimeout(() => setHit(false), 220);
@@ -82,7 +90,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds }: { unit: Co
       return () => clearTimeout(t);
     }
     prevHp.current = unit.hp;
-  }, [unit.hp, unit.alive]);
+  }, [unit.hp, unit.alive, motionEnabled]);
 
   const portraitSrc = (() => {
     if (side === 'enemy') return enemyArtSrc(unit.uid);
@@ -119,7 +127,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds }: { unit: Co
         <div className="mt-1 text-center text-[9px] font-bold tabular-nums text-[#bdb6a9]">{Math.ceil(unit.hp)} / {unit.maxHp}</div>
       </div>
       {/* Portrait */}
-      <div className={`relative ${unit.alive ? 'anim-bob' : ''}`}>
+      <div className={`relative ${unit.alive && motionEnabled ? 'anim-bob' : ''}`}>
         <div
           className={`arena-portrait combatant-card relative h-16 w-16 overflow-hidden sm:h-[80px] sm:w-[80px] xl:h-[88px] xl:w-[88px] 2xl:h-[96px] 2xl:w-[96px] ${side === 'enemy' ? 'ring-1 ring-rose-950/70' : ''} ${hit ? 'anim-hit' : ''} ${attacking && side === 'hero' ? 'anim-attack-hero' : ''} ${attacking && side === 'enemy' ? 'anim-attack-enemy' : ''}`}
           style={{
@@ -139,13 +147,14 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds }: { unit: Co
   );
 }
 
-function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns }: ArenaProps) {
+function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode }: ArenaProps) {
   const heroes = units.filter((u) => u.side === 'hero');
   const enemies = units.filter((u) => u.side === 'enemy');
   const [shake, setShake] = useState(false);
   const lastShake = useRef(0);
 
   useEffect(() => {
+    if (animationMode === 'off') { setShake(false); return undefined; }
     const recentCrit = floaters.some((f) => f.crit && performance.now() - f.born < 200);
     if (recentCrit && performance.now() - lastShake.current > 400) {
       lastShake.current = performance.now();
@@ -154,23 +163,24 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
       return () => clearTimeout(t);
     }
     return undefined;
-  }, [floaters]);
+  }, [floaters, animationMode]);
 
   void inventory; void potionFx;
 
   return (
-    <div className={`arena-stage-inner relative flex h-full w-full flex-col justify-end px-3 pb-4 pt-16 sm:px-6 ${shake ? 'anim-shake' : ''}`}>
+    <div className={`arena-stage-inner arena-mode-${animationMode} relative flex h-full w-full flex-col justify-end px-3 pb-4 pt-16 sm:px-6 ${shake ? 'anim-shake' : ''}`}>
+      {animationMode === 'spectacular' && <div className="arena-spectacular-atmosphere pointer-events-none absolute inset-0" aria-hidden="true" />}
       <div className="pointer-events-none absolute inset-x-[8%] bottom-[18%] h-16 rounded-[50%] border-b border-[#9b7540]/25 bg-[radial-gradient(ellipse,rgba(168,122,58,.13),transparent_68%)]" />
       <div className="arena-lanes relative z-10 grid grid-cols-2 items-center gap-4 sm:gap-10">
         <div className="arena-roster flex min-w-0 flex-col items-end justify-center gap-2">
-          {heroes.map((u) => {
+          {heroes.map((u, lane) => {
             const heroData = ownedHeroes?.find((h) => h.uid === u.uid);
-            return <UnitView key={u.uid} unit={u} floaters={floaters} side="hero" heroData={heroData} respawnSeconds={respawnCountdowns?.[u.uid]} />;
+            return <UnitView key={u.uid} unit={u} floaters={floaters} side="hero" heroData={heroData} respawnSeconds={respawnCountdowns?.[u.uid]} opponentAlive={Boolean(enemies[lane]?.alive)} animationMode={animationMode} />;
           })}
           {heroes.length === 0 && <div className="intentional-empty p-4 text-sm">Assemble a team to fight</div>}
         </div>
         <div className="arena-roster flex min-w-0 flex-col items-start justify-center gap-2">
-          {enemies.map((u) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" />)}
+          {enemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive)} animationMode={animationMode} />)}
           {enemies.length === 0 && <div className="intentional-empty p-4 text-sm">Enemies defeated</div>}
         </div>
       </div>

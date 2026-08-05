@@ -362,6 +362,25 @@ const STANDARD_LOOT_TABLE: { min: number; max: number; weights: Partial<Record<R
   { min: 80, max: Number.POSITIVE_INFINITY, weights: { common: 12, uncommon: 15, rare: 19, epic: 19, legendary: 15, mythic: 10, cosmic: 5, divine: 3, celestial: 2 } },
 ];
 
+const CHEST_PRESTIGE_MULTIPLIER: Partial<Record<Rarity, number>> = {
+  legendary: 0.60,
+  mythic: 0.35,
+  cosmic: 0.20,
+  divine: 0.10,
+  celestial: 0.05,
+};
+
+function dampenChestPrestige(weights: Record<Rarity, number>, floor: Rarity): Record<Rarity, number> {
+  let transferred = 0;
+  for (const [rarity, multiplier] of Object.entries(CHEST_PRESTIGE_MULTIPLIER) as [Rarity, number][]) {
+    const original = weights[rarity];
+    weights[rarity] = original * multiplier;
+    transferred += original - weights[rarity];
+  }
+  weights[floor] += transferred;
+  return weights;
+}
+
 export function standardLootWeights(playerLevel: number, availability: LimitedAvailability = {}): Record<Rarity, number> {
   const row = STANDARD_LOOT_TABLE.find((entry) => playerLevel >= entry.min && playerLevel <= entry.max) ?? STANDARD_LOOT_TABLE[0];
   const weights = Object.fromEntries(Object.keys(RARITY_INDEX).map((rarity) => [rarity, row.weights[rarity as Rarity] ?? 0])) as Record<Rarity, number>;
@@ -382,7 +401,7 @@ export function standardChestWeights(playerLevel: number, availability: LimitedA
   if (higherTotal > 0) {
     for (const rarity of RANDOM_DROP_RARITIES.slice(1)) weights[rarity] += transferable * (weights[rarity] / higherTotal);
   }
-  return weights;
+  return dampenChestPrestige(weights, 'common');
 }
 
 function rollItemLevel(playerLevel: number): number {
@@ -423,7 +442,7 @@ export function openBossChest(playerLevel: number, availability: LimitedAvailabi
   const weights = standardLootWeights(playerLevel, availability);
   const floorIndex = playerLevel >= 10 ? RARITY_INDEX.epic : RARITY_INDEX.rare;
   for (const rarity of RANDOM_DROP_RARITIES) if (RARITY_INDEX[rarity] < floorIndex) weights[rarity] = 0;
-  return rollFromWeights(weights, playerLevel) ?? rollItem('helmet-rare', rollItemLevel(playerLevel));
+  return rollFromWeights(dampenChestPrestige(weights, playerLevel >= 10 ? 'epic' : 'rare'), playerLevel) ?? rollItem('helmet-rare', rollItemLevel(playerLevel));
 }
 
 // ── Rotating shop ─────────────────────────────────────────────────────────
