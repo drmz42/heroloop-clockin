@@ -324,6 +324,7 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
       }));
       if (!account?.state || !Number.isSafeInteger(account.revision)) { setError('Registration failed. Please try again.'); return; }
       game.hydrateServerState(account.state);
+      window.location.replace('/#game');
     } catch {
       setError('Registration failed. Please try again.');
     } finally {
