@@ -624,29 +624,29 @@ function TokenEarningsPanel({ status, today, clientPower, eligible, heroes, defe
     return v >= 0.01 ? `$${v.toFixed(2)}` : `$${v.toFixed(4)}`;
   };
   const Row = ({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) => (
-    <div className="flex items-baseline justify-between gap-3 whitespace-nowrap">
+    <>
       <span className="text-[13px] font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span>
       <span className={`text-[15px] font-black tabular-nums ${valueClass ?? 'text-[#e8dfc8]'}`}>{value}</span>
-    </div>
+    </>
   );
   return (
-    <div className="absolute bottom-3 left-3 z-30 flex origin-bottom-left scale-[.55] flex-col gap-2 font-vt">
-      <div className="grid grid-cols-3 gap-2 rounded-2xl border-2 border-[#80683f] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_24px_rgba(128,104,63,.28)]">
-        {[['Heroes', heroes], ['Defeated', defeated], ['Bosses', bosses]].map(([label, value]) => <div key={label} className="min-w-[92px] text-center"><span className="block text-[11px] font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span><strong className="mt-1 block text-[16px] tabular-nums text-[#e8dfc8]">{formatNum(Number(value))}</strong></div>)}
+    <div className="absolute bottom-3 left-3 z-30 flex origin-bottom-left scale-[.6] flex-col items-start gap-2 font-vt">
+      <div className="grid grid-cols-3 gap-1 rounded-2xl border-2 border-[#80683f] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_24px_rgba(128,104,63,.28)]">
+        {[['Heroes', heroes], ['Defeated', defeated], ['Bosses', bosses]].map(([label, value]) => <div key={label} className="min-w-[78px] text-center"><span className="block text-[11px] font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span><strong className="mt-1 block text-[16px] tabular-nums text-[#e8dfc8]">{formatNum(Number(value))}</strong></div>)}
       </div>
-      <div className="token-earnings-panel flex flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_34px_rgba(229,177,70,.4)]">
+      <div className="token-earnings-panel flex w-fit flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_34px_rgba(229,177,70,.4)]">
       <div className="flex items-center gap-2">
         <HeroTokenIcon size={22} />
         <span className="text-[15px] font-black uppercase tracking-[.14em] text-[#ffd36e]">$HERO Income</span>
       </div>
       {status ? (
-        <>
+        <div className="grid grid-cols-[max-content_max-content] items-baseline gap-x-2 gap-y-2 whitespace-nowrap">
           <Row label="Per hour" value={`${fmt(rate)} (${usd(rate)})`} valueClass="text-[#7ee787]" />
           <Row label="Per day" value={`${fmt(daily)} (${usd(daily)})`} valueClass="text-[#e5bd68]" />
           <Row label="Pool share" value={`${poolSharePct.toFixed(poolSharePct < 0.01 ? 4 : 2)}%`} valueClass="text-[#9ed7ff]" />
           <Row label="Today" value={`${formatNum(today)} (${usd(today)})`} valueClass="text-[#ffd36e]" />
           <Row label="Daily pool" value={`${formatNum(pool)} $HERO`} valueClass="text-[#c8b3f0]" />
-        </>
+        </div>
       ) : (
         <span className="text-[12px] font-semibold text-[#9a937f]">Syncing token pool…</span>
       )}
