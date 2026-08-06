@@ -118,6 +118,7 @@ function shouldAutoLockItem(item: OwnedItem, state: GameState): boolean {
   const itemBase = ITEM_MAP[item.itemId];
   if (!itemBase) return false;
   if (['divine', 'celestial', 'cursed', 'immortal', 'god'].includes(itemBase.rarity)) return true;
+  if (!['common', 'uncommon', 'rare'].includes(itemBase.rarity) || item.level <= state.accountLevel) return false;
   const comparable = state.ownedHeroes.flatMap((hero) => Object.values(hero.equipped))
     .filter((uid): uid is string => Boolean(uid))
     .map((uid) => state.inventory.find((owned) => owned.uid === uid))
@@ -128,7 +129,7 @@ function shouldAutoLockItem(item: OwnedItem, state: GameState): boolean {
     });
   return comparable.length > 0 && comparable.every((owned) => {
     const equippedRarity = ITEM_MAP[owned.itemId]?.rarity ?? 'common';
-    return RARITY_INDEX[itemBase.rarity] > RARITY_INDEX[equippedRarity] && item.level > owned.level;
+    return RARITY_INDEX[itemBase.rarity] > RARITY_INDEX[equippedRarity];
   });
 }
 

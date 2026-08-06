@@ -49,6 +49,7 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
   const [toast, setToast] = useState<string | null>(null);
   const [showBulkSellConfirm, setShowBulkSellConfirm] = useState(false);
   const [showDropRates, setShowDropRates] = useState(false);
+  const [showZoomTip, setShowZoomTip] = useState(true);
   const [selectedHeroUid, setSelectedHeroUid] = useState<string | null>(state.team[0] ?? null);
   const [selectedItem, setSelectedItem] = useState<OwnedItem | null>(null);
   const [selectedItemSource, setSelectedItemSource] = useState<'bag' | 'hero' | null>(null);
@@ -255,6 +256,7 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
       <div className="game-scrollbar order-1 flex min-h-[464px] w-full shrink-0 flex-col overflow-hidden lg:order-none lg:min-h-0 lg:w-auto lg:min-w-0 lg:flex-1 lg:overflow-y-auto">
         {/* Arena */}
         <div className="battle-stage relative min-h-[320px] flex-1 overflow-hidden bg-arena">
+          {showZoomTip && <div className="absolute left-1/2 top-12 z-40 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-lg border border-[#80683f] bg-[#11130f]/95 px-3 py-1.5 font-vt text-[10px] font-bold text-[#d8c9ad] shadow-xl backdrop-blur-sm"><span>Adjust browser zoom with <kbd className="text-[#ffd36e]">Ctrl +</kbd> / <kbd className="text-[#ffd36e]">Ctrl -</kbd> to fit all interface elements.</span><button type="button" onClick={() => setShowZoomTip(false)} className="text-[#8f887b] hover:text-white" aria-label="Dismiss browser zoom tip"><X size={12} /></button></div>}
           <div className="absolute left-3 top-3 z-30 flex items-start gap-1.5">
             <div className="relative">
               <button onClick={() => setShowPotSettings(s => !s)} className={`game-control relative flex items-center gap-2 px-3 py-2 font-bold ${state.autoPot.enabled ? 'border-emerald-500/60 bg-emerald-950/30 text-emerald-300' : ''} ${showAutoPotGuide ? 'auto-pot-guide' : ''}`}>
@@ -400,7 +402,7 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
                   <button type="button" className={`set-bonus-badge rarity-${selectedSetBonus?.rarity ?? 'common'} ${selectedSetBonus ? 'set-bonus-active' : ''}`} aria-label="Set bonus details">
                     Set bonus {selectedSetBonus ? `+${selectedSetBonus.percent}%` : '—'}
                   </button>
-                  <span className="set-bonus-tooltip pointer-events-none absolute left-0 top-full z-50 mt-1 hidden w-64 rounded-lg border border-[#6f5833] bg-[#10120f]/[.98] p-2 text-[9px] leading-4 text-[#bbb2a2] shadow-2xl group-hover/set:block group-focus-within/set:block">
+                  <span className="set-bonus-tooltip pointer-events-none absolute bottom-full left-0 z-[70] mb-1 hidden w-64 rounded-lg border border-[#6f5833] bg-[#10120f]/[.98] p-2 text-[9px] leading-4 text-[#bbb2a2] shadow-2xl group-hover/set:block group-focus-within/set:block">
                     Equip all 8 item slots with one rarity to increase every stat granted by those items.
                     <span className="mt-1 grid grid-cols-3 gap-1">
                       {(['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial', 'cursed', 'immortal', 'god'] as const).map((rarity) => <span key={rarity} className={`set-bonus-rarity rarity-${rarity}`} style={{ color: RARITY_COLORS[rarity] }}>{RARITY_LABEL[rarity]} +{SET_BONUS_PERCENT[rarity]}%</span>)}

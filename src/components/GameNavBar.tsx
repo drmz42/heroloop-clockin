@@ -1,17 +1,17 @@
-import { Mail, ChevronDown, Rocket, Users, WalletCards } from 'lucide-react';
+import { Mail, ChevronDown, Rocket, Users, WalletCards, Swords, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus } from 'lucide-react';
 import type { Tab } from './TopMenu';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'main',        label: 'Play'    },
-  { id: 'heroes',      label: 'Heroes'  },
-  { id: 'summon',      label: 'Summon'  },
-  { id: 'training',    label: 'Training' },
-  { id: 'shop',        label: 'Store'   },
-  { id: 'market',      label: 'Market'  },
-  { id: 'leaderboard', label: 'Ranks'   },
-  { id: 'referrals',   label: 'Refer'   },
-];
+const TABS = [
+  { id: 'main',        label: 'Play',     icon: Swords },
+  { id: 'heroes',      label: 'Heroes',   icon: Shield },
+  { id: 'summon',      label: 'Summon',   icon: Sparkles },
+  { id: 'training',    label: 'Training', icon: Dumbbell },
+  { id: 'shop',        label: 'Store',    icon: ShoppingBag },
+  { id: 'market',      label: 'Market',   icon: Store },
+  { id: 'leaderboard', label: 'Ranks',    icon: Trophy },
+  { id: 'referrals',   label: 'Refer',    icon: UserPlus },
+] satisfies { id: Tab; label: string; icon: typeof Swords }[];
 
 const formatResource = (value: number) => Math.floor(value).toLocaleString('en-US').replace(/,/g, ' ');
 
@@ -32,15 +32,18 @@ export function GameNavBar({
 
       {/* Nav tabs */}
       <div className="flex items-center gap-0.5 overflow-x-auto no-scrollbar">
-        {TABS.map((t) => (
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          return (
           <button
             key={t.id}
             onClick={() => onChange(t.id)}
-            className={`game-nav-control whitespace-nowrap px-3 py-1 font-vt text-sm font-semibold tracking-wide ${tab === t.id ? 'game-nav-control-active' : ''}`}
+            className={`game-nav-control flex items-center gap-1.5 whitespace-nowrap px-3 py-1 font-vt text-sm font-semibold tracking-wide ${tab === t.id ? 'game-nav-control-active' : ''}`}
           >
-            {t.label}
+            <Icon size={14} aria-hidden="true" /> {t.label}
           </button>
-        ))}
+          );
+        })}
       </div>
 
       {/* Right side */}
