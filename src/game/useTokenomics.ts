@@ -14,6 +14,8 @@ export interface TokenomicsStatus {
   pending_tokens: number;
   total_claimed: number;
   token_balance: number;
+  resource_state?: unknown;
+  resource_revision?: number | null;
   boost: {
     active: boolean;
     login_days: number;

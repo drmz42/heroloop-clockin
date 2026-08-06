@@ -66,6 +66,8 @@ function App() {
   const boostStatus = tokenomics.status?.boost ?? null;
   const pityStatus = tokenomics.status?.pity ?? null;
   const serverTokenBalance = tokenomics.status?.token_balance;
+  const resourceState = tokenomics.status?.resource_state;
+  const resourceRevision = tokenomics.status?.resource_revision;
 
   useEffect(() => {
     if (!serverStateReady) legacyStateRef.current = game.state;
@@ -141,6 +143,12 @@ function App() {
   useEffect(() => {
     if (game.serverRevisionHint !== null) setServerStateRevision(game.serverRevisionHint);
   }, [game.serverRevisionHint]);
+
+  useEffect(() => {
+    if (!resourceState || !resourceRevision || resourceRevision <= (serverStateRevision ?? 0)) return;
+    hydrateServerState(resourceState);
+    setServerStateRevision(resourceRevision);
+  }, [resourceState, resourceRevision, serverStateRevision, hydrateServerState]);
 
   useEffect(() => {
     if (pendingTokens < 1 || autoClaimingRef.current) return;

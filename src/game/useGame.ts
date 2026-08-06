@@ -114,23 +114,10 @@ function createIdempotencyKey(): string {
   return [...bytes].map((byte, index) => `${index === 4 || index === 6 || index === 8 || index === 10 ? '-' : ''}${byte.toString(16).padStart(2, '0')}`).join('');
 }
 
-function shouldAutoLockItem(item: OwnedItem, state: GameState): boolean {
+function shouldAutoLockItem(item: OwnedItem): boolean {
   const itemBase = ITEM_MAP[item.itemId];
   if (!itemBase) return false;
-  if (['divine', 'celestial', 'cursed', 'immortal', 'god'].includes(itemBase.rarity)) return true;
-  if (!['common', 'uncommon', 'rare'].includes(itemBase.rarity) || item.level <= state.accountLevel) return false;
-  const comparable = state.ownedHeroes.flatMap((hero) => Object.values(hero.equipped))
-    .filter((uid): uid is string => Boolean(uid))
-    .map((uid) => state.inventory.find((owned) => owned.uid === uid))
-    .filter((owned): owned is OwnedItem => Boolean(owned))
-    .filter((owned) => {
-      const base = ITEM_MAP[owned.itemId];
-      return base?.slot === itemBase.slot && (itemBase.heroClass ? base.heroClass === itemBase.heroClass : !base?.heroClass);
-    });
-  return comparable.length > 0 && comparable.every((owned) => {
-    const equippedRarity = ITEM_MAP[owned.itemId]?.rarity ?? 'common';
-    return RARITY_INDEX[itemBase.rarity] > RARITY_INDEX[equippedRarity];
-  });
+  return ['divine', 'celestial', 'cursed', 'immortal', 'god'].includes(itemBase.rarity);
 }
 
 function bagItemCount(state: GameState): number {
@@ -564,6 +551,7 @@ export function useGame() {
   }, []);
 
   useEffect(() => {
+    if (tokenomicsEnabled) return;
     let previousTick = Date.now();
     const resetClock = () => { previousTick = Date.now(); };
     const tick = () => {
@@ -607,6 +595,7 @@ export function useGame() {
   // A minimized/background tab can pause requestAnimationFrame before a combat
   // wave resolves. Catch up the complete Active reward stream on return.
   useEffect(() => {
+    if (tokenomicsEnabled) return;
     let hiddenSince: number | null = null;
     const markHidden = () => { hiddenSince ??= Date.now(); };
     const catchUp = () => {
@@ -685,6 +674,7 @@ export function useGame() {
   const [offlineEarnings, setOfflineEarnings] = useState<{ gold: number; seconds: number; tokens?: number; chests?: number; xp?: number } | null>(null);
   useEffect(() => {
     if (tokenomicsEnabled && hydrationVersion === 0) return;
+    if (tokenomicsEnabled) return;
     const st = stateRef.current;
     if (!st.walletAddress) return;
     const prev = st.lastSeen;
@@ -1423,7 +1413,7 @@ export function useGame() {
     setState((prev) => ({
       ...prev,
       chests: prev.chests.slice(openCount),
-      inventory: [...prev.inventory, ...results.map((item) => shouldAutoLockItem(item, prev) ? { ...item, locked: true } : item)].sort((a, b) => {
+      inventory: [...prev.inventory, ...results.map((item) => shouldAutoLockItem(item) ? { ...item, locked: true } : item)].sort((a, b) => {
         const rarityDelta = RARITY_INDEX[ITEM_MAP[b.itemId]?.rarity ?? 'common'] - RARITY_INDEX[ITEM_MAP[a.itemId]?.rarity ?? 'common'];
         return rarityDelta || b.power - a.power;
       }),
