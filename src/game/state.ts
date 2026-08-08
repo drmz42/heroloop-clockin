@@ -11,7 +11,8 @@ export const MAX_HEROES = 500;
 export const MAX_INVENTORY = 64;
 export const MAX_CHESTS = 500;
 export const ROTATING_REFRESH_MS = 4 * 60 * 60 * 1000;
-export const STARTING_HERO_TOKENS = 20_000;
+export const STARTING_HERO_TOKENS = 0;
+const LEGACY_MISSING_HERO_TOKENS = 20_000;
 export const STARTING_GOLD = 500;
 export const ACTIVE_SESSION_MS = 8 * 60 * 60 * 1000;
 export const SUMMON_COST_HERO = 30;
@@ -349,7 +350,7 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
         ),
       },
       rotatingShop: parsed.rotatingShop?.length ? parsed.rotatingShop : base.rotatingShop,
-      hero: parsed.hero ?? STARTING_HERO_TOKENS,
+      hero: parsed.hero ?? LEGACY_MISSING_HERO_TOKENS,
       accountXp: parsed.accountXp ?? 0,
       accountLevel,
       totalKills: parsed.totalKills ?? 0,
