@@ -325,6 +325,7 @@ html { scroll-behavior: smooth; }
 .training-dummy-arms { position:absolute;left:0;top:25px;width:46px;height:6px;border:2px solid #79562f;border-radius:4px;background:#5c4023; }
 .training-dummy::after { content:'';position:absolute;left:22px;top:47px;width:5px;height:15px;border-radius:2px;background:#72502c;box-shadow:0 14px 0 5px #35271b; }
 .training-locked-post { display:flex;height:110px;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#6f6658; }
+.inventory-lock-cursor .item-slot:not(:disabled) { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23fca5a5' stroke-width='2'%3E%3Crect x='5' y='10' width='14' height='11' rx='2'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E") 8 8, pointer; }
 .training-locked-post>span { font-size:9px;font-weight:900;letter-spacing:.12em; }
 .training-unlock-button { display:flex!important;height:32px!important;align-items:center;gap:5px;padding:0 9px!important;color:#bef264!important;font-size:9px!important;font-style:normal; }
 .training-boost-panel { min-width:0; }

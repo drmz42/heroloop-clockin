@@ -48,6 +48,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [showBulkSellConfirm, setShowBulkSellConfirm] = useState(false);
+  const [inventoryLockMode, setInventoryLockMode] = useState(false);
   const [showDropRates, setShowDropRates] = useState(false);
   const [showZoomTip, setShowZoomTip] = useState(true);
   const [selectedHeroUid, setSelectedHeroUid] = useState<string | null>(state.team[0] ?? null);
@@ -452,17 +453,19 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
               <span className="section-kicker">Inventory</span>
               <span className="rounded-md border border-[#493e2d] bg-black/25 px-2 py-1 text-[10px] font-bold text-[#8d887d]">{bagItems.length}/{GRID_SIZE}</span>
             </div>
-            <div className="mt-2 grid min-w-0 grid-cols-4 gap-1">
+            <div className="mt-2 grid min-w-0 grid-cols-[1fr_1fr_32px_1fr_1fr] gap-1">
               <button onClick={() => { game.sortInventory(); showToast('Sorted by rarity'); }} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 text-xs font-bold" title="Sort by rarity"><ArrowUpDown size={12} /> Sort</button>
               <button onClick={() => { if (state.team.length > 0) { game.autoEquipBest(); showToast('Best gear equipped on active team'); } }} disabled={state.team.length === 0} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 text-xs font-bold" title="Equip the strongest valid gear on each active hero in formation order"><Wand2 size={12} /> Auto</button>
+              <button type="button" aria-label={inventoryLockMode ? 'Exit Inventory Lock mode' : 'Enter Inventory Lock mode'} aria-pressed={inventoryLockMode} onClick={() => { setInventoryLockMode((active) => !active); setSelectedItem(null); setSelectedItemSource(null); setSelectedItemSlot(null); setShowBulkSellConfirm(false); }} className={`game-control grid min-w-0 place-items-center px-0 py-1 ${inventoryLockMode ? 'border-red-500/70 bg-red-950/55 text-red-300' : 'text-[#a69c8c]'}`} title={inventoryLockMode ? 'Lock mode active — click to exit' : 'Lock mode — click items to lock or unlock'}><LockIcon size={13} /></button>
               <button disabled className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 text-xs font-bold" title="Crafting is coming later"><Hammer size={12} /> Craft</button>
               <div className="relative">
                 <button onClick={() => setShowBulkSellConfirm((value) => !value)} disabled={unlockedSellTotal === 0} className="game-control game-danger flex min-w-0 w-full items-center justify-center gap-1 px-1 py-1 text-xs font-bold" title={`Sell all unlocked items for ${formatNum(unlockedSellTotal)} gold`}><Coins size={12} /> Sell</button>
                 {showBulkSellConfirm && <div className="item-sell-confirm absolute right-0 top-full z-40 mt-1 w-48 rounded-md border border-[#80502d] p-2 text-left shadow-xl"><p className="text-[9px] font-bold text-[#ead9bf]">Sell all unlocked items for {formatNum(unlockedSellTotal)} Gold?</p><div className="mt-1.5 grid grid-cols-2 gap-1"><button type="button" onClick={() => setShowBulkSellConfirm(false)} className="game-control py-1 text-[9px] font-bold">Cancel</button><button type="button" onClick={() => { game.sellAllUnlocked(); setShowBulkSellConfirm(false); }} className="rounded border border-rose-500/45 bg-rose-500/15 py-1 text-[9px] font-black text-rose-200">Sell all</button></div></div>}
               </div>
             </div>
+            {inventoryLockMode && <div className="mt-1.5 rounded-md border border-red-500/45 bg-red-950/35 px-2 py-1 text-center text-[9px] font-bold text-red-200" role="status">LOCK MODE · click an item to lock or unlock it</div>}
           </div>
-          <div className="grid min-w-0 grid-cols-8 gap-1 overflow-hidden">
+          <div className={`grid min-w-0 grid-cols-8 gap-1 overflow-hidden ${inventoryLockMode ? 'inventory-lock-cursor' : ''}`}>
             {visiblePotions.map((potion) => (
               <button key={potion.tier} className="item-slot aspect-square min-w-0 w-full flex items-center justify-center overflow-hidden border border-emerald-500/50 relative" title={`${potion.name}: +${potion.hpRestore} HP`}>
                 <ItemArtwork itemId={`potion-${potion.tier}`} name={potion.name} fallback="🧪" />
@@ -477,7 +480,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
               return (
                 <Fragment key={item ? item.uid : `e${i}`}>
                 <button
-                  onClick={item ? () => { setSelectedItem(item); setSelectedItemSource('bag'); setSelectedItemSlot(null); } : undefined}
+                  onClick={item ? () => { if (inventoryLockMode) { game.toggleItemLock(item.uid); showToast(item.locked ? 'Item unlocked' : 'Item locked'); return; } setSelectedItem(item); setSelectedItemSource('bag'); setSelectedItemSlot(null); } : undefined}
                   className={`item-slot aspect-square min-w-0 w-full flex items-center justify-center overflow-hidden text-xl border transition hover:-translate-y-0.5 relative ${item && rarity ? `rarity-${rarity}` : ''} ${selectedItem?.uid === item?.uid ? 'ring-1 ring-[#d9ad5b]' : ''}`}
                   style={item ? { borderColor: rc ? `${rc}99` : 'rgba(255,255,255,0.08)' } : { borderColor: 'rgba(128,119,100,0.11)', background: 'linear-gradient(145deg,#151612,#0c0e0d)' }}
                 >
