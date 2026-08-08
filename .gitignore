@@ -28,6 +28,7 @@ supabase/.temp/
 dist.permission-backup/
 /*.png
 todo/.htpasswd
+todo/codex-usage.json
 upload/*
 !upload/.gitkeep
 # Large reference files
