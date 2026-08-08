@@ -1286,10 +1286,9 @@ export function useGame() {
         for (const iuid of Object.values(h.equipped)) { if (iuid) equippedUids.add(iuid); }
       });
       // only sell: not locked, not equipped
-      const isLimited = (item: OwnedItem) => ['divine', 'celestial'].includes(ITEM_MAP[item.itemId]?.rarity ?? '');
-      const toSell = prev.inventory.filter((i) => !i.locked && !equippedUids.has(i.uid) && !isLimited(i));
+      const toSell = prev.inventory.filter((i) => !i.locked && !equippedUids.has(i.uid));
       const total = toSell.reduce((acc, i) => acc + sellValue(i), 0);
-      const keep = prev.inventory.filter((i) => i.locked || equippedUids.has(i.uid) || isLimited(i));
+      const keep = prev.inventory.filter((i) => i.locked || equippedUids.has(i.uid));
       return { ...prev, gold: prev.gold + total, inventory: keep };
     });
     spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
