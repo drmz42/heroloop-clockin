@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Mail, ChevronDown, ChevronLeft, ChevronRight, Users, WalletCards, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus, Hammer } from 'lucide-react';
+import { Mail, ChevronLeft, ChevronRight, WalletCards, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus, Hammer } from 'lucide-react';
 import type { Tab } from './TopMenu';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
@@ -17,10 +17,10 @@ const TABS = [
 const formatResource = (value: number) => Math.floor(value).toLocaleString('en-US').replace(/,/g, ' ');
 
 export function GameNavBar({
-  tab, onChange, gold, hero, username, mailCount, onWalletClick,
+  tab, onChange, gold, hero, mailCount, onWalletClick,
 }: {
   tab: Tab; onChange: (t: Tab) => void;
-  gold: number; hero: number; username: string; mailCount: number;
+  gold: number; hero: number; mailCount: number;
   onWalletClick: () => void;
 }) {
   const navRef = useRef<HTMLDivElement>(null);
@@ -80,13 +80,6 @@ export function GameNavBar({
           <span className="text-sm font-black tabular-nums text-lime-300">{formatResource(hero)}</span>
           <span className="text-[9px] font-bold uppercase tracking-[.1em] text-[#7f8a69]">$Hero</span>
         </div>
-
-        {/* Username */}
-        <button className="game-control hidden items-center gap-1.5 px-2.5 py-1 lg:flex">
-          <Users size={14} className="text-px-dim" />
-          <span className="text-px-text font-vt text-base font-bold">{username || 'player'}</span>
-          <ChevronDown size={12} className="text-px-dim" />
-        </button>
       </div>
     </div>
   );

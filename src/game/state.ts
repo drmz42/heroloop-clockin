@@ -170,7 +170,7 @@ export function makeInitialState(): GameState {
     username: '',
     walletAddress: '',
     avatarHeroId: hero.heroId,
-    boost: { active: false, progress: 0, bonusPct: 0, chestProgressSeconds: 0, conditions: { connectTelegram: false, connectTwitter: false, connectDiscord: false, spentTokens: 0, holdTokens: 0 } },
+    boost: { active: false, progress: 0, bonusPct: 0, chestProgressSeconds: 0, goldProgressSeconds: 0, conditions: { connectTelegram: false, connectTwitter: false, connectDiscord: false, spentTokens: 0, holdTokens: 0 } },
     balanceTelemetry: emptyBalanceTelemetry(),
     marketListings: [],
     marketHistory: [],
@@ -385,6 +385,7 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
         ...base.boost,
         ...(parsed.boost ?? {}),
         chestProgressSeconds: Math.max(0, Number(parsed.boost?.chestProgressSeconds) || 0),
+        goldProgressSeconds: Math.max(0, Number(parsed.boost?.goldProgressSeconds) || 0),
         conditions: { ...base.boost.conditions, ...(parsed.boost?.conditions ?? {}) },
       },
       balanceTelemetry: parsed.balanceTelemetry?.version === BALANCE_VERSION

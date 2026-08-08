@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Star, Trash2, Lock, Unlock, Search, X, Sparkles, Users, Swords, Shield } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, RARITY_INDEX, CLASS_LABEL } from '@/game/heroes';
 import { formatNum, starUpCost, STAR_DUPES, heroXpForLevel, heroSellValue, MAX_HEROES, MAX_HERO_STARS } from '@/game/state';
-import { heroStats, getEquippedItems } from '@/game/engine';
+import { heroStats, getEquippedItems, teamPower as calculateTeamPower } from '@/game/engine';
 import type { HeroBase, OwnedHero, Rarity } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
 
@@ -55,6 +55,12 @@ function StateBadge({ label, tone }: { label: string; tone: 'gold' | 'green' | '
 
 function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameApi; onClose: () => void }) {
   const [teamError, setTeamError] = useState('');
+  const [powerNotice, setPowerNotice] = useState<{ delta: number; added: boolean } | null>(null);
+  useEffect(() => {
+    if (!powerNotice) return undefined;
+    const timeout = window.setTimeout(() => setPowerNotice(null), 1800);
+    return () => window.clearTimeout(timeout);
+  }, [powerNotice]);
   const base = HERO_MAP[hero.heroId];
   const items = getEquippedItems(hero, game.state.inventory);
   const stats = heroStats(hero, items);
@@ -65,6 +71,7 @@ function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameA
   const xpNeed = heroXpForLevel(hero.level);
   const isInTeam = game.state.team.includes(hero.uid);
   const power = Math.round(stats.atk + stats.hp / 10 + stats.def * 2);
+  const teamPowerDelta = calculateTeamPower([hero], game.state.inventory);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 backdrop-blur-[2px] anim-fade" onClick={onClose}>
       <div className={`px-panel-raised rarity-${base.rarity} relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl`} onClick={(event) => event.stopPropagation()}>
@@ -77,9 +84,10 @@ function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameA
           <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6"><StatBox label="HP" value={formatNum(stats.hp)} /><StatBox label="ATK" value={formatNum(stats.atk)} /><StatBox label="DEF" value={formatNum(stats.def)} /><StatBox label="Crit" value={`${(stats.critChance * 100).toFixed(1)}%`} /><StatBox label="Dodge" value={`${(stats.dodge * 100).toFixed(1)}%`} /><StatBox label="Speed" value={`+${stats.atkSpeed}`} /></div>
           <section className="mt-2 grid gap-2 sm:grid-cols-2"><div className="stat-tile p-2.5"><div className="text-[9px] font-bold uppercase tracking-wider text-[#827d72]">Passive</div><div className="mt-0.5 text-xs font-bold" style={{ color: rc }}>{base.passiveName}</div><div className="mt-0.5 text-[10px] text-[#aaa397]">{base.passiveDesc}</div></div><div className="stat-tile p-2.5"><div className="text-[9px] font-bold uppercase tracking-wider text-[#827d72]">Ability</div><div className="mt-0.5 text-xs font-bold" style={{ color: rc }}>{base.skillName}</div><div className="mt-0.5 text-[10px] text-[#aaa397]">{base.skillDesc}</div></div></section>
           <section className="mt-2 rounded-lg border border-violet-700/35 bg-violet-950/15 p-2.5"><div className="flex items-center justify-between gap-2"><span className="flex items-center gap-1.5 text-xs font-bold text-violet-200"><Sparkles size={13} /> Star Up → {Math.min(MAX_HERO_STARS, hero.stars + 1)}</span><span className="text-[10px] text-violet-300">{dupes.length}/{starCost.dupes} dupes · {starCost.hero} $HERO</span></div>{hero.stars < MAX_HERO_STARS && <div className="mt-2 flex items-center gap-1.5" aria-label={`${dupes.length} of ${starCost.dupes} required duplicates available`}>{Array.from({ length: starCost.dupes }, (_, index) => <div key={index} className={`rounded-md border p-0.5 ${index < dupes.length ? 'border-violet-400/65 bg-violet-900/25' : 'border-white/10 bg-black/35 opacity-30 grayscale'}`}><HeroPortrait heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={30} /></div>)}</div>}<button type="button" onClick={() => game.starUpHero(hero.uid)} disabled={dupes.length < starCost.dupes || hero.stars >= MAX_HERO_STARS} className="game-control mt-2 w-full px-3 text-xs font-bold">{hero.stars >= MAX_HERO_STARS ? 'Maximum ascension reached' : `Upgrade · ${STAR_DUPES[Math.min(hero.stars + 1, STAR_DUPES.length - 1)]} duplicate requirement`}</button></section>
+          {powerNotice && <div aria-live="polite" className={`anim-banner mt-2 rounded border p-2 text-center text-sm font-black tabular-nums ${powerNotice.added ? 'border-emerald-400/55 bg-emerald-950/55 text-emerald-300' : 'border-red-400/55 bg-red-950/55 text-red-300'}`}>{powerNotice.added ? '+' : '−'}{formatNum(powerNotice.delta)} POWER</div>}
           {teamError && <div className="mt-2 rounded border border-red-500/45 bg-red-950/40 p-2 text-xs text-red-200">{teamError}</div>}
         </div>
-        <footer className="grid grid-cols-[minmax(0,1fr)_92px_44px] gap-2 border-t border-[#54442e] bg-black/20 p-3"><button type="button" onClick={() => { const result = game.toggleTeamMember(hero.uid); setTeamError(result === 'inventory-full' ? 'Cannot remove hero: there is not enough room for equipped items. Free bag slots first.' : result === 'blocked' ? 'Team change is unavailable right now.' : ''); }} className={`game-control h-9 px-2 text-[10px] font-black ${isInTeam ? 'game-danger' : 'game-primary'}`}>{isInTeam ? 'Remove from Team' : 'Add to Team'}</button><button type="button" onClick={() => game.toggleHeroLock(hero.uid)} className="game-control flex h-9 items-center justify-center gap-1.5 px-2 text-[10px] font-black" title={hero.locked ? 'Unlock hero' : 'Lock hero'}>{hero.locked ? <Lock size={14} className="text-amber-300" /> : <Unlock size={14} />} {hero.locked ? 'UNLOCK' : 'LOCK'}</button><button type="button" disabled={hero.locked || isInTeam || game.state.ownedHeroes.length <= 1 || (hero.heroId === game.state.avatarHeroId && game.state.ownedHeroes.filter((owned) => owned.heroId === hero.heroId).length <= 1)} onClick={() => { game.sellHero(hero.uid); onClose(); }} className="game-control game-danger h-9 disabled:cursor-not-allowed disabled:opacity-35" title={hero.heroId === game.state.avatarHeroId ? 'Change avatar before selling the last copy' : hero.locked ? 'Unlock before selling' : isInTeam ? 'Remove from team before selling' : 'Sell hero'}><Trash2 size={15} className="mx-auto" /></button></footer>
+        <footer className="grid grid-cols-[minmax(0,1fr)_92px_44px] gap-2 border-t border-[#54442e] bg-black/20 p-3"><button type="button" onClick={() => { const result = game.toggleTeamMember(hero.uid); const succeeded = result === 'added' || result === 'removed'; setTeamError(result === 'inventory-full' ? 'Cannot remove hero: there is not enough room for equipped items. Free bag slots first.' : result === 'blocked' ? 'Team change is unavailable right now.' : ''); setPowerNotice(succeeded ? { delta: teamPowerDelta, added: result === 'added' } : null); }} className={`game-control h-9 px-2 text-[10px] font-black ${isInTeam ? 'game-danger' : 'game-primary'}`}>{isInTeam ? 'Remove from Team' : 'Add to Team'}</button><button type="button" onClick={() => game.toggleHeroLock(hero.uid)} className="game-control flex h-9 items-center justify-center gap-1.5 px-2 text-[10px] font-black" title={hero.locked ? 'Unlock hero' : 'Lock hero'}>{hero.locked ? <Lock size={14} className="text-amber-300" /> : <Unlock size={14} />} {hero.locked ? 'UNLOCK' : 'LOCK'}</button><button type="button" disabled={hero.locked || isInTeam || game.state.ownedHeroes.length <= 1 || (hero.heroId === game.state.avatarHeroId && game.state.ownedHeroes.filter((owned) => owned.heroId === hero.heroId).length <= 1)} onClick={() => { game.sellHero(hero.uid); onClose(); }} className="game-control game-danger h-9 disabled:cursor-not-allowed disabled:opacity-35" title={hero.heroId === game.state.avatarHeroId ? 'Change avatar before selling the last copy' : hero.locked ? 'Unlock before selling' : isInTeam ? 'Remove from team before selling' : 'Sell hero'}><Trash2 size={15} className="mx-auto" /></button></footer>
       </div>
     </div>
   );
@@ -100,6 +108,7 @@ export function HeroesScreen({ game }: { game: GameApi }) {
   const [confirmSale, setConfirmSale] = useState(false);
   const [promotionNotice, setPromotionNotice] = useState('');
   const [promoting, setPromoting] = useState(false);
+  const activeTeamPower = useMemo(() => calculateTeamPower(state.ownedHeroes.filter((hero) => state.team.includes(hero.uid)), state.inventory), [state.team, state.ownedHeroes, state.inventory]);
 
   const entries = useMemo(() => {
     const list = state.ownedHeroes.map((hero) => ({ base: HERO_MAP[hero.heroId], hero })).filter((entry): entry is { base: HeroBase; hero: OwnedHero } => Boolean(entry.base)).filter(({ base, hero }) => {
@@ -159,7 +168,7 @@ export function HeroesScreen({ game }: { game: GameApi }) {
           <section className="relative overflow-hidden rounded-xl border border-[#a87b35] bg-[radial-gradient(circle_at_50%_0%,rgba(190,137,55,.2),transparent_58%),linear-gradient(160deg,#211b12,#0c0d0c)] p-3 shadow-[inset_0_1px_rgba(255,226,163,.12),0_8px_25px_rgba(0,0,0,.35)]">
             <Swords size={54} className="absolute -left-3 -top-3 rotate-[-18deg] text-[#8d6a37]/20" />
             <Shield size={58} className="absolute -bottom-4 -right-2 text-[#8d6a37]/20" />
-            <div className="relative flex items-center justify-between"><span className="flex items-center gap-2 text-xs font-black uppercase tracking-[.15em] text-[#efc875]"><Users size={15} /> Active Team</span><b className="text-sm text-[#f5d98e]">{state.team.length}/3</b></div>
+            <div className="relative flex items-center justify-between gap-3"><span className="flex items-center gap-2 text-xs font-black uppercase tracking-[.15em] text-[#efc875]"><Users size={15} /> Active Team</span><div className="flex items-baseline gap-2"><span className="text-[9px] font-bold uppercase tracking-wider text-[#8f887b]">Team Power</span><b className="text-sm tabular-nums text-[#f5d98e]">{formatNum(activeTeamPower)}</b><span className="text-[10px] font-bold text-[#a99a7d]">{state.team.length}/3</span></div></div>
             <div className="relative mt-3 flex min-h-[96px] items-center justify-center gap-4">
               {state.team.map((uid) => { const hero = state.ownedHeroes.find((candidate) => candidate.uid === uid); const base = hero ? HERO_MAP[hero.heroId] : null; return hero && base ? <HeroPortrait key={uid} heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={88} active badge={hero.level} respawn={respawnCountdowns[uid] ?? 0} onClick={() => openHero(hero)} /> : null; })}
               {Array.from({ length: 3 - state.team.length }, (_, index) => <div key={index} className="grid h-[88px] w-[88px] place-items-center rounded-xl border border-dashed border-[#665333] bg-black/20"><Shield size={24} className="text-[#5c4b31]" /></div>)}

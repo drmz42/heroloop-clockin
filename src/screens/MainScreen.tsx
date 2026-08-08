@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, useMemo, useRef } from 'react';
-import { Package, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, ScrollText } from 'lucide-react';
+import { Package, PackageMinus, Backpack, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, ScrollText } from 'lucide-react';
 import { Arena } from '@/components/Arena';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
@@ -405,7 +405,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
                 <span className="section-kicker shrink-0">Equipped Gear</span>
                 <span className="min-w-0 truncate text-[8px] font-vt font-black" style={{ color: RARITY_COLORS[selectedHeroBase.rarity], textShadow: `0 0 8px ${RARITY_COLORS[selectedHeroBase.rarity]}55` }}>{RARITY_LABEL[selectedHeroBase.rarity]} {CLASS_LABEL[selectedHeroBase.heroClass]}</span>
                 <span className="group/set relative ml-auto shrink-0">
-                  <button type="button" className={`set-bonus-badge h-6 w-[68px] px-1 text-[8px] rarity-${selectedSetBonus?.rarity ?? 'common'} ${selectedSetBonus ? 'set-bonus-active' : ''}`} aria-label="Set bonus details">
+                  <button type="button" className={`set-bonus-badge h-6 w-[62px] px-1 text-[7px] rarity-${selectedSetBonus?.rarity ?? 'common'} ${selectedSetBonus ? 'set-bonus-active' : ''}`} aria-label="Set bonus details">
                     Set bonus {selectedSetBonus ? `+${selectedSetBonus.percent}%` : '—'}
                   </button>
                   <span className="set-bonus-tooltip pointer-events-none absolute bottom-full left-0 z-[70] mb-1 hidden w-64 rounded-lg border border-[#6f5833] bg-[#10120f]/[.98] p-2 text-[9px] leading-4 text-[#bbb2a2] shadow-2xl group-hover/set:block group-focus-within/set:block">
@@ -415,7 +415,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
                     </span>
                   </span>
                 </span>
-                <button type="button" onClick={() => { if (canUnequipAll) { game.unequipAll(selectedHero.uid); setSelectedItem(null); showToast('All gear unequipped'); } }} disabled={!canUnequipAll} className="game-control h-6 w-[68px] shrink-0 px-1 text-[8px] font-black" title={selectedEquippedCount === 0 ? 'No equipped items' : canUnequipAll ? 'Move all equipped items to Inventory' : 'Not enough Inventory space'}>Unequip All</button>
+                <button type="button" aria-label="Unequip All" onClick={() => { if (canUnequipAll) { game.unequipAll(selectedHero.uid); setSelectedItem(null); showToast('All gear unequipped'); } }} disabled={!canUnequipAll} className="game-control flex h-6 w-[44px] shrink-0 items-center justify-center gap-0.5 px-0.5 text-[7px] font-bold leading-none" title={selectedEquippedCount === 0 ? 'No equipped items' : canUnequipAll ? 'Move all equipped items to Inventory' : 'Not enough Inventory space'}><PackageMinus size={10} aria-hidden="true" />All</button>
             </div>
             <div className="grid w-full grid-cols-8 gap-1">
               {SLOTS.map(slot => {
@@ -454,8 +454,8 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
               <span className="section-kicker shrink-0">Inventory</span>
               <span className="shrink-0 rounded border border-[#493e2d] bg-black/25 px-1.5 py-0.5 text-[9px] font-bold text-[#8d887d]">{inventoryTab === 'resources' ? resourceSlotCount : inventoryTab === 1 ? bagItems.length : 0}/{GRID_SIZE}</span>
               <div className="ml-auto flex min-w-0 items-center gap-0.5" role="tablist" aria-label="Inventory sections">
-                {([1, 2, 3, 4] as const).map((bag) => <button key={bag} type="button" role="tab" aria-selected={inventoryTab === bag} onClick={() => { setInventoryTab(bag); setSelectedItem(null); if (bag > 1) showToast(`Bag ${bag} is locked · Shop price pending`); }} className={`game-control h-5 shrink-0 px-1 text-[8px] font-black ${inventoryTab === bag ? 'game-primary' : ''} ${bag > 1 ? 'opacity-55' : ''}`}>{bag > 1 && <LockIcon size={7} className="mr-0.5 inline" />}B{bag}</button>)}
-                <button type="button" role="tab" aria-selected={inventoryTab === 'resources'} onClick={() => { setInventoryTab('resources'); setSelectedItem(null); }} className={`game-control h-5 shrink-0 px-1.5 text-[8px] font-black ${inventoryTab === 'resources' ? 'game-primary' : ''}`}>Res</button>
+                {([1, 2, 3, 4] as const).map((bag) => <button key={bag} type="button" role="tab" aria-label={`Bag ${bag}${bag > 1 ? ', locked' : ''}`} aria-selected={inventoryTab === bag} onClick={() => { setInventoryTab(bag); setSelectedItem(null); if (bag > 1) showToast(`Bag ${bag} is locked · Shop price pending`); }} className={`game-control relative flex h-6 w-[30px] shrink-0 items-center justify-center gap-px px-0 text-[8px] font-medium ${inventoryTab === bag ? 'game-primary' : ''} ${bag > 1 ? 'opacity-55' : ''}`}><Backpack size={13} strokeWidth={1.7} aria-hidden="true" /><span>{bag}</span>{bag > 1 && <LockIcon size={6} className="absolute right-px top-px" aria-hidden="true" />}</button>)}
+                <button type="button" role="tab" aria-label="Resources" title="Resources" aria-selected={inventoryTab === 'resources'} onClick={() => { setInventoryTab('resources'); setSelectedItem(null); }} className={`game-control flex h-6 w-[34px] shrink-0 items-center justify-center gap-px px-0 text-[8px] font-medium ${inventoryTab === 'resources' ? 'game-primary' : ''}`}><Package size={13} strokeWidth={1.7} aria-hidden="true" /><span>R</span></button>
               </div>
             </div>
             {inventoryTab === 1 && <div className="mt-2 grid min-w-0 grid-cols-[1fr_1fr_32px_1fr] gap-1">

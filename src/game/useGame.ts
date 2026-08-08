@@ -190,6 +190,24 @@ export function useGame() {
     heroHpRef.current.clear();
   }, []);
 
+  const mergeServerResourceState = useCallback((remoteState: unknown) => {
+    const remote = normalizeState(remoteState as Partial<GameState>);
+    setState((current) => ({
+      ...current,
+      gold: remote.gold,
+      totalGoldEarned: remote.totalGoldEarned,
+      chests: remote.chests,
+      chestsOpenedToday: remote.chestsOpenedToday,
+      lastChestReset: remote.lastChestReset,
+      lastSeen: Math.max(current.lastSeen, remote.lastSeen),
+      boost: {
+        ...current.boost,
+        chestProgressSeconds: remote.boost.chestProgressSeconds,
+        goldProgressSeconds: remote.boost.goldProgressSeconds,
+      },
+    }));
+  }, []);
+
   useEffect(() => {
     const timer = window.setInterval(() => {
       setState((prev) => advanceTrainingCamp(prev, Date.now()));
@@ -1611,7 +1629,7 @@ export function useGame() {
     buyPotion, usePotion, setAutoPot, setBattleAnimationMode,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
     openChests, closeChestResult, buyRotatingItem, claimQuest,
-    claimReferralReward, setUserProfile, resetAccount, hydrateServerState, completeWelcomeTutorial, setAvatarHero, buyMarketAsset, createMarketListing, cancelMarketListing, completeMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
+    claimReferralReward, setUserProfile, resetAccount, hydrateServerState, mergeServerResourceState, completeWelcomeTutorial, setAvatarHero, buyMarketAsset, createMarketListing, cancelMarketListing, completeMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
     heroStatsFor: (uid: string) => {
       const owned = state.ownedHeroes.find((h) => h.uid === uid);
       if (!owned) return null;

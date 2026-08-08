@@ -1,4 +1,4 @@
-import { MessageCircle, BookOpen, LogOut, Globe, Send, Twitter } from 'lucide-react';
+import { MessageCircle, BookOpen, LogOut, Globe, Send, Twitter, User } from 'lucide-react';
 import { useState } from 'react';
 import type { GameApi } from '@/game/useGame';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
@@ -40,6 +40,10 @@ export function FooterBar({ game }: { game: GameApi }) {
       <div className="flex-1" />
 
       {/* Support + logout */}
+      <div className="game-control flex min-h-7 items-center gap-1 whitespace-nowrap px-2 py-1 font-vt text-xs text-[#d6d0c4]" title="Account nickname">
+        <User size={13} className="text-[#9a9386]" />
+        <span className="max-w-32 truncate">{game.state.username || 'player'}</span>
+      </div>
       <FooterLink icon={<MessageCircle size={13} />} label="Support" href="#" />
       <button onClick={logout} className="game-control game-danger flex min-h-7 items-center gap-1 whitespace-nowrap px-2 py-1 font-vt text-xs">
         <LogOut size={13} /> Logout

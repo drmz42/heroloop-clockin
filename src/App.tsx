@@ -28,10 +28,12 @@ function App() {
   const game = useGame();
   const walletAddress = game.state.walletAddress;
   const hydrateServerState = game.hydrateServerState;
+  const mergeServerResourceState = game.mergeServerResourceState;
   const [accountGate, setAccountGate] = useState<'landing' | 'checking' | 'verified' | 'error'>(tokenomicsEnabled ? 'checking' : (walletAddress ? 'verified' : 'landing'));
   const [accountCheckAttempt, setAccountCheckAttempt] = useState(0);
   const [serverStateReady, setServerStateReady] = useState(false);
   const [serverStateRevision, setServerStateRevision] = useState<number | null>(null);
+  const serverStateRevisionRef = useRef<number | null>(null);
   const saveTimerRef = useRef<number | null>(null);
   const legacyStateRef = useRef(game.state);
   const accountPower = useMemo(
@@ -90,6 +92,7 @@ function App() {
         if (saved.state && saved.revision) {
           hydrateServerState(saved.state);
           clearLegacyState();
+          serverStateRevisionRef.current = saved.revision;
           setServerStateRevision(saved.revision);
           setServerStateReady(true);
           setAccountGate('verified');
@@ -99,6 +102,7 @@ function App() {
           if (cancelled || !migrated) { setAccountGate('error'); return; }
           hydrateServerState(migrated.state);
           clearLegacyState();
+          serverStateRevisionRef.current = migrated.revision;
           setServerStateRevision(migrated.revision);
           setServerStateReady(true);
           setAccountGate('verified');
@@ -113,8 +117,13 @@ function App() {
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(() => {
       void playerSync<{ revision: number; state?: unknown; conflict?: boolean }>('game_state_save', { state: game.state, revision: serverStateRevision }).then((saved) => {
-        if (saved?.conflict && saved.state) hydrateServerState(saved.state);
-        if (saved?.revision) setServerStateRevision(saved.revision);
+        if (!saved?.revision) return;
+        const latestRevision = serverStateRevisionRef.current ?? 0;
+        if (saved.conflict && saved.state && saved.revision > latestRevision) hydrateServerState(saved.state);
+        if (saved.revision > latestRevision) {
+          serverStateRevisionRef.current = saved.revision;
+          setServerStateRevision(saved.revision);
+        }
       });
     }, 800);
     return () => { if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current); };
@@ -142,14 +151,18 @@ function App() {
   }, [pityStatus, applyServerPityStatus]);
 
   useEffect(() => {
-    if (game.serverRevisionHint !== null) setServerStateRevision(game.serverRevisionHint);
+    if (game.serverRevisionHint !== null && game.serverRevisionHint > (serverStateRevisionRef.current ?? 0)) {
+      serverStateRevisionRef.current = game.serverRevisionHint;
+      setServerStateRevision(game.serverRevisionHint);
+    }
   }, [game.serverRevisionHint]);
 
   useEffect(() => {
     if (!resourceState || !resourceRevision || resourceRevision <= (serverStateRevision ?? 0)) return;
-    hydrateServerState(resourceState);
+    mergeServerResourceState(resourceState);
+    serverStateRevisionRef.current = resourceRevision;
     setServerStateRevision(resourceRevision);
-  }, [resourceState, resourceRevision, serverStateRevision, hydrateServerState]);
+  }, [resourceState, resourceRevision, serverStateRevision, mergeServerResourceState]);
 
   useEffect(() => {
     if (pendingTokens < 1 || autoClaimingRef.current) return;
@@ -196,7 +209,6 @@ function App() {
         onChange={setTab}
         gold={game.state.gold}
         hero={game.state.hero}
-        username={game.state.username}
         mailCount={0}
         onWalletClick={() => setShowWallet(true)}
       />

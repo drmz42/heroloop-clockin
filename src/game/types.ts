@@ -335,6 +335,7 @@ export interface BoostState {
   progress: number;         // 0–100
   bonusPct: number;         // 100 when active
   chestProgressSeconds: number; // active reward time carried toward the next timed chest
+  goldProgressSeconds: number; // server reward time carried toward the next periodic Gold credit
   conditions: {
     connectTelegram: boolean;
     connectTwitter: boolean;
