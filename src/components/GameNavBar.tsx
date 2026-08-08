@@ -1,4 +1,5 @@
-import { Mail, ChevronDown, Rocket, Users, WalletCards, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus } from 'lucide-react';
+import { useRef } from 'react';
+import { Mail, ChevronDown, ChevronLeft, ChevronRight, Rocket, Users, WalletCards, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus } from 'lucide-react';
 import type { Tab } from './TopMenu';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
@@ -22,6 +23,9 @@ export function GameNavBar({
   boostActive: boolean; onBoostClick: () => void;
   onWalletClick: () => void;
 }) {
+  const navRef = useRef<HTMLDivElement>(null);
+  const scrollNav = (direction: -1 | 1) => navRef.current?.scrollBy({ left: direction * 180, behavior: 'smooth' });
+
   return (
     <div className="game-command-bar flex min-h-[54px] shrink-0 items-center gap-1 border-b px-2.5 py-2 shadow-[0_12px_35px_rgba(0,0,0,.42)] z-40">
       {/* Logo */}
@@ -30,19 +34,23 @@ export function GameNavBar({
       </button>
 
       {/* Nav tabs */}
-      <div className="flex items-center gap-0.5 overflow-x-auto no-scrollbar">
-        {TABS.map((t) => {
-          const Icon = t.icon;
-          return (
-          <button
-            key={t.id}
-            onClick={() => onChange(t.id)}
-            className={`game-nav-control flex items-center gap-1.5 whitespace-nowrap px-3 py-1 font-vt text-sm font-semibold tracking-wide ${tab === t.id ? 'game-nav-control-active' : ''}`}
-          >
-            <Icon size={14} aria-hidden="true" /> {t.label}
-          </button>
-          );
-        })}
+      <div className="flex min-w-0 flex-1 items-center gap-0.5">
+        <button type="button" onClick={() => scrollNav(-1)} className="game-nav-control grid h-8 w-7 shrink-0 place-items-center px-0" aria-label="Scroll navigation left"><ChevronLeft size={15} /></button>
+        <div ref={navRef} className="no-scrollbar flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
+          {TABS.map((t) => {
+            const Icon = t.icon;
+            return (
+            <button
+              key={t.id}
+              onClick={() => onChange(t.id)}
+              className={`game-nav-control flex items-center gap-1.5 whitespace-nowrap px-3 py-1 font-vt text-sm font-semibold tracking-wide ${tab === t.id ? 'game-nav-control-active' : ''}`}
+            >
+              <Icon size={14} aria-hidden="true" /> {t.label}
+            </button>
+            );
+          })}
+        </div>
+        <button type="button" onClick={() => scrollNav(1)} className="game-nav-control grid h-8 w-7 shrink-0 place-items-center px-0" aria-label="Scroll navigation right"><ChevronRight size={15} /></button>
       </div>
 
       {/* Right side */}
