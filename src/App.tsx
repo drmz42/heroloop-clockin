@@ -120,7 +120,7 @@ function App() {
       if (accountStatusRequestRef.current === request) accountStatusRequestRef.current = null;
     });
     return () => { cancelled = true; };
-  }, [accountCheckAttempt, hydrateServerState, walletAddress]);
+  }, [accountCheckAttempt, hydrateServerState]);
 
   flushServerSaveRef.current = () => {
     const revision = serverStateRevisionRef.current;
