@@ -105,6 +105,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
     ? state.inventory.find((item) => item.uid === selectedHero.equipped[liveSelectedBase.slot]) ?? null
     : null;
   const visiblePotions = POTIONS.filter((p) => state.potions[p.tier] > 0);
+  const resourceSlotCount = 2 + visiblePotions.length;
   const potionsEmpty = POTIONS.every((potion) => state.potions[potion.tier] <= 0);
   const showAutoPotGuide = potionsEmpty && !state.autoPot.autoBuy;
   const cells: (OwnedItem | null)[] = Array.from({ length: GRID_SIZE }).map((_, i) => bagItems[i] ?? null);
@@ -452,7 +453,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
           <div className="mb-2 min-w-0">
             <div className="flex items-center gap-2">
               <span className="section-kicker">Inventory</span>
-              <span className="rounded-md border border-[#493e2d] bg-black/25 px-2 py-1 text-[10px] font-bold text-[#8d887d]">{bagItems.length}/{GRID_SIZE}</span>
+              <span className="rounded-md border border-[#493e2d] bg-black/25 px-2 py-1 text-[10px] font-bold text-[#8d887d]">{inventoryTab === 'resources' ? resourceSlotCount : bagItems.length}/{GRID_SIZE}</span>
             </div>
             <div className="mt-2 grid grid-cols-5 gap-1" role="tablist" aria-label="Inventory sections">
               {([1, 2, 3, 4] as const).map((bag) => <button key={bag} type="button" role="tab" aria-selected={inventoryTab === bag} onClick={() => bag === 1 ? setInventoryTab(1) : showToast(`Bag ${bag} is locked · Shop price pending`)} className={`game-control py-1 text-[10px] font-black ${inventoryTab === bag ? 'game-primary' : ''} ${bag > 1 ? 'opacity-55' : ''}`}>{bag > 1 && <LockIcon size={9} className="mr-1 inline" />}Bag {bag}</button>)}
@@ -469,11 +470,11 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
             </div>}
             {inventoryTab === 1 && inventoryLockMode && <div className="mt-1.5 rounded-md border border-red-500/45 bg-red-950/35 px-2 py-1 text-center text-[9px] font-bold text-red-200" role="status">LOCK MODE · click an item to lock or unlock it</div>}
           </div>
-          {inventoryTab === 'resources' ? <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <div className="stat-tile flex min-h-20 items-center gap-3 p-3"><ScrollText size={24} className="text-violet-300" /><div><div className="text-xs font-black text-[#e7d9c2]">Summon Scrolls</div><div className="font-vt text-lg text-violet-200">{formatNum(state.summonScrolls)}</div></div></div>
-            <div className="stat-tile flex min-h-20 items-center gap-3 p-3"><BossKeyIcon size={24} /><div><div className="text-xs font-black text-[#e7d9c2]">Boss Keys</div><div className="font-vt text-lg text-amber-200">{formatNum(state.bossKeys)}</div></div></div>
-            {visiblePotions.map((potion) => <div key={potion.tier} className="stat-tile flex min-h-20 items-center gap-3 p-2"><div className="h-12 w-12"><ItemArtwork itemId={`potion-${potion.tier}`} name={potion.name} fallback="Potion" /></div><div className="min-w-0"><div className="truncate text-[10px] font-black text-emerald-200">{potion.name}</div><div className="font-vt text-base text-emerald-300">{state.potions[potion.tier]}</div></div></div>)}
-            <div className="col-span-full rounded-md border border-dashed border-[#4e4639] p-3 text-center text-[10px] text-[#777168]">Salvage materials and collectibles will appear here when their acquisition rules are approved.</div>
+          {inventoryTab === 'resources' ? <div className="grid min-w-0 grid-cols-8 gap-1 overflow-hidden">
+            <button type="button" className="item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-violet-400/55" title={`Summon Scrolls: ${formatNum(state.summonScrolls)}`}><ScrollText size={24} className="text-violet-300" /><span className="absolute bottom-0 right-0 min-w-4 rounded-tl bg-violet-400 px-0.5 text-[11px] font-bold leading-4 text-black">{formatNum(state.summonScrolls)}</span></button>
+            <button type="button" className="item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-amber-400/55" title={`Boss Keys: ${formatNum(state.bossKeys)}`}><BossKeyIcon size={24} /><span className="absolute bottom-0 right-0 min-w-4 rounded-tl bg-amber-400 px-0.5 text-[11px] font-bold leading-4 text-black">{formatNum(state.bossKeys)}</span></button>
+            {visiblePotions.map((potion) => <button type="button" key={potion.tier} className="item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-emerald-500/50" title={`${potion.name}: ${state.potions[potion.tier]}`}><ItemArtwork itemId={`potion-${potion.tier}`} name={potion.name} fallback="Potion" /><span className="absolute bottom-0 right-0 min-w-4 rounded-tl bg-emerald-500 px-0.5 text-[11px] font-bold leading-4 text-black">{state.potions[potion.tier]}</span></button>)}
+            {Array.from({ length: GRID_SIZE - resourceSlotCount }, (_, index) => <div key={`resource-empty-${index}`} className="item-slot aspect-square min-w-0 w-full border" style={{ borderColor: 'rgba(128,119,100,0.11)', background: 'linear-gradient(145deg,#151612,#0c0e0d)' }} />)}
           </div> : inventoryTab === 1 ? <div className={`grid min-w-0 grid-cols-8 gap-1 overflow-hidden ${inventoryLockMode ? 'inventory-lock-cursor' : ''}`}>
             {cells.map((item, i) => {
               const itemBase = item ? ITEM_MAP[item.itemId] : null;
