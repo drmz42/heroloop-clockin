@@ -1,9 +1,8 @@
-import { Mail, ChevronDown, Rocket, Users, WalletCards, Swords, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus } from 'lucide-react';
+import { Mail, ChevronDown, Rocket, Users, WalletCards, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus } from 'lucide-react';
 import type { Tab } from './TopMenu';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
 const TABS = [
-  { id: 'main',        label: 'Play',     icon: Swords },
   { id: 'heroes',      label: 'Heroes',   icon: Shield },
   { id: 'summon',      label: 'Summon',   icon: Sparkles },
   { id: 'training',    label: 'Training', icon: Dumbbell },
@@ -11,7 +10,7 @@ const TABS = [
   { id: 'market',      label: 'Market',   icon: Store },
   { id: 'leaderboard', label: 'Ranks',    icon: Trophy },
   { id: 'referrals',   label: 'Refer',    icon: UserPlus },
-] satisfies { id: Tab; label: string; icon: typeof Swords }[];
+] satisfies { id: Tab; label: string; icon: typeof Shield }[];
 
 const formatResource = (value: number) => Math.floor(value).toLocaleString('en-US').replace(/,/g, ' ');
 
@@ -26,9 +25,9 @@ export function GameNavBar({
   return (
     <div className="game-command-bar flex min-h-[54px] shrink-0 items-center gap-1 border-b px-2.5 py-2 shadow-[0_12px_35px_rgba(0,0,0,.42)] z-40">
       {/* Logo */}
-      <div className="mr-1 flex shrink-0 items-center border-r border-[#59472d] pl-1 pr-3">
+      <button type="button" onClick={() => onChange('main')} className="mr-1 flex shrink-0 items-center border-r border-[#59472d] pl-1 pr-3" aria-label="Open Play screen">
         <img src="/assets/brand/heroloop-logo.png" alt="HeroLoop" width={154} height={46} className="h-9 w-auto max-w-[148px] object-contain drop-shadow-[0_0_8px_rgba(226,170,61,.28)]" />
-      </div>
+      </button>
 
       {/* Nav tabs */}
       <div className="flex items-center gap-0.5 overflow-x-auto no-scrollbar">
