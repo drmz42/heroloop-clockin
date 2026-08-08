@@ -300,6 +300,7 @@ export interface GameState {
   currentLocation: number;
   highestLocation: number;
   lastSeen: number;
+  combatXpAt: number;            // Account/Hero XP rewarded-through cutoff
   activeUntil: number;           // ordinary Active reward window; Boost Max bypasses this cap
   totalGoldEarned: number;
   totalTokensEarned: number;

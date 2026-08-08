@@ -338,7 +338,7 @@ export function useGame() {
     const clearSeconds = Math.max(0, (now - battleStartedAtRef.current) / 1000);
     deadHeroUids.forEach((uid) => heroHpRef.current.delete(uid));
     setState((prev) => {
-      const next: GameState = { ...prev, gold: prev.gold + gold, totalGoldEarned: prev.totalGoldEarned + gold };
+      const next: GameState = { ...prev, combatXpAt: now, gold: prev.gold + gold, totalGoldEarned: prev.totalGoldEarned + gold };
       next.balanceTelemetry = recordBattleTelemetry(prev.balanceTelemetry, {
         locationId, teamSize: st.team.length, power: combatPower, boss: Boolean(loc.boss),
         win: allCleared, clearSeconds, heroDeaths: deadHeroUids.length, equippedStatLines,
@@ -624,11 +624,11 @@ export function useGame() {
         if (!prev.walletAddress) return prev;
         const dayChanged = moscowDayKey(prev.lastChestReset) !== moscowDayKey(now);
         const base = dayChanged ? { ...prev, chestsOpenedToday: 0, lastChestReset: now } : prev;
-        if (base.team.length === 0) return { ...base, lastSeen: now };
-        if (elapsed < 12) return { ...base, lastSeen: now };
+        if (base.team.length === 0) return { ...base, lastSeen: now, combatXpAt: now };
+        if (elapsed < 12) return { ...base, lastSeen: now, combatXpAt: now };
         const activeSeconds = base.boost.active ? elapsed : Math.min(elapsed, Math.max(0, (base.activeUntil - (now - elapsed * 1000)) / 1000));
         const battles = Math.floor(activeSeconds / 12);
-        if (activeSeconds <= 0 || battles <= 0) return { ...base, lastSeen: now };
+        if (activeSeconds <= 0 || battles <= 0) return { ...base, lastSeen: now, combatXpAt: now };
         const loc = buildLocation(base.currentLocation, base.team.length);
         const teamBonuses = base.team.reduce((acc, uid) => {
           const hero = base.ownedHeroes.find((candidate) => candidate.uid === uid);
@@ -654,6 +654,7 @@ export function useGame() {
         return {
           ...base,
           lastSeen: now,
+          combatXpAt: now,
           gold: base.gold + gold,
           totalGoldEarned: base.totalGoldEarned + gold,
           hero: base.hero + tokens,
@@ -691,10 +692,9 @@ export function useGame() {
   const [offlineEarnings, setOfflineEarnings] = useState<{ gold: number; seconds: number; tokens?: number; chests?: number; xp?: number } | null>(null);
   useEffect(() => {
     if (tokenomicsEnabled && hydrationVersion === 0) return;
-    if (tokenomicsEnabled) return;
     const st = stateRef.current;
     if (!st.walletAddress) return;
-    const prev = st.lastSeen;
+    const prev = st.combatXpAt;
     const now = Date.now();
     const settlementKey = `${st.walletAddress}:${prev}:${hydrationVersion}`;
     if (offlineSettlementKeyRef.current === settlementKey) return;
@@ -709,15 +709,15 @@ export function useGame() {
         const stats = hero ? heroStats(hero, getEquippedItems(hero, st.inventory)) : null;
         return stats ? { gold: acc.gold + stats.goldBonus, xp: acc.xp + stats.xpBonus } : acc;
       }, { gold: 0, xp: 0 });
-      const gold = Math.round(battles * loc.goldReward * (1 + teamBonuses.gold));
+      const gold = tokenomicsEnabled ? 0 : Math.round(battles * loc.goldReward * (1 + teamBonuses.gold));
       const heroXp = Math.round(battles * loc.xpReward * (1 + teamBonuses.xp));
       const accountXp = heroXp * loc.enemies.length;
       const penalty = trainingTokenPenalty(st.trainingCamp.heroUids.filter(Boolean).length);
-      const tokens = canMineTokens(st.currentLocation, st.accountLevel, st.highestLocation)
+      const tokens = !tokenomicsEnabled && canMineTokens(st.currentLocation, st.accountLevel, st.highestLocation)
         ? Math.floor((activeElapsed / 86400) * 20_000 * (1 - penalty))
         : 0;
-      const chestProgress = st.boost.chestProgressSeconds + activeElapsed;
-      const chests = Math.min(
+      const chestProgress = st.boost.chestProgressSeconds + (tokenomicsEnabled ? 0 : activeElapsed);
+      const chests = tokenomicsEnabled ? 0 : Math.min(
         Math.floor(chestProgress / ACTIVE_CHEST_SECONDS),
         Math.max(0, MAX_CHESTS - st.chests.length),
         Math.max(0, MAX_CHESTS_PER_DAY - st.chestsOpenedToday),
@@ -726,7 +726,8 @@ export function useGame() {
       const dayKey = moscowDayKey(now);
       setState((p) => ({
           ...p,
-          lastSeen: now,
+          lastSeen: tokenomicsEnabled ? p.lastSeen : now,
+          combatXpAt: now,
           gold: p.gold + gold,
           totalGoldEarned: p.totalGoldEarned + gold,
           hero: p.hero + tokens,
@@ -754,7 +755,7 @@ export function useGame() {
         }));
       setOfflineEarnings({ gold, seconds: activeElapsed, tokens: tokens || undefined, chests: chests || undefined, xp: accountXp || undefined });
     } else {
-      setState((p) => p.lastSeen === prev ? { ...p, lastSeen: now } : p);
+      setState((p) => ({ ...p, combatXpAt: now, lastSeen: tokenomicsEnabled ? p.lastSeen : now }));
     }
   }, [hydrationVersion, state.walletAddress]);
 
