@@ -23,6 +23,7 @@ dist-ssr
 *.sw?
 .env
 .backups/
+supabase/.temp/
 .playwright-mcp/
 dist.permission-backup/
 /*.png
