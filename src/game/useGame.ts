@@ -1445,11 +1445,13 @@ export function useGame() {
       const q = prev.dailyQuests.find((q) => q.id === questId) ?? prev.milestoneQuests.find((q) => q.id === questId);
       if (!q || q.claimed || q.progress < q.target) return prev;
       const overflow = Math.max(0, q.progress - q.target);
-      const nextMilestone = q.kind === 'milestone' && q.chain ? milestoneQuest(q.chain, (q.tier ?? 0) + 1, overflow) : null;
+      const nextProgress = q.chain === 'summon' ? prev.summons : overflow;
+      const nextMilestone = q.kind === 'milestone' && q.chain ? milestoneQuest(q.chain, (q.tier ?? 0) + 1, nextProgress) : null;
       return {
         ...prev,
         gold: prev.gold + q.reward.gold,
         hero: prev.hero + q.reward.hero,
+        summonScrolls: prev.summonScrolls + (q.reward.summonScrolls ?? 0),
         totalTokensEarned: prev.totalTokensEarned + q.reward.hero,
         tokensEarnedToday: prev.tokensEarnedToday + q.reward.hero,
         dailyQuests: prev.dailyQuests.map((q) => q.id === questId ? { ...q, claimed: true } : q),

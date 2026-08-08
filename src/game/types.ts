@@ -170,7 +170,7 @@ export interface DailyQuest {
   tier?: number;
   target: number;
   progress: number;
-  reward: { gold: number; hero: number; bossKeys?: number };
+  reward: { gold: number; hero: number; bossKeys?: number; summonScrolls?: number };
   claimed: boolean;
 }
 
@@ -308,6 +308,7 @@ export interface GameState {
   totalKills: number;
   totalBossKills: number;
   summons: number;
+  summonScrolls: number;
   potions: PotionInventory;
   autoPot: AutoPotConfig;
   tutorial: TutorialState;

@@ -83,7 +83,7 @@ const MILESTONE_TARGETS: Record<string, { label: string; targets: number[] }> = 
   chest: { label: 'Open {n} chests', targets: [1_000, 5_000, 25_000] },
   kill: { label: 'Defeat {n} enemies', targets: [50_000, 250_000, 1_000_000] },
   boss: { label: 'Defeat {n} bosses', targets: [25, 100, 500] },
-  summon: { label: 'Summon {n} heroes', targets: [1, 10, 50, 100] },
+  summon: { label: 'Summon {n} heroes', targets: [10, 100, 1_000, 10_000] },
   'token-earned': { label: 'Earn {n} $HERO', targets: [1_000, 10_000, 100_000] },
   'token-spent': { label: 'Spend {n} $HERO', targets: [500, 5_000, 50_000] },
   'gold-earned': { label: 'Earn {n} Gold', targets: [100_000, 1_000_000, 10_000_000] },
@@ -94,10 +94,16 @@ export function milestoneQuest(chain: string, tier = 0, progress = 0): DailyQues
   const definition = MILESTONE_TARGETS[chain];
   const target = definition?.targets[tier];
   if (!definition || target === undefined) return null;
+  const summonScrollRewards = [1, 5, 10, 50];
   return {
     id: `milestone-${chain}-${target}`, kind: 'milestone', chain, tier,
     label: definition.label.replace('{n}', target.toLocaleString('en-US')),
-    target, progress, reward: { gold: Math.max(2_500, Math.floor(target / 10)), hero: 5 * (tier + 1) }, claimed: false,
+    target,
+    progress,
+    reward: chain === 'summon'
+      ? { gold: 0, hero: 0, summonScrolls: summonScrollRewards[tier] }
+      : { gold: Math.max(2_500, Math.floor(target / 10)), hero: 5 * (tier + 1) },
+    claimed: false,
   };
 }
 
@@ -141,6 +147,7 @@ export function makeInitialState(): GameState {
     totalKills: 0,
     totalBossKills: 0,
     summons: 0,
+    summonScrolls: 0,
     potions: { xs: 10, sm: 0, md: 0, lg: 0, xl: 0, xxl: 0 },
     autoPot: { enabled: true, autoBuy: false, autoBuyTier: 'sm', autoSelectTier: true, threshold: 0.4 },
     tutorial: { welcomeCompleted: false, autoPotCompleted: false, chestGranted: false, chestCompleted: false },
@@ -355,6 +362,7 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
       accountLevel,
       totalKills: parsed.totalKills ?? 0,
       totalBossKills: parsed.totalBossKills ?? parsed.session?.bossKills ?? 0,
+      summonScrolls: Math.max(0, Math.floor(parsed.summonScrolls ?? 0)),
       tokensEarnedToday: parsed.tokenDayKey === moscowDayKey(now) ? (parsed.tokensEarnedToday ?? 0) : 0,
       tokenDayKey: moscowDayKey(now),
       currentLocation: parsed.currentLocation ?? 1,
@@ -364,7 +372,11 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
       dailyQuests: questSameDay && parsed.dailyQuests?.some((quest) => quest.id === 'kill-1000') ? parsed.dailyQuests : generateDailyQuests(),
       milestoneQuests: (parsed.milestoneQuests ?? generateMilestoneQuests()).map((quest) =>
         quest.kind === 'milestone' && quest.chain
-          ? milestoneQuest(quest.chain, quest.tier ?? 0, quest.progress) ?? quest
+          ? milestoneQuest(
+              quest.chain,
+              quest.chain === 'summon' && MILESTONE_TARGETS.summon.targets[quest.tier ?? 0] !== quest.target ? 0 : (quest.tier ?? 0),
+              quest.chain === 'summon' ? (parsed.summons ?? 0) : quest.progress,
+            ) ?? quest
           : quest
       ),
       lastQuestReset: questSameDay ? (parsed.lastQuestReset ?? now) : now,

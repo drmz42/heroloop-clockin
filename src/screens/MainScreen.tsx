@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, useMemo, useRef } from 'react';
-import { Package, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Hammer, Sparkles, Info, Settings2, Rocket } from 'lucide-react';
+import { Package, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Hammer, Sparkles, Info, Settings2, Rocket, ScrollText } from 'lucide-react';
 import { Arena } from '@/components/Arena';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
@@ -244,7 +244,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
                     <span className="text-[8px] font-bold uppercase text-[#8e887b]">Tier {(q.tier ?? 0) + 1}</span>
                   </div>
                   <div className="health-track mb-1 h-2 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#5a3d70,#bd78d5)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
-                  <div className="flex items-center justify-between text-xs"><span className="font-vt text-px-dim">{formatNum(q.progress)}/{formatNum(q.target)}</span><span className="flex items-center gap-1 font-vt text-px-text"><Coins size={11} />{formatNum(q.reward.gold)} <HeroTokenIcon size={11} />{q.reward.hero}</span></div>
+                  <div className="flex items-center justify-between text-xs"><span className="font-vt text-px-dim">{formatNum(q.progress)}/{formatNum(q.target)}</span><span className="flex items-center gap-1 font-vt text-px-text">{q.reward.summonScrolls ? <><ScrollText size={11} />{q.reward.summonScrolls}</> : <><Coins size={11} />{formatNum(q.reward.gold)} <HeroTokenIcon size={11} />{q.reward.hero}</>}</span></div>
                   {done && <button onClick={() => game.claimQuest(q.id)} className="game-control game-primary mt-2 w-full px-3 py-1 text-xs font-bold">Claim & unlock next</button>}
                 </div>
               );
