@@ -632,11 +632,11 @@ function TokenEarningsPanel({ status, today, clientPower, eligible, heroes, defe
     </>
   );
   return (
-    <div className="absolute bottom-3 left-3 z-30 flex origin-bottom-left scale-[.6] flex-col items-start gap-2 font-vt">
-      <div className="grid grid-cols-[repeat(3,max-content)] gap-2 rounded-2xl border-2 border-[#80683f] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_24px_rgba(128,104,63,.28)]">
+    <div className="absolute bottom-3 left-3 z-30 flex w-max origin-bottom-left scale-[.63] flex-col items-stretch gap-2 font-vt">
+      <div className="grid w-full grid-cols-[repeat(3,1fr)] gap-2 rounded-2xl border-2 border-[#80683f] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_24px_rgba(128,104,63,.28)]">
         {[['Heroes', heroes], ['Defeated', defeated], ['Bosses', bosses]].map(([label, value]) => <div key={label} className="text-center"><span className="block text-[11px] font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span><strong className="mt-1 block text-[16px] tabular-nums text-[#e8dfc8]">{formatNum(Number(value))}</strong></div>)}
       </div>
-      <div className="token-earnings-panel flex w-fit flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_34px_rgba(229,177,70,.4)]">
+      <div className="token-earnings-panel flex w-full flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_34px_rgba(229,177,70,.4)]">
       <div className="flex items-center gap-2">
         <HeroTokenIcon size={22} />
         <span className="text-[15px] font-black uppercase tracking-[.14em] text-[#ffd36e]">$HERO Income</span>
