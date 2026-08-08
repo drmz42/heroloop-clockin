@@ -247,6 +247,11 @@ html { scroll-behavior: smooth; }
   .health-track { border:1px solid #4d4536;border-radius:4px;background:#080a09;box-shadow:inset 0 2px 5px rgba(0,0,0,.8); }
 }
 
+/* Gameplay uses exactly three text tiers; public landing display type is unaffected. */
+.game-shell :is(.text-\[6px\],.text-\[7px\],.text-\[8px\],.text-\[9px\],.text-\[10px\],.text-\[11px\]) { font-size:var(--ui-text-small)!important;line-height:1.35; }
+.game-shell :is(.text-xs,.text-sm,.text-\[12px\],.text-\[13px\],.text-\[14px\],.text-\[15px\],.text-\[16px\]) { font-size:var(--ui-text-medium)!important;line-height:1.4; }
+.game-shell :is(.text-base,.text-lg,.text-xl,.text-2xl,.text-3xl,.text-4xl,.text-5xl,.text-6xl) { font-size:var(--ui-text-large)!important;line-height:1.25; }
+
 @keyframes legendary-glint { 0%,88%,100%{transform:translateX(-55%);opacity:0}92%{opacity:1}97%{transform:translateX(55%);opacity:0} }
 @keyframes rarity-prestige-aura { 0%,100%{filter:brightness(1);box-shadow:0 0 7px rgba(var(--rarity-rgb),.22),inset 0 0 10px rgba(var(--rarity-rgb),.1)}50%{filter:brightness(1.1);box-shadow:0 0 18px rgba(var(--rarity-rgb),.48),inset 0 0 16px rgba(var(--rarity-rgb),.18)} }
 @keyframes rarity-prestige-sheen { 0%,72%,100%{transform:translateX(-150%) rotate(12deg);opacity:0}78%{opacity:.55}88%{transform:translateX(150%) rotate(12deg);opacity:0} }

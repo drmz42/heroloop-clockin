@@ -35,6 +35,12 @@ function App() {
   const [serverStateRevision, setServerStateRevision] = useState<number | null>(null);
   const serverStateRevisionRef = useRef<number | null>(null);
   const saveTimerRef = useRef<number | null>(null);
+  const saveInFlightRef = useRef(false);
+  const saveStateRef = useRef(game.state);
+  const saveStateVersionRef = useRef(0);
+  const savedStateVersionRef = useRef(0);
+  const flushServerSaveRef = useRef<() => void>(() => undefined);
+  const accountStatusRequestRef = useRef<Promise<{ exists: boolean; username: string | null; account_id: string } | null> | null>(null);
   const legacyStateRef = useRef(game.state);
   const accountPower = useMemo(
     () => calculateAccountPower(game.state.ownedHeroes, game.state.inventory),
@@ -80,7 +86,9 @@ function App() {
     if (!tokenomicsEnabled) { setAccountGate('verified'); return; }
     let cancelled = false;
     setAccountGate('checking');
-    void playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status').then((account) => {
+    const request = accountStatusRequestRef.current ?? playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status');
+    accountStatusRequestRef.current = request;
+    void request.then((account) => {
       if (cancelled) return;
       if (!account) { setAccountGate('error'); return; }
       if (!account.exists || !account.username) {
@@ -108,26 +116,45 @@ function App() {
           setAccountGate('verified');
         });
       });
+    }).finally(() => {
+      if (accountStatusRequestRef.current === request) accountStatusRequestRef.current = null;
     });
     return () => { cancelled = true; };
   }, [accountCheckAttempt, hydrateServerState, walletAddress]);
 
+  flushServerSaveRef.current = () => {
+    const revision = serverStateRevisionRef.current;
+    if (!serverStateReady || revision === null || saveInFlightRef.current) return;
+    const state = saveStateRef.current;
+    const version = saveStateVersionRef.current;
+    if (version <= savedStateVersionRef.current) return;
+    saveInFlightRef.current = true;
+    void playerSync<{ revision: number; state?: unknown; conflict?: boolean }>('game_state_save', { state, revision }).then((saved) => {
+      if (!saved?.revision) return;
+      savedStateVersionRef.current = Math.max(savedStateVersionRef.current, version);
+      const latestRevision = serverStateRevisionRef.current ?? 0;
+      if (saved.conflict && saved.state && saved.revision > latestRevision) hydrateServerState(saved.state);
+      if (saved.revision > latestRevision) {
+        serverStateRevisionRef.current = saved.revision;
+        setServerStateRevision(saved.revision);
+      }
+    }).finally(() => {
+      saveInFlightRef.current = false;
+      if (saveStateVersionRef.current > version) {
+        if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = window.setTimeout(() => flushServerSaveRef.current(), 800);
+      }
+    });
+  };
+
   useEffect(() => {
-    if (!serverStateReady || serverStateRevision === null) return;
+    saveStateRef.current = game.state;
+    saveStateVersionRef.current += 1;
+    if (!serverStateReady) return;
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = window.setTimeout(() => {
-      void playerSync<{ revision: number; state?: unknown; conflict?: boolean }>('game_state_save', { state: game.state, revision: serverStateRevision }).then((saved) => {
-        if (!saved?.revision) return;
-        const latestRevision = serverStateRevisionRef.current ?? 0;
-        if (saved.conflict && saved.state && saved.revision > latestRevision) hydrateServerState(saved.state);
-        if (saved.revision > latestRevision) {
-          serverStateRevisionRef.current = saved.revision;
-          setServerStateRevision(saved.revision);
-        }
-      });
-    }, 800);
+    saveTimerRef.current = window.setTimeout(() => flushServerSaveRef.current(), 800);
     return () => { if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current); };
-  }, [game.state, hydrateServerState, serverStateReady, serverStateRevision]);
+  }, [game.state, serverStateReady]);
 
   useEffect(() => {
     if (serverTokenBalance === undefined) return;
@@ -191,6 +218,7 @@ function App() {
   const [showWallet, setShowWallet] = useState(false);
 
   useEffect(() => {
+    if (accountGate === 'checking' || accountGate === 'error') return;
     const target = accountGate === 'verified' ? '/#game' : '/';
     if (`${window.location.pathname}${window.location.hash}` !== target) {
       window.history.replaceState(null, '', target);

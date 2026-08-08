@@ -44,8 +44,14 @@ export function useTokenomics(power: number, accountLevel: number, username: str
   const [loading, setLoading] = useState(false);
   const powerRef = useRef(power);
   const playerIdRef = useRef(playerId);
+  const accountLevelRef = useRef(accountLevel);
+  const usernameRef = useRef(username);
+  const statsRef = useRef(stats);
   powerRef.current = power;
   playerIdRef.current = playerId;
+  accountLevelRef.current = accountLevel;
+  usernameRef.current = username;
+  statsRef.current = stats;
 
   const authHeaders = useCallback(() => getAuthHeaders(), []);
 
@@ -53,6 +59,7 @@ export function useTokenomics(power: number, accountLevel: number, username: str
     if (!tokenomicsEnabled) return;
     const pid = playerIdRef.current;
     if (!pid) return;
+    const currentStats = statsRef.current;
     try {
       const headers = await authHeaders();
       if (!headers) return;
@@ -63,19 +70,19 @@ export function useTokenomics(power: number, accountLevel: number, username: str
           action: 'sync',
           player_id: pid,
           power: powerRef.current,
-          account_level: accountLevel,
-          username,
-          total_kills: stats?.totalKills ?? 0,
-          boss_kills: stats?.bossKills ?? 0,
-          chests_opened: stats?.chestsOpened ?? 0,
-          heroes_owned: stats?.heroesOwned ?? 1,
-          highest_location: stats?.highestLocation ?? 1,
-          lineup: stats?.lineup ?? [],
-          avatar_hero_id: stats?.avatarHeroId ?? '',
-          summons: stats?.summons ?? 0,
-          total_tokens_earned: stats?.totalTokensEarned ?? 0,
-          token_eligible: stats?.tokenEligible ?? true,
-          training_hero_count: stats?.trainingHeroCount ?? 0,
+          account_level: accountLevelRef.current,
+          username: usernameRef.current,
+          total_kills: currentStats?.totalKills ?? 0,
+          boss_kills: currentStats?.bossKills ?? 0,
+          chests_opened: currentStats?.chestsOpened ?? 0,
+          heroes_owned: currentStats?.heroesOwned ?? 1,
+          highest_location: currentStats?.highestLocation ?? 1,
+          lineup: currentStats?.lineup ?? [],
+          avatar_hero_id: currentStats?.avatarHeroId ?? '',
+          summons: currentStats?.summons ?? 0,
+          total_tokens_earned: currentStats?.totalTokensEarned ?? 0,
+          token_eligible: currentStats?.tokenEligible ?? true,
+          training_hero_count: currentStats?.trainingHeroCount ?? 0,
         }),
       });
       if (!res.ok) return;
@@ -84,7 +91,7 @@ export function useTokenomics(power: number, accountLevel: number, username: str
         setStatus((prev) => prev ? { ...prev, pending_tokens: data.pending_tokens, total_claimed: data.total_claimed } : prev);
       }
     } catch { /* silent */ }
-  }, [accountLevel, username, stats?.totalKills, stats?.bossKills, stats?.chestsOpened, stats?.heroesOwned, stats?.highestLocation, stats?.tokenEligible, stats?.lineup, stats?.avatarHeroId, stats?.summons, stats?.totalTokensEarned, stats?.trainingHeroCount, authHeaders]);
+  }, [authHeaders]);
 
   const fetchStatus = useCallback(async () => {
     if (!tokenomicsEnabled) return;

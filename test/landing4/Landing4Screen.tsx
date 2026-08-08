@@ -795,10 +795,6 @@ export default function App() {
 }
 
 const CSS = `
-@import url('https://cdn.jsdelivr.net/fontsource/css/cinzel@latest/index.css');
-@import url('https://cdn.jsdelivr.net/fontsource/css/cinzel@latest/latin-900-normal.css');
-@import url('https://cdn.jsdelivr.net/fontsource/css/manrope@latest/index.css');
-
 :root{
   --ink:#050507;
   --bg0:#070709;

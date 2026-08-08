@@ -613,7 +613,6 @@ export function useGame() {
   // A minimized/background tab can pause requestAnimationFrame before a combat
   // wave resolves. Catch up the complete Active reward stream on return.
   useEffect(() => {
-    if (tokenomicsEnabled) return;
     let hiddenSince: number | null = null;
     const markHidden = () => { hiddenSince ??= Date.now(); };
     const catchUp = () => {
@@ -636,12 +635,12 @@ export function useGame() {
           const stats = hero ? heroStats(hero, getEquippedItems(hero, base.inventory)) : null;
           return stats ? { gold: acc.gold + stats.goldBonus, xp: acc.xp + stats.xpBonus } : acc;
         }, { gold: 0, xp: 0 });
-        const gold = Math.round(battles * loc.goldReward * (1 + teamBonuses.gold));
+        const gold = tokenomicsEnabled ? 0 : Math.round(battles * loc.goldReward * (1 + teamBonuses.gold));
         const heroXp = Math.round(battles * loc.xpReward * (1 + teamBonuses.xp));
         const accountXp = heroXp * loc.enemies.length;
         const kills = battles * loc.enemies.length;
-        const progress = base.boost.chestProgressSeconds + activeSeconds;
-        const earned = Math.floor(progress / ACTIVE_CHEST_SECONDS);
+        const progress = base.boost.chestProgressSeconds + (tokenomicsEnabled ? 0 : activeSeconds);
+        const earned = tokenomicsEnabled ? 0 : Math.floor(progress / ACTIVE_CHEST_SECONDS);
         const available = Math.max(0, MAX_CHESTS - base.chests.length);
         const dailyAvailable = Math.max(0, MAX_CHESTS_PER_DAY - base.chestsOpenedToday);
         const awarded = Math.min(earned, available, dailyAvailable);
@@ -649,7 +648,7 @@ export function useGame() {
           ? [...base.chests, ...Array.from({ length: awarded }, (_, index) => ({ id: `active-${now}-${index}`, stage: base.currentLocation }))]
           : base.chests;
         const penalty = trainingTokenPenalty(base.trainingCamp.heroUids.filter(Boolean).length);
-        const tokens = canMineTokens(base.currentLocation, base.accountLevel, base.highestLocation) ? Math.floor((activeSeconds / 86400) * 20_000 * (1 - penalty)) : 0;
+        const tokens = tokenomicsEnabled ? 0 : (canMineTokens(base.currentLocation, base.accountLevel, base.highestLocation) ? Math.floor((activeSeconds / 86400) * 20_000 * (1 - penalty)) : 0);
         const nextAccountXp = base.accountXp + accountXp;
         const dayKey = moscowDayKey();
         return {

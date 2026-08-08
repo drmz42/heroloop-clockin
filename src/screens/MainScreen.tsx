@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, useMemo, useRef } from 'react';
-import { Package, PackageMinus, Backpack, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, ScrollText } from 'lucide-react';
+import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, ScrollText } from 'lucide-react';
 import { Arena } from '@/components/Arena';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
@@ -15,6 +15,7 @@ import { ItemArtwork } from '@/components/ItemArtwork';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { ChestCollectIcon } from '@/components/ChestCollectIcon';
 import { BossKeyIcon } from '@/components/BossKeyIcon';
+import { FantasyBagIcon } from '@/components/FantasyBagIcon';
 import { recommendedTeamPower } from '@/game/balance';
 import { playerSync, supabase } from '@/game/backend';
 
@@ -50,6 +51,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
   const [showBulkSellConfirm, setShowBulkSellConfirm] = useState(false);
   const [inventoryLockMode, setInventoryLockMode] = useState(false);
   const [inventoryTab, setInventoryTab] = useState<1 | 2 | 3 | 4 | 'resources'>(1);
+  const [selectedResource, setSelectedResource] = useState<'summon-scroll' | 'boss-key' | null>(null);
   const [showDropRates, setShowDropRates] = useState(false);
   const [showZoomTip, setShowZoomTip] = useState(true);
   const [selectedHeroUid, setSelectedHeroUid] = useState<string | null>(state.team[0] ?? null);
@@ -214,40 +216,40 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
         </div>
 
         <div className="flex-1 p-3">
-          <div className="section-kicker mb-2">Daily Quests</div>
-          <div className="space-y-1.5">
+          <div className="section-kicker mb-1.5">Daily Quests</div>
+          <div className="space-y-1">
             {state.dailyQuests.map(q => {
               const done = q.progress >= q.target;
               return (
-                <div key={q.id} className={`quest-card p-2 ${done && !q.claimed ? 'border-[#b48a43]' : ''}`}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    {q.claimed ? <CheckCircle2 size={14} className="text-emerald-400" /> : done ? <Circle size={14} className="text-amber-400 fill-amber-400/30" /> : <Circle size={14} className="text-slate-600" />}
-                    <span className="text-sm text-px-text font-vt flex-1">{q.label}</span>
+                <div key={q.id} className={`quest-card px-2 py-1.5 ${done && !q.claimed ? 'border-[#b48a43]' : ''}`}>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    {q.claimed ? <CheckCircle2 size={12} className="text-emerald-400" /> : done ? <Circle size={12} className="fill-amber-400/30 text-amber-400" /> : <Circle size={12} className="text-slate-600" />}
+                    <span className="ui-text-medium min-w-0 flex-1 leading-tight text-px-text">{q.label}</span>
                   </div>
-                  <div className="health-track mb-1 h-2 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-px-dim font-vt">{q.progress}/{q.target}</span>
-                    <span className="text-px-text font-vt flex items-center gap-1"><Coins size={11} />{q.reward.gold} <HeroTokenIcon size={11} />{q.reward.hero}</span>
+                  <div className="health-track mb-1 h-1.5 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
+                  <div className="ui-text-small flex items-center justify-between">
+                    <span className="text-px-dim">{q.progress}/{q.target}</span>
+                    <span className="flex items-center gap-1 text-px-text"><Coins size={10} />{q.reward.gold} <HeroTokenIcon size={10} />{q.reward.hero}</span>
                   </div>
-                  {done && !q.claimed && <button onClick={() => game.claimQuest(q.id)} className="game-control game-primary mt-2 w-full px-3 py-1 text-xs font-bold">Claim reward</button>}
+                  {done && !q.claimed && <button onClick={() => game.claimQuest(q.id)} className="game-control game-primary ui-text-medium mt-1.5 min-h-7 w-full px-2 py-1 font-bold">Claim reward</button>}
                 </div>
               );
             })}
           </div>
-          <div className="section-kicker mb-2 mt-4">Milestone Quests</div>
-          <div className="space-y-1.5">
+          <div className="section-kicker mb-1.5 mt-3">Milestone Quests</div>
+          <div className="space-y-1">
             {state.milestoneQuests.map(q => {
               const done = q.progress >= q.target;
               return (
-                <div key={q.id} className={`quest-card p-2 ${done ? 'border-[#b48a43]' : ''}`}>
+                <div key={q.id} className={`quest-card px-2 py-1.5 ${done ? 'border-[#b48a43]' : ''}`}>
                   <div className="mb-1 flex items-center gap-1.5">
-                    {done ? <Circle size={14} className="fill-amber-400/30 text-amber-400" /> : <Circle size={14} className="text-slate-600" />}
-                    <span className="flex-1 font-vt text-sm text-px-text">{q.label}</span>
-                    <span className="text-[8px] font-bold uppercase text-[#8e887b]">Tier {(q.tier ?? 0) + 1}</span>
+                    {done ? <Circle size={12} className="fill-amber-400/30 text-amber-400" /> : <Circle size={12} className="text-slate-600" />}
+                    <span className="ui-text-medium min-w-0 flex-1 leading-tight text-px-text">{q.label}</span>
+                    <span className="ui-text-small shrink-0 font-bold uppercase text-[#8e887b]">Tier {(q.tier ?? 0) + 1}</span>
                   </div>
-                  <div className="health-track mb-1 h-2 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#5a3d70,#bd78d5)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
-                  <div className="flex items-center justify-between text-xs"><span className="font-vt text-px-dim">{formatNum(q.progress)}/{formatNum(q.target)}</span><span className="flex items-center gap-1 font-vt text-px-text">{q.reward.summonScrolls ? <><ScrollText size={11} />{q.reward.summonScrolls}</> : <><Coins size={11} />{formatNum(q.reward.gold)} <HeroTokenIcon size={11} />{q.reward.hero}</>}</span></div>
-                  {done && <button onClick={() => game.claimQuest(q.id)} className="game-control game-primary mt-2 w-full px-3 py-1 text-xs font-bold">Claim & unlock next</button>}
+                  <div className="health-track mb-1 h-1.5 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#5a3d70,#bd78d5)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
+                  <div className="ui-text-small flex items-center justify-between"><span className="text-px-dim">{formatNum(q.progress)}/{formatNum(q.target)}</span><span className="flex items-center gap-1 text-px-text">{q.reward.summonScrolls ? <><ScrollText size={10} />{q.reward.summonScrolls}</> : <><Coins size={10} />{formatNum(q.reward.gold)} <HeroTokenIcon size={10} />{q.reward.hero}</>}</span></div>
+                  {done && <button onClick={() => game.claimQuest(q.id)} className="game-control game-primary ui-text-medium mt-1.5 min-h-7 w-full px-2 py-1 font-bold">Claim & unlock next</button>}
                 </div>
               );
             })}
@@ -454,8 +456,8 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
               <span className="section-kicker shrink-0">Inventory</span>
               <span className="shrink-0 rounded border border-[#493e2d] bg-black/25 px-1.5 py-0.5 text-[9px] font-bold text-[#8d887d]">{inventoryTab === 'resources' ? resourceSlotCount : inventoryTab === 1 ? bagItems.length : 0}/{GRID_SIZE}</span>
               <div className="ml-auto flex min-w-0 items-center gap-0.5" role="tablist" aria-label="Inventory sections">
-                {([1, 2, 3, 4] as const).map((bag) => <button key={bag} type="button" role="tab" aria-label={`Bag ${bag}${bag > 1 ? ', locked' : ''}`} aria-selected={inventoryTab === bag} onClick={() => { setInventoryTab(bag); setSelectedItem(null); if (bag > 1) showToast(`Bag ${bag} is locked · Shop price pending`); }} className={`game-control relative flex h-6 w-[30px] shrink-0 items-center justify-center gap-px px-0 text-[8px] font-medium ${inventoryTab === bag ? 'game-primary' : ''} ${bag > 1 ? 'opacity-55' : ''}`}><Backpack size={13} strokeWidth={1.7} aria-hidden="true" /><span>{bag}</span>{bag > 1 && <LockIcon size={6} className="absolute right-px top-px" aria-hidden="true" />}</button>)}
-                <button type="button" role="tab" aria-label="Resources" title="Resources" aria-selected={inventoryTab === 'resources'} onClick={() => { setInventoryTab('resources'); setSelectedItem(null); }} className={`game-control flex h-6 w-[34px] shrink-0 items-center justify-center gap-px px-0 text-[8px] font-medium ${inventoryTab === 'resources' ? 'game-primary' : ''}`}><Package size={13} strokeWidth={1.7} aria-hidden="true" /><span>R</span></button>
+                {([1, 2, 3, 4] as const).map((bag) => <button key={bag} type="button" role="tab" aria-label={`Bag ${bag}${bag > 1 ? ', locked' : ''}`} aria-selected={inventoryTab === bag} onClick={() => { setInventoryTab(bag); setSelectedResource(null); setSelectedItem(null); if (bag > 1) showToast(`Bag ${bag} is locked · Shop price pending`); }} className={`game-control ui-text-small relative flex h-6 w-[30px] shrink-0 items-center justify-center gap-px px-0 font-medium ${inventoryTab === bag ? 'game-primary' : ''} ${bag > 1 ? 'opacity-55' : ''}`}><FantasyBagIcon size={14} /><span>{bag}</span>{bag > 1 && <LockIcon size={7} className="absolute right-px top-px" aria-hidden="true" />}</button>)}
+                <button type="button" role="tab" aria-label="Resources" title="Resources" aria-selected={inventoryTab === 'resources'} onClick={() => { setInventoryTab('resources'); setSelectedItem(null); }} className={`game-control ui-text-small flex h-6 w-[34px] shrink-0 items-center justify-center gap-px px-0 font-medium ${inventoryTab === 'resources' ? 'game-primary' : ''}`}><Package size={13} strokeWidth={1.7} aria-hidden="true" /><span>R</span></button>
               </div>
             </div>
             {inventoryTab === 1 && <div className="mt-2 grid min-w-0 grid-cols-[1fr_1fr_32px_1fr] gap-1">
@@ -469,11 +471,14 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
             </div>}
             {inventoryTab === 1 && inventoryLockMode && <div className="mt-1.5 rounded-md border border-red-500/45 bg-red-950/35 px-2 py-1 text-center text-[9px] font-bold text-red-200" role="status">LOCK MODE · click an item to lock or unlock it</div>}
           </div>
-          {inventoryTab === 'resources' ? <div className="grid min-w-0 grid-cols-8 gap-1 overflow-hidden">
-            <button type="button" className="item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-violet-400/55" title={`Summon Scrolls: ${formatNum(state.summonScrolls)}`}><ScrollText size={24} className="text-violet-300" /><span className="absolute bottom-0 right-0 min-w-4 rounded-tl bg-violet-400 px-0.5 text-[11px] font-bold leading-4 text-black">{formatNum(state.summonScrolls)}</span></button>
-            <button type="button" className="item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-amber-400/55" title={`Boss Keys: ${formatNum(state.bossKeys)}`}><BossKeyIcon size={24} /><span className="absolute bottom-0 right-0 min-w-4 rounded-tl bg-amber-400 px-0.5 text-[11px] font-bold leading-4 text-black">{formatNum(state.bossKeys)}</span></button>
+          {inventoryTab === 'resources' ? <div className="min-w-0">
+            <div className="grid min-w-0 grid-cols-8 gap-1 overflow-hidden">
+            <button type="button" aria-pressed={selectedResource === 'summon-scroll'} onClick={() => setSelectedResource((current) => current === 'summon-scroll' ? null : 'summon-scroll')} className={`item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-violet-400/55 ${selectedResource === 'summon-scroll' ? 'ring-2 ring-violet-300 ring-offset-1 ring-offset-black' : ''}`} title={`Summon Scrolls: ${formatNum(state.summonScrolls)}`}><ScrollText size={24} className="text-violet-300" /><span className="ui-text-small absolute bottom-0 right-0 min-w-4 rounded-tl bg-violet-400 px-0.5 font-bold leading-4 text-black">{formatNum(state.summonScrolls)}</span></button>
+            <button type="button" aria-pressed={selectedResource === 'boss-key'} onClick={() => setSelectedResource((current) => current === 'boss-key' ? null : 'boss-key')} className={`item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-amber-400/55 ${selectedResource === 'boss-key' ? 'ring-2 ring-amber-300 ring-offset-1 ring-offset-black' : ''}`} title={`Boss Keys: ${formatNum(state.bossKeys)}`}><BossKeyIcon size={24} /><span className="ui-text-small absolute bottom-0 right-0 min-w-4 rounded-tl bg-amber-400 px-0.5 font-bold leading-4 text-black">{formatNum(state.bossKeys)}</span></button>
             {visiblePotions.map((potion) => <button type="button" key={potion.tier} className="item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-emerald-500/50" title={`${potion.name}: ${state.potions[potion.tier]}`}><ItemArtwork itemId={`potion-${potion.tier}`} name={potion.name} fallback="Potion" /><span className="absolute bottom-0 right-0 min-w-4 rounded-tl bg-emerald-500 px-0.5 text-[11px] font-bold leading-4 text-black">{state.potions[potion.tier]}</span></button>)}
             {Array.from({ length: GRID_SIZE - resourceSlotCount }, (_, index) => <div key={`resource-empty-${index}`} className="item-slot aspect-square min-w-0 w-full border" style={{ borderColor: 'rgba(128,119,100,0.11)', background: 'linear-gradient(145deg,#151612,#0c0e0d)' }} />)}
+            </div>
+            {selectedResource && <div className={`mt-2 rounded-lg border p-2 ${selectedResource === 'summon-scroll' ? 'border-violet-400/45 bg-violet-950/20' : 'border-amber-400/45 bg-amber-950/20'}`}><div className="flex items-center gap-2"><span className={selectedResource === 'summon-scroll' ? 'text-violet-300' : 'text-amber-300'}>{selectedResource === 'summon-scroll' ? <ScrollText size={18} /> : <BossKeyIcon size={18} />}</span><div className="min-w-0"><strong className="ui-text-large block text-[#efe4ce]">{selectedResource === 'summon-scroll' ? 'Summon Scroll' : 'Boss Key'}</strong><span className="ui-text-small text-[#9b9283]">Owned: {formatNum(selectedResource === 'summon-scroll' ? state.summonScrolls : state.bossKeys)}</span></div></div><p className="ui-text-medium mt-1.5 leading-snug text-[#c9c0b1]">{selectedResource === 'summon-scroll' ? 'Persistent consumable for one future Free Summon. Scroll spending is not available until server-authoritative Free Summon launches.' : 'Non-deletable resource used only to summon a Boss. One summon consumes one key; a Boss Chest is awarded only after victory.'}</p></div>}
           </div> : inventoryTab === 1 ? <div className={`grid min-w-0 grid-cols-8 gap-1 overflow-hidden ${inventoryLockMode ? 'inventory-lock-cursor' : ''}`}>
             {cells.map((item, i) => {
               const itemBase = item ? ITEM_MAP[item.itemId] : null;
