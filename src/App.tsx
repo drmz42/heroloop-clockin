@@ -14,6 +14,7 @@ import { HeroesScreen } from '@/screens/HeroesScreen';
 import { SummonScreen } from '@/screens/SummonScreen';
 import { TrainingCampScreen } from '@/screens/TrainingCampScreen';
 import { ShopScreen } from '@/screens/ShopScreen';
+import { CraftingScreen } from '@/screens/CraftingScreen';
 import { MarketplaceScreen } from '@/screens/MarketplaceScreen';
 import { LeaderboardScreen } from '@/screens/LeaderboardScreen';
 import { ReferralsScreen } from '@/screens/ReferralsScreen';
@@ -224,6 +225,7 @@ function App() {
               {tab === 'heroes'      && <HeroesScreen game={game} />}
               {tab === 'summon'      && <SummonScreen game={game} />}
               {tab === 'training'    && <TrainingCampScreen game={game} />}
+              {tab === 'crafting'    && <CraftingScreen />}
               {tab === 'shop'        && <ShopScreen game={game} />}
               {tab === 'market'      && <MarketplaceScreen game={game} tokenomics={tokenomics} />}
               {tab === 'leaderboard' && <LeaderboardScreen game={game} />}

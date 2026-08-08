@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Mail, ChevronDown, ChevronLeft, ChevronRight, Users, WalletCards, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus } from 'lucide-react';
+import { Mail, ChevronDown, ChevronLeft, ChevronRight, Users, WalletCards, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus, Hammer } from 'lucide-react';
 import type { Tab } from './TopMenu';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
@@ -7,6 +7,7 @@ const TABS = [
   { id: 'heroes',      label: 'Heroes',   icon: Shield },
   { id: 'summon',      label: 'Summon',   icon: Sparkles },
   { id: 'training',    label: 'Training', icon: Dumbbell },
+  { id: 'crafting',    label: 'Crafting', icon: Hammer },
   { id: 'shop',        label: 'Store',    icon: ShoppingBag },
   { id: 'market',      label: 'Market',   icon: Store },
   { id: 'leaderboard', label: 'Ranks',    icon: Trophy },

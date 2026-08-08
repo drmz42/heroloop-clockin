@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, useMemo, useRef } from 'react';
-import { Package, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Hammer, Sparkles, Info, Settings2, Rocket, ScrollText } from 'lucide-react';
+import { Package, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, ScrollText } from 'lucide-react';
 import { Arena } from '@/components/Arena';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
@@ -49,6 +49,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
   const [toast, setToast] = useState<string | null>(null);
   const [showBulkSellConfirm, setShowBulkSellConfirm] = useState(false);
   const [inventoryLockMode, setInventoryLockMode] = useState(false);
+  const [inventoryTab, setInventoryTab] = useState<1 | 2 | 3 | 4 | 'resources'>(1);
   const [showDropRates, setShowDropRates] = useState(false);
   const [showZoomTip, setShowZoomTip] = useState(true);
   const [selectedHeroUid, setSelectedHeroUid] = useState<string | null>(state.team[0] ?? null);
@@ -106,14 +107,14 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
   const visiblePotions = POTIONS.filter((p) => state.potions[p.tier] > 0);
   const potionsEmpty = POTIONS.every((potion) => state.potions[potion.tier] <= 0);
   const showAutoPotGuide = potionsEmpty && !state.autoPot.autoBuy;
-  const cells: (OwnedItem | null)[] = Array.from({ length: Math.max(0, GRID_SIZE - visiblePotions.length) }).map((_, i) => bagItems[i] ?? null);
+  const cells: (OwnedItem | null)[] = Array.from({ length: GRID_SIZE }).map((_, i) => bagItems[i] ?? null);
   const unlockedSellTotal = bagItems
     .filter(i => !i.locked && !['divine', 'celestial'].includes(ITEM_MAP[i.itemId]?.rarity ?? ''))
     .reduce((acc, i) => acc + sellValue(i), 0);
   const selectedEquippedCount = selectedHero ? Object.values(selectedHero.equipped).filter(Boolean).length : 0;
   const canUnequipAll = selectedEquippedCount > 0 && bagItems.length + selectedEquippedCount <= GRID_SIZE;
   const selectedBagIndex = selectedItemSource === 'bag' && liveSelectedItem
-    ? visiblePotions.length + bagItems.findIndex((item) => item.uid === liveSelectedItem.uid)
+    ? bagItems.findIndex((item) => item.uid === liveSelectedItem.uid)
     : -1;
   const selectedBagRowEnd = selectedBagIndex >= 0 ? Math.floor(selectedBagIndex / 8) * 8 + 7 : -1;
   const chestWeights = standardChestWeights(state.accountLevel, tok.status?.rarity_capacity ?? {});
@@ -453,30 +454,32 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
               <span className="section-kicker">Inventory</span>
               <span className="rounded-md border border-[#493e2d] bg-black/25 px-2 py-1 text-[10px] font-bold text-[#8d887d]">{bagItems.length}/{GRID_SIZE}</span>
             </div>
-            <div className="mt-2 grid min-w-0 grid-cols-[1fr_1fr_32px_1fr_1fr] gap-1">
+            <div className="mt-2 grid grid-cols-5 gap-1" role="tablist" aria-label="Inventory sections">
+              {([1, 2, 3, 4] as const).map((bag) => <button key={bag} type="button" role="tab" aria-selected={inventoryTab === bag} onClick={() => bag === 1 ? setInventoryTab(1) : showToast(`Bag ${bag} is locked · Shop price pending`)} className={`game-control py-1 text-[10px] font-black ${inventoryTab === bag ? 'game-primary' : ''} ${bag > 1 ? 'opacity-55' : ''}`}>{bag > 1 && <LockIcon size={9} className="mr-1 inline" />}Bag {bag}</button>)}
+              <button type="button" role="tab" aria-selected={inventoryTab === 'resources'} onClick={() => { setInventoryTab('resources'); setSelectedItem(null); }} className={`game-control py-1 text-[10px] font-black ${inventoryTab === 'resources' ? 'game-primary' : ''}`}>Resources</button>
+            </div>
+            {inventoryTab === 1 && <div className="mt-2 grid min-w-0 grid-cols-[1fr_1fr_32px_1fr] gap-1">
               <button onClick={() => { game.sortInventory(); showToast('Sorted by rarity'); }} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 text-xs font-bold" title="Sort by rarity"><ArrowUpDown size={12} /> Sort</button>
               <button onClick={() => { if (state.team.length > 0) { game.autoEquipBest(); showToast('Best gear equipped on active team'); } }} disabled={state.team.length === 0} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 text-xs font-bold" title="Equip the strongest valid gear on each active hero in formation order"><Wand2 size={12} /> Auto</button>
               <button type="button" aria-label={inventoryLockMode ? 'Exit Inventory Lock mode' : 'Enter Inventory Lock mode'} aria-pressed={inventoryLockMode} onClick={() => { setInventoryLockMode((active) => !active); setSelectedItem(null); setSelectedItemSource(null); setSelectedItemSlot(null); setShowBulkSellConfirm(false); }} className={`game-control grid min-w-0 place-items-center px-0 py-1 ${inventoryLockMode ? 'border-red-500/70 bg-red-950/55 text-red-300' : 'text-[#a69c8c]'}`} title={inventoryLockMode ? 'Lock mode active — click to exit' : 'Lock mode — click items to lock or unlock'}><LockIcon size={13} /></button>
-              <button disabled className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 text-xs font-bold" title="Crafting is coming later"><Hammer size={12} /> Craft</button>
               <div className="relative">
                 <button onClick={() => setShowBulkSellConfirm((value) => !value)} disabled={unlockedSellTotal === 0} className="game-control game-danger flex min-w-0 w-full items-center justify-center gap-1 px-1 py-1 text-xs font-bold" title={`Sell all unlocked items for ${formatNum(unlockedSellTotal)} gold`}><Coins size={12} /> Sell</button>
                 {showBulkSellConfirm && <div className="item-sell-confirm absolute right-0 top-full z-40 mt-1 w-48 rounded-md border border-[#80502d] p-2 text-left shadow-xl"><p className="text-[9px] font-bold text-[#ead9bf]">Sell all unlocked items for {formatNum(unlockedSellTotal)} Gold?</p><div className="mt-1.5 grid grid-cols-2 gap-1"><button type="button" onClick={() => setShowBulkSellConfirm(false)} className="game-control py-1 text-[9px] font-bold">Cancel</button><button type="button" onClick={() => { game.sellAllUnlocked(); setShowBulkSellConfirm(false); }} className="rounded border border-rose-500/45 bg-rose-500/15 py-1 text-[9px] font-black text-rose-200">Sell all</button></div></div>}
               </div>
-            </div>
-            {inventoryLockMode && <div className="mt-1.5 rounded-md border border-red-500/45 bg-red-950/35 px-2 py-1 text-center text-[9px] font-bold text-red-200" role="status">LOCK MODE · click an item to lock or unlock it</div>}
+            </div>}
+            {inventoryTab === 1 && inventoryLockMode && <div className="mt-1.5 rounded-md border border-red-500/45 bg-red-950/35 px-2 py-1 text-center text-[9px] font-bold text-red-200" role="status">LOCK MODE · click an item to lock or unlock it</div>}
           </div>
-          <div className={`grid min-w-0 grid-cols-8 gap-1 overflow-hidden ${inventoryLockMode ? 'inventory-lock-cursor' : ''}`}>
-            {visiblePotions.map((potion) => (
-              <button key={potion.tier} className="item-slot aspect-square min-w-0 w-full flex items-center justify-center overflow-hidden border border-emerald-500/50 relative" title={`${potion.name}: +${potion.hpRestore} HP`}>
-                <ItemArtwork itemId={`potion-${potion.tier}`} name={potion.name} fallback="🧪" />
-                <span className="absolute bottom-0 right-0 min-w-4 bg-emerald-500 px-0.5 text-[11px] font-bold leading-4 text-black">{state.potions[potion.tier]}</span>
-              </button>
-            ))}
+          {inventoryTab === 'resources' ? <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="stat-tile flex min-h-20 items-center gap-3 p-3"><ScrollText size={24} className="text-violet-300" /><div><div className="text-xs font-black text-[#e7d9c2]">Summon Scrolls</div><div className="font-vt text-lg text-violet-200">{formatNum(state.summonScrolls)}</div></div></div>
+            <div className="stat-tile flex min-h-20 items-center gap-3 p-3"><BossKeyIcon size={24} /><div><div className="text-xs font-black text-[#e7d9c2]">Boss Keys</div><div className="font-vt text-lg text-amber-200">{formatNum(state.bossKeys)}</div></div></div>
+            {visiblePotions.map((potion) => <div key={potion.tier} className="stat-tile flex min-h-20 items-center gap-3 p-2"><div className="h-12 w-12"><ItemArtwork itemId={`potion-${potion.tier}`} name={potion.name} fallback="Potion" /></div><div className="min-w-0"><div className="truncate text-[10px] font-black text-emerald-200">{potion.name}</div><div className="font-vt text-base text-emerald-300">{state.potions[potion.tier]}</div></div></div>)}
+            <div className="col-span-full rounded-md border border-dashed border-[#4e4639] p-3 text-center text-[10px] text-[#777168]">Salvage materials and collectibles will appear here when their acquisition rules are approved.</div>
+          </div> : inventoryTab === 1 ? <div className={`grid min-w-0 grid-cols-8 gap-1 overflow-hidden ${inventoryLockMode ? 'inventory-lock-cursor' : ''}`}>
             {cells.map((item, i) => {
               const itemBase = item ? ITEM_MAP[item.itemId] : null;
               const rarity = itemBase?.rarity ?? (item ? 'common' : null);
               const rc = rarity ? RARITY_COLORS[rarity] : null;
-              const gridIndex = visiblePotions.length + i;
+              const gridIndex = i;
               return (
                 <Fragment key={item ? item.uid : `e${i}`}>
                 <button
@@ -494,7 +497,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
                 </Fragment>
               );
             })}
-          </div>
+          </div> : null}
         </div>
 
         {liveSelectedItem && selectedItemSource === 'hero' && (

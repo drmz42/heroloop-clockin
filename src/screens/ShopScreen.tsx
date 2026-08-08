@@ -27,6 +27,14 @@ export function ShopScreen({ game }: { game: GameApi }) {
 
       <main className="mx-auto mt-2 grid max-w-6xl gap-2">
         <section className="material-panel p-3">
+          <div className="section-kicker">Inventory expansion</div>
+          <h3 className="mt-0.5 text-lg font-black text-[#eadbc4]">Extra Bags</h3>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {[2, 3, 4].map((bag) => <article key={bag} className="shop-card p-3 text-center"><Package className="mx-auto text-[#b6914f]" size={22} /><div className="mt-1 text-xs font-black text-[#ddd0bc]">Bag {bag}</div><button type="button" disabled className="game-control mt-2 w-full py-1 text-[9px] font-bold">Price pending</button></article>)}
+          </div>
+          <p className="mt-2 text-[9px] text-[#817a70]">Purchase stays disabled until the founder approves exact prices and payment currency.</p>
+        </section>
+        <section className="material-panel p-3">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div><div className="section-kicker">Rotating stock</div><h3 className="mt-0.5 text-lg font-black text-[#eadbc4]">Adventurer's Wares</h3></div><div className="game-control flex items-center gap-2 px-3 text-xs text-[#b4ab9d]"><RefreshCw size={13} /> Refreshes in <b className="text-[#e3bc69]">{refreshH}h {refreshM}m</b></div></div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {state.rotatingShop.map((slot, index) => {
