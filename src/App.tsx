@@ -197,13 +197,11 @@ function App() {
         hero={game.state.hero}
         username={game.state.username}
         mailCount={0}
-        boostActive={!!game.state.boost?.active}
-        onBoostClick={() => setShowBoost(true)}
         onWalletClick={() => setShowWallet(true)}
       />
 
       <div className="flex-1 min-h-0 overflow-hidden">
-        <MainScreen game={game} tokenomics={tokenomics} />
+        <MainScreen game={game} tokenomics={tokenomics} onBoostClick={() => setShowBoost(true)} />
       </div>
 
       {tab !== 'main' && (

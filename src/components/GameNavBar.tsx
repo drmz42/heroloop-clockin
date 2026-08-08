@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Mail, ChevronDown, ChevronLeft, ChevronRight, Rocket, Users, WalletCards, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus } from 'lucide-react';
+import { Mail, ChevronDown, ChevronLeft, ChevronRight, Users, WalletCards, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus } from 'lucide-react';
 import type { Tab } from './TopMenu';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
@@ -16,11 +16,10 @@ const TABS = [
 const formatResource = (value: number) => Math.floor(value).toLocaleString('en-US').replace(/,/g, ' ');
 
 export function GameNavBar({
-  tab, onChange, gold, hero, username, mailCount, boostActive, onBoostClick, onWalletClick,
+  tab, onChange, gold, hero, username, mailCount, onWalletClick,
 }: {
   tab: Tab; onChange: (t: Tab) => void;
   gold: number; hero: number; username: string; mailCount: number;
-  boostActive: boolean; onBoostClick: () => void;
   onWalletClick: () => void;
 }) {
   const navRef = useRef<HTMLDivElement>(null);
@@ -61,15 +60,6 @@ export function GameNavBar({
         >
           <WalletCards size={16} /> <span className="hidden xl:inline">Wallet</span>
         </button>
-        {/* BOOST MAX is always lit */}
-        <button
-          onClick={onBoostClick}
-          className={`game-control flex items-center gap-1.5 px-3 py-1.5 font-vt text-sm font-bold ${boostActive ? 'boost-max-active' : 'boost-max-ready'}`}
-          title="Boost your offline earnings to 24/7"
-        >
-          <Rocket size={15} /> <span>{boostActive ? 'BOOST ON' : 'BOOST MAX'}</span>
-        </button>
-
         {/* Mail */}
         <button className="game-control relative grid h-9 w-9 place-items-center" title="Mailbox">
           <Mail size={16} className="text-px-text" />

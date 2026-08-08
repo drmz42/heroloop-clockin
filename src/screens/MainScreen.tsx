@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, useMemo, useRef } from 'react';
-import { Package, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Hammer, Sparkles, Info, Settings2 } from 'lucide-react';
+import { Package, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Hammer, Sparkles, Info, Settings2, Rocket } from 'lucide-react';
 import { Arena } from '@/components/Arena';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
@@ -38,7 +38,7 @@ function emptySlotArtworkId(slot: ItemSlot, heroClass: HeroClass): string {
   return `${slot}-common`;
 }
 
-export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: TokenomicsApi }) {
+export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void }) {
   const { state, units, floaters, battleResult, potionFx, respawnCountdowns } = game;
   const tok = tokenomics;
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
@@ -308,16 +308,19 @@ export function MainScreen({ game, tokenomics }: { game: GameApi; tokenomics: To
               {state.chests.some((chest) => chest.boss) && <p className="mt-2 border-t border-white/10 pt-2 text-[9px] text-rose-200">Boss Chests use the same level table with a Rare/Epic minimum.</p>}
             </div>}
             <button type="button" onClick={() => setShowDropRates((value) => !value)} className="game-control grid h-8 w-8 place-items-center" aria-label="Show chest drop rates" aria-expanded={showDropRates}><Info size={15} /></button>
-            <button
-              onClick={() => game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem)}
-              disabled={state.chests.length === 0}
-              className={`reward-cta game-control flex h-8 items-center gap-1 px-2 py-0.5 text-[9px] font-black disabled:opacity-55 ${state.tutorial.chestGranted && !state.tutorial.chestCompleted ? 'chest-tutorial-guide' : ''}`}
-              title={state.tutorial.chestGranted && !state.tutorial.chestCompleted ? 'Tutorial: open your first chest' : 'Open chests'}
-            >
-              <ChestCollectIcon size={34} />
-              <span>OPEN · {state.chests.length}</span>
-              {state.tutorial.chestGranted && !state.tutorial.chestCompleted && <span className="chest-tutorial-badge">+1</span>}
-            </button>
+            <div className="flex flex-col gap-1.5">
+              <button type="button" onClick={onBoostClick} className={`game-control flex h-8 w-36 items-center justify-center gap-1 px-2 py-0.5 text-[9px] font-black ${state.boost.active ? 'boost-max-active' : 'boost-max-ready'}`} title="Boost your offline earnings to 24/7"><Rocket size={15} /><span>{state.boost.active ? 'BOOST ON' : 'BOOST MAX'}</span></button>
+              <button
+                onClick={() => game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem)}
+                disabled={state.chests.length === 0}
+                className={`reward-cta game-control flex h-8 w-36 items-center justify-center gap-1 px-2 py-0.5 text-[9px] font-black disabled:opacity-55 ${state.tutorial.chestGranted && !state.tutorial.chestCompleted ? 'chest-tutorial-guide' : ''}`}
+                title={state.tutorial.chestGranted && !state.tutorial.chestCompleted ? 'Tutorial: open your first chest' : 'Open chests'}
+              >
+                <ChestCollectIcon size={34} />
+                <span>OPEN · {state.chests.length}</span>
+                {state.tutorial.chestGranted && !state.tutorial.chestCompleted && <span className="chest-tutorial-badge">+1</span>}
+              </button>
+            </div>
           </div>
           <TokenEarningsPanel status={tok.status} today={game.state.tokensEarnedToday} clientPower={ownPower} eligible={canMineTokens(state.currentLocation, state.accountLevel, state.highestLocation)} heroes={state.ownedHeroes.length} defeated={state.totalKills} bosses={state.totalBossKills} />
         </div>
