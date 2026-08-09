@@ -978,11 +978,9 @@ export function useGame() {
     const st = stateRef.current;
     let heroes = [...st.ownedHeroes];
     if (tokenomicsEnabled) {
-      let balance = st.hero;
-      let spent = 0;
       const promoted = new Map<string, PromotionSummary>();
       const heroIds = [...new Set(heroes.map((hero) => hero.heroId))];
-      for (const heroId of heroIds) {
+      promotion: for (const heroId of heroIds) {
         while (true) {
           const ranked = heroes.filter((hero) => hero.heroId === heroId).map((hero, index) => ({
             hero, index, power: teamPower([hero], st.inventory),
@@ -993,22 +991,19 @@ export function useGame() {
           const duplicateCount = ranked.filter(({ hero }) => hero.uid !== target.uid && hero.stars === 0 && !hero.locked && !st.team.includes(hero.uid) && !st.trainingCamp.heroUids.includes(hero.uid)).length;
           if (duplicateCount < cost.dupes) break;
           const settled = await settleServerAscension(target.uid, true);
-          if (!settled) break;
+          if (!settled) break promotion;
           heroes = settled.heroes;
-          balance = settled.balance;
-          spent += settled.spent;
           const current = promoted.get(target.uid);
           promoted.set(target.uid, { heroName: HERO_MAP[target.heroId]?.name ?? 'Hero', starsAdded: (current?.starsAdded ?? 0) + settled.starsAdded });
+          setState((prev) => ({
+            ...prev,
+            hero: settled.balance,
+            ownedHeroes: settled.heroes,
+            milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'token-spent-', settled.spent),
+          }));
         }
       }
       const summary = [...promoted.values()];
-      if (summary.length === 0) return [];
-      setState((prev) => ({
-        ...prev,
-        hero: balance,
-        ownedHeroes: heroes,
-        milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'token-spent-', spent),
-      }));
       return summary;
     }
     let available = tokenomicsEnabled ? Number.MAX_SAFE_INTEGER : st.hero;

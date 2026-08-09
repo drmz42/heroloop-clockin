@@ -44,7 +44,6 @@ export async function playerSync<T>(
         const detail = await response.json().catch(() => ({ error: `HTTP ${response.status}` })) as { error?: string };
         const message = detail.error ?? `HTTP ${response.status}`;
         onError?.(message);
-        if (action === 'hero_ascend' && payload.repeat === true) return null;
         if (action === 'spend_tokens' || action === 'hero_ascend') {
           const label = action === 'hero_ascend' ? 'Ascension' : '$HERO purchase';
           window.alert(`${label} failed: ${message}`);
@@ -58,7 +57,7 @@ export async function playerSync<T>(
     const retrySafe = typeof payload.idempotency_key === 'string' && (action === 'hero_summon' || action === 'hero_ascend' || action === 'spend_tokens' || action === 'chest_open' || action === 'item_mutate');
     if (retrySafe && networkRetry < 1) return playerSync<T>(action, payload, onError, networkRetry + 1);
     onError?.(message);
-    if (action === 'spend_tokens' || (action === 'hero_ascend' && payload.repeat !== true)) {
+    if (action === 'spend_tokens' || action === 'hero_ascend') {
       const label = action === 'hero_ascend' ? 'Ascension' : '$HERO purchase';
       window.alert(`${label} failed: ${message}`);
     }
