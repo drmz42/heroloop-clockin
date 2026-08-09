@@ -207,6 +207,7 @@ export function useGame() {
   const [respawnCountdowns, setRespawnCountdowns] = useState<Record<string, number>>({});
   const [potionFx, setPotionFx] = useState<{ uid: string; born: number } | null>(null);
   const [chestOpenResult, setChestOpenResult] = useState<OwnedItem[] | null>(null);
+  const [chestOpening, setChestOpening] = useState(false);
   const [enchantResult, setEnchantResult] = useState<{ success: boolean; item?: OwnedItem } | null>(null);
   const [hydrationVersion, setHydrationVersion] = useState(0);
   const [summonPity, setSummonPity] = useState({ legendary: 0, mythic: 0, cosmic: 0, divine: 0 });
@@ -223,6 +224,7 @@ export function useGame() {
   const battleStartedAtRef = useRef(Date.now());
   const lastCombatRenderRef = useRef(0);
   const offlineSettlementKeyRef = useRef('');
+  const chestOpeningRef = useRef(false);
 
   const hydrateServerState = useCallback((remoteState: unknown) => {
     setState(normalizeState(remoteState as Partial<GameState>));
@@ -1587,53 +1589,68 @@ export function useGame() {
     availability: Partial<Record<Rarity, boolean>> = {},
     reserveLimited?: (item: OwnedItem) => Promise<string | null>,
   ) => {
+    if (chestOpeningRef.current) return;
     const st = stateRef.current;
     const freeSlots = MAX_INVENTORY - bagItemCount(st);
     if (freeSlots <= 0 || st.chests.length === 0) return;
-    const openCount = Math.min(freeSlots, st.chests.length);
-    let results: OwnedItem[] = [];
-    let revision: number | null = null;
-    if (tokenomicsEnabled) {
-      const response = await playerSync<{ items: OwnedItem[]; chest_count: number; revision: number }>('chest_open', {
-        count: openCount,
-        idempotency_key: createIdempotencyKey(),
-      });
-      if (!response || response.chest_count !== openCount || !Array.isArray(response.items) || response.items.length !== openCount) return;
-      results = response.items.filter((item) => item && typeof item.uid === 'string' && item.serverOwned === true
-        && Boolean(ITEM_MAP[item.itemId]) && Array.isArray(item.stats));
-      if (results.length !== openCount) return;
-      revision = Number.isSafeInteger(response.revision) ? response.revision : null;
-    } else {
-      for (let i = 0; i < openCount; i++) {
-        const chest = st.chests[i];
-        let currentAvailability = { ...availability };
-        let item = chest.boss ? openBossChest(st.accountLevel, currentAvailability) : openStandardChest(st.accountLevel, currentAvailability);
-        for (let attempt = 0; attempt < 2; attempt++) {
-          const rarity = ITEM_MAP[item.itemId]?.rarity;
-          if (rarity !== 'divine' && rarity !== 'celestial') break;
-          const serverId = reserveLimited ? await reserveLimited(item) : null;
-          if (serverId) { item = { ...item, uid: serverId }; break; }
-          currentAvailability = { ...currentAvailability, [rarity]: false };
-          item = chest.boss ? openBossChest(st.accountLevel, currentAvailability) : openStandardChest(st.accountLevel, currentAvailability);
+    chestOpeningRef.current = true;
+    setChestOpening(true);
+    try {
+      const openCount = Math.min(freeSlots, st.chests.length);
+      let results: OwnedItem[] = [];
+      let revision: number | null = null;
+      if (tokenomicsEnabled) {
+        const idempotencyKey = createIdempotencyKey();
+        let response: { items: OwnedItem[]; chest_count: number; revision: number } | null = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          let error = '';
+          response = await playerSync<{ items: OwnedItem[]; chest_count: number; revision: number }>('chest_open', {
+            count: openCount,
+            idempotency_key: idempotencyKey,
+          }, (message) => { error = message; });
+          if (response || error !== 'chest_count_exceeded' || attempt === 2) break;
+          await new Promise((resolve) => window.setTimeout(resolve, 900));
         }
-        results.push(item);
+        if (!response || response.chest_count !== openCount || !Array.isArray(response.items) || response.items.length !== openCount) return;
+        results = response.items.filter((item) => item && typeof item.uid === 'string' && item.serverOwned === true
+          && Boolean(ITEM_MAP[item.itemId]) && Array.isArray(item.stats));
+        if (results.length !== openCount) return;
+        revision = Number.isSafeInteger(response.revision) ? response.revision : null;
+      } else {
+        for (let i = 0; i < openCount; i++) {
+          const chest = st.chests[i];
+          let currentAvailability = { ...availability };
+          let item = chest.boss ? openBossChest(st.accountLevel, currentAvailability) : openStandardChest(st.accountLevel, currentAvailability);
+          for (let attempt = 0; attempt < 2; attempt++) {
+            const rarity = ITEM_MAP[item.itemId]?.rarity;
+            if (rarity !== 'divine' && rarity !== 'celestial') break;
+            const serverId = reserveLimited ? await reserveLimited(item) : null;
+            if (serverId) { item = { ...item, uid: serverId }; break; }
+            currentAvailability = { ...currentAvailability, [rarity]: false };
+            item = chest.boss ? openBossChest(st.accountLevel, currentAvailability) : openStandardChest(st.accountLevel, currentAvailability);
+          }
+          results.push(item);
+        }
       }
+      if (revision !== null) setServerRevisionHint(revision);
+      flushSync(() => setChestOpenResult(results));
+      const openedTutorial = st.chests.slice(0, openCount).some((chest) => chest.tutorial);
+      setState((prev) => ({
+        ...prev,
+        chests: prev.chests.slice(openCount),
+        inventory: [...prev.inventory, ...results.map((item) => shouldAutoLockItem(item) ? { ...item, locked: true } : item)].sort((a, b) => {
+          const rarityDelta = RARITY_INDEX[ITEM_MAP[b.itemId]?.rarity ?? 'common'] - RARITY_INDEX[ITEM_MAP[a.itemId]?.rarity ?? 'common'];
+          return rarityDelta || b.power - a.power;
+        }),
+        session: { ...prev.session, chestsOpened: prev.session.chestsOpened + openCount },
+        dailyQuests: updateQuestProgress(prev.dailyQuests, 'chest-', openCount),
+        milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'chest-', openCount),
+        tutorial: openedTutorial ? { ...prev.tutorial, chestCompleted: true } : prev.tutorial,
+      }));
+    } finally {
+      chestOpeningRef.current = false;
+      setChestOpening(false);
     }
-    if (revision !== null) setServerRevisionHint(revision);
-    flushSync(() => setChestOpenResult(results));
-    const openedTutorial = st.chests.slice(0, openCount).some((chest) => chest.tutorial);
-    setState((prev) => ({
-      ...prev,
-      chests: prev.chests.slice(openCount),
-      inventory: [...prev.inventory, ...results.map((item) => shouldAutoLockItem(item) ? { ...item, locked: true } : item)].sort((a, b) => {
-        const rarityDelta = RARITY_INDEX[ITEM_MAP[b.itemId]?.rarity ?? 'common'] - RARITY_INDEX[ITEM_MAP[a.itemId]?.rarity ?? 'common'];
-        return rarityDelta || b.power - a.power;
-      }),
-      session: { ...prev.session, chestsOpened: prev.session.chestsOpened + openCount },
-      dailyQuests: updateQuestProgress(prev.dailyQuests, 'chest-', openCount),
-      milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'chest-', openCount),
-      tutorial: openedTutorial ? { ...prev.tutorial, chestCompleted: true } : prev.tutorial,
-    }));
   }, []);
 
   const closeChestResult = useCallback(() => setChestOpenResult(null), []);
@@ -1819,7 +1836,7 @@ export function useGame() {
   }, []);
 
   return {
-    state, hydrationVersion, summonPity, summonError, serverRevisionHint, units, floaters, battleResult, autoProgress, paused,
+    state, hydrationVersion, summonPity, summonError, serverRevisionHint, units, floaters, battleResult, autoProgress, paused, chestOpening,
     offlineEarnings, respawnCountdowns, potionFx, chestOpenResult, enchantResult,
     starUpHero, promoteAllHeroes, sellHero, sellHeroes, toggleHeroLock, markHeroSeen,
     summon, summonTen, summonHundred, summonBoss, syncBossKeys, toggleTeamMember, setLocation,

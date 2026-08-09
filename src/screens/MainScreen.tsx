@@ -316,13 +316,13 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
             <div className="flex flex-col gap-1.5">
               <button type="button" onClick={onBoostClick} className={`game-control flex h-8 w-36 items-center justify-center gap-1 px-2 py-0.5 text-[9px] font-black ${state.boost.active ? 'boost-max-active' : 'boost-max-ready'}`} title="Boost your offline earnings to 24/7"><Rocket size={15} /><span>{state.boost.active ? 'BOOST ON' : 'BOOST MAX'}</span></button>
               <button
-                onClick={() => game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem)}
-                disabled={state.chests.length === 0}
+                onClick={() => void game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem)}
+                disabled={state.chests.length === 0 || game.chestOpening}
                 className={`reward-cta game-control flex h-8 w-36 items-center justify-center gap-1 px-2 py-0.5 text-[9px] font-black disabled:opacity-55 ${state.tutorial.chestGranted && !state.tutorial.chestCompleted ? 'chest-tutorial-guide' : ''}`}
                 title={state.tutorial.chestGranted && !state.tutorial.chestCompleted ? 'Tutorial: open your first chest' : 'Open chests'}
               >
                 <ChestCollectIcon size={34} />
-                <span>OPEN · {state.chests.length}</span>
+                <span>{game.chestOpening ? 'OPENING…' : `OPEN · ${state.chests.length}`}</span>
                 {state.tutorial.chestGranted && !state.tutorial.chestCompleted && <span className="chest-tutorial-badge">+1</span>}
               </button>
             </div>
