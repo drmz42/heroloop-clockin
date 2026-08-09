@@ -1360,34 +1360,36 @@ export function useGame() {
 
   // FIXED: sellAllUnlocked only sells UNEQUIPPED, UNLOCKED items (not potions, not equipped)
   const sellAllUnlocked = useCallback(async () => {
-    if (tokenomicsEnabled) {
-      const st = stateRef.current;
-      const equipped = new Set(st.ownedHeroes.flatMap((hero) => Object.values(hero.equipped).filter((uid): uid is string => Boolean(uid))));
-      const itemUids = st.inventory.filter((item) => item.serverOwned && !item.locked && !equipped.has(item.uid)).map((item) => item.uid);
-      if (itemUids.length === 0) return;
+    const current = stateRef.current;
+    const equipped = new Set(current.ownedHeroes.flatMap((hero) => Object.values(hero.equipped).filter((uid): uid is string => Boolean(uid))));
+    const sellable = current.inventory.filter((item) => !item.locked && !equipped.has(item.uid));
+    const serverItemUids = tokenomicsEnabled ? sellable.filter((item) => item.serverOwned).map((item) => item.uid) : [];
+    const clientItems = sellable.filter((item) => !serverItemUids.includes(item.uid));
+    let serverRefund = 0;
+
+    if (serverItemUids.length > 0) {
       const result = await playerSync<{ item_ids: string[]; gold_refund: number; revision: number }>('item_mutate', {
-        operation: 'sell', item_uids: itemUids, idempotency_key: createIdempotencyKey(),
+        operation: 'sell', item_uids: serverItemUids, idempotency_key: createIdempotencyKey(),
       });
-      if (!result || !Array.isArray(result.item_ids) || result.item_ids.length !== itemUids.length
+      if (!result || !Array.isArray(result.item_ids) || result.item_ids.length !== serverItemUids.length
         || !Number.isSafeInteger(result.gold_refund) || result.gold_refund < 0) return;
-      const sold = new Set(result.item_ids);
-      if (itemUids.some((uid) => !sold.has(uid))) return;
+      const settled = new Set(result.item_ids);
+      if (serverItemUids.some((uid) => !settled.has(uid))) return;
       if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
-      setState((prev) => ({ ...prev, gold: prev.gold + result.gold_refund, inventory: prev.inventory.filter((item) => !sold.has(item.uid)) }));
-      spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
-      return;
+      serverRefund = result.gold_refund;
     }
+
+    const soldUids = new Set([...serverItemUids, ...clientItems.map((item) => item.uid)]);
+    if (soldUids.size === 0) return;
+    const clientRefund = clientItems.reduce((total, item) => total + sellValue(item), 0);
     setState((prev) => {
-      // find all equipped item UIDs
-      const equippedUids = new Set<string>();
-      prev.ownedHeroes.forEach((h) => {
-        for (const iuid of Object.values(h.equipped)) { if (iuid) equippedUids.add(iuid); }
-      });
-      // only sell: not locked, not equipped
-      const toSell = prev.inventory.filter((i) => !i.locked && !equippedUids.has(i.uid));
-      const total = toSell.reduce((acc, i) => acc + sellValue(i), 0);
-      const keep = prev.inventory.filter((i) => i.locked || equippedUids.has(i.uid));
-      return { ...prev, gold: prev.gold + total, inventory: keep };
+      const stillEquipped = new Set(prev.ownedHeroes.flatMap((hero) => Object.values(hero.equipped).filter((uid): uid is string => Boolean(uid))));
+      const safeSoldUids = new Set([...soldUids].filter((uid) => !stillEquipped.has(uid)));
+      return {
+        ...prev,
+        gold: prev.gold + serverRefund + clientRefund,
+        inventory: prev.inventory.filter((item) => !safeSoldUids.has(item.uid)),
+      };
     });
     spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
   }, [spawnBattle]);
