@@ -189,7 +189,7 @@ html { scroll-behavior: smooth; }
   .set-bonus-badge { min-height:22px;border:1px solid #514737;border-radius:6px;background:#11130f;padding:2px 7px;color:#807a6f;font-size:9px;font-weight:900;white-space:nowrap; }
   .set-bonus-active { color:var(--rarity,#e7c56c);border-color:var(--rarity,#806438)!important;box-shadow:0 0 9px rgba(var(--rarity-rgb,190,150,80),.24)!important; }
   .set-bonus-rarity { position:relative;overflow:hidden;border-radius:3px;padding:1px 2px;font-weight:900;white-space:nowrap; }
-  .offline-vault { border:1px solid #a77a34;background:linear-gradient(rgba(9,10,9,.72),rgba(9,10,9,.88)),url('/assets/screens/offline-vault-v1.png') center/cover;box-shadow:inset 0 0 0 1px rgba(255,222,153,.12),0 0 55px rgba(201,139,44,.22),0 28px 80px rgba(0,0,0,.72); }
+  .offline-vault { border:1px solid #a77a34;background:linear-gradient(rgba(9,10,9,.72),rgba(9,10,9,.88)),url('/assets/screens/offline-vault-v1.webp') center/cover;box-shadow:inset 0 0 0 1px rgba(255,222,153,.12),0 0 55px rgba(201,139,44,.22),0 28px 80px rgba(0,0,0,.72); }
   .offline-vault::before { content:'';position:absolute;inset:-7px;z-index:-1;border:1px solid rgba(209,164,76,.4);border-radius:16px;background:linear-gradient(135deg,rgba(173,118,40,.2),transparent 35%,rgba(110,56,143,.14)); }
   .offline-reward-tile { border:1px solid rgba(161,116,48,.42);border-radius:8px;background:linear-gradient(145deg,rgba(28,23,15,.9),rgba(8,10,9,.9));box-shadow:inset 0 1px rgba(255,227,164,.07); }
   .offline-afk-total { display:flex;align-items:baseline;justify-content:center;gap:4px;color:#d8a23f;font-size:10px;font-weight:900;letter-spacing:.04em;text-shadow:0 0 12px rgba(237,178,61,.28); }
@@ -270,12 +270,12 @@ html { scroll-behavior: smooth; }
 
 .premium-screen { background:radial-gradient(circle at 50% -12%,rgba(151,109,43,.12),transparent 38%),linear-gradient(180deg,#101311,#080a0a); }
 .themed-screen { background-position:center;background-size:cover;background-attachment:local; }
-.themed-screen-heroes { background-image:linear-gradient(rgba(5,6,6,.6),rgba(5,6,6,.78)),url('/assets/screens/heroes-hall-v1.png'); }
-.themed-screen-market { background-image:linear-gradient(rgba(7,5,3,.62),rgba(7,5,3,.8)),url('/assets/screens/market-vault-v1.png'); }
-.themed-screen-store { background-image:linear-gradient(rgba(4,8,6,.6),rgba(5,7,6,.8)),url('/assets/screens/store-apothecary-v1.png'); }
-.themed-screen-ranks { background-image:linear-gradient(rgba(6,6,6,.6),rgba(6,6,6,.8)),url('/assets/screens/ranks-hall-v1.png'); }
-.themed-screen-referrals { background-image:linear-gradient(rgba(8,6,3,.62),rgba(8,6,3,.8)),url('/assets/screens/referrals-guild-v1.png');background-position:center; background-size:cover; }
-.training-camp-screen { position:relative;background:linear-gradient(90deg,rgba(6,8,7,.86),rgba(6,8,7,.58) 58%,rgba(6,8,7,.72)),url('/assets/screens/training-camp-v1.png') center/cover fixed; }
+.themed-screen-heroes { background-image:linear-gradient(rgba(5,6,6,.6),rgba(5,6,6,.78)),url('/assets/screens/heroes-hall-v1.webp'); }
+.themed-screen-market { background-image:linear-gradient(rgba(7,5,3,.62),rgba(7,5,3,.8)),url('/assets/screens/market-vault-v1.webp'); }
+.themed-screen-store { background-image:linear-gradient(rgba(4,8,6,.6),rgba(5,7,6,.8)),url('/assets/screens/store-apothecary-v1.webp'); }
+.themed-screen-ranks { background-image:linear-gradient(rgba(6,6,6,.6),rgba(6,6,6,.8)),url('/assets/screens/ranks-hall-v1.webp'); }
+.themed-screen-referrals { background-image:linear-gradient(rgba(8,6,3,.62),rgba(8,6,3,.8)),url('/assets/screens/referrals-guild-v1.webp');background-position:center; background-size:cover; }
+.training-camp-screen { position:relative;background:linear-gradient(90deg,rgba(6,8,7,.86),rgba(6,8,7,.58) 58%,rgba(6,8,7,.72)),url('/assets/screens/training-camp-v1.webp') center/cover fixed; }
 .training-camp-screen::before { content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 72% 23%,rgba(242,157,47,.15),transparent 30%),linear-gradient(180deg,transparent 65%,rgba(3,4,4,.58)); }
 .training-slot { border:1px solid #4d422f;border-radius:10px;background:linear-gradient(160deg,rgba(31,31,25,.9),rgba(9,12,11,.94));box-shadow:inset 0 1px rgba(255,239,196,.05); }
 .training-slot-open { border-color:#826538;box-shadow:inset 0 1px rgba(255,239,196,.08),0 0 15px rgba(211,148,47,.08); }
