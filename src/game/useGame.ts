@@ -213,6 +213,7 @@ export function useGame() {
   const [summonPity, setSummonPity] = useState({ legendary: 0, mythic: 0, cosmic: 0, divine: 0 });
   const [summonError, setSummonError] = useState('');
   const [serverRevisionHint, setServerRevisionHint] = useState<number | null>(null);
+  const [storeBusy, setStoreBusy] = useState(false);
 
   const stateRef = useRef(state); stateRef.current = state;
   const unitsRef = useRef<CombatUnit[]>([]);
@@ -225,6 +226,7 @@ export function useGame() {
   const lastCombatRenderRef = useRef(0);
   const offlineSettlementKeyRef = useRef('');
   const chestOpeningRef = useRef(false);
+  const storeBusyRef = useRef(false);
 
   const hydrateServerState = useCallback((remoteState: unknown) => {
     setState(normalizeState(remoteState as Partial<GameState>));
@@ -637,6 +639,7 @@ export function useGame() {
   }, []);
 
   useEffect(() => {
+    if (tokenomicsEnabled) return;
     const check = () => { if (Date.now() >= stateRef.current.rotatingShopRefreshAt) setState((prev) => ({ ...prev, rotatingShop: generateRotatingShop().map((s) => ({ ...s, sold: false })), rotatingShopRefreshAt: Date.now() + ROTATING_REFRESH_MS })); };
     const t = setInterval(check, 60_000);
     return () => clearInterval(t);
@@ -1658,14 +1661,64 @@ export function useGame() {
 
   // ── Rotating shop ────────────────────────────────────────────────────────
 
-  const buyRotatingItem = useCallback((index: number) => {
+  const applyStoreState = useCallback((result: { store: GameState['rotatingShop']; refresh_at: number; gold: number; revision: number }) => {
+    if (!Array.isArray(result.store) || result.store.length !== 4 || !Number.isFinite(result.refresh_at)
+      || !Number.isFinite(result.gold) || !Number.isSafeInteger(result.revision)) return false;
+    if (result.store.some((offer) => !offer || !ITEM_MAP[offer.itemId] || !Number.isSafeInteger(offer.price) || offer.price < 0 || typeof offer.sold !== 'boolean')) return false;
+    setServerRevisionHint(result.revision);
+    setState((prev) => ({
+      ...prev,
+      rotatingShop: result.store,
+      rotatingShopRefreshAt: Math.floor(result.refresh_at),
+      gold: Math.max(0, Math.floor(result.gold)),
+    }));
+    return true;
+  }, []);
+
+  const refreshStore = useCallback(async (): Promise<boolean> => {
+    if (!tokenomicsEnabled) return true;
+    const result = await playerSync<{ store: GameState['rotatingShop']; refresh_at: number; gold: number; revision: number }>('store_snapshot');
+    return Boolean(result && applyStoreState(result));
+  }, [applyStoreState]);
+
+  const buyRotatingItem = useCallback(async (index: number): Promise<boolean> => {
+    if (storeBusyRef.current) return false;
+    if (tokenomicsEnabled) {
+      const slot = stateRef.current.rotatingShop[index];
+      if (!slot || slot.sold || stateRef.current.gold < slot.price || bagItemCount(stateRef.current) >= MAX_INVENTORY) return false;
+      storeBusyRef.current = true;
+      setStoreBusy(true);
+      try {
+        const result = await playerSync<{
+          inventory: OwnedItem[];
+          gold: number;
+          store: GameState['rotatingShop'];
+          refresh_at: number;
+          revision: number;
+        }>('store_buy_item', {
+          slot_index: index,
+          refresh_at: stateRef.current.rotatingShopRefreshAt,
+          idempotency_key: createIdempotencyKey(),
+        });
+        if (!result || !Array.isArray(result.inventory) || !applyStoreState(result)) {
+          await refreshStore();
+          return false;
+        }
+        setState((prev) => ({ ...prev, inventory: result.inventory }));
+        return true;
+      } finally {
+        storeBusyRef.current = false;
+        setStoreBusy(false);
+      }
+    }
     setState((prev) => {
       const slot = prev.rotatingShop[index];
       if (!slot || slot.sold || prev.gold < slot.price || bagItemCount(prev) >= MAX_INVENTORY) return prev;
       const proper = rollItem(slot.itemId, 1);
       return { ...prev, gold: prev.gold - slot.price, inventory: [...prev.inventory, proper], rotatingShop: prev.rotatingShop.map((s, i) => i === index ? { ...s, sold: true } : s) };
     });
-  }, []);
+    return true;
+  }, [applyStoreState, refreshStore]);
 
   // ── Quests ───────────────────────────────────────────────────────────────
 
@@ -1836,7 +1889,7 @@ export function useGame() {
   }, []);
 
   return {
-    state, hydrationVersion, summonPity, summonError, serverRevisionHint, units, floaters, battleResult, autoProgress, paused, chestOpening,
+    state, hydrationVersion, summonPity, summonError, serverRevisionHint, units, floaters, battleResult, autoProgress, paused, chestOpening, storeBusy,
     offlineEarnings, respawnCountdowns, potionFx, chestOpenResult, enchantResult,
     starUpHero, promoteAllHeroes, sellHero, sellHeroes, toggleHeroLock, markHeroSeen,
     summon, summonTen, summonHundred, summonBoss, syncBossKeys, toggleTeamMember, setLocation,
@@ -1845,7 +1898,7 @@ export function useGame() {
     enchantItem, rerollItem, dismissEnchantResult,
     buyPotion, usePotion, setAutoPot, setBattleAnimationMode,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
-    openChests, closeChestResult, buyRotatingItem, claimQuest,
+    openChests, closeChestResult, refreshStore, buyRotatingItem, claimQuest,
     claimReferralReward, setUserProfile, resetAccount, hydrateServerState, mergeServerResourceState, completeWelcomeTutorial, setAvatarHero, loadMarket, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
     heroStatsFor: (uid: string) => {
       const owned = state.ownedHeroes.find((h) => h.uid === uid);

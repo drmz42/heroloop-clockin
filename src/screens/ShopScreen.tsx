@@ -9,11 +9,12 @@ import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { ItemArtwork } from '@/components/ItemArtwork';
 
 export function ShopScreen({ game }: { game: GameApi }) {
-  const { state } = game;
+  const { state, refreshStore } = game;
   const equipped = new Set(state.ownedHeroes.flatMap((hero) => Object.values(hero.equipped)).filter(Boolean));
   const bagCount = state.inventory.filter((item) => !equipped.has(item.uid)).length;
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
+  useEffect(() => { void refreshStore(); }, [refreshStore]);
   const refreshIn = Math.max(0, state.rotatingShopRefreshAt - now);
   const refreshH = Math.floor(refreshIn / 3600000);
   const refreshM = Math.floor((refreshIn % 3600000) / 60000);
@@ -40,8 +41,8 @@ export function ShopScreen({ game }: { game: GameApi }) {
             {state.rotatingShop.map((slot, index) => {
               const base = ITEM_MAP[slot.itemId]; if (!base) return null;
               const rc = RARITY_COLORS[base.rarity];
-              const unavailable = slot.sold || state.gold < slot.price || bagCount >= 64;
-              return <article key={index} className={`shop-card rarity-${base.rarity} p-2.5`}><div className="mx-auto h-20 w-20 overflow-hidden rounded-lg border border-white/5 bg-black/20"><ItemArtwork itemId={base.id} name={base.name} fallback={base.icon} /></div><div className="mt-1 truncate text-center text-xs font-black" style={{ color: rc }}>{base.name}</div><div className="mt-0.5 flex items-center justify-center gap-1 text-[9px] uppercase tracking-wide text-[#888174]"><Package size={10} /> {RARITY_LABEL[base.rarity]} equipment</div><div className="mt-2 grid grid-cols-2 gap-1 text-[9px]"><Info label="Benefit" value="Owned gear" /><Info label="Duration" value="Permanent" /></div><button type="button" onClick={() => game.buyRotatingItem(index)} disabled={unavailable} className="game-control game-primary mt-2 flex w-full items-center justify-center gap-1 px-2 text-xs font-black">{slot.sold ? 'Sold' : bagCount >= 64 ? 'Inventory full' : state.gold < slot.price ? 'Not enough Gold' : <><Coins size={12} /> {formatNum(slot.price)}</>}</button></article>;
+              const unavailable = game.storeBusy || slot.sold || state.gold < slot.price || bagCount >= 64;
+              return <article key={index} className={`shop-card rarity-${base.rarity} p-2.5`}><div className="mx-auto h-20 w-20 overflow-hidden rounded-lg border border-white/5 bg-black/20"><ItemArtwork itemId={base.id} name={base.name} fallback={base.icon} /></div><div className="mt-1 truncate text-center text-xs font-black" style={{ color: rc }}>{base.name}</div><div className="mt-0.5 flex items-center justify-center gap-1 text-[9px] uppercase tracking-wide text-[#888174]"><Package size={10} /> {RARITY_LABEL[base.rarity]} equipment</div><div className="mt-2 grid grid-cols-2 gap-1 text-[9px]"><Info label="Benefit" value="Owned gear" /><Info label="Duration" value="Permanent" /></div><button type="button" onClick={() => void game.buyRotatingItem(index)} disabled={unavailable} className="game-control game-primary mt-2 flex w-full items-center justify-center gap-1 px-2 text-xs font-black">{game.storeBusy ? 'BUYING…' : slot.sold ? 'Sold' : bagCount >= 64 ? 'Inventory full' : state.gold < slot.price ? 'Not enough Gold' : <><Coins size={12} /> {formatNum(slot.price)}</>}</button></article>;
             })}
           </div>
           <div className="mt-3 flex items-start gap-2 rounded-lg border border-[#4d402e] bg-black/20 p-2.5 text-[10px] text-[#928b80]"><ShieldCheck size={14} className="mt-0.5 shrink-0 text-[#b6914f]" /><span>Store equipment follows existing rarity and inventory rules. It never bypasses unlock levels, global limits or crafting-only rarities.</span></div>
