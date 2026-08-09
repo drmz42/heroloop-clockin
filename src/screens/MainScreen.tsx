@@ -417,7 +417,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
                     </span>
                   </span>
                 </span>
-                <button type="button" aria-label="Unequip All" onClick={() => { if (canUnequipAll) { game.unequipAll(selectedHero.uid); setSelectedItem(null); showToast('All gear unequipped'); } }} disabled={!canUnequipAll} className="game-control flex h-6 w-[44px] shrink-0 items-center justify-center gap-0.5 px-0.5 text-[7px] font-bold leading-none" title={selectedEquippedCount === 0 ? 'No equipped items' : canUnequipAll ? 'Move all equipped items to Inventory' : 'Not enough Inventory space'}><PackageMinus size={10} aria-hidden="true" />All</button>
+                <button type="button" aria-label="Unequip All" onClick={async () => { if (canUnequipAll && await game.unequipAll(selectedHero.uid)) { setSelectedItem(null); showToast('All gear unequipped'); } }} disabled={!canUnequipAll} className="game-control flex h-6 w-[44px] shrink-0 items-center justify-center gap-0.5 px-0.5 text-[7px] font-bold leading-none" title={selectedEquippedCount === 0 ? 'No equipped items' : canUnequipAll ? 'Move all equipped items to Inventory' : 'Not enough Inventory space'}><PackageMinus size={10} aria-hidden="true" />All</button>
             </div>
             <div className="grid w-full grid-cols-8 gap-1">
               {SLOTS.map(slot => {
@@ -462,7 +462,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
             </div>
             {inventoryTab === 1 && <div className="mt-2 grid min-w-0 grid-cols-[1fr_1fr_32px_1fr] gap-1">
               <button onClick={() => { game.sortInventory(); showToast('Sorted by rarity'); }} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 text-xs font-bold" title="Sort by rarity"><ArrowUpDown size={12} /> Sort</button>
-              <button onClick={() => { if (state.team.length > 0) { game.autoEquipBest(); showToast('Best gear equipped on active team'); } }} disabled={state.team.length === 0} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 text-xs font-bold" title="Equip the strongest valid gear on each active hero in formation order"><Wand2 size={12} /> Auto</button>
+              <button onClick={async () => { if (state.team.length > 0 && await game.autoEquipBest()) showToast('Best gear equipped on active team'); }} disabled={state.team.length === 0} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 text-xs font-bold" title="Equip the strongest valid gear on each active hero in formation order"><Wand2 size={12} /> Auto</button>
               <button type="button" aria-label={inventoryLockMode ? 'Exit Inventory Lock mode' : 'Enter Inventory Lock mode'} aria-pressed={inventoryLockMode} onClick={() => { setInventoryLockMode((active) => !active); setSelectedItem(null); setSelectedItemSource(null); setSelectedItemSlot(null); setShowBulkSellConfirm(false); }} className={`game-control grid min-w-0 place-items-center px-0 py-1 ${inventoryLockMode ? 'border-red-500/70 bg-red-950/55 text-red-300' : 'text-[#a69c8c]'}`} title={inventoryLockMode ? 'Lock mode active — click to exit' : 'Lock mode — click items to lock or unlock'}><LockIcon size={13} /></button>
               <div className="relative">
                 <button onClick={() => setShowBulkSellConfirm((value) => !value)} disabled={unlockedSellTotal === 0} className="game-control game-danger flex min-w-0 w-full items-center justify-center gap-1 px-1 py-1 text-xs font-bold" title={`Sell all unlocked items for ${formatNum(unlockedSellTotal)} gold`}><Coins size={12} /> Sell</button>
@@ -498,7 +498,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
                   {itemBase?.heroClass && <div className="item-class-badge absolute right-0 top-0" title={`${CLASS_LABEL[itemBase.heroClass]} only`}>{CLASS_SHORT_LABEL[itemBase.heroClass]}</div>}
                   {item && <div className="absolute bottom-0 right-0 rounded-tl bg-black/75 px-1 text-[11px] font-bold leading-tight text-slate-200">{item.level}</div>}
                 </button>
-                {gridIndex === selectedBagRowEnd && liveSelectedItem && selectedItemSource === 'bag' && <div className="col-span-8 rounded-lg border border-[#6e5837] bg-[#10120f] p-2 shadow-inner"><ItemActionPanel item={liveSelectedItem} game={game} equippedSlot={null} comparisonItem={comparisonItem} equipDisabledReason={selectedEquipReason} onEquip={(slot) => { if (selectedHero) { game.equipItem(selectedHero.uid, liveSelectedItem.uid, slot); setSelectedItem(null); } }} onBeforeSell={async (selected) => { if (selected.serverOwned) return true; const selectedRarity = ITEM_MAP[selected.itemId]?.rarity; return selectedRarity === 'divine' || selectedRarity === 'celestial' ? tok.removeLimitedItem(selected.uid) : true; }} onClose={() => setSelectedItem(null)} /></div>}
+                {gridIndex === selectedBagRowEnd && liveSelectedItem && selectedItemSource === 'bag' && <div className="col-span-8 rounded-lg border border-[#6e5837] bg-[#10120f] p-2 shadow-inner"><ItemActionPanel item={liveSelectedItem} game={game} equippedSlot={null} comparisonItem={comparisonItem} equipDisabledReason={selectedEquipReason} onEquip={async (slot) => { if (selectedHero && await game.equipItem(selectedHero.uid, liveSelectedItem.uid, slot)) setSelectedItem(null); }} onBeforeSell={async (selected) => { if (selected.serverOwned) return true; const selectedRarity = ITEM_MAP[selected.itemId]?.rarity; return selectedRarity === 'divine' || selectedRarity === 'celestial' ? tok.removeLimitedItem(selected.uid) : true; }} onClose={() => setSelectedItem(null)} /></div>}
                 </Fragment>
               );
             })}
@@ -513,7 +513,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
               equippedSlot={selectedItemSource === 'hero' ? selectedItemSlot : null}
               comparisonItem={comparisonItem}
               equipDisabledReason={selectedEquipReason}
-              onUnequip={selectedItemSource === 'hero' && selectedItemSlot ? () => { if (selectedHero) { game.unequipItem(selectedHero.uid, selectedItemSlot); setSelectedItem(null); } } : undefined}
+              onUnequip={selectedItemSource === 'hero' && selectedItemSlot ? async () => { if (selectedHero && await game.unequipItem(selectedHero.uid, selectedItemSlot)) setSelectedItem(null); } : undefined}
               onBeforeSell={async (item) => {
                 if (item.serverOwned) return true;
                 const rarity = ITEM_MAP[item.itemId]?.rarity;
