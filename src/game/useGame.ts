@@ -931,6 +931,35 @@ export function useGame() {
     };
   }, []);
 
+  const settleServerPromotionAll = useCallback(async (targetUids: string[]) => {
+    if (!tokenomicsEnabled || targetUids.length === 0) return null;
+    const result = await playerSync<{
+      owned_heroes: OwnedHero[];
+      token_balance: number;
+      revision: number;
+      spent: number;
+      stars_added: number;
+      promotions: { target_uid: string; stars_added: number }[];
+    }>('hero_ascend', {
+      target_uids: targetUids,
+      repeat: true,
+      idempotency_key: createIdempotencyKey(),
+    });
+    if (!result || !Array.isArray(result.owned_heroes) || !Array.isArray(result.promotions)) return null;
+    const heroes = result.owned_heroes.filter((hero) => hero && typeof hero.uid === 'string' && Boolean(HERO_MAP[hero.heroId]));
+    const requested = new Set(targetUids);
+    const promotions = result.promotions.filter((promotion) => requested.has(promotion.target_uid)
+      && Number.isSafeInteger(promotion.stars_added) && promotion.stars_added > 0);
+    if (heroes.length !== result.owned_heroes.length || promotions.length !== result.promotions.length) return null;
+    if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
+    return {
+      heroes,
+      promotions,
+      balance: Math.max(0, Math.floor(result.token_balance)),
+      spent: Math.max(0, Math.floor(result.spent)),
+    };
+  }, []);
+
   const settleHeroSpend = useCallback(async (amount: number, actionKind: string): Promise<number | null> => {
     const safeAmount = Math.max(0, Math.floor(amount));
     if (safeAmount === 0) return stateRef.current.hero;
@@ -978,33 +1007,31 @@ export function useGame() {
     const st = stateRef.current;
     let heroes = [...st.ownedHeroes];
     if (tokenomicsEnabled) {
-      const promoted = new Map<string, PromotionSummary>();
       const heroIds = [...new Set(heroes.map((hero) => hero.heroId))];
-      promotion: for (const heroId of heroIds) {
-        while (true) {
-          const ranked = heroes.filter((hero) => hero.heroId === heroId).map((hero, index) => ({
-            hero, index, power: teamPower([hero], st.inventory),
-          })).sort((a, b) => b.power - a.power || b.hero.level - a.hero.level || b.hero.stars - a.hero.stars || a.index - b.index);
-          const target = ranked.find(({ hero }) => hero.stars < MAX_HERO_STARS)?.hero;
-          if (!target) break;
-          const cost = starUpCost(target.stars);
-          const duplicateCount = ranked.filter(({ hero }) => hero.uid !== target.uid && hero.stars === 0 && !hero.locked && !st.team.includes(hero.uid) && !st.trainingCamp.heroUids.includes(hero.uid)).length;
-          if (duplicateCount < cost.dupes) break;
-          const settled = await settleServerAscension(target.uid, true);
-          if (!settled) break promotion;
-          heroes = settled.heroes;
-          const current = promoted.get(target.uid);
-          promoted.set(target.uid, { heroName: HERO_MAP[target.heroId]?.name ?? 'Hero', starsAdded: (current?.starsAdded ?? 0) + settled.starsAdded });
-          setState((prev) => ({
-            ...prev,
-            hero: settled.balance,
-            ownedHeroes: settled.heroes,
-            milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'token-spent-', settled.spent),
-          }));
-        }
-      }
-      const summary = [...promoted.values()];
-      return summary;
+      const targets = heroIds.flatMap((heroId) => {
+        const ranked = heroes.filter((hero) => hero.heroId === heroId).map((hero, index) => ({
+          hero, index, power: teamPower([hero], st.inventory),
+        })).sort((a, b) => b.power - a.power || b.hero.level - a.hero.level || b.hero.stars - a.hero.stars || a.index - b.index);
+        const target = ranked.find(({ hero }) => hero.stars < MAX_HERO_STARS)?.hero;
+        if (!target) return [];
+        const cost = starUpCost(target.stars);
+        const duplicateCount = ranked.filter(({ hero }) => hero.uid !== target.uid && hero.stars === 0 && !hero.locked && !st.team.includes(hero.uid) && !st.trainingCamp.heroUids.includes(hero.uid)).length;
+        return duplicateCount >= cost.dupes ? [target] : [];
+      });
+      if (targets.length === 0) return [];
+      const settled = await settleServerPromotionAll(targets.map((hero) => hero.uid));
+      if (!settled) return [];
+      setState((prev) => ({
+        ...prev,
+        hero: settled.balance,
+        ownedHeroes: settled.heroes,
+        milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'token-spent-', settled.spent),
+      }));
+      const targetByUid = new Map(targets.map((hero) => [hero.uid, hero]));
+      return settled.promotions.map((promotion) => ({
+        heroName: HERO_MAP[targetByUid.get(promotion.target_uid)?.heroId ?? '']?.name ?? 'Hero',
+        starsAdded: promotion.stars_added,
+      }));
     }
     let available = tokenomicsEnabled ? Number.MAX_SAFE_INTEGER : st.hero;
     let spent = 0;
@@ -1044,7 +1071,7 @@ export function useGame() {
       milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'token-spent-', spent),
     }));
     return summary;
-  }, [settleHeroSpend, settleServerAscension]);
+  }, [settleHeroSpend, settleServerPromotionAll]);
 
   const sellHero = useCallback((uid: string) => {
     setState((prev) => {
