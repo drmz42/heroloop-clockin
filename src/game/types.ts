@@ -212,6 +212,7 @@ export interface TrainingCampState {
   activeBoostKey: TrainingBoostKey | null;
   boostQueue: TrainingBoostQueueEntry[];
   lastTick: number;
+  serverAppliedPurchaseIds?: string[];
 }
 
 export interface RotatingShopItem {
@@ -337,6 +338,7 @@ export interface BoostState {
   bonusPct: number;         // 100 when active
   chestProgressSeconds: number; // active reward time carried toward the next timed chest
   goldProgressSeconds: number; // server reward time carried toward the next periodic Gold credit
+  combatProgressSeconds: number; // server reward time carried toward the next combat settlement
   conditions: {
     connectTelegram: boolean;
     connectTwitter: boolean;

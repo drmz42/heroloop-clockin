@@ -171,7 +171,7 @@ export function makeInitialState(): GameState {
     username: '',
     walletAddress: '',
     avatarHeroId: hero.heroId,
-    boost: { active: false, progress: 0, bonusPct: 0, chestProgressSeconds: 0, goldProgressSeconds: 0, conditions: { connectTelegram: false, connectTwitter: false, connectDiscord: false, spentTokens: 0, holdTokens: 0 } },
+    boost: { active: false, progress: 0, bonusPct: 0, chestProgressSeconds: 0, goldProgressSeconds: 0, combatProgressSeconds: 0, conditions: { connectTelegram: false, connectTwitter: false, connectDiscord: false, spentTokens: 0, holdTokens: 0 } },
     balanceTelemetry: emptyBalanceTelemetry(),
     marketListings: [],
     marketHistory: [],
@@ -356,6 +356,9 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
           && entry.durationMs > 0
           && entry.durationMs <= 4 * 60 * 60 * 1000
         ),
+        serverAppliedPurchaseIds: (parsed.trainingCamp?.serverAppliedPurchaseIds ?? [])
+          .filter((id): id is string => typeof id === 'string')
+          .slice(-200),
       },
       rotatingShop: parsed.rotatingShop?.length ? parsed.rotatingShop : base.rotatingShop,
       hero: parsed.hero ?? LEGACY_MISSING_HERO_TOKENS,
@@ -388,6 +391,7 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
         ...(parsed.boost ?? {}),
         chestProgressSeconds: Math.max(0, Number(parsed.boost?.chestProgressSeconds) || 0),
         goldProgressSeconds: Math.max(0, Number(parsed.boost?.goldProgressSeconds) || 0),
+        combatProgressSeconds: Math.max(0, Number(parsed.boost?.combatProgressSeconds) || 0),
         conditions: { ...base.boost.conditions, ...(parsed.boost?.conditions ?? {}) },
       },
       balanceTelemetry: parsed.balanceTelemetry?.version === BALANCE_VERSION

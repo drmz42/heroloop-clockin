@@ -192,20 +192,35 @@ export function useGame() {
 
   const mergeServerResourceState = useCallback((remoteState: unknown) => {
     const remote = normalizeState(remoteState as Partial<GameState>);
-    setState((current) => ({
-      ...current,
-      gold: remote.gold,
-      totalGoldEarned: remote.totalGoldEarned,
-      chests: remote.chests,
-      chestsOpenedToday: remote.chestsOpenedToday,
-      lastChestReset: remote.lastChestReset,
-      lastSeen: Math.max(current.lastSeen, remote.lastSeen),
-      boost: {
-        ...current.boost,
-        chestProgressSeconds: remote.boost.chestProgressSeconds,
-        goldProgressSeconds: remote.boost.goldProgressSeconds,
-      },
-    }));
+    setState((current) => {
+      const localHeroes = new Map(current.ownedHeroes.map((hero) => [hero.uid, hero]));
+      return {
+        ...current,
+        gold: remote.gold,
+        accountXp: remote.accountXp,
+        accountLevel: remote.accountLevel,
+        ownedHeroes: remote.ownedHeroes.map((hero) => {
+          const local = localHeroes.get(hero.uid);
+          return local ? { ...hero, equipped: local.equipped, locked: local.locked, isNew: local.isNew, respawnAt: local.respawnAt } : hero;
+        }),
+        totalGoldEarned: remote.totalGoldEarned,
+        totalKills: remote.totalKills,
+        totalBossKills: remote.totalBossKills,
+        highestLocation: remote.highestLocation,
+        chests: remote.chests,
+        chestsOpenedToday: remote.chestsOpenedToday,
+        lastChestReset: remote.lastChestReset,
+        combatXpAt: remote.combatXpAt,
+        session: remote.session,
+        lastSeen: Math.max(current.lastSeen, remote.lastSeen),
+        boost: {
+          ...current.boost,
+          chestProgressSeconds: remote.boost.chestProgressSeconds,
+          goldProgressSeconds: remote.boost.goldProgressSeconds,
+          combatProgressSeconds: remote.boost.combatProgressSeconds,
+        },
+      };
+    });
   }, []);
 
   useEffect(() => {
@@ -338,12 +353,20 @@ export function useGame() {
     const clearSeconds = Math.max(0, (now - battleStartedAtRef.current) / 1000);
     deadHeroUids.forEach((uid) => heroHpRef.current.delete(uid));
     setState((prev) => {
-      const next: GameState = { ...prev, combatXpAt: now, gold: prev.gold + gold, totalGoldEarned: prev.totalGoldEarned + gold };
+      const next: GameState = tokenomicsEnabled
+        ? { ...prev }
+        : { ...prev, combatXpAt: now, gold: prev.gold + gold, totalGoldEarned: prev.totalGoldEarned + gold };
       next.balanceTelemetry = recordBattleTelemetry(prev.balanceTelemetry, {
         locationId, teamSize: st.team.length, power: combatPower, boss: Boolean(loc.boss),
         win: allCleared, clearSeconds, heroDeaths: deadHeroUids.length, equippedStatLines,
       });
       next.bossBattleActive = false;
+      if (tokenomicsEnabled) {
+        next.ownedHeroes = prev.ownedHeroes.map((hero) =>
+          deadHeroUids.includes(hero.uid) && !hero.respawnAt ? { ...hero, respawnAt: now + RESPAWN_TIME_MS } : hero
+        );
+        return next;
+      }
       next.accountXp = prev.accountXp + accountXpGain;
       next.accountLevel = accountLevelFromXp(next.accountXp);
       next.ownedHeroes = prev.ownedHeroes.map((h) =>
@@ -382,7 +405,14 @@ export function useGame() {
       }
       return next;
     });
-    setBattleResult({ win: allCleared, gold, xp: accountXpGain, tokens, chest: chestDropped, overpowered });
+    setBattleResult({
+      win: allCleared,
+      gold: tokenomicsEnabled ? 0 : gold,
+      xp: tokenomicsEnabled ? 0 : accountXpGain,
+      tokens,
+      chest: tokenomicsEnabled ? false : chestDropped,
+      overpowered,
+    });
   }, []);
 
   const summonBoss = useCallback((remainingKeys?: number) => {
@@ -613,6 +643,7 @@ export function useGame() {
   // A minimized/background tab can pause requestAnimationFrame before a combat
   // wave resolves. Catch up the complete Active reward stream on return.
   useEffect(() => {
+    if (tokenomicsEnabled) return;
     let hiddenSince: number | null = null;
     const markHidden = () => { hiddenSince ??= Date.now(); };
     const catchUp = () => {
@@ -691,7 +722,7 @@ export function useGame() {
 
   const [offlineEarnings, setOfflineEarnings] = useState<{ gold: number; seconds: number; tokens?: number; chests?: number; xp?: number } | null>(null);
   useEffect(() => {
-    if (tokenomicsEnabled && hydrationVersion === 0) return;
+    if (tokenomicsEnabled) return;
     const st = stateRef.current;
     if (!st.walletAddress) return;
     const prev = st.combatXpAt;
