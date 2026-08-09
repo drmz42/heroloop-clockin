@@ -9,6 +9,7 @@
     "check:edge-security": "node scripts/check-edge-security-contract.mjs",
     "check:registration": "node scripts/check-registration-contract.mjs",
     "check:server-rewards": "node scripts/check-server-reward-authority.mjs",
+    "check:server-items": "node scripts/check-server-item-ledger.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"

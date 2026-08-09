@@ -72,6 +72,7 @@ export interface OwnedItem {
   level: number;
   stats: ItemStatRoll[];
   power: number;
+  serverOwned?: boolean;
   locked?: boolean;
   enchantLevel: number;   // 0–10, each +1 boosts all stats by +10%
   enchantStatsVersion?: 2; // v2 keeps original rolled stats; missing legacy values stored compounded stats

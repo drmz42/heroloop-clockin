@@ -1441,21 +1441,35 @@ export function useGame() {
     const freeSlots = MAX_INVENTORY - bagItemCount(st);
     if (freeSlots <= 0 || st.chests.length === 0) return;
     const openCount = Math.min(freeSlots, st.chests.length);
-    const results: OwnedItem[] = [];
-    for (let i = 0; i < openCount; i++) {
-      const chest = st.chests[i];
-      let currentAvailability = { ...availability };
-      let item = chest.boss ? openBossChest(st.accountLevel, currentAvailability) : openStandardChest(st.accountLevel, currentAvailability);
-      for (let attempt = 0; attempt < 2; attempt++) {
-        const rarity = ITEM_MAP[item.itemId]?.rarity;
-        if (rarity !== 'divine' && rarity !== 'celestial') break;
-        const serverId = reserveLimited ? await reserveLimited(item) : null;
-        if (serverId) { item = { ...item, uid: serverId }; break; }
-        currentAvailability = { ...currentAvailability, [rarity]: false };
-        item = chest.boss ? openBossChest(st.accountLevel, currentAvailability) : openStandardChest(st.accountLevel, currentAvailability);
+    let results: OwnedItem[] = [];
+    let revision: number | null = null;
+    if (tokenomicsEnabled) {
+      const response = await playerSync<{ items: OwnedItem[]; chest_count: number; revision: number }>('chest_open', {
+        count: openCount,
+        idempotency_key: createIdempotencyKey(),
+      });
+      if (!response || response.chest_count !== openCount || !Array.isArray(response.items) || response.items.length !== openCount) return;
+      results = response.items.filter((item) => item && typeof item.uid === 'string' && item.serverOwned === true
+        && Boolean(ITEM_MAP[item.itemId]) && Array.isArray(item.stats));
+      if (results.length !== openCount) return;
+      revision = Number.isSafeInteger(response.revision) ? response.revision : null;
+    } else {
+      for (let i = 0; i < openCount; i++) {
+        const chest = st.chests[i];
+        let currentAvailability = { ...availability };
+        let item = chest.boss ? openBossChest(st.accountLevel, currentAvailability) : openStandardChest(st.accountLevel, currentAvailability);
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const rarity = ITEM_MAP[item.itemId]?.rarity;
+          if (rarity !== 'divine' && rarity !== 'celestial') break;
+          const serverId = reserveLimited ? await reserveLimited(item) : null;
+          if (serverId) { item = { ...item, uid: serverId }; break; }
+          currentAvailability = { ...currentAvailability, [rarity]: false };
+          item = chest.boss ? openBossChest(st.accountLevel, currentAvailability) : openStandardChest(st.accountLevel, currentAvailability);
+        }
+        results.push(item);
       }
-      results.push(item);
     }
+    if (revision !== null) setServerRevisionHint(revision);
     flushSync(() => setChestOpenResult(results));
     const openedTutorial = st.chests.slice(0, openCount).some((chest) => chest.tutorial);
     setState((prev) => ({
