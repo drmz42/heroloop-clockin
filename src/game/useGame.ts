@@ -1307,7 +1307,28 @@ export function useGame() {
     spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
   }, [settleHeroSpend, spawnBattle]);
 
-  const sellItem = useCallback((itemUid: string) => {
+  const sellItem = useCallback(async (itemUid: string) => {
+    const current = stateRef.current.inventory.find((item) => item.uid === itemUid);
+    if (tokenomicsEnabled && current?.serverOwned) {
+      if (current.locked) return;
+      const result = await playerSync<{ item_ids: string[]; gold_refund: number; revision: number }>('item_mutate', {
+        operation: 'sell', item_uids: [itemUid], idempotency_key: createIdempotencyKey(),
+      });
+      if (!result || !Array.isArray(result.item_ids) || result.item_ids.length !== 1 || result.item_ids[0] !== itemUid
+        || !Number.isSafeInteger(result.gold_refund) || result.gold_refund < 0) return;
+      if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
+      setState((prev) => ({
+        ...prev,
+        gold: prev.gold + result.gold_refund,
+        inventory: prev.inventory.filter((item) => item.uid !== itemUid),
+        ownedHeroes: prev.ownedHeroes.map((hero) => ({
+          ...hero,
+          equipped: Object.fromEntries(Object.entries(hero.equipped).filter(([, uid]) => uid !== itemUid)),
+        })),
+      }));
+      spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
+      return;
+    }
     setState((prev) => {
       const item = prev.inventory.find((i) => i.uid === itemUid);
       if (!item || item.locked) return prev;
@@ -1322,12 +1343,40 @@ export function useGame() {
     spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
   }, [spawnBattle]);
 
-  const toggleItemLock = useCallback((itemUid: string) => {
+  const toggleItemLock = useCallback(async (itemUid: string) => {
+    const current = stateRef.current.inventory.find((item) => item.uid === itemUid);
+    if (tokenomicsEnabled && current?.serverOwned) {
+      const locked = !current.locked;
+      const result = await playerSync<{ item_ids: string[]; locked: boolean; revision: number }>('item_mutate', {
+        operation: 'lock', item_uids: [itemUid], locked, idempotency_key: createIdempotencyKey(),
+      });
+      if (!result || result.locked !== locked || result.item_ids?.[0] !== itemUid) return;
+      if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
+      setState((prev) => ({ ...prev, inventory: prev.inventory.map((item) => item.uid === itemUid ? { ...item, locked } : item) }));
+      return;
+    }
     setState((prev) => ({ ...prev, inventory: prev.inventory.map((i) => i.uid === itemUid ? { ...i, locked: !i.locked } : i) }));
   }, []);
 
   // FIXED: sellAllUnlocked only sells UNEQUIPPED, UNLOCKED items (not potions, not equipped)
-  const sellAllUnlocked = useCallback(() => {
+  const sellAllUnlocked = useCallback(async () => {
+    if (tokenomicsEnabled) {
+      const st = stateRef.current;
+      const equipped = new Set(st.ownedHeroes.flatMap((hero) => Object.values(hero.equipped).filter((uid): uid is string => Boolean(uid))));
+      const itemUids = st.inventory.filter((item) => item.serverOwned && !item.locked && !equipped.has(item.uid)).map((item) => item.uid);
+      if (itemUids.length === 0) return;
+      const result = await playerSync<{ item_ids: string[]; gold_refund: number; revision: number }>('item_mutate', {
+        operation: 'sell', item_uids: itemUids, idempotency_key: createIdempotencyKey(),
+      });
+      if (!result || !Array.isArray(result.item_ids) || result.item_ids.length !== itemUids.length
+        || !Number.isSafeInteger(result.gold_refund) || result.gold_refund < 0) return;
+      const sold = new Set(result.item_ids);
+      if (itemUids.some((uid) => !sold.has(uid))) return;
+      if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
+      setState((prev) => ({ ...prev, gold: prev.gold + result.gold_refund, inventory: prev.inventory.filter((item) => !sold.has(item.uid)) }));
+      spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
+      return;
+    }
     setState((prev) => {
       // find all equipped item UIDs
       const equippedUids = new Set<string>();
