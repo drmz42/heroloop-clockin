@@ -11,6 +11,7 @@
     "check:registration": "node scripts/check-registration-contract.mjs",
     "check:server-rewards": "node scripts/check-server-reward-authority.mjs",
     "check:server-items": "node scripts/check-server-item-ledger.mjs",
+    "check:server-market": "node scripts/check-server-market.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"

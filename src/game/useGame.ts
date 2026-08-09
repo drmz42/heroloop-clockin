@@ -165,7 +165,27 @@ export interface PromotionSummary {
   starsAdded: number;
 }
 
-export interface MarketBuyInput { kind: 'item' | 'hero'; sourceId: string; name: string; level: number; price: number }
+export interface ServerMarketListing {
+  id: string;
+  price: number;
+  seller_id: string;
+  seller: string;
+  is_own: boolean;
+  created_at: string;
+  item: OwnedItem;
+}
+
+export interface ServerMarketSnapshot {
+  listings: ServerMarketListing[];
+  history: { id: string; name: string; price: number; createdAt: number; action: 'bought' | 'sold' }[];
+  active_limit: number;
+  fee_percent: number;
+  pool_day: string;
+  pool_fee_total: number;
+  pool_trade_count: number;
+}
+
+export interface MarketActionResult { ok: boolean; error?: string }
 
 function updateQuestProgress(quests: DailyQuest[], type: string, amount: number): DailyQuest[] {
   const chain = type.replace(/-$/, '');
@@ -1138,53 +1158,45 @@ export function useGame() {
     setState((prev) => ({ ...prev, ownedHeroes: prev.ownedHeroes.map((hero) => hero.uid === uid && hero.isNew ? { ...hero, isNew: false } : hero) }));
   }, []);
 
-  const buyMarketAsset = useCallback(async (input: MarketBuyInput): Promise<boolean> => {
-    const st = stateRef.current;
-    if (input.price <= 0 || (!tokenomicsEnabled && st.hero < input.price)) return false;
-    if (input.kind === 'item' && (st.inventory.length >= MAX_INVENTORY || !ITEM_MAP[input.sourceId])) return false;
-    if (input.kind === 'hero' && (st.ownedHeroes.length >= MAX_HEROES || !HERO_MAP[input.sourceId])) return false;
-    const balance = await settleHeroSpend(input.price, `market-${input.kind}`);
-    if (balance === null) return false;
-    setState((prev) => {
-      const record = { id: genUid(), kind: input.kind, sourceId: input.sourceId, name: input.name, price: input.price, createdAt: Date.now(), action: 'bought' as const };
-      if (input.kind === 'item') return { ...prev, hero: balance, inventory: [...prev.inventory, rollItem(input.sourceId, input.level)], marketHistory: [record, ...prev.marketHistory].slice(0, 100) };
-      const owned: OwnedHero = { uid: genUid(), heroId: input.sourceId, level: input.level, stars: 0, equipped: {}, xp: 0, isNew: true };
-      return { ...prev, hero: balance, ownedHeroes: [...prev.ownedHeroes, owned], marketHistory: [record, ...prev.marketHistory].slice(0, 100) };
-    });
-    return true;
-  }, [settleHeroSpend]);
+  const loadMarket = useCallback(async (): Promise<ServerMarketSnapshot | null> => {
+    if (!tokenomicsEnabled) return null;
+    return playerSync<ServerMarketSnapshot>('market_snapshot');
+  }, []);
 
-  const createMarketListing = useCallback((kind: 'item' | 'hero', uid: string, price: number): boolean => {
-    const st = stateRef.current;
-    const safePrice = Math.max(1, Math.floor(price));
-    if (kind === 'item') {
-      const item = st.inventory.find((owned) => owned.uid === uid);
-      const equipped = st.ownedHeroes.some((hero) => Object.values(hero.equipped).includes(uid));
-      if (!item || item.locked || equipped) return false;
-      setState((prev) => ({ ...prev, inventory: prev.inventory.filter((owned) => owned.uid !== uid), marketListings: [{ id: genUid(), kind, price: safePrice, createdAt: Date.now(), item }, ...prev.marketListings] }));
-      return true;
-    }
-    const hero = st.ownedHeroes.find((owned) => owned.uid === uid);
-    const lastAvatarCopy = hero && hero.heroId === st.avatarHeroId && st.ownedHeroes.filter((owned) => owned.heroId === hero.heroId).length <= 1;
-    if (!hero || hero.locked || st.team.includes(uid) || st.trainingCamp.heroUids.includes(uid) || st.ownedHeroes.length <= 1 || lastAvatarCopy) return false;
-    setState((prev) => ({ ...prev, ownedHeroes: prev.ownedHeroes.filter((owned) => owned.uid !== uid), marketListings: [{ id: genUid(), kind, price: safePrice, createdAt: Date.now(), hero }, ...prev.marketListings] }));
+  const applyMarketState = useCallback((result: { inventory: OwnedItem[]; token_balance: number; revision: number }) => {
+    if (!Array.isArray(result.inventory) || !Number.isFinite(result.token_balance)) return false;
+    if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
+    setState((prev) => ({ ...prev, inventory: result.inventory, hero: Math.max(0, Math.floor(result.token_balance)) }));
     return true;
   }, []);
 
-  const cancelMarketListing = useCallback((id: string) => setState((prev) => {
-    const listing = prev.marketListings.find((entry) => entry.id === id);
-    if (!listing) return prev;
-    return { ...prev, marketListings: prev.marketListings.filter((entry) => entry.id !== id), inventory: listing.item ? [...prev.inventory, listing.item] : prev.inventory, ownedHeroes: listing.hero ? [...prev.ownedHeroes, listing.hero] : prev.ownedHeroes };
-  }), []);
+  const createMarketListing = useCallback(async (uid: string, price: number): Promise<MarketActionResult> => {
+    let error = '';
+    const result = await playerSync<{ inventory: OwnedItem[]; token_balance: number; revision: number }>('market_list_item', {
+      item_id: uid,
+      price: Math.floor(price),
+      idempotency_key: createIdempotencyKey(),
+    }, (message) => { error = message; });
+    return result && applyMarketState(result) ? { ok: true } : { ok: false, error: error || 'market_settlement_failed' };
+  }, [applyMarketState]);
 
-  const completeMarketListing = useCallback((id: string) => setState((prev) => {
-    const listing = prev.marketListings.find((entry) => entry.id === id);
-    if (!listing) return prev;
-    const sourceId = listing.item?.itemId ?? listing.hero?.heroId ?? '';
-    const name = listing.item ? ITEM_MAP[sourceId]?.name : HERO_MAP[sourceId]?.name;
-    const record = { id: genUid(), kind: listing.kind, sourceId, name: name ?? 'Asset', price: listing.price, createdAt: Date.now(), action: 'sold' as const };
-    return { ...prev, hero: prev.hero + listing.price, marketListings: prev.marketListings.filter((entry) => entry.id !== id), marketHistory: [record, ...prev.marketHistory].slice(0, 100) };
-  }), []);
+  const cancelMarketListing = useCallback(async (id: string): Promise<MarketActionResult> => {
+    let error = '';
+    const result = await playerSync<{ inventory: OwnedItem[]; token_balance: number; revision: number }>('market_cancel_listing', {
+      listing_id: id,
+      idempotency_key: createIdempotencyKey(),
+    }, (message) => { error = message; });
+    return result && applyMarketState(result) ? { ok: true } : { ok: false, error: error || 'market_settlement_failed' };
+  }, [applyMarketState]);
+
+  const buyMarketAsset = useCallback(async (id: string): Promise<MarketActionResult> => {
+    let error = '';
+    const result = await playerSync<{ inventory: OwnedItem[]; token_balance: number; revision: number }>('market_buy_listing', {
+      listing_id: id,
+      idempotency_key: createIdempotencyKey(),
+    }, (message) => { error = message; });
+    return result && applyMarketState(result) ? { ok: true } : { ok: false, error: error || 'market_settlement_failed' };
+  }, [applyMarketState]);
 
   const setAvatarHero = useCallback((heroId: string) => {
     setState((prev) => prev.ownedHeroes.some((hero) => hero.heroId === heroId) ? { ...prev, avatarHeroId: heroId } : prev);
@@ -1817,7 +1829,7 @@ export function useGame() {
     buyPotion, usePotion, setAutoPot, setBattleAnimationMode,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
     openChests, closeChestResult, buyRotatingItem, claimQuest,
-    claimReferralReward, setUserProfile, resetAccount, hydrateServerState, mergeServerResourceState, completeWelcomeTutorial, setAvatarHero, buyMarketAsset, createMarketListing, cancelMarketListing, completeMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
+    claimReferralReward, setUserProfile, resetAccount, hydrateServerState, mergeServerResourceState, completeWelcomeTutorial, setAvatarHero, loadMarket, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
     heroStatsFor: (uid: string) => {
       const owned = state.ownedHeroes.find((h) => h.uid === uid);
       if (!owned) return null;
