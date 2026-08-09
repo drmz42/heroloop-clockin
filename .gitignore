@@ -29,6 +29,7 @@ dist.permission-backup/
 /*.png
 todo/.htpasswd
 todo/codex-usage.json
+todo/task-history.json
 upload/*
 !upload/.gitkeep
 # Large reference files
