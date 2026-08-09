@@ -97,11 +97,11 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
             <button disabled={Boolean(equipDisabledReason)} onClick={() => onEquip(base.slot)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-0.5 text-[8px] font-black text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={equipDisabledReason || `Equip ${SLOT_LABEL[base.slot]}`}><ArrowUp size={12} /><span className="mt-0.5">Equip</span></button>
           ) : <div />}
 
-          <button disabled={!canEnchant} onClick={() => setShowEnchant(s => !s)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 px-0.5 text-center text-[8px] font-black text-amber-300 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={canEnchant ? `Enchant +${item.enchantLevel + 1}: ${Math.round(enchChance * 100)}% chance, ${formatNum(enchGold)} Gold` : 'Maximum enchant +10'}>
+          <button disabled={!canEnchant || game.itemUpgradeBusy} onClick={() => setShowEnchant(s => !s)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 px-0.5 text-center text-[8px] font-black text-amber-300 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={canEnchant ? `Enchant +${item.enchantLevel + 1}: ${Math.round(enchChance * 100)}% chance, ${formatNum(enchGold)} Gold` : 'Maximum enchant +10'}>
             <ArrowUp size={12} /><span className="mt-0.5">{canEnchant ? `Enchant +${item.enchantLevel + 1}` : 'Max +10'}</span>{canEnchant && <span className="text-[7px] font-bold text-amber-100/70">{Math.round(enchChance * 100)}% · {formatNum(enchGold)} G</span>}
           </button>
 
-          <button disabled={!rerollAffordable} onClick={() => setShowReroll(s => !s)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 px-0.5 text-[8px] font-black text-cyan-300 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={rerollAffordable ? `Reroll for ${rCost} $HERO` : `Need ${rCost - game.state.hero} more $HERO`}>
+          <button disabled={!rerollAffordable || game.itemUpgradeBusy} onClick={() => setShowReroll(s => !s)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 px-0.5 text-[8px] font-black text-cyan-300 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={rerollAffordable ? `Reroll for ${rCost} $HERO` : `Need ${rCost - game.state.hero} more $HERO`}>
             <Dice5 size={12} /><span className="mt-0.5">Reroll</span><span className="flex items-center gap-0.5 text-[7px] font-bold text-cyan-100/70"><HeroTokenIcon size={8} /> {rCost}</span>
           </button>
 
@@ -127,8 +127,8 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
           <div className="rounded-lg bg-black/30 p-2 space-y-1.5">
             <div className="text-[10px] text-slate-400">Success: <span className={enchChance >= 1 ? 'text-emerald-300' : 'text-amber-300'}>{Math.round(enchChance * 100)}%</span> {enchChance < 1 && <span className="text-rose-400">· Fail = item destroyed</span>}</div>
             <button
-              onClick={() => { game.enchantItem(item.uid, false); setShowEnchant(false); onClose(); }}
-              disabled={game.state.gold < enchGold}
+              onClick={() => { void game.enchantItem(item.uid, false); setShowEnchant(false); onClose(); }}
+              disabled={game.itemUpgradeBusy || game.state.gold < enchGold}
               className="w-full py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold hover:bg-amber-500/25 disabled:opacity-40 transition"
             >
               Enchant (<Coins size={10} className="inline" /> {formatNum(enchGold)})
@@ -136,8 +136,8 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
             {charmCost > 0 && (
               <button
                 type="button"
-                onClick={() => { game.enchantItem(item.uid, true); setShowEnchant(false); onClose(); }}
-                disabled={game.state.gold < enchGold}
+                onClick={() => { void game.enchantItem(item.uid, true); setShowEnchant(false); onClose(); }}
+                disabled={game.itemUpgradeBusy || game.state.gold < enchGold || game.state.hero < charmCost}
                 className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-300 text-xs font-bold hover:bg-violet-500/25 disabled:opacity-40 transition"
               >
                 <ShieldCheck size={13} /> 100% Safe (<Coins size={10} /> {formatNum(enchGold)} + <HeroTokenIcon size={10} /> {charmCost})
@@ -151,8 +151,8 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
             <div className="text-[10px] text-slate-400 mb-1">Randomly rerolls all stats (within rarity range). Cost increases with each reroll.</div>
             <button
               type="button"
-              onClick={() => { game.rerollItem(item.uid); setShowReroll(false); }}
-              disabled={!rerollAffordable}
+              onClick={() => { void game.rerollItem(item.uid); setShowReroll(false); }}
+              disabled={game.itemUpgradeBusy || !rerollAffordable}
               className="w-full py-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-bold hover:bg-cyan-500/25 disabled:opacity-40 transition"
             >
               {rerollAffordable ? `Reroll for ${rCost} $HERO` : `Need ${rCost - game.state.hero} more $HERO`}

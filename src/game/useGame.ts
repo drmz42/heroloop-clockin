@@ -214,6 +214,7 @@ export function useGame() {
   const [summonError, setSummonError] = useState('');
   const [serverRevisionHint, setServerRevisionHint] = useState<number | null>(null);
   const [storeBusy, setStoreBusy] = useState(false);
+  const [itemUpgradeBusy, setItemUpgradeBusy] = useState(false);
 
   const stateRef = useRef(state); stateRef.current = state;
   const unitsRef = useRef<CombatUnit[]>([]);
@@ -221,6 +222,7 @@ export function useGame() {
   const pausedRef = useRef(paused); pausedRef.current = paused;
   const floaterId = useRef(0);
   const resolvingRef = useRef(false);
+  const itemUpgradeBusyRef = useRef(false);
   const heroHpRef = useRef<Map<string, number>>(new Map());
   const battleStartedAtRef = useRef(Date.now());
   const lastCombatRenderRef = useRef(0);
@@ -1361,6 +1363,38 @@ export function useGame() {
     const st = stateRef.current;
     const item = st.inventory.find((i) => i.uid === itemUid);
     if (!item || item.enchantLevel >= 10) { setEnchantResult({ success: false }); return; }
+    if (tokenomicsEnabled && item.serverOwned) {
+      if (itemUpgradeBusyRef.current) return;
+      itemUpgradeBusyRef.current = true;
+      setItemUpgradeBusy(true);
+      try {
+        const result = await playerSync<{
+          success: boolean; destroyed: boolean; item: OwnedItem | null; inventory: OwnedItem[];
+          owned_heroes: OwnedHero[]; gold: number; token_balance: number; token_cost: number; revision: number;
+        }>('item_upgrade', {
+          operation: 'enchant', item_uid: itemUid, use_charm: useCharm,
+          idempotency_key: createIdempotencyKey(),
+        });
+        if (!result || !Array.isArray(result.inventory) || !Array.isArray(result.owned_heroes)
+          || !Number.isFinite(result.gold) || !Number.isFinite(result.token_balance)) {
+          setEnchantResult({ success: false });
+          return;
+        }
+        if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
+        const nextState = {
+          ...stateRef.current, gold: result.gold, hero: result.token_balance,
+          inventory: result.inventory, ownedHeroes: result.owned_heroes,
+        };
+        stateRef.current = nextState;
+        setState(nextState);
+        setEnchantResult({ success: result.success, item: result.item ?? undefined });
+        spawnBattle(nextState.currentLocation, nextState.team);
+      } finally {
+        itemUpgradeBusyRef.current = false;
+        setItemUpgradeBusy(false);
+      }
+      return;
+    }
     const goldCost = enchantGoldCost(item.enchantLevel);
     const charmCost = useCharm ? enchantCharmCost(item.enchantLevel) : 0;
     if (st.gold < goldCost || (!tokenomicsEnabled && st.hero < charmCost)) { setEnchantResult({ success: false }); return; }
@@ -1400,6 +1434,35 @@ export function useGame() {
     const st = stateRef.current;
     const item = st.inventory.find((i) => i.uid === itemUid);
     if (!item) return;
+    if (tokenomicsEnabled && item.serverOwned) {
+      if (itemUpgradeBusyRef.current) return;
+      itemUpgradeBusyRef.current = true;
+      setItemUpgradeBusy(true);
+      try {
+        const result = await playerSync<{
+          item: OwnedItem | null; inventory: OwnedItem[]; owned_heroes: OwnedHero[];
+          gold: number; token_balance: number; token_cost: number; revision: number;
+        }>('item_upgrade', {
+          operation: 'reroll', item_uid: itemUid, use_charm: false,
+          idempotency_key: createIdempotencyKey(),
+        });
+        if (!result?.item || !Array.isArray(result.inventory) || !Array.isArray(result.owned_heroes)
+          || !Number.isFinite(result.gold) || !Number.isFinite(result.token_balance)) return;
+        if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
+        const nextState = {
+          ...stateRef.current, gold: result.gold, hero: result.token_balance,
+          inventory: result.inventory, ownedHeroes: result.owned_heroes,
+          milestoneQuests: updateQuestProgress(stateRef.current.milestoneQuests, 'token-spent-', result.token_cost),
+        };
+        stateRef.current = nextState;
+        setState(nextState);
+        spawnBattle(nextState.currentLocation, nextState.team);
+      } finally {
+        itemUpgradeBusyRef.current = false;
+        setItemUpgradeBusy(false);
+      }
+      return;
+    }
     const base = ITEM_MAP[item.itemId];
     if (!base) return;
     const cost = rerollCost(base.rarity, item.rerollCount);
@@ -1889,7 +1952,7 @@ export function useGame() {
   }, []);
 
   return {
-    state, hydrationVersion, summonPity, summonError, serverRevisionHint, units, floaters, battleResult, autoProgress, paused, chestOpening, storeBusy,
+    state, hydrationVersion, summonPity, summonError, serverRevisionHint, units, floaters, battleResult, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
     offlineEarnings, respawnCountdowns, potionFx, chestOpenResult, enchantResult,
     starUpHero, promoteAllHeroes, sellHero, sellHeroes, toggleHeroLock, markHeroSeen,
     summon, summonTen, summonHundred, summonBoss, syncBossKeys, toggleTeamMember, setLocation,
