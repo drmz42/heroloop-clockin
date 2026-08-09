@@ -498,7 +498,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
                   {itemBase?.heroClass && <div className="item-class-badge absolute right-0 top-0" title={`${CLASS_LABEL[itemBase.heroClass]} only`}>{CLASS_SHORT_LABEL[itemBase.heroClass]}</div>}
                   {item && <div className="absolute bottom-0 right-0 rounded-tl bg-black/75 px-1 text-[11px] font-bold leading-tight text-slate-200">{item.level}</div>}
                 </button>
-                {gridIndex === selectedBagRowEnd && liveSelectedItem && selectedItemSource === 'bag' && <div className="col-span-8 rounded-lg border border-[#6e5837] bg-[#10120f] p-2 shadow-inner"><ItemActionPanel item={liveSelectedItem} game={game} equippedSlot={null} comparisonItem={comparisonItem} equipDisabledReason={selectedEquipReason} onEquip={(slot) => { if (selectedHero) { game.equipItem(selectedHero.uid, liveSelectedItem.uid, slot); setSelectedItem(null); } }} onBeforeSell={async (selected) => { const selectedRarity = ITEM_MAP[selected.itemId]?.rarity; return selectedRarity === 'divine' || selectedRarity === 'celestial' ? tok.removeLimitedItem(selected.uid) : true; }} onClose={() => setSelectedItem(null)} /></div>}
+                {gridIndex === selectedBagRowEnd && liveSelectedItem && selectedItemSource === 'bag' && <div className="col-span-8 rounded-lg border border-[#6e5837] bg-[#10120f] p-2 shadow-inner"><ItemActionPanel item={liveSelectedItem} game={game} equippedSlot={null} comparisonItem={comparisonItem} equipDisabledReason={selectedEquipReason} onEquip={(slot) => { if (selectedHero) { game.equipItem(selectedHero.uid, liveSelectedItem.uid, slot); setSelectedItem(null); } }} onBeforeSell={async (selected) => { if (selected.serverOwned) return true; const selectedRarity = ITEM_MAP[selected.itemId]?.rarity; return selectedRarity === 'divine' || selectedRarity === 'celestial' ? tok.removeLimitedItem(selected.uid) : true; }} onClose={() => setSelectedItem(null)} /></div>}
                 </Fragment>
               );
             })}
@@ -515,6 +515,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
               equipDisabledReason={selectedEquipReason}
               onUnequip={selectedItemSource === 'hero' && selectedItemSlot ? () => { if (selectedHero) { game.unequipItem(selectedHero.uid, selectedItemSlot); setSelectedItem(null); } } : undefined}
               onBeforeSell={async (item) => {
+                if (item.serverOwned) return true;
                 const rarity = ITEM_MAP[item.itemId]?.rarity;
                 return rarity === 'divine' || rarity === 'celestial' ? tok.removeLimitedItem(item.uid) : true;
               }}
