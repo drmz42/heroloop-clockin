@@ -305,7 +305,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
               {battleResult && (
                 <div className="anim-banner stat-tile mt-2 flex flex-wrap items-center justify-center gap-2 px-3 py-2 font-vt text-sm">
                   {battleResult.gold > 0 && <span className="text-amber-300">+{formatNum(battleResult.gold)}g</span>}
-                  {battleResult.win && <span className="text-emerald-300">+{formatNum(battleResult.xp)} XP</span>}
+                  {battleResult.xp > 0 && <span className="text-emerald-300">+{formatNum(battleResult.xp)} XP</span>}
                   {dropBase && <span style={{ color: RARITY_COLORS[dropBase.rarity] }} className="flex items-center gap-1"><Package size={11} /> {dropBase.name}</span>}
                   {battleResult.chest && <span className="text-amber-200 flex items-center gap-1">+1 chest</span>}
                 </div>
