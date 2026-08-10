@@ -150,6 +150,14 @@ function serverEquipmentAssignments(state: GameState): ServerItemAssignment[] {
   }).sort((left, right) => left.item_uid.localeCompare(right.item_uid));
 }
 
+function sameServerEquipmentAssignments(expected: ServerItemAssignment[], actual: ServerItemAssignment[]): boolean {
+  if (expected.length !== actual.length) return false;
+  const key = (assignment: ServerItemAssignment) => `${assignment.item_uid}\u0000${assignment.hero_uid}\u0000${assignment.slot}`;
+  const expectedKeys = expected.map(key).sort();
+  const actualKeys = actual.map(key).sort();
+  return expectedKeys.every((value, index) => value === actualKeys[index]);
+}
+
 export interface BattleResult {
   win: boolean;
   gold: number;
@@ -1247,10 +1255,7 @@ export function useGame() {
       assignments,
       idempotency_key: createIdempotencyKey(),
     });
-    if (!result || !Array.isArray(result.assignments) || result.assignments.length !== assignments.length) return false;
-    const expected = JSON.stringify(assignments);
-    const actual = JSON.stringify([...result.assignments].sort((left, right) => left.item_uid.localeCompare(right.item_uid)));
-    if (actual !== expected) return false;
+    if (!result || !Array.isArray(result.assignments) || !sameServerEquipmentAssignments(assignments, result.assignments)) return false;
     if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
     return true;
   }, []);
