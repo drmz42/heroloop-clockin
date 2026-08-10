@@ -133,7 +133,7 @@ function App() {
       if (!saved?.revision) return;
       savedStateVersionRef.current = Math.max(savedStateVersionRef.current, version);
       const latestRevision = serverStateRevisionRef.current ?? 0;
-      if (saved.conflict && saved.state && saved.revision > latestRevision) hydrateServerState(saved.state);
+      if (saved.state && saved.revision > latestRevision) hydrateServerState(saved.state);
       if (saved.revision > latestRevision) {
         serverStateRevisionRef.current = saved.revision;
         setServerStateRevision(saved.revision);
