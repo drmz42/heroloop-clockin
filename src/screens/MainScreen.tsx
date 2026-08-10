@@ -427,6 +427,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
                 const ic = ib ? RARITY_COLORS[ib.rarity] : undefined;
                 return <div key={slot} className="min-w-0 text-center">
                   <button
+                    data-equipped-item-uid={item?.uid}
                     onClick={() => { if (item) { setSelectedItem(item); setSelectedItemSource('hero'); setSelectedItemSlot(slot); } else setSelectedItem(null); }}
                     className={`item-slot group aspect-square w-full min-w-0 flex items-center justify-center overflow-hidden text-lg border transition hover:-translate-y-0.5 relative ${ib ? `rarity-${ib.rarity}` : ''}`}
                     style={{ borderColor: ic ? `${ic}99` : 'rgba(255,255,255,0.08)', background: 'linear-gradient(145deg,#151c27,#090c11)' }}
@@ -488,6 +489,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
               return (
                 <Fragment key={item ? item.uid : `e${i}`}>
                 <button
+                  data-inventory-item-uid={item?.uid}
                   onClick={item ? () => { if (inventoryLockMode) { game.toggleItemLock(item.uid); showToast(item.locked ? 'Item unlocked' : 'Item locked'); return; } setSelectedItem(item); setSelectedItemSource('bag'); setSelectedItemSlot(null); } : undefined}
                   className={`item-slot aspect-square min-w-0 w-full flex items-center justify-center overflow-hidden text-xl border transition hover:-translate-y-0.5 relative ${item && rarity ? `rarity-${rarity}` : ''} ${selectedItem?.uid === item?.uid ? 'ring-1 ring-[#d9ad5b]' : ''}`}
                   style={item ? { borderColor: rc ? `${rc}99` : 'rgba(255,255,255,0.08)' } : { borderColor: 'rgba(128,119,100,0.11)', background: 'linear-gradient(145deg,#151612,#0c0e0d)' }}
