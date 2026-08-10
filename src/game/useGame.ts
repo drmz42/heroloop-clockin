@@ -231,6 +231,7 @@ export function useGame() {
   const floaterId = useRef(0);
   const resolvingRef = useRef(false);
   const itemUpgradeBusyRef = useRef(false);
+  const equipmentErrorRef = useRef('');
   const heroHpRef = useRef<Map<string, number>>(new Map());
   const battleStartedAtRef = useRef(Date.now());
   const lastCombatRenderRef = useRef(0);
@@ -1249,13 +1250,17 @@ export function useGame() {
   }, [settleServerSummon]);
 
   const settleServerEquipment = useCallback(async (nextState: GameState): Promise<boolean> => {
+    equipmentErrorRef.current = '';
     if (!tokenomicsEnabled) return true;
     const assignments = serverEquipmentAssignments(nextState);
     const result = await playerSync<{ assignments: ServerItemAssignment[]; revision: number }>('item_equip', {
       assignments,
       idempotency_key: createIdempotencyKey(),
-    });
-    if (!result || !Array.isArray(result.assignments) || !sameServerEquipmentAssignments(assignments, result.assignments)) return false;
+    }, (message) => { equipmentErrorRef.current = message; });
+    if (!result || !Array.isArray(result.assignments) || !sameServerEquipmentAssignments(assignments, result.assignments)) {
+      if (!equipmentErrorRef.current) equipmentErrorRef.current = 'invalid_server_response';
+      return false;
+    }
     if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
     return true;
   }, []);
@@ -1962,7 +1967,7 @@ export function useGame() {
     starUpHero, promoteAllHeroes, sellHero, sellHeroes, toggleHeroLock, markHeroSeen,
     summon, summonTen, summonHundred, summonBoss, syncBossKeys, toggleTeamMember, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, retry,
-    equipItem, unequipItem, unequipAll, sellItem, toggleItemLock, sellAllUnlocked,
+    equipItem, unequipItem, unequipAll, equipmentError: () => equipmentErrorRef.current, sellItem, toggleItemLock, sellAllUnlocked,
     enchantItem, rerollItem, dismissEnchantResult,
     buyPotion, usePotion, setAutoPot, setBattleAnimationMode,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
