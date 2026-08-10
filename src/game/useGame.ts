@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey } from '@/game/types';
 import {
   loadState, saveLegacyState, normalizeState, makeInitialState, makeRegisteredStarterState, genUid, starUpCost, summonCostHero,
-  MAX_TEAM, MAX_HEROES, MAX_HERO_STARS, MAX_INVENTORY, MAX_CHESTS, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
+  MAX_TEAM, MAX_HEROES, MAX_HERO_STARS, MAX_INVENTORY, MAX_CHESTS, MAX_ACCOUNT_XP, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
   accountLevelFromXp, advanceHeroXp, heroSellValue, milestoneQuest, moscowDayKey,
   heroXpForLevel, TRAINING_SLOT_COSTS, TRAINING_BOOST_COSTS,
   ACTIVE_SESSION_MS,
@@ -424,7 +424,7 @@ export function useGame() {
         );
         return next;
       }
-      next.accountXp = prev.accountXp + accountXpGain;
+      next.accountXp = Math.min(MAX_ACCOUNT_XP, prev.accountXp + accountXpGain);
       next.accountLevel = accountLevelFromXp(next.accountXp);
       next.ownedHeroes = prev.ownedHeroes.map((h) =>
         deadHeroUids.includes(h.uid) && !h.respawnAt ? { ...h, respawnAt: now + RESPAWN_TIME_MS } : h
@@ -738,7 +738,7 @@ export function useGame() {
           : base.chests;
         const penalty = trainingTokenPenalty(base.trainingCamp.heroUids.filter(Boolean).length);
         const tokens = tokenomicsEnabled ? 0 : (canMineTokens(base.currentLocation, base.accountLevel, base.highestLocation) ? Math.floor((activeSeconds / 86400) * 20_000 * (1 - penalty)) : 0);
-        const nextAccountXp = base.accountXp + accountXp;
+        const nextAccountXp = Math.min(MAX_ACCOUNT_XP, base.accountXp + accountXp);
         const dayKey = moscowDayKey();
         return {
           ...base,
@@ -823,8 +823,8 @@ export function useGame() {
           totalTokensEarned: p.totalTokensEarned + tokens,
           tokensEarnedToday: (p.tokenDayKey === dayKey ? p.tokensEarnedToday : 0) + tokens,
           tokenDayKey: dayKey,
-          accountXp: p.accountXp + accountXp,
-          accountLevel: accountLevelFromXp(p.accountXp + accountXp),
+          accountXp: Math.min(MAX_ACCOUNT_XP, p.accountXp + accountXp),
+          accountLevel: accountLevelFromXp(Math.min(MAX_ACCOUNT_XP, p.accountXp + accountXp)),
           totalKills: p.totalKills + kills,
           session: { ...p.session, kills: p.session.kills + kills },
           ownedHeroes: p.ownedHeroes.map((h) => {
@@ -859,7 +859,7 @@ export function useGame() {
   const creditTestAccountXp = useCallback((amount: number) => {
     const safeAmount = Math.max(0, Math.floor(amount));
     if (safeAmount <= 0) return;
-    setState((prev) => ({ ...prev, accountXp: prev.accountXp + safeAmount, accountLevel: accountLevelFromXp(prev.accountXp + safeAmount) }));
+    setState((prev) => ({ ...prev, accountXp: Math.min(MAX_ACCOUNT_XP, prev.accountXp + safeAmount), accountLevel: accountLevelFromXp(Math.min(MAX_ACCOUNT_XP, prev.accountXp + safeAmount)) }));
   }, []);
 
   const creditTestFormationXp = useCallback((amount: number) => {

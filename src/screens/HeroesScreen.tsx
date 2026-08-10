@@ -97,10 +97,10 @@ function StatBox({ label, value }: { label: string; value: string }) { return <d
 
 export function HeroesScreen({ game }: { game: GameApi }) {
   const { state, respawnCountdowns } = game;
-  const [sort, setSort] = useState<'rarity' | 'level' | 'power'>('rarity');
+  const [sort, setSort] = useState<'rarity' | 'stars' | 'level' | 'power'>('rarity');
   const [classFilter, setClassFilter] = useState('all');
   const [rarityFilter, setRarityFilter] = useState('all');
-  const [levelFilter, setLevelFilter] = useState<'all' | '1-9' | '10+'>('all');
+  const [levelFilter, setLevelFilter] = useState<'all' | '1-19' | '20-39' | '40-59' | '60-79' | '80-99'>('all');
   const [search, setSearch] = useState('');
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -114,12 +114,15 @@ export function HeroesScreen({ game }: { game: GameApi }) {
     const list = state.ownedHeroes.map((hero) => ({ base: HERO_MAP[hero.heroId], hero })).filter((entry): entry is { base: HeroBase; hero: OwnedHero } => Boolean(entry.base)).filter(({ base, hero }) => {
       if (classFilter !== 'all' && base.heroClass !== classFilter) return false;
       if (rarityFilter !== 'all' && base.rarity !== rarityFilter) return false;
-      if (levelFilter === '1-9' && hero.level > 9) return false;
-      if (levelFilter === '10+' && hero.level < 10) return false;
+      if (levelFilter !== 'all') {
+        const [minimum, maximum] = levelFilter.split('-').map(Number);
+        if (hero.level < minimum || hero.level > maximum) return false;
+      }
       return !search || base.name.toLowerCase().includes(search.toLowerCase());
     });
     return list.sort((a, b) => {
       if (sort === 'level') return b.hero.level - a.hero.level;
+      if (sort === 'stars') return b.hero.stars - a.hero.stars || b.hero.level - a.hero.level;
       if (sort === 'power') { const aStats = heroStats(a.hero, getEquippedItems(a.hero, state.inventory)); const bStats = heroStats(b.hero, getEquippedItems(b.hero, state.inventory)); return ((bStats?.atk ?? 0) + (bStats?.hp ?? 0) / 10) - ((aStats?.atk ?? 0) + (aStats?.hp ?? 0) / 10); }
       return RARITY_INDEX[b.base.rarity] - RARITY_INDEX[a.base.rarity];
     });
@@ -150,19 +153,15 @@ export function HeroesScreen({ game }: { game: GameApi }) {
           <div className="min-w-0">
             <div className="section-kicker">Hall of Champions</div>
             <h2 className="mt-0.5 text-xl font-black text-[#eee4d3]">My Heroes <span className="text-sm text-[#8f897e]">{state.ownedHeroes.length}/{MAX_HEROES}</span></h2>
-            <div className="mt-3 flex flex-wrap items-start gap-2">
-              <div className="grid w-[170px] shrink-0 grid-rows-2 gap-1"><label className="relative block h-8"><Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#736d62]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search heroes" className="game-control h-8 w-full bg-transparent pl-7 pr-2 text-[10px] outline-none" /></label><button type="button" disabled={promoting} onClick={() => void promoteAll()} className="game-control game-primary flex h-8 w-full items-center justify-center gap-1 px-2 text-[8px] font-black uppercase disabled:opacity-55"><Sparkles size={11} /> {promoting ? 'Promoting…' : 'Promote All'}</button></div>
-              <div className="grid min-w-[360px] flex-1 grid-rows-2 gap-1">
-                <div className="grid h-8 grid-cols-3 gap-1">
+            <div className="mt-3 grid grid-cols-2 gap-1 sm:grid-cols-5">
+                <label className="relative block h-8"><Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#736d62]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search heroes" className="game-control h-8 w-full bg-transparent pl-7 pr-2 text-[10px] outline-none" /></label>
                   <Filter value={classFilter} onChange={setClassFilter} label="Class" options={['all', 'knight', 'archer', 'assassin', 'shepherd', 'druid']} />
                   <Filter value={rarityFilter} onChange={setRarityFilter} label="Rarity" options={['all', ...FILTER_RARITIES]} />
-                  <Filter value={levelFilter} onChange={(value) => setLevelFilter(value as typeof levelFilter)} label="Level" options={['all', '1-9', '10+']} />
-                </div>
-                <div className="grid h-8 grid-cols-3 gap-1">
-                  {(['power', 'level'] as const).map((value) => <button type="button" key={value} onClick={() => setSort(value)} className={`game-control h-8 px-2 text-[8px] font-bold uppercase ${sort === value ? 'game-primary' : ''}`}>{value}</button>)}
+                  <Filter value={levelFilter} onChange={(value) => setLevelFilter(value as typeof levelFilter)} label="Level" options={['all', '1-19', '20-39', '40-59', '60-79', '80-99']} />
+                  <button type="button" onClick={() => { setClassFilter('all'); setRarityFilter('all'); setLevelFilter('all'); setSearch(''); }} className="game-control h-8 px-2 text-[8px] font-black uppercase"><X size={11} className="mr-1 inline" />Clear filters</button>
+                  <button type="button" disabled={promoting} onClick={() => void promoteAll()} className="game-control game-primary flex h-8 w-full items-center justify-center gap-1 px-2 text-[8px] font-black uppercase disabled:opacity-55"><Sparkles size={11} /> {promoting ? 'Promoting…' : 'Promote All'}</button>
+                  {(['stars', 'power', 'level'] as const).map((value) => <button type="button" key={value} onClick={() => setSort(value)} className={`game-control h-8 px-2 text-[8px] font-bold uppercase ${sort === value ? 'game-primary' : ''}`}>{value}</button>)}
                   <button type="button" onClick={() => { setSelectionMode((value) => !value); setSelectedUids(new Set()); }} className={`game-control h-8 px-2 text-[8px] font-black uppercase ${selectionMode ? 'game-primary' : ''}`}>{selectionMode ? 'Cancel selection' : 'Select heroes'}</button>
-                </div>
-              </div>
             </div>
           </div>
           <section className="relative overflow-hidden rounded-xl border border-[#a87b35] bg-[radial-gradient(circle_at_50%_0%,rgba(190,137,55,.2),transparent_58%),linear-gradient(160deg,#211b12,#0c0d0c)] p-3 shadow-[inset_0_1px_rgba(255,226,163,.12),0_8px_25px_rgba(0,0,0,.35)]">

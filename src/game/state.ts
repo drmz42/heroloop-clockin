@@ -195,19 +195,19 @@ export function makeRegisteredStarterState(username: string, walletAddress: stri
 
 // ── XP curves ────────────────────────────────────────────────────────────
 export function accountXpForLevel(level: number): number {
-  // Progression target at the baseline combat rate:
-  // day 1 ≈ level 20, day 2 ≈ +9 levels, then a gradual slowdown
-  // toward roughly 3 levels/day. Values remain subject to economy simulation.
   if (level < 20) return Math.round(1800 + level * 85);
-  if (level < 29) return Math.round(5200 + (level - 20) * 180);
-  return Math.min(18_000, Math.round(7000 + (level - 29) * 550));
+  if (level < 29) return Math.round(10_400 + (level - 20) * 360);
+  return Math.min(36_000, Math.round(14_000 + (level - 29) * 1_100));
 }
+
+export const MAX_LEVEL = 99;
+export const MAX_ACCOUNT_XP = Array.from({ length: MAX_LEVEL - 1 }, (_, index) => accountXpForLevel(index + 1)).reduce((sum, need) => sum + need, 0);
 
 export function accountLevelFromXp(xp: number): number {
   let lvl = 1;
   let need = accountXpForLevel(1);
   let acc = 0;
-  while (xp >= acc + need) {
+  while (lvl < MAX_LEVEL && Math.min(MAX_ACCOUNT_XP, Math.max(0, xp)) >= acc + need) {
     acc += need;
     lvl++;
     need = accountXpForLevel(lvl);
@@ -228,13 +228,13 @@ export function heroXpForLevel(level: number): number {
 }
 
 export function advanceHeroXp(level: number, currentXp: number, gainedXp: number): { level: number; remaining: number } {
-  let nextLevel = Math.max(1, level);
+  let nextLevel = Math.max(1, Math.min(MAX_LEVEL, level));
   let remaining = Math.max(0, currentXp) + Math.max(0, gainedXp);
-  while (remaining >= heroXpForLevel(nextLevel)) {
+  while (nextLevel < MAX_LEVEL && remaining >= heroXpForLevel(nextLevel)) {
     remaining -= heroXpForLevel(nextLevel);
     nextLevel++;
   }
-  return { level: nextLevel, remaining };
+  return { level: nextLevel, remaining: nextLevel >= MAX_LEVEL ? 0 : remaining };
 }
 
 export const MAX_HERO_STARS = 20;
@@ -297,9 +297,11 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
       if (oldSecondItem?.itemId.startsWith('offhand-warrior-')) equipped.offhand = old.ring2;
       if (!equipped.ring) equipped.ring = old.ring1 ?? (oldSecondItem?.itemId.startsWith('offhand-') ? undefined : old.ring2);
       delete equipped.weapon; delete equipped.armor; delete equipped.ring1; delete equipped.ring2;
-      return { ...h, uid, equipped, xp: h.xp ?? 0, locked: h.locked ?? false, stars: Math.max(0, Math.min(MAX_HERO_STARS, h.stars ?? 0)) };
+      const level = Math.max(1, Math.min(MAX_LEVEL, h.level ?? 1));
+      return { ...h, uid, equipped, level, xp: level >= MAX_LEVEL ? 0 : Math.max(0, h.xp ?? 0), locked: h.locked ?? false, stars: Math.max(0, Math.min(MAX_HERO_STARS, h.stars ?? 0)) };
     });
-    const accountLevel = Math.max(1, parsed.accountLevel ?? 1);
+    const accountXp = Math.max(0, Math.min(MAX_ACCOUNT_XP, parsed.accountXp ?? 0));
+    const accountLevel = Math.max(1, Math.min(MAX_LEVEL, parsed.accountLevel ?? accountLevelFromXp(accountXp)));
     const sanitizedHeroes = heroes.map((hero) => {
       const equipped = { ...hero.equipped };
       for (const [slot, itemUid] of Object.entries(equipped)) {
@@ -362,7 +364,7 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
       },
       rotatingShop: parsed.rotatingShop?.length ? parsed.rotatingShop : base.rotatingShop,
       hero: parsed.hero ?? LEGACY_MISSING_HERO_TOKENS,
-      accountXp: parsed.accountXp ?? 0,
+      accountXp,
       accountLevel,
       totalKills: parsed.totalKills ?? 0,
       totalBossKills: parsed.totalBossKills ?? parsed.session?.bossKills ?? 0,
