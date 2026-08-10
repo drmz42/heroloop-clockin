@@ -17,6 +17,7 @@ import {
   enchantSuccessChance, enchantGoldCost, enchantCharmCost, itemPower,
   MAX_CHESTS_PER_DAY, rerollCost,
   canClassEquipItem,
+  isMarketEligibleEquipment,
   meetsItemLevelRequirement,
 } from '@/game/items';
 import type { Rarity } from '@/game/types';
@@ -1116,7 +1117,8 @@ export function useGame() {
     if (kind === 'item') {
       const item = st.inventory.find((owned) => owned.uid === uid);
       const equipped = st.ownedHeroes.some((hero) => Object.values(hero.equipped).includes(uid));
-      if (!item || item.locked || equipped) return false;
+      const itemBase = item ? ITEM_MAP[item.itemId] : null;
+      if (!item || !itemBase || !isMarketEligibleEquipment(itemBase) || item.locked || equipped) return false;
       setState((prev) => ({ ...prev, inventory: prev.inventory.filter((owned) => owned.uid !== uid), marketListings: [{ id: genUid(), kind, price: safePrice, createdAt: Date.now(), item }, ...prev.marketListings] }));
       return true;
     }

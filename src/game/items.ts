@@ -141,6 +141,12 @@ const LEGACY_ITEMS: ItemBase[] = [
 
 export const RANDOM_DROP_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
 export const ALL_PRODUCT_RARITIES: Rarity[] = [...RANDOM_DROP_RARITIES, 'cursed', 'immortal', 'god'];
+export const MARKET_MIN_EQUIPMENT_RARITY: Rarity = 'legendary';
+
+export function isMarketEligibleEquipment(item: Pick<ItemBase, 'rarity'>): boolean {
+  return RARITY_INDEX[item.rarity] >= RARITY_INDEX[MARKET_MIN_EQUIPMENT_RARITY];
+}
+
 const RARITY_NAMES = ['Worn', 'Verdant', 'Sapphire', 'Amethyst', 'Legendary', 'Mythic', 'Cosmic', 'Divine', 'Celestial', 'Cursed', 'Immortal', 'God'];
 const WEAPON_TYPES: { key: string; label: string; heroClass: HeroClass; icon: string }[] = [
   { key: 'mage', label: 'Arcane Staff', heroClass: 'shepherd', icon: '🪄' },

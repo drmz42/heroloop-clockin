@@ -4,7 +4,7 @@ import { HeroPortrait } from '@/components/HeroPortrait';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { ItemArtwork } from '@/components/ItemArtwork';
 import { HEROES, HERO_MAP, RARITY_COLORS, RARITY_LABEL } from '@/game/heroes';
-import { ITEMS, ITEM_MAP, formatStatValue, sellValue, rollItem } from '@/game/items';
+import { ITEMS, ITEM_MAP, formatStatValue, isMarketEligibleEquipment, sellValue, rollItem } from '@/game/items';
 import { formatNum } from '@/game/state';
 import type { MarketOwnedListing, OwnedHero, OwnedItem, Rarity } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
@@ -21,14 +21,14 @@ const TABS: { id: MarketTab; label: string }[] = [
 ];
 
 function demoListings(): Listing[] {
-  const itemRows = ITEMS.filter((item) => !['cursed', 'immortal', 'god'].includes(item.rarity)).slice(7, 25).map((item, index) => { const level = 3 + index * 5; const rolled = rollItem(item.id, level); const enchantLevel = [0, 3, 5, 7, 10][index % 5]; return { id: `demo-item-${index}`, kind: 'item' as const, sourceId: item.id, name: item.name, rarity: item.rarity, level, enchantLevel, power: rolled.power, price: 3 + (index % 7) * 3, seller: ['BrassWolf', 'AshenFox', 'RuneSmith'][index % 3], createdAt: Date.now() - index * 61_000, stats: rolled.stats.map(formatStatValue) }; });
+  const itemRows = ITEMS.filter((item) => isMarketEligibleEquipment(item) && !['cursed', 'immortal', 'god'].includes(item.rarity)).slice(0, 18).map((item, index) => { const level = 3 + index * 5; const rolled = rollItem(item.id, level); const enchantLevel = [0, 3, 5, 7, 10][index % 5]; return { id: `demo-item-${index}`, kind: 'item' as const, sourceId: item.id, name: item.name, rarity: item.rarity, level, enchantLevel, power: rolled.power, price: 3 + (index % 7) * 3, seller: ['BrassWolf', 'AshenFox', 'RuneSmith'][index % 3], createdAt: Date.now() - index * 61_000, stats: rolled.stats.map(formatStatValue) }; });
   const heroRows = HEROES.slice(0, 9).map((hero, index) => ({ id: `demo-hero-${index}`, kind: 'hero' as const, sourceId: hero.id, name: hero.name, rarity: hero.rarity, level: 2 + index * 2, enchantLevel: 0, power: 70 + index * 35, price: 8 + index * 4, seller: ['NightVale', 'IronHearth'][index % 2], createdAt: Date.now() - (index + 18) * 61_000, stats: [hero.skillName, hero.passiveName] }));
   return [...itemRows, ...heroRows].sort((a, b) => b.createdAt - a.createdAt);
 }
 
 function ownedRows(game: GameApi): Listing[] {
   const equipped = new Set(game.state.ownedHeroes.flatMap((hero) => Object.values(hero.equipped)).filter(Boolean));
-  const items = game.state.inventory.flatMap((item) => { const base = ITEM_MAP[item.itemId]; return base ? [{ id: item.uid, kind: 'item' as const, sourceId: item.itemId, name: base.name, rarity: base.rarity, level: item.level, enchantLevel: item.enchantLevel, power: item.power, price: Math.max(1, sellValue(item) * 2), seller: item.locked ? 'Locked' : equipped.has(item.uid) ? 'Equipped' : 'Ready', createdAt: 0, stats: item.stats.map(formatStatValue), owned: item }] : []; });
+  const items = game.state.inventory.flatMap((item) => { const base = ITEM_MAP[item.itemId]; return base && isMarketEligibleEquipment(base) ? [{ id: item.uid, kind: 'item' as const, sourceId: item.itemId, name: base.name, rarity: base.rarity, level: item.level, enchantLevel: item.enchantLevel, power: item.power, price: Math.max(1, sellValue(item) * 2), seller: item.locked ? 'Locked' : equipped.has(item.uid) ? 'Equipped' : 'Ready', createdAt: 0, stats: item.stats.map(formatStatValue), owned: item }] : []; });
   const heroes = game.state.ownedHeroes.flatMap((hero) => { const base = HERO_MAP[hero.heroId]; return base ? [{ id: hero.uid, kind: 'hero' as const, sourceId: hero.heroId, name: base.name, rarity: base.rarity, level: hero.level, enchantLevel: 0, power: hero.level * 50 + hero.stars * 100, price: 6 + hero.level + hero.stars * 3, seller: hero.locked ? 'Locked' : game.state.team.includes(hero.uid) ? 'Active team' : 'Ready', createdAt: 0, stats: [base.skillName, `${hero.stars}★`], owned: hero }] : []; });
   return [...items, ...heroes];
 }
@@ -49,7 +49,7 @@ export function MarketplaceScreen({ game, tokenomics }: { game: GameApi; tokenom
   const comparisonLevel = comparisonHero?.level ?? 1;
   const heroRarities: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
   const allRarities: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial', 'cursed', 'immortal', 'god'];
-  const matchesCategory = (row: Listing) => { if (category === 'all') return true; if (category === 'heroes') return row.kind === 'hero'; if (category === 'pets') return false; if (row.kind !== 'item') return false; const slot = ITEM_MAP[row.sourceId]?.slot; if (category === 'weapons') return ['class_weapon', 'offhand', 'weapon', 'ring2'].includes(slot ?? ''); if (category === 'armor') return ['helmet', 'chest', 'gloves', 'boots', 'armor'].includes(slot ?? ''); return ['ring', 'amulet', 'ring1'].includes(slot ?? ''); };
+  const matchesCategory = (row: Listing) => { if (category === 'all') return true; if (category === 'heroes') return row.kind === 'hero'; if (category === 'pets') return false; if (row.kind !== 'item') return false; const item = ITEM_MAP[row.sourceId]; const slot = item?.slot; const isShield = slot === 'offhand' && item?.heroClass === 'knight'; if (category === 'weapons') return !isShield && ['class_weapon', 'offhand', 'weapon', 'ring2'].includes(slot ?? ''); if (category === 'armor') return isShield || ['helmet', 'chest', 'gloves', 'boots', 'armor'].includes(slot ?? ''); return ['ring', 'amulet', 'ring1'].includes(slot ?? ''); };
   const rows = (tab === 'browse' ? browse : tab === 'listings' ? mine : tab === 'sell' ? sellable : []).filter((row) => {
     if (query && !row.name.toLowerCase().includes(query.toLowerCase())) return false;
     if (!matchesCategory(row) || (rarity !== 'all' && row.rarity !== rarity)) return false;
@@ -63,7 +63,7 @@ export function MarketplaceScreen({ game, tokenomics }: { game: GameApi; tokenom
   const selected = rows.find((row) => row.id === selectedId) ?? rows[0] ?? null;
   const flash = (value: string) => { setNotice(value); window.setTimeout(() => setNotice(''), 2400); };
   const buy = async (row: Listing) => flash(await game.buyMarketAsset({ kind: row.kind, sourceId: row.sourceId, name: row.name, level: row.level, price: row.price }) ? `Purchased ${row.name}` : 'Purchase unavailable: check balance and storage');
-  const list = (row: Listing) => flash(game.createMarketListing(row.kind, row.id, price) ? `${row.name} listed for ${price} $HERO` : 'Unlock/remove from team or change avatar first');
+  const list = (row: Listing) => flash(game.createMarketListing(row.kind, row.id, price) ? `${row.name} listed for ${price} $HERO` : 'Legendary+ only; unlock or unequip the asset first');
   return <div className="premium-screen themed-screen themed-screen-market game-scrollbar h-full overflow-y-auto p-2"><div className="market-shell mx-auto flex min-h-full max-w-6xl flex-col overflow-hidden"><header className="market-header flex flex-wrap items-center justify-between gap-3 px-4 py-3"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-lg border border-[#a8762d] bg-black/25 text-[#efbd52]"><ShoppingCart size={20} /></span><div><div className="text-lg font-black text-[#f1e5d0]">Marketplace</div><div className="text-[9px] text-[#92897b]">Newest first · test settlement uses your game balance</div></div></div><Balance icon={<HeroTokenIcon size={13} />} value={formatNum(game.state.hero)} label="$HERO" /></header>
   <nav className="market-tabs flex gap-1 overflow-x-auto px-4 pt-2">{TABS.map((item) => <button key={item.id} type="button" onClick={() => { setTab(item.id); setSelectedId(null); }} className={`market-tab whitespace-nowrap ${tab === item.id ? 'market-tab-active' : ''}`}>{item.label}</button>)}</nav>
   {notice && <div className="mx-4 mt-2 rounded border border-emerald-700/50 bg-emerald-950/45 px-3 py-2 text-center text-xs text-emerald-200">{notice}</div>}
