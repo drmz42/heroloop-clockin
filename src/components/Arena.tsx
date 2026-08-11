@@ -126,9 +126,9 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
           </div>
         ))}
       </div>
-      {/* Role + HP bar + HP numbers */}
-      <div className="arena-unit-info grid h-[58px] w-[88px] shrink-0 grid-rows-[14px_10px_14px] content-center gap-1 rounded-lg border border-[#4b4234] bg-black/45 px-2 shadow-[0_6px_14px_rgba(0,0,0,.25)] sm:w-[104px]" title={unit.name} aria-label={`${unit.name}, ${side}`}>
-        <div className={`truncate text-center text-[10px] font-bold uppercase tracking-wider ${side === 'enemy' ? 'text-rose-200' : 'text-[#eee5d5]'}`}>{side === 'enemy' ? 'Enemy' : 'Hero'}</div>
+      {/* Unit name + HP bar + HP numbers */}
+      <div className="arena-unit-info grid h-[64px] w-[88px] shrink-0 grid-rows-[24px_10px_14px] content-center gap-1 rounded-lg border border-[#4b4234] bg-black/45 px-2 shadow-[0_6px_14px_rgba(0,0,0,.25)] sm:w-[104px]" aria-label={`${unit.name}, ${side}`}>
+        <div className={`arena-unit-name flex items-center justify-center text-center font-bold ${side === 'enemy' ? 'text-rose-200' : 'text-[#eee5d5]'}`}>{unit.name}</div>
         <HealthBar hp={unit.hp} maxHp={unit.maxHp} color={unit.color} />
         <div className="whitespace-nowrap text-center text-[9px] font-bold tabular-nums text-[#bdb6a9]" aria-label={`${Math.ceil(unit.hp)} of ${unit.maxHp} health`}>{formatHealth(unit.hp)} / {formatHealth(unit.maxHp)}</div>
       </div>
