@@ -427,7 +427,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
                   <button type="button" className={`set-bonus-badge h-6 w-[62px] px-1 text-[7px] rarity-${selectedSetBonus?.rarity ?? 'common'} ${selectedSetBonus ? 'set-bonus-active' : ''}`} aria-label="Set bonus details">
                     Set bonus {selectedSetBonus ? `+${selectedSetBonus.percent}%` : '—'}
                   </button>
-                  <span className="set-bonus-tooltip pointer-events-none absolute bottom-full left-0 z-[70] mb-1 hidden w-64 rounded-lg border border-[#6f5833] bg-[#10120f]/[.98] p-2 text-[9px] leading-4 text-[#bbb2a2] shadow-2xl group-hover/set:block group-focus-within/set:block">
+                  <span className="set-bonus-tooltip pointer-events-none absolute right-0 top-full z-[70] mt-1 hidden w-64 max-w-[calc(100vw-2rem)] rounded-lg border border-[#6f5833] bg-[#10120f]/[.98] p-2 text-[9px] leading-4 text-[#bbb2a2] shadow-2xl group-hover/set:block group-focus-within/set:block">
                     Equip all 8 item slots with one rarity to increase every stat granted by those items.
                     <span className="mt-1 grid grid-cols-3 gap-1">
                       {(['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial', 'cursed', 'immortal', 'god'] as const).map((rarity) => <span key={rarity} className={`set-bonus-rarity rarity-${rarity}`} style={{ color: RARITY_COLORS[rarity] }}>{RARITY_LABEL[rarity]} +{SET_BONUS_PERCENT[rarity]}%</span>)}
