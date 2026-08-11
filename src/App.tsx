@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { useGame } from '@/game/useGame';
 import { GameNavBar } from '@/components/GameNavBar';
 import { FooterBar } from '@/components/FooterBar';
@@ -215,16 +215,40 @@ function App() {
     return () => window.clearInterval(timer);
   }, [tokenomics.status?.my_hourly_share, game.state.walletAddress, game.state.boost.active, game.state.activeUntil, creditServerTokens]);
   const [tab, setTab] = useState<Tab>('main');
+  const [routeHash, setRouteHash] = useState(() => window.location.hash);
   const [showBoost, setShowBoost] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
 
   useEffect(() => {
+    const handleHashChange = () => setRouteHash(window.location.hash);
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  useEffect(() => {
     if (accountGate === 'checking' || accountGate === 'error') return;
+    if (routeHash === '#wiki') return;
     const target = accountGate === 'verified' ? '/#game' : '/';
     if (`${window.location.pathname}${window.location.hash}` !== target) {
       window.history.replaceState(null, '', target);
     }
-  }, [accountGate]);
+  }, [accountGate, routeHash]);
+
+  if (routeHash === '#wiki') {
+    return (
+      <div className="game-shell h-screen overflow-auto bg-px-bg text-px-text">
+        <div className="sticky top-0 z-20 flex min-h-[54px] items-center justify-between gap-3 border-b border-[#59472d] bg-[#0b0c0a]/95 px-3 py-2 backdrop-blur">
+          <img src="/assets/brand/heroloop-logo.png" alt="HeroLoop" width={154} height={46} className="h-9 w-auto max-w-[148px] object-contain" />
+          <a href="#game" className="game-control game-primary flex items-center gap-2 px-3 py-2 text-xs font-black">
+            <ArrowLeft size={15} aria-hidden="true" /> Back to game
+          </a>
+        </div>
+        <main className="mx-auto min-h-[calc(100vh-54px)] w-full max-w-[1100px]">
+          <GuidesScreen />
+        </main>
+      </div>
+    );
+  }
 
   if (accountGate !== 'verified') {
     if (accountGate === 'landing') return <LandingScreen game={game} />;
@@ -235,7 +259,13 @@ function App() {
     <div className="game-shell flex h-screen flex-col overflow-hidden bg-px-bg text-px-text">
       <GameNavBar
         tab={tab}
-        onChange={setTab}
+        onChange={(nextTab) => {
+          if (nextTab === 'guides') {
+            window.location.hash = 'wiki';
+            return;
+          }
+          setTab(nextTab);
+        }}
         gold={game.state.gold}
         hero={game.state.hero}
         mailCount={0}
@@ -271,7 +301,6 @@ function App() {
               {tab === 'market'      && <MarketplaceScreen game={game} tokenomics={tokenomics} />}
               {tab === 'leaderboard' && <LeaderboardScreen game={game} />}
               {tab === 'referrals'   && <ReferralsScreen game={game} />}
-              {tab === 'guides'      && <GuidesScreen />}
             </div>
           </section>
         </div>

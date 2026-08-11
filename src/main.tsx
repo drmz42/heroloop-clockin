@@ -17,7 +17,8 @@ function RootScreen() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const Screen = window.location.pathname === '/' && window.location.hash !== '#game'
+  const gameRoute = window.location.hash === '#game' || window.location.hash === '#wiki';
+  const Screen = window.location.pathname === '/' && !gameRoute
     ? Landing4Screen
     : GameScreen;
 

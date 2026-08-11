@@ -22,6 +22,7 @@ export function TopMenu({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => voi
         const active = tab === t.id;
         return (
           <button
+            type="button"
             key={t.id}
             onClick={() => onChange(t.id)}
             className={`relative flex items-center gap-1.5 px-2.5 py-1.5 font-vt text-sm font-bold tracking-wide whitespace-nowrap border-2 transition-none ${active ? 'px-btn-active bg-px-gold/20 border-px-bright text-px-bright' : 'border-transparent text-px-dim hover:text-px-text hover:bg-px-panel2'}`}

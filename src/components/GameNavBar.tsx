@@ -42,6 +42,7 @@ export function GameNavBar({
             const Icon = t.icon;
             return (
             <button
+              type="button"
               key={t.id}
               onClick={() => onChange(t.id)}
               className={`game-nav-control flex items-center gap-1.5 whitespace-nowrap px-3 py-1 font-vt text-sm font-semibold tracking-wide ${tab === t.id ? 'game-nav-control-active' : ''}`}
@@ -57,13 +58,14 @@ export function GameNavBar({
       {/* Right side */}
       <div className="ml-auto flex shrink-0 items-center gap-1.5 border-l border-[#4b3d29] pl-2">
         <button
+          type="button"
           onClick={onWalletClick}
           className="game-control flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-[#c9c3b5]"
         >
           <WalletCards size={16} /> <span className="hidden xl:inline">Wallet</span>
         </button>
         {/* Mail */}
-        <button className="game-control relative grid h-9 w-9 place-items-center" title="Mailbox">
+        <button type="button" className="game-control relative grid h-9 w-9 place-items-center" title="Mailbox">
           <Mail size={16} className="text-px-text" />
           {mailCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-px-red text-white text-[9px] font-vt font-bold px-0.5 leading-tight">{mailCount}</span>}
         </button>
