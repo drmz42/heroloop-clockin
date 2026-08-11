@@ -1,4 +1,4 @@
-import type { GameState, OwnedHero, DailyQuest, ItemSlot, TrainingBoostKey } from './types';
+import type { GameState, OwnedHero, DailyQuest, ItemSlot, TrainingBoostKey, Rarity } from './types';
 import { generateRotatingShop, itemPower } from './items';
 import { emptyBalanceTelemetry, BALANCE_VERSION } from './balance';
 
@@ -239,11 +239,26 @@ export function advanceHeroXp(level: number, currentXp: number, gainedXp: number
 
 export const MAX_HERO_STARS = 20;
 export const STAR_DUPES = [0, ...Array(5).fill(1), ...Array(5).fill(2), ...Array(5).fill(3), ...Array(5).fill(4)];
-const STAR_HERO_COSTS = [0, 0, 1, 2, 4, 8, 12, 16, 20, 25, 30, 40, 50, 60, 75, 90, 110, 135, 165, 200, 250];
-export function starUpCost(stars: number): { dupes: number; hero: number } {
+export const STAGING_HERO_USD_MICROS = 1_000;
+export const STAR_UP_BASE_USD_CENTS: Partial<Record<Rarity, number>> = {
+  common: 1,
+  uncommon: 2,
+  rare: 3,
+  epic: 5,
+  legendary: 8,
+  mythic: 12,
+  cosmic: 20,
+  divine: 30,
+  celestial: 45,
+};
+export function starUpCost(stars: number, rarity: Rarity): { dupes: number; hero: number; usdCents: number } {
   const dupes = STAR_DUPES[stars + 1] ?? 999;
-  const heroCost = STAR_HERO_COSTS[stars + 1] ?? 999;
-  return { dupes, hero: heroCost };
+  const nextStar = Math.max(1, Math.min(MAX_HERO_STARS, Math.floor(stars) + 1));
+  const baseUsdCents = STAR_UP_BASE_USD_CENTS[rarity];
+  if (!baseUsdCents) return { dupes, hero: Number.MAX_SAFE_INTEGER, usdCents: 0 };
+  const usdCents = baseUsdCents * nextStar;
+  const heroCost = Math.ceil((usdCents * 10_000) / STAGING_HERO_USD_MICROS);
+  return { dupes, hero: heroCost, usdCents };
 }
 
 export function summonCostHero(): number {

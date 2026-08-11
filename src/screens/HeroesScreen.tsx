@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Star, Trash2, Lock, Unlock, Search, X, Sparkles, Users, Swords, Shield } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, RARITY_INDEX, CLASS_LABEL } from '@/game/heroes';
-import { formatNum, starUpCost, STAR_DUPES, heroXpForLevel, heroSellValue, MAX_HEROES, MAX_HERO_STARS } from '@/game/state';
+import { formatNum, starUpCost, heroXpForLevel, heroSellValue, MAX_HEROES, MAX_HERO_STARS } from '@/game/state';
 import { heroStats, getEquippedItems, teamPower as calculateTeamPower } from '@/game/engine';
 import type { HeroBase, OwnedHero, Rarity } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
@@ -10,6 +10,7 @@ import type { GameApi } from '@/game/useGame';
 const FILTER_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
 
 const STAR_COLORS = ['#fbbf24', '#a855f7', '#ef4444', '#ec4899'];
+const formatUsdCents = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 function HeroStars({ stars, size }: { stars: number; size: number }) {
   const clamped = Math.max(0, Math.min(MAX_HERO_STARS, stars));
   const tier = clamped === 0 ? 0 : Math.floor((clamped - 1) / 5);
@@ -26,7 +27,8 @@ function HeroGridCard({ base, hero, game, selected, selectionMode, selectable, o
   const isInTeam = game.state.team.includes(hero.uid);
   const respawn = game.respawnCountdowns[hero.uid] ?? 0;
   const dupes = game.state.ownedHeroes.filter((candidate) => candidate.heroId === hero.heroId && candidate.uid !== hero.uid && candidate.stars === 0 && !candidate.locked && !game.state.team.includes(candidate.uid) && !game.state.trainingCamp.heroUids.includes(candidate.uid)).length;
-  const upgradeable = hero.stars < MAX_HERO_STARS && dupes >= starUpCost(hero.stars).dupes;
+  const starCost = starUpCost(hero.stars, base.rarity);
+  const upgradeable = hero.stars < MAX_HERO_STARS && dupes >= starCost.dupes && game.state.hero >= starCost.hero;
   const stats = heroStats(hero, getEquippedItems(hero, game.state.inventory));
   const power = stats ? Math.round(stats.atk + stats.hp / 10 + stats.def * 2) : 0;
   return (
@@ -38,6 +40,7 @@ function HeroGridCard({ base, hero, game, selected, selectionMode, selectable, o
       <div className="mt-1.5 truncate text-center text-[11px] font-bold" style={{ color: rc }}>{base.name}</div>
       <div className="mt-0.5 flex items-center justify-between gap-1 text-[8px] uppercase tracking-wide text-[#827d72]"><span>{CLASS_LABEL[base.heroClass]}</span><span style={{ color: rc }}>{RARITY_LABEL[base.rarity]}</span></div>
       <div className="mt-1 flex items-center justify-between border-t border-white/5 pt-1 text-[9px]"><span className="font-bold text-[#ddd4c4]">{formatNum(power)} PWR</span><HeroStars stars={hero.stars} size={7} /></div>
+      {hero.stars < MAX_HERO_STARS && <div className="mt-1 truncate border-t border-white/5 pt-1 text-center text-[8px] font-bold text-violet-200">{dupes}/{starCost.dupes} copies · {formatNum(starCost.hero)} $HERO</div>}
       <div className="pointer-events-none absolute left-1.5 top-1.5 z-10 flex flex-col gap-1">
         {hero.isNew && <StateBadge label="New" tone="gold" />}
         {isInTeam && <StateBadge label="Selected" tone="green" />}
@@ -66,7 +69,7 @@ function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameA
   const stats = heroStats(hero, items);
   if (!base || !stats) return null;
   const rc = RARITY_COLORS[base.rarity];
-  const starCost = starUpCost(hero.stars);
+  const starCost = starUpCost(hero.stars, base.rarity);
   const dupes = game.state.ownedHeroes.filter((candidate) => candidate.heroId === hero.heroId && candidate.uid !== hero.uid && candidate.stars === 0 && !candidate.locked && !game.state.team.includes(candidate.uid) && !game.state.trainingCamp.heroUids.includes(candidate.uid));
   const xpNeed = heroXpForLevel(hero.level);
   const isInTeam = game.state.team.includes(hero.uid);
@@ -83,7 +86,7 @@ function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameA
         <div className="game-scrollbar min-h-0 overflow-y-auto p-3">
           <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6"><StatBox label="HP" value={formatNum(stats.hp)} /><StatBox label="ATK" value={formatNum(stats.atk)} /><StatBox label="DEF" value={formatNum(stats.def)} /><StatBox label="Crit" value={`${(stats.critChance * 100).toFixed(1)}%`} /><StatBox label="Dodge" value={`${(stats.dodge * 100).toFixed(1)}%`} /><StatBox label="Speed" value={`+${stats.atkSpeed}`} /></div>
           <section className="mt-2 grid gap-2 sm:grid-cols-2"><div className="stat-tile p-2.5"><div className="text-[9px] font-bold uppercase tracking-wider text-[#827d72]">Passive</div><div className="mt-0.5 text-xs font-bold" style={{ color: rc }}>{base.passiveName}</div><div className="mt-0.5 text-[10px] text-[#aaa397]">{base.passiveDesc}</div></div><div className="stat-tile p-2.5"><div className="text-[9px] font-bold uppercase tracking-wider text-[#827d72]">Ability</div><div className="mt-0.5 text-xs font-bold" style={{ color: rc }}>{base.skillName}</div><div className="mt-0.5 text-[10px] text-[#aaa397]">{base.skillDesc}</div></div></section>
-          <section className="mt-2 rounded-lg border border-violet-700/35 bg-violet-950/15 p-2.5"><div className="flex items-center justify-between gap-2"><span className="flex items-center gap-1.5 text-xs font-bold text-violet-200"><Sparkles size={13} /> Star Up → {Math.min(MAX_HERO_STARS, hero.stars + 1)}</span><span className="text-[10px] text-violet-300">{dupes.length}/{starCost.dupes} dupes · {starCost.hero} $HERO</span></div>{hero.stars < MAX_HERO_STARS && <div className="mt-2 flex items-center gap-1.5" aria-label={`${dupes.length} of ${starCost.dupes} required duplicates available`}>{Array.from({ length: starCost.dupes }, (_, index) => <div key={index} className={`rounded-md border p-0.5 ${index < dupes.length ? 'border-violet-400/65 bg-violet-900/25' : 'border-white/10 bg-black/35 opacity-30 grayscale'}`}><HeroPortrait heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={30} /></div>)}</div>}<button type="button" onClick={() => game.starUpHero(hero.uid)} disabled={dupes.length < starCost.dupes || hero.stars >= MAX_HERO_STARS} className="game-control mt-2 w-full px-3 text-xs font-bold">{hero.stars >= MAX_HERO_STARS ? 'Maximum ascension reached' : `Upgrade · ${STAR_DUPES[Math.min(hero.stars + 1, STAR_DUPES.length - 1)]} duplicate requirement`}</button></section>
+          <section className="mt-2 rounded-lg border border-violet-700/35 bg-violet-950/15 p-2.5"><div className="flex items-center justify-between gap-2"><span className="flex items-center gap-1.5 text-xs font-bold text-violet-200"><Sparkles size={13} /> Star Up → {Math.min(MAX_HERO_STARS, hero.stars + 1)}</span><span className="text-right text-[10px] text-violet-300">{dupes.length}/{starCost.dupes} copies · {formatNum(starCost.hero)} $HERO<br /><span className="text-[9px] text-[#a99bb8]">Catalogue {formatUsdCents(starCost.usdCents)}</span></span></div>{hero.stars < MAX_HERO_STARS && <div className="mt-2 flex items-center gap-1.5" aria-label={`${dupes.length} of ${starCost.dupes} required duplicates available`}>{Array.from({ length: starCost.dupes }, (_, index) => <div key={index} className={`rounded-md border p-0.5 ${index < dupes.length ? 'border-violet-400/65 bg-violet-900/25' : 'border-white/10 bg-black/35 opacity-30 grayscale'}`}><HeroPortrait heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={30} /></div>)}</div>}<button type="button" onClick={() => game.starUpHero(hero.uid)} disabled={dupes.length < starCost.dupes || game.state.hero < starCost.hero || hero.stars >= MAX_HERO_STARS} className="game-control mt-2 w-full px-3 text-xs font-bold">{hero.stars >= MAX_HERO_STARS ? 'Maximum ascension reached' : `Upgrade · ${starCost.dupes} copies + ${formatNum(starCost.hero)} $HERO`}</button></section>
           {powerNotice && <div aria-live="polite" className={`anim-banner mt-2 rounded border p-2 text-center text-sm font-black tabular-nums ${powerNotice.added ? 'border-emerald-400/55 bg-emerald-950/55 text-emerald-300' : 'border-red-400/55 bg-red-950/55 text-red-300'}`}>{powerNotice.added ? '+' : '−'}{formatNum(powerNotice.delta)} POWER</div>}
           {teamError && <div className="mt-2 rounded border border-red-500/45 bg-red-950/40 p-2 text-xs text-red-200">{teamError}</div>}
         </div>

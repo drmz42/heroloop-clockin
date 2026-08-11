@@ -1034,7 +1034,9 @@ export function useGame() {
     const st = stateRef.current;
     const hero = st.ownedHeroes.find((h) => h.uid === uid);
     if (!hero || hero.stars >= MAX_HERO_STARS) return false;
-    const cost = starUpCost(hero.stars);
+    const base = HERO_MAP[hero.heroId];
+    if (!base) return false;
+    const cost = starUpCost(hero.stars, base.rarity);
     const dupes = st.ownedHeroes.filter((h) => h.heroId === hero.heroId && h.uid !== uid && h.stars === 0 && !h.locked && !st.team.includes(h.uid) && !st.trainingCamp.heroUids.includes(h.uid));
     if (dupes.length < cost.dupes || (!tokenomicsEnabled && st.hero < cost.hero)) return false;
     if (tokenomicsEnabled) {
@@ -1072,7 +1074,9 @@ export function useGame() {
         })).sort((a, b) => b.power - a.power || b.hero.level - a.hero.level || b.hero.stars - a.hero.stars || a.index - b.index);
         const target = ranked.find(({ hero }) => hero.stars < MAX_HERO_STARS)?.hero;
         if (!target) return [];
-        const cost = starUpCost(target.stars);
+        const base = HERO_MAP[target.heroId];
+        if (!base) return [];
+        const cost = starUpCost(target.stars, base.rarity);
         const duplicateCount = ranked.filter(({ hero }) => hero.uid !== target.uid && hero.stars === 0 && !hero.locked && !st.team.includes(hero.uid) && !st.trainingCamp.heroUids.includes(hero.uid)).length;
         return duplicateCount >= cost.dupes ? [target] : [];
       });
@@ -1104,7 +1108,9 @@ export function useGame() {
         })).sort((a, b) => b.power - a.power || b.hero.level - a.hero.level || b.hero.stars - a.hero.stars || a.index - b.index);
         const target = ranked.find(({ hero }) => hero.stars < MAX_HERO_STARS)?.hero;
         if (!target) break;
-        const cost = starUpCost(target.stars);
+        const base = HERO_MAP[target.heroId];
+        if (!base) break;
+        const cost = starUpCost(target.stars, base.rarity);
         const duplicates = ranked.filter(({ hero }) => hero.uid !== target.uid && hero.stars === 0 && !hero.locked && !st.team.includes(hero.uid) && !st.trainingCamp.heroUids.includes(hero.uid))
           .sort((a, b) => a.power - b.power || a.hero.level - b.hero.level || a.hero.stars - b.hero.stars || b.index - a.index);
         if (duplicates.length < cost.dupes || available < cost.hero) break;
@@ -1112,7 +1118,6 @@ export function useGame() {
         heroes = heroes.filter((hero) => !consumed.has(hero.uid)).map((hero) => hero.uid === target.uid ? { ...hero, stars: hero.stars + 1 } : hero);
         available -= cost.hero;
         spent += cost.hero;
-        const base = HERO_MAP[target.heroId];
         const current = promoted.get(target.uid);
         promoted.set(target.uid, { heroName: base?.name ?? 'Hero', starsAdded: (current?.starsAdded ?? 0) + 1 });
       }
