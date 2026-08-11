@@ -219,6 +219,7 @@ export function useGame() {
   const [enchantResult, setEnchantResult] = useState<{ success: boolean; item?: OwnedItem } | null>(null);
   const [hydrationVersion, setHydrationVersion] = useState(0);
   const [summonPity, setSummonPity] = useState({ legendary: 0, mythic: 0, cosmic: 0, divine: 0 });
+  const [ascensionFocus, setAscensionFocus] = useState<Partial<Record<Rarity, string>>>({});
   const [summonError, setSummonError] = useState('');
   const [serverRevisionHint, setServerRevisionHint] = useState<number | null>(null);
   const [storeBusy, setStoreBusy] = useState(false);
@@ -933,6 +934,29 @@ export function useGame() {
     });
   }, []);
 
+  const applyServerAscensionFocus = useCallback((focus: Partial<Record<Rarity, string>> | null | undefined) => {
+    const safe: Partial<Record<Rarity, string>> = {};
+    if (focus && typeof focus === 'object') {
+      for (const [rarity, heroId] of Object.entries(focus)) {
+        const base = typeof heroId === 'string' ? HERO_MAP[heroId] : undefined;
+        if (base?.rarity === rarity) safe[rarity as Rarity] = heroId;
+      }
+    }
+    setAscensionFocus(safe);
+  }, []);
+
+  const setHeroAscensionFocus = useCallback(async (rarity: Rarity, heroId: string | null): Promise<boolean> => {
+    if (!tokenomicsEnabled) return false;
+    const result = await playerSync<{ ascension_focus: Partial<Record<Rarity, string>> }>('ascension_focus_set', {
+      rarity,
+      target_hero_id: heroId,
+      idempotency_key: createIdempotencyKey(),
+    });
+    if (!result?.ascension_focus) return false;
+    applyServerAscensionFocus(result.ascension_focus);
+    return true;
+  }, [applyServerAscensionFocus]);
+
   const settleServerSummon = useCallback(async (count: 1 | 10 | 100) => {
     if (!tokenomicsEnabled) return null;
     setSummonError('');
@@ -944,6 +968,7 @@ export function useGame() {
       pity_mythic: number;
       pity_cosmic: number;
       pity_divine: number;
+      ascension_focus: Partial<Record<Rarity, string>>;
     }>('hero_summon', { count, idempotency_key: createIdempotencyKey() }, setSummonError);
     if (!result || !Array.isArray(result.heroes) || result.heroes.length !== count) {
       if (result) setSummonError('invalid_server_response');
@@ -960,9 +985,10 @@ export function useGame() {
       cosmic: Math.max(0, Math.floor(result.pity_cosmic)),
       divine: Math.max(0, Math.floor(result.pity_divine)),
     });
+    applyServerAscensionFocus(result.ascension_focus);
     if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
     return { heroes, balance: Math.max(0, Math.floor(result.token_balance)) };
-  }, []);
+  }, [applyServerAscensionFocus]);
 
   const settleServerAscension = useCallback(async (targetUid: string, repeat: boolean) => {
     if (!tokenomicsEnabled) return null;
@@ -1967,11 +1993,11 @@ export function useGame() {
   }, []);
 
   return {
-    state, hydrationVersion, summonPity, summonError, serverRevisionHint, units, floaters, battleResult, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
+    state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, units, floaters, battleResult, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
     offlineEarnings, respawnCountdowns, potionFx, chestOpenResult, enchantResult,
     starUpHero, promoteAllHeroes, sellHero, sellHeroes, toggleHeroLock, markHeroSeen,
     summon, summonTen, summonHundred, summonBoss, syncBossKeys, toggleTeamMember, setLocation,
-    setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, retry,
+    setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,
     equipItem, unequipItem, unequipAll, equipmentError: () => equipmentErrorRef.current, sellItem, toggleItemLock, sellAllUnlocked,
     enchantItem, rerollItem, dismissEnchantResult,
     buyPotion, usePotion, setAutoPot, setBattleAnimationMode,

@@ -70,11 +70,13 @@ function App() {
   const applyServerTokenClaim = game.applyServerTokenClaim;
   const applyServerBoostStatus = game.applyServerBoostStatus;
   const applyServerPityStatus = game.applyServerPityStatus;
+  const applyServerAscensionFocus = game.applyServerAscensionFocus;
   const setServerTokenBalance = game.setServerTokenBalance;
   const hydrationVersion = game.hydrationVersion;
   const pendingTokens = tokenomics.status?.pending_tokens ?? 0;
   const boostStatus = tokenomics.status?.boost ?? null;
   const pityStatus = tokenomics.status?.pity ?? null;
+  const ascensionFocusStatus = tokenomics.status?.ascension_focus;
   const serverTokenBalance = tokenomics.status?.token_balance;
   const resourceState = tokenomics.status?.resource_state;
   const resourceRevision = tokenomics.status?.resource_revision;
@@ -177,6 +179,10 @@ function App() {
   useEffect(() => {
     if (pityStatus) applyServerPityStatus(pityStatus);
   }, [pityStatus, applyServerPityStatus]);
+
+  useEffect(() => {
+    if (ascensionFocusStatus) applyServerAscensionFocus(ascensionFocusStatus);
+  }, [ascensionFocusStatus, applyServerAscensionFocus]);
 
   useEffect(() => {
     if (game.serverRevisionHint !== null && game.serverRevisionHint > (serverStateRevisionRef.current ?? 0)) {

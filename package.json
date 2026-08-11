@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "check:ascension-focus": "node scripts/check-ascension-focus-contract.mjs",
     "check:edge-security": "node scripts/check-edge-security-contract.mjs",
     "check:hero-ascension": "node scripts/check-hero-ascension-pricing.mjs",
     "check:promote-all": "node scripts/check-promote-all-contract.mjs",
@@ -15,6 +16,7 @@
     "check:server-market": "node scripts/check-server-market.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
+    "simulate:hero-ascension": "node scripts/simulate-hero-ascension.mjs",
     "simulate:post20-ascension": "node scripts/simulate-post20-ascension.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },

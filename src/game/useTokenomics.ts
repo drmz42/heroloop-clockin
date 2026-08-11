@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ITEM_MAP } from '@/game/items';
 import type { OwnedItem } from '@/game/types';
+import type { Rarity } from '@/game/types';
 import { authHeaders as getAuthHeaders, supabaseUrl, tokenomicsEnabled } from '@/game/backend';
 
 export interface TokenomicsStatus {
@@ -30,6 +31,7 @@ export interface TokenomicsStatus {
     cosmic: number;
     divine: number;
   } | null;
+  ascension_focus: Partial<Record<Rarity, string>>;
   boss_keys: number;
   rarity_capacity: { divine?: boolean; celestial?: boolean };
   rarity_supply?: Partial<Record<'divine' | 'celestial' | 'cursed' | 'immortal' | 'god', { existing: number; max: number }>>;

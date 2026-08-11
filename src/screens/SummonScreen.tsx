@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, Sparkles, Target, X } from 'lucide-react';
 import { HERO_MAP, RARITY_COLORS, RARITY_GLOW, RARITY_INDEX, RARITY_LABEL, RARITY_WEIGHT } from '@/game/heroes';
 import { summonCostHero, formatNum, MAX_HEROES } from '@/game/state';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
@@ -75,6 +75,8 @@ export function SummonScreen({ game }: { game: GameApi }) {
   const [promoting, setPromoting] = useState(false);
   const [summonNotice, setSummonNotice] = useState('');
   const [summoning, setSummoning] = useState<1 | 10 | 100 | null>(null);
+  const [focusRarity, setFocusRarity] = useState<Rarity>('common');
+  const [focusSaving, setFocusSaving] = useState(false);
   const cost = summonCostHero();
   const singleHasSpace = state.ownedHeroes.length < MAX_HEROES;
   const tenHasSpace = state.ownedHeroes.length + 10 <= MAX_HEROES;
@@ -131,6 +133,20 @@ export function SummonScreen({ game }: { game: GameApi }) {
     }
   };
   const rarities: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
+  const focusCandidates = [...new Set(state.ownedHeroes
+    .filter((hero) => HERO_MAP[hero.heroId]?.rarity === focusRarity)
+    .map((hero) => hero.heroId))]
+    .map((heroId) => HERO_MAP[heroId])
+    .filter((hero) => Boolean(hero));
+  const selectedFocus = game.ascensionFocus[focusRarity] ?? null;
+  const changeFocus = async (heroId: string | null) => {
+    if (focusSaving || summoning !== null) return;
+    setFocusSaving(true); setSummonNotice('');
+    try {
+      const saved = await game.setHeroAscensionFocus(focusRarity, heroId);
+      if (!saved) setSummonNotice('Ascension Focus was not changed · No Summon was spent');
+    } finally { setFocusSaving(false); }
+  };
 
   return (
     <div className="summon-sanctum relative flex h-full flex-col overflow-y-auto bg-black bg-cover bg-center no-scrollbar" style={{ backgroundImage: "linear-gradient(rgba(3,3,5,.18),rgba(3,3,5,.72)),url('/assets/summon/ritual-sanctum-v1.webp')" }}>
@@ -146,6 +162,21 @@ export function SummonScreen({ game }: { game: GameApi }) {
         <div className="mb-5 flex min-h-[48px] w-full max-w-xl flex-wrap content-center items-center justify-center gap-1.5 text-[9px]">
           {rarities.map(r => <span key={r} className="px-1.5 py-0.5 rounded-full border font-semibold uppercase tracking-wide" style={{ color: RARITY_COLORS[r], borderColor: RARITY_COLORS[r] + '55', background: RARITY_COLORS[r] + '11' }}>{RARITY_LABEL[r]} {RARITY_WEIGHT[r]}%</span>)}
         </div>
+
+        <section className="mb-4 w-full max-w-xl rounded-lg border border-violet-500/30 bg-black/45 p-2.5 text-left">
+          <div className="flex items-center justify-between gap-2"><span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-violet-200"><Target size={13} /> Ascension Focus</span><span className="text-[8px] font-bold uppercase text-emerald-300">Rarity chance unchanged</span></div>
+          <div className="mt-2 flex flex-wrap gap-1">{rarities.map((rarity) => <button key={rarity} type="button" onClick={() => setFocusRarity(rarity)} className={`rounded border px-1.5 py-1 text-[7px] font-black uppercase ${focusRarity === rarity ? 'bg-white/10' : 'bg-black/30 opacity-70'}`} style={{ color: RARITY_COLORS[rarity], borderColor: RARITY_COLORS[rarity] + '66' }}>{RARITY_LABEL[rarity]}</button>)}</div>
+          <div className="mt-2 flex min-h-10 flex-wrap items-center gap-1.5">
+            <button type="button" disabled={focusSaving || summoning !== null} onClick={() => void changeFocus(null)} className={`rounded-md border px-2 py-2 text-[8px] font-black uppercase ${selectedFocus === null ? 'border-violet-300 bg-violet-900/45 text-violet-100' : 'border-white/10 text-slate-500'}`}>Off</button>
+            {focusCandidates.map((hero) => {
+              if (!hero) return null;
+              const selected = selectedFocus === hero.id;
+              return <button key={hero.id} type="button" disabled={focusSaving || summoning !== null} onClick={() => void changeFocus(hero.id)} className={`flex items-center gap-1.5 rounded-md border px-1.5 py-1 text-[8px] font-bold ${selected ? 'bg-violet-900/50' : 'bg-black/25'}`} style={{ borderColor: selected ? RARITY_COLORS[focusRarity] : '#ffffff1a', color: selected ? RARITY_COLORS[focusRarity] : '#aaa0b4' }}><img src={heroPortraitSrc(hero.id, hero.heroClass, hero.rarity, hero.color)} alt="" className="h-7 w-7 rounded object-cover" style={heroPortraitStyle(hero.id, hero.heroClass)} /><span>{hero.name}{selected ? ' · Focused' : ''}</span></button>;
+            })}
+            {focusCandidates.length === 0 && <span className="text-[9px] text-slate-500">Obtain a {RARITY_LABEL[focusRarity]} hero to unlock its Focus.</span>}
+          </div>
+          <p className="mt-2 text-[8px] leading-relaxed text-[#8f8798]">The server locks one owned identity for this rarity when an x1/x10/x100 batch begins. Focus changes identity only, never rarity, Pity or batch size.</p>
+        </section>
 
         <div className="mb-4 grid w-full max-w-xl grid-cols-2 gap-1.5 sm:grid-cols-4">
           {([

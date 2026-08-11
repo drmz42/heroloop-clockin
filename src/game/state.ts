@@ -238,7 +238,17 @@ export function advanceHeroXp(level: number, currentXp: number, gainedXp: number
 }
 
 export const MAX_HERO_STARS = 20;
-export const STAR_DUPES = [0, ...Array(5).fill(1), ...Array(5).fill(2), ...Array(5).fill(3), ...Array(5).fill(4)];
+export const STAR_DUPLICATE_BANDS: Partial<Record<Rarity, readonly [number, number, number, number]>> = {
+  common: [12, 24, 36, 48],
+  uncommon: [9, 18, 27, 36],
+  rare: [7, 14, 21, 28],
+  epic: [5, 10, 15, 20],
+  legendary: [4, 8, 12, 16],
+  mythic: [2, 4, 6, 8],
+  cosmic: [1, 2, 3, 4],
+  divine: [2, 2, 2, 2],
+  celestial: [1, 1, 1, 1],
+};
 export const STAGING_HERO_USD_MICROS = 1_000;
 export const STAR_UP_BASE_USD_CENTS: Partial<Record<Rarity, number>> = {
   common: 1,
@@ -252,8 +262,9 @@ export const STAR_UP_BASE_USD_CENTS: Partial<Record<Rarity, number>> = {
   celestial: 45,
 };
 export function starUpCost(stars: number, rarity: Rarity): { dupes: number; hero: number; usdCents: number } {
-  const dupes = STAR_DUPES[stars + 1] ?? 999;
   const nextStar = Math.max(1, Math.min(MAX_HERO_STARS, Math.floor(stars) + 1));
+  const bands = STAR_DUPLICATE_BANDS[rarity];
+  const dupes = bands?.[Math.min(3, Math.floor((nextStar - 1) / 5))] ?? 999;
   const baseUsdCents = STAR_UP_BASE_USD_CENTS[rarity];
   if (!baseUsdCents) return { dupes, hero: Number.MAX_SAFE_INTEGER, usdCents: 0 };
   const usdCents = baseUsdCents * nextStar;
