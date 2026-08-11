@@ -18,6 +18,7 @@ import { CraftingScreen } from '@/screens/CraftingScreen';
 import { MarketplaceScreen } from '@/screens/MarketplaceScreen';
 import { LeaderboardScreen } from '@/screens/LeaderboardScreen';
 import { ReferralsScreen } from '@/screens/ReferralsScreen';
+import { GuidesScreen } from '@/screens/GuidesScreen';
 import type { Tab } from '@/components/TopMenu';
 import { canMineTokens, teamPower as calculateAccountPower } from '@/game/engine';
 import { useTokenomics } from '@/game/useTokenomics';
@@ -270,6 +271,7 @@ function App() {
               {tab === 'market'      && <MarketplaceScreen game={game} tokenomics={tokenomics} />}
               {tab === 'leaderboard' && <LeaderboardScreen game={game} />}
               {tab === 'referrals'   && <ReferralsScreen game={game} />}
+              {tab === 'guides'      && <GuidesScreen />}
             </div>
           </section>
         </div>

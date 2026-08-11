@@ -1,10 +1,11 @@
 import { useRef } from 'react';
-import { Mail, ChevronLeft, ChevronRight, WalletCards, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus, Hammer } from 'lucide-react';
+import { Mail, ChevronLeft, ChevronRight, WalletCards, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus, Hammer, BookOpen } from 'lucide-react';
 import type { Tab } from './TopMenu';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
 const TABS = [
   { id: 'heroes',      label: 'Heroes',   icon: Shield },
+  { id: 'guides',      label: 'Guides',   icon: BookOpen },
   { id: 'summon',      label: 'Summon',   icon: Sparkles },
   { id: 'training',    label: 'Training', icon: Dumbbell },
   { id: 'crafting',    label: 'Crafting', icon: Hammer },
