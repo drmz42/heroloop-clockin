@@ -7,6 +7,12 @@ import { Skull, Star } from 'lucide-react';
 import { MAX_HERO_STARS } from '@/game/state';
 
 const STAR_COLORS = ['#fbbf24', '#a855f7', '#ef4444', '#ec4899'];
+const HEALTH_NUMBER_FORMAT = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+
+function formatHealth(value: number) {
+  const rounded = Math.max(0, Math.ceil(value));
+  return rounded >= 10_000 ? HEALTH_NUMBER_FORMAT.format(rounded) : rounded.toLocaleString('en-US');
+}
 
 function BattleHeroStars({ stars }: { stars: number }) {
   const clamped = Number.isFinite(stars) ? Math.max(0, Math.min(MAX_HERO_STARS, stars)) : 0;
@@ -120,11 +126,11 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
           </div>
         ))}
       </div>
-      {/* Name + HP bar + HP numbers */}
-      <div className="arena-unit-info w-[78px] shrink-0 rounded-lg border border-[#4b4234] bg-black/45 px-1.5 py-1 shadow-[0_6px_14px_rgba(0,0,0,.25)] sm:w-[104px] sm:px-2">
-        <div className="mb-1 flex items-center justify-between gap-2"><span className={`truncate text-[11px] font-bold ${side === 'enemy' ? 'text-rose-200' : 'text-[#eee5d5]'}`}>{unit.name}</span><span className="text-[9px] font-semibold uppercase tracking-wider text-[#858074]">{side === 'enemy' ? 'Enemy' : 'Hero'}</span></div>
+      {/* Role + HP bar + HP numbers */}
+      <div className="arena-unit-info grid h-[58px] w-[88px] shrink-0 grid-rows-[14px_10px_14px] content-center gap-1 rounded-lg border border-[#4b4234] bg-black/45 px-2 shadow-[0_6px_14px_rgba(0,0,0,.25)] sm:w-[104px]" title={unit.name} aria-label={`${unit.name}, ${side}`}>
+        <div className={`truncate text-center text-[10px] font-bold uppercase tracking-wider ${side === 'enemy' ? 'text-rose-200' : 'text-[#eee5d5]'}`}>{side === 'enemy' ? 'Enemy' : 'Hero'}</div>
         <HealthBar hp={unit.hp} maxHp={unit.maxHp} color={unit.color} />
-        <div className="mt-1 text-center text-[9px] font-bold tabular-nums text-[#bdb6a9]">{Math.ceil(unit.hp)} / {unit.maxHp}</div>
+        <div className="whitespace-nowrap text-center text-[9px] font-bold tabular-nums text-[#bdb6a9]" aria-label={`${Math.ceil(unit.hp)} of ${unit.maxHp} health`}>{formatHealth(unit.hp)} / {formatHealth(unit.maxHp)}</div>
       </div>
       {/* Portrait */}
       <div className={`relative ${unit.alive && motionEnabled ? 'anim-bob' : ''}`}>
