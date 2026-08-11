@@ -8,6 +8,7 @@ import { ChestOpenModal } from '@/components/ChestOpenModal';
 import { BoostMaxModal } from '@/components/BoostMaxModal';
 import { GameWalletModal } from '@/components/GameWalletModal';
 import { WelcomeTutorialModal } from '@/components/WelcomeTutorialModal';
+import { PromoCodeModal, type PromoRedemption } from '@/components/PromoCodeModal';
 import { LandingScreen } from '@/screens/LandingScreen';
 import { MainScreen } from '@/screens/MainScreen';
 import { HeroesScreen } from '@/screens/HeroesScreen';
@@ -224,6 +225,14 @@ function App() {
   const [routePath, setRoutePath] = useState(() => window.location.pathname);
   const [showBoost, setShowBoost] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
+  const [showPromoCode, setShowPromoCode] = useState(false);
+
+  const applyPromoRedemption = (result: PromoRedemption) => {
+    hydrateServerState(result.state);
+    serverStateRevisionRef.current = result.revision;
+    setServerStateRevision(result.revision);
+    setServerTokenBalance(result.token_balance);
+  };
 
   useEffect(() => {
     const handlePopState = () => setRoutePath(window.location.pathname);
@@ -322,7 +331,7 @@ function App() {
         </div>
       )}
 
-      <FooterBar game={game} onGuidesClick={openWiki} />
+      <FooterBar game={game} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} />
 
       {game.offlineEarnings && (
         <OfflineModal
@@ -351,6 +360,7 @@ function App() {
           onClose={() => setShowWallet(false)}
         />
       )}
+      {showPromoCode && <PromoCodeModal onClose={() => setShowPromoCode(false)} onRedeemed={applyPromoRedemption} />}
       {game.state.walletAddress && !game.state.tutorial.welcomeCompleted && <WelcomeTutorialModal game={game} />}
     </div>
   );

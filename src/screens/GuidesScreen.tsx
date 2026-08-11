@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { BookOpen, Search } from 'lucide-react';
+import { BookOpen, ChevronRight, LibraryBig, Search, ShieldCheck, Sparkles } from 'lucide-react';
 
 type GuideStatus = 'Live' | 'Coming soon';
 
@@ -49,11 +49,38 @@ const GUIDES: GuideEntry[] = [
   { category: 'Economy', question: 'What are Gold and $HERO used for?', answer: 'Gold supports current game upgrades and purchases. $HERO is used by supported server-settled systems such as Summon, Ascension, guaranteed Enchant and Reroll.', status: 'Live' },
   { category: 'Economy', question: 'How does Summon Pity work?', answer: 'Pity counters track consecutive misses for protected rarity bands. A qualifying result resets its counter and every lower counter; the guarantees repeat.', status: 'Live' },
   { category: 'Features', question: 'What is available in the Market?', answer: 'Legendary-or-higher wearable equipment can be listed, bought and cancelled through server escrow. Locked or equipped items cannot be listed.', status: 'Live' },
+  { category: 'Features', question: 'How do promo codes work?', answer: 'Use Code in the bottom bar. A valid code is redeemed once by the server and can award Gold, $HERO, Summon Scrolls or Boss Keys. Invalid, expired, exhausted and previously used codes never change your balance.', status: 'Live' },
   { category: 'Features', question: 'Are Crafting, Salvage, Pets, Spells and Auras available?', answer: 'Not yet. Their controls or placeholders may be visible, but no undefined recipe, reward or bonus is active.', status: 'Coming soon' },
   { category: 'Accessibility', question: 'Can I reduce battle motion?', answer: 'Yes. Battle animation modes include Light, Spectacular and Off. System Reduced Motion also suppresses nonessential effects.', status: 'Live' },
 ];
 
 const CATEGORIES = ['All', ...Array.from(new Set(GUIDES.map((entry) => entry.category)))];
+
+function splitDetail(detail: string): [string, string] | null {
+  for (const separator of [': ', ' — ']) {
+    const index = detail.indexOf(separator);
+    if (index > 0) return [detail.slice(0, index), detail.slice(index + separator.length)];
+  }
+  const numeric = detail.match(/^(.+?)\s+((?:about\s+)?[$~<>]?\d.*)$/i);
+  return numeric ? [numeric[1], numeric[2]] : null;
+}
+
+function GuideDetails({ details }: { details: string[] }) {
+  const rows = details.map((detail) => ({ detail, pair: splitDetail(detail) }));
+  const tableRows = rows.filter((row): row is { detail: string; pair: [string, string] } => row.pair !== null);
+  const notes = rows.filter((row) => row.pair === null);
+  if (tableRows.length < 2) return <ul className="mt-3 grid gap-2 sm:grid-cols-2">{details.map((detail) => <li key={detail} className="rounded-lg border border-[#514126] bg-black/20 px-3 py-2 text-xs leading-5 text-[#c9bfae]">{detail}</li>)}</ul>;
+  return (
+    <div className="mt-3 overflow-hidden rounded-xl border border-[#5c492d] bg-black/20">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-left text-xs">
+          <tbody>{tableRows.map(({ detail, pair }, index) => <tr key={detail} className={index % 2 ? 'bg-white/[.025]' : ''}><th scope="row" className="min-w-36 border-b border-[#3e3424] px-3 py-2 font-bold text-[#e2c782]">{pair[0]}</th><td className="border-b border-[#3e3424] px-3 py-2 text-[#c9c1b3]">{pair[1]}</td></tr>)}</tbody>
+        </table>
+      </div>
+      {notes.length > 0 && <ul className="space-y-1 px-3 py-2 text-xs text-[#a9a092]">{notes.map(({ detail }) => <li key={detail}>• {detail}</li>)}</ul>}
+    </div>
+  );
+}
 
 export function GuidesScreen() {
   const [category, setCategory] = useState('All');
@@ -66,10 +93,14 @@ export function GuidesScreen() {
 
   return (
     <div className="premium-screen min-h-full p-4 sm:p-6">
-      <header className="pr-12">
-        <div className="section-kicker flex items-center gap-2"><BookOpen size={15} /> HeroLoop Guides</div>
-        <h1 className="mt-1 font-vt text-2xl font-black text-[#f0dfbb]">Wiki &amp; FAQ</h1>
-        <p className="mt-1 max-w-2xl text-sm text-[#aaa193]">Current player rules and concise answers. Planned systems are clearly marked and never presented as live.</p>
+      <header className="relative overflow-hidden rounded-2xl border border-[#745a32] bg-[radial-gradient(circle_at_82%_5%,rgba(202,151,58,.18),transparent_36%),linear-gradient(135deg,rgba(36,31,20,.98),rgba(11,14,12,.96))] p-5 pr-12 shadow-[0_18px_55px_rgba(0,0,0,.35)] sm:p-6">
+        <Sparkles className="absolute right-7 top-6 text-[#c99a49]/35" size={70} strokeWidth={1} aria-hidden="true" />
+        <div className="section-kicker flex items-center gap-2"><BookOpen size={15} /> HeroLoop Codex</div>
+        <h1 className="mt-2 font-vt text-3xl font-black text-[#f4dfb0]">Wiki &amp; Player Guide</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#b8ae9d]">Rules, drop tables and system guides in one searchable codex. Planned mechanics are always separated from the live game.</p>
+        <div className="mt-5 grid max-w-2xl grid-cols-3 gap-2">
+          {[['Answers', GUIDES.length], ['Categories', CATEGORIES.length - 1], ['Live now', GUIDES.filter((entry) => entry.status === 'Live').length]].map(([label, value]) => <div key={label} className="rounded-xl border border-[#5c492d] bg-black/25 px-3 py-2"><strong className="block font-vt text-lg text-[#f1cb77]">{value}</strong><span className="text-[9px] font-bold uppercase tracking-[.12em] text-[#928673]">{label}</span></div>)}
+        </div>
       </header>
 
       <label className="game-control mt-4 flex h-10 items-center gap-2 px-3">
@@ -79,23 +110,24 @@ export function GuidesScreen() {
       </label>
 
       <div className="mt-4 grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
-        <nav className="no-scrollbar flex gap-1 overflow-x-auto md:flex-col" aria-label="Guide categories">
+        <nav className="no-scrollbar flex gap-1 overflow-x-auto rounded-xl border border-[#4f402b] bg-black/20 p-2 md:flex-col md:self-start" aria-label="Guide categories">
           {CATEGORIES.map((item) => (
-            <button key={item} type="button" onClick={() => setCategory(item)} className={`game-control shrink-0 px-3 py-2 text-left text-xs font-bold ${category === item ? 'game-primary' : ''}`} aria-pressed={category === item}>{item}</button>
+            <button key={item} type="button" onClick={() => setCategory(item)} className={`game-control flex shrink-0 items-center justify-between gap-3 px-3 py-2 text-left text-xs font-bold ${category === item ? 'game-primary' : ''}`} aria-pressed={category === item}><span>{item}</span><span className="rounded-full bg-black/25 px-1.5 text-[9px] text-[#b9a886]">{item === 'All' ? GUIDES.length : GUIDES.filter((entry) => entry.category === item).length}</span></button>
           ))}
         </nav>
 
         <section className="min-w-0 space-y-2" aria-live="polite">
           {filtered.map((entry) => (
-            <details key={entry.question} className="group rounded-lg border border-[#55452e] bg-[#11130f]/90 open:border-[#96703a]">
-              <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-3 text-sm font-bold text-[#e9dfcd]">
+            <details key={entry.question} className="group overflow-hidden rounded-xl border border-[#55452e] bg-[linear-gradient(145deg,rgba(22,23,17,.96),rgba(13,15,13,.96))] shadow-[0_7px_20px_rgba(0,0,0,.18)] open:border-[#a47c3e] open:shadow-[0_12px_30px_rgba(0,0,0,.3)]">
+              <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 text-sm font-bold text-[#e9dfcd]">
+                <LibraryBig size={15} className="shrink-0 text-[#b38a4d]" aria-hidden="true" />
                 <span className="min-w-0 flex-1">{entry.question}</span>
-                <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[9px] uppercase tracking-wide ${entry.status === 'Live' ? 'border-emerald-700/60 text-emerald-300' : 'border-amber-700/60 text-amber-300'}`}>{entry.status}</span>
-                <span className="text-[#b8975c] transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                <span className={`flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-wide ${entry.status === 'Live' ? 'border-emerald-700/60 bg-emerald-950/30 text-emerald-300' : 'border-amber-700/60 bg-amber-950/30 text-amber-300'}`}>{entry.status === 'Live' && <ShieldCheck size={10} />}{entry.status}</span>
+                <ChevronRight size={15} className="text-[#b8975c] transition-transform group-open:rotate-90" aria-hidden="true" />
               </summary>
-              <div className="border-t border-[#443824] px-3 py-3 text-sm leading-relaxed text-[#bdb4a5]">
+              <div className="border-t border-[#443824] px-4 py-4 text-sm leading-relaxed text-[#bdb4a5]">
                 <p>{entry.answer}</p>
-                {entry.details && <ul className="mt-2 list-disc space-y-1 pl-5">{entry.details.map((detail) => <li key={detail}>{detail}</li>)}</ul>}
+                {entry.details && <GuideDetails details={entry.details} />}
               </div>
             </details>
           ))}

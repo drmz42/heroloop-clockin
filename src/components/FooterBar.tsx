@@ -1,9 +1,9 @@
-import { MessageCircle, BookOpen, LogOut, Globe, Send, Twitter, User } from 'lucide-react';
+import { MessageCircle, BookOpen, KeyRound, LogOut, Globe, Send, Twitter, User } from 'lucide-react';
 import { useState } from 'react';
 import type { GameApi } from '@/game/useGame';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
-export function FooterBar({ game, onGuidesClick }: { game: GameApi; onGuidesClick: () => void }) {
+export function FooterBar({ game, onGuidesClick, onCodeClick }: { game: GameApi; onGuidesClick: () => void; onCodeClick: () => void }) {
   const [copied, setCopied] = useState(false);
   const tokenCA = 'HERO...p7Xq9M'; // placeholder contract address
 
@@ -34,6 +34,9 @@ export function FooterBar({ game, onGuidesClick }: { game: GameApi; onGuidesClic
       <FooterLink icon={<MessageCircle size={13} />} label="Discord" href="#" />
       <FooterLink icon={<Globe size={13} />} label="Website" href="#" />
       <FooterLink icon={<BookOpen size={13} />} label="Guides" href="/wiki" target="_self" onClick={(event) => { event.preventDefault(); onGuidesClick(); }} />
+      <button type="button" onClick={onCodeClick} className="game-control flex min-h-7 items-center gap-1 whitespace-nowrap px-2 py-1 font-vt text-xs">
+        <KeyRound size={13} /> Code
+      </button>
 
       <div className="mx-1 h-5 w-px bg-px-border" />
 

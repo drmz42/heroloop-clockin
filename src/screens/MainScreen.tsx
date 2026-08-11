@@ -666,7 +666,7 @@ function TokenEarningsPanel({ status, today, clientPower, eligible, heroes, defe
     </>
   );
   return (
-    <div className="absolute bottom-3 left-3 z-30 flex w-max origin-bottom-left scale-[.63] flex-col items-stretch gap-2 font-vt">
+    <div className="absolute bottom-3 left-3 z-30 flex w-max origin-bottom-left scale-[.69] flex-col items-stretch gap-2 font-vt">
       <div className="grid w-full grid-cols-[repeat(3,1fr)] gap-2 rounded-2xl border-2 border-[#80683f] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_24px_rgba(128,104,63,.28)]">
         {[['Heroes', heroes], ['Defeated', defeated], ['Bosses', bosses]].map(([label, value]) => <div key={label} className="text-center"><span className="block text-[11px] font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span><strong className="mt-1 block text-[16px] tabular-nums text-[#e8dfc8]">{formatNum(Number(value))}</strong></div>)}
       </div>
