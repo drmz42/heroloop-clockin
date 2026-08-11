@@ -215,33 +215,43 @@ function App() {
     return () => window.clearInterval(timer);
   }, [tokenomics.status?.my_hourly_share, game.state.walletAddress, game.state.boost.active, game.state.activeUntil, creditServerTokens]);
   const [tab, setTab] = useState<Tab>('main');
-  const [routeHash, setRouteHash] = useState(() => window.location.hash);
+  const [routePath, setRoutePath] = useState(() => window.location.pathname);
   const [showBoost, setShowBoost] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
 
   useEffect(() => {
-    const handleHashChange = () => setRouteHash(window.location.hash);
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    const handlePopState = () => setRoutePath(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  const openWiki = () => {
+    window.history.pushState(null, '', '/wiki');
+    setRoutePath('/wiki');
+  };
+
+  const closeWiki = () => {
+    window.history.pushState(null, '', '/#game');
+    setRoutePath('/');
+  };
 
   useEffect(() => {
     if (accountGate === 'checking' || accountGate === 'error') return;
-    if (routeHash === '#wiki') return;
+    if (routePath === '/wiki') return;
     const target = accountGate === 'verified' ? '/#game' : '/';
     if (`${window.location.pathname}${window.location.hash}` !== target) {
       window.history.replaceState(null, '', target);
     }
-  }, [accountGate, routeHash]);
+  }, [accountGate, routePath]);
 
-  if (routeHash === '#wiki') {
+  if (routePath === '/wiki') {
     return (
       <div className="game-shell h-screen overflow-auto bg-px-bg text-px-text">
         <div className="sticky top-0 z-20 flex min-h-[54px] items-center justify-between gap-3 border-b border-[#59472d] bg-[#0b0c0a]/95 px-3 py-2 backdrop-blur">
           <img src="/assets/brand/heroloop-logo.png" alt="HeroLoop" width={154} height={46} className="h-9 w-auto max-w-[148px] object-contain" />
-          <a href="#game" className="game-control game-primary flex items-center gap-2 px-3 py-2 text-xs font-black">
+          <button type="button" onClick={closeWiki} className="game-control game-primary flex items-center gap-2 px-3 py-2 text-xs font-black">
             <ArrowLeft size={15} aria-hidden="true" /> Back to game
-          </a>
+          </button>
         </div>
         <main className="mx-auto min-h-[calc(100vh-54px)] w-full max-w-[1100px]">
           <GuidesScreen />
@@ -261,7 +271,7 @@ function App() {
         tab={tab}
         onChange={(nextTab) => {
           if (nextTab === 'guides') {
-            window.location.hash = 'wiki';
+            openWiki();
             return;
           }
           setTab(nextTab);
@@ -306,7 +316,7 @@ function App() {
         </div>
       )}
 
-      <FooterBar game={game} />
+      <FooterBar game={game} onGuidesClick={openWiki} />
 
       {game.offlineEarnings && (
         <OfflineModal

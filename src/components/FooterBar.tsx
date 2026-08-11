@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { GameApi } from '@/game/useGame';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
-export function FooterBar({ game }: { game: GameApi }) {
+export function FooterBar({ game, onGuidesClick }: { game: GameApi; onGuidesClick: () => void }) {
   const [copied, setCopied] = useState(false);
   const tokenCA = 'HERO...p7Xq9M'; // placeholder contract address
 
@@ -33,7 +33,7 @@ export function FooterBar({ game }: { game: GameApi }) {
       <FooterLink icon={<Twitter size={13} />} label="Twitter" href="#" />
       <FooterLink icon={<MessageCircle size={13} />} label="Discord" href="#" />
       <FooterLink icon={<Globe size={13} />} label="Website" href="#" />
-      <FooterLink icon={<BookOpen size={13} />} label="Guides" href="#wiki" target="_self" />
+      <FooterLink icon={<BookOpen size={13} />} label="Guides" href="/wiki" target="_self" onClick={(event) => { event.preventDefault(); onGuidesClick(); }} />
 
       <div className="mx-1 h-5 w-px bg-px-border" />
 
@@ -52,9 +52,9 @@ export function FooterBar({ game }: { game: GameApi }) {
   );
 }
 
-function FooterLink({ icon, label, href, target = '_blank' }: { icon: React.ReactNode; label: string; href: string; target?: React.HTMLAttributeAnchorTarget }) {
+function FooterLink({ icon, label, href, target = '_blank', onClick }: { icon: React.ReactNode; label: string; href: string; target?: React.HTMLAttributeAnchorTarget; onClick?: React.MouseEventHandler<HTMLAnchorElement> }) {
   return (
-    <a href={href} target={target} rel={target === '_blank' ? 'noopener noreferrer' : undefined} className="flex min-h-7 items-center gap-1 whitespace-nowrap rounded-md border border-transparent px-2 py-1 font-vt text-xs text-[#777870] transition hover:border-[#4d4231] hover:bg-white/[.025] hover:text-[#d6d0c4]">
+    <a href={href} target={target} rel={target === '_blank' ? 'noopener noreferrer' : undefined} onClick={onClick} className="flex min-h-7 items-center gap-1 whitespace-nowrap rounded-md border border-transparent px-2 py-1 font-vt text-xs text-[#777870] transition hover:border-[#4d4231] hover:bg-white/[.025] hover:text-[#d6d0c4]">
       {icon} <span className="hidden sm:inline">{label}</span>
     </a>
   );

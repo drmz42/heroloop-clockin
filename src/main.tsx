@@ -12,12 +12,16 @@ function RootScreen() {
   const [, setRoute] = useState(() => window.location.pathname + window.location.hash);
 
   useEffect(() => {
-    const handleHashChange = () => setRoute(window.location.pathname + window.location.hash);
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    const handleRouteChange = () => setRoute(window.location.pathname + window.location.hash);
+    window.addEventListener('hashchange', handleRouteChange);
+    window.addEventListener('popstate', handleRouteChange);
+    return () => {
+      window.removeEventListener('hashchange', handleRouteChange);
+      window.removeEventListener('popstate', handleRouteChange);
+    };
   }, []);
 
-  const gameRoute = window.location.hash === '#game' || window.location.hash === '#wiki';
+  const gameRoute = window.location.hash === '#game' || window.location.pathname === '/wiki';
   const Screen = window.location.pathname === '/' && !gameRoute
     ? Landing4Screen
     : GameScreen;
