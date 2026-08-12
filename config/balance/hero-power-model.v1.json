@@ -178,6 +178,40 @@
       "summoner": { "triggerHpThreshold": 0.5, "summonHpMultiplier": 0.05, "summonAttackMultiplier": 0.05 }
     }
   },
+  "dungeonCalibration": {
+    "status": "four-room-depth-proposal",
+    "targetRecoveryCompletionRate": 0.97,
+    "trials": 64,
+    "calibrationTrials": 32,
+    "binarySearchSteps": 9,
+    "minimumDifficultyScale": 0.2,
+    "maximumDifficultyScale": 2.5,
+    "waveTechnicalMaxSeconds": 120,
+    "bossTechnicalMaxSeconds": 240,
+    "weeklyRewardEligibleRuns": 3,
+    "recoveryHeal": 0.25,
+    "recoveryMinimumCompletionRate": 0.15,
+    "treasureIsOptional": true,
+    "treasurePostFightHeal": 0,
+    "potionPolicy": "disabled-until-server-authoritative",
+    "treasureResourceBundles": 1,
+    "finalDungeonChests": 1,
+    "roomRewardWaveEquivalent": 0.85,
+    "baseEnemyRelativeToMedianHero": { "hp": 0.65, "atk": 0.28, "def": 0.7, "speed": 0.9 },
+    "bossRelativeToMedianHero": { "hp": 2.3, "partyHpExponent": 1.2, "atk": 0.35, "def": 1.25, "speedBonus": 10 },
+    "depths": [
+      { "id": "depth-i", "name": "Depth I", "location": 7, "heroLevel": 60, "heroRarity": "mythic", "stars": 15, "essenceLevel": 0, "gear": "typical", "rewardMultiplier": 1.0 },
+      { "id": "depth-ii", "name": "Depth II", "location": 10, "heroLevel": 80, "heroRarity": "celestial", "stars": 20, "essenceLevel": 0, "gear": "typical", "rewardMultiplier": 1.45 },
+      { "id": "depth-iii", "name": "Depth III", "location": 20, "heroLevel": 99, "heroRarity": "celestial", "stars": 20, "essenceLevel": 200, "gear": "god", "rewardMultiplier": 2.0 }
+    ],
+    "rewardTargets": {
+      "goldPerActiveHourMultiplier": [1.0, 1.15, 1.3],
+      "xpPerActiveHourMultiplier": [1.0, 1.1, 1.2],
+      "maximumActiveHourMultiplier": 1.75,
+      "comparisonWaveSeconds": 12,
+      "noDirectHero": true
+    }
+  },
   "equipment": {
     "levelScaling": {
       "maxItemLevel": 99,
