@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "modelVersion": "hero-power-proposal-2026.08.12-v1",
+  "modelVersion": "hero-power-proposal-2026.08.12-v2",
   "date": "2026-08-12",
   "status": "proposal",
   "live": false,
@@ -107,6 +107,12 @@
     "stallSeconds": 120
   },
   "equipment": {
+    "levelScaling": {
+      "maxItemLevel": 99,
+      "bandSize": 15,
+      "bandBonus": 0.2,
+      "perLevel": { "main": 0.015, "slow": 0.005, "economy": 0.005 }
+    },
     "slotPools": {
       "class_weapon": ["atk", "attackSpeed", "critChance", "critDamage", "hp"],
       "helmet": ["hp", "def", "dodge", "critChance", "critDamage"],
@@ -137,10 +143,10 @@
       { "id": "immortal", "multiplier": 4.7, "lines": 6, "setBonus": 0.22 }, { "id": "god", "multiplier": 5.4, "lines": 6, "setBonus": 0.25 }
     ],
     "rolls": {
-      "hp": { "min": 4, "max": 8, "curve": "main" }, "atk": { "min": 1, "max": 2, "curve": "main" }, "def": { "min": 0.3, "max": 0.8, "curve": "main" },
-      "dodge": { "min": 0.0015, "max": 0.0045, "curve": "slow" }, "critChance": { "min": 0.003, "max": 0.009, "curve": "slow" },
-      "critDamage": { "min": 0.005, "max": 0.012, "curve": "slow" }, "attackSpeed": { "min": 0.0035, "max": 0.009, "curve": "slow" },
-      "goldBonus": { "min": 0.005, "max": 0.015, "curve": "economy" }, "xpBonus": { "min": 0.005, "max": 0.015, "curve": "economy" }
+      "hp": { "min": 3.658817373, "max": 4.573521716, "curve": "main" }, "atk": { "min": 0.914704343, "max": 1.143380429, "curve": "main" }, "def": { "min": 0.335391593, "max": 0.419239491, "curve": "main" },
+      "dodge": { "min": 0.001553236, "max": 0.001941545, "curve": "slow" }, "critChance": { "min": 0.003106472, "max": 0.00388309, "curve": "slow" },
+      "critDamage": { "min": 0.004400835, "max": 0.005501044, "curve": "slow" }, "attackSpeed": { "min": 0.003235908, "max": 0.004044885, "curve": "slow" },
+      "goldBonus": { "min": 0.005177453, "max": 0.006471816, "curve": "economy" }, "xpBonus": { "min": 0.005177453, "max": 0.006471816, "curve": "economy" }
     },
     "futureBudget": { "itemPowerShareTargetMin": 0.2, "itemPowerShareTargetMax": 0.45, "enemyRecommendedPowerRatio": 1.0, "bossPowerMultiplier": 2.5, "petPowerBudgetPerRole": 0.1 }
   },
