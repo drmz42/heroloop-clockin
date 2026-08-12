@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "check:dev-news-window": "node scripts/check-dev-news-publication-window.mjs",
     "check:ascension-focus": "node scripts/check-ascension-focus-contract.mjs",
     "check:edge-security": "node scripts/check-edge-security-contract.mjs",
     "check:hero-ascension": "node scripts/check-hero-ascension-pricing.mjs",
