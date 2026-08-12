@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "modelVersion": "hero-power-proposal-2026.08.12-v2",
+  "modelVersion": "hero-power-proposal-2026.08.12-v3",
   "date": "2026-08-12",
   "status": "proposal",
   "live": false,
@@ -27,8 +27,10 @@
     "gearProfiles": ["none", "typical", "maximum"]
   },
   "invariants": {
-    "requiredAdjacent": "same-class same-level same-gear next-rarity 1-star essence-0 power exceeds previous-rarity 20-star essence-0 power",
+    "requiredAdjacent": "same-class same-level next-rarity 1-star essence-0 power exceeds previous-rarity 20-star essence-0 power by 5-20% with no gear or shared progression-equivalent gear",
     "requiredCrossTier": "same-class same-level same-gear Celestial 1-star essence-0 power exceeds Legendary 20-star essence-0 power",
+    "requiredGearProfiles": ["none", "typical"],
+    "diagnosticGearProfiles": ["maximum"],
     "targetMarginMin": 0.05,
     "targetMarginMax": 0.20,
     "essence200ComparisonsAreDiagnosticOnly": true
@@ -48,14 +50,14 @@
   },
   "rarities": [
     { "id": "common", "tier": 0, "multiplier": 1.0, "summonEffectiveRate": 0.621298, "duplicatesPerStarBands": [12, 24, 36, 48] },
-    { "id": "uncommon", "tier": 1, "multiplier": 2.21, "summonEffectiveRate": 0.279547, "duplicatesPerStarBands": [9, 18, 27, 36] },
-    { "id": "rare", "tier": 2, "multiplier": 3.82, "summonEffectiveRate": 0.049985, "duplicatesPerStarBands": [7, 14, 21, 28] },
-    { "id": "epic", "tier": 3, "multiplier": 5.97, "summonEffectiveRate": 0.029972, "duplicatesPerStarBands": [5, 10, 15, 20] },
-    { "id": "legendary", "tier": 4, "multiplier": 8.84, "summonEffectiveRate": 0.012833, "duplicatesPerStarBands": [4, 8, 12, 16] },
-    { "id": "mythic", "tier": 5, "multiplier": 12.79, "summonEffectiveRate": 0.00456, "duplicatesPerStarBands": [2, 4, 6, 8] },
-    { "id": "cosmic", "tier": 6, "multiplier": 18.11, "summonEffectiveRate": 0.001179, "duplicatesPerStarBands": [1, 2, 3, 4] },
-    { "id": "divine", "tier": 7, "multiplier": 25.3, "summonEffectiveRate": 0.000494, "duplicatesPerStarBands": [2, 2, 2, 2] },
-    { "id": "celestial", "tier": 8, "multiplier": 35.04, "summonEffectiveRate": 0.000133, "duplicatesPerStarBands": [1, 1, 1, 1] }
+    { "id": "uncommon", "tier": 1, "multiplier": 1.441163, "summonEffectiveRate": 0.279547, "duplicatesPerStarBands": [9, 18, 27, 36] },
+    { "id": "rare", "tier": 2, "multiplier": 2.147372, "summonEffectiveRate": 0.049985, "duplicatesPerStarBands": [7, 14, 21, 28] },
+    { "id": "epic", "tier": 3, "multiplier": 3.084756, "summonEffectiveRate": 0.029972, "duplicatesPerStarBands": [5, 10, 15, 20] },
+    { "id": "legendary", "tier": 4, "multiplier": 4.435796, "summonEffectiveRate": 0.012833, "duplicatesPerStarBands": [4, 8, 12, 16] },
+    { "id": "mythic", "tier": 5, "multiplier": 6.370091, "summonEffectiveRate": 0.00456, "duplicatesPerStarBands": [2, 4, 6, 8] },
+    { "id": "cosmic", "tier": 6, "multiplier": 9.143236, "summonEffectiveRate": 0.001179, "duplicatesPerStarBands": [1, 2, 3, 4] },
+    { "id": "divine", "tier": 7, "multiplier": 13.119459, "summonEffectiveRate": 0.000494, "duplicatesPerStarBands": [2, 2, 2, 2] },
+    { "id": "celestial", "tier": 8, "multiplier": 18.814853, "summonEffectiveRate": 0.000133, "duplicatesPerStarBands": [1, 1, 1, 1] }
   ],
   "summonEconomy": {
     "usdPerRoll": 0.02,
@@ -105,6 +107,17 @@
     "combinedSustainCapPerSecond": 0.02,
     "shieldCap": 0.25,
     "stallSeconds": 120
+  },
+  "enemyCalibration": {
+    "status": "normal-wave-proposal",
+    "locations": 10,
+    "targetWinRate": 0.72,
+    "base": { "hp": 300, "atk": 32, "def": 10, "speed": 65 },
+    "locationScalePerStep": 0.35,
+    "difficulty": { "location1": 1, "location2": 1.45, "perLocationAfter2": 0.18 },
+    "heroFacingScale": { "hp": 0.33, "atk": 0.32, "def": 0.25 },
+    "laneScale": { "hpStart": 0.85, "hpStep": 0.08, "atkStart": 0.8, "atkStep": 0.05, "speedStep": 3 },
+    "calibration": { "anchorCohort": "month-1", "trials": 64, "binarySearchSteps": 12, "minimumScale": 0.05, "maximumScale": 40 }
   },
   "equipment": {
     "levelScaling": {
