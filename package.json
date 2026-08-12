@@ -17,6 +17,7 @@
     "check:server-market": "node scripts/check-server-market.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
+    "balance:hero-power-proposal": "node scripts/generate-hero-balance-proposal.mjs && node scripts/run-balance-simulation.mjs --hero-rarity-proposal",
     "simulate:hero-ascension": "node scripts/simulate-hero-ascension.mjs",
     "simulate:post20-ascension": "node scripts/simulate-post20-ascension.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"

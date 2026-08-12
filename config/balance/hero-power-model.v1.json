@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "hero-power-proposal-2026.08.12-v1",
+  "date": "2026-08-12",
+  "status": "proposal",
+  "live": false,
+  "units": {
+    "hp": "hit-points",
+    "atk": "damage-per-base-hit",
+    "def": "defense-rating",
+    "speed": "initiative-rating",
+    "chance": "fraction-0-to-1",
+    "duration": "seconds",
+    "power": "canonical-relative-combat-points",
+    "currency": "expected-USD"
+  },
+  "rounding": {
+    "displayStats": "round-half-up-to-integer",
+    "power": "round-half-up-to-integer-after-full-precision-calculation",
+    "percent": "round-half-up-to-2-decimals",
+    "csvInternal": "retain-6-decimals"
+  },
+  "matrix": {
+    "levels": [1, 20, 40, 60, 80],
+    "stars": [0, 1, 5, 10, 15, 20],
+    "essenceLevels": [0, 20, 40, 80, 120, 160, 200],
+    "gearProfiles": ["none", "typical", "maximum"]
+  },
+  "invariants": {
+    "requiredAdjacent": "same-class same-level same-gear next-rarity 1-star essence-0 power exceeds previous-rarity 20-star essence-0 power",
+    "requiredCrossTier": "same-class same-level same-gear Celestial 1-star essence-0 power exceeds Legendary 20-star essence-0 power",
+    "targetMarginMin": 0.05,
+    "targetMarginMax": 0.20,
+    "essence200ComparisonsAreDiagnosticOnly": true
+  },
+  "heroStatFormula": {
+    "baseStatScale": 0.2,
+    "rarityGrowthPerTier": 0.02,
+    "starBonusPerStar": 0.015,
+    "speedRarityPerTier": 0.01,
+    "speedPerStar": 0.1,
+    "description": "scaledBase = classBase * baseStatScale * rarityMultiplier * (1 + classGrowth * (1 + rarityTier * rarityGrowthPerTier) * (level - 1)) * (1 + stars * starBonusPerStar); HP then applies class HP passive; Essence multiplies only scaled HP/ATK/DEF before equipment"
+  },
+  "diagnosticBaseline": {
+    "name": "approved-2026-08-04-modelling-inputs-not-live",
+    "rarityMultipliers": [1.0, 1.2, 1.45, 1.75, 2.15, 2.7, 3.4, 4.3, 5.5],
+    "starBonusPerStar": [0.05, 0.0575, 0.065, 0.0725, 0.08, 0.0875, 0.095, 0.1025, 0.11]
+  },
+  "rarities": [
+    { "id": "common", "tier": 0, "multiplier": 1.0, "summonEffectiveRate": 0.621298, "duplicatesPerStarBands": [12, 24, 36, 48] },
+    { "id": "uncommon", "tier": 1, "multiplier": 2.21, "summonEffectiveRate": 0.279547, "duplicatesPerStarBands": [9, 18, 27, 36] },
+    { "id": "rare", "tier": 2, "multiplier": 3.82, "summonEffectiveRate": 0.049985, "duplicatesPerStarBands": [7, 14, 21, 28] },
+    { "id": "epic", "tier": 3, "multiplier": 5.97, "summonEffectiveRate": 0.029972, "duplicatesPerStarBands": [5, 10, 15, 20] },
+    { "id": "legendary", "tier": 4, "multiplier": 8.84, "summonEffectiveRate": 0.012833, "duplicatesPerStarBands": [4, 8, 12, 16] },
+    { "id": "mythic", "tier": 5, "multiplier": 12.79, "summonEffectiveRate": 0.00456, "duplicatesPerStarBands": [2, 4, 6, 8] },
+    { "id": "cosmic", "tier": 6, "multiplier": 18.11, "summonEffectiveRate": 0.001179, "duplicatesPerStarBands": [1, 2, 3, 4] },
+    { "id": "divine", "tier": 7, "multiplier": 25.3, "summonEffectiveRate": 0.000494, "duplicatesPerStarBands": [2, 2, 2, 2] },
+    { "id": "celestial", "tier": 8, "multiplier": 35.04, "summonEffectiveRate": 0.000133, "duplicatesPerStarBands": [1, 1, 1, 1] }
+  ],
+  "summonEconomy": {
+    "usdPerRoll": 0.02,
+    "identitiesPerRarity": 5,
+    "ascensionFeeUsdByStar": [0, 0.001, 0.002, 0.004, 0.008, 0.012, 0.016, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.075, 0.09, 0.11, 0.135, 0.165, 0.2, 0.25],
+    "costMethod": "first exact identity uses five-way effective rarity expectation; subsequent exact duplicates use Ascension Focus and the same effective rarity rate"
+  },
+  "essence": {
+    "maxLevel": 200,
+    "bonusPerLevel": 0.005,
+    "maxBonus": 1.0,
+    "affectedStats": ["hp", "atk", "def"],
+    "excludedStats": ["speed", "critChance", "critDamage", "dodge", "goldBonus", "xpBonus"],
+    "totalCost": 250000,
+    "tiers": [
+      { "from": 1, "to": 20, "costPerLevel": 100 },
+      { "from": 21, "to": 40, "costPerLevel": 200 },
+      { "from": 41, "to": 60, "costPerLevel": 300 },
+      { "from": 61, "to": 80, "costPerLevel": 500 },
+      { "from": 81, "to": 100, "costPerLevel": 750 },
+      { "from": 101, "to": 120, "costPerLevel": 1000 },
+      { "from": 121, "to": 140, "costPerLevel": 1300 },
+      { "from": 141, "to": 160, "costPerLevel": 1700 },
+      { "from": 161, "to": 180, "costPerLevel": 2400 },
+      { "from": 181, "to": 200, "costPerLevel": 4250 }
+    ]
+  },
+  "classes": [
+    { "id": "warrior", "runtimeId": "knight", "name": "Warrior", "base": { "hp": 500, "atk": 56, "def": 28, "speed": 92, "critChance": 0.08, "critDamage": 1.6 }, "growth": { "hp": 0.012, "atk": 0.0055, "def": 0.009 }, "passives": { "hpMultiplier": 1.15, "dpsMultiplier": 1.0, "regenPerSecond": 0, "attackSpeed": 0, "baseDodge": 0 }, "caps": { "defMitigation": 0.6, "dodge": 0.1, "critChance": 0.45, "critDamage": 2.0, "attackSpeed": 0.2 } },
+    { "id": "mage", "runtimeId": "shepherd", "name": "Mage", "base": { "hp": 340, "atk": 86, "def": 12, "speed": 104, "critChance": 0.12, "critDamage": 1.85 }, "growth": { "hp": 0.007, "atk": 0.0115, "def": 0.0035 }, "passives": { "hpMultiplier": 1.0, "dpsMultiplier": 1.1, "regenPerSecond": 0, "attackSpeed": 0, "baseDodge": 0 }, "caps": { "defMitigation": 0.4, "dodge": 0.15, "critChance": 0.5, "critDamage": 2.3, "attackSpeed": 0.2 } },
+    { "id": "assassin", "runtimeId": "assassin", "name": "Assassin", "base": { "hp": 310, "atk": 78, "def": 10, "speed": 130, "critChance": 0.23, "critDamage": 2.0 }, "growth": { "hp": 0.0065, "atk": 0.01, "def": 0.003 }, "passives": { "hpMultiplier": 1.0, "dpsMultiplier": 1.0, "regenPerSecond": 0, "attackSpeed": 0, "baseDodge": 0.05 }, "caps": { "defMitigation": 0.4, "dodge": 0.3, "critChance": 0.6, "critDamage": 2.5, "attackSpeed": 0.25 } },
+    { "id": "druid", "runtimeId": "druid", "name": "Druid", "base": { "hp": 450, "atk": 60, "def": 20, "speed": 100, "critChance": 0.1, "critDamage": 1.7 }, "growth": { "hp": 0.0105, "atk": 0.0065, "def": 0.0065 }, "passives": { "hpMultiplier": 1.1, "dpsMultiplier": 1.0, "regenPerSecond": 0.004, "attackSpeed": 0, "baseDodge": 0 }, "caps": { "defMitigation": 0.5, "dodge": 0.15, "critChance": 0.45, "critDamage": 2.1, "attackSpeed": 0.2 } },
+    { "id": "crossbowman", "runtimeId": "archer", "name": "Crossbowman", "base": { "hp": 360, "atk": 70, "def": 14, "speed": 124, "critChance": 0.15, "critDamage": 2.15 }, "growth": { "hp": 0.008, "atk": 0.009, "def": 0.0045 }, "passives": { "hpMultiplier": 1.0, "dpsMultiplier": 1.0, "regenPerSecond": 0, "attackSpeed": 0.08, "baseDodge": 0 }, "caps": { "defMitigation": 0.45, "dodge": 0.2, "critChance": 0.55, "critDamage": 2.7, "attackSpeed": 0.25 } }
+  ],
+  "powerFormula": {
+    "version": "canonical-power-v1-proposal",
+    "referenceDefenseAttack": 100,
+    "weights": { "damagePerSecond": 4.0, "effectiveHp": 0.08, "sustainPerSecond": 1.5 },
+    "description": "attackIntervalMs=max(600,(1540-min(speed*2.2,700))/(1+attackSpeed)); expectedDPS=atk*(1000/attackIntervalMs)*(1+critChance*(critDamage-1))*classDpsMultiplier; mitigation=min(classDefCap,def/(def+2*referenceDefenseAttack)); effectiveHP=hp/(1-mitigation)/(1-dodge); sustainPerSecond=hp*classRegenPerSecond; Power=round(4*expectedDPS+0.08*effectiveHP+1.5*sustainPerSecond)"
+  },
+  "defenseRules": {
+    "defaultDefMitigationCap": 0.5,
+    "defaultDodgeCap": 0.2,
+    "percentDefCap": 0.4,
+    "passiveRegenCapPerSecond": 0.015,
+    "lifestealCap": 0.12,
+    "combinedSustainCapPerSecond": 0.02,
+    "shieldCap": 0.25,
+    "stallSeconds": 120
+  },
+  "equipment": {
+    "slotPools": {
+      "class_weapon": ["atk", "attackSpeed", "critChance", "critDamage", "hp"],
+      "helmet": ["hp", "def", "dodge", "critChance", "critDamage"],
+      "chest": ["hp", "def", "dodge", "atk", "critDamage"],
+      "gloves": ["atk", "attackSpeed", "critChance", "critDamage", "def"],
+      "boots": ["hp", "def", "dodge", "attackSpeed", "critChance"],
+      "ring": ["atk", "critChance", "critDamage", "dodge", "goldBonus", "xpBonus", "hp"],
+      "amulet": ["hp", "def", "critDamage", "dodge", "goldBonus", "xpBonus", "critChance"]
+    },
+    "classBuilds": {
+      "warrior": { "offhand": ["hp", "def", "dodge", "atk", "critChance"], "priority": ["hp", "def", "atk", "critChance", "dodge", "critDamage", "attackSpeed", "goldBonus", "xpBonus"] },
+      "mage": { "offhand": ["atk", "attackSpeed", "critChance", "critDamage", "hp"], "priority": ["atk", "critChance", "critDamage", "attackSpeed", "hp", "def", "dodge", "goldBonus", "xpBonus"] },
+      "assassin": { "offhand": ["atk", "attackSpeed", "critChance", "critDamage", "dodge"], "priority": ["atk", "critChance", "critDamage", "dodge", "attackSpeed", "hp", "def", "goldBonus", "xpBonus"] },
+      "druid": { "offhand": ["hp", "def", "atk", "critChance", "critDamage"], "priority": ["hp", "def", "atk", "critChance", "critDamage", "dodge", "attackSpeed", "goldBonus", "xpBonus"] },
+      "crossbowman": { "offhand": ["atk", "attackSpeed", "critChance", "critDamage", "hp"], "priority": ["atk", "critChance", "critDamage", "attackSpeed", "hp", "dodge", "def", "goldBonus", "xpBonus"] }
+    },
+    "profiles": {
+      "none": { "rarity": null, "enchant": 0, "roll": "none" },
+      "typical": { "rarityOffset": -1, "minimumRarityTier": 0, "enchant": 5, "roll": "mid" },
+      "maximum": { "rarity": "god", "enchant": 10, "roll": "max" }
+    },
+    "rarities": [
+      { "id": "common", "multiplier": 1.0, "lines": 1, "setBonus": 0.02 }, { "id": "uncommon", "multiplier": 1.15, "lines": 1, "setBonus": 0.04 },
+      { "id": "rare", "multiplier": 1.35, "lines": 2, "setBonus": 0.06 }, { "id": "epic", "multiplier": 1.6, "lines": 2, "setBonus": 0.08 },
+      { "id": "legendary", "multiplier": 1.9, "lines": 3, "setBonus": 0.1 }, { "id": "mythic", "multiplier": 2.25, "lines": 3, "setBonus": 0.12 },
+      { "id": "cosmic", "multiplier": 2.65, "lines": 4, "setBonus": 0.14 }, { "id": "divine", "multiplier": 3.1, "lines": 4, "setBonus": 0.16 },
+      { "id": "celestial", "multiplier": 3.6, "lines": 5, "setBonus": 0.18 }, { "id": "cursed", "multiplier": 4.1, "lines": 5, "setBonus": 0.2 },
+      { "id": "immortal", "multiplier": 4.7, "lines": 6, "setBonus": 0.22 }, { "id": "god", "multiplier": 5.4, "lines": 6, "setBonus": 0.25 }
+    ],
+    "rolls": {
+      "hp": { "min": 4, "max": 8, "curve": "main" }, "atk": { "min": 1, "max": 2, "curve": "main" }, "def": { "min": 0.3, "max": 0.8, "curve": "main" },
+      "dodge": { "min": 0.0015, "max": 0.0045, "curve": "slow" }, "critChance": { "min": 0.003, "max": 0.009, "curve": "slow" },
+      "critDamage": { "min": 0.005, "max": 0.012, "curve": "slow" }, "attackSpeed": { "min": 0.0035, "max": 0.009, "curve": "slow" },
+      "goldBonus": { "min": 0.005, "max": 0.015, "curve": "economy" }, "xpBonus": { "min": 0.005, "max": 0.015, "curve": "economy" }
+    },
+    "futureBudget": { "itemPowerShareTargetMin": 0.2, "itemPowerShareTargetMax": 0.45, "enemyRecommendedPowerRatio": 1.0, "bossPowerMultiplier": 2.5, "petPowerBudgetPerRole": 0.1 }
+  },
+  "simulation": {
+    "seed": "heroloop-hero-power-proposal-2026.08.12-v1",
+    "trialsPerState": 256,
+    "maxSeconds": 120,
+    "damageVarianceMin": 0.9,
+    "damageVarianceMax": 1.1,
+    "enemyCalibrationPowerRatio": 1.0,
+    "percentiles": [0.1, 0.5, 0.9]
+  }
+}
