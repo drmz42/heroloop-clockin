@@ -591,7 +591,7 @@ function DungeonPreviewModal({ onClose, onGuidesClick }: { onClose: () => void; 
           </ol>
         </div>
 
-        <div className="mt-4 border-t border-[#4d3c57]/70 pt-3 text-[9px] leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Rules:</b> HP and deaths persist between rooms. Potions and Auto-pot are disabled. No offline combat. Reload resumes the verified server checkpoint.</p><p className="mt-1.5"><b className="text-[#e0bd71]">Rewards:</b> Gold and XP per cleared fight, a bundle from Treasure and one Dungeon Chest after the final Boss. No direct $HERO. Keys and exact chest odds are not approved yet.</p></div>
+        <div className="mt-4 border-t border-[#4d3c57]/70 pt-3 text-[9px] leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Rules:</b> HP and deaths persist between rooms. Potions and Auto-pot are disabled. No offline combat. Reload resumes the verified server checkpoint.</p><p className="mt-1.5"><b className="text-[#e0bd71]">Rewards:</b> Three entries per week, resetting Monday at 00:00 UTC. Gold and XP per cleared fight, a bundle from Treasure and one Dungeon Chest after the final Boss. No direct $HERO. Keys and exact chest odds are not approved yet.</p></div>
 
         <footer className="mt-4 grid gap-2 sm:grid-cols-2">
           <button type="button" onClick={onGuidesClick} className="game-control flex items-center justify-center gap-2 px-4 py-2 text-xs font-black"><BookOpen size={16} /> Read full Dungeon Wiki</button>
