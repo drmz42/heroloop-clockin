@@ -19,6 +19,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "balance:hero-power-proposal": "node scripts/generate-hero-balance-proposal.mjs && node scripts/run-balance-simulation.mjs --hero-rarity-proposal",
+    "balance:boss-hunt-proposal": "node scripts/run-boss-hunt-simulation.mjs",
     "simulate:hero-ascension": "node scripts/simulate-hero-ascension.mjs",
     "simulate:post20-ascension": "node scripts/simulate-post20-ascension.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"

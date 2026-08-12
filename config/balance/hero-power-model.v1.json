@@ -119,6 +119,25 @@
     "laneScale": { "hpStart": 0.85, "hpStep": 0.08, "atkStart": 0.8, "atkStep": 0.05, "speedStep": 3 },
     "calibration": { "anchorCohort": "month-1", "trials": 64, "binarySearchSteps": 12, "minimumScale": 0.05, "maximumScale": 40 }
   },
+  "bossHuntCalibration": {
+    "status": "shared-target-proposal",
+    "trials": 64,
+    "technicalMaxSeconds": 240,
+    "enrageSeconds": 180,
+    "enrageStepSeconds": 15,
+    "enrageAttackStep": 0.1,
+    "heavyCooldownSeconds": 8,
+    "heavyDamageMultiplier": 1.6,
+    "retinue": { "hpMultiplier": 0.6, "attackMultiplier": 0.25, "defenseMultiplier": 0.75 },
+    "sharedBoss": { "hpMultiplier": 2.3, "partyHpExponent": 1.2, "attackMultiplier": 0.35, "defenseMultiplier": 1.25, "speedBonus": 10, "partyCadencePerExtraHero": 1 },
+    "identities": {
+      "iron-warden": { "name": "Iron Warden", "hpMultiplier": 1.1, "attackMultiplier": 1, "defenseMultiplier": 1.15, "cooldownSeconds": 14, "retinueShield": 0.12, "bossShield": 0.1 },
+      "ash-warlock": { "name": "Ash Warlock", "hpMultiplier": 0.92, "attackMultiplier": 1.08, "defenseMultiplier": 0.95, "cooldownSeconds": 12, "retinueBlastMultiplier": 0.75, "areaDamageMultiplier": 0.55 },
+      "thorn-shaman": { "name": "Thorn Shaman", "hpMultiplier": 1, "attackMultiplier": 0.96, "defenseMultiplier": 1, "cooldownSeconds": 16, "retinueHeal": 0.08, "bossHeal": 0.06, "encounterHealCap": 0.3 },
+      "rift-behemoth": { "name": "Rift Behemoth", "hpMultiplier": 1.05, "attackMultiplier": 0.75, "defenseMultiplier": 1.08, "cooldownSeconds": 0, "guardDefenseMultiplier": 1.15, "enrageHpThreshold": 0.35, "enrageAttackMultiplier": 1.2, "enrageAttackSpeedMultiplier": 1.15 },
+      "grave-necromancer": { "name": "Grave Necromancer", "hpMultiplier": 0.65, "attackMultiplier": 0.85, "defenseMultiplier": 0.95, "cooldownSeconds": 0, "retinueReviveHp": 0.25, "summonThresholds": [0.7, 0.35], "summonsPerWave": 2, "summonHpMultiplier": 0.3, "summonAttackMultiplier": 0.3, "bossDamageReductionWhileSummonsLive": 0.25 }
+    }
+  },
   "equipment": {
     "levelScaling": {
       "maxItemLevel": 99,
@@ -161,7 +180,7 @@
       "critDamage": { "min": 0.004400835, "max": 0.005501044, "curve": "slow" }, "attackSpeed": { "min": 0.003235908, "max": 0.004044885, "curve": "slow" },
       "goldBonus": { "min": 0.005177453, "max": 0.006471816, "curve": "economy" }, "xpBonus": { "min": 0.005177453, "max": 0.006471816, "curve": "economy" }
     },
-    "futureBudget": { "itemPowerShareTargetMin": 0.2, "itemPowerShareTargetMax": 0.45, "enemyRecommendedPowerRatio": 1.0, "bossPowerMultiplier": 2.5, "petPowerBudgetPerRole": 0.1 }
+    "futureBudget": { "itemPowerShareTargetMin": 0.2, "itemPowerShareTargetMax": 0.45, "enemyRecommendedPowerRatio": 1.0, "bossPowerMultiplier": 2.3, "petPowerBudgetPerRole": 0.1 }
   },
   "simulation": {
     "seed": "heroloop-hero-power-proposal-2026.08.12-v1",
