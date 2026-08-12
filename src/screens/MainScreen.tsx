@@ -565,12 +565,6 @@ function DungeonPreviewModal({ onClose, onGuidesClick }: { onClose: () => void; 
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [onClose]);
-  const rooms = [
-    { label: 'Room 1', title: 'Guards', detail: 'Three-lane battle', icon: <DoorOpen size={16} /> },
-    { label: 'Room 2', title: 'Elite', detail: 'One readable affix', icon: <Sparkles size={16} /> },
-    { label: 'Room 3', title: 'Choose', detail: 'Recovery or Treasure', icon: <Gem size={16} /> },
-    { label: 'Room 4', title: 'Boss', detail: 'Retinue → shared target', icon: <Skull size={16} /> },
-  ];
   return (
     <div className="fixed inset-0 z-[9999] grid place-items-center bg-black/80 p-3 backdrop-blur-[5px]" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section role="dialog" aria-modal="true" aria-labelledby="dungeon-preview-title" className="game-scrollbar max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[#76569b] bg-[radial-gradient(circle_at_75%_0%,rgba(110,68,154,.23),transparent_38%),linear-gradient(155deg,#1d1822,#0b0d0c_70%)] p-4 shadow-[0_28px_100px_rgba(0,0,0,.85),0_0_38px_rgba(118,86,155,.18)] sm:p-5">
@@ -580,21 +574,24 @@ function DungeonPreviewModal({ onClose, onGuidesClick }: { onClose: () => void; 
           <button type="button" autoFocus onClick={onClose} className="game-control grid h-9 w-9 shrink-0 place-items-center" aria-label="Close Dungeons information"><X size={15} /></button>
         </header>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {rooms.map((room, index) => <div key={room.label} className="relative rounded-xl border border-[#544162] bg-black/25 p-3"><div className="flex items-center justify-between text-[#c4a3df]"><span className="text-[8px] font-black uppercase tracking-[.14em]">{room.label}</span>{room.icon}</div><strong className="mt-2 block text-xs text-[#eee3d2]">{room.title}</strong><span className="mt-1 block text-[9px] leading-4 text-[#9c92a0]">{room.detail}</span>{index < rooms.length - 1 && <span className="absolute -right-2.5 top-1/2 z-10 hidden -translate-y-1/2 text-[#76569b] sm:block">›</span>}</div>)}
+        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-y border-[#4d3c57]/70 py-2 text-[9px] text-[#94899a]">
+          <span className="font-black uppercase tracking-widest text-[#c4a3df]">Choose depth</span>
+          <span><b className="text-[#eadcf2]">I</b> Developing</span><span className="text-[#594762]">•</span>
+          <span><b className="text-[#eadcf2]">II</b> Established</span><span className="text-[#594762]">•</span>
+          <span><b className="text-[#eadcf2]">III</b> Endgame</span>
         </div>
 
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
-          {[['Depth I', 'Developing formation'], ['Depth II', 'Established formation'], ['Depth III', 'Optimized endgame']].map(([depth, label]) => <div key={depth} className="stat-tile px-3 py-2"><strong className="text-xs text-[#e2c3fa]">{depth}</strong><span className="mt-0.5 block text-[9px] text-[#918795]">{label}</span></div>)}
+        <div className="relative mx-auto mt-4 max-w-xl pl-1">
+          <div className="absolute bottom-7 left-[17px] top-5 w-px bg-gradient-to-b from-[#9470b3] via-[#76569b] to-[#ad8250]" aria-hidden="true" />
+          <ol className="relative space-y-4">
+            <li className="flex gap-3"><span className="z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#8965ad] bg-[#241b2c] text-[#d8b4fe]"><DoorOpen size={16} /></span><div><span className="text-[8px] font-black uppercase tracking-widest text-[#8e729f]">Room 1</span><strong className="block text-xs text-[#eee3d2]">Guards</strong><p className="text-[9px] leading-4 text-[#978d9b]">Defeat the three-lane guard formation.</p></div></li>
+            <li className="flex gap-3"><span className="z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#8965ad] bg-[#241b2c] text-[#d8b4fe]"><Sparkles size={16} /></span><div><span className="text-[8px] font-black uppercase tracking-widest text-[#8e729f]">Room 2</span><strong className="block text-xs text-[#eee3d2]">Elite</strong><p className="text-[9px] leading-4 text-[#978d9b]">One stronger enemy with one readable modifier.</p></div></li>
+            <li className="flex gap-3"><span className="z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#8965ad] bg-[#241b2c] text-[#d8b4fe]"><Gem size={16} /></span><div className="min-w-0 flex-1"><span className="text-[8px] font-black uppercase tracking-widest text-[#8e729f]">Room 3 · Choose one path</span><div className="mt-1.5 grid grid-cols-2 gap-4"><div><strong className="flex items-center gap-1.5 text-xs text-emerald-300"><HeartPulse size={14} /> Recovery</strong><p className="mt-0.5 text-[9px] leading-4 text-[#9ca69e]">Restore 25% HP to survivors. No revive.</p></div><div><strong className="flex items-center gap-1.5 text-xs text-amber-300"><Gem size={14} /> Treasure</strong><p className="mt-0.5 text-[9px] leading-4 text-[#aaa091]">Extra fight and bundle. No healing.</p></div></div></div></li>
+            <li className="flex gap-3"><span className="z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#ad8250] bg-[#2b2118] text-[#efbd79]"><Skull size={17} /></span><div><span className="text-[8px] font-black uppercase tracking-widest text-[#9f815d]">Room 4 · Final</span><strong className="block text-xs text-[#f1dfc5]">Retinue → Dungeon Boss</strong><p className="text-[9px] leading-4 text-[#a4998b]">Break the guards, then focus one shared Boss target.</p></div></li>
+          </ol>
         </div>
 
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <section className="rounded-xl border border-emerald-800/45 bg-emerald-950/15 p-3"><div className="flex items-center gap-2 text-emerald-300"><HeartPulse size={17} /><strong className="text-xs">Recovery</strong></div><p className="mt-1.5 text-[10px] leading-5 text-[#aeb5ad]">Skip the extra fight and restore 25% max HP to surviving heroes. It never revives.</p></section>
-          <section className="rounded-xl border border-amber-800/50 bg-amber-950/15 p-3"><div className="flex items-center gap-2 text-amber-300"><Gem size={17} /><strong className="text-xs">Treasure</strong></div><p className="mt-1.5 text-[10px] leading-5 text-[#b8afa2]">Fight an extra room for a resource bundle. No healing: improve heroes, gear or formation if the risk is too high.</p></section>
-        </div>
-
-        <div className="mt-3 rounded-xl border border-rose-900/45 bg-rose-950/15 p-3 text-[10px] leading-5 text-[#c3b8b6]"><span className="font-black text-rose-300">Dungeon rules:</span> HP and hero deaths persist between rooms. Potions and Auto-pot are disabled. No offline combat occurs. Reload will resume the server checkpoint after the authoritative encounter system is implemented.</div>
-        <div className="mt-2 rounded-xl border border-[#514126] bg-black/20 p-3 text-[10px] leading-5 text-[#aaa195]"><span className="font-black text-[#e0bd71]">Planned rewards:</span> bounded Gold and XP per cleared combat room, one resource bundle from Treasure and one Dungeon Chest after the final Boss. No direct $HERO. Dungeon Key sources and exact chest odds are not approved yet.</div>
+        <div className="mt-4 border-t border-[#4d3c57]/70 pt-3 text-[9px] leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Rules:</b> HP and deaths persist between rooms. Potions and Auto-pot are disabled. No offline combat. Reload resumes the verified server checkpoint.</p><p className="mt-1.5"><b className="text-[#e0bd71]">Rewards:</b> Gold and XP per cleared fight, a bundle from Treasure and one Dungeon Chest after the final Boss. No direct $HERO. Keys and exact chest odds are not approved yet.</p></div>
 
         <footer className="mt-4 grid gap-2 sm:grid-cols-2">
           <button type="button" onClick={onGuidesClick} className="game-control flex items-center justify-center gap-2 px-4 py-2 text-xs font-black"><BookOpen size={16} /> Read full Dungeon Wiki</button>
