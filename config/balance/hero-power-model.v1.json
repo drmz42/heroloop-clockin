@@ -138,6 +138,46 @@
       "grave-necromancer": { "name": "Grave Necromancer", "hpMultiplier": 0.65, "attackMultiplier": 0.85, "defenseMultiplier": 0.95, "cooldownSeconds": 0, "retinueReviveHp": 0.25, "summonThresholds": [0.7, 0.35], "summonsPerWave": 2, "summonHpMultiplier": 0.3, "summonAttackMultiplier": 0.3, "bossDamageReductionWhileSummonsLive": 0.25 }
     }
   },
+  "endgameCalibration": {
+    "status": "locations-11-20-proposal",
+    "targetWinRate": 0.72,
+    "trials": 64,
+    "binarySearchSteps": 10,
+    "minimumDifficultyScale": 0.2,
+    "maximumDifficultyScale": 10,
+    "technicalMaxSeconds": 120,
+    "eliteFrequency": 0.05,
+    "eliteRewardMultiplier": 1.5,
+    "baseEnemyRelativeToMedianHero": { "hp": 0.65, "atk": 0.28, "def": 0.7, "speed": 0.9 },
+    "locations": [
+      { "id": 11, "name": "Shattered Crown", "levels": [80, 81], "heroLevel": 80, "essenceLevel": 0, "gear": "typical" },
+      { "id": 12, "name": "Astral Scar", "levels": [82, 83], "heroLevel": 82, "essenceLevel": 0, "gear": "typical" },
+      { "id": 13, "name": "Cinder Throne", "levels": [84, 85], "heroLevel": 84, "essenceLevel": 0, "gear": "celestial" },
+      { "id": 14, "name": "Thorned Eclipse", "levels": [86, 87], "heroLevel": 86, "essenceLevel": 0, "gear": "celestial" },
+      { "id": 15, "name": "Graveglass Expanse", "levels": [88, 89], "heroLevel": 88, "essenceLevel": 0, "gear": "cursed" },
+      { "id": 16, "name": "Immortal Bastion", "levels": [90, 91], "heroLevel": 90, "essenceLevel": 40, "gear": "cursed" },
+      { "id": 17, "name": "Cursed Meridian", "levels": [92, 93], "heroLevel": 92, "essenceLevel": 80, "gear": "immortal" },
+      { "id": 18, "name": "Divine Crucible", "levels": [94, 95], "heroLevel": 94, "essenceLevel": 120, "gear": "immortal" },
+      { "id": 19, "name": "Celestial Terminus", "levels": [96, 97], "heroLevel": 97, "essenceLevel": 160, "gear": "god" },
+      { "id": 20, "name": "Godfall Nexus", "levels": [98, 99], "heroLevel": 99, "essenceLevel": 200, "gear": "god" }
+    ],
+    "roles": {
+      "tank": { "hp": 1.3, "atk": 0.8, "def": 1.35, "speed": 0.9 },
+      "striker": { "hp": 0.85, "atk": 1.25, "def": 0.85, "speed": 1 },
+      "skirmisher": { "hp": 0.8, "atk": 0.9, "def": 0.8, "speed": 1.25, "dodge": 0.05 },
+      "support": { "hp": 1, "atk": 0.75, "def": 1, "speed": 0.95, "heal": 0.06, "cooldownSeconds": 12, "healCap": 0.18 },
+      "caster": { "hp": 0.85, "atk": 1.05, "def": 0.8, "speed": 1, "blastMultiplier": 1.2, "cooldownSeconds": 10 }
+    },
+    "eliteAffixes": {
+      "guard-aura": { "defenseMultiplier": 1.1 },
+      "mending": { "heal": 0.06, "cooldownSeconds": 14, "healCap": 0.18 },
+      "barrier": { "shield": 0.1, "cooldownSeconds": 14 },
+      "enrage": { "hpThreshold": 0.35, "attackMultiplier": 1.2 },
+      "curse": { "heroAttackReduction": 0.12, "durationSeconds": 8, "cooldownSeconds": 14 },
+      "lane-blast": { "damageMultiplier": 1.15, "cooldownSeconds": 12 },
+      "summoner": { "triggerHpThreshold": 0.5, "summonHpMultiplier": 0.05, "summonAttackMultiplier": 0.05 }
+    }
+  },
   "equipment": {
     "levelScaling": {
       "maxItemLevel": 99,
