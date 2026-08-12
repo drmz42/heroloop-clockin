@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, useMemo, useRef } from 'react';
-import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, ScrollText, DoorOpen, HeartPulse, Gem, Skull, BookOpen, KeyRound } from 'lucide-react';
+import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, ScrollText, DoorOpen, HeartPulse, Gem, Skull, BookOpen } from 'lucide-react';
 import { Arena } from '@/components/Arena';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
@@ -591,11 +591,11 @@ function DungeonPreviewModal({ onClose, onGuidesClick }: { onClose: () => void; 
           </ol>
         </div>
 
-        <div className="mt-4 border-t border-[#4d3c57]/70 pt-3 text-[9px] leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Rules:</b> HP and deaths persist between rooms. Potions and Auto-pot are disabled. No offline combat. Reload resumes the verified server checkpoint.</p><p className="mt-1.5"><b className="text-[#e0bd71]">Rewards:</b> Three entries per week, resetting Monday at 00:00 UTC. Gold and XP per cleared fight, a bundle from Treasure and one Dungeon Chest after the final Boss. No direct $HERO. Keys and exact chest odds are not approved yet.</p></div>
+        <div className="mt-4 border-t border-[#4d3c57]/70 pt-3 text-[9px] leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Rules:</b> HP and deaths persist between rooms. Potions and Auto-pot are disabled. No offline combat. Reload resumes the verified server checkpoint.</p><p className="mt-1.5"><b className="text-[#e0bd71]">Rewards:</b> Three free entries per week, resetting Monday at 00:00 UTC; no Dungeon Keys or paid entries. Gold and XP per cleared fight, a bundle from Treasure and one Dungeon Chest after the final Boss. No direct $HERO. Exact chest odds are not approved yet.</p></div>
 
         <footer className="mt-4 grid gap-2 sm:grid-cols-2">
           <button type="button" onClick={onGuidesClick} className="game-control flex items-center justify-center gap-2 px-4 py-2 text-xs font-black"><BookOpen size={16} /> Read full Dungeon Wiki</button>
-          <button type="button" disabled className="game-control game-primary flex items-center justify-center gap-2 px-4 py-2 text-xs font-black"><KeyRound size={16} /> Enter Dungeon · Coming soon</button>
+          <button type="button" disabled className="game-control game-primary flex items-center justify-center gap-2 px-4 py-2 text-xs font-black"><DoorOpen size={16} /> Enter Dungeon · Coming soon</button>
         </footer>
       </section>
     </div>
