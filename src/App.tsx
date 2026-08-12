@@ -298,7 +298,7 @@ function App() {
       />
 
       <div className="flex-1 min-h-0 overflow-hidden">
-        <MainScreen game={game} tokenomics={tokenomics} onBoostClick={() => setShowBoost(true)} />
+        <MainScreen game={game} tokenomics={tokenomics} onBoostClick={() => setShowBoost(true)} onGuidesClick={openWiki} />
       </div>
 
       {tab !== 'main' && (

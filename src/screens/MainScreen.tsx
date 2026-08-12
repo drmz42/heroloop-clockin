@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, useMemo, useRef } from 'react';
-import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, ScrollText } from 'lucide-react';
+import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, ScrollText, DoorOpen, HeartPulse, Gem, Skull, BookOpen, KeyRound } from 'lucide-react';
 import { Arena } from '@/components/Arena';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
@@ -52,7 +52,7 @@ function emptySlotArtworkId(slot: ItemSlot, heroClass: HeroClass): string {
   return `${slot}-common`;
 }
 
-export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void }) {
+export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void }) {
   const { state, units, floaters, battleResult, potionFx, respawnCountdowns } = game;
   const tok = tokenomics;
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
@@ -67,6 +67,7 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
   const [selectedResource, setSelectedResource] = useState<'summon-scroll' | 'boss-key' | null>(null);
   const [showDropRates, setShowDropRates] = useState(false);
   const [showZoomTip, setShowZoomTip] = useState(true);
+  const [showDungeonInfo, setShowDungeonInfo] = useState(false);
   const [selectedHeroUid, setSelectedHeroUid] = useState<string | null>(state.team[0] ?? null);
   const [selectedItem, setSelectedItem] = useState<OwnedItem | null>(null);
   const [selectedItemSource, setSelectedItemSource] = useState<'bag' | 'hero' | null>(null);
@@ -314,13 +315,18 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
           )}
           {potionFx && <div key={potionFx.born} className="absolute inset-0 pointer-events-none anim-fade" style={{ background: 'radial-gradient(circle at 50% 70%, rgba(74,222,128,0.15), transparent 60%)' }} />}
           <Arena units={units} floaters={floaters} ownedHeroes={state.ownedHeroes} inventory={state.inventory} potionFx={potionFx} respawnCountdowns={respawnCountdowns} animationMode={state.battleAnimationMode} />
-          <button
-            onClick={handleSummonBoss}
-            disabled={state.bossKeys < 1 || state.bossBattleActive}
-            className="game-control absolute right-3 top-3 z-30 flex h-7 items-center gap-1 px-2 py-0.5 text-[9px] font-bold"
-          >
-            <BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}
-          </button>
+          <div className="absolute right-3 top-3 z-30 flex items-center gap-1.5">
+            <button type="button" onClick={() => setShowDungeonInfo(true)} className="game-control flex h-7 items-center gap-1 px-2 py-0.5 text-[9px] font-bold text-[#d7c6ea]" aria-label="Open Dungeons information">
+              <DoorOpen size={14} aria-hidden="true" /> DUNGEONS <Info size={11} aria-hidden="true" />
+            </button>
+            <button
+              onClick={handleSummonBoss}
+              disabled={state.bossKeys < 1 || state.bossBattleActive}
+              className="game-control flex h-7 items-center gap-1 px-2 py-0.5 text-[9px] font-bold"
+            >
+              <BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}
+            </button>
+          </div>
           <TestControls game={game} />
           <div className="absolute bottom-3 right-3 z-30 flex items-end gap-1.5">
             {showDropRates && <div className="absolute bottom-full right-0 mb-2 w-56 rounded-lg border border-[#80683f] bg-[#11130f]/95 p-2.5 shadow-2xl backdrop-blur-sm">
@@ -548,6 +554,53 @@ export function MainScreen({ game, tokenomics, onBoostClick }: { game: GameApi; 
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-px-panel border-2 border-px-bright font-vt text-base font-bold text-px-bright anim-slide-up" style={{ boxShadow: '3px 3px 0 #3d2008' }}>{toast}</div>
       )}
       {showAvatarPicker && <AvatarPicker game={game} onClose={() => setShowAvatarPicker(false)} />}
+      {showDungeonInfo && <DungeonPreviewModal onClose={() => setShowDungeonInfo(false)} onGuidesClick={() => { setShowDungeonInfo(false); onGuidesClick(); }} />}
+    </div>
+  );
+}
+
+function DungeonPreviewModal({ onClose, onGuidesClick }: { onClose: () => void; onGuidesClick: () => void }) {
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [onClose]);
+  const rooms = [
+    { label: 'Room 1', title: 'Guards', detail: 'Three-lane battle', icon: <DoorOpen size={16} /> },
+    { label: 'Room 2', title: 'Elite', detail: 'One readable affix', icon: <Sparkles size={16} /> },
+    { label: 'Room 3', title: 'Choose', detail: 'Recovery or Treasure', icon: <Gem size={16} /> },
+    { label: 'Room 4', title: 'Boss', detail: 'Retinue → shared target', icon: <Skull size={16} /> },
+  ];
+  return (
+    <div className="fixed inset-0 z-[9999] grid place-items-center bg-black/80 p-3 backdrop-blur-[5px]" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section role="dialog" aria-modal="true" aria-labelledby="dungeon-preview-title" className="game-scrollbar max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[#76569b] bg-[radial-gradient(circle_at_75%_0%,rgba(110,68,154,.23),transparent_38%),linear-gradient(155deg,#1d1822,#0b0d0c_70%)] p-4 shadow-[0_28px_100px_rgba(0,0,0,.85),0_0_38px_rgba(118,86,155,.18)] sm:p-5">
+        <header className="flex items-start gap-3">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[#8965ad] bg-[#281d33] text-[#d8b4fe] shadow-[inset_0_1px_rgba(255,255,255,.08),0_0_18px_rgba(168,85,247,.15)]"><DoorOpen size={23} /></div>
+          <div className="min-w-0 flex-1"><div className="section-kicker">Expedition preview</div><div className="mt-1 flex flex-wrap items-center gap-2"><h2 id="dungeon-preview-title" className="font-vt text-xl font-black text-[#f0e5ce]">Dungeons</h2><span className="rounded-full border border-amber-700/60 bg-amber-950/35 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-300">Coming soon</span></div><p className="mt-1 text-xs leading-5 text-[#aca1b2]">A four-room run with persistent HP, one strategic branch and a final shared Boss.</p></div>
+          <button type="button" autoFocus onClick={onClose} className="game-control grid h-9 w-9 shrink-0 place-items-center" aria-label="Close Dungeons information"><X size={15} /></button>
+        </header>
+
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {rooms.map((room, index) => <div key={room.label} className="relative rounded-xl border border-[#544162] bg-black/25 p-3"><div className="flex items-center justify-between text-[#c4a3df]"><span className="text-[8px] font-black uppercase tracking-[.14em]">{room.label}</span>{room.icon}</div><strong className="mt-2 block text-xs text-[#eee3d2]">{room.title}</strong><span className="mt-1 block text-[9px] leading-4 text-[#9c92a0]">{room.detail}</span>{index < rooms.length - 1 && <span className="absolute -right-2.5 top-1/2 z-10 hidden -translate-y-1/2 text-[#76569b] sm:block">›</span>}</div>)}
+        </div>
+
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          {[['Depth I', 'Developing formation'], ['Depth II', 'Established formation'], ['Depth III', 'Optimized endgame']].map(([depth, label]) => <div key={depth} className="stat-tile px-3 py-2"><strong className="text-xs text-[#e2c3fa]">{depth}</strong><span className="mt-0.5 block text-[9px] text-[#918795]">{label}</span></div>)}
+        </div>
+
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <section className="rounded-xl border border-emerald-800/45 bg-emerald-950/15 p-3"><div className="flex items-center gap-2 text-emerald-300"><HeartPulse size={17} /><strong className="text-xs">Recovery</strong></div><p className="mt-1.5 text-[10px] leading-5 text-[#aeb5ad]">Skip the extra fight and restore 25% max HP to surviving heroes. It never revives.</p></section>
+          <section className="rounded-xl border border-amber-800/50 bg-amber-950/15 p-3"><div className="flex items-center gap-2 text-amber-300"><Gem size={17} /><strong className="text-xs">Treasure</strong></div><p className="mt-1.5 text-[10px] leading-5 text-[#b8afa2]">Fight an extra room for a resource bundle. No healing: improve heroes, gear or formation if the risk is too high.</p></section>
+        </div>
+
+        <div className="mt-3 rounded-xl border border-rose-900/45 bg-rose-950/15 p-3 text-[10px] leading-5 text-[#c3b8b6]"><span className="font-black text-rose-300">Dungeon rules:</span> HP and hero deaths persist between rooms. Potions and Auto-pot are disabled. No offline combat occurs. Reload will resume the server checkpoint after the authoritative encounter system is implemented.</div>
+        <div className="mt-2 rounded-xl border border-[#514126] bg-black/20 p-3 text-[10px] leading-5 text-[#aaa195]"><span className="font-black text-[#e0bd71]">Planned rewards:</span> bounded Gold and XP per cleared combat room, one resource bundle from Treasure and one Dungeon Chest after the final Boss. No direct $HERO. Dungeon Key sources and exact chest odds are not approved yet.</div>
+
+        <footer className="mt-4 grid gap-2 sm:grid-cols-2">
+          <button type="button" onClick={onGuidesClick} className="game-control flex items-center justify-center gap-2 px-4 py-2 text-xs font-black"><BookOpen size={16} /> Read full Dungeon Wiki</button>
+          <button type="button" disabled className="game-control game-primary flex items-center justify-center gap-2 px-4 py-2 text-xs font-black"><KeyRound size={16} /> Enter Dungeon · Coming soon</button>
+        </footer>
+      </section>
     </div>
   );
 }
