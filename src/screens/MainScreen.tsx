@@ -266,17 +266,20 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
       };
     });
     const enemyStates = activeDungeon.room_state?.enemies ?? dungeonPreviewEnemies(activeDungeon, heroStates);
-    const sharedBoss = activeDungeon.room_state?.kind === 'shared_boss';
-    const enemies = enemyStates.map((unit, position): CombatUnit => ({
-      uid: sharedBoss
+    const sharedBossPhase = activeDungeon.room_state?.kind === 'shared_boss';
+    const enemies = enemyStates.map((unit, position): CombatUnit => {
+      const isSharedBoss = sharedBossPhase && String(unit.unit_id ?? '').startsWith('shared-boss-');
+      const isSummon = sharedBossPhase && String(unit.unit_id ?? '').startsWith('necromancer-summon-');
+      return ({
+      uid: isSharedBoss
         ? `${DUNGEON_BOSS_ART[activeDungeon.room_state?.boss?.boss_id ?? ''] ?? 'boss-lich'}-dungeon-shared`
-        : `e${position}-${activeDungeon.room === 2 ? 'boss-ogre' : activeDungeon.room === 3 ? 'skeleton' : activeDungeon.room === 4 ? 'goblin' : 'orc'}`,
-      name: sharedBoss ? (activeDungeon.room_state?.boss?.name ?? 'Dungeon Boss') : activeDungeon.room === 2 ? 'Elite Guard' : activeDungeon.room === 3 ? 'Treasure Guard' : activeDungeon.room === 4 ? 'Retinue Guard' : 'Citadel Guard',
+        : isSummon ? `e${position}-skeleton` : `e${position}-${activeDungeon.room === 2 ? 'boss-ogre' : activeDungeon.room === 3 ? 'skeleton' : activeDungeon.room === 4 ? 'goblin' : 'orc'}`,
+      name: isSharedBoss ? (activeDungeon.room_state?.boss?.name ?? 'Dungeon Boss') : isSummon ? 'Raised Guard' : activeDungeon.room === 2 ? 'Elite Guard' : activeDungeon.room === 3 ? 'Treasure Guard' : activeDungeon.room === 4 ? 'Retinue Guard' : 'Citadel Guard',
       side: 'enemy', hp: Number(unit.current_hp), maxHp: Number(unit.max_hp), atk: Number(unit.atk ?? 0),
       def: Number(unit.def ?? 0), speed: Number(unit.speed ?? 100), combatSpeed: 1, critChance: 0.06,
-      critDamage: 1.5, color: sharedBoss ? '#efb85b' : activeDungeon.room === 2 ? '#c084fc' : activeDungeon.room === 4 ? '#a78bfa' : '#ef7f68', icon: sharedBoss ? '👑' : activeDungeon.room === 2 ? '👹' : '🛡️',
+      critDamage: 1.5, color: isSharedBoss ? '#efb85b' : isSummon ? '#7eb5cf' : activeDungeon.room === 2 ? '#c084fc' : activeDungeon.room === 4 ? '#a78bfa' : '#ef7f68', icon: isSharedBoss ? '👑' : isSummon ? '💀' : activeDungeon.room === 2 ? '👹' : '🛡️',
       attackTimer: attackBeat % 2 === 0 ? 60 : 0, attackInterval: 1, alive: Boolean(unit.alive),
-    }));
+    }); });
     return [...heroes, ...enemies];
   }, [activeDungeon, state.ownedHeroes]);
 
@@ -312,7 +315,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
       elapsedSeconds: tick * 0.52,
       room: 4, depth: activeDungeon.depth, status: room.status,
       mechanic: mechanic.name, mechanicState: mechanic.state, threshold: mechanic.threshold,
-      summons: bossId === 'grave-necromancer' && bossRatio <= .7 ? (bossRatio <= .35 ? 2 : 1) : 0,
+      summons: bossId === 'grave-necromancer' ? (room.enemies ?? []).filter((enemy) => String(enemy.unit_id ?? '').startsWith('necromancer-summon-') && enemy.alive).length : 0,
       enrage: bossId === 'rift-behemoth' && bossRatio <= .35,
       transition: room.kind === 'retinue' && room.status === 'cleared' ? 'RETINUE DEFEATED · BOSS VULNERABLE' : tick === 1 ? `${room.boss.name.toUpperCase()} ADVANCES` : null,
     };
