@@ -188,7 +188,7 @@ export function SummonScreen({ game }: { game: GameApi }) {
             ['Celestial', game.summonPity.celestial, 20000, 'celestial'],
           ] as const).map(([label, current, target, rarity]) => (
             <div key={rarity} className="rounded-md border bg-black/35 px-1.5 py-1 text-left" style={{ borderColor: RARITY_COLORS[rarity] + '55' }}>
-              <div className="flex items-center justify-between gap-1 text-[8px] font-black uppercase" style={{ color: RARITY_COLORS[rarity] }}><span>{label} Pity</span><span>{current}/{target}</span></div>
+              <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 font-black uppercase" style={{ color: RARITY_COLORS[rarity] }}><span className="min-w-0 truncate text-[7px]">{label} Pity</span><span className="shrink-0 whitespace-nowrap text-[7px] tabular-nums tracking-[-.04em]">{current}/{target}</span></div>
               <div className="mt-1 h-1 overflow-hidden rounded-full bg-black/60"><div className="h-full rounded-full transition-[width]" style={{ width: `${Math.min(100, current / target * 100)}%`, backgroundColor: RARITY_COLORS[rarity] }} /></div>
               {rarity === 'mythic' && current >= 250 && <div className="mt-1 text-[7px] font-bold uppercase text-red-300">Soft pity +0.0015 pp / miss</div>}
             </div>
