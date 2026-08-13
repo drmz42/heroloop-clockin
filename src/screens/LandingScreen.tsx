@@ -370,12 +370,12 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
                 {heroCards.map(({ id, role, tagline, stat, hero, svg }) => {
                   const active = starter === id;
                   return (
-                    <button key={id} onClick={() => setStarter(id)} className={`relative grid grid-rows-[auto_auto_auto_1fr] overflow-hidden border p-4 text-left transition ${active ? 'border-amber-300 bg-amber-300/10 shadow-[0_0_30px_rgba(251,191,36,.12)]' : 'border-white/10 bg-white/[.025] hover:border-violet-400/50'}`}>
+                    <button key={id} onClick={() => setStarter(id)} className={`relative grid h-full w-full min-w-0 grid-rows-[auto_28px_auto_1fr] overflow-hidden border p-4 text-left transition ${active ? 'border-amber-300 bg-amber-300/10 shadow-[0_0_30px_rgba(251,191,36,.12)]' : 'border-white/10 bg-white/[.025] hover:border-violet-400/50'}`}>
                       {active && <span className="absolute right-3 top-3 grid h-6 w-6 place-items-center bg-amber-300 text-black"><Check size={14} strokeWidth={3} /></span>}
                       <div className="relative mx-auto aspect-square w-full max-w-36 overflow-hidden bg-black/30">
                         <img src={svg} alt={`${hero.name}, ${role}`} style={heroPortraitStyle(hero.id, hero.heroClass)} />
                       </div>
-                      <div className="mt-3 min-h-6 text-[10px] font-bold uppercase tracking-[.2em] text-violet-300">{role}</div>
+                      <div className="mt-3 flex min-w-0 items-start text-[9px] font-bold uppercase tracking-[.12em] text-violet-300">{role}</div>
                       <div className="mt-3 text-sm text-slate-300">{tagline}</div>
                       <div className="mt-1 text-xs text-slate-500">{stat}</div>
                     </button>
