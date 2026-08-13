@@ -30,6 +30,7 @@ export interface TokenomicsStatus {
     mythic: number;
     cosmic: number;
     divine: number;
+    celestial: number;
   } | null;
   ascension_focus: Partial<Record<Rarity, string>>;
   boss_keys: number;

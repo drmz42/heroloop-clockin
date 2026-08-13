@@ -180,19 +180,20 @@ export function SummonScreen({ game }: { game: GameApi }) {
 
         <div className="mb-4 grid w-full max-w-xl grid-cols-2 gap-1.5 sm:grid-cols-4">
           {([
-            ['Legendary', game.summonPity.legendary, 100, 'legendary'],
+            ['Legendary', game.summonPity.legendary, 150, 'legendary'],
             ['Mythic', game.summonPity.mythic, 500, 'mythic'],
-            ['Cosmic', game.summonPity.cosmic, 2500, 'cosmic'],
-            ['Divine', game.summonPity.divine, 10000, 'divine'],
+            ['Cosmic', game.summonPity.cosmic, 2000, 'cosmic'],
+            ['Divine', game.summonPity.divine, 5000, 'divine'],
+            ['Celestial', game.summonPity.celestial, 20000, 'celestial'],
           ] as const).map(([label, current, target, rarity]) => (
             <div key={rarity} className="rounded-md border bg-black/35 px-2 py-1.5 text-left" style={{ borderColor: RARITY_COLORS[rarity] + '55' }}>
               <div className="flex items-center justify-between gap-1 text-[8px] font-black uppercase" style={{ color: RARITY_COLORS[rarity] }}><span>{label} Pity</span><span>{current}/{target}</span></div>
               <div className="mt-1 h-1 overflow-hidden rounded-full bg-black/60"><div className="h-full rounded-full transition-[width]" style={{ width: `${Math.min(100, current / target * 100)}%`, backgroundColor: RARITY_COLORS[rarity] }} /></div>
-              {rarity === 'mythic' && current >= 200 && <div className="mt-1 text-[7px] font-bold uppercase text-red-300">Soft pity active</div>}
+              {rarity === 'mythic' && current >= 250 && <div className="mt-1 text-[7px] font-bold uppercase text-red-300">Soft pity +0.0015 pp / miss</div>}
             </div>
           ))}
         </div>
-        <p className="mb-4 max-w-xl rounded-md border border-violet-500/20 bg-violet-950/20 px-3 py-2 text-[9px] leading-relaxed text-[#aaa0b4]"><strong className="text-violet-200">How Pity works:</strong> counters track summons without that rarity or higher. A qualifying hero resets its counter and all lower counters, then the guarantee starts again. Mythic chance begins increasing after 200 misses. Celestial remains a pure rare roll.</p>
+        <p className="mb-4 max-w-xl rounded-md border border-violet-500/20 bg-violet-950/20 px-3 py-2 text-[9px] leading-relaxed text-[#aaa0b4]"><strong className="text-violet-200">How Pity works:</strong> counters track misses for that rarity or higher. Guarantees are 150 / 500 / 2,000 / 5,000 / 20,000. Mythic+ gains 0.0015 percentage point per miss on rolls 251–499, taken from Common.</p>
 
         <div className="flex w-full max-w-sm flex-col gap-2.5">
           {summonNotice && <div role="alert" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-red-700/65 bg-[linear-gradient(135deg,rgba(75,16,22,.92),rgba(20,8,12,.96))] px-3 py-2.5 text-left shadow-[inset_0_1px_rgba(255,255,255,.06),0_8px_22px_rgba(0,0,0,.35)]"><AlertTriangle size={17} className="shrink-0 text-red-300" /><span className="flex-1 text-[11px] font-bold text-red-100">{summonNotice}</span><button type="button" onClick={() => setSummonNotice('')} aria-label="Dismiss Summon message" className="rounded p-1 text-red-300 hover:bg-white/10"><X size={14} /></button></div>}

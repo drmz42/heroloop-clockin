@@ -83,7 +83,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
     }
     if (prevTimer.current > unit.attackTimer && unit.attackTimer < 30 && unit.alive && opponentAlive) {
       setAttacking(true);
-      const t = setTimeout(() => setAttacking(false), 360);
+      const t = setTimeout(() => setAttacking(false), 520);
       return () => clearTimeout(t);
     }
     prevTimer.current = unit.attackTimer;

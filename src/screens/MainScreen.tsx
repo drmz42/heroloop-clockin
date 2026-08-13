@@ -252,6 +252,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
       uid: hero.uid, position, current_hp: Number(hero.stats?.hp ?? 1), max_hp: Number(hero.stats?.hp ?? 1), alive: true,
     }));
     const playbackTick = activeDungeon.room_state?.playback_tick ?? 0;
+    const attackBeat = activeDungeon.room_state?.kind === 'shared_boss' ? Math.floor(playbackTick / 3) : Math.floor(playbackTick / 2);
     const heroes = heroStates.map((unit, position): CombatUnit => {
       const owned = state.ownedHeroes.find((hero) => hero.uid === unit.uid);
       const base = owned ? HERO_MAP[owned.heroId] : undefined;
@@ -261,7 +262,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
         hp: Number(unit.current_hp), maxHp: Number(unit.max_hp), atk: Number(snapshot?.stats?.atk ?? unit.atk ?? 0),
         def: Number(snapshot?.stats?.def ?? unit.def ?? 0), speed: Number(snapshot?.stats?.speed ?? unit.speed ?? 100),
         combatSpeed: 1, critChance: 0, critDamage: 1.5, color: base ? RARITY_COLORS[base.rarity] : '#b98ce0',
-        icon: '⚔️', attackTimer: playbackTick % 2 === 0 ? 0 : 60, attackInterval: 1, heroClass: base?.heroClass, alive: Boolean(unit.alive),
+        icon: '⚔️', attackTimer: attackBeat % 2 === 0 ? 0 : 60, attackInterval: 1, heroClass: base?.heroClass, alive: Boolean(unit.alive),
       };
     });
     const enemyStates = activeDungeon.room_state?.enemies ?? dungeonPreviewEnemies(activeDungeon, heroStates);
@@ -274,7 +275,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
       side: 'enemy', hp: Number(unit.current_hp), maxHp: Number(unit.max_hp), atk: Number(unit.atk ?? 0),
       def: Number(unit.def ?? 0), speed: Number(unit.speed ?? 100), combatSpeed: 1, critChance: 0.06,
       critDamage: 1.5, color: sharedBoss ? '#efb85b' : activeDungeon.room === 2 ? '#c084fc' : activeDungeon.room === 4 ? '#a78bfa' : '#ef7f68', icon: sharedBoss ? '👑' : activeDungeon.room === 2 ? '👹' : '🛡️',
-      attackTimer: playbackTick % 2 === 0 ? 60 : 0, attackInterval: 1, alive: Boolean(unit.alive),
+      attackTimer: attackBeat % 2 === 0 ? 60 : 0, attackInterval: 1, alive: Boolean(unit.alive),
     }));
     return [...heroes, ...enemies];
   }, [activeDungeon, state.ownedHeroes]);
@@ -958,12 +959,11 @@ function DungeonPreviewModal({ accountLevel, onStatus, onClose, onGuidesClick }:
         <header className="dungeon-gate-header flex items-start gap-3">
           <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[#8965ad] bg-[#281d33] text-[#d8b4fe] shadow-[inset_0_1px_rgba(255,255,255,.08),0_0_18px_rgba(168,85,247,.15)]"><DoorOpen size={23} /></div>
           <div className="min-w-0 flex-1"><div className="section-kicker">Live testing</div><div className="mt-1 flex flex-wrap items-center gap-2"><h2 id="dungeon-preview-title" className="font-vt text-xl font-black text-[#f0e5ce]">Dungeons</h2><span className="rounded-full border border-emerald-700/60 bg-emerald-950/35 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-300">Server active</span></div><p className="mt-1 text-xs leading-5 text-[#aca1b2]">Level 30+ testing · persistent HP · 100 Attempts each week.</p></div>
-          <figure className="dungeon-gate-art"><img src="/assets/screens/dungeon-throne-abyss-v1.png" alt="The throne hall of the Cursed Citadel" /></figure>
+          <aside className="dungeon-gate-quick"><b>Attempts {status ? `${status.attempts_remaining}/${status.attempts_max}` : '…'}</b>{!active && <div>{[1, 2, 3].map((value) => <button key={value} type="button" disabled={effectiveLevel < 30 || busy} onClick={() => setDepth(value)} className={depth === value ? 'is-selected' : ''}>D{value}</button>)}</div>}{active && <span>D{active.depth} · R{active.room}/4</span>}</aside>
           <button type="button" autoFocus onClick={onClose} className="game-control grid h-9 w-9 shrink-0 place-items-center" aria-label="Close Dungeons information"><X size={15} /></button>
         </header>
 
         <div className="dungeon-depth-selector mt-4 flex flex-wrap items-stretch gap-2 border-y border-[#4d3c57]/70 py-3 text-[9px] text-[#94899a]">
-          <span className="font-black uppercase tracking-widest text-[#c4a3df]">Attempts {status ? `${status.attempts_remaining}/${status.attempts_max}` : '…'}</span>
           {!active && [1, 2, 3].map((value) => <button key={value} type="button" disabled={effectiveLevel < 30 || busy} onClick={() => setDepth(value)} className={`dungeon-depth-seal ${depth === value ? 'is-selected' : ''}`}><i>{value === 1 ? 'Ⅰ' : value === 2 ? 'Ⅱ' : 'Ⅲ'}</i><span>DEPTH {value}</span><small>{value === 1 ? 'RUINED FORTRESS' : value === 2 ? 'INNER KEEP' : 'ABYSS FOUNDATION'}</small></button>)}
           {active && <span className="text-[#eadcf2]">Depth {active.depth} · Room {active.room}/4{active.room_state?.modifier ? ` · ${active.room_state.modifier.split('_').join(' ')}` : ''}</span>}
         </div>

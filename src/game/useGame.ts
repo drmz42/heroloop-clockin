@@ -218,7 +218,7 @@ export function useGame() {
   const [chestOpening, setChestOpening] = useState(false);
   const [enchantResult, setEnchantResult] = useState<{ success: boolean; item?: OwnedItem } | null>(null);
   const [hydrationVersion, setHydrationVersion] = useState(0);
-  const [summonPity, setSummonPity] = useState({ legendary: 0, mythic: 0, cosmic: 0, divine: 0 });
+  const [summonPity, setSummonPity] = useState({ legendary: 0, mythic: 0, cosmic: 0, divine: 0, celestial: 0 });
   const [ascensionFocus, setAscensionFocus] = useState<Partial<Record<Rarity, string>>>({});
   const [summonError, setSummonError] = useState('');
   const [serverRevisionHint, setServerRevisionHint] = useState<number | null>(null);
@@ -925,12 +925,13 @@ export function useGame() {
     });
   }, []);
 
-  const applyServerPityStatus = useCallback((pity: { legendary: number; mythic: number; cosmic: number; divine: number }) => {
+  const applyServerPityStatus = useCallback((pity: { legendary: number; mythic: number; cosmic: number; divine: number; celestial: number }) => {
     setSummonPity({
       legendary: Math.max(0, Math.floor(pity.legendary)),
       mythic: Math.max(0, Math.floor(pity.mythic)),
       cosmic: Math.max(0, Math.floor(pity.cosmic)),
       divine: Math.max(0, Math.floor(pity.divine)),
+      celestial: Math.max(0, Math.floor(pity.celestial)),
     });
   }, []);
 
@@ -968,6 +969,7 @@ export function useGame() {
       pity_mythic: number;
       pity_cosmic: number;
       pity_divine: number;
+      pity_celestial: number;
       ascension_focus: Partial<Record<Rarity, string>>;
     }>('hero_summon', { count, idempotency_key: createIdempotencyKey() }, setSummonError);
     if (!result || !Array.isArray(result.heroes) || result.heroes.length !== count) {
@@ -984,6 +986,7 @@ export function useGame() {
       mythic: Math.max(0, Math.floor(result.pity_mythic)),
       cosmic: Math.max(0, Math.floor(result.pity_cosmic)),
       divine: Math.max(0, Math.floor(result.pity_divine)),
+      celestial: Math.max(0, Math.floor(result.pity_celestial)),
     });
     applyServerAscensionFocus(result.ascension_focus);
     if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
