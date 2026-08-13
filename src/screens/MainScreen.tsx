@@ -26,7 +26,7 @@ const GRID_SIZE = 64;
 
 type DungeonCheckpoint = {
   type: 'dungeon'; encounter_id: string; depth: number; room: number; revision: number;
-  room_state: null | { status: string; modifier?: string; heroes?: Array<{ current_hp: number; max_hp: number; alive: boolean }> };
+  room_state: null | { status: string; kind?: string; choice?: string; modifier?: string; heroes?: Array<{ current_hp: number; max_hp: number; alive: boolean }> };
 };
 type DungeonStatus = {
   attempts_remaining: number; attempts_max: number; next_reset_at: string; account_level: number;
@@ -601,11 +601,13 @@ function DungeonPreviewModal({ accountLevel, onClose, onGuidesClick }: { account
       disabled: effectiveLevel < 30 || status.attempts_remaining < 1,
       action: () => runAction('dungeon_start', { depth }),
     };
+    if (active.room === 3 && !active.room_state) return { label: 'Choose Recovery or Treasure', disabled: true, action: () => undefined };
     if (!active.room_state) return {
       label: `Start Room ${active.room}`,
       disabled: active.room > 2,
       action: () => runAction('dungeon_room_start', { encounter_id: active.encounter_id, expected_revision: active.revision }),
     };
+    if (active.room === 3 && active.room_state.kind === 'treasure_guards') return { label: 'Treasure combat activation in progress', disabled: true, action: () => undefined };
     if (active.room_state.status === 'ready') return {
       label: active.room === 2 ? 'Resolve Elite Room' : 'Resolve Room 1', disabled: false,
       action: () => runAction('dungeon_room_action', { encounter_id: active.encounter_id, expected_revision: active.revision, command: 'resolve' }),
@@ -640,11 +642,12 @@ function DungeonPreviewModal({ accountLevel, onClose, onGuidesClick }: { account
           </ol>
         </div>
 
-        <div className="mt-4 border-t border-[#4d3c57]/70 pt-3 text-[9px] leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Testing rules:</b> Unlocks at Account Level 30. All Depths are selectable. Formation, equipment, HP and deaths persist. Potions and Auto-pot are disabled.</p><p className="mt-1.5"><b className="text-[#e0bd71]">Current build:</b> Room 1 and modifier-aware Room 2 are server-authoritative. Rooms 3–4 and every reward remain disabled until their server settlement is accepted.</p>{error && <p role="alert" className="mt-2 font-bold text-rose-300">{error.split('_').join(' ')}</p>}</div>
+        <div className="mt-4 border-t border-[#4d3c57]/70 pt-3 text-[9px] leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Testing rules:</b> Unlocks at Account Level 30. All Depths are selectable. Formation, equipment, HP and deaths persist. Potions and Auto-pot are disabled.</p><p className="mt-1.5"><b className="text-[#e0bd71]">Current build:</b> Room 1, Room 2 and the Room-3 Recovery/Treasure choice are server-authoritative. Treasure combat, Room 4 and every reward remain disabled.</p>{error && <p role="alert" className="mt-2 font-bold text-rose-300">{error.split('_').join(' ')}</p>}</div>
 
         <footer className="mt-4 grid gap-2 sm:grid-cols-2">
           <button type="button" onClick={onGuidesClick} className="game-control flex items-center justify-center gap-2 px-4 py-2 text-xs font-black"><BookOpen size={16} /> Read full Dungeon Wiki</button>
           <div className="grid gap-2">
+            {active?.room === 3 && !active.room_state && <div className="grid grid-cols-2 gap-2"><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: active.encounter_id, expected_revision: active.revision, choice: 'recovery' })} className="game-control min-h-11 px-2 py-2 text-[10px] font-black text-emerald-300"><HeartPulse size={14} className="mx-auto mb-1" />Recovery · +25% HP</button><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: active.encounter_id, expected_revision: active.revision, choice: 'treasure' })} className="game-control min-h-11 px-2 py-2 text-[10px] font-black text-amber-300"><Gem size={14} className="mx-auto mb-1" />Treasure · no healing</button></div>}
             <button type="button" disabled={primary.disabled || busy} onClick={primary.action} className="game-control game-primary flex min-h-11 items-center justify-center gap-2 px-4 py-2 text-xs font-black"><DoorOpen size={16} /> {busy ? 'Server confirming…' : primary.label}</button>
             {active && <button type="button" disabled={busy} onClick={() => runAction('dungeon_abandon', { encounter_id: active.encounter_id, expected_revision: active.revision })} className="game-control flex min-h-9 items-center justify-center px-3 py-1 text-[10px] font-bold text-rose-300">Abandon run · no Attempt refund</button>}
           </div>
