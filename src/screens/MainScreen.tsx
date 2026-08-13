@@ -288,8 +288,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
     const bossUnit = room.enemies?.[0];
     const bossRatio = bossUnit ? Number(bossUnit.current_hp) / Math.max(1, Number(bossUnit.max_hp)) : 1;
     const identityCasting = room.kind === 'shared_boss' && room.status === 'resolving' && Boolean(room.identity_casts) && tick >= 3 && tick <= 6;
-    const heavyCasting = room.kind === 'shared_boss' && room.status === 'resolving' && tick >= 8 && tick <= 15;
-    const remaining = identityCasting ? Math.max(0, (6 - tick) * (2 / 3)) : Math.max(0, (15 - tick) * (3 / 7));
+    const heavyCasting = room.kind === 'shared_boss' && room.status === 'resolving' && tick >= 9 && tick <= 15;
+    const remaining = identityCasting ? Math.max(0, (6 - tick) * 0.5) : Math.max(0, (15 - tick) * 0.5);
     const bossId = room.boss.boss_id;
     const mechanics: Record<string, { name: string; state: string; threshold?: number }> = {
       'iron-warden': { name: 'BULWARK · 20% SHIELD', state: tick >= 3 && tick <= 6 ? 'BARRIER FORMING' : 'SHIELD COOLDOWN' },
@@ -308,7 +308,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
         ? { name: room.identity_ability ?? 'Boss Ability', remaining, impact: tick === 6 }
         : heavyCasting ? { name: 'Heavy Strike', remaining, impact: tick === 15 } : null,
       momentum: heroRatio > bossRatio + 0.12 ? 'party' as const : bossRatio > heroRatio + 0.12 ? 'boss' as const : 'even' as const,
-      elapsedSeconds: tick * 0.24,
+      elapsedSeconds: tick * 0.52,
       room: 4, depth: activeDungeon.depth, status: room.status,
       mechanic: mechanic.name, mechanicState: mechanic.state, threshold: mechanic.threshold,
       summons: bossId === 'grave-necromancer' && bossRatio <= .7 ? (bossRatio <= .35 ? 2 : 1) : 0,
@@ -794,7 +794,7 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
         },
       });
       previousHeroes = nextHeroes; previousEnemies = nextEnemies;
-      if (frame < totalFrames) await new Promise<void>((resolve) => setTimeout(resolve, bossFight ? 250 : 320));
+      if (frame < totalFrames) await new Promise<void>((resolve) => setTimeout(resolve, bossFight ? 520 : 430));
     }
     onCombatPulse([]);
     if (result.status && result.status !== 'active') {
@@ -954,25 +954,25 @@ function DungeonPreviewModal({ accountLevel, onStatus, onClose, onGuidesClick }:
   })();
   return (
     <div className="fixed inset-0 z-[9999] grid place-items-center bg-black/80 p-3 backdrop-blur-[5px]" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="dungeon-preview-title" className="game-scrollbar max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[#76569b] bg-[radial-gradient(circle_at_75%_0%,rgba(110,68,154,.23),transparent_38%),linear-gradient(155deg,#1d1822,#0b0d0c_70%)] p-4 shadow-[0_28px_100px_rgba(0,0,0,.85),0_0_38px_rgba(118,86,155,.18)] sm:p-5">
-        <header className="flex items-start gap-3">
+      <section role="dialog" aria-modal="true" aria-labelledby="dungeon-preview-title" className="dungeon-gate-modal game-scrollbar max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-[#76569b] p-4 shadow-[0_28px_100px_rgba(0,0,0,.85),0_0_38px_rgba(118,86,155,.18)] sm:p-5">
+        <header className="dungeon-gate-header flex items-start gap-3">
           <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[#8965ad] bg-[#281d33] text-[#d8b4fe] shadow-[inset_0_1px_rgba(255,255,255,.08),0_0_18px_rgba(168,85,247,.15)]"><DoorOpen size={23} /></div>
           <div className="min-w-0 flex-1"><div className="section-kicker">Live testing</div><div className="mt-1 flex flex-wrap items-center gap-2"><h2 id="dungeon-preview-title" className="font-vt text-xl font-black text-[#f0e5ce]">Dungeons</h2><span className="rounded-full border border-emerald-700/60 bg-emerald-950/35 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-300">Server active</span></div><p className="mt-1 text-xs leading-5 text-[#aca1b2]">Level 30+ testing · persistent HP · 100 Attempts each week.</p></div>
           <button type="button" autoFocus onClick={onClose} className="game-control grid h-9 w-9 shrink-0 place-items-center" aria-label="Close Dungeons information"><X size={15} /></button>
         </header>
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-y border-[#4d3c57]/70 py-2 text-[9px] text-[#94899a]">
+        <div className="dungeon-depth-selector mt-4 flex flex-wrap items-stretch gap-2 border-y border-[#4d3c57]/70 py-3 text-[9px] text-[#94899a]">
           <span className="font-black uppercase tracking-widest text-[#c4a3df]">Attempts {status ? `${status.attempts_remaining}/${status.attempts_max}` : '…'}</span>
-          {!active && [1, 2, 3].map((value) => <button key={value} type="button" disabled={effectiveLevel < 30 || busy} onClick={() => setDepth(value)} className={`game-control px-2 py-1 ${depth === value ? 'border-[#b98ce0] text-[#f3e8ff]' : ''}`}>Depth {value}</button>)}
+          {!active && [1, 2, 3].map((value) => <button key={value} type="button" disabled={effectiveLevel < 30 || busy} onClick={() => setDepth(value)} className={`dungeon-depth-seal ${depth === value ? 'is-selected' : ''}`}><i>{value === 1 ? 'Ⅰ' : value === 2 ? 'Ⅱ' : 'Ⅲ'}</i><span>DEPTH {value}</span><small>{value === 1 ? 'RUINED FORTRESS' : value === 2 ? 'INNER KEEP' : 'ABYSS FOUNDATION'}</small></button>)}
           {active && <span className="text-[#eadcf2]">Depth {active.depth} · Room {active.room}/4{active.room_state?.modifier ? ` · ${active.room_state.modifier.split('_').join(' ')}` : ''}</span>}
         </div>
 
-        <div className="relative mx-auto mt-4 max-w-xl pl-1">
+        <div className="dungeon-route-preview relative mx-auto mt-5 max-w-2xl pl-1">
           <div className="absolute bottom-7 left-[17px] top-5 w-px bg-gradient-to-b from-[#9470b3] via-[#76569b] to-[#ad8250]" aria-hidden="true" />
           <ol className="relative space-y-4">
             <li className="flex gap-3"><span className="z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#8965ad] bg-[#241b2c] text-[#d8b4fe]"><DoorOpen size={16} /></span><div><span className="text-[8px] font-black uppercase tracking-widest text-[#8e729f]">Room 1</span><strong className="block text-xs text-[#eee3d2]">Guards</strong><p className="text-[9px] leading-4 text-[#978d9b]">Defeat the three-lane guard formation.</p></div></li>
             <li className="flex gap-3"><span className="z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#8965ad] bg-[#241b2c] text-[#d8b4fe]"><Sparkles size={16} /></span><div><span className="text-[8px] font-black uppercase tracking-widest text-[#8e729f]">Room 2</span><strong className="block text-xs text-[#eee3d2]">Elite</strong><p className="text-[9px] leading-4 text-[#978d9b]">One stronger enemy with one readable modifier.</p></div></li>
-            <li className="flex gap-3"><span className="z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#8965ad] bg-[#241b2c] text-[#d8b4fe]"><Gem size={16} /></span><div className="min-w-0 flex-1"><span className="text-[8px] font-black uppercase tracking-widest text-[#8e729f]">Room 3 · Choose one path</span><div className="mt-1.5 grid grid-cols-2 gap-4"><div><strong className="flex items-center gap-1.5 text-xs text-emerald-300"><HeartPulse size={14} /> Recovery</strong><p className="mt-0.5 text-[9px] leading-4 text-[#9ca69e]">Restore 25% HP to survivors. No revive.</p></div><div><strong className="flex items-center gap-1.5 text-xs text-amber-300"><Gem size={14} /> Treasure</strong><p className="mt-0.5 text-[9px] leading-4 text-[#aaa091]">Extra fight and bundle. No healing.</p></div></div></div></li>
+            <li className="dungeon-fork flex gap-3"><span className="z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#8965ad] bg-[#241b2c] text-[#d8b4fe]"><Gem size={16} /></span><div className="min-w-0 flex-1"><span className="text-[9px] font-black uppercase tracking-[.16em] text-[#d5b8ec]">Room 3 · CHOOSE YOUR PATH</span><div className="mt-2 grid grid-cols-2 gap-3"><div className="dungeon-fork-door is-recovery"><strong className="flex items-center gap-1.5 text-xs text-emerald-300"><HeartPulse size={14} /> RECOVERY SHRINE</strong><p className="mt-1 text-[9px] leading-4 text-[#b9c7ba]">Restore 25% HP to every survivor. Does not revive.</p></div><div className="dungeon-fork-door is-treasure"><strong className="flex items-center gap-1.5 text-xs text-amber-300"><Gem size={14} /> TREASURE VAULT</strong><p className="mt-1 text-[9px] leading-4 text-[#c9b89d]">Extra difficult fight. No healing.</p></div></div></div></li>
             <li className="flex gap-3"><span className="z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#ad8250] bg-[#2b2118] text-[#efbd79]"><Skull size={17} /></span><div><span className="text-[8px] font-black uppercase tracking-widest text-[#9f815d]">Room 4 · Final</span><strong className="block text-xs text-[#f1dfc5]">Retinue → Dungeon Boss</strong><p className="text-[9px] leading-4 text-[#a4998b]">Break the guards, then focus one shared Boss target.</p></div></li>
           </ol>
         </div>
