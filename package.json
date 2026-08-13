@@ -8,6 +8,7 @@
     "build": "vite build",
     "check:ascension-focus": "node scripts/check-ascension-focus-contract.mjs",
     "check:dungeon-server-core": "node scripts/check-dungeon-server-core.mjs",
+    "check:dungeon-staging": "node ops/verify-staging-dungeon-server-core.mjs",
     "check:edge-security": "node scripts/check-edge-security-contract.mjs",
     "check:hero-ascension": "node scripts/check-hero-ascension-pricing.mjs",
     "check:item-level-scaling": "node scripts/check-item-level-scaling.mjs",
