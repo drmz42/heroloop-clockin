@@ -726,18 +726,19 @@ function DungeonPreviewModal({ accountLevel, onStatus, onClose, onGuidesClick }:
     if (busy) return;
     setBusy(true); setError('');
     const result = await playerSync<Record<string, unknown>>(action, { ...payload, idempotency_key: crypto.randomUUID() }, (message) => setError(message === 'rate_limited' ? 'Please wait a few seconds before repeating this Dungeon action.' : message));
-    if (result) setStatus((current) => {
-      if (!current) return current;
-      if (action === 'dungeon_start') {
-        const encounter = result.encounter as Omit<DungeonCheckpoint, 'room_state'> | undefined;
-        const next: DungeonStatus = encounter ? {
-          ...current,
-          attempts_remaining: Number(result.attempts_remaining ?? current.attempts_remaining),
-          active_encounter: { ...encounter, type: 'dungeon' as const, room_state: null },
-        } : current;
+    if (result && action === 'dungeon_start' && status) {
+      const encounter = result.encounter as Omit<DungeonCheckpoint, 'room_state'> | undefined;
+      if (encounter) {
+        const next: DungeonStatus = {
+          ...status,
+          attempts_remaining: Number(result.attempts_remaining ?? status.attempts_remaining),
+          active_encounter: { ...encounter, type: 'dungeon', room_state: null },
+        };
+        setStatus(next);
         onStatusRef.current(next);
-        return next;
       }
+    } else if (result) setStatus((current) => {
+      if (!current) return current;
       if (action === 'dungeon_abandon') return {
         ...current,
         attempts_remaining: Number(result.attempts_remaining ?? current.attempts_remaining),
