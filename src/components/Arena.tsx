@@ -46,6 +46,7 @@ interface ArenaProps {
   dungeonBossScene?: {
     phase: 'retinue' | 'shared'; bossId: string; bossName: string; targetUid?: string;
     cast?: { name: string; remaining: number; impact: boolean } | null;
+    momentum?: 'party' | 'even' | 'boss'; elapsedSeconds?: number;
   } | null;
 }
 
@@ -209,6 +210,10 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
           <Crosshair size={14} /><span>{dungeonBossScene.cast.name}</span><b>{dungeonBossScene.cast.impact ? 'IMPACT' : `${dungeonBossScene.cast.remaining.toFixed(1)}s`}</b>
           <i style={{ width: `${Math.max(0, Math.min(100, dungeonBossScene.cast.remaining / 3 * 100))}%` }} />
         </div>}
+        <div className={`dungeon-momentum dungeon-momentum-${dungeonBossScene.momentum ?? 'even'}`} role="status">
+          <span>{dungeonBossScene.momentum === 'party' ? 'PARTY ADVANTAGE' : dungeonBossScene.momentum === 'boss' ? 'BOSS ADVANTAGE' : 'BATTLE CONTESTED'}</span>
+          <b>{Math.max(0, Math.round(dungeonBossScene.elapsedSeconds ?? 0))}s</b>
+        </div>
         <div className="dungeon-boss-floor-sigil" />
         <UnitView unit={sharedBoss} floaters={floaters} side="enemy" opponentAlive={heroes.some((hero) => hero.alive)} animationMode={animationMode} />
       </div>}

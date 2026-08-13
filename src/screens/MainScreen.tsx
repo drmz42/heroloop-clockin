@@ -281,6 +281,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
     const room = activeDungeon?.room_state;
     if (!room?.boss || activeDungeon?.room !== 4 || !['retinue', 'shared_boss'].includes(room.kind ?? '')) return null;
     const tick = room.playback_tick ?? 0;
+    const heroRatio = (room.heroes ?? []).reduce((sum, hero) => sum + Number(hero.current_hp), 0)
+      / Math.max(1, (room.heroes ?? []).reduce((sum, hero) => sum + Number(hero.max_hp), 0));
+    const bossUnit = room.enemies?.[0];
+    const bossRatio = bossUnit ? Number(bossUnit.current_hp) / Math.max(1, Number(bossUnit.max_hp)) : 1;
     const identityCasting = room.kind === 'shared_boss' && room.status === 'resolving' && Boolean(room.identity_casts) && tick >= 3 && tick <= 6;
     const heavyCasting = room.kind === 'shared_boss' && room.status === 'resolving' && tick >= 8 && tick <= 15;
     const remaining = identityCasting ? Math.max(0, (6 - tick) * (2 / 3)) : Math.max(0, (15 - tick) * (3 / 7));
@@ -292,6 +296,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
       cast: identityCasting
         ? { name: room.identity_ability ?? 'Boss Ability', remaining, impact: tick === 6 }
         : heavyCasting ? { name: 'Heavy Strike', remaining, impact: tick === 15 } : null,
+      momentum: heroRatio > bossRatio + 0.12 ? 'party' as const : bossRatio > heroRatio + 0.12 ? 'boss' as const : 'even' as const,
+      elapsedSeconds: tick * 0.24,
     };
   }, [activeDungeon]);
 
@@ -729,7 +735,8 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts }: {
       const hp = Math.round(Number(start.current_hp) + (Number(unit.current_hp) - Number(start.current_hp)) * progress);
       return { ...unit, current_hp: hp, alive: progress >= 1 ? unit.alive : hp > 0 };
     });
-    const frames = 18;
+    const bossFight = startState.kind === 'shared_boss';
+    const frames = bossFight ? 36 : 24;
     for (let frame = 1; frame <= frames; frame += 1) {
       const progress = frame / frames;
       onChange({
@@ -742,7 +749,7 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts }: {
           playback_tick: frame,
         },
       });
-      if (frame < frames) await new Promise<void>((resolve) => setTimeout(resolve, 160));
+      if (frame < frames) await new Promise<void>((resolve) => setTimeout(resolve, bossFight ? 240 : 190));
     }
     if (startState.kind === 'retinue' && finalState.status === 'cleared') {
       await new Promise<void>((resolve) => setTimeout(resolve, 900));
