@@ -13,6 +13,7 @@
     "check:dungeon-room-two-start": "node scripts/check-dungeon-room-two-start.mjs",
     "check:dungeon-room-two-combat": "node scripts/check-dungeon-room-two-combat.mjs",
     "check:dungeon-room-three-choice": "node scripts/check-dungeon-room-three-choice.mjs",
+    "check:dungeon-room-three-combat": "node scripts/check-dungeon-room-three-combat.mjs",
     "check:dungeon-staging": "node ops/verify-staging-dungeon-server-core.mjs",
     "check:dungeon-testing-ui": "node scripts/check-dungeon-testing-ui.mjs",
     "check:edge-security": "node scripts/check-edge-security-contract.mjs",

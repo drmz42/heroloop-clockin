@@ -607,9 +607,8 @@ function DungeonPreviewModal({ accountLevel, onClose, onGuidesClick }: { account
       disabled: active.room > 2,
       action: () => runAction('dungeon_room_start', { encounter_id: active.encounter_id, expected_revision: active.revision }),
     };
-    if (active.room === 3 && active.room_state.kind === 'treasure_guards') return { label: 'Treasure combat activation in progress', disabled: true, action: () => undefined };
     if (active.room_state.status === 'ready') return {
-      label: active.room === 2 ? 'Resolve Elite Room' : 'Resolve Room 1', disabled: false,
+      label: active.room === 3 ? 'Resolve Treasure Guards' : active.room === 2 ? 'Resolve Elite Room' : 'Resolve Room 1', disabled: false,
       action: () => runAction('dungeon_room_action', { encounter_id: active.encounter_id, expected_revision: active.revision, command: 'resolve' }),
     };
     return {
@@ -642,7 +641,7 @@ function DungeonPreviewModal({ accountLevel, onClose, onGuidesClick }: { account
           </ol>
         </div>
 
-        <div className="mt-4 border-t border-[#4d3c57]/70 pt-3 text-[9px] leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Testing rules:</b> Unlocks at Account Level 30. All Depths are selectable. Formation, equipment, HP and deaths persist. Potions and Auto-pot are disabled.</p><p className="mt-1.5"><b className="text-[#e0bd71]">Current build:</b> Room 1, Room 2 and the Room-3 Recovery/Treasure choice are server-authoritative. Treasure combat, Room 4 and every reward remain disabled.</p>{error && <p role="alert" className="mt-2 font-bold text-rose-300">{error.split('_').join(' ')}</p>}</div>
+        <div className="mt-4 border-t border-[#4d3c57]/70 pt-3 text-[9px] leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Testing rules:</b> Unlocks at Account Level 30. All Depths are selectable. Formation, equipment, HP and deaths persist. Potions and Auto-pot are disabled.</p><p className="mt-1.5"><b className="text-[#e0bd71]">Current build:</b> Rooms 1–3, including Recovery and Treasure combat, are server-authoritative. Room 4 and every reward remain disabled.</p>{error && <p role="alert" className="mt-2 font-bold text-rose-300">{error.split('_').join(' ')}</p>}</div>
 
         <footer className="mt-4 grid gap-2 sm:grid-cols-2">
           <button type="button" onClick={onGuidesClick} className="game-control flex items-center justify-center gap-2 px-4 py-2 text-xs font-black"><BookOpen size={16} /> Read full Dungeon Wiki</button>
