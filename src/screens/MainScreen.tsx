@@ -744,6 +744,14 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts }: {
       });
       if (frame < frames) await new Promise<void>((resolve) => setTimeout(resolve, 160));
     }
+    if (startState.kind === 'retinue' && finalState.status === 'cleared') {
+      await new Promise<void>((resolve) => setTimeout(resolve, 900));
+      const revealed = await requestAction('dungeon_room_complete', {
+        encounter_id: resolved.encounter_id,
+        expected_revision: resolved.revision,
+      });
+      if (revealed) onChange(checkpointFromResult(resolved, revealed));
+    }
   };
 
   const startBattle = async () => {
