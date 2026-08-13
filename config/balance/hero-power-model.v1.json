@@ -131,11 +131,11 @@
     "retinue": { "hpMultiplier": 0.6, "attackMultiplier": 0.25, "defenseMultiplier": 0.75 },
     "sharedBoss": { "hpMultiplier": 2.3, "partyHpExponent": 1.2, "attackMultiplier": 0.35, "defenseMultiplier": 1.25, "speedBonus": 10, "partyCadencePerExtraHero": 1 },
     "identities": {
-      "iron-warden": { "name": "Iron Warden", "hpMultiplier": 1.1, "attackMultiplier": 1, "defenseMultiplier": 1.15, "cooldownSeconds": 14, "retinueShield": 0.12, "bossShield": 0.1 },
+      "iron-warden": { "name": "Iron Warden", "hpMultiplier": 1.1, "attackMultiplier": 1, "defenseMultiplier": 1.15, "cooldownSeconds": 14, "retinueShield": 0.2, "bossShield": 0.2 },
       "ash-warlock": { "name": "Ash Warlock", "hpMultiplier": 0.92, "attackMultiplier": 1.08, "defenseMultiplier": 0.95, "cooldownSeconds": 12, "retinueBlastMultiplier": 0.75, "areaDamageMultiplier": 0.55 },
-      "thorn-shaman": { "name": "Thorn Shaman", "hpMultiplier": 1, "attackMultiplier": 0.96, "defenseMultiplier": 1, "cooldownSeconds": 16, "retinueHeal": 0.08, "bossHeal": 0.06, "encounterHealCap": 0.3 },
+      "thorn-shaman": { "name": "Thorn Shaman", "hpMultiplier": 1, "attackMultiplier": 0.96, "defenseMultiplier": 1, "cooldownSeconds": 16, "retinueHeal": 0.3, "bossHeal": 0.2, "encounterHealCap": 0.8 },
       "rift-behemoth": { "name": "Rift Behemoth", "hpMultiplier": 1.05, "attackMultiplier": 0.75, "defenseMultiplier": 1.08, "cooldownSeconds": 0, "guardDefenseMultiplier": 1.15, "enrageHpThreshold": 0.35, "enrageAttackMultiplier": 1.2, "enrageAttackSpeedMultiplier": 1.15 },
-      "grave-necromancer": { "name": "Grave Necromancer", "hpMultiplier": 0.65, "attackMultiplier": 0.85, "defenseMultiplier": 0.95, "cooldownSeconds": 0, "retinueReviveHp": 0.25, "summonThresholds": [0.7, 0.35], "summonsPerWave": 2, "summonHpMultiplier": 0.3, "summonAttackMultiplier": 0.3, "bossDamageReductionWhileSummonsLive": 0.25 }
+      "grave-necromancer": { "name": "Grave Necromancer", "hpMultiplier": 0.65, "attackMultiplier": 0.85, "defenseMultiplier": 0.95, "cooldownSeconds": 0, "retinueReviveHp": 0.35, "summonThresholds": [0.7, 0.35], "summonsPerWave": 2, "summonHpMultiplier": 0.3, "summonAttackMultiplier": 0.3, "bossDamageReductionWhileSummonsLive": 0.25 }
     }
   },
   "endgameCalibration": {
