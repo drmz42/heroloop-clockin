@@ -429,17 +429,17 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
         {/* Arena */}
         <div className="battle-stage relative min-h-[320px] flex-1 overflow-hidden bg-arena">
           {!activeDungeon && showZoomTip && <div className="absolute left-1/2 top-12 z-40 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-lg border border-[#80683f] bg-[#11130f]/95 px-3 py-1.5 font-vt text-[10px] font-bold text-[#d8c9ad] shadow-xl backdrop-blur-sm"><span>Adjust browser zoom with <kbd className="text-[#ffd36e]">Ctrl +</kbd> / <kbd className="text-[#ffd36e]">Ctrl -</kbd> to fit all interface elements.</span><button type="button" onClick={() => setShowZoomTip(false)} className="text-[#8f887b] hover:text-white" aria-label="Dismiss browser zoom tip"><X size={12} /></button></div>}
-          <div className="absolute left-3 top-3 z-30 flex items-start gap-1.5">
+          <div className={`absolute left-3 top-3 flex items-start gap-1.5 ${showPotSettings || showBattleSettings ? 'z-[110]' : 'z-30'}`}>
             {!activeDungeon ? <div className="relative">
-              <button onClick={() => setShowPotSettings(s => !s)} className={`game-control relative flex items-center gap-2 px-3 py-2 font-bold ${state.autoPot.enabled ? 'border-emerald-500/60 bg-emerald-950/30 text-emerald-300' : ''} ${showAutoPotGuide ? 'auto-pot-guide' : ''}`}>
-                <FlaskConical size={16} /> Pot-auto {state.autoPot.enabled ? 'ON' : 'OFF'}
+              <button onClick={() => setShowPotSettings(s => !s)} className={`game-control relative flex h-7 items-center gap-1.5 px-2 py-0.5 text-[9px] font-bold ${state.autoPot.enabled ? 'border-emerald-500/60 bg-emerald-950/30 text-emerald-300' : ''} ${showAutoPotGuide ? 'auto-pot-guide' : ''}`}>
+                <FlaskConical size={14} /> Pot-auto {state.autoPot.enabled ? 'ON' : 'OFF'}
               </button>
               {showAutoPotGuide && !showPotSettings && <div className="auto-pot-guide-tip">Potions empty · open Auto-pot</div>}
               {showPotSettings && <PotionSettings game={game} guideAutoBuy={showAutoPotGuide} onClose={() => setShowPotSettings(false)} />}
             </div> : <div className="game-control flex h-9 items-center gap-2 border-violet-500/60 bg-violet-950/40 px-3 text-[9px] font-black uppercase text-violet-200"><DoorOpen size={15} /> Depth {activeDungeon.depth} · Room {activeDungeon.room}/4</div>}
             <div className="relative">
-              <button type="button" onClick={() => setShowBattleSettings((value) => !value)} className="game-control flex h-9 items-center gap-1.5 px-2 text-[9px] font-black uppercase" aria-label="Battle animation settings" aria-expanded={showBattleSettings}><Settings2 size={15} /><span className="hidden sm:inline">{state.battleAnimationMode}</span></button>
-              {showBattleSettings && <div className="absolute left-0 top-full mt-1 w-56 rounded-lg border border-[#80683f] bg-[#11130f]/97 p-2 shadow-2xl backdrop-blur-sm">
+              <button type="button" onClick={() => setShowBattleSettings((value) => !value)} className="game-control flex h-7 items-center gap-1.5 px-2 text-[9px] font-black uppercase" aria-label="Battle animation settings" aria-expanded={showBattleSettings}><Settings2 size={14} /><span className="hidden sm:inline">{state.battleAnimationMode}</span></button>
+              {showBattleSettings && <div className="absolute left-0 top-full z-[111] mt-1 w-56 rounded-lg border border-[#80683f] bg-[#11130f]/97 p-2 shadow-2xl backdrop-blur-sm">
                 <div className="mb-1.5 text-[9px] font-black uppercase tracking-[.14em] text-[#efd18a]">Battle animation</div>
                 {([
                   ['light', 'Light', 'Current restrained movement'],
