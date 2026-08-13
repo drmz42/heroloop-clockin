@@ -574,23 +574,48 @@ function DungeonPreviewModal({ accountLevel, onClose, onGuidesClick }: { account
   const [depth, setDepth] = useState(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const onCloseRef = useRef(onClose);
   const active = status?.active_encounter?.type === 'dungeon' ? status.active_encounter : null;
   const effectiveLevel = status?.account_level ?? accountLevel;
-  const loadStatus = async () => {
-    const result = await playerSync<DungeonStatus>('dungeon_status', {}, setError);
-    if (result) { setStatus(result); setError(''); }
-  };
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
   useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') onCloseRef.current(); };
     window.addEventListener('keydown', closeOnEscape);
-    void loadStatus();
+    void playerSync<DungeonStatus>('dungeon_status', {}, (message) => setError(message === 'rate_limited' ? 'Dungeon status is cooling down. Reopen in a few seconds.' : message))
+      .then((result) => { if (result) { setStatus(result); setError(''); } });
     return () => window.removeEventListener('keydown', closeOnEscape);
-  }, [onClose]);
+  }, []);
   const runAction = async (action: string, payload: Record<string, unknown>) => {
     if (busy) return;
     setBusy(true); setError('');
-    const result = await playerSync<Record<string, unknown>>(action, { ...payload, idempotency_key: crypto.randomUUID() }, setError);
-    if (result) await loadStatus();
+    const result = await playerSync<Record<string, unknown>>(action, { ...payload, idempotency_key: crypto.randomUUID() }, (message) => setError(message === 'rate_limited' ? 'Please wait a few seconds before repeating this Dungeon action.' : message));
+    if (result) setStatus((current) => {
+      if (!current) return current;
+      if (action === 'dungeon_start') {
+        const encounter = result.encounter as Omit<DungeonCheckpoint, 'room_state'> | undefined;
+        return encounter ? {
+          ...current,
+          attempts_remaining: Number(result.attempts_remaining ?? current.attempts_remaining),
+          active_encounter: { ...encounter, type: 'dungeon', room_state: null },
+        } : current;
+      }
+      if (action === 'dungeon_abandon') return {
+        ...current,
+        attempts_remaining: Number(result.attempts_remaining ?? current.attempts_remaining),
+        active_encounter: null,
+      };
+      if (current.active_encounter?.type !== 'dungeon' || result.encounter_id !== current.active_encounter.encounter_id) return current;
+      if (result.status && result.status !== 'active') return { ...current, active_encounter: null };
+      return {
+        ...current,
+        active_encounter: {
+          ...current.active_encounter,
+          room: Number(result.room ?? current.active_encounter.room),
+          revision: Number(result.revision ?? current.active_encounter.revision),
+          room_state: (result.room_state ?? null) as DungeonCheckpoint['room_state'],
+        },
+      };
+    });
     setBusy(false);
   };
   const primary = (() => {
