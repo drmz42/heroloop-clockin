@@ -614,6 +614,42 @@ html { scroll-behavior: smooth; }
   border-width:3px;border-radius:20px;
   box-shadow:inset 0 0 0 4px rgba(0,0,0,.35),0 22px 60px rgba(0,0,0,.7),0 0 34px rgba(239,184,91,.28)!important;
 }
+.dungeon-boss-phase-retinue .arena-lanes { z-index:20; }
+.dungeon-throne-boss {
+  position:absolute;z-index:4;left:50%;top:8px;display:grid;width:min(190px,31%);justify-items:center;
+  transform:translateX(-18%);color:#e7d4aa;text-align:center;pointer-events:none;
+}
+.dungeon-throne-boss img,.dungeon-throne-boss>svg {
+  position:relative;z-index:2;width:clamp(92px,13vw,154px);height:clamp(92px,13vw,154px);object-fit:cover;object-position:center 22%;
+  border:2px solid rgba(135,102,61,.65);border-radius:18px 18px 8px 8px;filter:saturate(.58) brightness(.67);
+  box-shadow:0 18px 45px rgba(0,0,0,.72),0 0 30px rgba(110,72,150,.16);
+}
+.dungeon-throne-haze { position:absolute;z-index:1;inset:15% -25% -8%;background:radial-gradient(ellipse,rgba(92,54,128,.3),transparent 68%);filter:blur(8px); }
+.dungeon-throne-state { position:relative;z-index:3;display:flex;align-items:center;gap:5px;margin-top:-10px;padding:4px 8px;border:1px solid #876f45;border-radius:5px;background:#100d0de8;font-size:8px;font-weight:900;letter-spacing:.08em; }
+.dungeon-throne-boss strong { position:relative;z-index:3;margin-top:3px;font-family:var(--font-vt);font-size:11px;text-shadow:0 2px 4px #000; }
+.dungeon-boss-phase-shared { justify-content:flex-end; }
+.dungeon-boss-phase-shared .arena-lanes { grid-template-columns:1fr;z-index:30;padding-right:min(43%,260px); }
+.dungeon-boss-phase-shared .arena-lanes>.arena-roster:first-child { flex-direction:row;align-items:flex-end;gap:8px; }
+.dungeon-boss-phase-shared .arena-lanes>.arena-roster:last-child { display:none; }
+.dungeon-boss-phase-shared .arena-unit { flex-direction:column-reverse;gap:3px; }
+.dungeon-boss-phase-shared .arena-unit-info { width:88px; }
+.dungeon-shared-stage {
+  position:absolute;z-index:22;right:230px;top:8px;bottom:8px;display:flex;width:min(34%,250px);flex-direction:column;align-items:center;justify-content:flex-end;
+}
+.dungeon-shared-stage .dungeon-shared-boss { flex-direction:column-reverse;gap:4px; }
+.dungeon-shared-stage .dungeon-shared-boss .arena-unit-info { display:none; }
+.dungeon-boss-hud { position:absolute;z-index:6;top:0;left:50%;display:grid;width:min(260px,95%);transform:translateX(-50%);grid-template-columns:auto 1fr;gap:3px 8px;padding:7px 9px;border:1px solid rgba(172,103,66,.65);border-radius:8px;background:linear-gradient(180deg,rgba(28,14,15,.97),rgba(10,8,10,.95));box-shadow:0 8px 22px #0009; }
+.dungeon-boss-hud>span { display:flex;align-items:center;gap:4px;color:#ef9b86;font-size:8px;font-weight:900;letter-spacing:.08em; }
+.dungeon-boss-hud>strong { overflow:hidden;color:#ffe2b1;font-size:11px;text-align:right;text-overflow:ellipsis;white-space:nowrap; }
+.dungeon-boss-hud>.health-track { grid-column:1/-1;height:10px; }
+.dungeon-boss-hud>small { grid-column:1/-1;color:#cbbeb0;font-size:9px;font-weight:800;text-align:center; }
+.dungeon-cast-bar { position:absolute;z-index:8;top:62px;left:50%;display:grid;width:min(245px,92%);height:34px;transform:translateX(-50%);grid-template-columns:auto 1fr auto;align-items:center;gap:6px;overflow:hidden;padding:4px 8px;border:1px solid #b23b42;border-radius:6px;background:#1b090bea;color:#ffd9d5;font-size:10px;font-weight:900;box-shadow:0 0 18px rgba(180,35,42,.3); }
+.dungeon-cast-bar>i { position:absolute;z-index:-1;right:0;bottom:0;height:3px;background:#e25157;transition:width .15s linear; }
+.dungeon-cast-bar.is-impact { border-color:#ff8a74;background:#4b1014; }
+.dungeon-boss-floor-sigil { position:absolute;z-index:-1;right:3%;bottom:2%;width:94%;height:34%;border:2px solid rgba(177,43,50,.45);border-radius:50%;background:radial-gradient(ellipse,rgba(150,27,35,.2),transparent 67%);box-shadow:inset 0 0 24px rgba(204,45,53,.22),0 0 18px rgba(146,34,44,.16); }
+.dungeon-heavy-target { z-index:8; }
+.dungeon-target-sigil { position:absolute;z-index:-1;left:50%;bottom:-9px;width:112%;height:35%;transform:translateX(-50%);border:2px solid #d33e45;border-radius:50%;background:radial-gradient(ellipse,rgba(191,35,43,.32),transparent 65%);box-shadow:0 0 16px rgba(222,49,57,.65),inset 0 0 12px rgba(204,37,45,.4); }
+.dungeon-target-label { position:absolute;z-index:8;left:50%;top:-17px;display:flex;transform:translateX(-50%);align-items:center;gap:3px;padding:2px 5px;border:1px solid #d85359;border-radius:4px;background:#2b090be8;color:#ffd5d2;font-size:7px;font-weight:900;white-space:nowrap; }
 .dungeon-shared-boss .arena-unit-info { width:clamp(118px,14vw,190px)!important;height:78px;grid-template-rows:28px 12px 16px; }
 .dungeon-shared-boss .arena-unit-name { font-size:clamp(11px,1.2vw,17px);color:#ffe0a1; }
 .dungeon-protected-boss { margin-bottom:6px;opacity:.72!important;filter:saturate(.55); }
@@ -625,6 +661,17 @@ html { scroll-behavior: smooth; }
   .dungeon-shared-boss .arena-portrait { width:112px!important;height:112px!important; }
   .dungeon-shared-boss .arena-unit-info { width:92px!important; }
   .dungeon-protected-boss .arena-portrait { width:72px!important;height:72px!important; }
+  .dungeon-throne-boss { left:54%;top:48px;width:120px;transform:none; }
+  .dungeon-throne-boss img { width:86px;height:86px; }
+  .dungeon-shared-stage { right:8px;top:54px;width:42%; }
+  .dungeon-boss-phase-shared .arena-lanes { padding-right:43%; }
+  .dungeon-boss-phase-shared .arena-lanes>.arena-roster:first-child { flex-direction:column;align-items:flex-end;gap:3px; }
+  .dungeon-boss-phase-shared .arena-unit { flex-direction:row; }
+  .dungeon-boss-phase-shared .arena-portrait { width:58px!important;height:58px!important; }
+  .dungeon-boss-phase-shared .arena-unit-info { width:76px!important;height:54px;grid-template-rows:18px 8px 12px; }
+  .dungeon-boss-hud { top:0;width:100%;padding:5px 6px; }
+  .dungeon-boss-hud>span { font-size:7px; }.dungeon-boss-hud>strong { font-size:9px; }
+  .dungeon-cast-bar { top:58px;width:100%;font-size:8px; }
 }
 
 /* Beta test-controls cluster — under the Boss button */

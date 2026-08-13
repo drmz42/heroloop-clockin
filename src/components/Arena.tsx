@@ -3,11 +3,15 @@ import type { CombatUnit, FloatingNumber, GameState, OwnedHero, OwnedItem } from
 import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { enemyArtSrc } from '@/game/art';
-import { Skull, Star } from 'lucide-react';
+import { Crosshair, Shield, Skull, Star, Swords } from 'lucide-react';
 import { MAX_HERO_STARS } from '@/game/state';
 
 const STAR_COLORS = ['#fbbf24', '#a855f7', '#ef4444', '#ec4899'];
 const HEALTH_NUMBER_FORMAT = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+const DUNGEON_BOSS_ART: Record<string, string> = {
+  'iron-warden': 'boss-titan', 'ash-warlock': 'boss-lich', 'thorn-shaman': 'boss-ogre',
+  'rift-behemoth': 'boss-dragon', 'grave-necromancer': 'boss-lich',
+};
 
 function formatHealth(value: number) {
   const rounded = Math.max(0, Math.ceil(value));
@@ -39,6 +43,10 @@ interface ArenaProps {
   respawnCountdowns?: Record<string, number>;
   animationMode: GameState['battleAnimationMode'];
   dungeonPanelOpen?: boolean;
+  dungeonBossScene?: {
+    phase: 'retinue' | 'shared'; bossId: string; bossName: string; targetUid?: string;
+    cast?: { name: string; remaining: number; impact: boolean } | null;
+  } | null;
 }
 
 function HealthBar({ hp, maxHp, color }: { hp: number; maxHp: number; color: string }) {
@@ -51,7 +59,7 @@ function HealthBar({ hp, maxHp, color }: { hp: number; maxHp: number; color: str
   );
 }
 
-function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAlive, animationMode }: { unit: CombatUnit; floaters: FloatingNumber[]; side: 'hero' | 'enemy'; heroData?: OwnedHero; respawnSeconds?: number; opponentAlive: boolean; animationMode: GameState['battleAnimationMode'] }) {
+function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAlive, animationMode, targeted = false }: { unit: CombatUnit; floaters: FloatingNumber[]; side: 'hero' | 'enemy'; heroData?: OwnedHero; respawnSeconds?: number; opponentAlive: boolean; animationMode: GameState['battleAnimationMode']; targeted?: boolean }) {
   const prevHp = useRef(unit.hp);
   const prevTimer = useRef(unit.attackTimer);
   const [attacking, setAttacking] = useState(false);
@@ -115,7 +123,9 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   const protectedBoss = unit.uid.endsWith('-dungeon-protected');
 
   return (
-    <div className={`arena-unit relative flex items-center gap-2 transition-opacity duration-300 ${side === 'enemy' ? 'flex-row-reverse' : ''} ${dungeonBoss ? 'dungeon-shared-boss' : ''} ${protectedBoss ? 'dungeon-protected-boss' : ''} ${unit.alive ? 'opacity-100' : 'opacity-40 grayscale'}`}>
+    <div className={`arena-unit relative flex items-center gap-2 transition-opacity duration-300 ${side === 'enemy' ? 'flex-row-reverse' : ''} ${dungeonBoss ? 'dungeon-shared-boss' : ''} ${protectedBoss ? 'dungeon-protected-boss' : ''} ${targeted ? 'dungeon-heavy-target' : ''} ${unit.alive ? 'opacity-100' : 'opacity-40 grayscale'}`}>
+      {targeted && <div className="dungeon-target-sigil" aria-hidden="true" />}
+      {targeted && <div className="dungeon-target-label"><Crosshair size={11} /> HEAVY TARGET</div>}
       {/* Floating damage numbers */}
       <div className="absolute -top-4 left-1/2 -translate-x-1/2 pointer-events-none z-20 w-24 h-16">
         {myFloaters.map((f) => (
@@ -156,10 +166,13 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   );
 }
 
-function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode, dungeonPanelOpen }: ArenaProps) {
+function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode, dungeonPanelOpen, dungeonBossScene }: ArenaProps) {
   const heroes = units.filter((u) => u.side === 'hero');
   const enemies = units.filter((u) => u.side === 'enemy');
   const sharedBossActive = enemies.some((unit) => unit.uid.endsWith('-dungeon-shared') && unit.alive);
+  const sharedBoss = dungeonBossScene?.phase === 'shared' ? enemies.find((unit) => unit.uid.endsWith('-dungeon-shared')) : undefined;
+  const laneEnemies = sharedBoss ? enemies.filter((unit) => unit.uid !== sharedBoss.uid) : enemies.filter((unit) => !unit.uid.endsWith('-dungeon-protected'));
+  const bossArt = dungeonBossScene ? enemyArtSrc(`e0-${DUNGEON_BOSS_ART[dungeonBossScene.bossId] ?? 'boss-lich'}`) : null;
   const [shake, setShake] = useState(false);
   const lastShake = useRef(0);
 
@@ -178,20 +191,39 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
   void inventory; void potionFx;
 
   return (
-    <div className={`arena-stage-inner arena-mode-${animationMode} ${dungeonPanelOpen ? 'dungeon-panel-open' : ''} relative flex h-full w-full flex-col justify-end px-3 pb-4 pt-16 sm:px-6 ${shake ? 'anim-shake' : ''}`}>
+    <div className={`arena-stage-inner arena-mode-${animationMode} ${dungeonPanelOpen ? 'dungeon-panel-open' : ''} ${dungeonBossScene ? `dungeon-boss-phase-${dungeonBossScene.phase}` : ''} relative flex h-full w-full flex-col justify-end px-3 pb-4 pt-16 sm:px-6 ${shake ? 'anim-shake' : ''}`}>
       {animationMode === 'spectacular' && <div className="arena-spectacular-atmosphere pointer-events-none absolute inset-0" aria-hidden="true" />}
+      {dungeonBossScene?.phase === 'retinue' && <div className="dungeon-throne-boss" aria-label={`${dungeonBossScene.bossName}, protected behind the Retinue`}>
+        <div className="dungeon-throne-haze" />
+        {bossArt ? <img src={bossArt} alt="" /> : <Skull aria-hidden="true" />}
+        <div className="dungeon-throne-state"><Shield size={12} /> PROTECTED BY RETINUE</div>
+        <strong>{dungeonBossScene.bossName}</strong>
+      </div>}
+      {sharedBoss && dungeonBossScene && <div className="dungeon-shared-stage" aria-label={`${dungeonBossScene.bossName}, shared Boss target`}>
+        <div className="dungeon-boss-hud">
+          <span><Swords size={13} /> SHARED TARGET</span><strong>{dungeonBossScene.bossName}</strong>
+          <HealthBar hp={sharedBoss.hp} maxHp={sharedBoss.maxHp} color="#b9373e" />
+          <small>{formatHealth(sharedBoss.hp)} / {formatHealth(sharedBoss.maxHp)} HP</small>
+        </div>
+        {dungeonBossScene.cast && <div className={`dungeon-cast-bar ${dungeonBossScene.cast.impact ? 'is-impact' : ''}`} role="status">
+          <Crosshair size={14} /><span>{dungeonBossScene.cast.name}</span><b>{dungeonBossScene.cast.impact ? 'IMPACT' : `${dungeonBossScene.cast.remaining.toFixed(1)}s`}</b>
+          <i style={{ width: `${Math.max(0, Math.min(100, dungeonBossScene.cast.remaining / 3 * 100))}%` }} />
+        </div>}
+        <div className="dungeon-boss-floor-sigil" />
+        <UnitView unit={sharedBoss} floaters={floaters} side="enemy" opponentAlive={heroes.some((hero) => hero.alive)} animationMode={animationMode} />
+      </div>}
       <div className="pointer-events-none absolute inset-x-[8%] bottom-[18%] h-16 rounded-[50%] border-b border-[#9b7540]/25 bg-[radial-gradient(ellipse,rgba(168,122,58,.13),transparent_68%)]" />
       <div className="arena-lanes relative z-10 grid grid-cols-2 items-center gap-4 sm:gap-10">
         <div className="arena-roster flex min-w-0 flex-col items-end justify-center gap-2">
           {heroes.map((u, lane) => {
             const heroData = ownedHeroes?.find((h) => h.uid === u.uid);
-            return <UnitView key={u.uid} unit={u} floaters={floaters} side="hero" heroData={heroData} respawnSeconds={respawnCountdowns?.[u.uid]} opponentAlive={sharedBossActive || Boolean(enemies[lane]?.alive)} animationMode={animationMode} />;
+            return <UnitView key={u.uid} unit={u} floaters={floaters} side="hero" heroData={heroData} respawnSeconds={respawnCountdowns?.[u.uid]} opponentAlive={sharedBossActive || Boolean(laneEnemies[lane]?.alive)} animationMode={animationMode} targeted={dungeonBossScene?.targetUid === u.uid} />;
           })}
           {heroes.length === 0 && <div className="intentional-empty p-4 text-sm">Assemble a team to fight</div>}
         </div>
         <div className="arena-roster flex min-w-0 flex-col items-start justify-center gap-2">
-          {enemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={u.uid.includes('-dungeon-') ? heroes.some((hero) => hero.alive) : Boolean(heroes[lane]?.alive)} animationMode={animationMode} />)}
-          {enemies.length === 0 && <div className="intentional-empty p-4 text-sm">Enemies defeated</div>}
+          {laneEnemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive)} animationMode={animationMode} />)}
+          {laneEnemies.length === 0 && !sharedBoss && <div className="intentional-empty p-4 text-sm">Enemies defeated</div>}
         </div>
       </div>
       <div className="relative z-20 mt-3 h-px bg-gradient-to-r from-transparent via-[#a78045]/35 to-transparent" />

@@ -28,7 +28,7 @@ type DungeonCheckpoint = {
   type: 'dungeon'; encounter_id: string; depth: number; room: number; revision: number;
   roster_snapshot?: Array<{ uid: string; hero_id: string; stats?: Record<string, number> }>;
   run_state?: { heroes?: DungeonUnitState[]; rooms_cleared?: number };
-  room_state: null | { status: string; kind?: string; choice?: string; modifier?: string; heroes?: DungeonUnitState[]; enemies?: DungeonUnitState[]; boss?: { boss_id: string; name: string; status: string; current_hp?: number; max_hp?: number }; playback_tick?: number };
+  room_state: null | { status: string; kind?: string; choice?: string; modifier?: string; heroes?: DungeonUnitState[]; enemies?: DungeonUnitState[]; boss?: { boss_id: string; name: string; status: string; current_hp?: number; max_hp?: number }; playback_tick?: number; heavy_target_uid?: string; heavy_casts?: number; identity_ability?: string; identity_casts?: number };
 };
 type DungeonUnitState = {
   uid?: string; unit_id?: string; position?: number; lane?: number; current_hp: number; max_hp: number; alive: boolean;
@@ -274,13 +274,26 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
       critDamage: 1.5, color: sharedBoss ? '#efb85b' : activeDungeon.room === 2 ? '#c084fc' : activeDungeon.room === 4 ? '#a78bfa' : '#ef7f68', icon: sharedBoss ? '👑' : activeDungeon.room === 2 ? '👹' : '🛡️',
       attackTimer: playbackTick % 2 === 0 ? 60 : 0, attackInterval: 1, alive: Boolean(unit.alive),
     }));
-    const boss = activeDungeon.room_state?.kind === 'retinue' && activeDungeon.room_state.boss ? [{
-      uid: `${bossArt[activeDungeon.room_state.boss.boss_id] ?? 'boss-lich'}-dungeon-protected`, name: activeDungeon.room_state.boss.name, side: 'enemy' as const,
-      hp: 1, maxHp: 1, atk: 0, def: 0, speed: 0, combatSpeed: 1, critChance: 0,
-      critDamage: 1.5, color: '#a78bfa', icon: '👑', attackTimer: 0, attackInterval: 1, alive: true,
-    }] : [];
-    return [...heroes, ...enemies, ...boss];
+    return [...heroes, ...enemies];
   }, [activeDungeon, state.ownedHeroes]);
+
+  const dungeonBossScene = useMemo(() => {
+    const room = activeDungeon?.room_state;
+    if (!room?.boss || activeDungeon?.room !== 4 || !['retinue', 'shared_boss'].includes(room.kind ?? '')) return null;
+    const tick = room.playback_tick ?? 0;
+    const identityCasting = room.kind === 'shared_boss' && room.status === 'resolving' && Boolean(room.identity_casts) && tick >= 3 && tick <= 6;
+    const heavyCasting = room.kind === 'shared_boss' && room.status === 'resolving' && tick >= 8 && tick <= 15;
+    const remaining = identityCasting ? Math.max(0, (6 - tick) * (2 / 3)) : Math.max(0, (15 - tick) * (3 / 7));
+    return {
+      phase: room.kind === 'retinue' ? 'retinue' as const : 'shared' as const,
+      bossId: room.boss.boss_id,
+      bossName: room.boss.name,
+      targetUid: heavyCasting ? room.heavy_target_uid : undefined,
+      cast: identityCasting
+        ? { name: room.identity_ability ?? 'Boss Ability', remaining, impact: tick === 6 }
+        : heavyCasting ? { name: 'Heavy Strike', remaining, impact: tick === 15 } : null,
+    };
+  }, [activeDungeon]);
 
   return (
     <div className="game-main flex h-full flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
@@ -419,7 +432,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
             </div>
           )}
           {!activeDungeon && potionFx && <div key={potionFx.born} className="absolute inset-0 pointer-events-none anim-fade" style={{ background: 'radial-gradient(circle at 50% 70%, rgba(74,222,128,0.15), transparent 60%)' }} />}
-          <Arena units={activeDungeon ? dungeonUnits : units} floaters={activeDungeon ? [] : floaters} ownedHeroes={state.ownedHeroes} inventory={state.inventory} potionFx={activeDungeon ? null : potionFx} respawnCountdowns={activeDungeon ? {} : respawnCountdowns} animationMode={state.battleAnimationMode} dungeonPanelOpen={Boolean(activeDungeon)} />
+          <Arena units={activeDungeon ? dungeonUnits : units} floaters={activeDungeon ? [] : floaters} ownedHeroes={state.ownedHeroes} inventory={state.inventory} potionFx={activeDungeon ? null : potionFx} respawnCountdowns={activeDungeon ? {} : respawnCountdowns} animationMode={state.battleAnimationMode} dungeonPanelOpen={Boolean(activeDungeon)} dungeonBossScene={dungeonBossScene} />
           {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={setActiveDungeon} onAttempts={setDungeonAttempts} />}
           {!activeDungeon && <div className="absolute right-3 top-3 z-30 flex items-center gap-1.5">
             <button type="button" onClick={() => setShowDungeonInfo(true)} className="game-control flex h-7 items-center gap-1 px-2 py-0.5 text-[9px] font-bold text-[#d7c6ea]" aria-label="Open Dungeons information">
