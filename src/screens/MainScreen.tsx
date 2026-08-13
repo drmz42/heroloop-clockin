@@ -240,7 +240,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
       };
     });
     const enemies = (activeDungeon.room_state?.enemies ?? []).map((unit, position): CombatUnit => ({
-      uid: unit.unit_id ?? `dungeon-enemy-${position}`,
+      uid: `e${position}-${activeDungeon.room === 2 ? 'boss-ogre' : activeDungeon.room === 3 ? 'skeleton' : 'orc'}`,
       name: activeDungeon.room === 2 ? 'Elite Guard' : activeDungeon.room === 3 ? 'Treasure Guard' : 'Citadel Guard',
       side: 'enemy', hp: Number(unit.current_hp), maxHp: Number(unit.max_hp), atk: Number(unit.atk ?? 0),
       def: Number(unit.def ?? 0), speed: Number(unit.speed ?? 100), combatSpeed: 1, critChance: 0.06,
