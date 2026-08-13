@@ -3,7 +3,7 @@ import type { CombatUnit, FloatingNumber, GameState, OwnedHero, OwnedItem } from
 import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { enemyArtSrc } from '@/game/art';
-import { Crosshair, Shield, Skull, Star, Swords } from 'lucide-react';
+import { Crosshair, Shield, Skull, Star, Swords, DoorOpen, Flame, Timer, Users } from 'lucide-react';
 import { MAX_HERO_STARS } from '@/game/state';
 
 const STAR_COLORS = ['#fbbf24', '#a855f7', '#ef4444', '#ec4899'];
@@ -47,7 +47,10 @@ interface ArenaProps {
     phase: 'retinue' | 'shared'; bossId: string; bossName: string; targetUid?: string;
     cast?: { name: string; remaining: number; impact: boolean } | null;
     momentum?: 'party' | 'even' | 'boss'; elapsedSeconds?: number;
+    room: number; depth: number; status?: string; mechanic?: string; mechanicState?: string;
+    threshold?: number; summons?: number; enrage?: boolean; transition?: string | null;
   } | null;
+  dungeonRoom?: { room: number; depth: number; label: string; status?: string } | null;
 }
 
 function HealthBar({ hp, maxHp, color }: { hp: number; maxHp: number; color: string }) {
@@ -167,7 +170,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   );
 }
 
-function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode, dungeonPanelOpen, dungeonBossScene }: ArenaProps) {
+function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode, dungeonPanelOpen, dungeonBossScene, dungeonRoom }: ArenaProps) {
   const heroes = units.filter((u) => u.side === 'hero');
   const enemies = units.filter((u) => u.side === 'enemy');
   const sharedBossActive = enemies.some((unit) => unit.uid.endsWith('-dungeon-shared') && unit.alive);
@@ -192,8 +195,12 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
   void inventory; void potionFx;
 
   return (
-    <div className={`arena-stage-inner arena-mode-${animationMode} ${dungeonPanelOpen ? 'dungeon-panel-open' : ''} ${dungeonBossScene ? `dungeon-boss-phase-${dungeonBossScene.phase}` : ''} relative flex h-full w-full flex-col justify-end px-3 pb-4 pt-16 sm:px-6 ${shake ? 'anim-shake' : ''}`}>
+    <div className={`arena-stage-inner arena-mode-${animationMode} ${dungeonPanelOpen ? 'dungeon-panel-open' : ''} ${dungeonRoom ? `dungeon-room dungeon-depth-${dungeonRoom.depth} dungeon-room-${dungeonRoom.room}` : ''} ${dungeonBossScene ? `dungeon-boss-phase-${dungeonBossScene.phase} dungeon-boss-${dungeonBossScene.bossId}` : ''} relative flex h-full w-full flex-col justify-end px-3 pb-4 pt-16 sm:px-6 ${shake ? 'anim-shake' : ''}`}>
       {animationMode === 'spectacular' && <div className="arena-spectacular-atmosphere pointer-events-none absolute inset-0" aria-hidden="true" />}
+      {dungeonRoom && <div className="dungeon-route" aria-label={`Dungeon route, room ${dungeonRoom.room} of 4`}>
+        {['GUARDS', 'ELITE', 'FATE', 'BOSS'].map((label, index) => <div key={label} className={index + 1 < dungeonRoom.room ? 'is-done' : index + 1 === dungeonRoom.room ? 'is-active' : ''}><i>{index + 1 < dungeonRoom.room ? '✓' : index + 1}</i><span>{label}</span></div>)}
+      </div>}
+      {dungeonRoom && !dungeonBossScene && <div className="dungeon-room-title"><DoorOpen size={14} /><span>DEPTH {dungeonRoom.depth} · ROOM {dungeonRoom.room}/4</span><strong>{dungeonRoom.label}</strong></div>}
       {dungeonBossScene?.phase === 'retinue' && <div className="dungeon-throne-boss" aria-label={`${dungeonBossScene.bossName}, protected behind the Retinue`}>
         <div className="dungeon-throne-haze" />
         {bossArt ? <img src={bossArt} alt="" /> : <Skull aria-hidden="true" />}
@@ -205,6 +212,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
           <span><Swords size={13} /> SHARED TARGET</span><strong>{dungeonBossScene.bossName}</strong>
           <HealthBar hp={sharedBoss.hp} maxHp={sharedBoss.maxHp} color="#b9373e" />
           <small>{formatHealth(sharedBoss.hp)} / {formatHealth(sharedBoss.maxHp)} HP</small>
+          {dungeonBossScene.threshold && <i className="dungeon-threshold" style={{ left: `${100 - dungeonBossScene.threshold}%` }} title={`${dungeonBossScene.threshold}% mechanic threshold`} />}
         </div>
         {dungeonBossScene.cast && <div className={`dungeon-cast-bar ${dungeonBossScene.cast.impact ? 'is-impact' : ''}`} role="status">
           <Crosshair size={14} /><span>{dungeonBossScene.cast.name}</span><b>{dungeonBossScene.cast.impact ? 'IMPACT' : `${dungeonBossScene.cast.remaining.toFixed(1)}s`}</b>
@@ -214,9 +222,16 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
           <span>{dungeonBossScene.momentum === 'party' ? 'PARTY ADVANTAGE' : dungeonBossScene.momentum === 'boss' ? 'BOSS ADVANTAGE' : 'BATTLE CONTESTED'}</span>
           <b>{Math.max(0, Math.round(dungeonBossScene.elapsedSeconds ?? 0))}s</b>
         </div>
+        <div className="dungeon-status-row">
+          <span><Timer size={10} /> {dungeonBossScene.mechanic ?? 'Heavy Strike'} </span>
+          {dungeonBossScene.mechanicState && <span><Shield size={10} /> {dungeonBossScene.mechanicState}</span>}
+          {Boolean(dungeonBossScene.summons) && <span><Users size={10} /> SUMMONS {dungeonBossScene.summons}</span>}
+          {dungeonBossScene.enrage && <span className="is-danger"><Flame size={10} /> ENRAGED</span>}
+        </div>
         <div className="dungeon-boss-floor-sigil" />
         <UnitView unit={sharedBoss} floaters={floaters} side="enemy" opponentAlive={heroes.some((hero) => hero.alive)} animationMode={animationMode} />
       </div>}
+      {dungeonBossScene?.transition && <div className="dungeon-phase-banner" role="status">{dungeonBossScene.transition}</div>}
       <div className="pointer-events-none absolute inset-x-[8%] bottom-[18%] h-16 rounded-[50%] border-b border-[#9b7540]/25 bg-[radial-gradient(ellipse,rgba(168,122,58,.13),transparent_68%)]" />
       <div className="arena-lanes relative z-10 grid grid-cols-2 items-center gap-4 sm:gap-10">
         <div className="arena-roster flex min-w-0 flex-col items-end justify-center gap-2">

@@ -10,7 +10,7 @@ import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, CLASS_LABEL, RARITY_INDEX } from
 import type { TokenomicsApi } from '@/game/useTokenomics';
 import type { TokenomicsStatus } from '@/game/useTokenomics';
 import type { GameApi } from '@/game/useGame';
-import type { CombatUnit, HeroClass, ItemSlot, OwnedItem, PotionTier } from '@/game/types';
+import type { CombatUnit, FloatingNumber, HeroClass, ItemSlot, OwnedItem, PotionTier } from '@/game/types';
 import { ItemArtwork } from '@/components/ItemArtwork';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { ChestCollectIcon } from '@/components/ChestCollectIcon';
@@ -23,6 +23,7 @@ const SAVE_KEY = 'afk-heroes-save-v7';
 
 const SLOTS: ItemSlot[] = ['class_weapon', 'offhand', 'helmet', 'chest', 'gloves', 'boots', 'ring', 'amulet'];
 const GRID_SIZE = 64;
+const DUNGEON_BOSS_ART: Record<string, string> = { 'iron-warden': 'boss-titan', 'ash-warlock': 'boss-lich', 'thorn-shaman': 'boss-ogre', 'rift-behemoth': 'boss-dragon', 'grave-necromancer': 'boss-lich' };
 
 type DungeonCheckpoint = {
   type: 'dungeon'; encounter_id: string; depth: number; room: number; revision: number;
@@ -106,6 +107,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
   const [showZoomTip, setShowZoomTip] = useState(true);
   const [showDungeonInfo, setShowDungeonInfo] = useState(false);
   const [activeDungeon, setActiveDungeon] = useState<DungeonCheckpoint | null>(null);
+  const [dungeonFloaters, setDungeonFloaters] = useState<FloatingNumber[]>([]);
+  const [dungeonCompletion, setDungeonCompletion] = useState<{ won: boolean; depth: number } | null>(null);
   const [dungeonAttempts, setDungeonAttempts] = useState<{ remaining: number; max: number } | null>(null);
   const dungeonPreviousPause = useRef<boolean | null>(null);
   const [selectedHeroUid, setSelectedHeroUid] = useState<string | null>(state.team[0] ?? null);
@@ -262,11 +265,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
       };
     });
     const enemyStates = activeDungeon.room_state?.enemies ?? dungeonPreviewEnemies(activeDungeon, heroStates);
-    const bossArt: Record<string, string> = { 'iron-warden': 'boss-titan', 'ash-warlock': 'boss-lich', 'thorn-shaman': 'boss-ogre', 'rift-behemoth': 'boss-dragon', 'grave-necromancer': 'boss-lich' };
     const sharedBoss = activeDungeon.room_state?.kind === 'shared_boss';
     const enemies = enemyStates.map((unit, position): CombatUnit => ({
       uid: sharedBoss
-        ? `${bossArt[activeDungeon.room_state?.boss?.boss_id ?? ''] ?? 'boss-lich'}-dungeon-shared`
+        ? `${DUNGEON_BOSS_ART[activeDungeon.room_state?.boss?.boss_id ?? ''] ?? 'boss-lich'}-dungeon-shared`
         : `e${position}-${activeDungeon.room === 2 ? 'boss-ogre' : activeDungeon.room === 3 ? 'skeleton' : activeDungeon.room === 4 ? 'goblin' : 'orc'}`,
       name: sharedBoss ? (activeDungeon.room_state?.boss?.name ?? 'Dungeon Boss') : activeDungeon.room === 2 ? 'Elite Guard' : activeDungeon.room === 3 ? 'Treasure Guard' : activeDungeon.room === 4 ? 'Retinue Guard' : 'Citadel Guard',
       side: 'enemy', hp: Number(unit.current_hp), maxHp: Number(unit.max_hp), atk: Number(unit.atk ?? 0),
@@ -288,9 +290,18 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
     const identityCasting = room.kind === 'shared_boss' && room.status === 'resolving' && Boolean(room.identity_casts) && tick >= 3 && tick <= 6;
     const heavyCasting = room.kind === 'shared_boss' && room.status === 'resolving' && tick >= 8 && tick <= 15;
     const remaining = identityCasting ? Math.max(0, (6 - tick) * (2 / 3)) : Math.max(0, (15 - tick) * (3 / 7));
+    const bossId = room.boss.boss_id;
+    const mechanics: Record<string, { name: string; state: string; threshold?: number }> = {
+      'iron-warden': { name: 'BULWARK · 20% SHIELD', state: tick >= 3 && tick <= 6 ? 'BARRIER FORMING' : 'SHIELD COOLDOWN' },
+      'ash-warlock': { name: 'ASHEN RUIN · PARTY MARK', state: identityCasting ? 'ALL HEROES MARKED' : 'CINDERS ORBITING' },
+      'thorn-shaman': { name: 'THORN RENEWAL · HEAL', state: identityCasting ? 'CHANNELING HEAL' : 'SOURCE 20/80%' },
+      'rift-behemoth': { name: 'RIFT FURY · 35%', state: bossRatio <= .35 ? 'FURY ACTIVE' : 'SHELL INTACT', threshold: 35 },
+      'grave-necromancer': { name: 'RAISE DEAD · 70% / 35%', state: bossRatio <= .7 ? 'THE DEAD PROTECT' : 'SOUL CHAINS READY', threshold: bossRatio > .7 ? 70 : 35 },
+    };
+    const mechanic = mechanics[bossId] ?? { name: 'HEAVY STRIKE', state: 'READY' };
     return {
       phase: room.kind === 'retinue' ? 'retinue' as const : 'shared' as const,
-      bossId: room.boss.boss_id,
+      bossId,
       bossName: room.boss.name,
       targetUid: heavyCasting ? room.heavy_target_uid : undefined,
       cast: identityCasting
@@ -298,8 +309,18 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
         : heavyCasting ? { name: 'Heavy Strike', remaining, impact: tick === 15 } : null,
       momentum: heroRatio > bossRatio + 0.12 ? 'party' as const : bossRatio > heroRatio + 0.12 ? 'boss' as const : 'even' as const,
       elapsedSeconds: tick * 0.24,
+      room: 4, depth: activeDungeon.depth, status: room.status,
+      mechanic: mechanic.name, mechanicState: mechanic.state, threshold: mechanic.threshold,
+      summons: bossId === 'grave-necromancer' && bossRatio <= .7 ? (bossRatio <= .35 ? 2 : 1) : 0,
+      enrage: bossId === 'rift-behemoth' && bossRatio <= .35,
+      transition: room.kind === 'retinue' && room.status === 'cleared' ? 'RETINUE DEFEATED · BOSS VULNERABLE' : tick === 1 ? `${room.boss.name.toUpperCase()} ADVANCES` : null,
     };
   }, [activeDungeon]);
+
+  const dungeonRoom = useMemo(() => activeDungeon ? ({
+    room: activeDungeon.room, depth: activeDungeon.depth, status: activeDungeon.room_state?.status,
+    label: activeDungeon.room === 1 ? 'OUTER BASTION' : activeDungeon.room === 2 ? 'HALL OF THE CURSED GUARD' : activeDungeon.room === 3 ? 'CROSSROADS OF FATE' : 'THRONE OF THE ABYSS',
+  }) : null, [activeDungeon]);
 
   return (
     <div className="game-main flex h-full flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
@@ -438,8 +459,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
             </div>
           )}
           {!activeDungeon && potionFx && <div key={potionFx.born} className="absolute inset-0 pointer-events-none anim-fade" style={{ background: 'radial-gradient(circle at 50% 70%, rgba(74,222,128,0.15), transparent 60%)' }} />}
-          <Arena units={activeDungeon ? dungeonUnits : units} floaters={activeDungeon ? [] : floaters} ownedHeroes={state.ownedHeroes} inventory={state.inventory} potionFx={activeDungeon ? null : potionFx} respawnCountdowns={activeDungeon ? {} : respawnCountdowns} animationMode={state.battleAnimationMode} dungeonPanelOpen={Boolean(activeDungeon)} dungeonBossScene={dungeonBossScene} />
-          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={setActiveDungeon} onAttempts={setDungeonAttempts} />}
+          <Arena units={activeDungeon ? dungeonUnits : units} floaters={activeDungeon ? dungeonFloaters : floaters} ownedHeroes={state.ownedHeroes} inventory={state.inventory} potionFx={activeDungeon ? null : potionFx} respawnCountdowns={activeDungeon ? {} : respawnCountdowns} animationMode={state.battleAnimationMode} dungeonPanelOpen={Boolean(activeDungeon)} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
+          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={setActiveDungeon} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onComplete={(won) => setDungeonCompletion({ won, depth: activeDungeon.depth })} />}
+          {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Dungeon Complete' : 'Dungeon Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>CURSED CITADEL · DEPTH {dungeonCompletion.depth}</small><strong>{dungeonCompletion.won ? 'DUNGEON COMPLETE' : 'THE CITADEL ENDURES'}</strong><p>{dungeonCompletion.won ? 'The Abyss throne is silent. Testing run verified · rewards disabled.' : 'The formation has fallen. Persistent run HP reached zero.'}</p><button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
           {!activeDungeon && <div className="absolute right-3 top-3 z-30 flex items-center gap-1.5">
             <button type="button" onClick={() => setShowDungeonInfo(true)} className="game-control flex h-7 items-center gap-1 px-2 py-0.5 text-[9px] font-bold text-[#d7c6ea]" aria-label="Open Dungeons information">
               <DoorOpen size={14} aria-hidden="true" /> DUNGEONS <Info size={11} aria-hidden="true" />
@@ -684,11 +706,13 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
   );
 }
 
-function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts }: {
+function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onCombatPulse, onComplete }: {
   checkpoint: DungeonCheckpoint;
   attempts: { remaining: number; max: number } | null;
   onChange: (checkpoint: DungeonCheckpoint | null) => void;
   onAttempts: (attempts: { remaining: number; max: number } | null) => void;
+  onCombatPulse: (floaters: FloatingNumber[]) => void;
+  onComplete: (won: boolean) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -716,6 +740,7 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts }: {
     if (result) {
       if (action === 'dungeon_abandon' || (result.status && result.status !== 'active')) {
         if (attempts) onAttempts({ remaining: Number(result.attempts_remaining ?? attempts.remaining), max: attempts.max });
+        if (action !== 'dungeon_abandon') onComplete(result.status === 'completed');
         onChange(null);
       } else {
         onChange(checkpointFromResult(checkpoint, result));
@@ -736,20 +761,47 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts }: {
       return { ...unit, current_hp: hp, alive: progress >= 1 ? unit.alive : hp > 0 };
     });
     const bossFight = startState.kind === 'shared_boss';
-    const frames = bossFight ? 36 : 24;
-    for (let frame = 1; frame <= frames; frame += 1) {
-      const progress = frame / frames;
+    const frames = 18;
+    const presentationFrames = bossFight ? 36 : 24;
+    const totalFrames = bossFight ? presentationFrames : frames;
+    let previousHeroes = startState.heroes ?? [];
+    let previousEnemies = startState.enemies ?? [];
+    for (let frame = 1; frame <= totalFrames; frame += 1) {
+      const beat = bossFight ? Math.ceil(frame / 3) : frame;
+      const totalBeats = bossFight ? 12 : totalFrames;
+      const progress = beat / totalBeats;
+      const nextHeroes = interpolate(startState.heroes, finalState.heroes, progress);
+      const nextEnemies = interpolate(startState.enemies, finalState.enemies, progress);
+      const born = performance.now();
+      const pulses: FloatingNumber[] = [];
+      [...nextHeroes, ...nextEnemies].forEach((unit, index) => {
+        const identity = unit.uid ?? unit.unit_id ?? `unit-${index}`;
+        const prior = [...previousHeroes, ...previousEnemies].find((candidate) => (candidate.uid ?? candidate.unit_id) === identity);
+        const delta = prior ? Math.round(Number(prior.current_hp) - Number(unit.current_hp)) : 0;
+        const enemy = nextEnemies.includes(unit);
+        const targetUid = bossFight && enemy ? `${DUNGEON_BOSS_ART[startState.boss?.boss_id ?? ''] ?? 'boss-lich'}-dungeon-shared` : identity;
+        if (delta !== 0) pulses.push({ id: Date.now() + index, targetUid, value: Math.abs(delta), crit: delta > 0 && (beat + index) % 5 === 0, heal: delta < 0, born });
+      });
+      onCombatPulse(pulses);
       onChange({
         ...resolved,
         room_state: {
           ...finalState,
           status: progress < 1 ? 'resolving' : finalState.status,
-          heroes: interpolate(startState.heroes, finalState.heroes, progress),
-          enemies: interpolate(startState.enemies, finalState.enemies, progress),
+          heroes: nextHeroes,
+          enemies: nextEnemies,
           playback_tick: frame,
         },
       });
-      if (frame < frames) await new Promise<void>((resolve) => setTimeout(resolve, bossFight ? 240 : 190));
+      previousHeroes = nextHeroes; previousEnemies = nextEnemies;
+      if (frame < totalFrames) await new Promise<void>((resolve) => setTimeout(resolve, bossFight ? 250 : 320));
+    }
+    onCombatPulse([]);
+    if (result.status && result.status !== 'active') {
+      onComplete(result.status === 'completed');
+      await new Promise<void>((resolve) => setTimeout(resolve, 900));
+      onChange(null);
+      return;
     }
     if (startState.kind === 'retinue' && finalState.status === 'cleared') {
       await new Promise<void>((resolve) => setTimeout(resolve, 900));
