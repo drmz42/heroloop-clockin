@@ -174,8 +174,9 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
   const heroes = units.filter((u) => u.side === 'hero');
   const enemies = units.filter((u) => u.side === 'enemy');
   const sharedBossActive = enemies.some((unit) => unit.uid.endsWith('-dungeon-shared') && unit.alive);
-  const sharedBoss = dungeonBossScene?.phase === 'shared' ? enemies.find((unit) => unit.uid.endsWith('-dungeon-shared')) : undefined;
-  const laneEnemies = sharedBoss ? enemies.filter((unit) => unit.uid !== sharedBoss.uid) : enemies.filter((unit) => !unit.uid.endsWith('-dungeon-protected'));
+  const sharedBossUnit = dungeonBossScene?.phase === 'shared' ? enemies.find((unit) => unit.uid.endsWith('-dungeon-shared')) : undefined;
+  const sharedBoss = sharedBossUnit?.alive ? sharedBossUnit : undefined;
+  const laneEnemies = sharedBossUnit ? enemies.filter((unit) => unit.uid !== sharedBossUnit.uid) : enemies.filter((unit) => !unit.uid.endsWith('-dungeon-protected'));
   const bossArt = dungeonBossScene ? enemyArtSrc(`e0-${DUNGEON_BOSS_ART[dungeonBossScene.bossId] ?? 'boss-lich'}`) : null;
   const [shake, setShake] = useState(false);
   const lastShake = useRef(0);
@@ -229,6 +230,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
           {dungeonBossScene.enrage && <span className="is-danger"><Flame size={10} /> ENRAGED</span>}
         </div>
         <div className="dungeon-boss-floor-sigil" />
+        {Boolean(dungeonBossScene.summons) && <div className="dungeon-summon-rack" aria-label={`${dungeonBossScene.summons} summoned guards protect the Boss`}>{Array.from({ length: Math.min(2, dungeonBossScene.summons ?? 0) }, (_, index) => <div key={index}><Skull size={18} /><span>SUMMON {index + 1}</span><i /></div>)}</div>}
         <UnitView unit={sharedBoss} floaters={floaters} side="enemy" opponentAlive={heroes.some((hero) => hero.alive)} animationMode={animationMode} />
       </div>}
       {dungeonBossScene?.transition && <div className="dungeon-phase-banner" role="status">{dungeonBossScene.transition}</div>}

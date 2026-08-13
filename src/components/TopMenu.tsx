@@ -1,4 +1,4 @@
-import { Sword, Users, Sparkles, Store, ShoppingCart, Trophy, Gift, Dumbbell, BookOpen } from 'lucide-react';
+import { Sword, Users, Sparkles, Store, ShoppingCart, Trophy, Gift, Dumbbell } from 'lucide-react';
 
 export type Tab = 'main' | 'heroes' | 'summon' | 'training' | 'crafting' | 'shop' | 'market' | 'leaderboard' | 'referrals' | 'guides';
 
@@ -11,7 +11,6 @@ const TABS: { id: Tab; label: string; icon: typeof Sword }[] = [
   { id: 'market',      label: 'Market',  icon: ShoppingCart },
   { id: 'leaderboard', label: 'Ranks',   icon: Trophy   },
   { id: 'referrals',   label: 'Refer',   icon: Gift     },
-  { id: 'guides',      label: 'Guides',  icon: BookOpen },
 ];
 
 export function TopMenu({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {
