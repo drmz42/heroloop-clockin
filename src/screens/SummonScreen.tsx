@@ -151,16 +151,18 @@ export function SummonScreen({ game }: { game: GameApi }) {
   return (
     <div className="summon-sanctum relative flex h-full flex-col overflow-y-auto bg-black bg-cover bg-center no-scrollbar" style={{ backgroundImage: "linear-gradient(rgba(3,3,5,.18),rgba(3,3,5,.72)),url('/assets/summon/ritual-sanctum-v1.webp')" }}>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(163,74,255,.12),transparent_38%),linear-gradient(90deg,rgba(0,0,0,.55),transparent_30%,transparent_70%,rgba(0,0,0,.55))]" />
-      <div className="relative flex min-h-full flex-1 flex-col items-center justify-center px-4 py-5 text-center xl:pr-[310px]">
+      <div className="relative flex min-h-full flex-1 flex-col items-center justify-center px-4 py-5 text-center">
         <div className="summon-portal relative mb-3 grid h-24 w-24 shrink-0 place-items-center rounded-full"><i className="summon-rune-ring" /><i className="summon-rune-ring summon-rune-ring-inner" /><Sparkles size={34} className="relative z-10 text-[#f2c96e] drop-shadow-[0_0_14px_rgba(212,126,255,.9)]" />{Array.from({ length: 8 }, (_, index) => <i key={index} className="summon-portal-mote" style={{ '--mote-index': index } as React.CSSProperties} />)}</div>
         <div className="flex w-full max-w-2xl flex-col items-center rounded-xl border border-[#8c6231]/60 bg-[#08070a]/72 px-6 py-4 shadow-[0_16px_50px_rgba(0,0,0,.65),inset_0_1px_rgba(255,224,165,.08)] backdrop-blur-[2px]">
         <div className="section-kicker">The Obsidian Covenant</div>
         <h2 className="mb-1 mt-1 text-2xl font-black text-white"><span className="text-[#d7a9ff]">Hero</span> Summon</h2>
         <p className="text-slate-400 text-sm max-w-sm mb-1">Summon heroes using $HERO tokens. All heroes are unique and tradeable.</p>
-        <p className="summon-account-panel mb-4 flex items-center justify-center gap-1 rounded-lg border border-cyan-500/25 bg-cyan-950/15 px-3 py-2 text-[12px] font-black text-cyan-200"><HeroTokenIcon size={15} /> {formatNum(state.hero)} $HERO <span className="font-medium text-slate-500">· {state.summons} summons · {state.ownedHeroes.length}/{MAX_HEROES} heroes</span></p>
+        <div className="summon-account-rates mb-3 grid w-full gap-2 sm:grid-cols-[220px_1fr]">
+        <p className="summon-account-panel flex min-h-[48px] flex-col items-center justify-center rounded-lg border border-cyan-500/25 bg-cyan-950/15 px-3 py-2 text-[12px] font-black text-cyan-200"><span className="flex items-center gap-1"><HeroTokenIcon size={15} /> {formatNum(state.hero)} $HERO</span><span className="mt-0.5 text-[9px] font-medium text-slate-500">{state.summons} summons · {state.ownedHeroes.length}/{MAX_HEROES} heroes</span></p>
 
-        <div className="summon-rate-panel mb-5 flex min-h-[48px] w-full max-w-xl flex-wrap content-center items-center justify-center gap-1.5 text-[9px]">
+        <div className="summon-rate-panel grid grid-cols-3 content-center gap-1 rounded-lg border border-[#5f496e] bg-black/35 p-2 text-[8px] sm:grid-cols-5">
           {rarities.map(r => <span key={r} className="px-1.5 py-0.5 rounded-full border font-semibold uppercase tracking-wide" style={{ color: RARITY_COLORS[r], borderColor: RARITY_COLORS[r] + '55', background: RARITY_COLORS[r] + '11' }}>{RARITY_LABEL[r]} {RARITY_WEIGHT[r]}%</span>)}
+        </div>
         </div>
 
         <section className="mb-4 w-full max-w-xl rounded-lg border border-violet-500/30 bg-black/45 p-2.5 text-left">
