@@ -28,7 +28,7 @@ type DungeonCheckpoint = {
   type: 'dungeon'; encounter_id: string; depth: number; room: number; revision: number;
   roster_snapshot?: Array<{ uid: string; hero_id: string; stats?: Record<string, number> }>;
   run_state?: { heroes?: DungeonUnitState[]; rooms_cleared?: number };
-  room_state: null | { status: string; kind?: string; choice?: string; modifier?: string; heroes?: DungeonUnitState[]; enemies?: DungeonUnitState[]; boss?: { boss_id: string; name: string; status: string }; playback_tick?: number };
+  room_state: null | { status: string; kind?: string; choice?: string; modifier?: string; heroes?: DungeonUnitState[]; enemies?: DungeonUnitState[]; boss?: { boss_id: string; name: string; status: string; current_hp?: number; max_hp?: number }; playback_tick?: number };
 };
 type DungeonUnitState = {
   uid?: string; unit_id?: string; position?: number; lane?: number; current_hp: number; max_hp: number; alive: boolean;
@@ -262,16 +262,20 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
       };
     });
     const enemyStates = activeDungeon.room_state?.enemies ?? dungeonPreviewEnemies(activeDungeon, heroStates);
+    const bossArt: Record<string, string> = { 'iron-warden': 'boss-titan', 'ash-warlock': 'boss-lich', 'thorn-shaman': 'boss-ogre', 'rift-behemoth': 'boss-dragon', 'grave-necromancer': 'boss-lich' };
+    const sharedBoss = activeDungeon.room_state?.kind === 'shared_boss';
     const enemies = enemyStates.map((unit, position): CombatUnit => ({
-      uid: `e${position}-${activeDungeon.room === 2 ? 'boss-ogre' : activeDungeon.room === 3 ? 'skeleton' : activeDungeon.room === 4 ? 'goblin' : 'orc'}`,
-      name: activeDungeon.room === 2 ? 'Elite Guard' : activeDungeon.room === 3 ? 'Treasure Guard' : activeDungeon.room === 4 ? 'Retinue Guard' : 'Citadel Guard',
+      uid: sharedBoss
+        ? `${bossArt[activeDungeon.room_state?.boss?.boss_id ?? ''] ?? 'boss-lich'}-dungeon-shared`
+        : `e${position}-${activeDungeon.room === 2 ? 'boss-ogre' : activeDungeon.room === 3 ? 'skeleton' : activeDungeon.room === 4 ? 'goblin' : 'orc'}`,
+      name: sharedBoss ? (activeDungeon.room_state?.boss?.name ?? 'Dungeon Boss') : activeDungeon.room === 2 ? 'Elite Guard' : activeDungeon.room === 3 ? 'Treasure Guard' : activeDungeon.room === 4 ? 'Retinue Guard' : 'Citadel Guard',
       side: 'enemy', hp: Number(unit.current_hp), maxHp: Number(unit.max_hp), atk: Number(unit.atk ?? 0),
       def: Number(unit.def ?? 0), speed: Number(unit.speed ?? 100), combatSpeed: 1, critChance: 0.06,
-      critDamage: 1.5, color: activeDungeon.room === 2 ? '#c084fc' : activeDungeon.room === 4 ? '#a78bfa' : '#ef7f68', icon: activeDungeon.room === 2 ? '👹' : '🛡️',
+      critDamage: 1.5, color: sharedBoss ? '#efb85b' : activeDungeon.room === 2 ? '#c084fc' : activeDungeon.room === 4 ? '#a78bfa' : '#ef7f68', icon: sharedBoss ? '👑' : activeDungeon.room === 2 ? '👹' : '🛡️',
       attackTimer: playbackTick % 2 === 0 ? 60 : 0, attackInterval: 1, alive: Boolean(unit.alive),
     }));
-    const boss = activeDungeon.room_state?.kind === 'boss_protected' && activeDungeon.room_state.boss ? [{
-      uid: 'e0-boss-lich', name: activeDungeon.room_state.boss.name, side: 'enemy' as const,
+    const boss = activeDungeon.room_state?.kind === 'retinue' && activeDungeon.room_state.boss ? [{
+      uid: `${bossArt[activeDungeon.room_state.boss.boss_id] ?? 'boss-lich'}-dungeon-protected`, name: activeDungeon.room_state.boss.name, side: 'enemy' as const,
       hp: 1, maxHp: 1, atk: 0, def: 0, speed: 0, combatSpeed: 1, critChance: 0,
       critDamage: 1.5, color: '#a78bfa', icon: '👑', attackTimer: 0, attackInterval: 1, alive: true,
     }] : [];
@@ -754,14 +758,17 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts }: {
 
   const primary = (() => {
     if (checkpoint.room === 3 && !roomState) return null;
-    if (roomState?.status === 'boss_locked') return null;
+    if (roomState?.status === 'boss_locked') return {
+      label: 'Reveal Boss',
+      action: () => runAction('dungeon_room_complete', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }),
+    };
     if (roomState?.status === 'resolving') return null;
     if (!roomState) return checkpoint.room === 3 ? null : {
       label: `Start Room ${checkpoint.room}`,
       action: startBattle,
     };
     if (roomState.status === 'ready') return {
-      label: `Start Room ${checkpoint.room}`,
+      label: roomState.kind === 'shared_boss' ? 'Fight Boss' : `Start Room ${checkpoint.room}`,
       action: startBattle,
     };
     return {
@@ -780,8 +787,7 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts }: {
       {roomState?.status === 'failed' && <div className="text-center text-xs font-black uppercase tracking-wider text-rose-300">Formation defeated</div>}
       {busy && <div className="text-center text-[11px] font-black uppercase tracking-wide text-violet-200">Battle in progress…</div>}
       {checkpoint.room === 3 && !roomState && <div className="grid grid-cols-2 gap-2"><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'recovery' })} className="game-control min-h-11 px-2 text-[10px] font-black text-emerald-300"><HeartPulse size={15} className="mx-auto mb-1" />Recovery · +25% HP</button><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'treasure' })} className="game-control min-h-11 px-2 text-[10px] font-black text-amber-300"><Gem size={15} className="mx-auto mb-1" />Treasure fight</button></div>}
-      {checkpoint.room === 4 && roomState?.boss && <div className="rounded-lg border border-amber-800/45 bg-amber-950/20 px-3 py-2 text-center text-[10px] font-bold text-amber-200">{roomState.boss.name} · {roomState.status === 'boss_locked' ? 'Retinue defeated · Boss vulnerable' : 'Protected by Retinue'}</div>}
-      {roomState?.status === 'boss_locked' && <div className="text-center text-[10px] font-bold text-violet-200">Boss combat is the next server slice. No Boss action or reward is enabled.</div>}
+      {checkpoint.room === 4 && roomState?.boss && <div className="rounded-lg border border-amber-800/45 bg-amber-950/20 px-3 py-2 text-center text-[10px] font-bold text-amber-200">{roomState.boss.name} · {roomState.kind === 'shared_boss' ? 'Vulnerable · Shared target' : roomState.status === 'boss_locked' ? 'Retinue defeated · Boss vulnerable' : 'Protected by Retinue'}</div>}
       {primary && <button type="button" disabled={busy} onClick={primary.action} className="game-control game-primary min-h-11 px-3 text-[13px] font-black"><Skull size={17} className="mr-2 inline" />{primary.label}</button>}
       {error && <div role="alert" className="text-center text-[10px] font-bold text-rose-300">{error.split('_').join(' ')}</div>}
       <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="game-control min-h-10 px-3 text-[11px] font-bold text-rose-300">{confirmAbandon ? 'Confirm exit · no refund' : 'Exit Dungeon'}</button>
@@ -891,7 +897,7 @@ function DungeonPreviewModal({ accountLevel, onStatus, onClose, onGuidesClick }:
           </ol>
         </div>
 
-        <div className="mt-4 border-t border-[#4d3c57]/70 pt-3 text-[9px] leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Testing rules:</b> Unlocks at Account Level 30. All Depths are selectable. Formation, equipment, HP and deaths persist. Potions and Auto-pot are disabled.</p><p className="mt-1.5"><b className="text-[#e0bd71]">Current build:</b> Rooms 1–3 and the Room-4 Retinue are server-authoritative. Boss combat and every reward remain disabled.</p>{error && <p role="alert" className="mt-2 font-bold text-rose-300">{error.split('_').join(' ')}</p>}</div>
+        <div className="mt-4 border-t border-[#4d3c57]/70 pt-3 text-[9px] leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Testing rules:</b> Unlocks at Account Level 30. All Depths are selectable. Formation, equipment, HP and deaths persist. Potions and Auto-pot are disabled.</p><p className="mt-1.5"><b className="text-[#e0bd71]">Current build:</b> All four rooms, Retinue and shared Boss combat are server-authoritative. Testing runs do not mint rewards.</p>{error && <p role="alert" className="mt-2 font-bold text-rose-300">{error.split('_').join(' ')}</p>}</div>
 
         <footer className="mt-4 grid gap-2 sm:grid-cols-2">
           <button type="button" onClick={onGuidesClick} className="game-control flex items-center justify-center gap-2 px-4 py-2 text-xs font-black"><BookOpen size={16} /> Read full Dungeon Wiki</button>

@@ -111,9 +111,11 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
     : undefined;
   const heroRarityColor = heroData ? RARITY_COLORS[HERO_MAP[heroData.heroId]?.rarity] : undefined;
   const portraitColor = heroRarityColor ?? unit.color;
+  const dungeonBoss = unit.uid.endsWith('-dungeon-shared');
+  const protectedBoss = unit.uid.endsWith('-dungeon-protected');
 
   return (
-    <div className={`arena-unit relative flex items-center gap-2 transition-opacity duration-300 ${side === 'enemy' ? 'flex-row-reverse' : ''} ${unit.alive ? 'opacity-100' : 'opacity-40 grayscale'}`}>
+    <div className={`arena-unit relative flex items-center gap-2 transition-opacity duration-300 ${side === 'enemy' ? 'flex-row-reverse' : ''} ${dungeonBoss ? 'dungeon-shared-boss' : ''} ${protectedBoss ? 'dungeon-protected-boss' : ''} ${unit.alive ? 'opacity-100' : 'opacity-40 grayscale'}`}>
       {/* Floating damage numbers */}
       <div className="absolute -top-4 left-1/2 -translate-x-1/2 pointer-events-none z-20 w-24 h-16">
         {myFloaters.map((f) => (
@@ -157,6 +159,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
 function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode, dungeonPanelOpen }: ArenaProps) {
   const heroes = units.filter((u) => u.side === 'hero');
   const enemies = units.filter((u) => u.side === 'enemy');
+  const sharedBossActive = enemies.some((unit) => unit.uid.endsWith('-dungeon-shared') && unit.alive);
   const [shake, setShake] = useState(false);
   const lastShake = useRef(0);
 
@@ -182,12 +185,12 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
         <div className="arena-roster flex min-w-0 flex-col items-end justify-center gap-2">
           {heroes.map((u, lane) => {
             const heroData = ownedHeroes?.find((h) => h.uid === u.uid);
-            return <UnitView key={u.uid} unit={u} floaters={floaters} side="hero" heroData={heroData} respawnSeconds={respawnCountdowns?.[u.uid]} opponentAlive={Boolean(enemies[lane]?.alive)} animationMode={animationMode} />;
+            return <UnitView key={u.uid} unit={u} floaters={floaters} side="hero" heroData={heroData} respawnSeconds={respawnCountdowns?.[u.uid]} opponentAlive={sharedBossActive || Boolean(enemies[lane]?.alive)} animationMode={animationMode} />;
           })}
           {heroes.length === 0 && <div className="intentional-empty p-4 text-sm">Assemble a team to fight</div>}
         </div>
         <div className="arena-roster flex min-w-0 flex-col items-start justify-center gap-2">
-          {enemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive)} animationMode={animationMode} />)}
+          {enemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={u.uid.includes('-dungeon-') ? heroes.some((hero) => hero.alive) : Boolean(heroes[lane]?.alive)} animationMode={animationMode} />)}
           {enemies.length === 0 && <div className="intentional-empty p-4 text-sm">Enemies defeated</div>}
         </div>
       </div>
