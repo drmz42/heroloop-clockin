@@ -10,7 +10,7 @@ import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, CLASS_LABEL, RARITY_INDEX } from
 import type { TokenomicsApi } from '@/game/useTokenomics';
 import type { TokenomicsStatus } from '@/game/useTokenomics';
 import type { GameApi } from '@/game/useGame';
-import type { HeroClass, ItemSlot, OwnedItem, PotionTier } from '@/game/types';
+import type { CombatUnit, HeroClass, ItemSlot, OwnedItem, PotionTier } from '@/game/types';
 import { ItemArtwork } from '@/components/ItemArtwork';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { ChestCollectIcon } from '@/components/ChestCollectIcon';
@@ -26,7 +26,13 @@ const GRID_SIZE = 64;
 
 type DungeonCheckpoint = {
   type: 'dungeon'; encounter_id: string; depth: number; room: number; revision: number;
-  room_state: null | { status: string; kind?: string; choice?: string; modifier?: string; heroes?: Array<{ current_hp: number; max_hp: number; alive: boolean }> };
+  roster_snapshot?: Array<{ uid: string; hero_id: string; stats?: Record<string, number> }>;
+  run_state?: { heroes?: DungeonUnitState[]; rooms_cleared?: number };
+  room_state: null | { status: string; kind?: string; choice?: string; modifier?: string; heroes?: DungeonUnitState[]; enemies?: DungeonUnitState[] };
+};
+type DungeonUnitState = {
+  uid?: string; unit_id?: string; position?: number; lane?: number; current_hp: number; max_hp: number; alive: boolean;
+  atk?: number; def?: number; speed?: number; attack_speed_bonus?: number;
 };
 type DungeonStatus = {
   attempts_remaining: number; attempts_max: number; next_reset_at: string; account_level: number;
@@ -63,7 +69,7 @@ function emptySlotArtworkId(slot: ItemSlot, heroClass: HeroClass): string {
 }
 
 export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void }) {
-  const { state, units, floaters, battleResult, potionFx, respawnCountdowns } = game;
+  const { state, units, floaters, battleResult, potionFx, respawnCountdowns, paused, setPaused } = game;
   const tok = tokenomics;
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
   const [banner, setBanner] = useState<string | null>(null);
@@ -78,6 +84,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
   const [showDropRates, setShowDropRates] = useState(false);
   const [showZoomTip, setShowZoomTip] = useState(true);
   const [showDungeonInfo, setShowDungeonInfo] = useState(false);
+  const [activeDungeon, setActiveDungeon] = useState<DungeonCheckpoint | null>(null);
+  const [dungeonAttempts, setDungeonAttempts] = useState<{ remaining: number; max: number } | null>(null);
+  const dungeonPreviousPause = useRef<boolean | null>(null);
   const [selectedHeroUid, setSelectedHeroUid] = useState<string | null>(state.team[0] ?? null);
   const [selectedItem, setSelectedItem] = useState<OwnedItem | null>(null);
   const [selectedItemSource, setSelectedItemSource] = useState<'bag' | 'hero' | null>(null);
@@ -92,6 +101,31 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
   useEffect(() => {
     if (selectedHeroUid && !state.team.includes(selectedHeroUid)) setSelectedHeroUid(state.team[0] ?? null);
   }, [state.team, selectedHeroUid]);
+
+  useEffect(() => {
+    void playerSync<DungeonStatus>('dungeon_status').then((status) => {
+      if (!status) return;
+      setDungeonAttempts({ remaining: status.attempts_remaining, max: status.attempts_max });
+      setActiveDungeon(status.active_encounter?.type === 'dungeon' ? status.active_encounter : null);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (activeDungeon && dungeonPreviousPause.current === null) {
+      dungeonPreviousPause.current = paused;
+      setPaused(true);
+    } else if (!activeDungeon && dungeonPreviousPause.current !== null) {
+      setPaused(dungeonPreviousPause.current);
+      dungeonPreviousPause.current = null;
+    }
+  }, [activeDungeon, paused, setPaused]);
+
+  const enterDungeonArena = (status: DungeonStatus) => {
+    const encounter = status.active_encounter?.type === 'dungeon' ? status.active_encounter : null;
+    setDungeonAttempts({ remaining: status.attempts_remaining, max: status.attempts_max });
+    setActiveDungeon(encounter);
+    if (encounter) setShowDungeonInfo(false);
+  };
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2000); };
   const equipmentFailure = (action: string) => {
@@ -186,6 +220,35 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
     const result = await tok.summonBoss(state.currentLocation);
     if (!result || !game.summonBoss(result.remaining_keys)) showToast('A Boss Key is required');
   };
+
+  const dungeonUnits = useMemo<CombatUnit[]>(() => {
+    if (!activeDungeon) return [];
+    const roomHeroes = activeDungeon.room_state?.heroes ?? activeDungeon.run_state?.heroes ?? [];
+    const heroStates: DungeonUnitState[] = roomHeroes.length > 0 ? roomHeroes : (activeDungeon.roster_snapshot ?? []).map((hero, position) => ({
+      uid: hero.uid, position, current_hp: Number(hero.stats?.hp ?? 1), max_hp: Number(hero.stats?.hp ?? 1), alive: true,
+    }));
+    const heroes = heroStates.map((unit, position): CombatUnit => {
+      const owned = state.ownedHeroes.find((hero) => hero.uid === unit.uid);
+      const base = owned ? HERO_MAP[owned.heroId] : undefined;
+      const snapshot = activeDungeon.roster_snapshot?.find((hero) => hero.uid === unit.uid);
+      return {
+        uid: unit.uid ?? `dungeon-hero-${position}`, name: base?.name ?? 'Dungeon Hero', side: 'hero',
+        hp: Number(unit.current_hp), maxHp: Number(unit.max_hp), atk: Number(snapshot?.stats?.atk ?? unit.atk ?? 0),
+        def: Number(snapshot?.stats?.def ?? unit.def ?? 0), speed: Number(snapshot?.stats?.speed ?? unit.speed ?? 100),
+        combatSpeed: 1, critChance: 0, critDamage: 1.5, color: base ? RARITY_COLORS[base.rarity] : '#b98ce0',
+        icon: '⚔️', attackTimer: 0, attackInterval: 1, heroClass: base?.heroClass, alive: Boolean(unit.alive),
+      };
+    });
+    const enemies = (activeDungeon.room_state?.enemies ?? []).map((unit, position): CombatUnit => ({
+      uid: unit.unit_id ?? `dungeon-enemy-${position}`,
+      name: activeDungeon.room === 2 ? 'Elite Guard' : activeDungeon.room === 3 ? 'Treasure Guard' : 'Citadel Guard',
+      side: 'enemy', hp: Number(unit.current_hp), maxHp: Number(unit.max_hp), atk: Number(unit.atk ?? 0),
+      def: Number(unit.def ?? 0), speed: Number(unit.speed ?? 100), combatSpeed: 1, critChance: 0.06,
+      critDamage: 1.5, color: activeDungeon.room === 2 ? '#c084fc' : '#ef7f68', icon: activeDungeon.room === 2 ? '👹' : '🛡️',
+      attackTimer: 0, attackInterval: 1, alive: Boolean(unit.alive),
+    }));
+    return [...heroes, ...enemies];
+  }, [activeDungeon, state.ownedHeroes]);
 
   return (
     <div className="game-main flex h-full flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
@@ -289,15 +352,15 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
       <div className="game-scrollbar order-1 flex min-h-[464px] w-full shrink-0 flex-col overflow-hidden lg:order-none lg:min-h-0 lg:w-auto lg:min-w-0 lg:flex-1 lg:overflow-y-auto">
         {/* Arena */}
         <div className="battle-stage relative min-h-[320px] flex-1 overflow-hidden bg-arena">
-          {showZoomTip && <div className="absolute left-1/2 top-12 z-40 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-lg border border-[#80683f] bg-[#11130f]/95 px-3 py-1.5 font-vt text-[10px] font-bold text-[#d8c9ad] shadow-xl backdrop-blur-sm"><span>Adjust browser zoom with <kbd className="text-[#ffd36e]">Ctrl +</kbd> / <kbd className="text-[#ffd36e]">Ctrl -</kbd> to fit all interface elements.</span><button type="button" onClick={() => setShowZoomTip(false)} className="text-[#8f887b] hover:text-white" aria-label="Dismiss browser zoom tip"><X size={12} /></button></div>}
+          {!activeDungeon && showZoomTip && <div className="absolute left-1/2 top-12 z-40 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-lg border border-[#80683f] bg-[#11130f]/95 px-3 py-1.5 font-vt text-[10px] font-bold text-[#d8c9ad] shadow-xl backdrop-blur-sm"><span>Adjust browser zoom with <kbd className="text-[#ffd36e]">Ctrl +</kbd> / <kbd className="text-[#ffd36e]">Ctrl -</kbd> to fit all interface elements.</span><button type="button" onClick={() => setShowZoomTip(false)} className="text-[#8f887b] hover:text-white" aria-label="Dismiss browser zoom tip"><X size={12} /></button></div>}
           <div className="absolute left-3 top-3 z-30 flex items-start gap-1.5">
-            <div className="relative">
+            {!activeDungeon ? <div className="relative">
               <button onClick={() => setShowPotSettings(s => !s)} className={`game-control relative flex items-center gap-2 px-3 py-2 font-bold ${state.autoPot.enabled ? 'border-emerald-500/60 bg-emerald-950/30 text-emerald-300' : ''} ${showAutoPotGuide ? 'auto-pot-guide' : ''}`}>
                 <FlaskConical size={16} /> Pot-auto {state.autoPot.enabled ? 'ON' : 'OFF'}
               </button>
               {showAutoPotGuide && !showPotSettings && <div className="auto-pot-guide-tip">Potions empty · open Auto-pot</div>}
               {showPotSettings && <PotionSettings game={game} guideAutoBuy={showAutoPotGuide} onClose={() => setShowPotSettings(false)} />}
-            </div>
+            </div> : <div className="game-control flex h-9 items-center gap-2 border-violet-500/60 bg-violet-950/40 px-3 text-[9px] font-black uppercase text-violet-200"><DoorOpen size={15} /> Depth {activeDungeon.depth} · Room {activeDungeon.room}/4</div>}
             <div className="relative">
               <button type="button" onClick={() => setShowBattleSettings((value) => !value)} className="game-control flex h-9 items-center gap-1.5 px-2 text-[9px] font-black uppercase" aria-label="Battle animation settings" aria-expanded={showBattleSettings}><Settings2 size={15} /><span className="hidden sm:inline">{state.battleAnimationMode}</span></button>
               {showBattleSettings && <div className="absolute left-0 top-full mt-1 w-56 rounded-lg border border-[#80683f] bg-[#11130f]/97 p-2 shadow-2xl backdrop-blur-sm">
@@ -310,7 +373,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
               </div>}
             </div>
           </div>
-          {banner && (
+          {!activeDungeon && banner && (
             <div className="absolute inset-x-0 top-1/4 flex flex-col items-center z-30 pointer-events-none">
               <div className={`anim-banner font-pixel text-xl sm:text-2xl tracking-wider ${banner === 'VICTORY' ? 'text-px-bright' : 'text-px-red'}`} style={{ textShadow: banner === 'VICTORY' ? '0 0 20px #f5c518' : '0 0 20px #c02010' }}>{banner}</div>
               {battleResult && (
@@ -323,9 +386,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
               )}
             </div>
           )}
-          {potionFx && <div key={potionFx.born} className="absolute inset-0 pointer-events-none anim-fade" style={{ background: 'radial-gradient(circle at 50% 70%, rgba(74,222,128,0.15), transparent 60%)' }} />}
-          <Arena units={units} floaters={floaters} ownedHeroes={state.ownedHeroes} inventory={state.inventory} potionFx={potionFx} respawnCountdowns={respawnCountdowns} animationMode={state.battleAnimationMode} />
-          <div className="absolute right-3 top-3 z-30 flex items-center gap-1.5">
+          {!activeDungeon && potionFx && <div key={potionFx.born} className="absolute inset-0 pointer-events-none anim-fade" style={{ background: 'radial-gradient(circle at 50% 70%, rgba(74,222,128,0.15), transparent 60%)' }} />}
+          <Arena units={activeDungeon ? dungeonUnits : units} floaters={activeDungeon ? [] : floaters} ownedHeroes={state.ownedHeroes} inventory={state.inventory} potionFx={activeDungeon ? null : potionFx} respawnCountdowns={activeDungeon ? {} : respawnCountdowns} animationMode={state.battleAnimationMode} />
+          {!activeDungeon && <div className="absolute right-3 top-3 z-30 flex items-center gap-1.5">
             <button type="button" onClick={() => setShowDungeonInfo(true)} className="game-control flex h-7 items-center gap-1 px-2 py-0.5 text-[9px] font-bold text-[#d7c6ea]" aria-label="Open Dungeons information">
               <DoorOpen size={14} aria-hidden="true" /> DUNGEONS <Info size={11} aria-hidden="true" />
             </button>
@@ -336,9 +399,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
             >
               <BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}
             </button>
-          </div>
-          <TestControls game={game} />
-          <div className="absolute bottom-3 right-3 z-30 flex items-end gap-1.5">
+          </div>}
+          {!activeDungeon && <TestControls game={game} />}
+          {!activeDungeon && <div className="absolute bottom-3 right-3 z-30 flex items-end gap-1.5">
             {showDropRates && <div className="absolute bottom-full right-0 mb-2 w-56 rounded-lg border border-[#80683f] bg-[#11130f]/95 p-2.5 shadow-2xl backdrop-blur-sm">
               <div className="flex items-center justify-between gap-2"><strong className="text-[10px] uppercase tracking-wider text-[#efd18a]">Chest drop rate</strong><button type="button" onClick={() => setShowDropRates(false)} aria-label="Close drop rates"><X size={13} /></button></div>
               <p className="mt-1 text-[9px] text-[#978f81]">Current Account Level {state.accountLevel}. Rates update with account level and global rarity availability.</p>
@@ -359,12 +422,14 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
                 {state.tutorial.chestGranted && !state.tutorial.chestCompleted && <span className="chest-tutorial-badge">+1</span>}
               </button>
             </div>
-          </div>
-          <TokenEarningsPanel status={tok.status} today={game.state.tokensEarnedToday} clientPower={ownPower} eligible={canMineTokens(state.currentLocation, state.accountLevel, state.highestLocation)} heroes={state.ownedHeroes.length} defeated={state.totalKills} bosses={state.totalBossKills} />
+          </div>}
+          {!activeDungeon && <TokenEarningsPanel status={tok.status} today={game.state.tokensEarnedToday} clientPower={ownPower} eligible={canMineTokens(state.currentLocation, state.accountLevel, state.highestLocation)} heroes={state.ownedHeroes.length} defeated={state.totalKills} bosses={state.totalBossKills} />}
         </div>
 
+        {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={setActiveDungeon} onAttempts={setDungeonAttempts} />}
+
         {/* Location cards — redesigned like screenshot 4 */}
-        <div className="material-panel mt-1.5 shrink-0 p-2.5">
+        {!activeDungeon ? <div className="material-panel mt-1.5 shrink-0 p-2.5">
           <div className="mb-1.5 flex items-center justify-between">
             <span className="section-kicker">Locations</span>
             <span className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#77746d]">Progression path</span>
@@ -416,7 +481,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
             </div>
             <button onClick={() => scrollLocations(1)} className="game-control grid place-items-center" aria-label="Next locations"><ChevronRight size={20} /></button>
           </div>
-        </div>
+        </div> : <div className="material-panel mt-1.5 shrink-0 p-3"><div className="flex items-center justify-between gap-3"><span className="section-kicker">Cursed Citadel</span><span className="text-[9px] font-black uppercase tracking-widest text-violet-300">HP persists · potions disabled</span></div><div className="mt-2 grid grid-cols-4 gap-1.5">{['Guards', 'Elite', 'Crossroads', 'Boss'].map((label, index) => <div key={label} className={`rounded-lg border px-2 py-2 text-center text-[9px] font-black uppercase ${activeDungeon.room === index + 1 ? 'border-violet-400 bg-violet-950/40 text-violet-100' : activeDungeon.room > index + 1 ? 'border-emerald-700/60 bg-emerald-950/25 text-emerald-300' : 'border-white/10 bg-black/20 text-[#77706f]'}`}>{index + 1}. {label}</div>)}</div></div>}
 
       </div>
 
@@ -564,25 +629,97 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-px-panel border-2 border-px-bright font-vt text-base font-bold text-px-bright anim-slide-up" style={{ boxShadow: '3px 3px 0 #3d2008' }}>{toast}</div>
       )}
       {showAvatarPicker && <AvatarPicker game={game} onClose={() => setShowAvatarPicker(false)} />}
-      {showDungeonInfo && <DungeonPreviewModal accountLevel={state.accountLevel} onClose={() => setShowDungeonInfo(false)} onGuidesClick={() => { setShowDungeonInfo(false); onGuidesClick(); }} />}
+      {showDungeonInfo && <DungeonPreviewModal accountLevel={state.accountLevel} onStatus={enterDungeonArena} onClose={() => setShowDungeonInfo(false)} onGuidesClick={() => { setShowDungeonInfo(false); onGuidesClick(); }} />}
     </div>
   );
 }
 
-function DungeonPreviewModal({ accountLevel, onClose, onGuidesClick }: { accountLevel: number; onClose: () => void; onGuidesClick: () => void }) {
+function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts }: {
+  checkpoint: DungeonCheckpoint;
+  attempts: { remaining: number; max: number } | null;
+  onChange: (checkpoint: DungeonCheckpoint | null) => void;
+  onAttempts: (attempts: { remaining: number; max: number } | null) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [confirmAbandon, setConfirmAbandon] = useState(false);
+  const roomState = checkpoint.room_state;
+
+  const runAction = async (action: string, payload: Record<string, unknown>) => {
+    if (busy) return;
+    setBusy(true); setError(''); setConfirmAbandon(false);
+    const request = playerSync<Record<string, unknown>>(action, { ...payload, idempotency_key: crypto.randomUUID() }, (message) => setError(message === 'rate_limited' ? 'Please wait a few seconds before repeating this Dungeon action.' : message));
+    const [result] = await Promise.all([
+      request,
+      new Promise<void>((resolve) => setTimeout(resolve, action === 'dungeon_room_action' ? 700 : 0)),
+    ]);
+    if (result) {
+      if (action === 'dungeon_abandon' || (result.status && result.status !== 'active')) {
+        if (attempts) onAttempts({ remaining: Number(result.attempts_remaining ?? attempts.remaining), max: attempts.max });
+        onChange(null);
+      } else {
+        onChange({
+          ...checkpoint,
+          room: Number(result.room ?? checkpoint.room),
+          revision: Number(result.revision ?? checkpoint.revision),
+          run_state: (result.run_state ?? checkpoint.run_state) as DungeonCheckpoint['run_state'],
+          room_state: (result.room_state ?? null) as DungeonCheckpoint['room_state'],
+        });
+      }
+    }
+    setBusy(false);
+  };
+
+  const primary = (() => {
+    if (checkpoint.room === 3 && !roomState) return null;
+    if (!roomState) return checkpoint.room > 2 ? null : {
+      label: `Start Room ${checkpoint.room}`,
+      action: () => runAction('dungeon_room_start', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }),
+    };
+    if (roomState.status === 'ready') return {
+      label: checkpoint.room === 3 ? 'Attack Treasure Guards' : checkpoint.room === 2 ? 'Attack Elite Room' : 'Attack Room 1',
+      action: () => runAction('dungeon_room_action', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, command: 'resolve' }),
+    };
+    return {
+      label: roomState.status === 'cleared' ? `Continue to Room ${checkpoint.room + 1}` : 'Leave defeated run',
+      action: () => runAction('dungeon_room_complete', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }),
+    };
+  })();
+
+  return <div className="material-panel mt-1.5 grid shrink-0 gap-2 border-violet-500/40 bg-[#100d14] p-3 shadow-2xl">
+    <div className="text-center">
+      <div className="font-vt text-sm font-black uppercase tracking-wider text-violet-100">Depth {checkpoint.depth} · Room {checkpoint.room}/4</div>
+      <div className="mt-0.5 text-[9px] uppercase tracking-widest text-[#a99ab4]">{roomState?.modifier?.split('_').join(' ') ?? (roomState?.kind?.split('_').join(' ') || 'Prepare formation')} · Attempts {attempts ? `${attempts.remaining}/${attempts.max}` : '—'}</div>
+    </div>
+    <div className="mx-auto grid w-full max-w-lg gap-2">
+      {roomState?.status === 'cleared' && <div className="text-center font-vt text-sm font-black uppercase tracking-widest text-emerald-300">Room cleared</div>}
+      {roomState?.status === 'failed' && <div className="text-center font-vt text-sm font-black uppercase tracking-widest text-rose-300">Formation defeated</div>}
+      {busy && <div className="text-center text-[10px] font-black uppercase tracking-widest text-violet-200">Server resolving combat…</div>}
+      {checkpoint.room === 3 && !roomState && <div className="grid grid-cols-2 gap-2"><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'recovery' })} className="game-control min-h-11 px-2 text-[10px] font-black text-emerald-300"><HeartPulse size={15} className="mx-auto mb-1" />Recovery · +25% HP</button><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'treasure' })} className="game-control min-h-11 px-2 text-[10px] font-black text-amber-300"><Gem size={15} className="mx-auto mb-1" />Treasure fight</button></div>}
+      {checkpoint.room === 4 && !roomState && <div className="rounded-lg border border-amber-800/45 bg-amber-950/20 px-3 py-2 text-center text-[10px] font-bold text-amber-200">Room 4 Boss is the next server slice and remains disabled.</div>}
+      {primary && <button type="button" disabled={busy} onClick={primary.action} className="game-control game-primary min-h-12 px-4 text-sm font-black"><Skull size={17} className="mr-2 inline" />{primary.label}</button>}
+      {error && <div role="alert" className="text-center text-[10px] font-bold text-rose-300">{error.split('_').join(' ')}</div>}
+      <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="game-control min-h-8 px-3 text-[9px] font-bold text-rose-300">{confirmAbandon ? 'Confirm abandon · Attempt is not refunded' : 'Abandon Dungeon'}</button>
+    </div>
+  </div>;
+}
+
+function DungeonPreviewModal({ accountLevel, onStatus, onClose, onGuidesClick }: { accountLevel: number; onStatus: (status: DungeonStatus) => void; onClose: () => void; onGuidesClick: () => void }) {
   const [status, setStatus] = useState<DungeonStatus | null>(null);
   const [depth, setDepth] = useState(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const onCloseRef = useRef(onClose);
+  const onStatusRef = useRef(onStatus);
   const active = status?.active_encounter?.type === 'dungeon' ? status.active_encounter : null;
   const effectiveLevel = status?.account_level ?? accountLevel;
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  useEffect(() => { onStatusRef.current = onStatus; }, [onStatus]);
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') onCloseRef.current(); };
     window.addEventListener('keydown', closeOnEscape);
     void playerSync<DungeonStatus>('dungeon_status', {}, (message) => setError(message === 'rate_limited' ? 'Dungeon status is cooling down. Reopen in a few seconds.' : message))
-      .then((result) => { if (result) { setStatus(result); setError(''); } });
+      .then((result) => { if (result) { setStatus(result); setError(''); onStatusRef.current(result); } });
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, []);
   const runAction = async (action: string, payload: Record<string, unknown>) => {
@@ -593,11 +730,13 @@ function DungeonPreviewModal({ accountLevel, onClose, onGuidesClick }: { account
       if (!current) return current;
       if (action === 'dungeon_start') {
         const encounter = result.encounter as Omit<DungeonCheckpoint, 'room_state'> | undefined;
-        return encounter ? {
+        const next: DungeonStatus = encounter ? {
           ...current,
           attempts_remaining: Number(result.attempts_remaining ?? current.attempts_remaining),
-          active_encounter: { ...encounter, type: 'dungeon', room_state: null },
+          active_encounter: { ...encounter, type: 'dungeon' as const, room_state: null },
         } : current;
+        onStatusRef.current(next);
+        return next;
       }
       if (action === 'dungeon_abandon') return {
         ...current,
