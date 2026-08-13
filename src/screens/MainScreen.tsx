@@ -770,7 +770,7 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts }: {
     };
   })();
 
-  return <div className="material-panel absolute inset-x-2 bottom-2 z-40 grid gap-2 border-violet-500/50 bg-[#100d14]/95 p-3 shadow-2xl backdrop-blur-sm sm:inset-x-auto sm:bottom-auto sm:right-3 sm:top-14 sm:w-52">
+  return <aside className="dungeon-battle-panel" aria-label="Dungeon battle controls">
     <div className="text-center">
       <div className="font-vt text-base font-black uppercase tracking-wider text-violet-100">Depth {checkpoint.depth} · Room {checkpoint.room}/4</div>
       <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-[#b7a9c0]">{roomState?.modifier?.split('_').join(' ') ?? (roomState?.kind?.split('_').join(' ') || 'Ready')} · {attempts ? `${attempts.remaining}/${attempts.max}` : '—'}</div>
@@ -784,9 +784,9 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts }: {
       {roomState?.status === 'boss_locked' && <div className="text-center text-[10px] font-bold text-violet-200">Boss combat is the next server slice. No Boss action or reward is enabled.</div>}
       {primary && <button type="button" disabled={busy} onClick={primary.action} className="game-control game-primary min-h-11 px-3 text-[13px] font-black"><Skull size={17} className="mr-2 inline" />{primary.label}</button>}
       {error && <div role="alert" className="text-center text-[10px] font-bold text-rose-300">{error.split('_').join(' ')}</div>}
-      <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="game-control min-h-10 px-3 text-[11px] font-bold text-rose-300">{confirmAbandon ? 'Confirm · no refund' : 'Abandon Dungeon'}</button>
+      <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="game-control min-h-10 px-3 text-[11px] font-bold text-rose-300">{confirmAbandon ? 'Confirm exit · no refund' : 'Exit Dungeon'}</button>
     </div>
-  </div>;
+  </aside>;
 }
 
 function DungeonPreviewModal({ accountLevel, onStatus, onClose, onGuidesClick }: { accountLevel: number; onStatus: (status: DungeonStatus) => void; onClose: () => void; onGuidesClick: () => void }) {
