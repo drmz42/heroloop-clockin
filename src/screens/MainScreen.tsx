@@ -24,6 +24,16 @@ const SAVE_KEY = 'afk-heroes-save-v7';
 const SLOTS: ItemSlot[] = ['class_weapon', 'offhand', 'helmet', 'chest', 'gloves', 'boots', 'ring', 'amulet'];
 const GRID_SIZE = 64;
 
+type DungeonCheckpoint = {
+  type: 'dungeon'; encounter_id: string; depth: number; room: number; revision: number;
+  room_state: null | { status: string; modifier?: string; heroes?: Array<{ current_hp: number; max_hp: number; alive: boolean }> };
+};
+type DungeonStatus = {
+  attempts_remaining: number; attempts_max: number; next_reset_at: string; account_level: number;
+  unlocks: { depth_1: boolean; depth_2: boolean; depth_3: boolean };
+  active_encounter: DungeonCheckpoint | { type: 'boss_hunt' } | null;
+};
+
 const EQUIPMENT_ERROR_LABELS: Record<string, string> = {
   duplicate_equipment_assignment: 'Saved gear conflict',
   hero_not_active: 'Hero is not in the active team',
@@ -554,31 +564,71 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-px-panel border-2 border-px-bright font-vt text-base font-bold text-px-bright anim-slide-up" style={{ boxShadow: '3px 3px 0 #3d2008' }}>{toast}</div>
       )}
       {showAvatarPicker && <AvatarPicker game={game} onClose={() => setShowAvatarPicker(false)} />}
-      {showDungeonInfo && <DungeonPreviewModal onClose={() => setShowDungeonInfo(false)} onGuidesClick={() => { setShowDungeonInfo(false); onGuidesClick(); }} />}
+      {showDungeonInfo && <DungeonPreviewModal accountLevel={state.accountLevel} onClose={() => setShowDungeonInfo(false)} onGuidesClick={() => { setShowDungeonInfo(false); onGuidesClick(); }} />}
     </div>
   );
 }
 
-function DungeonPreviewModal({ onClose, onGuidesClick }: { onClose: () => void; onGuidesClick: () => void }) {
+function DungeonPreviewModal({ accountLevel, onClose, onGuidesClick }: { accountLevel: number; onClose: () => void; onGuidesClick: () => void }) {
+  const [status, setStatus] = useState<DungeonStatus | null>(null);
+  const [depth, setDepth] = useState(1);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const active = status?.active_encounter?.type === 'dungeon' ? status.active_encounter : null;
+  const effectiveLevel = status?.account_level ?? accountLevel;
+  const loadStatus = async () => {
+    const result = await playerSync<DungeonStatus>('dungeon_status', {}, setError);
+    if (result) { setStatus(result); setError(''); }
+  };
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
     window.addEventListener('keydown', closeOnEscape);
+    void loadStatus();
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [onClose]);
+  const runAction = async (action: string, payload: Record<string, unknown>) => {
+    if (busy) return;
+    setBusy(true); setError('');
+    const result = await playerSync<Record<string, unknown>>(action, { ...payload, idempotency_key: crypto.randomUUID() }, setError);
+    if (result) await loadStatus();
+    setBusy(false);
+  };
+  const primary = (() => {
+    if (!status) return { label: 'Loading Dungeon…', disabled: true, action: () => undefined };
+    if (status.active_encounter?.type === 'boss_hunt') return { label: 'Boss Hunt is active', disabled: true, action: () => undefined };
+    if (!active) return {
+      label: effectiveLevel < 30 ? 'Unlocks at Account Level 30' : `Enter Depth ${depth} · Uses 1 Attempt`,
+      disabled: effectiveLevel < 30 || status.attempts_remaining < 1,
+      action: () => runAction('dungeon_start', { depth }),
+    };
+    if (!active.room_state) return {
+      label: `Start Room ${active.room}`,
+      disabled: active.room > 2,
+      action: () => runAction('dungeon_room_start', { encounter_id: active.encounter_id, expected_revision: active.revision }),
+    };
+    if (active.room === 2) return { label: 'Elite combat activation in progress', disabled: true, action: () => undefined };
+    if (active.room_state.status === 'ready') return {
+      label: 'Resolve Room 1', disabled: false,
+      action: () => runAction('dungeon_room_action', { encounter_id: active.encounter_id, expected_revision: active.revision, command: 'resolve' }),
+    };
+    return {
+      label: active.room_state.status === 'cleared' ? 'Continue to Room 2' : 'Close defeated run', disabled: false,
+      action: () => runAction('dungeon_room_complete', { encounter_id: active.encounter_id, expected_revision: active.revision }),
+    };
+  })();
   return (
     <div className="fixed inset-0 z-[9999] grid place-items-center bg-black/80 p-3 backdrop-blur-[5px]" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section role="dialog" aria-modal="true" aria-labelledby="dungeon-preview-title" className="game-scrollbar max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[#76569b] bg-[radial-gradient(circle_at_75%_0%,rgba(110,68,154,.23),transparent_38%),linear-gradient(155deg,#1d1822,#0b0d0c_70%)] p-4 shadow-[0_28px_100px_rgba(0,0,0,.85),0_0_38px_rgba(118,86,155,.18)] sm:p-5">
         <header className="flex items-start gap-3">
           <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[#8965ad] bg-[#281d33] text-[#d8b4fe] shadow-[inset_0_1px_rgba(255,255,255,.08),0_0_18px_rgba(168,85,247,.15)]"><DoorOpen size={23} /></div>
-          <div className="min-w-0 flex-1"><div className="section-kicker">Expedition preview</div><div className="mt-1 flex flex-wrap items-center gap-2"><h2 id="dungeon-preview-title" className="font-vt text-xl font-black text-[#f0e5ce]">Dungeons</h2><span className="rounded-full border border-amber-700/60 bg-amber-950/35 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-300">Coming soon</span></div><p className="mt-1 text-xs leading-5 text-[#aca1b2]">A four-room run with persistent HP, one strategic branch and a final shared Boss.</p></div>
+          <div className="min-w-0 flex-1"><div className="section-kicker">Live testing</div><div className="mt-1 flex flex-wrap items-center gap-2"><h2 id="dungeon-preview-title" className="font-vt text-xl font-black text-[#f0e5ce]">Dungeons</h2><span className="rounded-full border border-emerald-700/60 bg-emerald-950/35 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-300">Server active</span></div><p className="mt-1 text-xs leading-5 text-[#aca1b2]">Level 30+ testing · persistent HP · three Attempts each week.</p></div>
           <button type="button" autoFocus onClick={onClose} className="game-control grid h-9 w-9 shrink-0 place-items-center" aria-label="Close Dungeons information"><X size={15} /></button>
         </header>
 
         <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-y border-[#4d3c57]/70 py-2 text-[9px] text-[#94899a]">
-          <span className="font-black uppercase tracking-widest text-[#c4a3df]">Choose depth</span>
-          <span><b className="text-[#eadcf2]">I</b> Developing</span><span className="text-[#594762]">•</span>
-          <span><b className="text-[#eadcf2]">II</b> Established</span><span className="text-[#594762]">•</span>
-          <span><b className="text-[#eadcf2]">III</b> Endgame</span>
+          <span className="font-black uppercase tracking-widest text-[#c4a3df]">Attempts {status ? `${status.attempts_remaining}/${status.attempts_max}` : '…'}</span>
+          {!active && [1, 2, 3].map((value) => <button key={value} type="button" disabled={effectiveLevel < 30 || busy} onClick={() => setDepth(value)} className={`game-control px-2 py-1 ${depth === value ? 'border-[#b98ce0] text-[#f3e8ff]' : ''}`}>Depth {value}</button>)}
+          {active && <span className="text-[#eadcf2]">Depth {active.depth} · Room {active.room}/4{active.room_state?.modifier ? ` · ${active.room_state.modifier.split('_').join(' ')}` : ''}</span>}
         </div>
 
         <div className="relative mx-auto mt-4 max-w-xl pl-1">
@@ -591,11 +641,14 @@ function DungeonPreviewModal({ onClose, onGuidesClick }: { onClose: () => void; 
           </ol>
         </div>
 
-        <div className="mt-4 border-t border-[#4d3c57]/70 pt-3 text-[9px] leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Rules:</b> Unlocks at Account Level 30. HP and deaths persist. Potions and Auto-pot are disabled. Five Boss identities use marked casts; enrage starts at 180s and the fight ends at 240s.</p><p className="mt-1.5"><b className="text-[#e0bd71]">Rewards:</b> Treasure gives 1,000 / 2,500 / 5,000 Gold; only Depth III also gives 1 Scroll. The final Boss gives 1 Scroll and the run's only Dungeon Chest: Epic+, Divine from level 55, Celestial from level 80. Claim through the victory ritual; Scroll and Chest store in Resources.</p></div>
+        <div className="mt-4 border-t border-[#4d3c57]/70 pt-3 text-[9px] leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Testing rules:</b> Unlocks at Account Level 30. All Depths are selectable. Formation, equipment, HP and deaths persist. Potions and Auto-pot are disabled.</p><p className="mt-1.5"><b className="text-[#e0bd71]">Current build:</b> Room 1 and the Room 2 Elite checkpoint are server-authoritative. Later combat and every reward remain disabled until their server settlement is accepted.</p>{error && <p role="alert" className="mt-2 font-bold text-rose-300">{error.split('_').join(' ')}</p>}</div>
 
         <footer className="mt-4 grid gap-2 sm:grid-cols-2">
           <button type="button" onClick={onGuidesClick} className="game-control flex items-center justify-center gap-2 px-4 py-2 text-xs font-black"><BookOpen size={16} /> Read full Dungeon Wiki</button>
-          <button type="button" disabled className="game-control game-primary flex items-center justify-center gap-2 px-4 py-2 text-xs font-black"><DoorOpen size={16} /> Enter Dungeon · Coming soon</button>
+          <div className="grid gap-2">
+            <button type="button" disabled={primary.disabled || busy} onClick={primary.action} className="game-control game-primary flex min-h-11 items-center justify-center gap-2 px-4 py-2 text-xs font-black"><DoorOpen size={16} /> {busy ? 'Server confirming…' : primary.label}</button>
+            {active && <button type="button" disabled={busy} onClick={() => runAction('dungeon_abandon', { encounter_id: active.encounter_id, expected_revision: active.revision })} className="game-control flex min-h-9 items-center justify-center px-3 py-1 text-[10px] font-bold text-rose-300">Abandon run · no Attempt refund</button>}
+          </div>
         </footer>
       </section>
     </div>
