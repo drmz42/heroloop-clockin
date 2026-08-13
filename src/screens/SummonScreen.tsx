@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Sparkles, Target, X } from 'lucide-react';
+import { AlertTriangle, ChevronDown, Info, Sparkles, Target, X } from 'lucide-react';
 import { HERO_MAP, RARITY_COLORS, RARITY_GLOW, RARITY_INDEX, RARITY_LABEL, RARITY_WEIGHT } from '@/game/heroes';
 import { summonCostHero, formatNum, MAX_HEROES } from '@/game/state';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
@@ -77,6 +77,8 @@ export function SummonScreen({ game }: { game: GameApi }) {
   const [summoning, setSummoning] = useState<1 | 10 | 100 | null>(null);
   const [focusRarity, setFocusRarity] = useState<Rarity>('common');
   const [focusSaving, setFocusSaving] = useState(false);
+  const [showFocus, setShowFocus] = useState(false);
+  const [showPityInfo, setShowPityInfo] = useState(false);
   const cost = summonCostHero();
   const singleHasSpace = state.ownedHeroes.length < MAX_HEROES;
   const tenHasSpace = state.ownedHeroes.length + 10 <= MAX_HEROES;
@@ -158,8 +160,10 @@ export function SummonScreen({ game }: { game: GameApi }) {
         <div className="section-kicker">The Obsidian Covenant</div>
         <h2 className="mb-1 mt-1 text-2xl font-black text-white"><span className="text-[#d7a9ff]">Hero</span> Summon</h2>
         <p className="text-slate-400 text-sm max-w-sm mb-1">Summon heroes using $HERO tokens. All heroes are unique and tradeable.</p>
-        <section className="mb-4 w-full max-w-xl rounded-lg border border-violet-500/30 bg-black/45 p-2.5 text-left">
-          <div className="flex items-center justify-between gap-2"><span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-violet-200"><Target size={13} /> Ascension Focus</span><span className="text-[8px] font-bold uppercase text-emerald-300">Rarity chance unchanged</span></div>
+        <section className="mb-2 w-full max-w-xl rounded-lg border border-violet-500/30 bg-black/45 text-left">
+          <button type="button" onClick={() => setShowFocus((value) => !value)} aria-expanded={showFocus} className="flex min-h-10 w-full items-center gap-2 px-3 py-2"><Target size={13} className="text-violet-300" /><span className="text-[10px] font-black uppercase tracking-wide text-violet-200">Ascension Focus</span><span className="min-w-0 flex-1 truncate text-right text-[9px] text-[#9b8ea2]">{selectedFocus ? HERO_MAP[selectedFocus]?.name ?? 'Selected' : 'Off'}</span><ChevronDown size={13} className={`text-[#87788e] transition-transform ${showFocus ? 'rotate-180' : ''}`} /></button>
+          {showFocus && <div className="border-t border-violet-500/20 px-2.5 pb-2.5">
+          <div className="mt-2 text-right text-[8px] font-bold uppercase text-emerald-300">Rarity chance unchanged</div>
           <div className="mt-2 flex flex-wrap gap-1">{rarities.map((rarity) => <button key={rarity} type="button" onClick={() => setFocusRarity(rarity)} className={`rounded border px-1.5 py-1 text-[7px] font-black uppercase ${focusRarity === rarity ? 'bg-white/10' : 'bg-black/30 opacity-70'}`} style={{ color: RARITY_COLORS[rarity], borderColor: RARITY_COLORS[rarity] + '66' }}>{RARITY_LABEL[rarity]}</button>)}</div>
           <div className="mt-2 flex min-h-10 flex-wrap items-center gap-1.5">
             <button type="button" disabled={focusSaving || summoning !== null} onClick={() => void changeFocus(null)} className={`rounded-md border px-2 py-2 text-[8px] font-black uppercase ${selectedFocus === null ? 'border-violet-300 bg-violet-900/45 text-violet-100' : 'border-white/10 text-slate-500'}`}>Off</button>
@@ -171,9 +175,11 @@ export function SummonScreen({ game }: { game: GameApi }) {
             {focusCandidates.length === 0 && <span className="text-[9px] text-slate-500">Obtain a {RARITY_LABEL[focusRarity]} hero to unlock its Focus.</span>}
           </div>
           <p className="mt-2 text-[8px] leading-relaxed text-[#8f8798]">The server locks one owned identity for this rarity when an x1/x10/x100 batch begins. Focus changes identity only, never rarity, Pity or batch size.</p>
+          </div>}
         </section>
 
-        <div className="mb-4 grid w-full max-w-xl grid-cols-2 gap-1.5 sm:grid-cols-4">
+        <div className="mb-1 flex w-full max-w-xl items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[.14em] text-[#9d8ca6]">Pity progress</span><button type="button" onClick={() => setShowPityInfo((value) => !value)} aria-expanded={showPityInfo} className="game-control flex h-7 items-center gap-1 px-2 text-[8px] font-black"><Info size={11} /> Pity info</button></div>
+        <div className="mb-2 grid w-full max-w-xl grid-cols-3 gap-1 sm:grid-cols-5">
           {([
             ['Legendary', game.summonPity.legendary, 150, 'legendary'],
             ['Mythic', game.summonPity.mythic, 500, 'mythic'],
@@ -181,14 +187,14 @@ export function SummonScreen({ game }: { game: GameApi }) {
             ['Divine', game.summonPity.divine, 5000, 'divine'],
             ['Celestial', game.summonPity.celestial, 20000, 'celestial'],
           ] as const).map(([label, current, target, rarity]) => (
-            <div key={rarity} className="rounded-md border bg-black/35 px-2 py-1.5 text-left" style={{ borderColor: RARITY_COLORS[rarity] + '55' }}>
+            <div key={rarity} className="rounded-md border bg-black/35 px-1.5 py-1 text-left" style={{ borderColor: RARITY_COLORS[rarity] + '55' }}>
               <div className="flex items-center justify-between gap-1 text-[8px] font-black uppercase" style={{ color: RARITY_COLORS[rarity] }}><span>{label} Pity</span><span>{current}/{target}</span></div>
               <div className="mt-1 h-1 overflow-hidden rounded-full bg-black/60"><div className="h-full rounded-full transition-[width]" style={{ width: `${Math.min(100, current / target * 100)}%`, backgroundColor: RARITY_COLORS[rarity] }} /></div>
               {rarity === 'mythic' && current >= 250 && <div className="mt-1 text-[7px] font-bold uppercase text-red-300">Soft pity +0.0015 pp / miss</div>}
             </div>
           ))}
         </div>
-        <p className="mb-4 max-w-xl rounded-md border border-violet-500/20 bg-violet-950/20 px-3 py-2 text-[9px] leading-relaxed text-[#aaa0b4]"><strong className="text-violet-200">How Pity works:</strong> counters track misses for that rarity or higher. Guarantees are 150 / 500 / 2,000 / 5,000 / 20,000. Mythic+ gains 0.0015 percentage point per miss on rolls 251–499, taken from Common.</p>
+        {showPityInfo && <p className="mb-2 max-w-xl rounded-md border border-violet-500/20 bg-violet-950/20 px-3 py-2 text-[9px] leading-relaxed text-[#aaa0b4]"><strong className="text-violet-200">How Pity works:</strong> counters track misses for that rarity or higher. Guarantees are 150 / 500 / 2,000 / 5,000 / 20,000. Mythic+ gains 0.0015 percentage point per miss on rolls 251–499, taken from Common.</p>}
 
         <div className="flex w-full max-w-sm flex-col gap-2.5">
           {summonNotice && <div role="alert" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-red-700/65 bg-[linear-gradient(135deg,rgba(75,16,22,.92),rgba(20,8,12,.96))] px-3 py-2.5 text-left shadow-[inset_0_1px_rgba(255,255,255,.06),0_8px_22px_rgba(0,0,0,.35)]"><AlertTriangle size={17} className="shrink-0 text-red-300" /><span className="flex-1 text-[11px] font-bold text-red-100">{summonNotice}</span><button type="button" onClick={() => setSummonNotice('')} aria-label="Dismiss Summon message" className="rounded p-1 text-red-300 hover:bg-white/10"><X size={14} /></button></div>}
