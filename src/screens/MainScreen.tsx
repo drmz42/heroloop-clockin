@@ -28,7 +28,7 @@ type DungeonCheckpoint = {
   type: 'dungeon'; encounter_id: string; depth: number; room: number; revision: number;
   roster_snapshot?: Array<{ uid: string; hero_id: string; stats?: Record<string, number> }>;
   run_state?: { heroes?: DungeonUnitState[]; rooms_cleared?: number };
-  room_state: null | { status: string; kind?: string; choice?: string; modifier?: string; heroes?: DungeonUnitState[]; enemies?: DungeonUnitState[]; boss?: { boss_id: string; name: string; status: string } };
+  room_state: null | { status: string; kind?: string; choice?: string; modifier?: string; heroes?: DungeonUnitState[]; enemies?: DungeonUnitState[]; boss?: { boss_id: string; name: string; status: string }; playback_tick?: number };
 };
 type DungeonUnitState = {
   uid?: string; unit_id?: string; position?: number; lane?: number; current_hp: number; max_hp: number; alive: boolean;
@@ -39,6 +39,27 @@ type DungeonStatus = {
   unlocks: { depth_1: boolean; depth_2: boolean; depth_3: boolean };
   active_encounter: DungeonCheckpoint | { type: 'boss_hunt' } | null;
 };
+
+const DUNGEON_PREVIEW_STATS: Record<number, Record<number, { hp: number; atk: number; def: number; speed: number }>> = {
+  1: { 1: { hp: 618, atk: 58, def: 19, speed: 99.63 }, 2: { hp: 2372, atk: 214, def: 78, speed: 102.888 }, 3: { hp: 6759, atk: 585, def: 272, speed: 102.888 } },
+  2: { 1: { hp: 649, atk: 61, def: 20, speed: 99.63 }, 2: { hp: 2491, atk: 225, def: 82, speed: 102.888 }, 3: { hp: 7097, atk: 614, def: 286, speed: 102.888 } },
+  4: { 1: { hp: 371, atk: 15, def: 14, speed: 99.63 }, 2: { hp: 1423, atk: 54, def: 59, speed: 102.888 }, 3: { hp: 4055, atk: 146, def: 204, speed: 102.888 } },
+};
+
+function dungeonPreviewEnemies(checkpoint: DungeonCheckpoint, heroes: DungeonUnitState[]): DungeonUnitState[] {
+  const stats = DUNGEON_PREVIEW_STATS[checkpoint.room]?.[checkpoint.depth];
+  if (!stats) return [];
+  return heroes.filter((hero) => hero.alive).map((hero, index) => ({
+    unit_id: `preview-${checkpoint.room}-${hero.position ?? index}`,
+    lane: hero.position ?? index,
+    current_hp: stats.hp,
+    max_hp: stats.hp,
+    atk: stats.atk,
+    def: stats.def,
+    speed: stats.speed,
+    alive: true,
+  }));
+}
 
 const EQUIPMENT_ERROR_LABELS: Record<string, string> = {
   duplicate_equipment_assignment: 'Saved gear conflict',
@@ -227,6 +248,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
     const heroStates: DungeonUnitState[] = roomHeroes.length > 0 ? roomHeroes : (activeDungeon.roster_snapshot ?? []).map((hero, position) => ({
       uid: hero.uid, position, current_hp: Number(hero.stats?.hp ?? 1), max_hp: Number(hero.stats?.hp ?? 1), alive: true,
     }));
+    const playbackTick = activeDungeon.room_state?.playback_tick ?? 0;
     const heroes = heroStates.map((unit, position): CombatUnit => {
       const owned = state.ownedHeroes.find((hero) => hero.uid === unit.uid);
       const base = owned ? HERO_MAP[owned.heroId] : undefined;
@@ -236,16 +258,17 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
         hp: Number(unit.current_hp), maxHp: Number(unit.max_hp), atk: Number(snapshot?.stats?.atk ?? unit.atk ?? 0),
         def: Number(snapshot?.stats?.def ?? unit.def ?? 0), speed: Number(snapshot?.stats?.speed ?? unit.speed ?? 100),
         combatSpeed: 1, critChance: 0, critDamage: 1.5, color: base ? RARITY_COLORS[base.rarity] : '#b98ce0',
-        icon: '⚔️', attackTimer: 0, attackInterval: 1, heroClass: base?.heroClass, alive: Boolean(unit.alive),
+        icon: '⚔️', attackTimer: playbackTick % 2 === 0 ? 0 : 60, attackInterval: 1, heroClass: base?.heroClass, alive: Boolean(unit.alive),
       };
     });
-    const enemies = (activeDungeon.room_state?.enemies ?? []).map((unit, position): CombatUnit => ({
+    const enemyStates = activeDungeon.room_state?.enemies ?? dungeonPreviewEnemies(activeDungeon, heroStates);
+    const enemies = enemyStates.map((unit, position): CombatUnit => ({
       uid: `e${position}-${activeDungeon.room === 2 ? 'boss-ogre' : activeDungeon.room === 3 ? 'skeleton' : activeDungeon.room === 4 ? 'goblin' : 'orc'}`,
       name: activeDungeon.room === 2 ? 'Elite Guard' : activeDungeon.room === 3 ? 'Treasure Guard' : activeDungeon.room === 4 ? 'Retinue Guard' : 'Citadel Guard',
       side: 'enemy', hp: Number(unit.current_hp), maxHp: Number(unit.max_hp), atk: Number(unit.atk ?? 0),
       def: Number(unit.def ?? 0), speed: Number(unit.speed ?? 100), combatSpeed: 1, critChance: 0.06,
       critDamage: 1.5, color: activeDungeon.room === 2 ? '#c084fc' : activeDungeon.room === 4 ? '#a78bfa' : '#ef7f68', icon: activeDungeon.room === 2 ? '👹' : '🛡️',
-      attackTimer: 0, attackInterval: 1, alive: Boolean(unit.alive),
+      attackTimer: playbackTick % 2 === 0 ? 60 : 0, attackInterval: 1, alive: Boolean(unit.alive),
     }));
     const boss = activeDungeon.room_state?.kind === 'boss_protected' && activeDungeon.room_state.boss ? [{
       uid: 'e0-boss-lich', name: activeDungeon.room_state.boss.name, side: 'enemy' as const,
@@ -392,7 +415,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
             </div>
           )}
           {!activeDungeon && potionFx && <div key={potionFx.born} className="absolute inset-0 pointer-events-none anim-fade" style={{ background: 'radial-gradient(circle at 50% 70%, rgba(74,222,128,0.15), transparent 60%)' }} />}
-          <Arena units={activeDungeon ? dungeonUnits : units} floaters={activeDungeon ? [] : floaters} ownedHeroes={state.ownedHeroes} inventory={state.inventory} potionFx={activeDungeon ? null : potionFx} respawnCountdowns={activeDungeon ? {} : respawnCountdowns} animationMode={state.battleAnimationMode} />
+          <Arena units={activeDungeon ? dungeonUnits : units} floaters={activeDungeon ? [] : floaters} ownedHeroes={state.ownedHeroes} inventory={state.inventory} potionFx={activeDungeon ? null : potionFx} respawnCountdowns={activeDungeon ? {} : respawnCountdowns} animationMode={state.battleAnimationMode} dungeonPanelOpen={Boolean(activeDungeon)} />
+          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={setActiveDungeon} onAttempts={setDungeonAttempts} />}
           {!activeDungeon && <div className="absolute right-3 top-3 z-30 flex items-center gap-1.5">
             <button type="button" onClick={() => setShowDungeonInfo(true)} className="game-control flex h-7 items-center gap-1 px-2 py-0.5 text-[9px] font-bold text-[#d7c6ea]" aria-label="Open Dungeons information">
               <DoorOpen size={14} aria-hidden="true" /> DUNGEONS <Info size={11} aria-hidden="true" />
@@ -430,8 +454,6 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
           </div>}
           {!activeDungeon && <TokenEarningsPanel status={tok.status} today={game.state.tokensEarnedToday} clientPower={ownPower} eligible={canMineTokens(state.currentLocation, state.accountLevel, state.highestLocation)} heroes={state.ownedHeroes.length} defeated={state.totalKills} bosses={state.totalBossKills} />}
         </div>
-
-        {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={setActiveDungeon} onAttempts={setDungeonAttempts} />}
 
         {/* Location cards — redesigned like screenshot 4 */}
         {!activeDungeon ? <div className="material-panel mt-1.5 shrink-0 p-2.5">
@@ -650,41 +672,97 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts }: {
   const [confirmAbandon, setConfirmAbandon] = useState(false);
   const roomState = checkpoint.room_state;
 
+  const checkpointFromResult = (base: DungeonCheckpoint, result: Record<string, unknown>): DungeonCheckpoint => ({
+    ...base,
+    room: Number(result.room ?? base.room),
+    revision: Number(result.revision ?? base.revision),
+    run_state: (result.run_state ?? base.run_state) as DungeonCheckpoint['run_state'],
+    room_state: (result.room_state ?? null) as DungeonCheckpoint['room_state'],
+  });
+
+  const requestAction = (action: string, payload: Record<string, unknown>) => playerSync<Record<string, unknown>>(
+    action,
+    { ...payload, idempotency_key: crypto.randomUUID() },
+    (message) => setError(message === 'rate_limited' ? 'Please wait a few seconds before repeating this Dungeon action.' : message),
+  );
+
   const runAction = async (action: string, payload: Record<string, unknown>) => {
     if (busy) return;
     setBusy(true); setError(''); setConfirmAbandon(false);
-    const request = playerSync<Record<string, unknown>>(action, { ...payload, idempotency_key: crypto.randomUUID() }, (message) => setError(message === 'rate_limited' ? 'Please wait a few seconds before repeating this Dungeon action.' : message));
-    const [result] = await Promise.all([
-      request,
-      new Promise<void>((resolve) => setTimeout(resolve, action === 'dungeon_room_action' ? 700 : 0)),
-    ]);
+    const result = await requestAction(action, payload);
     if (result) {
       if (action === 'dungeon_abandon' || (result.status && result.status !== 'active')) {
         if (attempts) onAttempts({ remaining: Number(result.attempts_remaining ?? attempts.remaining), max: attempts.max });
         onChange(null);
       } else {
-        onChange({
-          ...checkpoint,
-          room: Number(result.room ?? checkpoint.room),
-          revision: Number(result.revision ?? checkpoint.revision),
-          run_state: (result.run_state ?? checkpoint.run_state) as DungeonCheckpoint['run_state'],
-          room_state: (result.room_state ?? null) as DungeonCheckpoint['room_state'],
-        });
+        onChange(checkpointFromResult(checkpoint, result));
       }
     }
+    setBusy(false);
+  };
+
+  const playServerCombat = async (ready: DungeonCheckpoint, result: Record<string, unknown>) => {
+    const resolved = checkpointFromResult(ready, result);
+    const startState = ready.room_state;
+    const finalState = resolved.room_state;
+    if (!startState || !finalState) { onChange(resolved); return; }
+    const interpolate = (startUnits: DungeonUnitState[] = [], finalUnits: DungeonUnitState[] = [], progress: number) => finalUnits.map((unit, index) => {
+      const identity = unit.uid ?? unit.unit_id;
+      const start = startUnits.find((candidate) => (candidate.uid ?? candidate.unit_id) === identity) ?? startUnits[index] ?? unit;
+      const hp = Math.round(Number(start.current_hp) + (Number(unit.current_hp) - Number(start.current_hp)) * progress);
+      return { ...unit, current_hp: hp, alive: progress >= 1 ? unit.alive : hp > 0 };
+    });
+    const frames = 18;
+    for (let frame = 1; frame <= frames; frame += 1) {
+      const progress = frame / frames;
+      onChange({
+        ...resolved,
+        room_state: {
+          ...finalState,
+          status: progress < 1 ? 'resolving' : finalState.status,
+          heroes: interpolate(startState.heroes, finalState.heroes, progress),
+          enemies: interpolate(startState.enemies, finalState.enemies, progress),
+          playback_tick: frame,
+        },
+      });
+      if (frame < frames) await new Promise<void>((resolve) => setTimeout(resolve, 160));
+    }
+  };
+
+  const startBattle = async () => {
+    if (busy) return;
+    setBusy(true); setError(''); setConfirmAbandon(false);
+    let ready = checkpoint;
+    if (!ready.room_state) {
+      const started = await requestAction('dungeon_room_start', {
+        encounter_id: ready.encounter_id,
+        expected_revision: ready.revision,
+      });
+      if (!started) { setBusy(false); return; }
+      ready = checkpointFromResult(ready, started);
+      onChange(ready);
+    }
+    if (ready.room_state?.status !== 'ready') { setBusy(false); return; }
+    const resolved = await requestAction('dungeon_room_action', {
+      encounter_id: ready.encounter_id,
+      expected_revision: ready.revision,
+      command: 'resolve',
+    });
+    if (resolved) await playServerCombat(ready, resolved);
     setBusy(false);
   };
 
   const primary = (() => {
     if (checkpoint.room === 3 && !roomState) return null;
     if (roomState?.status === 'boss_locked') return null;
+    if (roomState?.status === 'resolving') return null;
     if (!roomState) return checkpoint.room === 3 ? null : {
       label: `Start Room ${checkpoint.room}`,
-      action: () => runAction('dungeon_room_start', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }),
+      action: startBattle,
     };
     if (roomState.status === 'ready') return {
-      label: checkpoint.room === 4 ? 'Attack Retinue' : checkpoint.room === 3 ? 'Attack Treasure Guards' : checkpoint.room === 2 ? 'Attack Elite Room' : 'Attack Room 1',
-      action: () => runAction('dungeon_room_action', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, command: 'resolve' }),
+      label: `Start Room ${checkpoint.room}`,
+      action: startBattle,
     };
     return {
       label: roomState.status === 'cleared' ? (checkpoint.room === 4 ? 'Reveal Boss' : `Continue to Room ${checkpoint.room + 1}`) : 'Leave defeated run',
@@ -692,21 +770,21 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts }: {
     };
   })();
 
-  return <div className="material-panel mt-1.5 grid shrink-0 gap-2 border-violet-500/40 bg-[#100d14] p-3 shadow-2xl">
+  return <div className="material-panel absolute inset-x-2 bottom-2 z-40 grid gap-2 border-violet-500/50 bg-[#100d14]/95 p-3 shadow-2xl backdrop-blur-sm sm:inset-x-auto sm:bottom-auto sm:right-3 sm:top-14 sm:w-52">
     <div className="text-center">
-      <div className="font-vt text-sm font-black uppercase tracking-wider text-violet-100">Depth {checkpoint.depth} · Room {checkpoint.room}/4</div>
-      <div className="mt-0.5 text-[9px] uppercase tracking-widest text-[#a99ab4]">{roomState?.modifier?.split('_').join(' ') ?? (roomState?.kind?.split('_').join(' ') || 'Prepare formation')} · Attempts {attempts ? `${attempts.remaining}/${attempts.max}` : '—'}</div>
+      <div className="font-vt text-base font-black uppercase tracking-wider text-violet-100">Depth {checkpoint.depth} · Room {checkpoint.room}/4</div>
+      <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-[#b7a9c0]">{roomState?.modifier?.split('_').join(' ') ?? (roomState?.kind?.split('_').join(' ') || 'Ready')} · {attempts ? `${attempts.remaining}/${attempts.max}` : '—'}</div>
     </div>
-    <div className="mx-auto grid w-full max-w-lg gap-2">
-      {roomState?.status === 'cleared' && <div className="text-center font-vt text-sm font-black uppercase tracking-widest text-emerald-300">Room cleared</div>}
-      {roomState?.status === 'failed' && <div className="text-center font-vt text-sm font-black uppercase tracking-widest text-rose-300">Formation defeated</div>}
-      {busy && <div className="text-center text-[10px] font-black uppercase tracking-widest text-violet-200">Server resolving combat…</div>}
+    <div className="grid w-full gap-2">
+      {roomState?.status === 'cleared' && <div className="text-center text-xs font-black uppercase tracking-wider text-emerald-300">Room cleared</div>}
+      {roomState?.status === 'failed' && <div className="text-center text-xs font-black uppercase tracking-wider text-rose-300">Formation defeated</div>}
+      {busy && <div className="text-center text-[11px] font-black uppercase tracking-wide text-violet-200">Battle in progress…</div>}
       {checkpoint.room === 3 && !roomState && <div className="grid grid-cols-2 gap-2"><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'recovery' })} className="game-control min-h-11 px-2 text-[10px] font-black text-emerald-300"><HeartPulse size={15} className="mx-auto mb-1" />Recovery · +25% HP</button><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'treasure' })} className="game-control min-h-11 px-2 text-[10px] font-black text-amber-300"><Gem size={15} className="mx-auto mb-1" />Treasure fight</button></div>}
       {checkpoint.room === 4 && roomState?.boss && <div className="rounded-lg border border-amber-800/45 bg-amber-950/20 px-3 py-2 text-center text-[10px] font-bold text-amber-200">{roomState.boss.name} · {roomState.status === 'boss_locked' ? 'Retinue defeated · Boss vulnerable' : 'Protected by Retinue'}</div>}
       {roomState?.status === 'boss_locked' && <div className="text-center text-[10px] font-bold text-violet-200">Boss combat is the next server slice. No Boss action or reward is enabled.</div>}
-      {primary && <button type="button" disabled={busy} onClick={primary.action} className="game-control game-primary min-h-12 px-4 text-sm font-black"><Skull size={17} className="mr-2 inline" />{primary.label}</button>}
+      {primary && <button type="button" disabled={busy} onClick={primary.action} className="game-control game-primary min-h-11 px-3 text-[13px] font-black"><Skull size={17} className="mr-2 inline" />{primary.label}</button>}
       {error && <div role="alert" className="text-center text-[10px] font-bold text-rose-300">{error.split('_').join(' ')}</div>}
-      <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="game-control min-h-8 px-3 text-[9px] font-bold text-rose-300">{confirmAbandon ? 'Confirm abandon · Attempt is not refunded' : 'Abandon Dungeon'}</button>
+      <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="game-control min-h-10 px-3 text-[11px] font-bold text-rose-300">{confirmAbandon ? 'Confirm · no refund' : 'Abandon Dungeon'}</button>
     </div>
   </div>;
 }

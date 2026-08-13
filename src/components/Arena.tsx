@@ -38,6 +38,7 @@ interface ArenaProps {
   potionFx?: { uid: string; born: number } | null;
   respawnCountdowns?: Record<string, number>;
   animationMode: GameState['battleAnimationMode'];
+  dungeonPanelOpen?: boolean;
 }
 
 function HealthBar({ hp, maxHp, color }: { hp: number; maxHp: number; color: string }) {
@@ -153,7 +154,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   );
 }
 
-function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode }: ArenaProps) {
+function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode, dungeonPanelOpen }: ArenaProps) {
   const heroes = units.filter((u) => u.side === 'hero');
   const enemies = units.filter((u) => u.side === 'enemy');
   const [shake, setShake] = useState(false);
@@ -174,7 +175,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
   void inventory; void potionFx;
 
   return (
-    <div className={`arena-stage-inner arena-mode-${animationMode} relative flex h-full w-full flex-col justify-end px-3 pb-4 pt-16 sm:px-6 ${shake ? 'anim-shake' : ''}`}>
+    <div className={`arena-stage-inner arena-mode-${animationMode} ${dungeonPanelOpen ? 'dungeon-panel-open' : ''} relative flex h-full w-full flex-col justify-end px-3 pb-4 pt-16 sm:px-6 ${shake ? 'anim-shake' : ''}`}>
       {animationMode === 'spectacular' && <div className="arena-spectacular-atmosphere pointer-events-none absolute inset-0" aria-hidden="true" />}
       <div className="pointer-events-none absolute inset-x-[8%] bottom-[18%] h-16 rounded-[50%] border-b border-[#9b7540]/25 bg-[radial-gradient(ellipse,rgba(168,122,58,.13),transparent_68%)]" />
       <div className="arena-lanes relative z-10 grid grid-cols-2 items-center gap-4 sm:gap-10">

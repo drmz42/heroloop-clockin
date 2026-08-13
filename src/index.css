@@ -597,6 +597,10 @@ html { scroll-behavior: smooth; }
   .battle-hero-level { left:10px;top:10px;padding:5px 9px;font-size:15px; }
 }
 
+@media (min-width:640px) {
+  .arena-stage-inner.dungeon-panel-open { padding-right:230px; }
+}
+
 /* Beta test-controls cluster — under the Boss button */
 .test-marker {
   font-size: 8px; font-weight: 800; letter-spacing: .28em; text-transform: uppercase;
