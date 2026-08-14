@@ -29,6 +29,7 @@
     "check:server-items": "node scripts/check-server-item-ledger.mjs",
     "check:server-market": "node scripts/check-server-market.mjs",
     "check:selfhosted-compose": "node scripts/check-selfhosted-compose-contract.mjs",
+    "check:selfhosted-api": "bash scripts/check-selfhosted-api-contract.sh",
     "check:selfhosted-baseline": "bash scripts/check-selfhosted-baseline.sh",
     "check:selfhosted-restored-baseline": "sudo -n bash scripts/check-selfhosted-restored-baseline.sh",
     "check:selfhosted-empty-schema": "bash scripts/check-selfhosted-empty-schema.sh",

@@ -95,7 +95,9 @@ services:
 
   api:
     <<: *deno-service
-    command: ["run", "--allow-net=0.0.0.0:8080", "/app/api/main.ts"]
+    command: ["run", "--allow-env=AUTH_INTERNAL_URL", "--allow-net=0.0.0.0:8080,auth:9999,postgres:5432", "/app/api/main.ts"]
+    environment:
+      AUTH_INTERNAL_URL: http://auth:9999
     volumes:
       - ./api:/app/api:ro
     depends_on:
