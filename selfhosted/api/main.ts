@@ -16,6 +16,7 @@ const jsonHeaders = {
   "content-type": "application/json; charset=utf-8",
 };
 const authInternalUrl = Deno.env.get("AUTH_INTERNAL_URL") ?? "http://auth:9999";
+const testerControlsEnabled = Deno.env.get("TESTER_CONTROLS_ENABLED") === "true";
 const databasePool = new Pool({
   applicationName: "heroloop-api",
   database: Deno.env.get("PGDATABASE"),
@@ -182,6 +183,22 @@ function validateAccountStatusPayload(payload: JsonRecord): string | null {
 function validatePayloadFields(payload: JsonRecord, allowed: readonly string[]): string | null {
   const fields = new Set(["player_id", ...allowed]);
   return Object.keys(payload).some((key) => !fields.has(key)) ? "invalid_payload" : null;
+}
+
+function idempotencyKey(envelope: JsonRecord): string | null {
+  return typeof envelope.idempotency_key === "string" && uuidPattern.test(envelope.idempotency_key)
+    ? envelope.idempotency_key
+    : null;
+}
+
+function databaseErrorCode(error: unknown, allowed: readonly string[]): string | null {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return allowed.find((code) => message.includes(code)) ?? null;
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 async function withDatabase<T>(operation: (client: Awaited<ReturnType<Pool["connect"]>>) => Promise<T>): Promise<T> {
@@ -427,6 +444,161 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
       } catch {
         console.error("sync database adapter failed", { requestId });
         return errorResponse(503, "sync_unavailable", requestId);
+      }
+    }
+    if (parsed.value.action === "claim") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.claim_tokens($1::uuid) AS result",
+          [identity.playerId],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        return errorResponse(400, "claim_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "tester_credit_tokens") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      if (!testerControlsEnabled) return errorResponse(404, "not_found", requestId);
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.tester_credit_tokens($1::uuid) AS result",
+          [identity.playerId],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        return errorResponse(400, "tester_credit_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "spend_tokens") {
+      const payloadError = validatePayloadFields(payload, ["amount", "action_kind"]);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      const requestKey = idempotencyKey(parsed.value);
+      const amount = Math.min(1_000_000_000, Math.max(0, Number(payload.amount) || 0));
+      const actionKind = typeof payload.action_kind === "string"
+        ? payload.action_kind.toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 64)
+        : "";
+      if (!requestKey || !Number.isFinite(amount) || amount <= 0 || !actionKind) {
+        return errorResponse(400, "invalid_spend", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.spend_tokens($1::uuid, $2::uuid, $3::numeric, $4::text) AS result",
+          [identity.playerId, requestKey, amount, actionKind],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["insufficient_tokens"]);
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(400, "spend_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "promo_redeem") {
+      const payloadError = validatePayloadFields(payload, ["code"]);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      const requestKey = idempotencyKey(parsed.value);
+      if (!requestKey || typeof payload.code !== "string" || !/^[A-Za-z0-9 -]{4,40}$/.test(payload.code)) {
+        return errorResponse(400, "invalid_promo_code", requestId);
+      }
+      const normalizedCode = payload.code.trim().toUpperCase().replace(/[ -]+/g, "");
+      if (!/^[A-Z0-9]{4,24}$/.test(normalizedCode)) {
+        return errorResponse(400, "invalid_promo_code", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.promo_redeem($1::uuid, $2::text, $3::uuid) AS result",
+          [identity.playerId, await sha256Hex(normalizedCode), requestKey],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "invalid_promo_code", "promo_code_already_redeemed", "promo_code_exhausted",
+        ]);
+        if (code) return errorResponse(409, code, requestId);
+        console.error("promo_redeem database adapter failed", { requestId });
+        return errorResponse(503, "promo_redemption_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "ascension_focus_set") {
+      const payloadError = validatePayloadFields(payload, ["rarity", "target_hero_id"]);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      const requestKey = idempotencyKey(parsed.value);
+      const rarity = typeof payload.rarity === "string" ? payload.rarity : "";
+      const targetHeroId = payload.target_hero_id === null
+        ? null
+        : typeof payload.target_hero_id === "string" ? payload.target_hero_id.slice(0, 100) : undefined;
+      if (!requestKey || targetHeroId === undefined) {
+        return errorResponse(400, "invalid_ascension_focus", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.ascension_focus_set($1::uuid, $2::uuid, $3::text, $4::text) AS result",
+          [identity.playerId, requestKey, rarity, targetHeroId],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "invalid_focus_rarity", "focus_target_not_owned", "focus_target_rarity_mismatch", "idempotency_conflict",
+        ]);
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(400, "ascension_focus_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "hero_summon") {
+      const payloadError = validatePayloadFields(payload, ["count"]);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      const requestKey = idempotencyKey(parsed.value);
+      const count = Math.floor(Number(payload.count) || 0);
+      if (!requestKey || ![1, 10, 100].includes(count)) {
+        return errorResponse(400, "invalid_summon", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.hero_summon($1::uuid, $2::uuid, $3::integer) AS result",
+          [identity.playerId, requestKey, count],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["insufficient_tokens", "hero_capacity_exceeded", "idempotency_conflict"]);
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(400, "summon_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "hero_ascend") {
+      const payloadError = validatePayloadFields(payload, ["target_uid", "target_uids", "repeat"]);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      const requestKey = idempotencyKey(parsed.value);
+      const repeat = payload.repeat === true;
+      const targetUid = typeof payload.target_uid === "string" ? payload.target_uid : null;
+      const targetUids = Array.isArray(payload.target_uids) ? payload.target_uids : null;
+      const validSingle = targetUid !== null && targetUid.length >= 1 && targetUid.length <= 100 && targetUids === null;
+      const validAll = targetUid === null && repeat && targetUids !== null && targetUids.length >= 1 && targetUids.length <= 45 &&
+        targetUids.every((uid) => typeof uid === "string" && uid.length >= 1 && uid.length <= 100) &&
+        new Set(targetUids).size === targetUids.length;
+      if (!requestKey || typeof payload.repeat !== "boolean" || (!validSingle && !validAll)) {
+        return errorResponse(400, "invalid_ascension", requestId);
+      }
+      try {
+        const result = validAll
+          ? await databaseJson(
+            "SELECT heroloop_api.hero_promote_all($1::uuid, $2::uuid, $3::jsonb) AS result",
+            [identity.playerId, requestKey, JSON.stringify(targetUids)],
+          )
+          : await databaseJson(
+            "SELECT heroloop_api.hero_ascend($1::uuid, $2::uuid, $3::text, $4::boolean) AS result",
+            [identity.playerId, requestKey, targetUid, repeat],
+          );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "insufficient_duplicates", "insufficient_tokens", "maximum_stars", "target_not_found", "idempotency_conflict",
+        ]);
+        if (code) return errorResponse(409, code, requestId);
+        console.error("hero_ascend database adapter failed", { requestId });
+        return errorResponse(503, "ascension_failed", requestId);
       }
     }
     if (parsed.value.action === "leaderboard") {

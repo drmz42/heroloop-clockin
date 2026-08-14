@@ -97,7 +97,7 @@ services:
 
   api:
     <<: *deno-service
-    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=AUTH_INTERNAL_URL,PGHOST,PGPORT,PGDATABASE,PGUSER,PGPASSWORD,PGPOOL_SIZE", "--allow-net=0.0.0.0:8080,auth:9999,postgres:5432", "/app/api/main.ts"]
+    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=AUTH_INTERNAL_URL,PGHOST,PGPORT,PGDATABASE,PGUSER,PGPASSWORD,PGPOOL_SIZE,TESTER_CONTROLS_ENABLED", "--allow-net=0.0.0.0:8080,auth:9999,postgres:5432", "/app/api/main.ts"]
     environment:
       AUTH_INTERNAL_URL: http://auth:9999
       PGHOST: postgres
@@ -106,6 +106,7 @@ services:
       PGUSER: heroloop_api_runtime
       PGPASSWORD: ${API_DATABASE_PASSWORD}
       PGPOOL_SIZE: "4"
+      TESTER_CONTROLS_ENABLED: ${TESTER_CONTROLS_ENABLED:-false}
     volumes:
       - ./api:/app/api:ro
       - ../supabase/functions/player-sync/authority.mjs:/app/shared/authority.mjs:ro
