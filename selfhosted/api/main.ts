@@ -3,9 +3,11 @@ import {
   canonicalizeLoadedState,
   mergeSaveState,
   missingFormationUids,
+  prepareLeaderboardResult,
   prepareLegacyMigration,
   prepareProfileSync,
   prepareRegistration,
+  prepareStatusResult,
   recoverMissingFormationHeroes,
 } from "./state.ts";
 
@@ -425,6 +427,41 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
       } catch {
         console.error("sync database adapter failed", { requestId });
         return errorResponse(503, "sync_unavailable", requestId);
+      }
+    }
+    if (parsed.value.action === "leaderboard") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const context = await databaseJson(
+          "SELECT heroloop_api.leaderboard($1::uuid) AS result",
+          [identity.playerId],
+        );
+        const result = prepareLeaderboardResult(context, identity.playerId);
+        if ("code" in result) return errorResponse(result.status, result.code, requestId);
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        console.error("leaderboard database adapter failed", { requestId });
+        return errorResponse(503, "leaderboard_unavailable", requestId);
+      }
+    }
+    if (parsed.value.action === "status") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const context = await databaseJson(
+          "SELECT heroloop_api.status_context($1::uuid) AS result",
+          [identity.playerId],
+        );
+        return json(200, {
+          ok: true,
+          contract_version: 1,
+          request_id: requestId,
+          result: prepareStatusResult(context, Date.now()),
+        });
+      } catch {
+        console.error("status database adapter failed", { requestId });
+        return errorResponse(503, "status_unavailable", requestId);
       }
     }
     if (parsed.value.action === "game_state_load") {

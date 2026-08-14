@@ -173,6 +173,79 @@ export function prepareProfileSync(
   return { username, avatarHeroId, summary };
 }
 
+export function prepareLeaderboardResult(
+  context: JsonRecord,
+  playerId: string,
+): { players: JsonRecord[]; me: string } | { code: string; status: number } {
+  const players = recordArray(context.players);
+  if (context.me !== playerId || !Array.isArray(context.players) || players.length > 100) {
+    return { code: "leaderboard_unavailable", status: 503 };
+  }
+  return { players, me: playerId };
+}
+
+export function prepareStatusResult(context: JsonRecord, now: number): JsonRecord {
+  const pool = isRecord(context.pool) ? context.pool : null;
+  const player = isRecord(context.player) ? context.player : null;
+  const eligiblePlayers = recordArray(context.eligible_players);
+  const scoreOf = (entry: JsonRecord): number => {
+    const power = Math.max(0, Number(entry.power) || 0);
+    const location = Math.max(1, Number(entry.highest_location) || 1);
+    return power * (1 + 0.10 * (location - 1)) * (entry.boost_max_active === true ? 2 : 1);
+  };
+  const totalScore = eligiblePlayers.reduce((sum, entry) => sum + scoreOf(entry), 0);
+  const rewardActive = Boolean(player && (
+    player.boost_max_active === true ||
+    (typeof player.reward_active_until === "string" && Date.parse(player.reward_active_until) > now)
+  ));
+  const myScore = player?.token_eligible === true && rewardActive ? scoreOf(player) : 0;
+  const myDailyShare = totalScore > 0 ? (myScore / totalScore) * 20_000 : 0;
+  const rarityCapacity: JsonRecord = {};
+  const raritySupply: JsonRecord = {};
+  for (const row of recordArray(context.rarity_supply)) {
+    const rarity = String(row.rarity ?? "");
+    if (!new Set(["divine", "celestial", "cursed", "immortal", "god"]).has(rarity)) continue;
+    const existing = Number(row.existing_count) || 0;
+    const max = Number(row.max_existing) || 0;
+    rarityCapacity[rarity] = existing < max;
+    raritySupply[rarity] = { existing, max };
+  }
+  const resource = isRecord(context.resource) ? context.resource : null;
+  return {
+    pool_amount: 20_000,
+    total_distributed: pool ? Number(pool.total_distributed) || 0 : 0,
+    distribution_rate: pool ? Number(pool.distribution_rate) || 0.15 : 0.15,
+    total_power: totalScore,
+    my_power: myScore,
+    my_daily_share: myDailyShare,
+    my_hourly_share: myDailyShare / 24,
+    pending_tokens: player ? Number(player.pending_tokens) || 0 : 0,
+    total_claimed: player ? Number(player.total_claimed) || 0 : 0,
+    token_balance: player ? Number(player.token_balance) || 0 : 0,
+    boost: player ? {
+      active: player.boost_max_active === true,
+      login_days: Number(player.boost_login_days) || 0,
+      online_seconds: Number(player.boost_online_seconds) || 0,
+      tokens_earned: Number(player.boost_tokens_earned) || 0,
+      tokens_spent: Number(player.boost_tokens_spent) || 0,
+      token_balance: Number(player.token_balance) || 0,
+    } : null,
+    pity: player ? {
+      legendary: Number(player.pity_legendary) || 0,
+      mythic: Number(player.pity_mythic) || 0,
+      cosmic: Number(player.pity_cosmic) || 0,
+      divine: Number(player.pity_divine) || 0,
+      celestial: Number(player.pity_celestial) || 0,
+    } : null,
+    ascension_focus: player && isRecord(player.ascension_focus) ? player.ascension_focus : {},
+    boss_keys: player ? Number(player.boss_keys) || 0 : 0,
+    resource_state: resource?.state ?? null,
+    resource_revision: resource ? Number(resource.revision) : null,
+    rarity_capacity: rarityCapacity,
+    rarity_supply: raritySupply,
+  };
+}
+
 function canonicalItem(item: JsonRecord, ledgerById: Map<string, JsonRecord>): JsonRecord {
   const row = ledgerById.get(String(item.uid ?? ""));
   return row === undefined ? item : {
