@@ -81,6 +81,80 @@ export function prepareRegistration(
     : { code: "invalid_registration_state", status: 400 };
 }
 
+export function prepareLegacyMigration(
+  context: JsonRecord,
+  requestedValue: unknown,
+  playerId: string,
+): { state: JsonRecord } | { code: string; status: number } {
+  const account = isRecord(context.account) ? context.account : null;
+  if (!account) return { code: "account_required", status: 403 };
+  if (!validPersistentState(requestedValue)) return { code: "invalid_state", status: 400 };
+  const state = clonePersistentState(requestedValue, String(account.username ?? ""), playerId);
+  if (!state) return { code: "state_too_large", status: 413 };
+  state.hero = Number(account.token_balance);
+  state.summons = Number(account.summons);
+  return { state };
+}
+
+export function missingFormationUids(state: JsonRecord): string[] {
+  const ownedUids = new Set(recordArray(state.ownedHeroes).map((hero) => String(hero.uid ?? "")));
+  const team = Array.isArray(state.team)
+    ? state.team.filter((uid): uid is string => typeof uid === "string" && uid.length > 0).slice(0, 3)
+    : [];
+  return [...new Set(team.filter((uid) => !ownedUids.has(uid)))];
+}
+
+export function recoverMissingFormationHeroes(
+  sourceState: JsonRecord,
+  context: JsonRecord,
+): { state: JsonRecord; recovered: number } {
+  const ownedHeroes = recordArray(sourceState.ownedHeroes);
+  const team = Array.isArray(sourceState.team)
+    ? sourceState.team.filter((uid): uid is string => typeof uid === "string" && uid.length > 0).slice(0, 3)
+    : [];
+  const missingUids = missingFormationUids(sourceState);
+  if (missingUids.length === 0) return { state: sourceState, recovered: 0 };
+
+  const candidates = recordArray(context.heroes);
+  const recovered = missingUids.flatMap((uid) => {
+    const exact = candidates.find((hero) => hero.uid === uid);
+    return exact ? [structuredClone(exact) as JsonRecord] : [];
+  });
+  const unresolvedUids = missingUids.filter((uid) => !recovered.some((hero) => hero.uid === uid));
+  if (unresolvedUids.length > 0) {
+    const remainingLineup = [...recordArray(context.lineup)];
+    for (const uid of team) {
+      const owned = [...ownedHeroes, ...recovered].find((hero) => hero.uid === uid);
+      if (!owned) continue;
+      const index = remainingLineup.findIndex((entry) =>
+        entry.hero_id === owned.heroId && Number(entry.level) === Number(owned.level) &&
+        Number(entry.stars) === Number(owned.stars)
+      );
+      if (index >= 0) remainingLineup.splice(index, 1);
+    }
+    const validHeroId = /^(shepherd|assassin|knight|druid|archer)-(common|uncommon|rare|epic|legendary|mythic|cosmic|divine|celestial)$/;
+    if (
+      remainingLineup.length === unresolvedUids.length &&
+      remainingLineup.every((entry) => validHeroId.test(String(entry.hero_id ?? "")))
+    ) {
+      unresolvedUids.forEach((uid, index) => {
+        const entry = remainingLineup[index];
+        recovered.push({
+          uid,
+          heroId: entry.hero_id,
+          level: Math.max(1, Math.floor(Number(entry.level) || 1)),
+          stars: Math.max(0, Math.min(20, Math.floor(Number(entry.stars) || 0))),
+          equipped: {},
+          xp: 0,
+        });
+      });
+    }
+  }
+  return recovered.length > 0
+    ? { state: { ...sourceState, ownedHeroes: [...ownedHeroes, ...recovered] }, recovered: recovered.length }
+    : { state: sourceState, recovered: 0 };
+}
+
 function canonicalItem(item: JsonRecord, ledgerById: Map<string, JsonRecord>): JsonRecord {
   const row = ledgerById.get(String(item.uid ?? ""));
   return row === undefined ? item : {

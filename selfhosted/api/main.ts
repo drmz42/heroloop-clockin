@@ -2,7 +2,10 @@ import { Pool } from "@db/postgres";
 import {
   canonicalizeLoadedState,
   mergeSaveState,
+  missingFormationUids,
+  prepareLegacyMigration,
   prepareRegistration,
+  recoverMissingFormationHeroes,
 } from "./state.ts";
 
 const jsonHeaders = {
@@ -220,6 +223,18 @@ async function databaseJson(
   return result;
 }
 
+async function consumeRateLimit(playerId: string, action: string): Promise<{ allowed: boolean; retryAfter: number }> {
+  const result = await databaseJson(
+    "SELECT heroloop_api.consume_rate_limit($1::uuid, $2::text) AS result",
+    [playerId, action],
+  );
+  if (typeof result.allowed !== "boolean") throw new Error("invalid rate-limit response");
+  return {
+    allowed: result.allowed,
+    retryAfter: Math.max(1, Math.floor(Number(result.retry_after) || 1)),
+  };
+}
+
 async function authenticate(
   request: Request,
   requestId: string,
@@ -307,6 +322,17 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
     ) {
       return errorResponse(403, "player_identity_mismatch", requestId);
     }
+    try {
+      const rateLimit = await consumeRateLimit(identity.playerId, String(parsed.value.action));
+      if (!rateLimit.allowed) {
+        return errorResponse(429, "rate_limited", requestId, {
+          "retry-after": String(rateLimit.retryAfter),
+        });
+      }
+    } catch {
+      console.error("rate-limit database adapter failed", { requestId });
+      return errorResponse(503, "database_unavailable", requestId);
+    }
     if (parsed.value.action === "account_status") {
       const payloadError = validateAccountStatusPayload(payload);
       if (payloadError) return errorResponse(400, payloadError, requestId);
@@ -352,17 +378,67 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
         );
         const loaded = canonicalizeLoadedState(context);
         if ("code" in loaded) return errorResponse(loaded.status, loaded.code, requestId);
-        const result: JsonRecord = { state: loaded.state, revision: loaded.revision };
+        let state = loaded.state;
+        let revision = loaded.revision;
+        let recoveredCount = 0;
+        if (state && revision !== null) {
+          const missingUids = missingFormationUids(state);
+          if (missingUids.length > 0) {
+            const recoveryContext = await databaseJson(
+              "SELECT heroloop_api.formation_recovery_context($1::uuid, $2::jsonb) AS result",
+              [identity.playerId, JSON.stringify(missingUids)],
+            );
+            const repaired = recoverMissingFormationHeroes(state, recoveryContext);
+            if (repaired.recovered > 0) {
+              const committed = await databaseJson(
+                "SELECT heroloop_api.game_state_save_commit($1::uuid, $2::bigint, $3::jsonb) AS result",
+                [identity.playerId, revision, JSON.stringify(repaired.state)],
+              );
+              const committedRevision = Number(committed.revision);
+              if (committed.conflict !== true && Number.isSafeInteger(committedRevision) && committedRevision > revision) {
+                state = isRecord(committed.state) ? committed.state : repaired.state;
+                revision = committedRevision;
+                recoveredCount = repaired.recovered;
+              }
+            }
+          }
+        }
+        const result: JsonRecord = { state, revision };
         if (loaded.migratedItems > 0) result.migrated_items = loaded.migratedItems;
+        if (recoveredCount > 0) result.recovered_formation_heroes = recoveredCount;
         return json(200, {
           ok: true,
           contract_version: 1,
           request_id: requestId,
-          ...(loaded.revision === null ? {} : { revision: loaded.revision }),
+          ...(revision === null ? {} : { revision }),
           result,
         });
       } catch {
         console.error("game_state_load database adapter failed", { requestId });
+        return errorResponse(503, "state_unavailable", requestId);
+      }
+    }
+    if (parsed.value.action === "game_state_migrate") {
+      const payloadError = validatePayloadFields(payload, ["state"]);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const context = await databaseJson(
+          "SELECT heroloop_api.game_state_save_context($1::uuid) AS result",
+          [identity.playerId],
+        );
+        const prepared = prepareLegacyMigration(context, payload.state, identity.playerId);
+        if ("code" in prepared) return errorResponse(prepared.status, prepared.code, requestId);
+        const result = await databaseJson(
+          "SELECT heroloop_api.game_state_migrate($1::uuid, $2::jsonb) AS result",
+          [identity.playerId, JSON.stringify(prepared.state)],
+        );
+        const revision = Number(result.revision);
+        if (!Number.isSafeInteger(revision) || revision < 1 || !isRecord(result.state) || typeof result.migrated !== "boolean") {
+          throw new Error("invalid migrate database response");
+        }
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, revision, result });
+      } catch {
+        console.error("game_state_migrate database adapter failed", { requestId });
         return errorResponse(503, "state_unavailable", requestId);
       }
     }
