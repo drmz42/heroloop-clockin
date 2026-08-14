@@ -28,6 +28,8 @@
     "check:server-rewards": "node scripts/check-server-reward-authority.mjs",
     "check:server-items": "node scripts/check-server-item-ledger.mjs",
     "check:server-market": "node scripts/check-server-market.mjs",
+    "check:selfhosted-compose": "node scripts/check-selfhosted-compose-contract.mjs",
+    "check:selfhosted-empty-schema": "bash scripts/check-selfhosted-empty-schema.sh",
     "lint": "eslint .",
     "preview": "vite preview",
     "balance:hero-power-proposal": "node scripts/generate-hero-balance-proposal.mjs && node scripts/run-balance-simulation.mjs --hero-rarity-proposal",

@@ -1,0 +1,139 @@
+name: heroloop-selfhosted
+
+x-deno-service: &deno-service
+  image: denoland/deno:2.9.4@sha256:c777b4b225501a61074837e90a826a58f99124837824023cd60334b1e2374498
+  init: true
+  restart: unless-stopped
+  read_only: true
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=32m
+  networks:
+    - backend
+
+services:
+  postgres:
+    image: supabase/postgres:17.6.1.136@sha256:f371b5f3f2ac0a05703f33d6e6134515fb2498cab708fb948a0aeb7481467c00
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in the root-owned runtime environment}
+      POSTGRES_PORT: "5432"
+      PGPORT: "5432"
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in the root-owned runtime environment}
+      JWT_EXP: ${JWT_EXPIRY:-3600}
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - max_connections=80
+      - -c
+      - shared_buffers=256MB
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init/zy-heroloop-auth-password.sh:/docker-entrypoint-initdb.d/zy-heroloop-auth-password.sh:ro
+      - ./postgres/init/zz-heroloop-bootstrap.sql:/docker-entrypoint-initdb.d/zz-heroloop-bootstrap.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "127.0.0.1", "-p", "5432"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    cpus: 0.75
+    mem_limit: 1024m
+    pids_limit: 256
+    shm_size: 256m
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+
+  auth:
+    image: supabase/gotrue:v2.189.0@sha256:385184459f57569c54c25209f51f3b2be99ddd7c4ce9e3555b5d3eea8447b7cf
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: "9999"
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL:?set the environment-specific external Auth URL}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@postgres:5432/postgres
+      GOTRUE_SITE_URL: ${SITE_URL:?set the environment-specific site URL}
+      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS:?set the exact environment redirect allowlist}
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: "true"
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "false"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: ${JWT_EXPIRY:-3600}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_KEYS: ${JWT_KEYS:?set a JSON array containing the environment-specific asymmetric signing key}
+      GOTRUE_JWT_ISSUER: ${API_EXTERNAL_URL}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9999/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    cpus: 0.25
+    mem_limit: 256m
+    pids_limit: 128
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+
+  api:
+    <<: *deno-service
+    command: ["run", "--allow-net=0.0.0.0:8080", "/app/api/main.ts"]
+    volumes:
+      - ./api:/app/api:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "deno", "eval", "const r=await fetch('http://127.0.0.1:8080/internal/health');if(!r.ok)Deno.exit(1)"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    cpus: 0.35
+    mem_limit: 256m
+    pids_limit: 128
+
+  worker:
+    <<: *deno-service
+    command: ["run", "--allow-write=/tmp", "/app/worker/main.ts"]
+    volumes:
+      - ./worker:/app/worker:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "deno", "eval", "const age=Date.now()-(await Deno.stat('/tmp/heroloop-worker-ready')).mtime.getTime();if(age>30000)Deno.exit(1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    cpus: 0.20
+    mem_limit: 192m
+    pids_limit: 96
+
+networks:
+  backend:
+    internal: true
+
+volumes:
+  postgres-data:
