@@ -108,6 +108,8 @@ services:
       PGPOOL_SIZE: "4"
     volumes:
       - ./api:/app/api:ro
+      - ../supabase/functions/player-sync/authority.mjs:/app/shared/authority.mjs:ro
+      - ../supabase/functions/player-sync/registration.js:/app/shared/registration.js:ro
       - ./deno.json:/app/deno.json:ro
       - ./deno.lock:/app/deno.lock:ro
       - ./vendor:/app/vendor:ro

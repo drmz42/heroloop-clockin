@@ -1,4 +1,9 @@
 import { Pool } from "@db/postgres";
+import {
+  canonicalizeLoadedState,
+  mergeSaveState,
+  prepareRegistration,
+} from "./state.ts";
 
 const jsonHeaders = {
   "cache-control": "no-store",
@@ -168,6 +173,11 @@ function validateAccountStatusPayload(payload: JsonRecord): string | null {
     : null;
 }
 
+function validatePayloadFields(payload: JsonRecord, allowed: readonly string[]): string | null {
+  const fields = new Set(["player_id", ...allowed]);
+  return Object.keys(payload).some((key) => !fields.has(key)) ? "invalid_payload" : null;
+}
+
 async function withDatabase<T>(operation: (client: Awaited<ReturnType<Pool["connect"]>>) => Promise<T>): Promise<T> {
   const client = await databasePool.connect();
   try {
@@ -192,6 +202,20 @@ async function accountStatus(playerId: string): Promise<JsonRecord> {
     result.account_id !== playerId
   ) {
     throw new Error("invalid account_status database response");
+  }
+  return result;
+}
+
+async function databaseJson(
+  queryText: string,
+  args: unknown[],
+): Promise<JsonRecord> {
+  const query = await withDatabase((client) =>
+    client.queryObject<{ result: unknown }>(queryText, args)
+  );
+  const result = query.rows[0]?.result;
+  if (query.rows.length !== 1 || !isRecord(result)) {
+    throw new Error("invalid database adapter response");
   }
   return result;
 }
@@ -296,6 +320,105 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
       } catch {
         console.error("account_status database adapter failed", { requestId });
         return errorResponse(503, "database_unavailable", requestId);
+      }
+    }
+    if (parsed.value.action === "account_register") {
+      const payloadError = validatePayloadFields(payload, ["username", "starter_hero_id", "state"]);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      const prepared = prepareRegistration(payload, identity.playerId, Date.now());
+      if ("code" in prepared) return errorResponse(prepared.status, prepared.code, requestId);
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.account_register($1::uuid, $2::text, $3::text, $4::jsonb) AS result",
+          [identity.playerId, prepared.username, prepared.starterHeroId, JSON.stringify(prepared.state)],
+        );
+        const revision = Number(result.revision);
+        if (!Number.isSafeInteger(revision) || revision < 1 || !isRecord(result.state)) {
+          throw new Error("invalid registration database response");
+        }
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, revision, result });
+      } catch {
+        console.error("account_register database adapter failed", { requestId });
+        return errorResponse(503, "registration_unavailable", requestId);
+      }
+    }
+    if (parsed.value.action === "game_state_load") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const context = await databaseJson(
+          "SELECT heroloop_api.game_state_load_context($1::uuid) AS result",
+          [identity.playerId],
+        );
+        const loaded = canonicalizeLoadedState(context);
+        if ("code" in loaded) return errorResponse(loaded.status, loaded.code, requestId);
+        const result: JsonRecord = { state: loaded.state, revision: loaded.revision };
+        if (loaded.migratedItems > 0) result.migrated_items = loaded.migratedItems;
+        return json(200, {
+          ok: true,
+          contract_version: 1,
+          request_id: requestId,
+          ...(loaded.revision === null ? {} : { revision: loaded.revision }),
+          result,
+        });
+      } catch {
+        console.error("game_state_load database adapter failed", { requestId });
+        return errorResponse(503, "state_unavailable", requestId);
+      }
+    }
+    if (parsed.value.action === "game_state_save") {
+      const payloadError = validatePayloadFields(payload, ["state", "revision"]);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      const requestedRevision = Number(payload.revision);
+      if (!Number.isSafeInteger(requestedRevision) || requestedRevision < 1) {
+        return errorResponse(400, "invalid_revision", requestId);
+      }
+      try {
+        const context = await databaseJson(
+          "SELECT heroloop_api.game_state_save_context($1::uuid) AS result",
+          [identity.playerId],
+        );
+        const currentRevision = Number(context.revision);
+        if (Number.isSafeInteger(currentRevision) && currentRevision !== requestedRevision) {
+          return json(409, {
+            ok: false,
+            code: "state_conflict",
+            request_id: requestId,
+            revision: currentRevision,
+            result: { state: context.state, revision: currentRevision, conflict: true },
+          });
+        }
+        const merged = mergeSaveState(context, payload.state, identity.playerId, Date.now());
+        if ("code" in merged) {
+          return merged.result
+            ? json(merged.status, { ok: false, code: merged.code, request_id: requestId, result: merged.result })
+            : errorResponse(merged.status, merged.code, requestId);
+        }
+        const committed = await databaseJson(
+          "SELECT heroloop_api.game_state_save_commit($1::uuid, $2::bigint, $3::jsonb) AS result",
+          [identity.playerId, merged.revision, JSON.stringify(merged.state)],
+        );
+        const revision = Number(committed.revision);
+        if (committed.conflict === true) {
+          return json(409, {
+            ok: false,
+            code: "state_conflict",
+            request_id: requestId,
+            ...(Number.isSafeInteger(revision) ? { revision } : {}),
+            result: { state: committed.state, revision: committed.revision, conflict: true },
+          });
+        }
+        if (!Number.isSafeInteger(revision) || revision < 1) throw new Error("invalid save commit response");
+        const result: JsonRecord = { revision };
+        const migratedItems = Math.max(0, Math.floor(Number(committed.migrated_items) || 0));
+        if (migratedItems > 0) {
+          result.state = committed.state;
+          result.migrated_items = migratedItems;
+        }
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, revision, result });
+      } catch {
+        console.error("game_state_save database adapter failed", { requestId });
+        return errorResponse(503, "state_unavailable", requestId);
       }
     }
     return errorResponse(503, "command_unavailable", requestId);
