@@ -1,6 +1,7 @@
 import {
   allowedGoldCredit,
   applyTrainingPurchases,
+  deriveServerSummary,
   serverLocationCap,
 } from "../shared/authority.mjs";
 import {
@@ -153,6 +154,23 @@ export function recoverMissingFormationHeroes(
   return recovered.length > 0
     ? { state: { ...sourceState, ownedHeroes: [...ownedHeroes, ...recovered] }, recovered: recovered.length }
     : { state: sourceState, recovered: 0 };
+}
+
+export function prepareProfileSync(
+  context: JsonRecord,
+  payload: JsonRecord,
+): { username: string; avatarHeroId: string; summary: JsonRecord } | { code: string; status: number } {
+  if (context.account_exists !== true || !isRecord(context.state)) {
+    return { code: "account_required", status: 403 };
+  }
+  const username = typeof payload.username === "string"
+    ? payload.username.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 16) || "player"
+    : "player";
+  const avatarHeroId = typeof payload.avatar_hero_id === "string"
+    ? payload.avatar_hero_id.replace(/[^a-z0-9_-]/gi, "").slice(0, 64)
+    : "";
+  const summary = deriveServerSummary(context.state, recordArray(context.items)) as JsonRecord;
+  return { username, avatarHeroId, summary };
 }
 
 function canonicalItem(item: JsonRecord, ledgerById: Map<string, JsonRecord>): JsonRecord {

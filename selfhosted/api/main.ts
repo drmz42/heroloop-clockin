@@ -4,6 +4,7 @@ import {
   mergeSaveState,
   missingFormationUids,
   prepareLegacyMigration,
+  prepareProfileSync,
   prepareRegistration,
   recoverMissingFormationHeroes,
 } from "./state.ts";
@@ -366,6 +367,64 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
       } catch {
         console.error("account_register database adapter failed", { requestId });
         return errorResponse(503, "registration_unavailable", requestId);
+      }
+    }
+    if (parsed.value.action === "account_delete") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.account_delete($1::uuid) AS result",
+          [identity.playerId],
+        );
+        if (result.deleted !== true || result.account_id !== identity.playerId) {
+          throw new Error("invalid account deletion response");
+        }
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        console.error("account_delete database adapter failed", { requestId });
+        return errorResponse(503, "account_delete_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "sync") {
+      const payloadError = validatePayloadFields(payload, [
+        "power", "account_level", "username", "total_kills", "boss_kills", "chests_opened",
+        "heroes_owned", "highest_location", "lineup", "avatar_hero_id", "summons",
+        "total_tokens_earned", "token_eligible", "training_hero_count",
+      ]);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const context = await databaseJson(
+          "SELECT heroloop_api.sync_context($1::uuid) AS result",
+          [identity.playerId],
+        );
+        const prepared = prepareProfileSync(context, payload);
+        if ("code" in prepared) return errorResponse(prepared.status, prepared.code, requestId);
+        const result = await databaseJson(
+          "SELECT heroloop_api.sync_commit($1::uuid, $2::text, $3::text, $4::jsonb) AS result",
+          [identity.playerId, prepared.username, prepared.avatarHeroId, JSON.stringify(prepared.summary)],
+        );
+        const pendingTokens = Number(result.pending_tokens);
+        const totalClaimed = Number(result.total_claimed);
+        const profile = isRecord(result.profile) ? result.profile : null;
+        if (
+          !Number.isFinite(pendingTokens) || !Number.isFinite(totalClaimed) || !profile ||
+          profile.username !== prepared.username || profile.avatar_hero_id !== prepared.avatarHeroId ||
+          Number(profile.power) !== Number(prepared.summary.power) ||
+          Number(profile.combat_power) !== Number(prepared.summary.combat_power) ||
+          Number(profile.account_level) !== Number(prepared.summary.account_level) ||
+          Number(profile.heroes_owned) !== Number(prepared.summary.heroes_owned) ||
+          Number(profile.highest_location) !== Number(prepared.summary.highest_location)
+        ) {
+          throw new Error("invalid sync database response");
+        }
+        result.pending_tokens = pendingTokens;
+        result.total_claimed = totalClaimed;
+        delete result.profile;
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        console.error("sync database adapter failed", { requestId });
+        return errorResponse(503, "sync_unavailable", requestId);
       }
     }
     if (parsed.value.action === "game_state_load") {
