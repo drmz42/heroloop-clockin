@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "@db/postgres": "jsr:@db/postgres@0.19.5"
+  },
+  "vendor": true
+}

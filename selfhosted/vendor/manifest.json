@@ -1,0 +1,5 @@
+{
+  "modules": {
+    "https://jsr.io/@std/crypto/1.1.0/_wasm/lib/deno_std_wasm_crypto.internal.mjs": {}
+  }
+}

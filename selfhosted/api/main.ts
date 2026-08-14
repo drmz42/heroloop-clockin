@@ -1,8 +1,25 @@
+import { Pool } from "@db/postgres";
+
 const jsonHeaders = {
   "cache-control": "no-store",
   "content-type": "application/json; charset=utf-8",
 };
 const authInternalUrl = Deno.env.get("AUTH_INTERNAL_URL") ?? "http://auth:9999";
+const databasePool = new Pool({
+  applicationName: "heroloop-api",
+  database: Deno.env.get("PGDATABASE"),
+  hostname: Deno.env.get("PGHOST"),
+  password: Deno.env.get("PGPASSWORD"),
+  port: Number(Deno.env.get("PGPORT") ?? "5432"),
+  user: Deno.env.get("PGUSER"),
+  connection: { attempts: 1, interval: 250 },
+  options: {
+    idle_in_transaction_session_timeout: "2000",
+    lock_timeout: "1000",
+    statement_timeout: "2000",
+  },
+  tls: { enabled: false, enforce: false },
+}, Number(Deno.env.get("PGPOOL_SIZE") ?? "4"), true);
 const maxBodyBytes = 256 * 1024;
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -145,6 +162,40 @@ function validateEnvelope(body: JsonRecord): string | null {
   return null;
 }
 
+function validateAccountStatusPayload(payload: JsonRecord): string | null {
+  return Object.keys(payload).some((key) => key !== "player_id")
+    ? "invalid_payload"
+    : null;
+}
+
+async function withDatabase<T>(operation: (client: Awaited<ReturnType<Pool["connect"]>>) => Promise<T>): Promise<T> {
+  const client = await databasePool.connect();
+  try {
+    return await operation(client);
+  } finally {
+    client.release();
+  }
+}
+
+async function accountStatus(playerId: string): Promise<JsonRecord> {
+  const query = await withDatabase((client) =>
+    client.queryObject<{ result: unknown }>(
+      "SELECT heroloop_api.account_status($1::uuid) AS result",
+      [playerId],
+    )
+  );
+  const result = query.rows[0]?.result;
+  if (
+    query.rows.length !== 1 || !isRecord(result) ||
+    typeof result.exists !== "boolean" ||
+    (result.username !== null && typeof result.username !== "string") ||
+    result.account_id !== playerId
+  ) {
+    throw new Error("invalid account_status database response");
+  }
+  return result;
+}
+
 async function authenticate(
   request: Request,
   requestId: string,
@@ -180,17 +231,16 @@ async function authenticate(
 }
 
 async function dependenciesHealthy(): Promise<boolean> {
-  let postgres: Deno.TcpConn | undefined;
   try {
-    postgres = await Deno.connect({ hostname: "postgres", port: 5432 });
+    const databaseHealthy = await withDatabase(async (client) =>
+      (await client.queryObject<{ ok: number }>("SELECT 1 AS ok")).rows[0]?.ok === 1
+    );
     const authResponse = await fetch(`${authInternalUrl}/health`, {
       signal: AbortSignal.timeout(2_000),
     });
-    return authResponse.ok;
+    return databaseHealthy && authResponse.ok;
   } catch {
     return false;
-  } finally {
-    postgres?.close();
   }
 }
 
@@ -232,6 +282,21 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
       payloadPlayerId !== undefined && payloadPlayerId !== identity.playerId
     ) {
       return errorResponse(403, "player_identity_mismatch", requestId);
+    }
+    if (parsed.value.action === "account_status") {
+      const payloadError = validateAccountStatusPayload(payload);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        return json(200, {
+          ok: true,
+          contract_version: 1,
+          request_id: requestId,
+          result: await accountStatus(identity.playerId),
+        });
+      } catch {
+        console.error("account_status database adapter failed", { requestId });
+        return errorResponse(503, "database_unavailable", requestId);
+      }
     }
     return errorResponse(503, "command_unavailable", requestId);
   }

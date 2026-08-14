@@ -21,6 +21,7 @@ services:
     environment:
       POSTGRES_DB: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in the root-owned runtime environment}
+      API_DATABASE_PASSWORD: ${API_DATABASE_PASSWORD:?set a separate API database password in the root-owned runtime environment}
       POSTGRES_PORT: "5432"
       PGPORT: "5432"
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in the root-owned runtime environment}
@@ -37,6 +38,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - ./postgres/init/zy-heroloop-auth-password.sh:/docker-entrypoint-initdb.d/zy-heroloop-auth-password.sh:ro
       - ./postgres/init/zz-heroloop-bootstrap.sql:/docker-entrypoint-initdb.d/zz-heroloop-bootstrap.sql:ro
+      - ./postgres/init/zzz-heroloop-api-password.sh:/docker-entrypoint-initdb.d/zzz-heroloop-api-password.sh:ro
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres", "-h", "127.0.0.1", "-p", "5432"]
       interval: 5s
@@ -95,11 +97,20 @@ services:
 
   api:
     <<: *deno-service
-    command: ["run", "--allow-env=AUTH_INTERNAL_URL", "--allow-net=0.0.0.0:8080,auth:9999,postgres:5432", "/app/api/main.ts"]
+    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=AUTH_INTERNAL_URL,PGHOST,PGPORT,PGDATABASE,PGUSER,PGPASSWORD,PGPOOL_SIZE", "--allow-net=0.0.0.0:8080,auth:9999,postgres:5432", "/app/api/main.ts"]
     environment:
       AUTH_INTERNAL_URL: http://auth:9999
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGDATABASE: postgres
+      PGUSER: heroloop_api_runtime
+      PGPASSWORD: ${API_DATABASE_PASSWORD}
+      PGPOOL_SIZE: "4"
     volumes:
       - ./api:/app/api:ro
+      - ./deno.json:/app/deno.json:ro
+      - ./deno.lock:/app/deno.lock:ro
+      - ./vendor:/app/vendor:ro
     depends_on:
       postgres:
         condition: service_healthy
