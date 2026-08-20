@@ -38,6 +38,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "balance:hero-power-proposal": "node scripts/generate-hero-balance-proposal.mjs && node scripts/run-balance-simulation.mjs --hero-rarity-proposal",
+    "balance:essence-combat": "node scripts/run-balance-simulation.mjs --essence-impact",
     "balance:boss-hunt-proposal": "node scripts/run-boss-hunt-simulation.mjs",
     "balance:endgame-proposal": "node scripts/run-endgame-simulation.mjs",
     "balance:dungeon-proposal": "node scripts/run-dungeon-simulation.mjs",
