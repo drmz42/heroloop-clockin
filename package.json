@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "check:ascension-focus": "node scripts/check-ascension-focus-contract.mjs",
+    "check:codex-watchdog": "node scripts/check-codex-watchdog.mjs",
+    "check:dev-news-resilience": "node scripts/check-dev-news-resilience.mjs",
     "check:dungeon-server-core": "node scripts/check-dungeon-server-core.mjs",
     "check:dungeon-room-start": "node scripts/check-dungeon-room-start.mjs",
     "check:dungeon-room-combat": "node scripts/check-dungeon-room-combat.mjs",
