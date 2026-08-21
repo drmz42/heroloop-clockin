@@ -1,12 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 
+export const backendMode = import.meta.env.VITE_BACKEND_MODE === 'selfhosted' ? 'selfhosted' : 'supabase';
 export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+export const selfhostedUrl = (import.meta.env.VITE_SELFHOSTED_URL as string | undefined)?.replace(/\/$/, '')
+  || window.location.origin;
+export const backendUrl = backendMode === 'selfhosted' ? selfhostedUrl : supabaseUrl;
+export const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)
+  || 'selfhosted-public-auth';
 export const tokenomicsEnabled = import.meta.env.VITE_ENABLE_TOKENOMICS !== 'false';
 // Client-side token accrual is never safe for a value-bearing economy.
 export const demoTokenomicsEnabled = import.meta.env.VITE_DEMO_TOKENOMICS === 'true';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// GoTrue retains the supported Supabase Auth protocol after the database/API exit.
+export const supabase = createClient(backendUrl, supabaseAnonKey);
 
 export async function authHeaders(refresh = false): Promise<Record<string, string> | null> {
   let { data: { session } } = await supabase.auth.getSession();
@@ -36,21 +42,57 @@ export async function playerSync<T>(
     for (let attempt = 0; attempt < 2; attempt++) {
       const headers = await authHeaders(attempt === 1);
       if (!headers) return null;
-      const response = await fetch(`${supabaseUrl}/functions/v1/player-sync`, {
-        method: 'POST', headers, body: JSON.stringify({ action, ...payload }),
+      const idempotencyKey = typeof payload.idempotency_key === 'string' ? payload.idempotency_key : undefined;
+      const commandPayload = { ...payload };
+      delete commandPayload.idempotency_key;
+      const endpoint = backendMode === 'selfhosted'
+        ? `${backendUrl}/api/v1/player/commands`
+        : `${supabaseUrl}/functions/v1/player-sync`;
+      const body = backendMode === 'selfhosted'
+        ? {
+          contract_version: 1,
+          action,
+          ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}),
+          payload: commandPayload,
+        }
+        : { action, ...payload };
+      const response = await fetch(endpoint, {
+        method: 'POST', headers, body: JSON.stringify(body),
       });
       if (response.status === 401 && attempt === 0) continue;
       if (!response.ok) {
-        const detail = await response.json().catch(() => ({ error: `HTTP ${response.status}` })) as { error?: string };
-        const message = detail.error ?? `HTTP ${response.status}`;
+        const detail = await response.json().catch(() => ({ error: `HTTP ${response.status}` })) as {
+          error?: string;
+          code?: string;
+          revision?: number;
+          result?: Record<string, unknown>;
+        };
+        const message = detail.code ?? detail.error ?? `HTTP ${response.status}`;
         onError?.(message);
+        if (backendMode === 'selfhosted' && action === 'game_state_save'
+          && response.status === 409 && detail.code === 'state_conflict' && detail.result) {
+          return {
+            ...detail.result,
+            ...(detail.revision === undefined ? {} : { revision: detail.revision }),
+          } as T;
+        }
         if (action === 'spend_tokens' || action === 'hero_ascend') {
           const label = action === 'hero_ascend' ? 'Ascension' : '$HERO purchase';
           window.alert(`${label} failed: ${message}`);
         }
         return null;
       }
-      return response.json() as Promise<T>;
+      const responseBody = await response.json() as T | {
+        ok: true;
+        revision?: number;
+        result: Record<string, unknown>;
+      };
+      if (backendMode !== 'selfhosted') return responseBody as T;
+      const envelope = responseBody as { revision?: number; result: Record<string, unknown> };
+      return {
+        ...envelope.result,
+        ...(envelope.revision === undefined ? {} : { revision: envelope.revision }),
+      } as T;
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'network_error';

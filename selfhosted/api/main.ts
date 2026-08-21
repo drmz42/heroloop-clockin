@@ -601,6 +601,327 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
         return errorResponse(503, "ascension_failed", requestId);
       }
     }
+    if (parsed.value.action === "chest_open") {
+      const payloadError = validatePayloadFields(payload, ["count"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const count = Number(payload.count);
+      if (payloadError || !requestKey || !Number.isSafeInteger(count) || count < 1 || count > 64) {
+        return errorResponse(400, payloadError ?? "invalid_chest_open", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.chest_open($1::uuid, $2::uuid, $3::integer) AS result",
+          [identity.playerId, requestKey, count],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["item_capacity_exceeded", "chest_count_exceeded", "idempotency_conflict"]);
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(400, "chest_open_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "item_mutate") {
+      const payloadError = validatePayloadFields(payload, ["operation", "item_uids", "locked"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const operation = payload.operation;
+      const itemUids = payload.item_uids;
+      const locked = operation === "lock" ? payload.locked : null;
+      const valid = !payloadError && requestKey && ["lock", "sell"].includes(String(operation)) &&
+        Array.isArray(itemUids) && itemUids.length >= 1 && itemUids.length <= 64 &&
+        itemUids.every((uid) => typeof uid === "string" && uuidPattern.test(uid)) &&
+        new Set(itemUids).size === itemUids.length &&
+        (operation === "sell" || (itemUids.length === 1 && typeof locked === "boolean"));
+      if (!valid) return errorResponse(400, payloadError ?? "invalid_item_mutation", requestId);
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.item_mutate($1::uuid, $2::uuid, $3::text, $4::jsonb, $5::boolean) AS result",
+          [identity.playerId, requestKey, operation, JSON.stringify(itemUids), locked],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["item_not_found", "item_locked", "item_state_mismatch", "idempotency_conflict"]);
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(400, "item_mutation_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "item_equip") {
+      const payloadError = validatePayloadFields(payload, ["assignments"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const assignments = payload.assignments;
+      const slots = new Set(["class_weapon", "offhand", "helmet", "chest", "gloves", "boots", "ring", "amulet"]);
+      const valid = !payloadError && requestKey && Array.isArray(assignments) && assignments.length <= 64 &&
+        assignments.every((assignment) => isRecord(assignment) &&
+          Object.keys(assignment).sort().join(",") === "hero_uid,item_uid,slot" &&
+          typeof assignment.item_uid === "string" && uuidPattern.test(assignment.item_uid) &&
+          typeof assignment.hero_uid === "string" && assignment.hero_uid.length >= 1 && assignment.hero_uid.length <= 100 &&
+          typeof assignment.slot === "string" && slots.has(assignment.slot));
+      if (!valid) return errorResponse(400, payloadError ?? "invalid_equipment_assignment", requestId);
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.item_equip($1::uuid, $2::uuid, $3::jsonb) AS result",
+          [identity.playerId, requestKey, JSON.stringify(assignments)],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "invalid_equipment_assignment", "duplicate_equipment_assignment", "hero_not_active", "hero_not_found",
+          "item_not_found", "item_state_mismatch", "item_level_required", "item_slot_mismatch", "item_class_mismatch",
+          "item_capacity_exceeded", "idempotency_conflict",
+        ]);
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(400, "item_equipment_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "item_upgrade") {
+      const payloadError = validatePayloadFields(payload, ["operation", "item_uid", "use_charm"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const operation = payload.operation;
+      const itemUid = payload.item_uid;
+      const useCharm = payload.use_charm;
+      const valid = !payloadError && requestKey && ["enchant", "reroll"].includes(String(operation)) &&
+        typeof itemUid === "string" && uuidPattern.test(itemUid) && typeof useCharm === "boolean" &&
+        (operation === "enchant" || useCharm === false);
+      if (!valid) return errorResponse(400, payloadError ?? "invalid_item_upgrade", requestId);
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.item_upgrade($1::uuid, $2::uuid, $3::text, $4::uuid, $5::boolean) AS result",
+          [identity.playerId, requestKey, operation, itemUid, useCharm],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "invalid_item_upgrade", "charm_unavailable", "maximum_enchant", "insufficient_gold", "insufficient_tokens",
+          "item_not_found", "item_state_mismatch", "idempotency_conflict", "save_not_found", "account_not_found",
+        ]);
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(400, "item_upgrade_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "store_snapshot") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const result = await databaseJson("SELECT heroloop_api.store_snapshot($1::uuid) AS result", [identity.playerId]);
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        return errorResponse(503, "store_snapshot_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "store_buy_item") {
+      const payloadError = validatePayloadFields(payload, ["slot_index", "refresh_at"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const slotIndex = Number(payload.slot_index);
+      const refreshAt = Number(payload.refresh_at);
+      if (payloadError || !requestKey || !Number.isSafeInteger(slotIndex) || slotIndex < 0 || slotIndex > 3 ||
+        !Number.isSafeInteger(refreshAt) || refreshAt < 1) {
+        return errorResponse(400, payloadError ?? "invalid_store_purchase", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.store_buy_item($1::uuid, $2::uuid, $3::integer, $4::bigint) AS result",
+          [identity.playerId, requestKey, slotIndex, refreshAt],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "invalid_store_slot", "store_offer_expired", "store_offer_sold", "insufficient_gold",
+          "item_capacity_exceeded", "idempotency_conflict", "save_not_found",
+        ]);
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(400, "store_purchase_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "market_snapshot") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const result = await databaseJson("SELECT heroloop_api.market_snapshot($1::uuid) AS result", [identity.playerId]);
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        return errorResponse(503, "market_unavailable", requestId);
+      }
+    }
+    if (parsed.value.action === "market_seed_test_stock") {
+      const payloadError = validatePayloadFields(payload, []);
+      const requestKey = idempotencyKey(parsed.value);
+      if (payloadError || !requestKey) return errorResponse(400, payloadError ?? "invalid_market_seed", requestId);
+      if (!testerControlsEnabled) return errorResponse(404, "not_found", requestId);
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.market_seed_test_stock($1::uuid, $2::uuid) AS result",
+          [identity.playerId, requestKey],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "idempotency_conflict", "market_test_seed_forbidden", "market_test_stock_not_empty", "save_not_found",
+        ]);
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(400, "market_test_seed_failed", requestId);
+      }
+    }
+    if (["market_list_item", "market_cancel_listing", "market_buy_listing"].includes(String(parsed.value.action))) {
+      const action = String(parsed.value.action);
+      const allowedFields = action === "market_list_item" ? ["item_id", "price"] : ["listing_id"];
+      const payloadError = validatePayloadFields(payload, allowedFields);
+      const requestKey = idempotencyKey(parsed.value);
+      const itemId = payload.item_id;
+      const listingId = payload.listing_id;
+      const price = Number(payload.price);
+      const valid = !payloadError && requestKey && (action === "market_list_item"
+        ? typeof itemId === "string" && uuidPattern.test(itemId) && Number.isSafeInteger(price) && price >= 1 && price <= 1_000_000_000
+        : typeof listingId === "string" && uuidPattern.test(listingId));
+      if (!valid) return errorResponse(400, payloadError ?? "invalid_market_request", requestId);
+      try {
+        const result = action === "market_list_item"
+          ? await databaseJson(
+            "SELECT heroloop_api.market_list_item($1::uuid, $2::uuid, $3::uuid, $4::bigint) AS result",
+            [identity.playerId, requestKey, itemId, price],
+          )
+          : await databaseJson(
+            `SELECT heroloop_api.${action === "market_cancel_listing" ? "market_cancel_listing" : "market_buy_listing"}($1::uuid, $2::uuid, $3::uuid) AS result`,
+            [identity.playerId, requestKey, listingId],
+          );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "idempotency_conflict", "invalid_market_price", "market_test_limit_reached", "market_test_item_required",
+          "market_listing_unavailable", "market_self_purchase", "market_seller_limit_reached", "insufficient_tokens",
+          "item_not_found", "item_locked", "item_equipped", "item_state_mismatch", "item_capacity_exceeded", "save_not_found",
+        ]);
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(400, "market_settlement_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "set_boost_max_active") {
+      const payloadError = validatePayloadFields(payload, ["active"]);
+      if (payloadError || typeof payload.active !== "boolean") {
+        return errorResponse(400, payloadError ?? "invalid_boost_state", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.set_boost_max_active($1::uuid, $2::boolean) AS result",
+          [identity.playerId, payload.active],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["boost_max_requirements_not_met", "insufficient_tokens"]);
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(400, "boost_max_update_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "summon_boss") {
+      const payloadError = validatePayloadFields(payload, ["location"]);
+      const location = Number(payload.location);
+      if (payloadError || !Number.isSafeInteger(location) || location < 1 || location > 10_000) {
+        return errorResponse(400, payloadError ?? "invalid_boss_location", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.summon_boss($1::uuid, $2::integer) AS result",
+          [identity.playerId, location],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["boss_key_required", "active_encounter_exists"]);
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(503, "boss_summon_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "remove_limited_item") {
+      const payloadError = validatePayloadFields(payload, ["item_id"]);
+      if (payloadError || typeof payload.item_id !== "string" || !uuidPattern.test(payload.item_id)) {
+        return errorResponse(400, payloadError ?? "invalid_item_id", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.remove_limited_item($1::uuid, $2::uuid) AS result",
+          [identity.playerId, payload.item_id],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        return errorResponse(400, "item_removal_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "dungeon_status") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const result = await databaseJson("SELECT heroloop_api.dungeon_status($1::uuid) AS result", [identity.playerId]);
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        if (databaseErrorCode(error, ["save_not_found"])) return errorResponse(403, "account_required", requestId);
+        return errorResponse(503, "dungeon_status_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "dungeon_start") {
+      const payloadError = validatePayloadFields(payload, ["depth"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const depth = Number(payload.depth);
+      if (payloadError || !requestKey || !Number.isSafeInteger(depth) || depth < 1 || depth > 3) {
+        return errorResponse(400, payloadError ?? "dungeon_invalid_depth", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.dungeon_start($1::uuid, $2::integer, $3::uuid) AS result",
+          [identity.playerId, depth, requestKey],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "idempotency_conflict", "dungeon_invalid_depth", "dungeon_invalid_progression", "dungeon_invalid_formation",
+          "dungeon_equipment_state_mismatch", "dungeon_depth_locked", "dungeon_attempts_exhausted", "active_encounter_exists", "save_not_found",
+        ]);
+        if (code === "save_not_found") return errorResponse(403, "account_required", requestId);
+        if (["dungeon_invalid_depth", "dungeon_invalid_progression", "dungeon_invalid_formation", "dungeon_equipment_state_mismatch"].includes(String(code))) {
+          return errorResponse(400, String(code), requestId);
+        }
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(503, "dungeon_start_failed", requestId);
+      }
+    }
+    if (["dungeon_room_start", "dungeon_room_action", "dungeon_room_complete", "dungeon_room_choose", "dungeon_abandon"].includes(String(parsed.value.action))) {
+      const action = String(parsed.value.action);
+      const extraField = action === "dungeon_room_action" ? "command" : action === "dungeon_room_choose" ? "choice" : null;
+      const payloadError = validatePayloadFields(payload, ["encounter_id", "expected_revision", ...(extraField ? [extraField] : [])]);
+      const requestKey = idempotencyKey(parsed.value);
+      const encounterId = payload.encounter_id;
+      const expectedRevision = Number(payload.expected_revision);
+      const validExtra = action === "dungeon_room_action" ? payload.command === "resolve"
+        : action === "dungeon_room_choose" ? ["recovery", "treasure"].includes(String(payload.choice)) : true;
+      if (payloadError || !requestKey || typeof encounterId !== "string" || !uuidPattern.test(encounterId) ||
+        !Number.isSafeInteger(expectedRevision) || expectedRevision < 1 || !validExtra) {
+        return errorResponse(400, payloadError ?? "invalid_dungeon_request", requestId);
+      }
+      try {
+        const functionName = action;
+        const query = action === "dungeon_room_action"
+          ? `SELECT heroloop_api.${functionName}($1::uuid, $2::uuid, $3::bigint, $4::text, $5::uuid) AS result`
+          : action === "dungeon_room_choose"
+          ? `SELECT heroloop_api.${functionName}($1::uuid, $2::uuid, $3::bigint, $4::text, $5::uuid) AS result`
+          : `SELECT heroloop_api.${functionName}($1::uuid, $2::uuid, $3::bigint, $4::uuid) AS result`;
+        const args = action === "dungeon_room_action"
+          ? [identity.playerId, encounterId, expectedRevision, payload.command, requestKey]
+          : action === "dungeon_room_choose"
+          ? [identity.playerId, encounterId, expectedRevision, payload.choice, requestKey]
+          : [identity.playerId, encounterId, expectedRevision, requestKey];
+        const result = await databaseJson(query, args);
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "idempotency_conflict", "dungeon_invalid_revision", "dungeon_invalid_action", "dungeon_invalid_choice",
+          "dungeon_encounter_not_found", "dungeon_encounter_not_active", "dungeon_revision_conflict",
+          "dungeon_room_not_available", "dungeon_room_already_started", "dungeon_room_not_ready",
+          "dungeon_room_already_resolved", "dungeon_room_not_resolved", "dungeon_room_state_invalid",
+          "dungeon_run_state_invalid", "dungeon_combat_version_mismatch",
+        ]);
+        if (["dungeon_invalid_revision", "dungeon_invalid_action", "dungeon_invalid_choice"].includes(String(code))) {
+          return errorResponse(400, String(code), requestId);
+        }
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(503, `${action}_failed`, requestId);
+      }
+    }
     if (parsed.value.action === "leaderboard") {
       const payloadError = validatePayloadFields(payload, []);
       if (payloadError) return errorResponse(400, payloadError, requestId);
