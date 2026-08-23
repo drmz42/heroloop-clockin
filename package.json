@@ -43,6 +43,7 @@
     "check:promo-economy": "node scripts/check-promo-economy-contract.mjs",
     "check:referrals": "node scripts/check-referral-contract.mjs",
     "check:registration": "node scripts/check-registration-contract.mjs",
+    "check:save-schema-coverage": "node scripts/check-save-schema-coverage.mjs",
     "check:resource-ledger": "node scripts/check-resource-ledger-proposal.mjs",
     "check:salvage": "node scripts/check-salvage-proposal.mjs",
     "check:server-rewards": "node scripts/check-server-reward-authority.mjs",
