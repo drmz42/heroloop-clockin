@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "status": "proposal-only",
+  "runtimeAdopted": false,
+  "pricingApproved": false,
+  "capacity": {
+    "bags": 4,
+    "slotsPerBag": 64,
+    "bag1AlwaysUnlocked": true,
+    "equippedItemsConsumeCapacity": false,
+    "resourcesUseSeparateGrid": true
+  },
+  "pricingOptions": [
+    {
+      "id": "gold-progression",
+      "currency": "gold",
+      "bagCosts": { "2": { "gold": 2000000 }, "3": { "gold": 15000000 }, "4": { "gold": 75000000 } },
+      "total": { "gold": 92000000 },
+      "preferredForFurtherEvaluation": true
+    },
+    {
+      "id": "hero-qol",
+      "currency": "hero",
+      "bagCosts": { "2": { "hero": 2000 }, "3": { "hero": 5000 }, "4": { "hero": 10000 } },
+      "usdAtTestQuote": { "2": 2, "3": 5, "4": 10, "total": 17 },
+      "total": { "hero": 17000 },
+      "preferredForFurtherEvaluation": false
+    },
+    {
+      "id": "mixed",
+      "currency": "gold-and-hero",
+      "bagCosts": { "2": { "gold": 1000000, "hero": 1000 }, "3": { "gold": 8000000, "hero": 3000 }, "4": { "gold": 40000000, "hero": 8000 } },
+      "usdAtTestQuote": { "2": 1, "3": 3, "4": 8, "total": 12 },
+      "total": { "gold": 49000000, "hero": 12000 },
+      "preferredForFurtherEvaluation": false
+    }
+  ],
+  "recommendation": {
+    "option": "gold-progression",
+    "status": "evaluation-only-not-approved",
+    "reason": "Permanent equipment storage is core quality-of-life capacity; Gold-only avoids a real-value storage gate and creates a long progression sink.",
+    "requiresFounderApproval": true
+  },
+  "settlement": {
+    "purchaseAction": "bag_unlock",
+    "moveAction": "bag_items_move",
+    "purchaseRequest": ["bag_index", "expected_revision", "idempotency_key"],
+    "moveRequest": ["item_uids", "target_bag_index", "expected_revision", "idempotency_key"],
+    "forbiddenClientFields": ["price", "currency", "balance", "unlocked_bags", "capacity", "ownership", "equipped", "item_data", "resulting_inventory"],
+    "sequentialUnlockRequired": true,
+    "serverPriceCatalogueRequired": true,
+    "locks": ["players-row", "player_saves-row", "selected-player-items"],
+    "itemLedgerField": "storage_bag",
+    "storageBagRange": [1, 4],
+    "equippedItemKeepsReturnBag": true,
+    "movingEquippedItemChangesOnlyReturnBag": true,
+    "targetBagMustBeUnlocked": true,
+    "targetUnequippedCountCannotExceed64": true,
+    "batchLimit": 64,
+    "sameKeyReplay": "return-original-result-with-zero-charge-or-movement",
+    "changedPayloadReplay": "idempotency-conflict",
+    "staleRevision": "state-conflict-with-canonical-bag-state"
+  },
+  "acquisitionRouting": {
+    "default": "first-unlocked-bag-with-free-slot",
+    "chestBatch": "all-or-nothing-across-total-unlocked-free-capacity",
+    "storePurchase": "reject-only-if-all-unlocked-bags-full",
+    "marketPurchase": "reject-only-if-all-unlocked-bags-full",
+    "unequip": "return-to-stored-bag-else-first-unlocked-free-bag-atomically",
+    "sellOrDestroy": "remove-exact-ledger-item-from-its-bag",
+    "lockedBag": "cannot-receive-an-item-from-any-path"
+  },
+  "migration": {
+    "requiresProductionApproval": true,
+    "requiresVerifiedRecoveryPoint": true,
+    "existingItemsDefaultBag": 1,
+    "preserveLegacyBag1Overflow": true,
+    "overflowMayOnlyStayEqualOrDecrease": true,
+    "duplicateOrMissingLedgerUid": "fail-before-write",
+    "equippedReferencesRemainUnchanged": true,
+    "dryRun": "aggregate-counts-only-no-player-identifiers"
+  },
+  "acceptance": [
+    "sequential-purchase-and-insufficient-balance",
+    "same-key-replay-and-changed-payload-conflict",
+    "parallel-double-purchase-one-charge",
+    "single-and-64-item-move",
+    "locked-and-full-target-rejection-zero-mutation",
+    "equipped-item-return-bag-change-preserves-equipment",
+    "chest-store-market-and-unequip-routing",
+    "sell-enchant-destruction-and-account-delete-cleanup",
+    "legacy-overflow-preservation-and-monotonic-reduction",
+    "reload-relogin-and-stale-revision",
+    "390-780-1024-layout-and-accessibility",
+    "disposable-exact-candidate-staging-proof"
+  ]
+}
