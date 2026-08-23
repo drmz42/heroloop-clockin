@@ -50,6 +50,7 @@
     "simulate:hero-ascension": "node scripts/simulate-hero-ascension.mjs",
     "simulate:post20-ascension": "node scripts/simulate-post20-ascension.mjs",
     "simulate:enchant-set": "node scripts/simulate-enchant-set-progression.mjs",
+    "simulate:chest-pacing": "node scripts/simulate-chest-pacing.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
