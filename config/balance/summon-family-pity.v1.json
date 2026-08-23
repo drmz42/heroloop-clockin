@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "summon-family-pity-proposal-2026.08.23-v1",
+  "status": "proposal",
+  "live": false,
+  "families": ["pet", "spell", "aura"],
+  "familyIsolation": {
+    "heroPityNeverReadOrWritten": true,
+    "counterKey": ["player_id", "family", "pity_series_id", "threshold_id"],
+    "focusKey": ["player_id", "family", "banner_id", "rarity"],
+    "crossFamilyCarry": false,
+    "crossFamilyReset": false
+  },
+  "rarities": [
+    { "id": "common", "tier": 0, "baseRate": 0.70 },
+    { "id": "rare", "tier": 1, "baseRate": 0.22 },
+    { "id": "epic", "tier": 2, "baseRate": 0.06 },
+    { "id": "legendary", "tier": 3, "baseRate": 0.018 },
+    { "id": "mythic", "tier": 4, "baseRate": 0.002 }
+  ],
+  "thresholds": [
+    { "id": "epic_plus", "minimumTier": 2, "hardGuarantee": 50, "softStartAfterMisses": null, "softIncrementPercentagePoints": 0 },
+    { "id": "legendary_plus", "minimumTier": 3, "hardGuarantee": 100, "softStartAfterMisses": 60, "softIncrementPercentagePoints": 0.10 },
+    { "id": "mythic", "minimumTier": 4, "hardGuarantee": 500, "softStartAfterMisses": 300, "softIncrementPercentagePoints": 0.01 }
+  ],
+  "resetHierarchy": {
+    "qualifyingResultResetsSatisfiedThresholdAndAllLowerThresholds": true,
+    "highestDueGuaranteeControlsRoll": true,
+    "nonQualifyingResultIncrementsEligibleCounter": true
+  },
+  "availability": {
+    "unavailableTierRemovedBeforeNormalization": true,
+    "affectedCounterFreezes": true,
+    "guaranteeCannotBeConsumedWithoutAtomicCapacityReservation": true,
+    "otherEligibleCountersContinue": true
+  },
+  "sources": {
+    "paidAndFreeRollsShareOdds": true,
+    "paidAndFreeRollsSharePity": true,
+    "allSettledRollsAdvancePity": true,
+    "directCompensationGrantIsNotARoll": true
+  },
+  "focus": {
+    "familyLocal": true,
+    "ownedIdentityRequired": true,
+    "rarityFirstIdentitySecond": true,
+    "doesNotChangeOddsOrPity": true,
+    "lockedForBatch": true,
+    "heroAscensionFocusUnaffected": true
+  },
+  "bannerLifecycle": {
+    "explicitPitySeriesRequired": true,
+    "defaultExpiryPolicy": "carry-one-to-one-to-declared-successor",
+    "noSuccessorPolicy": "freeze-and-preserve-until-compatible-successor",
+    "silentResetForbidden": true,
+    "carryAcrossChangedOddsRequiresDisclosure": true,
+    "counterConversionOrDeletionForbidden": true
+  },
+  "settlement": {
+    "serverOwned": true,
+    "atomic": true,
+    "idempotencyKeyRequired": true,
+    "capacityCheckedBeforeChargeOrRoll": true,
+    "counterAndRewardCommittedTogether": true,
+    "immutableEventRequired": true,
+    "clientCannotSubmitOddsResultOrCounters": true,
+    "persistOutsideBrowser": true
+  },
+  "disclosure": {
+    "showExactBaseOdds": true,
+    "showEffectiveSoftOddsForNextRoll": true,
+    "showCurrentAndHardGuarantee": true,
+    "showFreezeReasonAndPreservedProgress": true,
+    "showPitySeriesAndCarryPolicy": true,
+    "showFreePaidParity": true,
+    "wikiAndAdminCoverageRequired": true
+  },
+  "simulation": {
+    "rollsPerFamily": 2000000,
+    "cohortSize": 20000,
+    "seed": 1398030676
+  }
+}
