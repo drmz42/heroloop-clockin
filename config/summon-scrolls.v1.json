@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "status": "approved-not-live",
+  "live": false,
+  "resourceKey": "summon_scroll",
+  "spendBatches": [1, 10, 100],
+  "scrollsPerSummon": 1,
+  "heroCapacity": 500,
+  "settlement": {
+    "serverOwned": true,
+    "atomic": true,
+    "idempotencyKeyRequired": true,
+    "expectedRevisionRequired": true,
+    "usesPaidSummonOdds": true,
+    "usesPaidSummonPity": true,
+    "usesAscensionFocus": true,
+    "rejectsPartialCapacity": true,
+    "clientCannotSubmitResults": true
+  },
+  "sources": {
+    "tutorialQuestRewards": [2, 1, 1],
+    "lifetimeSummonMilestones": [
+      { "summons": 10, "scrolls": 1 },
+      { "summons": 100, "scrolls": 5 },
+      { "summons": 1000, "scrolls": 10 },
+      { "summons": 10000, "scrolls": 50 }
+    ],
+    "bossVictory": 2,
+    "premiumPackQuantities": null
+  }
+}
