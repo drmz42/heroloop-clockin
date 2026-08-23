@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "status": "proposal-only",
+  "runtimeAdopted": false,
+  "yieldApproved": false,
+  "economicRule": {
+    "mintsGold": false,
+    "mintsHero": false,
+    "recipeValuesDefined": false,
+    "reason": "Salvage creates crafting inputs only; exchange rates and recipes must be balanced before material quantities become permanent."
+  },
+  "materials": [
+    { "id": "iron_scrap", "name": "Iron Scrap", "rarities": ["common", "uncommon", "rare"] },
+    { "id": "arcane_dust", "name": "Arcane Dust", "rarities": ["epic", "legendary", "mythic"] },
+    { "id": "astral_shard", "name": "Astral Shard", "rarities": ["cosmic", "divine", "celestial"] },
+    { "id": "godforged_core", "name": "Godforged Core", "rarities": ["cursed", "immortal", "god"] }
+  ],
+  "rarities": [
+    { "id": "common", "tier": 0, "material": "iron_scrap", "baseUnits": 1 },
+    { "id": "uncommon", "tier": 1, "material": "iron_scrap", "baseUnits": 2 },
+    { "id": "rare", "tier": 2, "material": "iron_scrap", "baseUnits": 4 },
+    { "id": "epic", "tier": 3, "material": "arcane_dust", "baseUnits": 1 },
+    { "id": "legendary", "tier": 4, "material": "arcane_dust", "baseUnits": 3 },
+    { "id": "mythic", "tier": 5, "material": "arcane_dust", "baseUnits": 7 },
+    { "id": "cosmic", "tier": 6, "material": "astral_shard", "baseUnits": 1 },
+    { "id": "divine", "tier": 7, "material": "astral_shard", "baseUnits": 3 },
+    { "id": "celestial", "tier": 8, "material": "astral_shard", "baseUnits": 8 },
+    { "id": "cursed", "tier": 9, "material": "godforged_core", "baseUnits": 1 },
+    { "id": "immortal", "tier": 10, "material": "godforged_core", "baseUnits": 3 },
+    { "id": "god", "tier": 11, "material": "godforged_core", "baseUnits": 8 }
+  ],
+  "itemLevelBands": [
+    { "min": 1, "max": 15, "multiplierBps": 10000 },
+    { "min": 16, "max": 30, "multiplierBps": 12500 },
+    { "min": 31, "max": 45, "multiplierBps": 15000 },
+    { "min": 46, "max": 60, "multiplierBps": 17500 },
+    { "min": 61, "max": 75, "multiplierBps": 20000 },
+    { "min": 76, "max": 90, "multiplierBps": 22500 },
+    { "min": 91, "max": 99, "multiplierBps": 25000 }
+  ],
+  "yieldCurves": [
+    { "id": "conservative", "enchantBonusBpsPerLevel": 400, "preferredForFurtherEvaluation": false },
+    { "id": "standard", "enchantBonusBpsPerLevel": 800, "preferredForFurtherEvaluation": true },
+    { "id": "generous", "enchantBonusBpsPerLevel": 1200, "preferredForFurtherEvaluation": false }
+  ],
+  "rounding": "floor-after-combined-multipliers-minimum-one",
+  "recommendation": {
+    "curve": "standard",
+    "status": "evaluation-only-not-approved",
+    "reason": "It visibly recognizes Item Level and Enchant investment without refunding currency or approaching a full-value loop before crafting recipes exist.",
+    "requiresFounderApproval": true
+  },
+  "eligibility": {
+    "wearableEquipmentOnly": true,
+    "resourceTypesForbidden": true,
+    "bossKeysForbidden": true,
+    "tutorialChestsForbidden": true,
+    "lockedForbidden": true,
+    "equippedForbidden": true,
+    "activeMarketListingForbidden": true,
+    "marketEscrowForbidden": true,
+    "removedItemForbidden": true,
+    "legacyUnregisteredItemForbidden": true,
+    "enchantFailureDestructionGrantsNothing": true
+  },
+  "protection": {
+    "quickSelectMaximumRarity": "rare",
+    "quickSelectMaximumEnchant": 0,
+    "quickSelectNeverIncludesNewItems": true,
+    "manualSelectionRequiredAboveQuickSelect": true,
+    "extraConfirmationFromRarity": "divine",
+    "extraConfirmationFromEnchant": 4,
+    "craftOnlyItemsCreatedLocked": true,
+    "lockMustBeRemovedOutsideSalvageMode": true,
+    "confirmationShows": ["item_count", "rarity_counts", "enchanted_item_count", "material_totals", "irreversible_warning"]
+  },
+  "settlement": {
+    "quoteAction": "item_salvage_quote",
+    "commitAction": "item_salvage_commit",
+    "quoteRequest": ["item_uids", "expected_revision"],
+    "commitRequest": ["quote_id", "expected_revision", "idempotency_key"],
+    "forbiddenClientFields": ["material_ids", "material_amounts", "rarity", "item_level", "enchant_level", "ownership", "locked", "equipped", "market_state", "global_supply", "resulting_inventory"],
+    "batchLimit": 64,
+    "duplicateIds": "reject",
+    "batchAtomicity": "all-or-nothing",
+    "quoteTtlSeconds": 60,
+    "quoteBoundTo": ["player_id", "canonical_item_rows", "save_revision", "yield_version"],
+    "locks": ["player-save-row", "selected-player-item-rows", "active-market-listings", "global-limited-supply-rows", "resource-balance-row"],
+    "sameKeyReplay": "return-original-result-with-zero-additional-consumption-or-reward",
+    "changedPayloadReplay": "idempotency-conflict",
+    "staleOrChangedQuote": "state-conflict-with-zero-consumption-or-reward",
+    "success": "soft-delete-exact-items-release-limited-slots-credit-stacked-resources-and-increment-save-revision-in-one-transaction"
+  },
+  "ui": {
+    "entry": "hammer-cursor-inventory-mode-and-item-details",
+    "selectionClick": "toggle-only-never-open-details-or-mutate",
+    "ineligibleItems": "not-selectable-with-specific-reason",
+    "preview": "server-quote-only",
+    "cancel": "clears-selection-with-zero-mutation",
+    "commit": "disabled-until-current-server-quote-and-required-confirmation",
+    "busy": "single-flight-disable-until-result",
+    "reload": "discard-uncommitted-selection-and-reload-canonical-state"
+  },
+  "migration": {
+    "requiresProductionApproval": true,
+    "requiresVerifiedRecoveryPoint": true,
+    "materialsUseServerResourceLedger": true,
+    "legacyItemsMustBeRegisteredBeforeSalvage": true,
+    "dryRun": "aggregate-eligible-and-protected-counts-only-no-player-identifiers"
+  },
+  "acceptance": [
+    "all-12-rarities-level-boundaries-and-enchant-0-to-10",
+    "locked-equipped-market-resource-and-legacy-rejection",
+    "quick-select-protection-and-high-value-double-confirmation",
+    "duplicate-over-64-stale-and-expired-quote-rejection",
+    "same-key-replay-and-changed-payload-conflict",
+    "parallel-salvage-sell-enchant-equip-and-market-races",
+    "atomic-soft-delete-resource-credit-and-limited-slot-release",
+    "full-equipment-bags-do-not-block-stackable-resource-credit",
+    "enchant-failure-destruction-grants-zero-materials",
+    "reload-relogin-and-audit-event-reconciliation",
+    "390-780-1024-layout-keyboard-touch-and-reduced-motion",
+    "disposable-exact-candidate-staging-proof"
+  ]
+}
