@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "status": "proposal-only",
+  "runtimeAdopted": false,
+  "economyChanged": false,
+  "families": ["daily", "milestone", "tutorial"],
+  "currentAudit": {
+    "claimExecution": "client-state-mutation",
+    "progressAuthority": {
+      "chest": "server",
+      "kill": "mixed-client-save-and-server-total",
+      "boss": "client",
+      "summon": "client",
+      "gold-earned": "client",
+      "token-earned": "client",
+      "token-spent": "client",
+      "hero-owned": "client"
+    },
+    "rewardAuthority": {
+      "gold": "server-capped-from-current-quest-snapshot",
+      "hero": "not-credited-by-quest-settlement",
+      "summon-scrolls": "client-save-compatible",
+      "tutorial-chests": "not-implemented"
+    },
+    "blockers": [
+      "no-idempotent-quest-claim-command",
+      "client-can-submit-progress-claimed-and-reward-shape",
+      "no-surviving-quest-claim-ledger",
+      "no-atomic-gold-hero-resource-credit",
+      "no-server-owned-moscow-daily-instance"
+    ]
+  },
+  "targetContract": {
+    "catalogue": {
+      "authority": "versioned-server-catalogue",
+      "clientFields": ["quest_id", "idempotency_key"],
+      "forbiddenClientFields": ["family", "day", "chain", "tier", "target", "progress", "claimed", "reward", "gold", "hero", "summon_scrolls", "tutorial_chests"]
+    },
+    "progressSources": {
+      "chest": "settle_chest_open",
+      "kill": "settle_periodic_progression-or-future-combat-settlement",
+      "boss": "future-server-boss-settlement",
+      "summon": "settle_hero_summon",
+      "gold-earned": "server-gold-ledger",
+      "token-earned": "hero-ledger-credit-events",
+      "token-spent": "token_spend_events",
+      "hero-owned": "server-owned-hero-ledger"
+    },
+    "claim": {
+      "action": "quest_claim",
+      "rpc": "settle_quest_claim",
+      "eventTable": "quest_claim_events",
+      "locks": ["players-row", "player_saves-row", "quest-instance"],
+      "atomicCredits": ["gold", "hero", "summon-scrolls", "tutorial-chests", "save-revision"],
+      "sameKeyReplay": "return-original-result-with-zero-mutation",
+      "changedPayloadReplay": "idempotency-conflict",
+      "incompleteOrUnknownQuest": "reject-with-zero-mutation",
+      "response": ["quest_id", "family", "claimed", "reward", "balances", "resources", "next_milestone", "revision"]
+    },
+    "dailyReset": {
+      "timezone": "Europe/Moscow",
+      "instanceKey": "family:quest_id:YYYY-MM-DD",
+      "clockAuthority": "database-server-time",
+      "previousDayClaim": "reject",
+      "dayRollover": "create-or-derive-new-unclaimed-instance"
+    },
+    "tutorial": {
+      "ordered": true,
+      "progressBeforeVisibleStep": "preserve-from-authoritative-events",
+      "replay": "rewardless",
+      "completion": "hide-after-final-claim",
+      "tutorialChestStorage": "inventory-resources-stacked",
+      "tutorialChestOpenSettlement": "ordinary-standard-chest-settlement-with-tutorial-source"
+    }
+  },
+  "migrationPolicy": {
+    "requiresProductionApproval": true,
+    "requiresVerifiedRecoveryPoint": true,
+    "claimedHistoricalRewards": "preserve-no-clawback",
+    "dailyProgress": "rebuild-from-current-server-day-authoritative-events-otherwise-zero",
+    "milestoneProgress": "rebuild-from-authoritative-lifetime-counters-and-ledgers",
+    "tutorialProgress": "derive-from-authoritative-events-with-existing-account-compatibility",
+    "clientOnlyUnclaimedProgress": "do-not-promote-to-authoritative-credit",
+    "dryRun": "report-counts-only-no-player-identifiers"
+  },
+  "acceptance": {
+    "required": [
+      "unit-fixtures-for-every-catalogue-quest",
+      "same-key-replay-and-changed-payload-conflict",
+      "parallel-double-claim-one-credit",
+      "moscow-midnight-boundary",
+      "reload-and-relogin-persistence",
+      "daily-to-milestone-overflow",
+      "tutorial-early-action-preservation",
+      "full-bag-tutorial-chest-claim",
+      "hero-ledger-reconciliation-zero-drift",
+      "disposable-exact-candidate-staging-pass"
+    ],
+    "status": "blocked-until-implemented-after-phase-h-and-approved-for-live-economy"
+  }
+}
