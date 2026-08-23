@@ -20,7 +20,7 @@
 
     { "id": "mining_pool_hero", "asset": "hero", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_faucet", "ledgerSourceKinds": ["mining_pool"] },
     { "id": "promo_hero", "asset": "hero", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_faucet", "ledgerSourceKinds": ["promo_code"] },
-    { "id": "tester_hero", "asset": "hero", "direction": "faucet", "status": "staging-only-server", "authority": "server", "telemetryAggregate": "currency_faucet" },
+    { "id": "tester_hero", "asset": "hero", "direction": "faucet", "status": "staging-only-server", "authority": "server", "telemetryAggregate": "currency_faucet", "blocksLedgerReconciliation": true },
     { "id": "referral_hero", "asset": "hero", "direction": "faucet", "status": "proposal", "authority": "server", "telemetryAggregate": "currency_faucet" },
     { "id": "paid_summon_hero", "asset": "hero", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_sink", "ledgerSourceKinds": ["hero-summon"] },
     { "id": "ascension_hero", "asset": "hero", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_sink", "ledgerSourceKinds": ["hero-ascension"] },
@@ -30,6 +30,7 @@
     { "id": "market_hero_trade", "asset": "hero", "direction": "transfer", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_transfer" },
     { "id": "market_hero_fee", "asset": "hero", "direction": "transfer", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_transfer", "ledgerSourceKinds": ["market_fee"] },
     { "id": "hero_claim", "asset": "hero", "direction": "internal", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_transfer" },
+    { "id": "account_delete_hero", "asset": "hero", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_sink", "blocksLedgerReconciliation": true },
 
     { "id": "combat_account_xp", "asset": "account_xp", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "progression_flow" },
     { "id": "combat_hero_xp", "asset": "hero_xp", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "progression_flow" },
@@ -64,6 +65,7 @@
     "clientCompatibilityBlocksRealValue": true,
     "telemetryRequiredForEveryEntry": true,
     "balanceVersionRequired": true,
-    "newSourceRequiresRegistryEntry": true
+    "newSourceRequiresRegistryEntry": true,
+    "knownBalanceMutationRequiresLedgerCoverage": true
   }
 }

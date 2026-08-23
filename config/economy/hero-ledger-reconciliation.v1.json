@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "hero-ledger-reconciliation-2026.08.23-v1",
+  "status": "proposal",
+  "live": false,
+  "asset": "hero",
+  "precision": "postgresql-numeric-exact",
+  "sourceKinds": [
+    { "id": "mining_pool", "flow": "player_issuance", "treatment": "player-issuance" },
+    { "id": "promo_code", "flow": "player_issuance", "treatment": "player-issuance" },
+    { "id": "hero-summon", "flow": "treasury_inflow", "treatment": "unallocated-project-receipt" },
+    { "id": "hero-ascension", "flow": "treasury_inflow", "treatment": "unallocated-project-receipt" },
+    { "id": "training-slot", "flow": "treasury_inflow", "treatment": "unallocated-project-receipt" },
+    { "id": "training-boost-2x-1h", "flow": "treasury_inflow", "treatment": "unallocated-project-receipt" },
+    { "id": "training-boost-2x-4h", "flow": "treasury_inflow", "treatment": "unallocated-project-receipt" },
+    { "id": "training-boost-4x-1h", "flow": "treasury_inflow", "treatment": "unallocated-project-receipt" },
+    { "id": "training-boost-4x-4h", "flow": "treasury_inflow", "treatment": "unallocated-project-receipt" },
+    { "id": "item-enchant", "flow": "treasury_inflow", "treatment": "unallocated-project-receipt" },
+    { "id": "item-reroll", "flow": "treasury_inflow", "treatment": "unallocated-project-receipt" },
+    { "id": "market_fee", "flow": "treasury_inflow", "treatment": "unallocated-project-receipt" }
+  ],
+  "coverage": [
+    { "source": "distribution_log.amount_distributed", "ledgerKind": "mining_pool", "sourceKeyPrefix": "distribution:" },
+    { "source": "promo_code_redemptions.result.rewards.hero", "ledgerKind": "promo_code", "sourceKeyPrefix": "promo:" },
+    { "source": "token_spend_events.amount", "ledgerKinds": ["hero-summon", "hero-ascension", "training-slot", "training-boost-2x-1h", "training-boost-2x-4h", "training-boost-4x-1h", "training-boost-4x-4h", "item-enchant", "item-reroll"], "sourceKeyPrefix": "token_spend:" },
+    { "source": "market_item_events.result.fee", "ledgerKind": "market_fee", "sourceKeyPrefix": "market_fee:" }
+  ],
+  "currentCoverageBlockers": [
+    { "operation": "tester_credit_tokens", "environment": "staging", "requiredLedgerKind": "tester_credit", "flow": "player_issuance", "reason": "credit_token_distribution changes pending_tokens without distribution_log" },
+    { "operation": "account_delete", "environment": "all", "requiredLedgerKind": "account_balance_extinguishment", "flow": "balance_extinguishment", "reason": "deleting players removes token_balance and pending_tokens without a surviving balance event" }
+  ],
+  "equations": {
+    "playerBalanceScope": ["players.token_balance", "players.pending_tokens"],
+    "expectedCurrentPlayerTotal": "verified_baseline_player_total + player_issuance - treasury_inflow - balance_extinguishment",
+    "marketGrossTransferExcluded": true,
+    "marketFeeIncluded": true,
+    "claimIsInternalAndNetZero": true,
+    "sourceEventAmountMustEqualLedgerAmount": true,
+    "sourceEventAndLedgerKeySetsMustMatch": true,
+    "absoluteDriftTolerance": 0
+  },
+  "reporterActivationBlockedUntilCurrentCoverageBlockersAreClosed": true,
+  "treasuryBoundary": {
+    "receiptIsNotCashRevenue": true,
+    "receiptIsNotAutomaticBurn": true,
+    "receiptIsNotAutomaticLiquidity": true,
+    "receiptIsNotAutomaticRedistribution": true,
+    "burnReserveLiquidityRequireNewApprovedFlowAndAudit": true,
+    "noBlockchainTransaction": true
+  },
+  "requiredImplementationFields": ["environment", "balance_version"],
+  "alerts": {
+    "unknownSourceKind": "critical",
+    "duplicateSourceKey": "critical",
+    "missingSourceOrLedgerRow": "critical",
+    "nonZeroBalanceDrift": "critical",
+    "negativePlayerBalance": "critical",
+    "dailyRunStaleAfterHours": 26,
+    "stateChangeOnly": true,
+    "recoveryNotice": true
+  },
+  "dailyExport": {
+    "timezone": "Europe/Moscow",
+    "format": "csv",
+    "columns": ["environment", "moscow_day", "balance_version", "flow", "source_kind", "event_count", "amount"],
+    "includesPlayerIdentifiers": false,
+    "checksumManifest": true,
+    "formulaInjectionEscaping": true,
+    "founderOnly": true
+  },
+  "adminReporting": {
+    "dailySourceTotals": true,
+    "issuanceInflowNet": true,
+    "balanceDrift": true,
+    "coverageGapAndDuplicateCounts": true,
+    "immutableSourceDrilldown": true,
+    "defaultAggregateOnly": true,
+    "playerDrilldownRequiresFounderRoleAndReason": true
+  },
+  "rules": {
+    "newSettledSourceRequiresRegistryKindAndReconciliationMapping": true,
+    "appendOnlyEvidence": true,
+    "clientAmountsForbidden": true,
+    "productionMutationForbiddenFromReporter": true
+  }
+}
