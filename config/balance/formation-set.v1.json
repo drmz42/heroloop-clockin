@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "formation-set-proposal-2026.08.23-v1",
+  "status": "proposal",
+  "live": false,
+  "formationSize": 3,
+  "scope": {
+    "source": "active-formation-only",
+    "reserveHeroesCount": false,
+    "trainingHeroesCount": false,
+    "pveModes": ["normal", "boss", "dungeon"],
+    "pvpEnabled": false,
+    "reason": "Arena requires a separately calibrated competitive ruleset"
+  },
+  "identityRules": {
+    "uniqueInstancesRequired": true,
+    "duplicateHeroIdentitiesCount": true,
+    "mixedRarityCountsForClass": true,
+    "mixedClassCountsForRarity": true
+  },
+  "stacking": {
+    "rarityAndClassStack": true,
+    "primaryStatMode": "additive-percent-before-caps",
+    "secondaryStatMode": "additive-points-then-existing-class-cap",
+    "rewardMultiplier": 1,
+    "directCurrencyOrLootBonus": false
+  },
+  "rarityHarmony": {
+    "requiresExactlyThreeSameRarity": true,
+    "allRaritiesUseSameBonus": true,
+    "bonuses": { "hpPercent": 0.05, "atkPercent": 0.05, "defPercent": 0.05 }
+  },
+  "classDoctrine": {
+    "requiresExactlyThreeSameClass": true,
+    "bonuses": {
+      "warrior": { "hpPercent": 0.12, "defPercent": 0.08 },
+      "mage": { "atkPercent": 0.08, "critDamagePoints": 0.05 },
+      "assassin": { "dodgePoints": 0.03, "attackSpeedPoints": 0.04 },
+      "druid": { "hpPercent": 0.10, "regenPerSecondPoints": 0.004 },
+      "crossbowman": { "atkPercent": 0.06, "critChancePoints": 0.03 }
+    }
+  },
+  "powerAndRecommendation": {
+    "teamPowerIncludesActiveBonuses": true,
+    "heroCardPowerOutsideActiveFormationExcludesBonus": true,
+    "recommendedPowerMustBeRecalibratedWithSameModelVersion": true,
+    "recommendedPowerDoesNotAssumePlayerOwnsASet": true
+  },
+  "settlement": {
+    "authority": "server",
+    "derivedFromCanonicalFormation": true,
+    "clientCannotSubmitDetectedSetsOrBonuses": true,
+    "saveMigrationRequired": false,
+    "persistDerivedBonus": false,
+    "recomputeOnFormationOrHeroChange": true
+  },
+  "ui": {
+    "previewWhenTwoOfThreeMatch": true,
+    "activeBadges": ["Rarity Harmony", "Class Doctrine"],
+    "showStackedBadgesSeparately": true,
+    "showExactStatsAndPowerDelta": true
+  },
+  "simulation": {
+    "heroLevel": 80,
+    "stars": 20,
+    "essenceLevel": 0,
+    "gearProfile": "typical",
+    "trialsPerState": 256,
+    "maxSeconds": 120,
+    "individualPowerDeltaBounds": [0.03, 0.12],
+    "stackedPowerDeltaBounds": [0.08, 0.20]
+  }
+}
