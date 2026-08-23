@@ -68,6 +68,7 @@
     "simulate:enchant-set": "node scripts/simulate-enchant-set-progression.mjs",
     "simulate:formation-set": "node scripts/simulate-formation-set.mjs",
     "simulate:market-fee-use": "node scripts/simulate-market-fee-use.mjs",
+    "simulate:resource-ledger": "node scripts/simulate-resource-ledger.mjs",
     "simulate:bag-expansion": "node scripts/simulate-bag-expansion.mjs",
     "simulate:salvage": "node scripts/simulate-salvage.mjs",
     "audit:hero-abilities": "node scripts/audit-hero-ability-availability.mjs",
