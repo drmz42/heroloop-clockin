@@ -10,6 +10,7 @@
     "check:balance-version": "node scripts/check-balance-version-contract.mjs",
     "check:codex-watchdog": "node scripts/check-codex-watchdog.mjs",
     "check:dev-news-resilience": "node scripts/check-dev-news-resilience.mjs",
+    "check:daily-hero-accrual": "node scripts/check-daily-hero-accrual-contract.mjs",
     "check:dungeon-server-core": "node scripts/check-dungeon-server-core.mjs",
     "check:dungeon-room-start": "node scripts/check-dungeon-room-start.mjs",
     "check:dungeon-room-combat": "node scripts/check-dungeon-room-combat.mjs",

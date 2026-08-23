@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "status": "proposal",
+  "live": false,
+  "currency": "hero",
+  "earningKind": "mining-pool-distribution-credit",
+  "dayBoundary": {
+    "timezone": "Europe/Moscow",
+    "dayKeyFormat": "YYYY-MM-DD",
+    "deriveAtReadTime": true,
+    "clientClockRejected": true
+  },
+  "ledger": {
+    "appendOnly": true,
+    "oneRowPerPlayerPerDistributionTick": true,
+    "uniqueSourceKey": "distribution:{tick_id}:player:{player_id}",
+    "serverCalculatedAmount": true,
+    "positiveAmountOnly": true,
+    "browserWritesDenied": true,
+    "claimDoesNotChangeEarnedTotal": true
+  },
+  "statusOutput": {
+    "authenticatedOwnerOnly": true,
+    "fields": ["dayKey", "earnedToday"],
+    "sumFromLedger": true,
+    "zeroWhenNoRows": true
+  },
+  "idempotency": {
+    "distributionReplayNoop": true,
+    "sourceKeyConflictNoop": true,
+    "saveReloadStable": true
+  },
+  "acceptance": [
+    "credit",
+    "exact-replay",
+    "multiple-ticks",
+    "refresh",
+    "relogin",
+    "claim-preserves-earned",
+    "moscow-day-rollover",
+    "forged-client-value-rejected"
+  ]
+}
