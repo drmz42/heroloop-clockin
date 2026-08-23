@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "manifestVersion": "balance-release-manifest-2026.08.23-v1",
+  "status": "proposal",
+  "live": false,
+  "balanceVersion": "hero-power-proposal-2026.08.12-v3",
+  "modelConfig": "config/balance/hero-power-model.v1.json",
+  "groups": [
+    { "id": "heroes", "version": "heroes-v3", "keys": ["heroStatFormula", "classes", "rarities", "essence"] },
+    { "id": "items", "version": "items-v3", "keys": ["equipment"] },
+    { "id": "combat", "version": "combat-v3", "keys": ["powerFormula", "defenseRules"] },
+    { "id": "normal-locations", "version": "normal-locations-v3", "keys": ["enemyCalibration"] },
+    { "id": "boss-hunt", "version": "boss-hunt-v3", "keys": ["bossHuntCalibration"] },
+    { "id": "endgame-locations", "version": "endgame-locations-v3", "keys": ["endgameCalibration"] },
+    { "id": "dungeons", "version": "dungeons-v3", "keys": ["dungeonCalibration"] },
+    { "id": "summon-economy", "version": "summon-economy-v3", "keys": ["summonEconomy"] }
+  ],
+  "experimentPolicy": {
+    "allowedChangedGroups": 1,
+    "requiresControlBalanceVersion": true,
+    "requiresSameSeedSet": true,
+    "telemetryField": "balanceVersion",
+    "serverStampedTelemetry": true,
+    "rejectMixedVersions": true,
+    "productionActivation": "explicit-founder-approval"
+  }
+}
