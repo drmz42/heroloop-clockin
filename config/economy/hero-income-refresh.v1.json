@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "status": "proposal-only",
+  "runtimeAdopted": false,
+  "economyFormulaChanged": false,
+  "currentAudit": {
+    "ordinaryRefreshSeconds": 30,
+    "panelPreview": "client-roster-power-divided-by-server-total-score",
+    "previewMissingFactors": ["server-canonical-power", "location-multiplier", "boost-max-multiplier", "training-occupancy-penalty"],
+    "previewCanUseUncommittedState": true,
+    "blocksAccurateRealValueDisplay": true
+  },
+  "scoreAuthority": {
+    "singleServerFunction": "canonical_hero_income_score",
+    "formula": "effective_power * (1 + 0.10 * (highest_location - 1)) * boost_max_multiplier",
+    "clientRecalculationForbidden": true,
+    "scoreVersionRequired": true,
+    "actualSettlementUnchanged": true
+  },
+  "sharedDenominator": {
+    "cacheScope": "environment-and-score-version",
+    "maximumAgeSeconds": 60,
+    "includesOnlyRewardActiveEligiblePlayers": true,
+    "recomputeSerialized": true,
+    "mutationRefreshUsesLatestCachedDenominator": true,
+    "ordinaryStatusReconciles": true
+  },
+  "incomeSnapshot": {
+    "requiredFields": [
+      "score_version",
+      "player_power",
+      "training_hero_count",
+      "training_penalty",
+      "highest_location",
+      "location_multiplier",
+      "boost_multiplier",
+      "my_score",
+      "total_score",
+      "denominator_as_of",
+      "daily_pool",
+      "my_daily_share",
+      "my_hourly_share",
+      "pool_share_percent",
+      "save_revision"
+    ],
+    "newerRevisionWins": true,
+    "failedRefresh": "retain-last-confirmed-snapshot-and-mark-stale",
+    "noClientPowerFallback": true
+  },
+  "canonicalMutationTriggers": [
+    "formation-add-remove-swap",
+    "hero-level",
+    "hero-stars",
+    "hero-essence-if-score-version-includes-it",
+    "item-equip-unequip-auto-equip",
+    "item-enchant-reroll-upgrade-destruction",
+    "rarity-set-or-enchant-resonance",
+    "training-assignment",
+    "eligible-or-highest-location",
+    "boost-max-state"
+  ],
+  "refreshProtocol": {
+    "preferred": "successful-mutation-response-includes-income-snapshot",
+    "fallback": "immediate-status-after-successful-mutation",
+    "invalidOrNoopMutation": "do-not-change-confirmed-income-snapshot",
+    "ordinaryStatusIntervalMaximumSeconds": 30,
+    "coalesceConcurrentMutationRefreshes": true,
+    "discardResponseOlderThanConfirmedSaveRevision": true
+  },
+  "dependencies": {
+    "formation": "server-owned-revisioned-formation-mutation",
+    "items": "existing-server-item-settlements",
+    "training": "config/economy/training-occupancy.v1.json",
+    "location": "server-owned-progression-settlement",
+    "boost": "existing-server-boost-settlement"
+  },
+  "acceptance": {
+    "required": [
+      "common-solo-to-legendary-plus-two-epic-formation-increases-confirmed-income",
+      "each-canonical-mutation-trigger-refreshes-without-waiting-30-seconds",
+      "invalid-and-noop-mutations-leave-income-unchanged",
+      "out-of-order-response-cannot-overwrite-newer-revision",
+      "30-second-status-repairs-missed-immediate-refresh",
+      "reload-and-relogin-preserve-confirmed-values",
+      "hourly-display-matches-subsequent-settlement-within-one-minute-denominator-window",
+      "boost-and-training-factors-match-server-score",
+      "zero-client-power-fallback",
+      "disposable-exact-candidate-staging-pass"
+    ],
+    "status": "blocked-until-authoritative-mutations-implemented-after-phase-h"
+  }
+}
