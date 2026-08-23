@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "status": "proposal",
+  "live": false,
+  "scope": ["owned-heroes", "inventory-items", "player-item-ledger", "equipped-item-references", "legacy-market-escrow"],
+  "preconditions": {
+    "exactEnvironmentRequired": true,
+    "allPlayerAccountsIncluded": true,
+    "allBrowserSessionsClosed": true,
+    "verifiedRecoveryPointRequired": true,
+    "productionMutationApprovalRequired": true
+  },
+  "postconditions": {
+    "canonicalUuidInstances": true,
+    "globalHeroAndItemUniqueness": true,
+    "noPreResetInstanceReuse": true,
+    "inventoryLedgerParity": true,
+    "equippedReferencesOwnedItems": true,
+    "legacyMarketEscrowEmpty": true,
+    "browserReloadMatchesServer": true
+  },
+  "auditInput": {
+    "before": ["playerId", "heroUids", "itemUids", "ledgerItemUids"],
+    "after": ["playerId", "heroUids", "itemUids", "ledgerItemUids", "equippedItemUids", "legacyListingUids"]
+  },
+  "failurePolicy": "fail-closed-before-release"
+}

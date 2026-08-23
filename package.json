@@ -28,6 +28,7 @@
     "check:economy-telemetry": "node scripts/check-economy-telemetry-contract.mjs",
     "check:hero-ascension": "node scripts/check-hero-ascension-pricing.mjs",
     "check:item-level-scaling": "node scripts/check-item-level-scaling.mjs",
+    "check:instance-reset": "node scripts/check-instance-reset-contract.mjs",
     "check:legacy-market-recovery": "node scripts/check-legacy-market-recovery.mjs",
     "check:monitor-alerts": "node scripts/check-monitor-alert-accuracy.mjs",
     "check:nginx-security": "node scripts/check-nginx-security-contract.mjs",
