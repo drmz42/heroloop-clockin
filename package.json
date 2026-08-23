@@ -63,6 +63,7 @@
     "simulate:post20-ascension": "node scripts/simulate-post20-ascension.mjs",
     "simulate:enchant-set": "node scripts/simulate-enchant-set-progression.mjs",
     "simulate:formation-set": "node scripts/simulate-formation-set.mjs",
+    "simulate:market-fee-use": "node scripts/simulate-market-fee-use.mjs",
     "audit:hero-abilities": "node scripts/audit-hero-ability-availability.mjs",
     "audit:power-target-bands": "node scripts/audit-power-target-bands.mjs",
     "simulate:summon-family-pity": "node scripts/simulate-summon-family-pity.mjs",

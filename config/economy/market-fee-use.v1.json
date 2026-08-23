@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "status": "simulation-only",
+  "runtimeAdopted": false,
+  "financialPolicyApproved": false,
+  "inputs": {
+    "feeRate": 0.05,
+    "fixedDailyEmission": 20000,
+    "dailyGmvScenarios": [0, 10000, 100000, 1000000, 10000000],
+    "horizonDays": 30,
+    "asset": "hero"
+  },
+  "policies": [
+    {
+      "id": "status-quo-unallocated",
+      "playerPool": "fixed-emission",
+      "feeTreatment": "unallocated-project-receipt",
+      "incomeEffect": "none",
+      "requiresApproval": false,
+      "adopted": true
+    },
+    {
+      "id": "fixed-pool-offset",
+      "playerPool": "fixed-emission",
+      "feeTreatment": "reissue-up-to-fixed-pool-and-reduce-new-issuance-equally",
+      "incomeEffect": "none",
+      "requiresApproval": true,
+      "adopted": false,
+      "preferredForFurtherEvaluation": true
+    },
+    {
+      "id": "additive-redistribution",
+      "playerPool": "fixed-emission-plus-all-fees",
+      "feeTreatment": "redistribute-to-eligible-players",
+      "incomeEffect": "variable-upward",
+      "requiresApproval": true,
+      "adopted": false,
+      "preferredForFurtherEvaluation": false
+    },
+    {
+      "id": "burn",
+      "playerPool": "fixed-emission",
+      "feeTreatment": "permanent-supply-removal",
+      "incomeEffect": "none",
+      "requiresApproval": true,
+      "adopted": false,
+      "preferredForFurtherEvaluation": false
+    },
+    {
+      "id": "treasury-reserve",
+      "playerPool": "fixed-emission",
+      "feeTreatment": "segregated-project-token-reserve",
+      "incomeEffect": "none",
+      "requiresApproval": true,
+      "adopted": false,
+      "preferredForFurtherEvaluation": false
+    }
+  ],
+  "evaluationRules": {
+    "statusQuoUntilApproved": true,
+    "fixedPoolMustRemain20000": true,
+    "additiveFeesMustAppearInIncomeEstimateIfAdopted": true,
+    "marketGrossTransferIsNeverProjectIncome": true,
+    "onlyExactFivePercentFeeIsInScope": true,
+    "feeReuseRequiresUniqueLedgerLink": true,
+    "sameFeeCannotBeReusedBurnedAndReserved": true,
+    "noAutomaticCashRevenueRecognition": true,
+    "burnRequiresSupplyLedgerAndMultisigPolicy": true,
+    "treasuryUseRequiresLegalAccountingAndMultisigPolicy": true
+  },
+  "fixedPoolOffsetBoundary": {
+    "maximumDailyFeeReuse": 20000,
+    "externalEmission": "max(0, 20000 - fee_reused)",
+    "feeReuse": "min(daily_fee, 20000)",
+    "excessFee": "max(0, daily_fee - 20000)",
+    "playerPool": 20000,
+    "playerIncomeFormulaUnchanged": true,
+    "requiresSeparateFounderApproval": true
+  },
+  "acceptanceBeforeAnyAdoption": [
+    "observed-gmv-and-fee-cohorts-by-moscow-day",
+    "zero-drift-fee-source-to-ledger-reconciliation",
+    "thirty-day-circulation-and-concentration-simulation",
+    "fee-farming-and-self-trade-abuse-review",
+    "income-copy-and-estimate-parity",
+    "refund-reversal-and-account-deletion-policy",
+    "jurisdiction-tax-aml-and-consumer-review",
+    "multisig-and-role-separation",
+    "explicit-financially-material-founder-approval",
+    "disposable-exact-candidate-staging-proof"
+  ]
+}
