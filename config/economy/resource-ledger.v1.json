@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "status": "proposal-only",
+  "runtimeAdopted": false,
+  "schemaApproved": false,
+  "catalog": [
+    { "id": "potion_xs", "family": "potion", "status": "client-compatibility", "spendable": true, "deletable": false },
+    { "id": "potion_sm", "family": "potion", "status": "client-compatibility", "spendable": true, "deletable": false },
+    { "id": "potion_md", "family": "potion", "status": "client-compatibility", "spendable": true, "deletable": false },
+    { "id": "potion_lg", "family": "potion", "status": "client-compatibility", "spendable": true, "deletable": false },
+    { "id": "potion_xl", "family": "potion", "status": "client-compatibility", "spendable": true, "deletable": false },
+    { "id": "potion_xxl", "family": "potion", "status": "client-compatibility", "spendable": true, "deletable": false },
+    { "id": "boss_key", "family": "key", "status": "mixed-compatibility", "spendable": true, "deletable": false },
+    { "id": "summon_scroll", "family": "summon", "status": "client-compatibility", "spendable": true, "deletable": false },
+    { "id": "tutorial_chest", "family": "chest", "status": "proposal-only", "spendable": true, "deletable": false },
+    { "id": "iron_scrap", "family": "crafting", "status": "proposal-only", "spendable": true, "deletable": false },
+    { "id": "arcane_dust", "family": "crafting", "status": "proposal-only", "spendable": true, "deletable": false },
+    { "id": "astral_shard", "family": "crafting", "status": "proposal-only", "spendable": true, "deletable": false },
+    { "id": "godforged_core", "family": "crafting", "status": "proposal-only", "spendable": true, "deletable": false }
+  ],
+  "storage": {
+    "resourceCatalog": {
+      "primaryKey": "resource_id",
+      "fields": ["resource_id", "family", "display_order", "enabled", "spendable", "deletable", "maximum_balance", "catalog_version"]
+    },
+    "playerResourceState": {
+      "primaryKey": "player_id",
+      "fields": ["player_id", "revision", "updated_at"]
+    },
+    "playerResourceBalances": {
+      "primaryKey": ["player_id", "resource_id"],
+      "fields": ["player_id", "resource_id", "quantity_bigint", "updated_at"],
+      "constraints": ["quantity-nonnegative", "quantity-not-above-catalog-maximum", "catalog-resource-required"]
+    },
+    "resourceTransactions": {
+      "primaryKey": "transaction_id",
+      "unique": ["player_id-idempotency_key"],
+      "fields": ["transaction_id", "player_id", "idempotency_key", "action", "source_key", "request_hash", "resource_revision_before", "resource_revision_after", "save_revision_after", "created_at"]
+    },
+    "resourceEntries": {
+      "primaryKey": "entry_id",
+      "fields": ["entry_id", "transaction_id", "resource_id", "delta_bigint", "balance_after_bigint", "created_at"],
+      "constraints": ["delta-nonzero", "one-entry-per-transaction-resource"]
+    }
+  },
+  "authority": {
+    "browserTableWrites": false,
+    "genericCreditOrDebitApi": false,
+    "balancesAreClientInputs": false,
+    "deltasAreClientInputs": false,
+    "catalogueIsServerOwned": true,
+    "mutationPath": "fixed-purpose-settlements-call-internal-apply-resource-deltas-in-their-existing-transaction",
+    "readPath": "authenticated-owner-snapshot-with-decimal-string-quantities-and-resource-revision",
+    "javascriptSafety": "quantities-serialize-as-decimal-strings-never-lossy-number",
+    "negativeBalance": "reject-entire-outer-settlement",
+    "sameKeyReplay": "return-original-outer-result-with-zero-new-entries",
+    "changedPayloadReplay": "idempotency-conflict"
+  },
+  "integration": [
+    { "action": "tutorial-quest-claim", "resources": ["tutorial_chest", "potion_xs"], "direction": "credit", "atomicWith": "quest-claim-and-save-revision" },
+    { "action": "tutorial-chest-open", "resources": ["tutorial_chest"], "direction": "debit", "atomicWith": "canonical-item-creation-and-quest-progress" },
+    { "action": "summon-milestone-or-boss-reward", "resources": ["summon_scroll"], "direction": "credit", "atomicWith": "source-settlement" },
+    { "action": "free-summon", "resources": ["summon_scroll"], "direction": "debit", "atomicWith": "hero-roll-pity-capacity-and-save-revision" },
+    { "action": "boss-start", "resources": ["boss_key"], "direction": "debit", "atomicWith": "encounter-creation" },
+    { "action": "potion-use-or-auto-buy-use", "resources": ["potion_xs", "potion_sm", "potion_md", "potion_lg", "potion_xl", "potion_xxl"], "direction": "debit-or-credit-and-debit", "atomicWith": "gold-debit-and-canonical-combat-heal" },
+    { "action": "item-salvage", "resources": ["iron_scrap", "arcane_dust", "astral_shard", "godforged_core"], "direction": "credit", "atomicWith": "item-soft-delete-and-limited-slot-release" },
+    { "action": "item-craft", "resources": ["astral_shard", "godforged_core"], "direction": "debit", "atomicWith": "input-consumption-target-slot-reservation-and-output-create" },
+    { "action": "promo-code", "resources": ["boss_key", "summon_scroll"], "direction": "credit", "atomicWith": "promo-redemption" }
+  ],
+  "inventory": {
+    "gridUniqueTypeCapacity": 64,
+    "currentProposedTypeCount": 13,
+    "quantityConsumesAdditionalCells": false,
+    "equipmentBagCapacityIndependent": true,
+    "zeroBalanceVisibility": "catalogue-policy-per-resource",
+    "selectionReadsCanonicalSnapshot": true,
+    "optimisticMutation": false
+  },
+  "migration": {
+    "requiresProductionApproval": true,
+    "requiresVerifiedRecoveryPoint": true,
+    "sources": {
+      "potions": "player-save-compatibility-snapshot",
+      "bossKey": "canonical-players-boss-key-column-cross-checked-with-save",
+      "summonScroll": "player-save-compatibility-snapshot",
+      "newResources": "zero"
+    },
+    "oneOpeningTransactionPerPlayer": true,
+    "sourceKey": "resource-ledger-opening-balance-v1",
+    "outlierPolicy": "dry-run-histograms-and-quarantine-conflicts-for-review-never-silent-truncate-or-double-import",
+    "legacyWritesAfterCutover": "ignored-for-authority-and-overwritten-by-canonical-read",
+    "dryRun": "aggregate-count-balance-percentiles-conflicts-and-overflow-only-no-player-identifiers"
+  },
+  "reconciliation": {
+    "equation": "opening-balance-plus-sum-entry-deltas-equals-current-balance",
+    "frequency": "daily-and-after-every-disposable-staging-acceptance",
+    "alerts": ["negative-or-over-cap-balance", "missing-or-duplicate-opening", "snapshot-ledger-drift", "duplicate-idempotency-key", "unknown-source-key", "orphan-transaction-or-entry"],
+    "repair": "report-only-no-automatic-player-mutation"
+  },
+  "acceptance": [
+    "registration-zero-and-starter-potion-opening-balance",
+    "all-13-catalog-resources-and-64-unique-type-grid-cap",
+    "decimal-string-roundtrip-above-javascript-safe-integer",
+    "same-key-replay-and-changed-payload-conflict",
+    "parallel-credit-debit-and-insufficient-balance",
+    "quest-tutorial-chest-scroll-boss-key-potion-salvage-craft-promo-atomicity",
+    "full-equipment-bag-does-not-block-resource-credit",
+    "legacy-import-conflict-quarantine-and-no-double-import",
+    "save-reload-relogin-and-stale-response-ordering",
+    "snapshot-ledger-reconciliation-zero-drift",
+    "browser-cannot-call-generic-credit-debit-or-write-tables",
+    "390-780-1024-layout-keyboard-touch-and-large-quantity-formatting",
+    "disposable-exact-candidate-staging-proof"
+  ]
+}
