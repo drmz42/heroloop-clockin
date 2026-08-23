@@ -11,6 +11,7 @@
     "check:bag-expansion": "node scripts/check-bag-expansion-proposal.mjs",
     "check:codex-watchdog": "node scripts/check-codex-watchdog.mjs",
     "check:combat-regression": "node scripts/check-combat-regression-matrix.mjs",
+    "check:crafting-settlement": "node scripts/check-crafting-settlement-proposal.mjs",
     "check:dev-news-resilience": "node scripts/check-dev-news-resilience.mjs",
     "check:daily-hero-accrual": "node scripts/check-daily-hero-accrual-contract.mjs",
     "check:dungeon-server-core": "node scripts/check-dungeon-server-core.mjs",

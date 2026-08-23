@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "status": "proposal-only",
+  "runtimeAdopted": false,
+  "recipesApproved": false,
+  "activationGuard": "every-recipe-must-have-approved-counts-level-catalyst-output-balance-version-and-founder-approval",
+  "rarityLadder": [
+    {
+      "targetRarity": "cursed",
+      "predecessorRarity": "celestial",
+      "predecessorCount": null,
+      "playerLevelRequired": null,
+      "salvageMaterial": "astral_shard",
+      "salvageMaterialAmount": null,
+      "rareCatalyst": null,
+      "rareCatalystAmount": null,
+      "globalMaximum": 2500
+    },
+    {
+      "targetRarity": "immortal",
+      "predecessorRarity": "cursed",
+      "predecessorCount": null,
+      "playerLevelRequired": null,
+      "salvageMaterial": "godforged_core",
+      "salvageMaterialAmount": null,
+      "rareCatalyst": null,
+      "rareCatalystAmount": null,
+      "globalMaximum": 1000
+    },
+    {
+      "targetRarity": "god",
+      "predecessorRarity": "immortal",
+      "predecessorCount": null,
+      "playerLevelRequired": null,
+      "salvageMaterial": "godforged_core",
+      "salvageMaterialAmount": null,
+      "rareCatalyst": null,
+      "rareCatalystAmount": null,
+      "globalMaximum": 500
+    }
+  ],
+  "candidateRules": {
+    "status": "evaluation-only-not-approved",
+    "successMode": "guaranteed-after-valid-server-commit-no-rng-failure",
+    "primaryPredecessor": "same-base-item-slot-class-and-item-level-as-output",
+    "primaryPredecessorEnchantRequired": 0,
+    "allInputEnchantRequired": 0,
+    "additionalPredecessors": "same-target-recipe-and-server-catalogue-only",
+    "outputEnchant": 0,
+    "outputRerollCount": 0,
+    "outputLocked": true,
+    "outputStats": "fresh-server-roll-from-approved-target-rarity-and-item-balance-version",
+    "previewStats": "range-only-never-a-rerollable-exact-preview",
+    "goldCost": null,
+    "heroCost": null,
+    "reason": "A +0-only primary prevents accidental destruction of paid Enchant investment; guaranteed settlement avoids an undisclosed high-value gambling loop."
+  },
+  "eligibility": {
+    "exactOwnedLedgerItemsOnly": true,
+    "primaryMustBeUnlocked": true,
+    "allInputsMustBeUnequipped": true,
+    "allInputsMustBeUnlocked": true,
+    "activeMarketListingForbidden": true,
+    "marketEscrowForbidden": true,
+    "removedItemForbidden": true,
+    "legacyUnregisteredItemForbidden": true,
+    "duplicateInputIdsForbidden": true,
+    "craftOnlyOutputCannotEnterOrdinaryLoot": true
+  },
+  "settlement": {
+    "quoteAction": "item_craft_quote",
+    "commitAction": "item_craft_commit",
+    "quoteRequest": ["recipe_id", "primary_item_uid", "additional_item_uids", "expected_revision"],
+    "commitRequest": ["quote_id", "expected_revision", "idempotency_key"],
+    "forbiddenClientFields": ["recipe", "costs", "balances", "rarities", "item_level", "stats", "power", "enchant", "locked", "market_state", "global_supply", "rng_seed", "output_item"],
+    "quoteTtlSeconds": 60,
+    "quoteReservesGlobalSupply": false,
+    "quoteBoundTo": ["player_id", "recipe_version", "canonical_input_rows", "resource_balances", "save_revision", "item_balance_version"],
+    "locks": ["player-save-row", "input-player-item-rows-sorted-by-uuid", "resource-balance-row", "source-and-target-rarity-supply-rows-sorted-by-rarity"],
+    "targetCapacityCheckedBeforeConsumption": true,
+    "batchAtomicity": "consume-input-items-and-resources-release-source-slots-reserve-target-slot-create-one-output-write-event-and-increment-revision",
+    "sameKeyReplay": "return-original-output-with-zero-additional-consumption",
+    "changedPayloadReplay": "idempotency-conflict",
+    "staleQuoteOrFullTarget": "reject-with-zero-consumption",
+    "outputIdentity": "one-new-server-uuid-created-once-per-successful-idempotency-key"
+  },
+  "ui": {
+    "showBeforeConfirmation": ["target-archetype", "target-rarity", "item-level", "stat-range", "all-consumed-items", "all-materials", "rare-catalyst", "player-level-requirement", "global-availability", "irreversible-warning"],
+    "lockedReasonsSeparate": ["recipe-unapproved", "insufficient-materials", "insufficient-level", "invalid-or-protected-item", "global-limit-full", "state-changed"],
+    "confirmation": "explicit-irreversible-confirmation-naming-target-and-input-counts",
+    "successReveal": "distinct-crafting-ritual-not-chest-reveal",
+    "busy": "single-flight-disable-until-canonical-result",
+    "reload": "discard-quote-and-reload-canonical-state"
+  },
+  "migration": {
+    "requiresProductionApproval": true,
+    "requiresVerifiedRecoveryPoint": true,
+    "requiresCompleteItemLedger": true,
+    "requiresServerResourceLedger": true,
+    "dryRun": "aggregate-recipe-eligibility-and-supply-headroom-only-no-player-identifiers"
+  },
+  "acceptance": [
+    "configuration-refuses-null-or-unapproved-recipe",
+    "cursed-immortal-god-only-and-no-ordinary-loot-path",
+    "same-archetype-slot-class-and-item-level-preservation",
+    "enchanted-locked-equipped-market-and-legacy-input-rejection",
+    "insufficient-material-level-and-global-cap-zero-mutation",
+    "quote-expiry-stale-revision-replay-and-payload-conflict",
+    "parallel-craft-salvage-sell-enchant-equip-and-market-races",
+    "source-slot-release-and-target-slot-reservation-same-transaction",
+    "one-output-uuid-and-one-audit-event-per-success",
+    "fresh-output-stats-power-lock-and-plus-zero-consistency",
+    "reload-relogin-and-ledger-resource-supply-reconciliation",
+    "390-780-1024-layout-keyboard-touch-and-reduced-motion",
+    "disposable-exact-candidate-staging-proof"
+  ]
+}
