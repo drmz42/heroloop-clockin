@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "status": "approved-not-live",
+  "live": false,
+  "sectionPlacement": "account-above-daily-quests",
+  "progression": {
+    "activeQuestCount": 1,
+    "unlockNextOnClaim": true,
+    "recognizeEarlyCanonicalActions": true,
+    "hideAfterFinalClaim": true,
+    "newRegistrationsStartAt": 1,
+    "existingSavesDefaultCompleted": true,
+    "replayIsDisplayOnly": true
+  },
+  "claim": {
+    "serverOwned": true,
+    "idempotencyKeyRequired": true,
+    "expectedRevisionRequired": true
+  },
+  "tutorialChest": {
+    "resourceKey": "tutorial_chest",
+    "inventorySection": "resources",
+    "stacked": true,
+    "deletable": false,
+    "usesTimedStandardChestQuota": false,
+    "usesOrdinaryChestQueue": false,
+    "lootTable": "standard_chest_account_level",
+    "openBatchSizes": [1, 10],
+    "equipmentCapacity": 64,
+    "countsTowardOrdinaryOpenChestProgress": true,
+    "atomicConsumeAndItemCreate": true
+  },
+  "quests": [
+    {
+      "ordinal": 1,
+      "id": "defeat-10-enemies",
+      "label": "Defeat 10 enemies",
+      "progressSource": "combat_settlement.verified_enemy_kills",
+      "target": 10,
+      "reward": { "tutorialChests": 10 }
+    },
+    {
+      "ordinal": 2,
+      "id": "open-10-tutorial-chests",
+      "label": "Open 10 Tutorial Chests",
+      "progressSource": "tutorial_chest_settlement.opened_count",
+      "target": 10,
+      "reward": { "gold": 500 }
+    },
+    {
+      "ordinal": 3,
+      "id": "equip-active-hero",
+      "label": "Equip one item on an active hero",
+      "progressSource": "item_equipment_settlement.active_hero_assignments",
+      "target": 1,
+      "reward": { "summonScrolls": 2 }
+    },
+    {
+      "ordinal": 4,
+      "id": "summon-two-heroes",
+      "label": "Summon two heroes",
+      "progressSource": "hero_summon_settlement.summons_after_registration",
+      "target": 2,
+      "reward": { "summonScrolls": 1 }
+    },
+    {
+      "ordinal": 5,
+      "id": "fill-active-formation",
+      "label": "Fill the three-hero Active Formation",
+      "progressSource": "persisted_formation.active_hero_count",
+      "target": 3,
+      "reward": { "potions": { "xs": 3 } }
+    },
+    {
+      "ordinal": 6,
+      "id": "summon-reserve-hero",
+      "label": "Summon one reserve hero",
+      "progressSource": "hero_summon_settlement.summons_after_registration",
+      "target": 3,
+      "reward": { "gold": 500 }
+    },
+    {
+      "ordinal": 7,
+      "id": "assign-training-hero",
+      "label": "Assign a reserve hero to Training Camp",
+      "progressSource": "persisted_training.active_assignment_count",
+      "target": 1,
+      "reward": { "potions": { "xs": 3 } }
+    },
+    {
+      "ordinal": 8,
+      "id": "enable-auto-pot",
+      "label": "Enable Auto-pot",
+      "progressSource": "persisted_auto_pot.enabled",
+      "target": 1,
+      "reward": { "bossKeys": 1 }
+    },
+    {
+      "ordinal": 9,
+      "id": "reach-location-2",
+      "label": "Reach Location 2",
+      "progressSource": "combat_settlement.highest_location",
+      "target": 2,
+      "reward": { "gold": 1000 }
+    },
+    {
+      "ordinal": 10,
+      "id": "defeat-tutorial-boss",
+      "label": "Use the granted key and defeat one summoned Boss",
+      "progressSource": "boss_completion_settlement.tutorial_key_boss_kills",
+      "target": 1,
+      "reward": { "summonScrolls": 1, "tutorialComplete": true }
+    }
+  ]
+}
