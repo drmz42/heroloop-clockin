@@ -25,6 +25,7 @@
     "check:edge-security": "node scripts/check-edge-security-contract.mjs",
     "check:hero-ascension": "node scripts/check-hero-ascension-pricing.mjs",
     "check:item-level-scaling": "node scripts/check-item-level-scaling.mjs",
+    "check:legacy-market-recovery": "node scripts/check-legacy-market-recovery.mjs",
     "check:monitor-alerts": "node scripts/check-monitor-alert-accuracy.mjs",
     "check:promote-all": "node scripts/check-promote-all-contract.mjs",
     "check:promo-economy": "node scripts/check-promo-economy-contract.mjs",
