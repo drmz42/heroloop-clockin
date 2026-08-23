@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "status": "proposal",
+  "live": false,
+  "serverOwned": true,
+  "tiers": [
+    { "depth": 1, "rate": 0.08 },
+    { "depth": 2, "rate": 0.03 },
+    { "depth": 3, "rate": 0.01 }
+  ],
+  "relationship": {
+    "oneInviterPerPlayer": true,
+    "immutableAfterCreation": true,
+    "rejectSelfReferral": true,
+    "rejectCycles": true,
+    "maximumDepth": 3,
+    "clientRelationshipRejected": true
+  },
+  "attribution": {
+    "source": "append-only-server-hero-earnings-ledger",
+    "rejectClientAmounts": true,
+    "excludeReferralRewardEarnings": true,
+    "idempotentBySourceEvent": true,
+    "eligibleEarningSources": null,
+    "retroactiveAttribution": null
+  },
+  "claim": {
+    "atomic": true,
+    "idempotencyKey": "uuid",
+    "locksPlayerAndPendingBalance": true,
+    "rejectClientAmount": true,
+    "zeroOrNegativeIsNoop": true,
+    "minimumHero": null,
+    "cooldownSeconds": null
+  },
+  "audit": {
+    "relationshipEvents": true,
+    "attributionEvents": true,
+    "claimEvents": true,
+    "requestId": true,
+    "beforeAfterAmounts": true
+  }
+}

@@ -32,6 +32,7 @@
     "check:nginx-security": "node scripts/check-nginx-security-contract.mjs",
     "check:promote-all": "node scripts/check-promote-all-contract.mjs",
     "check:promo-economy": "node scripts/check-promo-economy-contract.mjs",
+    "check:referrals": "node scripts/check-referral-contract.mjs",
     "check:registration": "node scripts/check-registration-contract.mjs",
     "check:server-rewards": "node scripts/check-server-reward-authority.mjs",
     "check:server-items": "node scripts/check-server-item-ledger.mjs",
