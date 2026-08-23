@@ -243,6 +243,22 @@ async function databaseJson(
   return result;
 }
 
+function isStatementTimeout(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  const code = isRecord(error) && typeof error.code === "string" ? error.code : "";
+  return code === "57014" || message.includes("canceling statement due to statement timeout");
+}
+
+async function databaseJsonReadRetryOnce(queryText: string, args: unknown[]): Promise<JsonRecord> {
+  try {
+    return await databaseJson(queryText, args);
+  } catch (error) {
+    if (!isStatementTimeout(error)) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return await databaseJson(queryText, args);
+  }
+}
+
 async function consumeRateLimit(playerId: string, action: string): Promise<{ allowed: boolean; retryAfter: number }> {
   const result = await databaseJson(
     "SELECT heroloop_api.consume_rate_limit($1::uuid, $2::text) AS result",
@@ -847,7 +863,10 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
       const payloadError = validatePayloadFields(payload, []);
       if (payloadError) return errorResponse(400, payloadError, requestId);
       try {
-        const result = await databaseJson("SELECT heroloop_api.dungeon_status($1::uuid) AS result", [identity.playerId]);
+        const result = await databaseJsonReadRetryOnce(
+          "SELECT heroloop_api.dungeon_status($1::uuid) AS result",
+          [identity.playerId],
+        );
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
       } catch (error) {
         if (databaseErrorCode(error, ["save_not_found"])) return errorResponse(403, "account_required", requestId);
