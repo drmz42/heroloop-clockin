@@ -236,22 +236,52 @@ export const POTION_MAP: Record<PotionTier, PotionDef> = Object.fromEntries(
 
 // Success chance per enchant level (+1 to +10)
 export const ENCHANT_CHANCE = [1.0, 1.0, 1.0, 0.85, 0.70, 0.55, 0.40, 0.25, 0.15, 0.10];
-// Gold cost per level
-export const ENCHANT_GOLD_COST = [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600];
-// $HERO protection charm cost (only for +4 and above, index 0 = +4)
-export const ENCHANT_CHARM_COST = [1, 2, 5, 10, 20, 35, 50];   // for +4 through +10
+const ENCHANT_EARLY_GOLD = [50, 100, 200];
+const ENCHANT_EARLY_RARITY_MULTIPLIER: Record<Rarity, number> = {
+  common: 1, uncommon: 1.25, rare: 1.5, epic: 2, legendary: 3, mythic: 4,
+  relic: 4, cosmic: 5, divine: 6, celestial: 7, cursed: 8, immortal: 9, god: 10,
+};
+const ENCHANT_GOLD_BY_RARITY: Partial<Record<Rarity, number[]>> = {
+  common: [400, 1_000, 3_000, 10_000, 25_000, 50_000, 100_000],
+  uncommon: [800, 2_500, 7_500, 25_000, 75_000, 150_000, 250_000],
+  rare: [2_000, 7_500, 25_000, 75_000, 250_000, 500_000, 1_000_000],
+  epic: [5_000, 20_000, 75_000, 250_000, 1_000_000, 2_500_000, 5_000_000],
+  legendary: [25_000, 100_000, 400_000, 1_500_000, 5_000_000, 12_000_000, 25_000_000],
+  mythic: [50_000, 200_000, 800_000, 3_000_000, 10_000_000, 25_000_000, 50_000_000],
+  relic: [50_000, 200_000, 800_000, 3_000_000, 10_000_000, 25_000_000, 50_000_000],
+  cosmic: [100_000, 400_000, 1_500_000, 6_000_000, 20_000_000, 50_000_000, 100_000_000],
+};
+const ENCHANT_HERO_BY_RARITY: Partial<Record<Rarity, number[]>> = {
+  divine: [500, 1_500, 4_000, 10_000, 25_000, 60_000, 150_000],
+  celestial: [1_000, 3_000, 8_000, 20_000, 50_000, 120_000, 250_000],
+  cursed: [2_000, 5_000, 15_000, 35_000, 80_000, 180_000, 300_000],
+  immortal: [5_000, 10_000, 25_000, 50_000, 100_000, 200_000, 350_000],
+  god: [10_000, 20_000, 40_000, 80_000, 150_000, 300_000, 400_000],
+};
+export const ENCHANT_GUARANTEE_HERO_SURCHARGE = 2_000;
+export const HERO_USD_QUOTE = 0.001;
 
 export function enchantSuccessChance(currentEnchant: number): number {
   return ENCHANT_CHANCE[currentEnchant] ?? 0.10;
 }
 
-export function enchantGoldCost(currentEnchant: number): number {
-  return ENCHANT_GOLD_COST[currentEnchant] ?? 25600;
+export function enchantCost(item: OwnedItem): { gold: number; hero: number } {
+  const rarity = ITEM_MAP[item.itemId]?.rarity ?? 'common';
+  const currentEnchant = Math.max(0, Math.min(9, item.enchantLevel));
+  if (currentEnchant < 3) {
+    const base = ENCHANT_EARLY_GOLD[currentEnchant];
+    const rarityMultiplier = ENCHANT_EARLY_RARITY_MULTIPLIER[rarity] ?? 1;
+    const levelMultiplier = 1 + 0.01 * (Math.max(1, Math.min(100, item.level)) - 1);
+    return { gold: Math.ceil(base * rarityMultiplier * levelMultiplier / 10) * 10, hero: 0 };
+  }
+  const index = currentEnchant - 3;
+  const hero = ENCHANT_HERO_BY_RARITY[rarity]?.[index];
+  if (hero !== undefined) return { gold: 0, hero };
+  return { gold: ENCHANT_GOLD_BY_RARITY[rarity]?.[index] ?? 0, hero: 0 };
 }
 
 export function enchantCharmCost(currentEnchant: number): number {
-  if (currentEnchant < 3) return 0;
-  return ENCHANT_CHARM_COST[currentEnchant - 3] ?? 50;
+  return currentEnchant >= 3 ? ENCHANT_GUARANTEE_HERO_SURCHARGE : 0;
 }
 
 // Stats on item boosted by enchant level
@@ -266,15 +296,15 @@ export function enchantedStats(stats: ItemStatRoll[], enchantLevel: number): Ite
   }));
 }
 
-// Reroll costs (base $HERO × 1 + rerollCount × 1.5)
+// Reroll catalogue converted at the Staging quote, capped at 5x.
 export function rerollCost(rarity: Rarity, rerollCount: number): number {
   const base: Record<Rarity, number> = {
-    common: 1, uncommon: 2, rare: 4, epic: 8, legendary: 15,
-    mythic: 25, relic: 40, cursed: 60, cosmic: 90, divine: 150, celestial: 300,
-    immortal: 600, god: 1200,
+    common: 5, uncommon: 10, rare: 20, epic: 40, legendary: 80,
+    mythic: 150, relic: 150, cosmic: 300, divine: 600, celestial: 1_000,
+    cursed: 1_500, immortal: 2_500, god: 4_000,
   };
   const cost = base[rarity] ?? 1;
-  return Math.round(cost * (1 + rerollCount * 1.5));
+  return cost * Math.min(5, Math.max(1, Math.floor(rerollCount) + 1));
 }
 
 // ── Stat rolling ──────────────────────────────────────────────────────────

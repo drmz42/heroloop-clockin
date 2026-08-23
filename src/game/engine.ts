@@ -1,6 +1,6 @@
 import type { Enemy, Location, CombatUnit, OwnedHero, OwnedItem, Rarity } from './types';
 import { HERO_MAP } from './heroes';
-import { ITEM_MAP, enchantedStats, maxChestRarityForLocation } from './items';
+import { ITEM_MAP, maxChestRarityForLocation } from './items';
 import { recommendedTeamPower } from './balance';
 
 export interface HeroFullStats {
@@ -18,11 +18,20 @@ export const SET_BONUS_PERCENT: Record<Rarity, number> = {
   relic: 12, cosmic: 14, divine: 16, celestial: 18, cursed: 20, immortal: 22, god: 25,
 };
 
+export const ENCHANT_RESONANCE_PERCENT = [0, 1, 2, 4, 7, 11, 16, 22, 30, 39, 50] as const;
+
 export function equippedSetBonus(equippedItems: OwnedItem[]): { rarity: Rarity; percent: number } | null {
   if (equippedItems.length !== 8) return null;
   const rarities = equippedItems.map((item) => ITEM_MAP[item.itemId]?.rarity).filter((rarity): rarity is Rarity => Boolean(rarity));
   if (rarities.length !== 8 || !rarities.every((rarity) => rarity === rarities[0])) return null;
   return { rarity: rarities[0], percent: SET_BONUS_PERCENT[rarities[0]] };
+}
+
+export function equippedEnchantResonance(equippedItems: OwnedItem[]): { level: number; percent: number } | null {
+  if (equippedItems.length !== 8) return null;
+  const level = Math.min(...equippedItems.map((item) => Math.max(0, Math.min(10, item.enchantLevel))));
+  if (level < 1) return null;
+  return { level, percent: ENCHANT_RESONANCE_PERCENT[level] };
 }
 
 export function heroStarMultiplier(stars: number): number {
@@ -54,11 +63,14 @@ export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
   let atkSpeed = 0;
 
   if (equippedItems) {
-    const setBonusMultiplier = 1 + (equippedSetBonus(equippedItems)?.percent ?? 0) / 100;
+    const setBonus = (equippedSetBonus(equippedItems)?.percent ?? 0) / 100;
+    const resonance = (equippedEnchantResonance(equippedItems)?.percent ?? 0) / 100;
     for (const item of equippedItems) {
-      const effectiveStats = enchantedStats(item.stats, item.enchantLevel);
-      for (const s of effectiveStats) {
-        const value = s.value * setBonusMultiplier;
+      const multiplier = 1 + Math.max(0, Math.min(10, item.enchantLevel)) * 0.10 + setBonus + resonance;
+      for (const s of item.stats) {
+        const value = s.isPercent
+          ? Math.round(s.value * multiplier * 1000) / 1000
+          : Math.round(s.value * multiplier);
         switch (s.key) {
           case 'hp': hp += value; break;
           case 'atk': atk += value; break;

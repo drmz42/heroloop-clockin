@@ -3,7 +3,7 @@ import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, 
 import { Arena } from '@/components/Arena';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
-import { buildLocation, canMineTokens, equippedSetBonus, getEquippedItems, heroStats, locationUnlockLevel, locationLevelRange, LOCATION_RANGES, SET_BONUS_PERCENT, teamPower as calculateHeroPower } from '@/game/engine';
+import { buildLocation, canMineTokens, ENCHANT_RESONANCE_PERCENT, equippedEnchantResonance, equippedSetBonus, getEquippedItems, heroStats, locationUnlockLevel, locationLevelRange, LOCATION_RANGES, SET_BONUS_PERCENT, teamPower as calculateHeroPower } from '@/game/engine';
 import { formatNum, accountXpForLevel, accountXpProgress, heroXpForLevel } from '@/game/state';
 import { ITEM_MAP, SLOT_LABEL, POTIONS, sellValue, meetsItemLevelRequirement, canClassEquipItem, standardChestWeights } from '@/game/items';
 import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, CLASS_LABEL, RARITY_INDEX } from '@/game/heroes';
@@ -173,6 +173,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
   );
   const selectedSetBonus = useMemo(
     () => selectedHero ? equippedSetBonus(getEquippedItems(selectedHero, state.inventory)) : null,
+    [selectedHero, state.inventory],
+  );
+  const selectedEnchantResonance = useMemo(
+    () => selectedHero ? equippedEnchantResonance(getEquippedItems(selectedHero, state.inventory)) : null,
     [selectedHero, state.inventory],
   );
   const activeTeamBonuses = useMemo(() => state.team.reduce((totals, uid) => {
@@ -478,7 +482,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
               <BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}
             </button>
           </div>}
-          {!activeDungeon && <TestControls game={game} />}
+          {!activeDungeon && import.meta.env.MODE === 'staging' && <TestControls game={game} />}
           {!activeDungeon && <div className="absolute bottom-3 right-3 z-30 flex items-end gap-1.5">
             {showDropRates && <div className="fixed bottom-14 right-3 z-[100] w-56 rounded-lg border border-[#80683f] bg-[#11130f]/98 p-2.5 shadow-2xl backdrop-blur-sm">
               <div className="flex items-center justify-between gap-2"><strong className="text-[10px] uppercase tracking-wider text-[#efd18a]">Chest drop rate</strong><button type="button" onClick={() => setShowDropRates(false)} aria-label="Close drop rates"><X size={13} /></button></div>
@@ -588,6 +592,11 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
                     Equip all 8 item slots with one rarity to increase every stat granted by those items.
                     <span className="mt-1 grid grid-cols-3 gap-1">
                       {(['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial', 'cursed', 'immortal', 'god'] as const).map((rarity) => <span key={rarity} className={`set-bonus-rarity rarity-${rarity}`} style={{ color: RARITY_COLORS[rarity] }}>{RARITY_LABEL[rarity]} +{SET_BONUS_PERCENT[rarity]}%</span>)}
+                    </span>
+                    <span className="mt-2 block border-t border-[#4f412e] pt-1 font-black text-amber-200">Enchant Resonance {selectedEnchantResonance ? `+${selectedEnchantResonance.percent}%` : '—'}</span>
+                    <span className="block">Fill all 8 slots. The lowest Enchant level sets the bonus; rarity matching is not required.</span>
+                    <span className="mt-1 grid grid-cols-5 gap-1">
+                      {ENCHANT_RESONANCE_PERCENT.slice(1).map((percent, index) => <span key={index} className="set-bonus-rarity text-amber-200">+{index + 1}: {percent}%</span>)}
                     </span>
                   </span>
                 </span>
@@ -1021,6 +1030,7 @@ function TestControls({ game }: { game: GameApi }) {
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
   const [crediting, setCrediting] = useState(false);
+  const [creditingGold, setCreditingGold] = useState(false);
   const [done, setDone] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const armed = confirm.toUpperCase() === 'DELETE';
@@ -1031,6 +1041,13 @@ function TestControls({ game }: { game: GameApi }) {
     const result = await playerSync<{ claimed: number; token_balance: number }>('tester_credit_tokens');
     if (result) game.applyServerTokenClaim(result.claimed, result.token_balance);
     setCrediting(false);
+  };
+
+  const creditGold = async () => {
+    if (creditingGold) return;
+    setCreditingGold(true);
+    await game.creditTestGold();
+    setCreditingGold(false);
   };
 
   const wipe = async () => {
@@ -1053,7 +1070,7 @@ function TestControls({ game }: { game: GameApi }) {
     <>
       <div className="absolute right-3 top-14 z-40 flex flex-col items-stretch gap-1">
         <span className="test-marker">TESTER</span>
-        <button type="button" className="test-btn test-btn-gold" onClick={() => game.creditTestGold(10000)}>+10k Gold</button>
+        <button type="button" className="test-btn test-btn-gold" disabled={creditingGold} onClick={() => void creditGold()}>{creditingGold ? 'Crediting…' : '+10k Gold'}</button>
         <button type="button" className="test-btn test-btn-gold" onClick={() => game.creditTestAccountXp(2000)}>+2k Account XP</button>
         <button type="button" className="test-btn test-btn-gold" onClick={() => game.creditTestFormationXp(2000)}>+2k Formation XP</button>
         <button type="button" className="test-btn test-btn-green" disabled={crediting} onClick={() => void creditTokens()}>{crediting ? 'Crediting…' : '+10k $HERO'}</button>

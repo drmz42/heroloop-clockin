@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { ArrowUp, Dice5, ShieldCheck, Trash2, Lock, Unlock, X, Coins } from 'lucide-react';
-import { ITEM_MAP, SLOT_LABEL, enchantedStats, formatStatValue, STAT_LABEL, sellValue, enchantSuccessChance, enchantGoldCost, enchantCharmCost, rerollCost } from '@/game/items';
+import { HERO_USD_QUOTE, ITEM_MAP, SLOT_LABEL, enchantedStats, formatStatValue, STAT_LABEL, sellValue, enchantSuccessChance, enchantCost, enchantCharmCost, rerollCost } from '@/game/items';
 import { CLASS_LABEL, RARITY_COLORS, RARITY_LABEL } from '@/game/heroes';
 import { formatNum } from '@/game/state';
 import { ItemArtwork } from '@/components/ItemArtwork';
@@ -29,11 +29,15 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
   const rc = RARITY_COLORS[base.rarity];
   const refund = sellValue(item);
   const enchChance = enchantSuccessChance(item.enchantLevel);
-  const enchGold = enchantGoldCost(item.enchantLevel);
+  const enchCost = enchantCost(item);
   const charmCost = enchantCharmCost(item.enchantLevel);
   const canEnchant = item.enchantLevel < 10;
   const rCost = rerollCost(base.rarity, item.rerollCount);
   const rerollAffordable = game.state.hero >= rCost;
+  const enchantAffordable = game.state.gold >= enchCost.gold && game.state.hero >= enchCost.hero;
+  const guaranteedAffordable = enchantAffordable && game.state.hero >= enchCost.hero + charmCost;
+  const enchantCostText = enchCost.gold > 0 ? `${formatNum(enchCost.gold)} Gold` : `${formatNum(enchCost.hero)} $HERO`;
+  const usd = (hero: number) => `$${(hero * HERO_USD_QUOTE).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 })}`;
   const ringSlot = !equippedSlot && onEquip && (base.slot === 'ring1' || base.slot === 'ring2');
   const candidateStats = new Map(enchantedStats(item.stats, item.enchantLevel).map((stat) => [stat.key, stat]));
   const equippedStats = new Map((comparisonItem ? enchantedStats(comparisonItem.stats, comparisonItem.enchantLevel) : []).map((stat) => [stat.key, stat]));
@@ -97,12 +101,12 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
             <button data-item-action="equip" disabled={Boolean(equipDisabledReason)} onClick={() => onEquip(base.slot)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-0.5 text-[8px] font-black text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={equipDisabledReason || `Equip ${SLOT_LABEL[base.slot]}`}><ArrowUp size={12} /><span className="mt-0.5">Equip</span></button>
           ) : <div />}
 
-          <button disabled={!canEnchant || game.itemUpgradeBusy} onClick={() => setShowEnchant(s => !s)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 px-0.5 text-center text-[8px] font-black text-amber-300 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={canEnchant ? `Enchant +${item.enchantLevel + 1}: ${Math.round(enchChance * 100)}% chance, ${formatNum(enchGold)} Gold` : 'Maximum enchant +10'}>
-            <ArrowUp size={12} /><span className="mt-0.5">{canEnchant ? `Enchant +${item.enchantLevel + 1}` : 'Max +10'}</span>{canEnchant && <span className="text-[7px] font-bold text-amber-100/70">{Math.round(enchChance * 100)}% · {formatNum(enchGold)} G</span>}
+          <button disabled={!canEnchant || game.itemUpgradeBusy} onClick={() => setShowEnchant(s => !s)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 px-0.5 text-center text-[8px] font-black text-amber-300 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={canEnchant ? `Enchant +${item.enchantLevel + 1}: ${Math.round(enchChance * 100)}% chance, ${enchantCostText}` : 'Maximum enchant +10'}>
+            <ArrowUp size={12} /><span className="mt-0.5">{canEnchant ? `Enchant +${item.enchantLevel + 1}` : 'Max +10'}</span>{canEnchant && <span className="text-[7px] font-bold text-amber-100/70">{Math.round(enchChance * 100)}% · {enchCost.gold > 0 ? `${formatNum(enchCost.gold)} G` : `${formatNum(enchCost.hero)} HERO`}</span>}
           </button>
 
           <button disabled={!rerollAffordable || game.itemUpgradeBusy} onClick={() => setShowReroll(s => !s)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 px-0.5 text-[8px] font-black text-cyan-300 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={rerollAffordable ? `Reroll for ${rCost} $HERO` : `Need ${rCost - game.state.hero} more $HERO`}>
-            <Dice5 size={12} /><span className="mt-0.5">Reroll</span><span className="flex items-center gap-0.5 text-[7px] font-bold text-cyan-100/70"><HeroTokenIcon size={8} /> {rCost}</span>
+            <Dice5 size={12} /><span className="mt-0.5">Reroll</span><span className="flex items-center gap-0.5 text-[7px] font-bold text-cyan-100/70"><HeroTokenIcon size={8} /> {usd(rCost)} · {formatNum(rCost)}</span>
           </button>
 
           <div className="relative min-w-0">
@@ -125,22 +129,22 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
 
         {showEnchant && canEnchant && (
           <div className="rounded-lg bg-black/30 p-2 space-y-1.5">
-            <div className="text-[10px] text-slate-400">Success: <span className={enchChance >= 1 ? 'text-emerald-300' : 'text-amber-300'}>{Math.round(enchChance * 100)}%</span> {enchChance < 1 && <span className="text-rose-400">· Fail = item destroyed</span>}</div>
+            <div className="text-[10px] text-slate-400">Ordinary success: <span className={enchChance >= 1 ? 'text-emerald-300' : 'text-amber-300'}>{Math.round(enchChance * 100)}%</span> {enchChance < 1 && <span className="text-slate-300">· Failure preserves item and level</span>}</div>
             <button
               onClick={() => { void game.enchantItem(item.uid, false); setShowEnchant(false); onClose(); }}
-              disabled={game.itemUpgradeBusy || game.state.gold < enchGold}
+              disabled={game.itemUpgradeBusy || !enchantAffordable}
               className="w-full py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold hover:bg-amber-500/25 disabled:opacity-40 transition"
             >
-              Enchant (<Coins size={10} className="inline" /> {formatNum(enchGold)})
+              Ordinary ({enchCost.gold > 0 ? <><Coins size={10} className="inline" /> {formatNum(enchCost.gold)}</> : <><HeroTokenIcon size={10} className="inline" /> {usd(enchCost.hero)} · {formatNum(enchCost.hero)}</>})
             </button>
             {charmCost > 0 && (
               <button
                 type="button"
                 onClick={() => { void game.enchantItem(item.uid, true); setShowEnchant(false); onClose(); }}
-                disabled={game.itemUpgradeBusy || game.state.gold < enchGold || game.state.hero < charmCost}
+                disabled={game.itemUpgradeBusy || !guaranteedAffordable}
                 className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-300 text-xs font-bold hover:bg-violet-500/25 disabled:opacity-40 transition"
               >
-                <ShieldCheck size={13} /> 100% Safe (<Coins size={10} /> {formatNum(enchGold)} + <HeroTokenIcon size={10} /> {charmCost})
+                <ShieldCheck size={13} /> Guaranteed ({enchCost.gold > 0 ? <><Coins size={10} /> {formatNum(enchCost.gold)} + </> : enchCost.hero > 0 ? <><HeroTokenIcon size={10} /> {usd(enchCost.hero)} · {formatNum(enchCost.hero)} + </> : null}<HeroTokenIcon size={10} /> $2.00 · {formatNum(charmCost)})
               </button>
             )}
           </div>
@@ -148,7 +152,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
 
         {showReroll && (
           <div className="rounded-lg bg-black/30 p-2">
-            <div className="text-[10px] text-slate-400 mb-1">Randomly rerolls all stats (within rarity range). Cost increases with each reroll.</div>
+            <div className="text-[10px] text-slate-400 mb-1">Randomly rerolls all stats (within rarity range). Price is {usd(rCost)} · {formatNum(rCost)} $HERO and caps at 5×.</div>
             <button
               type="button"
               onClick={() => { void game.rerollItem(item.uid); setShowReroll(false); }}

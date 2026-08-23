@@ -14,7 +14,7 @@ import { HERO_MAP, RARITY_INDEX, canonicalHeroId } from '@/game/heroes';
 import {
   openStandardChest, openBossChest, generateRotatingShop,
   ITEM_MAP, POTION_MAP, sellValue, rollItem, rerollItemStats,
-  enchantSuccessChance, enchantGoldCost, enchantCharmCost, itemPower,
+  enchantSuccessChance, enchantCost, enchantCharmCost, itemPower,
   MAX_CHESTS_PER_DAY, rerollCost,
   canClassEquipItem,
   meetsItemLevelRequirement,
@@ -851,10 +851,18 @@ export function useGame() {
 
   // ── Actions ──────────────────────────────────────────────────────────────
 
-  const creditTestGold = useCallback((amount: number) => {
-    const safeAmount = Math.max(0, Math.floor(amount));
-    if (safeAmount <= 0) return;
-    setState((prev) => ({ ...prev, gold: prev.gold + safeAmount, totalGoldEarned: prev.totalGoldEarned + safeAmount }));
+  const creditTestGold = useCallback(async (): Promise<boolean> => {
+    const result = await playerSync<{ gold: number; total_gold_earned: number; revision: number }>('tester_credit_gold');
+    if (!result || !Number.isFinite(result.gold) || !Number.isFinite(result.total_gold_earned)) return false;
+    if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
+    const nextState = {
+      ...stateRef.current,
+      gold: result.gold,
+      totalGoldEarned: result.total_gold_earned,
+    };
+    stateRef.current = nextState;
+    setState(nextState);
+    return true;
   }, []);
 
   const creditTestAccountXp = useCallback((amount: number) => {
@@ -1439,10 +1447,11 @@ export function useGame() {
       }
       return;
     }
-    const goldCost = enchantGoldCost(item.enchantLevel);
+    const baseCost = enchantCost(item);
     const charmCost = useCharm ? enchantCharmCost(item.enchantLevel) : 0;
-    if (st.gold < goldCost || (!tokenomicsEnabled && st.hero < charmCost)) { setEnchantResult({ success: false }); return; }
-    const balance = await settleHeroSpend(charmCost, 'enchant-charm');
+    const tokenCost = baseCost.hero + charmCost;
+    if (st.gold < baseCost.gold || (!tokenomicsEnabled && st.hero < tokenCost)) { setEnchantResult({ success: false }); return; }
+    const balance = await settleHeroSpend(tokenCost, 'item-enchant');
     if (balance === null) { setEnchantResult({ success: false }); return; }
     const baseChance = enchantSuccessChance(item.enchantLevel);
     const success = useCharm ? true : Math.random() < baseChance;
@@ -1451,23 +1460,16 @@ export function useGame() {
       const newPower = itemPower(item.stats, newEnchant);
       setState((prev) => ({
         ...prev,
-        gold: prev.gold - goldCost,
+        gold: prev.gold - baseCost.gold,
         hero: balance,
         inventory: prev.inventory.map((i) => i.uid === itemUid ? { ...i, enchantLevel: newEnchant, enchantStatsVersion: 2, power: newPower } : i),
       }));
       setEnchantResult({ success: true, item: { ...item, enchantLevel: newEnchant, enchantStatsVersion: 2, power: newPower } });
     } else {
-      // Item destroyed on failure
       setState((prev) => ({
         ...prev,
-        gold: prev.gold - goldCost,
+        gold: prev.gold - baseCost.gold,
         hero: balance,
-        inventory: prev.inventory.filter((i) => i.uid !== itemUid),
-        ownedHeroes: prev.ownedHeroes.map((h) => {
-          const eq = { ...h.equipped };
-          for (const [s, iuid] of Object.entries(eq)) { if (iuid === itemUid) delete eq[s as ItemSlot]; }
-          return { ...h, equipped: eq };
-        }),
       }));
       setEnchantResult({ success: false });
     }
