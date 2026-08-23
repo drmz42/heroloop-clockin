@@ -29,6 +29,18 @@ BEGIN
 END
 $roles$;
 
+DO $backup_runtime$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'heroloop_backup_runtime') THEN
+    CREATE ROLE heroloop_backup_runtime
+      LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE REPLICATION NOBYPASSRLS NOINHERIT;
+  ELSE
+    ALTER ROLE heroloop_backup_runtime
+      LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE REPLICATION NOBYPASSRLS NOINHERIT;
+  END IF;
+END
+$backup_runtime$;
+
 CREATE SCHEMA IF NOT EXISTS heroloop_migrations AUTHORIZATION supabase_admin;
 
 CREATE TABLE IF NOT EXISTS heroloop_migrations.applied_migrations (
