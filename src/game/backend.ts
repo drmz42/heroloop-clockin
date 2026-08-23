@@ -45,6 +45,7 @@ export async function playerSync<T>(
       const idempotencyKey = typeof payload.idempotency_key === 'string' ? payload.idempotency_key : undefined;
       const commandPayload = { ...payload };
       delete commandPayload.idempotency_key;
+      if (backendMode === 'selfhosted') delete commandPayload.player_id;
       const endpoint = backendMode === 'selfhosted'
         ? `${backendUrl}/api/v1/player/commands`
         : `${supabaseUrl}/functions/v1/player-sync`;
