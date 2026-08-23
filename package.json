@@ -23,6 +23,7 @@
     "check:dungeon-staging": "node ops/verify-staging-dungeon-server-core.mjs",
     "check:dungeon-testing-ui": "node scripts/check-dungeon-testing-ui.mjs",
     "check:edge-security": "node scripts/check-edge-security-contract.mjs",
+    "check:economy-telemetry": "node scripts/check-economy-telemetry-contract.mjs",
     "check:hero-ascension": "node scripts/check-hero-ascension-pricing.mjs",
     "check:item-level-scaling": "node scripts/check-item-level-scaling.mjs",
     "check:legacy-market-recovery": "node scripts/check-legacy-market-recovery.mjs",
