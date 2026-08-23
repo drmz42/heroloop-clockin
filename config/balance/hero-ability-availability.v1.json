@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "auditVersion": "hero-ability-availability-2026.08.23-v1",
+  "status": "repository-audit",
+  "live": false,
+  "catalogue": {
+    "canonicalHeroes": 45,
+    "legacyHeroes": 32,
+    "totalResolvableHeroIds": 77,
+    "descriptionTemplates": 37
+  },
+  "abilities": {
+    "availability": "unavailable",
+    "executorExists": false,
+    "cooldownsExist": false,
+    "raritySpecificEffectsExist": false
+  },
+  "heroSpecificPassives": {
+    "availability": "unavailable",
+    "descriptionsDriveCombat": false,
+    "legacyDescriptionsDriveCombat": false
+  },
+  "classTraits": [
+    { "class": "knight", "label": "Warrior", "effect": "def_multiplier", "value": 1.05, "status": "implemented-client-normal-combat-only" },
+    { "class": "assassin", "label": "Assassin", "effect": "dodge_points", "value": 0.08, "status": "implemented-client-normal-combat-only" },
+    { "class": "druid", "label": "Druid", "effect": "max_hp_regen_every_3_seconds", "value": 0.015, "status": "implemented-client-normal-combat-only" },
+    { "class": "shepherd", "label": "Mage", "effect": "heal_on_attack", "value": 0.05, "status": "declared-not-consumed" },
+    { "class": "archer", "label": "Crossbowman", "effect": null, "value": null, "status": "unavailable" }
+  ],
+  "playerVisiblePolicy": {
+    "unavailableAbilityLabel": "Coming soon — not active in combat",
+    "unavailablePassiveLabel": "Coming soon — not active in combat",
+    "implementedClassTraitShownSeparately": true,
+    "mechanicalDescriptionCannotAppearAsActiveUntilServerSettlementAndTestsExist": true,
+    "wikiMustMatchRuntimeAvailability": true
+  },
+  "authorityBoundary": {
+    "clientOnlyTraitsCannotAffectValueBearingSettlement": true,
+    "futureEffectsMustBeServerOwned": true,
+    "deterministicReplayRequired": true,
+    "powerAndRecommendedPowerVersioningRequired": true,
+    "saveMigrationOrDerivedStateMustBeExplicit": true
+  }
+}
