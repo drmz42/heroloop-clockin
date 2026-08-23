@@ -18,6 +18,7 @@
     "check:dungeon-room-three-combat": "node scripts/check-dungeon-room-three-combat.mjs",
     "check:dungeon-room-four-retinue": "node scripts/check-dungeon-room-four-retinue.mjs",
     "check:dungeon-shared-boss": "node scripts/check-dungeon-shared-boss.mjs",
+    "check:dungeon-reward-lock": "node scripts/check-dungeon-reward-lock.mjs",
     "check:dungeon-boss-presentation": "node scripts/check-dungeon-boss-presentation.mjs",
     "check:dungeon-staging": "node ops/verify-staging-dungeon-server-core.mjs",
     "check:dungeon-testing-ui": "node scripts/check-dungeon-testing-ui.mjs",

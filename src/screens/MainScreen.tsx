@@ -848,6 +848,10 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
       label: 'Reveal Boss',
       action: () => runAction('dungeon_room_complete', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }),
     };
+    if (roomState?.status === 'reward_locked') return {
+      label: 'Finish test run',
+      action: () => runAction('dungeon_room_complete', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }),
+    };
     if (roomState?.status === 'resolving') return null;
     if (!roomState) return checkpoint.room === 3 ? null : {
       label: `Start Room ${checkpoint.room}`,
@@ -870,7 +874,8 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
       {roomState?.status === 'failed' && <div className="text-center text-xs font-black uppercase tracking-wider text-rose-300">Formation defeated</div>}
       {busy && <div className="text-center text-[11px] font-black uppercase tracking-wide text-violet-200">Battle in progress…</div>}
       {checkpoint.room === 3 && !roomState && <div className="grid grid-cols-2 gap-2"><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'recovery' })} className="game-control min-h-11 px-2 text-[10px] font-black text-emerald-300"><HeartPulse size={15} className="mx-auto mb-1" />Recovery · +25% HP</button><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'treasure' })} className="game-control min-h-11 px-2 text-[10px] font-black text-amber-300"><Gem size={15} className="mx-auto mb-1" />Treasure fight</button></div>}
-      {checkpoint.room === 4 && roomState?.boss && <div className="rounded-lg border border-amber-800/45 bg-amber-950/20 px-3 py-2 text-center text-[10px] font-bold text-amber-200">{roomState.boss.name} · {roomState.kind === 'shared_boss' ? 'Vulnerable · Shared target' : roomState.status === 'boss_locked' ? 'Retinue defeated · Boss vulnerable' : 'Protected by Retinue'}</div>}
+      {checkpoint.room === 4 && roomState?.boss && <div className="rounded-lg border border-amber-800/45 bg-amber-950/20 px-3 py-2 text-center text-[10px] font-bold text-amber-200">{roomState.boss.name} · {roomState.status === 'reward_locked' ? 'Defeated · Rewards locked' : roomState.kind === 'shared_boss' ? 'Vulnerable · Shared target' : roomState.status === 'boss_locked' ? 'Retinue defeated · Boss vulnerable' : 'Protected by Retinue'}</div>}
+      {roomState?.status === 'reward_locked' && <div className="dungeon-reward-preview"><span><ScrollText size={14} /> 1 SUMMON SCROLL</span><span><Package size={14} /> 1 DUNGEON CHEST</span><small>Verified server checkpoint · settlement disabled in testing</small></div>}
       {roomState?.status === 'cleared' && checkpoint.room < 4 && <div className="rounded border border-amber-700/35 bg-amber-950/20 px-2 py-1.5 text-center text-[9px] font-bold text-amber-200">Room reward preview · Gold + XP · settlement disabled in testing</div>}
       {primary && <button type="button" disabled={busy} onClick={primary.action} className="game-control game-primary min-h-11 px-3 text-[13px] font-black"><Skull size={17} className="mr-2 inline" />{primary.label}</button>}
       {error && <div role="alert" className="text-center text-[10px] font-bold text-rose-300">{error.split('_').join(' ')}</div>}
