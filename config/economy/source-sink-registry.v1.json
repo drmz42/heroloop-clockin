@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "registryVersion": "economy-source-sink-2026.08.23-v1",
+  "registryVersion": "economy-source-sink-2026.08.23-v2",
   "status": "proposal",
   "live": false,
   "entries": [
@@ -43,14 +43,23 @@
     { "id": "boss_chest", "asset": "boss_chest", "direction": "faucet", "status": "client-compatibility", "authority": "client", "telemetryAggregate": "chest_flow", "blocksRealValue": true },
     { "id": "dungeon_chest", "asset": "dungeon_chest", "direction": "faucet", "status": "proposal", "authority": "server", "telemetryAggregate": "chest_flow" },
     { "id": "chest_open", "asset": "chest", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "chest_flow" },
+    { "id": "tutorial_chest_open", "asset": "tutorial_chest", "direction": "sink", "status": "proposal", "authority": "server", "telemetryAggregate": "chest_flow" },
 
+    { "id": "starter_potion", "asset": "potion", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
+    { "id": "tutorial_potion", "asset": "potion", "direction": "faucet", "status": "proposal", "authority": "server", "telemetryAggregate": "resource_flow" },
+    { "id": "potion_purchase", "asset": "potion", "direction": "faucet", "status": "client-compatibility", "authority": "client", "telemetryAggregate": "resource_flow", "blocksRealValue": true },
+    { "id": "potion_use", "asset": "potion", "direction": "sink", "status": "client-compatibility", "authority": "client", "telemetryAggregate": "resource_flow", "blocksRealValue": true },
     { "id": "promo_boss_key", "asset": "boss_key", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "tutorial_boss_key", "asset": "boss_key", "direction": "faucet", "status": "proposal", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "boss_key_spend", "asset": "boss_key", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "summon_milestone_scroll", "asset": "summon_scroll", "direction": "faucet", "status": "client-compatibility", "authority": "client", "telemetryAggregate": "resource_flow", "blocksRealValue": true },
     { "id": "tutorial_summon_scroll", "asset": "summon_scroll", "direction": "faucet", "status": "proposal", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "boss_summon_scroll", "asset": "summon_scroll", "direction": "faucet", "status": "proposal", "authority": "server", "telemetryAggregate": "resource_flow" },
+    { "id": "promo_summon_scroll", "asset": "summon_scroll", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "free_summon_scroll", "asset": "summon_scroll", "direction": "sink", "status": "proposal", "authority": "server", "telemetryAggregate": "resource_flow" },
+    { "id": "resource_opening_balance", "asset": "resource", "direction": "internal", "status": "proposal", "authority": "server", "telemetryAggregate": "resource_flow" },
+    { "id": "item_salvage_material", "asset": "crafting_material", "direction": "faucet", "status": "proposal", "authority": "server", "telemetryAggregate": "resource_flow" },
+    { "id": "item_craft_material", "asset": "crafting_material", "direction": "sink", "status": "proposal", "authority": "server", "telemetryAggregate": "resource_flow" },
 
     { "id": "paid_summon_hero_instance", "asset": "hero_instance", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "hero_flow" },
     { "id": "free_summon_hero_instance", "asset": "hero_instance", "direction": "faucet", "status": "proposal", "authority": "server", "telemetryAggregate": "hero_flow" },
@@ -58,7 +67,10 @@
     { "id": "chest_item", "asset": "equipment", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "item_flow" },
     { "id": "store_item", "asset": "equipment", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "item_flow" },
     { "id": "item_sale_removal", "asset": "equipment", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "item_flow" },
-    { "id": "enchant_failure_destruction", "asset": "equipment", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "item_flow" }
+    { "id": "enchant_failure_destruction", "asset": "equipment", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "item_flow" },
+    { "id": "item_salvage_removal", "asset": "equipment", "direction": "sink", "status": "proposal", "authority": "server", "telemetryAggregate": "item_flow" },
+    { "id": "item_craft_input", "asset": "equipment", "direction": "sink", "status": "proposal", "authority": "server", "telemetryAggregate": "item_flow" },
+    { "id": "item_craft_output", "asset": "equipment", "direction": "faucet", "status": "proposal", "authority": "server", "telemetryAggregate": "item_flow" }
   ],
   "rules": {
     "uniqueSourceKind": true,
