@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "status": "proposal-only",
+  "runtimeAdopted": false,
+  "pricesChanged": false,
+  "currentAudit": {
+    "assignment": "client-hook-then-general-save",
+    "saveValidation": [
+      "slot-is-unlocked",
+      "hero-is-owned",
+      "hero-is-unique-in-training",
+      "hero-is-not-in-active-formation",
+      "hero-level-is-below-account-level"
+    ],
+    "remainingAuthorityGap": "client-selects-the-persisted-training-uid-array",
+    "economicImpact": "deriveServerSummary-counts-saved-training-uids-for-hero-mining-penalty",
+    "blocksRealValue": true
+  },
+  "targetContract": {
+    "action": "training_assignment_set",
+    "rpc": "settle_training_assignment",
+    "eventTable": "training_assignment_events",
+    "request": ["slot_index", "hero_uid_or_null", "expected_revision", "idempotency_key"],
+    "forbiddenClientFields": ["hero_level", "account_level", "owned", "team", "unlocked_slots", "training_count", "penalty", "power", "combat_power", "xp", "reward", "resulting_state"],
+    "locks": ["players-row", "player_saves-row"],
+    "beforeMutation": "settle-training-xp-through-database-now-with-old-assignment",
+    "validation": [
+      "slot-index-is-0-through-9",
+      "slot-is-unlocked-from-server-spend-history",
+      "hero-is-canonical-owned-instance",
+      "hero-is-not-in-active-formation",
+      "hero-is-not-in-another-training-slot",
+      "hero-level-is-below-authoritative-account-level"
+    ],
+    "atomicWrites": [
+      "canonical-ten-slot-array",
+      "training-assignment-event",
+      "save-revision",
+      "players-training-hero-count",
+      "players-effective-power",
+      "players-combat-power"
+    ],
+    "sameKeyReplay": "return-original-result-with-zero-xp-or-state-mutation",
+    "changedPayloadReplay": "idempotency-conflict",
+    "staleRevision": "state-conflict-with-canonical-state",
+    "response": ["slot_index", "hero_uid", "hero_uids", "training_hero_count", "penalty", "power", "combat_power", "revision"]
+  },
+  "sharedMutationBoundary": {
+    "generalSaveTrainingUids": "read-only-from-server",
+    "formationMutation": "must-lock-same-save-row-and-reject-training-overlap",
+    "heroConsumptionOrSale": "must-lock-same-save-row-and-reject-or-remove-training-reference-before-consumption",
+    "accountLevelCap": "server-training-tick-removes-capped-trainee-before-next-credit",
+    "tutorialProgress": "derive-from-first-accepted-non-null-assignment-event"
+  },
+  "penalty": {
+    "counts": [0, 1, 2, 3, 4, 5],
+    "percent": [0, 10, 25, 50, 75, 90],
+    "fiveMeans": "five-or-more",
+    "appliesTo": ["hero-mining-score"],
+    "doesNotApplyTo": ["combat-power", "gold", "xp", "chests", "quests", "ordinary-drops"],
+    "immediateIncomeRefresh": true,
+    "actualDistributionRemainsServerAuthoritative": true
+  },
+  "migrationPolicy": {
+    "requiresProductionApproval": true,
+    "requiresVerifiedRecoveryPoint": true,
+    "preserveValidUniqueAssignments": true,
+    "dropInvalidDuplicateFormationOrCappedReferences": true,
+    "settleTrainingXpBeforeMigrationCutoff": true,
+    "neverGrantXpForDroppedOrUnverifiableInterval": true,
+    "dryRun": "aggregate-counts-only-no-player-identifiers"
+  },
+  "acceptance": {
+    "required": [
+      "assign-and-remove-every-unlocked-slot",
+      "locked-slot-rejection",
+      "unknown-duplicate-formation-and-level-cap-rejection",
+      "parallel-formation-assignment-race-one-winner",
+      "same-key-replay-and-changed-payload-conflict",
+      "training-xp-cutoff-no-gap-or-duplicate",
+      "penalty-count-and-power-update-same-transaction",
+      "immediate-income-then-30-second-reconciliation",
+      "reload-relogin-and-offline-training",
+      "tutorial-progress-once",
+      "migration-dry-run-and-idempotent-replay",
+      "disposable-exact-candidate-staging-pass"
+    ],
+    "status": "blocked-until-implemented-after-phase-h-and-approved-for-live-economy"
+  }
+}
