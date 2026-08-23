@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "power-target-bands-proposal-2026.08.23-v1",
+  "status": "proposal",
+  "live": false,
+  "scope": "normal-wave-pve",
+  "ratio": "canonical_team_power / candidate_recommended_team_power",
+  "teamSizesAuditedSeparately": [1, 2, 3],
+  "bands": [
+    { "id": "far_below", "minRatio": 0, "maxRatioExclusive": 0.75, "winRatePercent": [0, 10], "medianWinningClearSeconds": [10, 25] },
+    { "id": "below", "minRatio": 0.75, "maxRatioExclusive": 0.90, "winRatePercent": [15, 35], "medianWinningClearSeconds": [10, 22] },
+    { "id": "near_below", "minRatio": 0.90, "maxRatioExclusive": 0.98, "winRatePercent": [35, 55], "medianWinningClearSeconds": [8, 20] },
+    { "id": "recommended", "minRatio": 0.98, "maxRatioExclusive": 1.02, "winRatePercent": [65, 79], "medianWinningClearSeconds": [7, 18] },
+    { "id": "near_above", "minRatio": 1.02, "maxRatioExclusive": 1.10, "winRatePercent": [72, 88], "medianWinningClearSeconds": [6, 16] },
+    { "id": "above", "minRatio": 1.10, "maxRatioExclusive": 1.25, "winRatePercent": [82, 95], "medianWinningClearSeconds": [4, 14] },
+    { "id": "far_above", "minRatio": 1.25, "maxRatioExclusive": null, "winRatePercent": [95, 100], "medianWinningClearSeconds": [1, 10] }
+  ],
+  "acceptance": {
+    "minimumScenarioRowsPerTeamSizeBand": 10,
+    "maximumWinRateSpreadAcrossTeamSizesPercentagePoints": 10,
+    "zeroStallRateRequired": true,
+    "enemyFirstStrikeRequired": true,
+    "sameBalanceVersionRequired": true,
+    "observedProductionCohortRequiredBeforeApproval": true
+  },
+  "excluded": ["boss", "dungeon", "pvp", "pets", "active_skills", "auras"],
+  "evidence": {
+    "combatResults": "docs/game/data/combat-simulation-results.csv",
+    "recommendations": "docs/game/data/combat-recommendation-calibration.csv"
+  }
+}
