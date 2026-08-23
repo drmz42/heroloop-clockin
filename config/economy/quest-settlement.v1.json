@@ -33,8 +33,8 @@
   "targetContract": {
     "catalogue": {
       "authority": "versioned-server-catalogue",
-      "clientFields": ["quest_id", "idempotency_key"],
-      "forbiddenClientFields": ["family", "day", "chain", "tier", "target", "progress", "claimed", "reward", "gold", "hero", "summon_scrolls", "tutorial_chests"]
+      "clientFields": ["quest_id", "expected_revision", "idempotency_key"],
+      "forbiddenClientFields": ["family", "day", "chain", "tier", "target", "progress", "claimed", "reward", "gold", "hero", "summon_scrolls", "tutorial_chests", "potions", "boss_keys", "tutorial_complete"]
     },
     "progressSources": {
       "chest": "settle_chest_open",
@@ -44,14 +44,21 @@
       "gold-earned": "server-gold-ledger",
       "token-earned": "hero-ledger-credit-events",
       "token-spent": "token_spend_events",
-      "hero-owned": "server-owned-hero-ledger"
+      "hero-owned": "server-owned-hero-ledger",
+      "tutorial-chest": "standard-chest-settlement-with-tutorial-source",
+      "equipment": "settle_item_equipment",
+      "formation": "revisioned-server-validated-save",
+      "training": "revisioned-server-validated-save",
+      "auto-pot": "revisioned-server-validated-save",
+      "location": "settle_periodic_progression-or-future-combat-settlement",
+      "tutorial-boss": "future-server-boss-settlement-with-granted-key-provenance"
     },
     "claim": {
       "action": "quest_claim",
       "rpc": "settle_quest_claim",
       "eventTable": "quest_claim_events",
       "locks": ["players-row", "player_saves-row", "quest-instance"],
-      "atomicCredits": ["gold", "hero", "summon-scrolls", "tutorial-chests", "save-revision"],
+      "atomicCredits": ["gold", "hero", "summon-scrolls", "tutorial-chests", "potions", "boss-keys", "tutorial-completion", "save-revision"],
       "sameKeyReplay": "return-original-result-with-zero-mutation",
       "changedPayloadReplay": "idempotency-conflict",
       "incompleteOrUnknownQuest": "reject-with-zero-mutation",
@@ -70,7 +77,9 @@
       "replay": "rewardless",
       "completion": "hide-after-final-claim",
       "tutorialChestStorage": "inventory-resources-stacked",
-      "tutorialChestOpenSettlement": "ordinary-standard-chest-settlement-with-tutorial-source"
+      "tutorialChestOpenSettlement": "ordinary-standard-chest-settlement-with-tutorial-source",
+      "fullEquipmentBagClaim": "grant-stacked-resource-without-opening",
+      "fullEquipmentBagOpen": "reject-with-zero-resource-consumption-and-zero-item-creation"
     }
   },
   "migrationPolicy": {
@@ -92,7 +101,7 @@
       "reload-and-relogin-persistence",
       "daily-to-milestone-overflow",
       "tutorial-early-action-preservation",
-      "full-bag-tutorial-chest-claim",
+      "full-bag-tutorial-chest-claim-and-open-boundary",
       "hero-ledger-reconciliation-zero-drift",
       "disposable-exact-candidate-staging-pass"
     ],
