@@ -1466,11 +1466,21 @@ export function useGame() {
       }));
       setEnchantResult({ success: true, item: { ...item, enchantLevel: newEnchant, enchantStatsVersion: 2, power: newPower } });
     } else {
-      setState((prev) => ({
-        ...prev,
-        gold: prev.gold - baseCost.gold,
+      const nextState = {
+        ...stateRef.current,
+        gold: stateRef.current.gold - baseCost.gold,
         hero: balance,
-      }));
+        inventory: stateRef.current.inventory.filter((i) => i.uid !== itemUid),
+        ownedHeroes: stateRef.current.ownedHeroes.map((hero) => {
+          const equipped = { ...hero.equipped };
+          for (const [slot, equippedUid] of Object.entries(equipped)) {
+            if (equippedUid === itemUid) delete equipped[slot as ItemSlot];
+          }
+          return { ...hero, equipped };
+        }),
+      };
+      stateRef.current = nextState;
+      setState(nextState);
       setEnchantResult({ success: false });
     }
     spawnBattle(stateRef.current.currentLocation, stateRef.current.team);

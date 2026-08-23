@@ -129,7 +129,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
 
         {showEnchant && canEnchant && (
           <div className="rounded-lg bg-black/30 p-2 space-y-1.5">
-            <div className="text-[10px] text-slate-400">Ordinary success: <span className={enchChance >= 1 ? 'text-emerald-300' : 'text-amber-300'}>{Math.round(enchChance * 100)}%</span> {enchChance < 1 && <span className="text-slate-300">· Failure preserves item and level</span>}</div>
+            <div className="text-[10px] text-slate-400">Ordinary success: <span className={enchChance >= 1 ? 'text-emerald-300' : 'text-amber-300'}>{Math.round(enchChance * 100)}%</span> {enchChance < 1 && <span className="font-bold text-rose-300">· Failure destroys the item ({Math.round((1 - enchChance) * 100)}%)</span>}</div>
             <button
               onClick={() => { void game.enchantItem(item.uid, false); setShowEnchant(false); onClose(); }}
               disabled={game.itemUpgradeBusy || !enchantAffordable}
@@ -142,6 +142,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
                 type="button"
                 onClick={() => { void game.enchantItem(item.uid, true); setShowEnchant(false); onClose(); }}
                 disabled={game.itemUpgradeBusy || !guaranteedAffordable}
+                title="100% success · the item cannot be destroyed"
                 className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-300 text-xs font-bold hover:bg-violet-500/25 disabled:opacity-40 transition"
               >
                 <ShieldCheck size={13} /> Guaranteed ({enchCost.gold > 0 ? <><Coins size={10} /> {formatNum(enchCost.gold)} + </> : enchCost.hero > 0 ? <><HeroTokenIcon size={10} /> {usd(enchCost.hero)} · {formatNum(enchCost.hero)} + </> : null}<HeroTokenIcon size={10} /> $2.00 · {formatNum(charmCost)})
