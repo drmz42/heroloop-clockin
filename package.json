@@ -21,6 +21,7 @@
     "audit:runtime-performance": "node scripts/audit-runtime-performance-budget.mjs",
     "audit:runtime-images": "node scripts/audit-runtime-images.mjs",
     "check:admin-panel": "node scripts/check-admin-panel-contract.mjs",
+    "check:admin-analytics": "node scripts/check-admin-analytics-contract.mjs",
     "simulate:acceleration-calendar": "node scripts/simulate-acceleration-calendar.mjs",
     "check:bag-expansion": "node scripts/check-bag-expansion-proposal.mjs",
     "check:codex-watchdog": "node scripts/check-codex-watchdog.mjs",
