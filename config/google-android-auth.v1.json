@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "google-android-auth-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "inGameAccount": {
+    "clientFlow": "android-credential-manager-sign-in-with-google",
+    "credential": "google-openid-id-token",
+    "transport": "https-post-to-heroloop-server",
+    "providerSubject": "verified-sub",
+    "emailIsOptionalMetadataNeverIdentity": true,
+    "plainClientUserIdForbidden": true,
+    "currentAccountLinkUsesIdentityChallenge": true
+  },
+  "serverVerification": {
+    "googleAuthLibraryOrDiscoveryJwksRequired": true,
+    "tokeninfoProductionUseForbidden": true,
+    "signatureRequired": true,
+    "allowedIssuers": ["https://accounts.google.com", "accounts.google.com"],
+    "audienceExactAllowlistRequired": true,
+    "expirationRequired": true,
+    "issuedAtBoundRequired": true,
+    "nonceChallengeMatchRequired": true,
+    "subjectRequired": true,
+    "jwksCacheHonorsResponseCacheControl": true,
+    "verificationOutageGrantsNoNewSessionOrLink": true
+  },
+  "playGamesServices": {
+    "role": "optional-platform-achievements-and-features",
+    "primaryInGameIdentity": false,
+    "clientPlayerIdTrusted": false,
+    "serverAuthCodeSingleUse": true,
+    "serverWebClientIdRequired": true,
+    "serverExchangesCodeAndFetchesPlayerId": true,
+    "playerIdStoredSeparatelyFromGoogleOpenIdSubject": true,
+    "playerIdNeverAutoMergesAccounts": true,
+    "offlineRefreshTokenRequestedByDefault": false,
+    "optionalScopes": []
+  },
+  "session": {
+    "heroloopServerIssuesSessionOnlyAfterVerification": true,
+    "sessionBoundToAccountIdentityAndDeviceClass": true,
+    "shortLivedAccessAndRotatingRefresh": true,
+    "logoutRevokesHeroloopSession": true,
+    "googleTokenNeverStoredInClientLogs": true,
+    "serverLogsExcludeTokenCodeEmailAndSubject": true
+  },
+  "failClosed": {
+    "unknownAudience": "reject",
+    "badIssuer": "reject",
+    "expiredToken": "reject",
+    "nonceMismatch": "reject",
+    "subjectCollision": "reject-and-audit",
+    "googleUnavailable": "no-new-login-or-link",
+    "pgsUnavailable": "ordinary-heroloop-session-continues",
+    "userDeclinesOptionalPgs": "ordinary-heroloop-session-continues"
+  },
+  "acceptanceScenarios": [
+    "valid-new-account", "valid-link", "exact-replay", "changed-replay", "bad-signature", "wrong-audience", "wrong-issuer", "expired-token", "future-issued-at", "nonce-mismatch", "missing-subject", "email-change-same-subject", "subject-collision", "google-outage", "pgs-valid-server-code", "pgs-client-player-id-forgery", "pgs-decline"
+  ],
+  "activation": {
+    "androidPackageAndSigningApproved": false,
+    "googleCloudOauthClientsApproved": false,
+    "playConsolePgsProjectApproved": false,
+    "serverCredentialSecretInstalled": false,
+    "identitySchemaImplemented": false,
+    "runtimeImplemented": false,
+    "privacyAndDeletionReviewApproved": false,
+    "phaseHCompletionRequired": true
+  },
+  "officialSources": {
+    "googleBackendAuth": "https://developers.google.com/identity/sign-in/android/backend-auth",
+    "googleOpenId": "https://developers.google.com/identity/openid-connect/openid-connect",
+    "pgsPlatformAuth": "https://developer.android.com/games/pgs/platform-authentication",
+    "pgsServerAccess": "https://developer.android.com/games/pgs/android/server-access"
+  }
+}
