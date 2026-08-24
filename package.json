@@ -28,6 +28,7 @@
     "check:admin-audit": "node scripts/check-admin-audit-contract.mjs",
     "check:admin-economy-operations": "node scripts/check-admin-economy-operations-contract.mjs",
     "check:admin-suite": "node scripts/check-admin-suite-contract.mjs",
+    "check:external-uptime": "node scripts/check-external-uptime-contract.mjs",
     "simulate:acceleration-calendar": "node scripts/simulate-acceleration-calendar.mjs",
     "check:bag-expansion": "node scripts/check-bag-expansion-proposal.mjs",
     "check:codex-watchdog": "node scripts/check-codex-watchdog.mjs",
