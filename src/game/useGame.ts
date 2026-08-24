@@ -643,10 +643,12 @@ export function useGame() {
     if (!paused) combatWakeRef.current();
   }, [paused]);
 
+  const hasFloaters = floaters.length > 0;
   useEffect(() => {
+    if (!hasFloaters) return;
     const t = setInterval(() => { const now = performance.now(); setFloaters((prev) => prev.filter((f) => now - f.born < 850)); }, 300);
     return () => clearInterval(t);
-  }, []);
+  }, [hasFloaters]);
 
   useEffect(() => {
     if (!battleResult || pausedRef.current || !autoRef.current) return;
