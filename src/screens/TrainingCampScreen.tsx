@@ -55,8 +55,21 @@ export function TrainingCampScreen({ game }: { game: Game }) {
   const xpPerHour = baseXpPerHour * (activeBoost ? state.trainingCamp.boostMultiplier : 1);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
-    return () => window.clearInterval(timer);
+    let timer: number | null = null;
+    const tick = () => setNow(Date.now());
+    const syncClock = () => {
+      if (timer !== null) window.clearInterval(timer);
+      timer = null;
+      if (document.visibilityState !== 'visible') return;
+      tick();
+      timer = window.setInterval(tick, 1_000);
+    };
+    document.addEventListener('visibilitychange', syncClock);
+    syncClock();
+    return () => {
+      if (timer !== null) window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', syncClock);
+    };
   }, []);
 
   const sortedHeroes = useMemo(() => state.ownedHeroes

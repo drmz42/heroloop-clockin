@@ -658,7 +658,8 @@ export function useGame() {
   }, [battleResult, spawnBattle]);
 
   useEffect(() => {
-    const t = setInterval(() => {
+    let timer: number | null = null;
+    const tickRespawnClock = () => {
       const now = Date.now();
       const st = stateRef.current;
       const countdown: Record<string, number> = {};
@@ -669,8 +670,20 @@ export function useGame() {
       });
       setRespawnCountdowns(countdown);
       if (finished) setState((prev) => ({ ...prev, ownedHeroes: prev.ownedHeroes.map((h) => h.respawnAt && h.respawnAt <= now ? { ...h, respawnAt: undefined } : h) }));
-    }, 1000);
-    return () => clearInterval(t);
+    };
+    const syncRespawnClock = () => {
+      if (timer !== null) window.clearInterval(timer);
+      timer = null;
+      if (document.visibilityState !== 'visible') return;
+      tickRespawnClock();
+      timer = window.setInterval(tickRespawnClock, 1_000);
+    };
+    document.addEventListener('visibilitychange', syncRespawnClock);
+    syncRespawnClock();
+    return () => {
+      if (timer !== null) window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', syncRespawnClock);
+    };
   }, []);
 
   useEffect(() => {
