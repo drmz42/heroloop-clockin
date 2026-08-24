@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "promo-management-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "codeHandling": {
+    "generationEntropyBitsMinimum": 128,
+    "humanSafeAlphabetRequired": true,
+    "importAllowed": true,
+    "normalization": "trim-uppercase-remove-spaces-and-hyphens",
+    "normalizedPattern": "^[A-Z0-9]{4,24}$",
+    "hash": "SHA-256",
+    "plaintextDisplayCount": 1,
+    "plaintextRecoveryForbidden": true,
+    "plaintextInDatabaseAuditLogsExportsForbidden": true
+  },
+  "rewards": {
+    "allowedKeys": ["gold", "hero", "summon_scrolls", "boss_keys"],
+    "integerOnly": true,
+    "atLeastOnePositive": true,
+    "perRedemptionMaximum": {
+      "gold": 1000000000,
+      "hero": 1000000000,
+      "summon_scrolls": 10000,
+      "boss_keys": 10000
+    },
+    "directHeroOrItemGrantForbidden": true,
+    "campaignIdRequired": true,
+    "sourceKind": "promo_code",
+    "grantVersionRequired": true,
+    "balanceVersionRequired": true
+  },
+  "budget": {
+    "positiveRewardRequiresGlobalRedemptionLimit": true,
+    "worstCaseLiabilityPreviewRequired": true,
+    "worstCaseFormula": "per-redemption-reward-times-global-redemption-limit",
+    "promoMaximumDayEquivalentsPer30Days": 0.5,
+    "rollingSummonScrollAllowancePreviewRequired": true,
+    "serverObservedCohortBaselineRequired": true,
+    "budgetCheckBeforeActivationAndRedemption": true,
+    "clientSuppliedBudgetValuesForbidden": true
+  },
+  "approval": {
+    "draftMayBePreparedWithoutRuntimeMutation": true,
+    "activationRequiresFounderConfirmation": true,
+    "freshStepUpRequired": true,
+    "heroOrPaidValueRequiresExplicitFinancialFounderApproval": true,
+    "highValueRequiresDistinctSecondApprover": true,
+    "highValueThresholdsApproved": false,
+    "activationBeforeThresholdApprovalForbidden": true,
+    "panelCannotCreateItsOwnExternalApproval": true
+  },
+  "eligibility": {
+    "oneRedemptionPerPlayerPerCode": true,
+    "globalLimitRequiredForValueBearingCode": true,
+    "startAndEndWindowRequired": true,
+    "serverAuthoritativeAudience": true,
+    "freeFormSqlAudienceForbidden": true,
+    "rawIdentifierUploadForbidden": true
+  },
+  "lifecycle": {
+    "states": ["draft", "approved", "active", "paused", "exhausted", "expired", "revoked"],
+    "activeRewardWindowOrLimitEditForbidden": true,
+    "replacementVersionRequiredForMaterialEdit": true,
+    "pauseAndRevokeAffectFutureRedemptionsOnly": true,
+    "priorRedemptionDeletionForbidden": true,
+    "appendOnlyAuditRequired": true
+  },
+  "settlement": {
+    "serverSideOnly": true,
+    "promoRowLockRequired": true,
+    "playerAndSaveRowLocksRequired": true,
+    "atomicRewardCounterAndAuditRequired": true,
+    "idempotencyKeyRequired": true,
+    "exactReplayReturnsStoredResult": true,
+    "changedReplayFailsClosed": true,
+    "concurrentFinalSlotSingleWinner": true,
+    "unrestrictedServiceRoleInPanelForbidden": true
+  },
+  "reporting": {
+    "aggregateOnly": true,
+    "minimumCohortSize": 5,
+    "codePlaintextHashAndPlayerIdentifiersForbidden": true,
+    "boundedExportRequired": true
+  },
+  "acceptanceScenarios": [
+    "invalid-format", "plaintext-shown-once", "plaintext-log-redaction", "hash-only-storage",
+    "not-started", "expired", "paused", "revoked", "exhausted", "per-player-duplicate",
+    "exact-idempotent-replay", "changed-replay", "concurrent-final-slot", "unsupported-reward",
+    "reward-cap-overflow", "missing-global-limit", "worst-case-budget-overflow",
+    "rolling-scroll-allowance-overflow", "hero-approval-missing", "high-value-second-approval-missing",
+    "aggregate-small-cohort-suppression", "aggregate-secret-redaction", "browser-service-role-deny"
+  ],
+  "activation": {
+    "adminPanelImplemented": false,
+    "narrowAdminApiImplemented": false,
+    "managementSchemaImplemented": false,
+    "audiencePredicatesApproved": false,
+    "highValueThresholdsApproved": false,
+    "secondApproverRoleApproved": false,
+    "runtimeImplemented": false,
+    "phaseHCompletionRequired": true
+  }
+}
