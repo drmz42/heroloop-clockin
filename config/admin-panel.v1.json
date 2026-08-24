@@ -37,7 +37,7 @@
     "analyst": ["aggregate-read"]
   },
   "views": {
-    "overview": ["ccu", "dau-wau-mau", "new-returning-churned", "sessions-playtime", "registration-funnel", "d1-d7-d30", "privacy-safe-cohorts", "version-adoption", "release-annotations"],
+    "overview": ["ccu", "dau-wau-mau", "new-returning-churned", "sessions-playtime", "registration-funnel", "d1-d7-d30", "privacy-safe-cohorts", "version-adoption", "online-reward-active", "release-annotations"],
     "economy": ["balance-percentiles", "issued-circulating-held-project", "faucet-sink-inflation", "market-gmv-fees", "first-party-settlement", "promo", "outliers", "reconciliation"],
     "progression": ["account-hero-levels", "location-time-to-clear", "formation", "power-versus-recommended", "combat", "afk-boost", "chests-inventory", "equipment", "summon-pity-focus", "training", "tutorial-features"],
     "players": ["identity-summary", "session-ban-state", "masked-balances", "progression", "roster-equipment", "inventory-resources", "settlement-history", "save-revision", "support-notes"],
