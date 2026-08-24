@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "status-effects-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "effects": [
+    { "id": "burn", "kind": "damage", "resistance": "flame", "baseProcChance": 0.12, "internalCooldownSeconds": 8, "durationSeconds": 4, "tickSeconds": 1, "attackerAtkPercentPerTick": 8, "maximumStacks": 1, "refresh": "strongest-value-and-longest-remaining", "exclusiveWith": ["frost"] },
+    { "id": "poison", "kind": "damage-and-healing-reduction", "resistance": "toxin", "baseProcChance": 0.10, "internalCooldownSeconds": 6, "durationSeconds": 6, "tickSeconds": 1, "attackerAtkPercentPerTick": 4, "healingReductionPercentPerStack": 5, "maximumStacks": 3, "refresh": "add-stack-then-refresh-oldest", "exclusiveWith": [] },
+    { "id": "armor-break", "kind": "debuff", "resistance": "physical", "baseProcChance": 0.12, "internalCooldownSeconds": 8, "durationSeconds": 5, "defReductionPercent": 8, "maximumStacks": 1, "refresh": "strongest-value-and-longest-remaining", "exclusiveWith": [] },
+    { "id": "frost", "kind": "control", "resistance": "frost", "baseProcChance": 0.12, "internalCooldownSeconds": 8, "durationSeconds": 4, "attackSpeedReductionPercent": 12, "maximumStacks": 1, "refresh": "strongest-value-and-longest-remaining", "exclusiveWith": ["burn"] },
+    { "id": "bleed", "kind": "triggered-damage", "resistance": "physical", "baseProcChance": 0.10, "internalCooldownSeconds": 8, "durationSeconds": 8, "attackerAtkPercentPerTargetAttack": 6, "maximumDamageTriggers": 5, "maximumStacks": 1, "refresh": "strongest-value-and-longest-remaining", "exclusiveWith": [] },
+    { "id": "shock", "kind": "control", "resistance": "arcane", "baseProcChance": 0.08, "internalCooldownSeconds": 12, "durationSeconds": 2, "damageTakenIncreasePercent": 8, "interruptsTelegraphedCharge": true, "maximumStacks": 1, "refresh": "no-refresh-during-immunity", "exclusiveWith": [] },
+    { "id": "weakness", "kind": "debuff", "resistance": "arcane", "baseProcChance": 0.12, "internalCooldownSeconds": 8, "durationSeconds": 5, "atkReductionPercent": 10, "maximumStacks": 1, "refresh": "strongest-value-and-longest-remaining", "exclusiveWith": [] }
+  ],
+  "resistances": {
+    "types": ["flame", "toxin", "physical", "frost", "arcane"],
+    "heroCapPercent": 60,
+    "bossCapPercent": 75,
+    "normalEnemyCapPercent": 50,
+    "minimumAppliedEffectPercent": 25,
+    "damageEffectsReduceDamage": true,
+    "controlEffectsReduceDuration": true,
+    "debuffEffectsReduceProcChance": true,
+    "unexplainedImmunityForbidden": true
+  },
+  "caps": {
+    "maximumStatusDamageAttackerAtkPercentPerSecond": 20,
+    "maximumConcurrentStatusDamageAttackerAtkPercent": 150,
+    "maximumPoisonStacks": 3,
+    "maximumHealingReductionPercent": 15,
+    "maximumDefReductionPercent": 8,
+    "maximumAttackSpeedReductionPercent": 12,
+    "maximumAtkReductionPercent": 10,
+    "maximumDamageTakenIncreasePercent": 8,
+    "percentageTargetMaxHpDamageEnabled": false,
+    "bossStatusDamageScale": 0.6,
+    "pvpStatusDamageScale": 0.7
+  },
+  "controlSafety": {
+    "hardStunEnabled": false,
+    "shockImmunitySecondsAfterEnd": 12,
+    "bossShockImmunitySecondsAfterEnd": 20,
+    "oneInterruptPerTelegraphedCharge": true,
+    "attackSpeedCannotCrossGlobalMinimumInterval": true
+  },
+  "stacking": {
+    "oneStatusProcPerSourceHit": true,
+    "sameSourceInternalCooldown": true,
+    "burnAndFrostReplaceEachOther": true,
+    "strongerValueCannotBeOverwrittenByWeaker": true,
+    "durationRefreshCannotExceedBaseDuration": true,
+    "armorBreakAndWeaknessMayCoexist": true,
+    "cleanseRemovesHighestSeverityThenOldest": true,
+    "barrierAbsorbsPostMitigationDamageBeforeHp": true
+  },
+  "counters": {
+    "cleanse": { "removesHarmfulEffects": 1, "cannotRemoveShockImmunity": true, "serverTargetRequired": true },
+    "barrier": { "usesSharedShieldCap": true, "replacementKeepsHigherRemainingValue": true },
+    "bosses": { "resistancesVisible": true, "higherResistanceNotImmunity": true }
+  },
+  "presentation": {
+    "iconLabelShapeAndNumericTimerRequired": true,
+    "sourceAndTargetInCombatLog": true,
+    "telegraphBeforeShockInterruptWindow": true,
+    "reducedMotionKeepsIconsTimersTargetsAndImpactShape": true,
+    "weakDeviceRemovesParticlesBlurAndCameraMotion": true,
+    "colorAloneForbidden": true
+  },
+  "authority": {
+    "serverOwnedRng": true,
+    "serverCombatClock": true,
+    "versionedSourceAndResistanceSnapshot": true,
+    "clientCannotSubmitProcResultDurationDamageResistanceOrReward": true,
+    "idempotentEncounterSettlement": true,
+    "immutableDiagnosticSummary": true,
+    "statusCannotGenerateExtraRewards": true
+  },
+  "power": {
+    "futureVersionRequired": true,
+    "expectedProcCooldownResistanceAndUptimeRequired": true,
+    "enemyAndRecommendedPowerMustIncludeStatuses": true,
+    "combinedHeroItemPetSpellAuraMasteryStatusSimulationRequired": true
+  }
+}
