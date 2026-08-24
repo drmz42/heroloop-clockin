@@ -229,6 +229,7 @@ export function useGame() {
   const unitsRef = useRef<CombatUnit[]>([]);
   const autoRef = useRef(autoProgress); autoRef.current = autoProgress;
   const pausedRef = useRef(paused); pausedRef.current = paused;
+  const combatWakeRef = useRef<() => void>(() => undefined);
   const floaterId = useRef(0);
   const resolvingRef = useRef(false);
   const itemUpgradeBusyRef = useRef(false);
@@ -344,6 +345,7 @@ export function useGame() {
     setBattleResult(null);
     setFloaters([]);
     resolvingRef.current = false;
+    combatWakeRef.current();
   }, []);
 
   const activeTeamKey = state.team.join('|');
@@ -513,8 +515,22 @@ export function useGame() {
 
   // Combat loop
   useEffect(() => {
-    let raf = 0; let last = performance.now();
+    let raf = 0;
+    let disposed = false;
+    let last = performance.now();
+    const canRun = () => document.visibilityState === 'visible'
+      && Boolean(stateRef.current.walletAddress)
+      && !pausedRef.current
+      && unitsRef.current.length > 0
+      && !resolvingRef.current;
+    const schedule = (resetClock = false) => {
+      if (disposed || raf !== 0 || !canRun()) return;
+      if (resetClock) last = performance.now();
+      raf = requestAnimationFrame(loop);
+    };
     const loop = (now: number) => {
+      raf = 0;
+      if (!canRun()) return;
       const dt = Math.min((now - last) * COMBAT_SPEED, 100);
       last = now;
       const live = unitsRef.current;
@@ -602,11 +618,30 @@ export function useGame() {
           tryAutoPotion();
         }
       }
-      raf = requestAnimationFrame(loop);
+      schedule();
     };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        if (raf !== 0) cancelAnimationFrame(raf);
+        raf = 0;
+        return;
+      }
+      schedule(true);
+    };
+    combatWakeRef.current = () => schedule(true);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    schedule(true);
+    return () => {
+      disposed = true;
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      if (raf !== 0) cancelAnimationFrame(raf);
+      combatWakeRef.current = () => undefined;
+    };
   }, [awardBattle, tryAutoPotion]);
+
+  useEffect(() => {
+    if (!paused) combatWakeRef.current();
+  }, [paused]);
 
   useEffect(() => {
     const t = setInterval(() => { const now = performance.now(); setFloaters((prev) => prev.filter((f) => now - f.born < 850)); }, 300);
