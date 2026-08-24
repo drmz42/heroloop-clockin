@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "bot-protection-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "selection": {
+    "provider": "cloudflare-turnstile",
+    "plan": "free",
+    "mode": "managed",
+    "provisional": true,
+    "reasons": ["server-siteverify", "single-use-five-minute-token", "wcag-2.2", "no-cloudflare-cdn-requirement", "free-unlimited-challenges"],
+    "recaptchaNotSelected": "free-tier-hard-limit-and-google-cloud-account-coupling",
+    "paidPlanOrCostAuthorized": false
+  },
+  "scope": {
+    "ordinaryPageView": false,
+    "ordinaryAuthenticatedGameplay": false,
+    "everyLoginAttempt": false,
+    "riskTriggeredActions": ["account-create", "identity-link", "identity-recovery", "repeated-wallet-challenge", "pre-registration", "promo-abuse", "checkout-start"],
+    "serverRateLimitsRemainPrimary": true,
+    "challengeNeverAuthorizesAccountCurrencyRewardOrPurchase": true
+  },
+  "client": {
+    "siteKeyPublic": true,
+    "secretForbidden": true,
+    "managedWidget": true,
+    "language": "auto",
+    "explicitErrorExpiredTimeoutCallbacksRequired": true,
+    "keyboardScreenReaderAndZoomAcceptanceRequired": true,
+    "reducedMotionRespectedByHeroLoopUi": true,
+    "privacyNoticeRequired": true,
+    "invisibleMode": false,
+    "preclearance": false
+  },
+  "serverVerification": {
+    "endpoint": "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    "mandatory": true,
+    "secretServerOnly": true,
+    "tokenMaximumAgeSeconds": 300,
+    "tokenSingleUse": true,
+    "hostnameExactAllowlistRequired": true,
+    "actionExactMatchRequired": true,
+    "idempotencyKeyRequired": true,
+    "remoteIpSentByDefault": false,
+    "verificationTimeoutMilliseconds": 3000,
+    "boundedRetryCount": 1,
+    "siteverifySuccessStillRequiresAllOrdinaryAuthorization": true
+  },
+  "privacy": {
+    "formWalletTokenOrGameDataSentToProvider": false,
+    "heroLoopStoresChallengeToken": false,
+    "heroLoopLogsIpOrFullUserAgentForChallenge": false,
+    "storedFields": ["environment", "action", "outcome", "bounded_error_family", "day"],
+    "minimumAggregateCohort": 5,
+    "aggregateRetentionDays": 30,
+    "providerAddendumReviewRequired": true,
+    "privacyPolicyUpdateRequired": true,
+    "ageAudienceReviewRequired": true
+  },
+  "failureStates": {
+    "scriptBlocked": "show-accessible-retry-and-support-path-no-sensitive-action",
+    "providerTimeout": "one-bounded-server-retry-then-no-sensitive-action",
+    "invalidExpiredOrDuplicateToken": "fresh-challenge-required",
+    "hostnameOrActionMismatch": "reject-and-alert",
+    "providerOutage": "existing-sessions-and-ordinary-gameplay-continue-sensitive-challenged-actions-stop",
+    "lowSolveRate": "disable-new-risk-rule-not-server-rate-limits-after-operator-review",
+    "noClientSideBypass": true
+  },
+  "csp": {
+    "scriptSrc": ["https://challenges.cloudflare.com"],
+    "frameSrc": ["https://challenges.cloudflare.com"],
+    "connectSrc": ["https://challenges.cloudflare.com"],
+    "nonceBasedScriptPreferred": true,
+    "noWildcardSource": true
+  },
+  "telemetry": {
+    "metrics": ["issued", "solved", "failed", "expired", "duplicate", "provider_error", "latency_ms", "abandoned"],
+    "dimensions": ["environment", "action", "day"],
+    "alertOnHostnameOrActionMismatch": true,
+    "alertOnProviderFailureRate": true,
+    "noPlayerIdentifier": true
+  },
+  "acceptanceScenarios": [
+    "valid-managed-token", "forged-token", "expired-token", "duplicate-token", "wrong-hostname", "wrong-action", "siteverify-timeout-retry-success", "siteverify-timeout-stop", "script-blocked", "keyboard-only", "screen-reader", "zoom-200-percent", "reduced-motion", "provider-outage-existing-session", "provider-outage-sensitive-action", "ordinary-gameplay-no-challenge", "rate-limit-still-enforced", "challenge-success-no-auth-bypass", "csp-allowlist", "privacy-log-redaction"
+  ],
+  "activation": {
+    "cloudflareAccountAndWidgetApproved": false,
+    "productionSiteAndSecretCreated": false,
+    "privacyAgeAndAccessibilityReviewApproved": false,
+    "cspChangeApproved": false,
+    "runtimeImplemented": false,
+    "phaseHCompletionRequired": true
+  },
+  "officialSources": {
+    "overview": "https://developers.cloudflare.com/turnstile/",
+    "plans": "https://developers.cloudflare.com/turnstile/plans/",
+    "siteverify": "https://developers.cloudflare.com/turnstile/get-started/server-side-validation/",
+    "errors": "https://developers.cloudflare.com/turnstile/troubleshooting/client-side-errors/",
+    "csp": "https://developers.cloudflare.com/turnstile/reference/content-security-policy/",
+    "recaptchaPricing": "https://docs.cloud.google.com/recaptcha/docs/billing-information"
+  }
+}
