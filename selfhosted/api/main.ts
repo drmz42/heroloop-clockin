@@ -78,6 +78,7 @@ const commandActions = new Set([
   "dungeon_room_complete",
   "dungeon_room_choose",
   "dungeon_abandon",
+  "boss_claim",
 ]);
 
 type JsonRecord = Record<string, unknown>;
@@ -949,7 +950,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
         return errorResponse(503, "dungeon_start_failed", requestId);
       }
     }
-    if (["dungeon_room_start", "dungeon_room_action", "dungeon_room_complete", "dungeon_room_choose", "dungeon_abandon"].includes(String(parsed.value.action))) {
+    if (["dungeon_room_start", "dungeon_room_action", "dungeon_room_complete", "dungeon_room_choose", "dungeon_abandon", "boss_claim"].includes(String(parsed.value.action))) {
       const action = String(parsed.value.action);
       const extraField = action === "dungeon_room_action" ? "command" : action === "dungeon_room_choose" ? "choice" : null;
       const payloadError = validatePayloadFields(payload, ["encounter_id", "expected_revision", ...(extraField ? [extraField] : [])]);
@@ -982,7 +983,8 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
           "dungeon_encounter_not_found", "dungeon_encounter_not_active", "dungeon_revision_conflict",
           "dungeon_room_not_available", "dungeon_room_already_started", "dungeon_room_not_ready",
           "dungeon_room_already_resolved", "dungeon_room_not_resolved", "dungeon_room_state_invalid",
-          "dungeon_run_state_invalid", "dungeon_combat_version_mismatch",
+          "dungeon_run_state_invalid", "dungeon_combat_version_mismatch", "boss_encounter_not_found",
+          "boss_encounter_not_active", "boss_reward_not_ready", "boss_claim_required", "chest_capacity_exceeded", "daily_chest_limit_reached",
         ]);
         if (["dungeon_invalid_revision", "dungeon_invalid_action", "dungeon_invalid_choice"].includes(String(code))) {
           return errorResponse(400, String(code), requestId);
