@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "cross-platform-parity-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "account": {
+    "canonicalKey": "heroloop_account_uuid",
+    "oneSharedProgression": true,
+    "oneActiveBalanceVersion": true,
+    "providerIdentityUniqueKey": ["provider", "provider_subject"],
+    "providerSubjects": ["solana_public_key", "google_subject", "apple_subject", "steam_id_64"],
+    "emailIsNeverIdentityOrAutoMergeKey": true,
+    "linkRequiresCurrentSessionAndFreshProviderProof": true,
+    "collisionFailsClosed": true,
+    "unlinkCannotRemoveLastVerifiedIdentity": true,
+    "linkUnlinkRecoveryAuditedServerSide": true
+  },
+  "progression": {
+    "sharedAcrossPlatforms": ["heroes", "earned_items", "cosmetics", "account_progression", "quests", "encounter_progress", "resources"],
+    "serverAuthoritative": true,
+    "sameCombatRulesAndAttainablePower": true,
+    "platformExclusiveCombatPowerForbidden": true,
+    "clientPlatformCannotSelectBalanceVersion": true
+  },
+  "ledgers": {
+    "heroToken": { "scope": "web", "transferable": true, "visibleOnNativeOrSteam": false },
+    "paidCredit": { "scope": "storefront_account_region", "transferable": false, "portableAcrossStores": false },
+    "earnedGameplay": { "scope": "heroloop_account", "portableAcrossLinkedPlatforms": true },
+    "automaticHeroPaidCreditConversionForbidden": true,
+    "sharedWalletTableForbidden": true
+  },
+  "catalog": {
+    "serverProductIdRequired": true,
+    "platformSkuMappingRequired": true,
+    "equivalentGameplayContentsAcrossPlatforms": true,
+    "regionalPriceTaxAndStoreFeeMayDiffer": true,
+    "priceParityRequired": false,
+    "platformExclusiveCosmeticRequiresReview": true,
+    "missingPlatformSkuMeansUnavailableNotFallbackCheckout": true
+  },
+  "receipts": {
+    "uniqueKey": ["environment", "platform", "transaction_id"],
+    "serverVerificationRequired": true,
+    "clientReceiptOrSuccessRedirectNeverGrants": true,
+    "accountProductAmountCurrencyAndStatusBound": true,
+    "atomicGrantLedgerAndAudit": true,
+    "exactReplayReturnsStoredResult": true,
+    "changedReplayFailsClosed": true,
+    "states": ["received", "verified", "granted", "reversed", "review_required"]
+  },
+  "refunds": {
+    "exactPurchaseGrantLinkRequired": true,
+    "reversalIsIdempotent": true,
+    "unusedReversibleEntitlementsMayBeRevoked": true,
+    "earnedProgressionAndUnrelatedPurchasesNeverRevoked": true,
+    "consumedOrNonReversibleGrantMovesToReviewRequired": true,
+    "genericInventoryClawbackForbidden": true,
+    "chargebackNeverAutoDeletesAccount": true
+  },
+  "nativeTokenBoundary": {
+    "heroBalanceHidden": true,
+    "heroPriceTradeWithdrawAndWalletCtasHidden": true,
+    "heroRewardPromptsHidden": true,
+    "webEarnedGameplayEntitlementsMaySync": true,
+    "syncRequiresEquivalentGameplayAvailabilityAndPlatformReview": true
+  },
+  "policyFailure": {
+    "disableOnlyAffectedCheckoutOrSku": true,
+    "ordinaryGameplayAndEarnedProgressionContinue": true,
+    "externalFallbackLinkForbidden": true,
+    "unverifiedPendingPurchaseGrantsNothing": true,
+    "providerOutageQueuesServerRecheckWithoutClientGrant": true
+  },
+  "agePrivacyAndDeletion": {
+    "targetAudienceAndAgeRatingReviewRequired": true,
+    "parentalPurchaseControlsUsePlatformControls": true,
+    "rewardedAdsRemainDisabled": true,
+    "inAppAccountDeletionPathRequired": true,
+    "googleWebDeletionRequestPathRequired": true,
+    "appleTokenRevocationOnDeletionRequired": true,
+    "financialAuditRetentionSeparatedAndMinimized": true
+  },
+  "activation": {
+    "identitySchemaApproved": false,
+    "providerCredentialsApproved": false,
+    "receiptAndRefundWorkersApproved": false,
+    "skuTaxRegionalMatrixApproved": false,
+    "legalPrivacyAgeAndStoreReviewApproved": false,
+    "nativePackagingApproved": false,
+    "phaseHCompletionRequired": true,
+    "financialFounderApprovalRequired": true
+  },
+  "officialSources": {
+    "appleReview": "https://developer.apple.com/app-store/review/guidelines/",
+    "appleDeletion": "https://developer.apple.com/support/offering-account-deletion-in-your-app/",
+    "googlePayments": "https://support.google.com/googleplay/android-developer/answer/10281818",
+    "googleDeletion": "https://support.google.com/googleplay/android-developer/answer/13327111",
+    "googleFamilies": "https://support.google.com/googleplay/android-developer/answer/9893335",
+    "steamAuthentication": "https://partner.steamgames.com/doc/features/auth",
+    "steamTransactions": "https://partner.steamgames.com/doc/features/microtransactions/implementation"
+  }
+}
