@@ -1019,6 +1019,10 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
           "SELECT heroloop_api.resource_snapshot($1::uuid) AS result",
           [identity.playerId],
         );
+        context.income = await databaseJson(
+          "SELECT heroloop_api.income_snapshot($1::uuid) AS result",
+          [identity.playerId],
+        );
         return json(200, {
           ok: true,
           contract_version: 1,

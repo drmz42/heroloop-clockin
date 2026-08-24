@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "status": "proposal-only",
-  "runtimeAdopted": false,
+  "status": "runtime-candidate-staging-pending",
+  "runtimeAdopted": true,
   "economyFormulaChanged": false,
   "currentAudit": {
     "ordinaryRefreshSeconds": 30,
-    "panelPreview": "client-roster-power-divided-by-server-total-score",
-    "previewMissingFactors": ["server-canonical-power", "location-multiplier", "boost-max-multiplier", "training-occupancy-penalty"],
-    "previewCanUseUncommittedState": true,
-    "blocksAccurateRealValueDisplay": true
+    "panelPreview": "removed-server-snapshot-only",
+    "previewMissingFactors": [],
+    "previewCanUseUncommittedState": false,
+    "blocksAccurateRealValueDisplay": false
   },
   "scoreAuthority": {
     "singleServerFunction": "canonical_hero_income_score",
@@ -87,6 +87,6 @@
       "zero-client-power-fallback",
       "disposable-exact-candidate-staging-pass"
     ],
-    "status": "blocked-until-authoritative-mutations-implemented-after-phase-h"
+    "status": "runtime-complete-exact-candidate-staging-pending"
   }
 }

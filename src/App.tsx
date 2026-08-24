@@ -43,6 +43,7 @@ function App() {
   const flushServerSaveRef = useRef<() => void>(() => undefined);
   const accountStatusRequestRef = useRef<Promise<{ exists: boolean; username: string | null; account_id: string } | null> | null>(null);
   const legacyStateRef = useRef(game.state);
+  const confirmedIncomeFingerprintRef = useRef('');
   const accountPower = useMemo(
     () => calculateAccountPower(game.state.ownedHeroes, game.state.inventory),
     [game.state.ownedHeroes, game.state.inventory],
@@ -131,6 +132,15 @@ function App() {
     const state = saveStateRef.current;
     const version = saveStateVersionRef.current;
     if (version <= savedStateVersionRef.current) return;
+    const incomeFingerprint = JSON.stringify({
+      team: state.team,
+      heroes: state.ownedHeroes.map((hero) => ({ uid: hero.uid, heroId: hero.heroId, level: hero.level, stars: hero.stars, equipped: hero.equipped })),
+      items: state.inventory.map((item) => ({ uid: item.uid, itemId: item.itemId, level: item.level, enchantLevel: item.enchantLevel, power: item.power })),
+      training: state.trainingCamp.heroUids,
+      accountLevel: state.accountLevel,
+      currentLocation: state.currentLocation,
+      highestLocation: state.highestLocation,
+    });
     saveInFlightRef.current = true;
     void playerSync<{ revision: number; state?: unknown; conflict?: boolean }>('game_state_save', { state, revision }).then((saved) => {
       if (!saved?.revision) return;
@@ -140,6 +150,10 @@ function App() {
       if (saved.revision > latestRevision) {
         serverStateRevisionRef.current = saved.revision;
         setServerStateRevision(saved.revision);
+      }
+      if (incomeFingerprint !== confirmedIncomeFingerprintRef.current) {
+        confirmedIncomeFingerprintRef.current = incomeFingerprint;
+        void tokenomics.refreshIncome(saved.revision);
       }
     }).finally(() => {
       saveInFlightRef.current = false;

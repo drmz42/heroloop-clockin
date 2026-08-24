@@ -172,7 +172,6 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
   const drop = battleResult?.drop;
   const dropBase = drop ? ITEM_MAP[drop.itemId] : null;
   const power = game.teamPower();
-  const ownPower = useMemo(() => calculateHeroPower(state.ownedHeroes, state.inventory), [state.ownedHeroes, state.inventory]);
   const selectedHero = selectedHeroUid ? state.ownedHeroes.find(h => h.uid === selectedHeroUid) : null;
   const selectedHeroBase = selectedHero ? HERO_MAP[selectedHero.heroId] : null;
   const selectedHeroStats = useMemo(
@@ -530,7 +529,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
               </button>
             </div>
           </div>}
-          {!activeDungeon && <TokenEarningsPanel status={tok.status} today={game.state.tokensEarnedToday} clientPower={ownPower} eligible={canMineTokens(state.currentLocation, state.accountLevel, state.highestLocation)} heroes={state.ownedHeroes.length} defeated={state.totalKills} bosses={state.totalBossKills} />}
+          {!activeDungeon && <TokenEarningsPanel status={tok.status} stale={tok.incomeStale} today={game.state.tokensEarnedToday} heroes={state.ownedHeroes.length} defeated={state.totalKills} bosses={state.totalBossKills} />}
         </div>
 
         {/* Location cards — redesigned like screenshot 4 */}
@@ -1145,21 +1144,13 @@ function TestControls({ game }: { game: GameApi }) {
   );
 }
 
-function TokenEarningsPanel({ status, today, clientPower, eligible, heroes, defeated, bosses }: { status: TokenomicsStatus | null; today: number; clientPower: number; eligible: boolean; heroes: number; defeated: number; bosses: number }) {
+function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: { status: TokenomicsStatus | null; stale: boolean; today: number; heroes: number; defeated: number; bosses: number }) {
   const TOKEN_PRICE_USD = 0.001;
   const DAILY_POOL = 20_000;
-  // Display shares are mirrored client-side using the same efficiency share so
-  // the panel never shows 0.000 for an eligible online miner, even when the
-  // server status has not yet recorded the player as online/eligible.
-  const serverDaily = status?.my_daily_share ?? 0;
-  const totalScore = status?.total_power ?? 0;
-  const myScore = clientPower > 0 ? clientPower : (status?.my_power ?? 0);
-  const daily = eligible && myScore > 0
-    ? (myScore / Math.max(totalScore, myScore)) * DAILY_POOL
-    : serverDaily;
-  const rate = daily / 24;
+  const daily = status?.my_daily_share ?? 0;
+  const rate = status?.my_hourly_share ?? 0;
   const pool = status?.pool_amount ?? DAILY_POOL;
-  const poolSharePct = pool > 0 ? (daily / pool) * 100 : 0;
+  const poolSharePct = status?.pool_share_percent ?? 0;
   const fmt = (value: number) => value < 1 ? value.toFixed(3) : formatNum(value);
   const usd = (tokens: number) => {
     const v = tokens * TOKEN_PRICE_USD;
@@ -1180,6 +1171,7 @@ function TokenEarningsPanel({ status, today, clientPower, eligible, heroes, defe
       <div className="flex items-center gap-2">
         <HeroTokenIcon size={22} />
         <span className="text-[15px] font-black uppercase tracking-[.14em] text-[#ffd36e]">$HERO Income</span>
+        {stale && <span className="ml-auto text-[9px] font-bold uppercase tracking-wide text-amber-300" title="Keeping the last confirmed server values while income refresh retries">Updating…</span>}
       </div>
       {status ? (
         <div className="grid grid-cols-[max-content_max-content] items-baseline gap-x-2 gap-y-2 whitespace-nowrap">

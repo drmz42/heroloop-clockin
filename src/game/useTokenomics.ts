@@ -5,6 +5,19 @@ import type { Rarity } from '@/game/types';
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
 
 export interface TokenomicsStatus {
+  score_version: number;
+  player_power: number;
+  training_hero_count: number;
+  training_penalty: number;
+  highest_location: number;
+  location_multiplier: number;
+  boost_multiplier: number;
+  my_score: number;
+  total_score: number;
+  denominator_as_of: string;
+  daily_pool: number;
+  pool_share_percent: number;
+  save_revision: number;
   pool_amount: number;
   total_distributed: number;
   distribution_rate: number;
@@ -46,11 +59,15 @@ export function useTokenomics(power: number, accountLevel: number, username: str
 }) {
   const [status, setStatus] = useState<TokenomicsStatus | null>(null);
   const [loading, setLoading] = useState(false);
+  const [incomeStale, setIncomeStale] = useState(false);
   const powerRef = useRef(power);
   const playerIdRef = useRef(playerId);
   const accountLevelRef = useRef(accountLevel);
   const usernameRef = useRef(username);
   const statsRef = useRef(stats);
+  const confirmedIncomeRevisionRef = useRef(0);
+  const incomeRefreshInFlightRef = useRef<Promise<void> | null>(null);
+  const queuedIncomeRevisionRef = useRef(0);
   powerRef.current = power;
   playerIdRef.current = playerId;
   accountLevelRef.current = accountLevel;
@@ -58,9 +75,9 @@ export function useTokenomics(power: number, accountLevel: number, username: str
   statsRef.current = stats;
 
   const syncUp = useCallback(async () => {
-    if (!tokenomicsEnabled) return;
+    if (!tokenomicsEnabled) return false;
     const pid = playerIdRef.current;
-    if (!pid) return;
+    if (!pid) return false;
     const currentStats = statsRef.current;
     try {
       const data = await playerSync<{ pending_tokens: number; total_claimed: number }>('sync', {
@@ -82,19 +99,48 @@ export function useTokenomics(power: number, accountLevel: number, username: str
       });
       if (data?.pending_tokens !== undefined) {
         setStatus((prev) => prev ? { ...prev, pending_tokens: data.pending_tokens, total_claimed: data.total_claimed } : prev);
+        return true;
       }
     } catch { /* silent */ }
+    return false;
   }, []);
 
-  const fetchStatus = useCallback(async () => {
+  const fetchStatus = useCallback(async (expectedRevision = 0) => {
     if (!tokenomicsEnabled) return;
     const pid = playerIdRef.current;
     if (!pid) return;
     try {
       const data = await playerSync<TokenomicsStatus>('status', { player_id: pid });
-      if (data) setStatus(data);
-    } catch { /* silent */ }
+      if (!data) { setIncomeStale(true); return false; }
+      const revision = Number.isSafeInteger(data.save_revision) ? data.save_revision : 0;
+      if (revision < Math.max(expectedRevision, confirmedIncomeRevisionRef.current)) { setIncomeStale(true); return false; }
+      confirmedIncomeRevisionRef.current = Math.max(confirmedIncomeRevisionRef.current, revision);
+      setStatus(data);
+      setIncomeStale(false);
+      return true;
+    } catch { setIncomeStale(true); }
+    return false;
   }, []);
+
+  const refreshIncome = useCallback((expectedRevision = 0): Promise<void> => {
+    queuedIncomeRevisionRef.current = Math.max(queuedIncomeRevisionRef.current, expectedRevision);
+    if (incomeRefreshInFlightRef.current) return incomeRefreshInFlightRef.current;
+    const run = async () => {
+      while (true) {
+        const targetRevision = queuedIncomeRevisionRef.current;
+        queuedIncomeRevisionRef.current = 0;
+        const synced = await syncUp();
+        if (synced) await fetchStatus(targetRevision);
+        else setIncomeStale(true);
+        if (queuedIncomeRevisionRef.current <= targetRevision) break;
+      }
+    };
+    const request = run().finally(() => {
+      if (incomeRefreshInFlightRef.current === request) incomeRefreshInFlightRef.current = null;
+    });
+    incomeRefreshInFlightRef.current = request;
+    return request;
+  }, [fetchStatus, syncUp]);
 
   const claimTokens = useCallback(async () => {
     if (!tokenomicsEnabled) return null;
@@ -131,9 +177,10 @@ export function useTokenomics(power: number, accountLevel: number, username: str
       const data = await playerSync<NonNullable<TokenomicsStatus['boost']>>('set_boost_max_active', { active });
       if (!data) return null;
       setStatus((prev) => prev ? { ...prev, token_balance: data.token_balance, boost: data } : prev);
+      await fetchStatus();
       return data;
     } catch { return null; }
-  }, []);
+  }, [fetchStatus]);
 
   const summonBoss = useCallback(async (location: number) => {
     if (!tokenomicsEnabled) return null;
@@ -167,15 +214,14 @@ export function useTokenomics(power: number, accountLevel: number, username: str
   useEffect(() => {
     if (!tokenomicsEnabled || !playerId) return;
     const refresh = async () => {
-      await syncUp();
-      await fetchStatus();
+      await refreshIncome();
     };
     void refresh();
     const refreshInterval = setInterval(() => { void refresh(); }, 30_000);
     return () => clearInterval(refreshInterval);
-  }, [playerId, syncUp, fetchStatus]);
+  }, [playerId, refreshIncome]);
 
-  return { status, loading, claimTokens, spendTokens, setBoostMaxActive, summonBoss, reserveLimitedItem, removeLimitedItem, syncUp, fetchStatus };
+  return { status, incomeStale, loading, claimTokens, spendTokens, setBoostMaxActive, summonBoss, reserveLimitedItem, removeLimitedItem, syncUp, fetchStatus, refreshIncome };
 }
 
 export type TokenomicsApi = ReturnType<typeof useTokenomics>;

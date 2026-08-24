@@ -206,6 +206,11 @@ export function prepareStatusResult(context: JsonRecord, now: number): JsonRecor
   ));
   const myScore = player?.token_eligible === true && rewardActive ? scoreOf(player) : 0;
   const myDailyShare = totalScore > 0 ? (myScore / totalScore) * 20_000 : 0;
+  const trainingHeroCount = Math.max(0, Math.min(10, Number(player?.training_hero_count) || 0));
+  const trainingPenalty = trainingHeroCount >= 5 ? 0.9 : [0, 0.1, 0.25, 0.5, 0.75][trainingHeroCount] ?? 0;
+  const highestLocation = Math.max(1, Number(player?.highest_location) || 1);
+  const locationMultiplier = 1 + 0.10 * (highestLocation - 1);
+  const boostMultiplier = player?.boost_max_active === true ? 2 : 1;
   const rarityCapacity: JsonRecord = {};
   const raritySupply: JsonRecord = {};
   for (const row of recordArray(context.rarity_supply)) {
@@ -217,7 +222,21 @@ export function prepareStatusResult(context: JsonRecord, now: number): JsonRecor
     raritySupply[rarity] = { existing, max };
   }
   const resource = isRecord(context.resource) ? context.resource : null;
+  const income = isRecord(context.income) ? context.income : null;
   return {
+    score_version: 2,
+    player_power: player ? Number(player.power) || 0 : 0,
+    training_hero_count: trainingHeroCount,
+    training_penalty: trainingPenalty,
+    highest_location: highestLocation,
+    location_multiplier: locationMultiplier,
+    boost_multiplier: boostMultiplier,
+    my_score: myScore,
+    total_score: totalScore,
+    denominator_as_of: new Date(now).toISOString(),
+    daily_pool: 20_000,
+    pool_share_percent: myDailyShare / 20_000 * 100,
+    save_revision: resource ? Number(resource.revision) || 0 : 0,
     pool_amount: 20_000,
     total_distributed: pool ? Number(pool.total_distributed) || 0 : 0,
     distribution_rate: pool ? Number(pool.distribution_rate) || 0.15 : 0.15,
@@ -250,6 +269,7 @@ export function prepareStatusResult(context: JsonRecord, now: number): JsonRecor
     resources: isRecord(context.resources) ? context.resources : null,
     rarity_capacity: rarityCapacity,
     rarity_supply: raritySupply,
+    ...(income ?? {}),
   };
 }
 
