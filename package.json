@@ -14,6 +14,7 @@
     "check:cross-platform-parity": "node scripts/check-cross-platform-parity-contract.mjs",
     "check:account-identity-link": "node scripts/check-account-identity-link-contract.mjs",
     "check:google-android-auth": "node scripts/check-google-android-auth-contract.mjs",
+    "check:apple-ios-auth": "node scripts/check-apple-ios-auth-contract.mjs",
     "simulate:acceleration-calendar": "node scripts/simulate-acceleration-calendar.mjs",
     "check:bag-expansion": "node scripts/check-bag-expansion-proposal.mjs",
     "check:codex-watchdog": "node scripts/check-codex-watchdog.mjs",

@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "apple-ios-auth-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "client": {
+    "flow": "authentication-services-sign-in-with-apple",
+    "sendsToServer": ["identity_token", "single_use_authorization_code", "state", "nonce"],
+    "providerSubject": "verified-sub",
+    "privateRelayEmailSupported": true,
+    "emailIsOptionalMetadataNeverIdentity": true,
+    "nameAcceptedOnlyOnFirstAuthorization": true,
+    "plainClientUserIdentifierForbidden": true
+  },
+  "serverVerification": {
+    "appleJwksSignatureRequired": true,
+    "issuer": "https://appleid.apple.com",
+    "audienceExactAllowlistRequired": true,
+    "expirationRequired": true,
+    "issuedAtBoundRequired": true,
+    "nonceChallengeMatchRequired": true,
+    "stateChallengeMatchRequired": true,
+    "subjectRequired": true,
+    "authorizationCodeExchangedAtAppleTokenEndpoint": true,
+    "authorizationCodeSingleUse": true,
+    "clientSecretGeneratedServerSideWithApplePrivateKey": true,
+    "verificationOutageGrantsNoNewSessionOrLink": true
+  },
+  "tokenStorage": {
+    "refreshTokenEncryptedServerOnly": true,
+    "accessTokenEncryptedServerOnlyIfRetained": true,
+    "identityTokenNotUsedAsLongLivedHeroloopSession": true,
+    "applePrivateKeyNeverLeavesSecretStore": true,
+    "clientAndServerLogsExcludeTokensCodesEmailAndSubject": true,
+    "retentionEndsOnUnlinkOrDeletion": true
+  },
+  "revocationAndChanges": {
+    "nativeCredentialRevokedNotificationHandled": true,
+    "credentialStateChecked": true,
+    "signedServerNotificationRequired": true,
+    "supportedServerEvents": ["consent-revoked", "account-deleted", "email-enabled", "email-disabled"],
+    "affectedHeroloopSessionsRevoked": true,
+    "lastIdentityMovesAccountToRecoveryLocked": true,
+    "emailForwardingChangeNeverChangesIdentity": true
+  },
+  "accountDeletion": {
+    "inAppPathRequired": true,
+    "recentReauthenticationRequired": true,
+    "appleTokenRevocationAttemptedBeforeTokenDeletion": true,
+    "revokeEndpoint": "https://appleid.apple.com/auth/revoke",
+    "revocationUsesRefreshOrAccessToken": true,
+    "appleRevocationFailureNeverBlocksHeroloopDataDeletion": true,
+    "failedRevocationAuditedForBoundedRetryOrManualGuidance": true,
+    "localAndServerAppleUserDataDeleted": true
+  },
+  "failClosed": {
+    "badSignature": "reject",
+    "wrongAudience": "reject",
+    "wrongIssuer": "reject",
+    "expiredToken": "reject",
+    "nonceOrStateMismatch": "reject",
+    "codeExchangeFailure": "reject",
+    "subjectCollision": "reject-and-audit",
+    "appleUnavailable": "no-new-login-or-link"
+  },
+  "acceptanceScenarios": [
+    "valid-new-account", "valid-link", "exact-replay", "changed-replay", "bad-signature", "wrong-audience", "wrong-issuer", "expired-token", "future-issued-at", "nonce-mismatch", "state-mismatch", "authorization-code-replay", "missing-subject", "private-relay-email", "email-forwarding-change", "subject-collision", "consent-revoked", "apple-account-deleted", "in-app-delete-revoke-success", "in-app-delete-revoke-failure", "apple-outage"
+  ],
+  "activation": {
+    "bundleAndEntitlementApproved": false,
+    "appleDeveloperIdentifiersApproved": false,
+    "applePrivateKeyInstalled": false,
+    "serverNotificationEndpointApproved": false,
+    "identitySchemaImplemented": false,
+    "runtimeImplemented": false,
+    "privacyDeletionAndRetentionApproved": false,
+    "phaseHCompletionRequired": true
+  },
+  "officialSources": {
+    "authentication": "https://developer.apple.com/documentation/signinwithapple/authenticating-users-with-sign-in-with-apple",
+    "accountChanges": "https://developer.apple.com/documentation/signinwithapple/processing-changes-for-sign-in-with-apple-accounts",
+    "deletionTechnote": "https://developer.apple.com/documentation/technotes/tn3194-handling-account-deletions-and-revoking-tokens-for-sign-in-with-apple",
+    "tokenRevocation": "https://developer.apple.com/documentation/signinwithapplerestapi/revoke-tokens"
+  }
+}
