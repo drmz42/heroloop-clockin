@@ -290,10 +290,16 @@ function canonicalItem(item: JsonRecord, ledgerById: Map<string, JsonRecord>): J
 }
 
 export function canonicalizeLoadedState(context: JsonRecord):
-  | { state: JsonRecord | null; revision: number | null; migratedItems: number; schemaMigrated: boolean }
+  | { state: JsonRecord | null; revision: number | null; migratedItems: number; schemaMigrated: boolean; legacyMarketRecovery: JsonRecord }
   | { code: string; status: number } {
+  const legacyMarketRecovery = isRecord(context.legacy_market_recovery)
+    ? structuredClone(context.legacy_market_recovery) as JsonRecord
+    : null;
+  if (!legacyMarketRecovery || typeof legacyMarketRecovery.status !== "string" || typeof legacyMarketRecovery.blocked !== "boolean") {
+    return { code: "state_unavailable", status: 503 };
+  }
   if (context.state === null && context.revision === null) {
-    return { state: null, revision: null, migratedItems: 0, schemaMigrated: false };
+    return { state: null, revision: null, migratedItems: 0, schemaMigrated: false, legacyMarketRecovery };
   }
   if (!isRecord(context.state) || !Number.isSafeInteger(Number(context.revision))) {
     return { code: "state_unavailable", status: 503 };
@@ -320,6 +326,7 @@ export function canonicalizeLoadedState(context: JsonRecord):
     revision: Number(context.revision),
     migratedItems: Math.max(0, Math.floor(Number(context.migrated_items) || 0)),
     schemaMigrated: validated.migrated === true,
+    legacyMarketRecovery,
   };
 }
 

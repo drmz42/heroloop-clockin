@@ -1089,6 +1089,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
           }
         }
         const result: JsonRecord = { state, revision };
+        result.legacy_market_recovery = loaded.legacyMarketRecovery;
         if (loaded.migratedItems > 0) result.migrated_items = loaded.migratedItems;
         if (loaded.schemaMigrated) result.save_schema_migrated = true;
         if (recoveredCount > 0) result.recovered_formation_heroes = recoveredCount;
