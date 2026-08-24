@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "pets-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "formationSlots": ["attack", "defense", "support"],
+  "maximumEquippedPerRole": 1,
+  "maximumOwned": 100,
+  "raritySource": "config/balance/summon-family-pity.v1.json",
+  "rarityScales": {
+    "common": 1,
+    "rare": 1.35,
+    "epic": 1.75,
+    "legendary": 2.2,
+    "mythic": 2.6
+  },
+  "catalog": [
+    { "id": "ember-lynx", "role": "attack", "effect": "formation_atk_percent", "baseValue": 2.3 },
+    { "id": "razor-raven", "role": "attack", "effect": "formation_crit_chance_points", "baseValue": 1.15 },
+    { "id": "storm-hound", "role": "attack", "effect": "formation_attack_speed_percent", "baseValue": 1.5 },
+    { "id": "bastion-tortoise", "role": "defense", "effect": "formation_hp_percent", "baseValue": 2.3 },
+    { "id": "iron-ram", "role": "defense", "effect": "formation_def_percent", "baseValue": 2.3 },
+    { "id": "mist-fox", "role": "defense", "effect": "formation_dodge_points", "baseValue": 0.75 },
+    { "id": "moonwing-sprite", "role": "support", "effect": "heal_lowest_percent_max_hp", "baseValue": 0.23, "cooldownSeconds": 12 },
+    { "id": "dawn-moth", "role": "support", "effect": "formation_healing_received_percent", "baseValue": 3.8 },
+    { "id": "aegis-owl", "role": "support", "effect": "shield_lowest_percent_max_hp", "baseValue": 2.69, "cooldownSeconds": 20 }
+  ],
+  "globalCaps": {
+    "formation_atk_percent": 6,
+    "formation_crit_chance_points": 3,
+    "formation_attack_speed_percent": 4,
+    "formation_hp_percent": 6,
+    "formation_def_percent": 6,
+    "formation_dodge_points": 2,
+    "heal_lowest_percent_max_hp": 0.6,
+    "formation_healing_received_percent": 10,
+    "shield_lowest_percent_max_hp": 7,
+    "combinedPassiveHealingPercentMaxHpPerSecond": 2,
+    "simultaneousShieldPercentMaxHp": 25
+  },
+  "combat": {
+    "serverOwned": true,
+    "snapshotWithFormation": true,
+    "oneEffectPerPet": true,
+    "petsCannotBeTargeted": true,
+    "petsDoNotCreateEnemyLanes": true,
+    "deadHeroesReceiveNoHealOrShield": true,
+    "cooldownsUseServerCombatTime": true,
+    "reducedMotionKeepsIconTargetAndCountdown": true
+  },
+  "ownership": {
+    "instanceUuidRequired": true,
+    "browserAuthorityForbidden": true,
+    "duplicateUpgrade": null,
+    "levels": null,
+    "capacityReservedBeforeAcquisition": true,
+    "equippedAndMarketEscrowMutuallyExclusive": true
+  },
+  "settlement": {
+    "actions": ["pet_summon", "pet_equip_set", "pet_market_list", "pet_market_buy", "pet_market_cancel"],
+    "expectedRevisionRequired": true,
+    "idempotencyKeyRequired": true,
+    "atomicOwnershipCapacitySpendAndResult": true,
+    "clientCannotSubmitRarityResultBonusOrPriceRule": true,
+    "immutableEventsRequired": true
+  },
+  "acquisition": {
+    "summonFamily": "pet",
+    "summonPitySharedWithHeroes": false,
+    "directStorePrice": null,
+    "paidPackContents": null,
+    "freeSources": null
+  },
+  "market": {
+    "minimumRarity": "legendary",
+    "currency": "hero",
+    "feePercent": 5,
+    "sameEscrowAndIdempotencyBoundaryAsItems": true,
+    "activationRequiresFinancialApproval": true
+  },
+  "power": {
+    "futureVersionRequired": true,
+    "combatAndRecommendedPowerMustIncludeEffects": true,
+    "heroIncomePowerExcludedUntilApprovedServerSettlement": true,
+    "combinedHeroItemPetSimulationRequired": true
+  }
+}
