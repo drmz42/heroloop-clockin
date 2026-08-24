@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "steam-auth-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "inGameFlow": {
+    "clientApi": "ISteamUser.GetAuthTicketForWebApi",
+    "waitForTicketCallbackBeforeSend": true,
+    "transport": "https-post-to-heroloop-server",
+    "ticketSingleAttempt": true,
+    "plainClientSteamIdForbidden": true,
+    "emailRequestedOrTrusted": false
+  },
+  "serverVerification": {
+    "api": "ISteamUserAuth.AuthenticateUserTicket",
+    "publisherWebApiKeyServerOnly": true,
+    "publisherKeyLeastPrivilegeAppGroup": true,
+    "expectedAppIdRequired": true,
+    "appOwnershipRequired": true,
+    "steamId64DerivedOnlyFromVerifiedResponse": true,
+    "providerSubject": "verified-steam-id-64",
+    "ticketReplayRejected": true,
+    "verificationOutageGrantsNoNewSessionOrLink": true
+  },
+  "browserLinking": {
+    "steamOpenIdAllowedOnlyForExplicitBrowserLink": true,
+    "authenticatedCurrentHeroloopSessionRequired": true,
+    "freshIdentityChallengeStateRequired": true,
+    "claimedIdSteamIdServerVerified": true,
+    "emailAutoMergeForbidden": true,
+    "existingSteamIdCollisionFailsClosed": true
+  },
+  "session": {
+    "heroloopSessionIssuedOnlyAfterSteamVerification": true,
+    "sessionBoundToAccountAndSteamId64": true,
+    "shortLivedAccessAndRotatingRefresh": true,
+    "steamTicketNeverUsedAsHeroloopSession": true,
+    "logoutRevokesHeroloopSessionAndCancelsTicket": true,
+    "logsExcludeTicketPublisherKeyAndRawSteamId": true
+  },
+  "ownershipChanges": {
+    "ownershipRecheckedForNewSession": true,
+    "ownershipLossBlocksNewSteamSession": true,
+    "ownershipLossNeverDeletesEarnedProgression": true,
+    "existingOtherProviderSessionUnaffected": true,
+    "lastIdentityLossMovesAccountToRecoveryLocked": true
+  },
+  "failClosed": {
+    "invalidTicket": "reject",
+    "ticketReplay": "reject",
+    "wrongAppId": "reject",
+    "noOwnership": "reject",
+    "steamIdCollision": "reject-and-audit",
+    "steamUnavailable": "no-new-login-or-link",
+    "publisherKeyUnavailable": "no-new-login-or-link"
+  },
+  "acceptanceScenarios": [
+    "valid-new-account", "valid-explicit-link", "exact-request-replay", "changed-request-replay", "plain-steam-id-forgery", "invalid-ticket", "ticket-replay", "wrong-app-id", "no-app-ownership", "steam-id-collision", "openid-valid-link", "openid-state-mismatch", "openid-without-current-session", "ownership-lost", "steam-outage", "publisher-key-missing", "logout-cancels-ticket"
+  ],
+  "activation": {
+    "steamworksAppIdApproved": false,
+    "publisherWebApiKeyInstalled": false,
+    "appOwnershipPolicyApproved": false,
+    "identitySchemaImplemented": false,
+    "runtimeImplemented": false,
+    "privacyDeletionAndRecoveryApproved": false,
+    "phaseHCompletionRequired": true
+  },
+  "officialSources": {
+    "authentication": "https://partner.steamgames.com/doc/features/auth",
+    "webApiKeys": "https://partner.steamgames.com/doc/webapi_overview/auth",
+    "userAuthApi": "https://partner.steamgames.com/doc/webapi/isteamuserauth"
+  }
+}
