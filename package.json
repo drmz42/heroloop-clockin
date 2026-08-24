@@ -8,6 +8,7 @@
     "build": "vite build",
     "check:ascension-focus": "node scripts/check-ascension-focus-contract.mjs",
     "check:balance-version": "node scripts/check-balance-version-contract.mjs",
+    "check:balance-dashboard": "node scripts/check-balance-dashboard-contract.mjs",
     "check:bag-expansion": "node scripts/check-bag-expansion-proposal.mjs",
     "check:codex-watchdog": "node scripts/check-codex-watchdog.mjs",
     "check:combat-regression": "node scripts/check-combat-regression-matrix.mjs",
