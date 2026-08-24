@@ -19,6 +19,7 @@
     "check:solana-web-auth": "node scripts/check-solana-web-auth-contract.mjs",
     "check:bot-protection": "node scripts/check-bot-protection-contract.mjs",
     "audit:runtime-performance": "node scripts/audit-runtime-performance-budget.mjs",
+    "audit:runtime-images": "node scripts/audit-runtime-images.mjs",
     "simulate:acceleration-calendar": "node scripts/simulate-acceleration-calendar.mjs",
     "check:bag-expansion": "node scripts/check-bag-expansion-proposal.mjs",
     "check:codex-watchdog": "node scripts/check-codex-watchdog.mjs",
