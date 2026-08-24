@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "account-identity-link-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "tables": {
+    "heroloop_accounts": {
+      "primaryKey": "account_id:uuid",
+      "fields": ["state:active|recovery_locked|deletion_pending", "created_at:timestamptz", "updated_at:timestamptz"]
+    },
+    "account_identities": {
+      "primaryKey": "identity_id:uuid",
+      "fields": ["account_id:uuid", "provider:solana|google|apple|steam", "provider_subject:text", "state:active|revoked", "verified_at:timestamptz", "last_verified_at:timestamptz", "created_at:timestamptz", "revoked_at:timestamptz?"],
+      "globalUnique": ["provider", "provider_subject"],
+      "emailColumnForbidden": true,
+      "cascadeOnAccountDeletion": true,
+      "directClientWriteForbidden": true
+    },
+    "identity_challenges": {
+      "primaryKey": "challenge_id:uuid",
+      "fields": ["account_id:uuid", "provider:text", "purpose:link|unlink|reauth|recovery", "nonce_hash:text", "expires_at:timestamptz", "consumed_at:timestamptz?", "attempt_count:smallint", "created_at:timestamptz"],
+      "rawNonceOrProviderProofStored": false,
+      "singleUse": true,
+      "maximumLifetimeMinutes": 10,
+      "maximumAttempts": 5,
+      "directClientReadWriteForbidden": true
+    },
+    "identity_events": {
+      "primaryKey": "event_id:uuid",
+      "fields": ["account_id:uuid", "identity_id:uuid?", "event_kind:text", "provider:text?", "request_id:uuid", "result_code:text", "created_at:timestamptz"],
+      "appendOnly": true,
+      "rawTokenSignatureNonceEmailOrSubjectForbidden": true,
+      "requestIdUnique": true
+    }
+  },
+  "operations": {
+    "link": {
+      "requiresAuthenticatedCurrentAccount": true,
+      "requiresFreshProviderProof": true,
+      "serverDerivesProviderSubject": true,
+      "emailAutoMergeForbidden": true,
+      "existingSubjectCollisionFailsClosed": true,
+      "atomicIdentityAndEvent": true,
+      "exactRequestReplayIdempotent": true
+    },
+    "unlink": {
+      "requiresRecentReauthentication": true,
+      "cannotRemoveLastActiveIdentity": true,
+      "atomicStateAndEvent": true,
+      "activeSessionsForProviderRevoked": true
+    },
+    "providerRevocation": {
+      "marksIdentityRevoked": true,
+      "revokesAffectedSessions": true,
+      "neverAutoLinksAnotherAccount": true,
+      "lastIdentityMovesAccountToRecoveryLocked": true
+    },
+    "recovery": {
+      "emailAloneNeverSufficient": true,
+      "providerRestorationOrTwoIndependentProofsRequired": true,
+      "rateLimited": true,
+      "cooldownRequired": true,
+      "manualDatabaseReassignmentForbidden": true,
+      "everyDecisionAudited": true
+    },
+    "delete": {
+      "requiresRecentReauthentication": true,
+      "identitiesAndChallengesDeletedWithAccount": true,
+      "providerTokenRevocationAttempted": true,
+      "minimalFinancialAuditHandledBySeparateRetentionPolicy": true
+    }
+  },
+  "providerProofs": {
+    "solana": ["server_nonce", "domain", "uri", "chain", "issued_at", "expiration", "public_key", "ed25519_signature"],
+    "google": ["server_verified_code_or_token", "issuer", "audience", "subject", "issued_at", "expiration"],
+    "apple": ["server_verified_credential", "issuer", "audience", "subject", "issued_at", "expiration", "revocation_state"],
+    "steam": ["fresh_session_ticket", "expected_app_id", "ownership", "steam_id_64"]
+  },
+  "acceptanceScenarios": [
+    "fresh-link", "exact-link-replay", "changed-replay", "email-match-no-merge", "cross-account-subject-collision", "unlink-with-two-identities", "last-identity-unlink-rejected", "expired-challenge", "consumed-challenge-replay", "provider-revocation", "recovery-locked", "account-delete"
+  ],
+  "activation": {
+    "schemaMigrationApproved": false,
+    "providerCredentialsApproved": false,
+    "recoveryPolicyApproved": false,
+    "privacyRetentionApproved": false,
+    "runtimeImplementationApproved": false,
+    "phaseHCompletionRequired": true
+  }
+}
