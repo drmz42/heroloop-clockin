@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "approved-not-live",
+  "status": "staging-runtime-candidate",
   "live": false,
   "sectionPlacement": "account-above-daily-quests",
   "progression": {

@@ -12,6 +12,7 @@ interface GuideEntry {
 }
 
 const GUIDES: GuideEntry[] = [
+  { category: 'Getting Started', question: 'Replay tutorial', answer: 'The new-account Tutorial Quests form one ten-step path. This guide is display-only and never repeats rewards or changes your saved tutorial progress.', details: ['1 — Defeat 10 enemies', '2 — Open 10 Tutorial Chests', '3 — Equip one item on an active hero', '4 — Summon two heroes', '5 — Fill the three-hero Active Formation', '6 — Summon one reserve hero', '7 — Assign a reserve hero to Training Camp', '8 — Enable Auto-pot', '9 — Reach Location 2', '10 — Use the granted key and defeat one summoned Boss'], status: 'Testing' },
   { category: 'Getting Started', question: 'How is my progress saved?', answer: 'Your registered account loads and saves game progress through the server. Use the same authenticated account when you return.', status: 'Live' },
   { category: 'Getting Started', question: 'What happens while I am away?', answer: 'Offline progress uses your last farming location and active formation. Ordinary sessions have a limited offline reward window; active Boost Max removes that window cap.', status: 'Live' },
   { category: 'Heroes', question: 'How many heroes can fight?', answer: 'Your Active Formation supports up to three heroes. Each hero fights in one lane and keeps individual HP, level, stars, stats and equipment.', status: 'Live' },

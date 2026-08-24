@@ -7,7 +7,6 @@ import { OfflineModal } from '@/components/OfflineModal';
 import { ChestOpenModal } from '@/components/ChestOpenModal';
 import { BoostMaxModal } from '@/components/BoostMaxModal';
 import { GameWalletModal } from '@/components/GameWalletModal';
-import { WelcomeTutorialModal } from '@/components/WelcomeTutorialModal';
 import { PromoCodeModal, type PromoRedemption } from '@/components/PromoCodeModal';
 import { LandingScreen } from '@/screens/LandingScreen';
 import { MainScreen } from '@/screens/MainScreen';
@@ -361,7 +360,6 @@ function App() {
         />
       )}
       {showPromoCode && <PromoCodeModal onClose={() => setShowPromoCode(false)} onRedeemed={applyPromoRedemption} />}
-      {game.state.walletAddress && !game.state.tutorial.welcomeCompleted && <WelcomeTutorialModal game={game} />}
     </div>
   );
 }

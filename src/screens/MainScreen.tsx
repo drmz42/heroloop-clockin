@@ -23,6 +23,18 @@ const SAVE_KEY = 'afk-heroes-save-v7';
 
 const SLOTS: ItemSlot[] = ['class_weapon', 'offhand', 'helmet', 'chest', 'gloves', 'boots', 'ring', 'amulet'];
 const GRID_SIZE = 64;
+const TUTORIAL_QUESTS = [
+  ['defeat-10-enemies', 'Defeat 10 enemies', 10, '10 Tutorial Chests'],
+  ['open-10-tutorial-chests', 'Open 10 Tutorial Chests', 10, '500 Gold'],
+  ['equip-active-hero', 'Equip one item on an active hero', 1, '2 Summon Scrolls'],
+  ['summon-two-heroes', 'Summon two heroes', 2, '1 Summon Scroll'],
+  ['fill-active-formation', 'Fill the three-hero Active Formation', 3, '3 XS Potions'],
+  ['summon-reserve-hero', 'Summon one reserve hero', 3, '500 Gold'],
+  ['assign-training-hero', 'Assign a reserve hero to Training Camp', 1, '3 XS Potions'],
+  ['enable-auto-pot', 'Enable Auto-pot', 1, '1 Boss Key'],
+  ['reach-location-2', 'Reach Location 2', 2, '1,000 Gold'],
+  ['defeat-tutorial-boss', 'Use the granted key and defeat one summoned Boss', 1, '1 Summon Scroll'],
+] as const;
 const DUNGEON_BOSS_ART: Record<string, string> = { 'iron-warden': 'boss-titan', 'ash-warlock': 'boss-lich', 'thorn-shaman': 'boss-ogre', 'rift-behemoth': 'boss-dragon', 'grave-necromancer': 'boss-lich' };
 
 type DungeonCheckpoint = {
@@ -198,8 +210,6 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
     : null;
   const visiblePotions = POTIONS.filter((p) => state.potions[p.tier] > 0);
   const resourceSlotCount = 2 + visiblePotions.length;
-  const potionsEmpty = POTIONS.every((potion) => state.potions[potion.tier] <= 0);
-  const showAutoPotGuide = potionsEmpty && !state.autoPot.autoBuy;
   const cells: (OwnedItem | null)[] = Array.from({ length: GRID_SIZE }).map((_, i) => bagItems[i] ?? null);
   const unlockedSellTotal = bagItems
     .filter(i => !i.locked)
@@ -387,6 +397,23 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
         </div>
 
         <div className="flex-1 p-3">
+          {!state.tutorial.questCompleted && (() => {
+            const ordinal = Math.max(1, Math.min(10, state.tutorial.questOrdinal));
+            const quest = TUTORIAL_QUESTS[ordinal - 1];
+            const activeEquipped = state.ownedHeroes.some((hero) => state.team.includes(hero.uid) && Object.keys(hero.equipped).length > 0);
+            const progress = [state.totalKills, state.tutorial.openedCount, activeEquipped ? 1 : 0, state.summons, state.team.length, state.summons, state.trainingCamp.heroUids.some(Boolean) ? 1 : 0, state.autoPot.enabled ? 1 : 0, state.highestLocation, Math.max(0, state.totalBossKills - state.tutorial.bossKillsAtKeyGrant)][ordinal - 1];
+            const done = progress >= quest[2];
+            return <section className="mb-3" aria-label="Tutorial Quests">
+              <div className="section-kicker mb-1.5">Tutorial Quests · {ordinal}/10</div>
+              <div className={`quest-card px-2 py-2 ${done ? 'border-[#b48a43]' : ''}`}>
+                <div className="flex items-center gap-1.5"><Circle size={12} className={done ? 'fill-amber-400/30 text-amber-400' : 'text-slate-600'} /><span className="ui-text-medium flex-1 leading-tight text-px-text">{quest[1]}</span></div>
+                <div className="health-track my-1.5 h-1.5 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, progress / quest[2] * 100)}%` }} /></div>
+                <div className="ui-text-small flex justify-between"><span className="text-px-dim">{progress}/{quest[2]}</span><span className="text-[#e7c579]">{quest[3]}</span></div>
+                {done && <button onClick={() => void game.claimTutorialQuest(quest[0])} className="game-control game-primary ui-text-medium mt-1.5 min-h-7 w-full px-2 py-1 font-bold">Claim & unlock next</button>}
+              </div>
+              {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1.5 px-2 py-2"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1.5 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => void game.openTutorialChests(1)} className="game-control min-h-7 text-[9px] font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => void game.openTutorialChests(10)} className="game-control min-h-7 text-[9px] font-bold">Open 10</button></div></div>}
+            </section>;
+          })()}
           <div className="section-kicker mb-1.5">Daily Quests</div>
           <div className="space-y-1">
             {state.dailyQuests.map(q => {
@@ -435,11 +462,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
           {!activeDungeon && showZoomTip && <div className="absolute left-1/2 top-12 z-40 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-lg border border-[#80683f] bg-[#11130f]/95 px-3 py-1.5 font-vt text-[10px] font-bold text-[#d8c9ad] shadow-xl backdrop-blur-sm"><span>Adjust browser zoom with <kbd className="text-[#ffd36e]">Ctrl +</kbd> / <kbd className="text-[#ffd36e]">Ctrl -</kbd> to fit all interface elements.</span><button type="button" onClick={() => setShowZoomTip(false)} className="text-[#8f887b] hover:text-white" aria-label="Dismiss browser zoom tip"><X size={12} /></button></div>}
           <div className={`absolute left-3 top-3 flex items-start gap-1.5 ${showPotSettings || showBattleSettings ? 'z-[110]' : 'z-30'}`}>
             {!activeDungeon ? <div className="relative">
-              <button onClick={() => setShowPotSettings(s => !s)} className={`game-control relative flex h-7 items-center gap-1.5 px-2 py-0.5 text-[9px] font-bold ${state.autoPot.enabled ? 'border-emerald-500/60 bg-emerald-950/30 text-emerald-300' : ''} ${showAutoPotGuide ? 'auto-pot-guide' : ''}`}>
+              <button onClick={() => setShowPotSettings(s => !s)} className={`game-control relative flex h-7 items-center gap-1.5 px-2 py-0.5 text-[9px] font-bold ${state.autoPot.enabled ? 'border-emerald-500/60 bg-emerald-950/30 text-emerald-300' : ''}`}>
                 <FlaskConical size={14} /> Pot-auto {state.autoPot.enabled ? 'ON' : 'OFF'}
               </button>
-              {showAutoPotGuide && !showPotSettings && <div className="auto-pot-guide-tip">Potions empty · open Auto-pot</div>}
-              {showPotSettings && <PotionSettings game={game} guideAutoBuy={showAutoPotGuide} onClose={() => setShowPotSettings(false)} />}
+              {showPotSettings && <PotionSettings game={game} onClose={() => setShowPotSettings(false)} />}
             </div> : <div className="game-control flex h-9 items-center gap-2 border-violet-500/60 bg-violet-950/40 px-3 text-[9px] font-black uppercase text-violet-200"><DoorOpen size={15} /> Depth {activeDungeon.depth} · Room {activeDungeon.room}/4</div>}
             <div className="relative">
               <button type="button" onClick={() => setShowBattleSettings((value) => !value)} className="game-control flex h-7 items-center gap-1.5 px-2 text-[9px] font-black uppercase" aria-label="Battle animation settings" aria-expanded={showBattleSettings}><Settings2 size={14} /><span className="hidden sm:inline">{state.battleAnimationMode}</span></button>
@@ -496,12 +522,11 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
               <button
                 onClick={() => void game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem)}
                 disabled={state.chests.length === 0 || game.chestOpening}
-                className={`reward-cta game-control flex h-8 w-36 items-center justify-center gap-1 px-2 py-0.5 text-[9px] font-black disabled:opacity-55 ${state.tutorial.chestGranted && !state.tutorial.chestCompleted ? 'chest-tutorial-guide' : ''}`}
-                title={state.tutorial.chestGranted && !state.tutorial.chestCompleted ? 'Tutorial: open your first chest' : 'Open chests'}
+                className="reward-cta game-control flex h-8 w-36 items-center justify-center gap-1 px-2 py-0.5 text-[9px] font-black disabled:opacity-55"
+                title="Open chests"
               >
                 <ChestCollectIcon size={34} />
                 <span>{game.chestOpening ? 'OPENING…' : `OPEN · ${state.chests.length}`}</span>
-                {state.tutorial.chestGranted && !state.tutorial.chestCompleted && <span className="chest-tutorial-badge">+1</span>}
               </button>
             </div>
           </div>}
@@ -1177,15 +1202,14 @@ function AvatarPicker({ game, onClose }: { game: GameApi; onClose: () => void })
   return <div className="fixed inset-0 z-[9999] grid place-items-center bg-black/75 p-3 backdrop-blur-[3px]" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className="px-panel-raised game-scrollbar max-h-[88vh] w-full max-w-xl overflow-y-auto rounded-2xl p-4"><div className="flex items-center justify-between"><div><div className="section-kicker">Account identity</div><h3 className="mt-1 text-lg font-black text-[#eee2cb]">Choose Avatar</h3></div><button type="button" onClick={onClose} className="game-control grid h-9 w-9 place-items-center"><X size={15} /></button></div><section className="mt-3"><div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#9b907c]">Owned heroes · one of each type</div><div className="grid grid-cols-4 gap-2 sm:grid-cols-6">{uniqueHeroIds.map((heroId) => { const base = HERO_MAP[heroId]; if (!base) return null; const active = heroId === game.state.avatarHeroId; return <button type="button" key={heroId} onClick={() => game.setAvatarHero(heroId)} className={`rounded-lg border p-1 transition ${active ? 'border-[#efc660] bg-[#6a481b]/35 shadow-[0_0_14px_rgba(226,183,84,.35)]' : 'border-[#544630] bg-black/20'}`} title={base.name}><HeroPortrait heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={62} active={active} /><span className="mt-1 block truncate text-[8px] font-bold" style={{ color: RARITY_COLORS[base.rarity] }}>{base.name}</span></button>; })}</div></section><div className="mt-4 grid grid-cols-2 gap-2"><section className="stat-tile cursor-not-allowed p-3 opacity-45"><LockIcon size={16} className="text-[#9a8b72]" /><b className="mt-2 block text-xs text-[#cfc4b1]">Avatar Frames</b><span className="text-[9px] text-[#81796c]">Coming later</span></section><section className="stat-tile cursor-not-allowed p-3 opacity-45"><Sparkles size={16} className="text-[#9a8b72]" /><b className="mt-2 block text-xs text-[#cfc4b1]">Glow & Effects</b><span className="text-[9px] text-[#81796c]">Coming later</span></section></div><p className="mt-3 text-[9px] leading-relaxed text-[#837a6d]">The final owned copy of the selected avatar cannot be sold. Choose another avatar first.</p></div></div>;
 }
 
-function PotionSettings({ game, guideAutoBuy, onClose }: { game: GameApi; guideAutoBuy: boolean; onClose: () => void }) {
+function PotionSettings({ game, onClose }: { game: GameApi; onClose: () => void }) {
   const { state } = game;
   return (
     <div className="auto-pot-settings anim-slide-up">
       <div className="mb-1.5 flex items-center justify-between"><span className="flex items-center gap-1.5 text-xs font-bold text-px-text"><FlaskConical size={14} className="text-emerald-400" /> Auto-potion</span><button onClick={onClose} className="grid h-7 w-7 place-items-center text-px-dim"><X size={14} /></button></div>
       <label className="flex items-center justify-between py-1 text-xs"><span className="text-px-text">Auto-use</span><Toggle on={state.autoPot.enabled} onClick={() => game.setAutoPot({ enabled: !state.autoPot.enabled })} /></label>
       <div className="py-1"><div className="mb-0.5 flex items-center justify-between text-xs"><span className="text-px-text">Use below HP</span><span className="font-bold text-emerald-300">{Math.round(state.autoPot.threshold * 100)}%</span></div><input type="range" min={10} max={90} step={5} value={Math.round(state.autoPot.threshold * 100)} onChange={(e) => game.setAutoPot({ threshold: Number(e.target.value) / 100 })} className="h-4 w-full accent-emerald-400" /></div>
-      {guideAutoBuy && <div className="mb-1 rounded-md border border-amber-400/60 bg-amber-950/60 px-2 py-1.5 text-[10px] font-bold text-amber-100">Step 2 · Turn on automatic potion purchases</div>}
-      <label className={`flex items-center justify-between rounded-md px-1 py-1 text-xs ${guideAutoBuy ? 'auto-pot-guide' : ''}`}><span className="text-px-text">Buy when empty</span><Toggle on={state.autoPot.autoBuy} onClick={() => game.setAutoPot({ autoBuy: !state.autoPot.autoBuy })} /></label>
+      <label className="flex items-center justify-between rounded-md px-1 py-1 text-xs"><span className="text-px-text">Buy when empty</span><Toggle on={state.autoPot.autoBuy} onClick={() => game.setAutoPot({ autoBuy: !state.autoPot.autoBuy })} /></label>
       {state.autoPot.autoBuy && (
         <>
           <button onClick={() => game.setAutoPot({ autoSelectTier: !state.autoPot.autoSelectTier })} className={`my-1 w-full rounded-md border px-2 py-1.5 text-left text-[10px] font-semibold ${state.autoPot.autoSelectTier ? 'border-cyan-400/50 bg-cyan-400/10 text-cyan-200' : 'border-white/10 text-slate-400'}`}>

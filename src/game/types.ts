@@ -196,6 +196,11 @@ export interface TutorialState {
   autoPotCompleted: boolean;
   chestGranted: boolean;
   chestCompleted: boolean;
+  questOrdinal: number;
+  questCompleted: boolean;
+  openedCount: number;
+  chestBalance: number;
+  bossKillsAtKeyGrant: number;
 }
 
 export type TrainingBoostKey = '2x-1h' | '2x-4h' | '4x-1h' | '4x-4h';

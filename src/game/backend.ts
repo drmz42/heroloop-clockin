@@ -99,6 +99,7 @@ export async function playerSync<T>(
     const message = error instanceof Error ? error.message : 'network_error';
     const retrySafe = typeof payload.idempotency_key === 'string' && (
       action === 'hero_summon' || action === 'hero_ascend' || action === 'ascension_focus_set' || action === 'promo_redeem' || action === 'spend_tokens' || action === 'chest_open'
+      || action === 'tutorial_quest_claim' || action === 'tutorial_chest_open'
       || action === 'item_mutate' || action === 'item_equip' || action === 'item_upgrade' || action === 'market_list_item'
       || action === 'market_cancel_listing' || action === 'market_buy_listing' || action === 'store_buy_item'
       || action === 'dungeon_start' || action === 'dungeon_room_start' || action === 'dungeon_room_action'

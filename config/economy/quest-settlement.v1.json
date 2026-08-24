@@ -2,6 +2,7 @@
   "version": 1,
   "status": "proposal-only",
   "runtimeAdopted": false,
+  "runtimeAdoption": { "tutorial": true, "daily": false, "milestone": false },
   "economyChanged": false,
   "families": ["daily", "milestone", "tutorial"],
   "currentAudit": {
@@ -105,6 +106,6 @@
       "hero-ledger-reconciliation-zero-drift",
       "disposable-exact-candidate-staging-pass"
     ],
-    "status": "blocked-until-implemented-after-phase-h-and-approved-for-live-economy"
+    "status": "tutorial-implemented-staging-candidate-daily-and-milestone-remain-blocked"
   }
 }

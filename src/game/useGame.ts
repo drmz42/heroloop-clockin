@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey } from '@/game/types';
 import {
-  loadState, saveLegacyState, normalizeState, makeInitialState, makeRegisteredStarterState, genUid, starUpCost, summonCostHero,
+  loadState, saveLegacyState, normalizeState, makeInitialState, makeRegisteredStarterState, starUpCost, summonCostHero,
   MAX_TEAM, MAX_HEROES, MAX_HERO_STARS, MAX_INVENTORY, MAX_CHESTS, MAX_ACCOUNT_XP, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
   accountLevelFromXp, advanceHeroXp, heroSellValue, milestoneQuest, moscowDayKey,
   heroXpForLevel, TRAINING_SLOT_COSTS, TRAINING_BOOST_COSTS,
@@ -287,20 +287,6 @@ export function useGame() {
     }, 10_000);
     return () => window.clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    const potionsEmpty = Object.values(state.potions).every((count) => count <= 0);
-    if (!potionsEmpty || !state.autoPot.autoBuy || state.tutorial.autoPotCompleted) return;
-    setState((prev) => {
-      if (prev.tutorial.autoPotCompleted) return prev;
-      const tutorialChest = { id: `tutorial-${genUid()}`, stage: Math.max(1, prev.currentLocation), tutorial: true };
-      return {
-        ...prev,
-        chests: prev.tutorial.chestGranted ? prev.chests : [tutorialChest, ...prev.chests].slice(0, MAX_CHESTS),
-        tutorial: { ...prev.tutorial, autoPotCompleted: true, chestGranted: true },
-      };
-    });
-  }, [state.potions, state.autoPot.autoBuy, state.tutorial.autoPotCompleted]);
 
   useEffect(() => {
     // Remove equipment created by the old unrestricted prototype rules
@@ -1863,6 +1849,53 @@ export function useGame() {
     });
   }, []);
 
+  const claimTutorialQuest = useCallback(async (questId: string): Promise<boolean> => {
+    if (!tokenomicsEnabled || !Number.isSafeInteger(serverRevisionHint)) return false;
+    const result = await playerSync<{
+      gold: number; revision: number; tutorial: GameState['tutorial'];
+      resources: { balances?: Record<string, string> };
+    }>('tutorial_quest_claim', {
+      quest_id: questId, expected_revision: serverRevisionHint, idempotency_key: createIdempotencyKey(),
+    });
+    if (!result || !Number.isSafeInteger(result.revision) || !result.tutorial) return false;
+    const balances = result.resources?.balances ?? {};
+    const read = (key: string, fallback: number) => /^\d+$/.test(balances[key] ?? '') ? Number(balances[key]) : fallback;
+    setServerRevisionHint(result.revision);
+    setState((prev) => ({
+      ...prev, gold: Math.max(0, Math.floor(result.gold)), tutorial: result.tutorial,
+      bossKeys: read('boss_key', prev.bossKeys), summonScrolls: read('summon_scroll', prev.summonScrolls),
+      potions: { ...prev.potions, xs: read('potion_xs', prev.potions.xs) },
+    }));
+    return true;
+  }, [serverRevisionHint]);
+
+  const openTutorialChests = useCallback(async (requestedCount: 1 | 10): Promise<boolean> => {
+    if (!tokenomicsEnabled || chestOpeningRef.current) return false;
+    const current = stateRef.current;
+    const count = Math.min(requestedCount, current.tutorial.chestBalance, MAX_INVENTORY - bagItemCount(current));
+    if (count !== 1 && count !== 10) return false;
+    chestOpeningRef.current = true; setChestOpening(true);
+    try {
+      const result = await playerSync<{ items: OwnedItem[]; chest_count: number; revision: number; tutorial: GameState['tutorial'] }>('tutorial_chest_open', {
+        count, idempotency_key: createIdempotencyKey(),
+      });
+      if (!result || result.chest_count !== count || !Array.isArray(result.items) || result.items.length !== count || !result.tutorial) return false;
+      const items = result.items.filter((item) => item?.serverOwned === true && typeof item.uid === 'string' && Boolean(ITEM_MAP[item.itemId]));
+      if (items.length !== count) return false;
+      if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
+      flushSync(() => setChestOpenResult(items));
+      setState((prev) => ({
+        ...prev, tutorial: result.tutorial,
+        inventory: [...prev.inventory, ...items.map((item) => shouldAutoLockItem(item) ? { ...item, locked: true } : item)]
+          .sort((a, b) => RARITY_INDEX[ITEM_MAP[b.itemId]?.rarity ?? 'common'] - RARITY_INDEX[ITEM_MAP[a.itemId]?.rarity ?? 'common'] || b.power - a.power),
+        session: { ...prev.session, chestsOpened: prev.session.chestsOpened + count },
+        dailyQuests: updateQuestProgress(prev.dailyQuests, 'chest-', count),
+        milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'chest-', count),
+      }));
+      return true;
+    } finally { chestOpeningRef.current = false; setChestOpening(false); }
+  }, []);
+
   const setUserProfile = useCallback((username: string, walletAddress: string, starterHeroId?: string) => {
     setState((prev) => {
       if (!starterHeroId) return { ...prev, username, walletAddress, activeUntil: Date.now() + ACTIVE_SESSION_MS, lastSeen: Date.now() };
@@ -2017,7 +2050,7 @@ export function useGame() {
     enchantItem, rerollItem, dismissEnchantResult,
     buyPotion, usePotion, setAutoPot, setBattleAnimationMode,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
-    openChests, closeChestResult, refreshStore, buyRotatingItem, claimQuest,
+    openChests, openTutorialChests, closeChestResult, refreshStore, buyRotatingItem, claimQuest, claimTutorialQuest,
     claimReferralReward, setUserProfile, resetAccount, hydrateServerState, mergeServerResourceState, completeWelcomeTutorial, setAvatarHero, loadMarket, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
     heroStatsFor: (uid: string) => {
       const owned = state.ownedHeroes.find((h) => h.uid === uid);

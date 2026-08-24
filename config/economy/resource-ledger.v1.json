@@ -12,7 +12,7 @@
     { "id": "potion_xxl", "family": "potion", "status": "client-compatibility", "spendable": true, "deletable": false },
     { "id": "boss_key", "family": "key", "status": "mixed-compatibility", "spendable": true, "deletable": false },
     { "id": "summon_scroll", "family": "summon", "status": "client-compatibility", "spendable": true, "deletable": false },
-    { "id": "tutorial_chest", "family": "chest", "status": "proposal-only", "spendable": true, "deletable": false },
+    { "id": "tutorial_chest", "family": "chest", "status": "runtime-candidate", "spendable": true, "deletable": false },
     { "id": "iron_scrap", "family": "crafting", "status": "proposal-only", "spendable": true, "deletable": false },
     { "id": "arcane_dust", "family": "crafting", "status": "proposal-only", "spendable": true, "deletable": false },
     { "id": "astral_shard", "family": "crafting", "status": "proposal-only", "spendable": true, "deletable": false },
@@ -57,8 +57,8 @@
     "changedPayloadReplay": "idempotency-conflict"
   },
   "integration": [
-    { "action": "tutorial-quest-claim", "resources": ["tutorial_chest", "potion_xs"], "direction": "credit", "atomicWith": "quest-claim-and-save-revision", "runtime": "planned-with-tutorial-settlement" },
-    { "action": "tutorial-chest-open", "resources": ["tutorial_chest"], "direction": "debit", "atomicWith": "canonical-item-creation-and-quest-progress", "runtime": "planned-with-tutorial-settlement" },
+    { "action": "tutorial-quest-claim", "resources": ["tutorial_chest", "potion_xs", "boss_key", "summon_scroll"], "direction": "credit", "atomicWith": "quest-claim-and-save-revision", "runtime": "integrated" },
+    { "action": "tutorial-chest-open", "resources": ["tutorial_chest"], "direction": "debit", "atomicWith": "canonical-item-creation-and-quest-progress", "runtime": "integrated" },
     { "action": "summon-milestone-or-boss-reward", "resources": ["summon_scroll"], "direction": "credit", "atomicWith": "source-settlement", "runtime": "planned-with-reward-settlement" },
     { "action": "free-summon", "resources": ["summon_scroll"], "direction": "debit", "atomicWith": "hero-roll-pity-capacity-and-save-revision", "runtime": "planned-with-free-summon" },
     { "action": "boss-start", "resources": ["boss_key"], "direction": "debit", "atomicWith": "encounter-creation", "runtime": "integrated" },

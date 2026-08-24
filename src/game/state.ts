@@ -151,7 +151,7 @@ export function makeInitialState(): GameState {
     summonScrolls: 0,
     potions: { xs: 10, sm: 0, md: 0, lg: 0, xl: 0, xxl: 0 },
     autoPot: { enabled: true, autoBuy: false, autoBuyTier: 'sm', autoSelectTier: true, threshold: 0.4 },
-    tutorial: { welcomeCompleted: false, autoPotCompleted: false, chestGranted: false, chestCompleted: false },
+    tutorial: { welcomeCompleted: false, autoPotCompleted: false, chestGranted: false, chestCompleted: false, questOrdinal: 1, questCompleted: false, openedCount: 0, chestBalance: 0, bossKillsAtKeyGrant: 0 },
     trainingCamp: {
       heroUids: Array.from({ length: 10 }, () => null),
       unlockedSlots: 2,
