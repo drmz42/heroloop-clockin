@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "status": "runtime-candidate-staging-pending",
+  "status": "accepted-vps1-staging",
   "runtimeAdopted": true,
   "economyFormulaChanged": false,
   "currentAudit": {
@@ -87,6 +87,6 @@
       "zero-client-power-fallback",
       "disposable-exact-candidate-staging-pass"
     ],
-    "status": "runtime-complete-exact-candidate-staging-pending"
+    "status": "accepted-vps1-staging-cb8d6bdd9fd54ee35c340b1fd490ba5bdbde862c"
   }
 }
