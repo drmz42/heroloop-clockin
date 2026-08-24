@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "admin-audit-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "events": {
+    "requiredTypes": [
+      "access_invite", "access_enrollment", "access_suspend", "access_remove", "role_change",
+      "session_revoke", "player_search", "player_view", "player_unmask", "support_note_create",
+      "support_session_start", "support_session_end", "operation_preview", "operation_execute",
+      "promo_create", "promo_approve", "promo_activate", "promo_pause", "promo_revoke",
+      "analytics_query", "export_request", "export_download", "alert_acknowledge", "recovery_attempt"
+    ],
+    "requiredFields": [
+      "event_id", "environment", "actor_id", "actor_role", "event_type", "operation",
+      "target_type", "target_id_masked", "reason", "before", "after", "request_id",
+      "idempotency_key", "approval_reference", "session_id", "ip_metadata", "created_at"
+    ],
+    "serverTimestampRequired": true,
+    "serverActorRoleSnapshotRequired": true,
+    "environmentRequired": true,
+    "requestAndSessionCorrelationRequired": true,
+    "clientSuppliedActorTargetBeforeAfterOrTimestampForbidden": true
+  },
+  "payload": {
+    "allowlistedFieldsOnly": true,
+    "authoritativeBeforeAfterRequiredForMutation": true,
+    "diffOnlyNoFullPlayerSave": true,
+    "maximumReasonCharacters": 500,
+    "maximumBeforeAfterBytesEach": 32768,
+    "reasonPlainTextOnly": true,
+    "reasonSecretScannerRequired": true,
+    "truncationForbiddenForRequiredEvidence": true,
+    "oversizeEventFailsOperationBeforeMutation": true
+  },
+  "redaction": {
+    "passwordTokenJwtPrivateKeySignatureRecoveryCodeAuthenticatorAndOauthCredentialForbidden": true,
+    "authorizationCookieEnvironmentValueRequestBodyResponseBodySqlDumpAndJournalLineForbidden": true,
+    "emailWalletProviderSubjectAndIpMaskedByDefault": true,
+    "promoPlaintextAndCodeHashForbidden": true,
+    "paymentInstrumentAndSpecialCategoryDataForbidden": true,
+    "redactionRunsServerSideBeforePersistence": true,
+    "redactionFailureFailsSensitiveOperationClosed": true
+  },
+  "integrity": {
+    "appendOnly": true,
+    "applicationUpdateAndDeleteForbidden": true,
+    "eventIdUnique": true,
+    "idempotencyUniquenessByEnvironmentActorOperationRequired": true,
+    "exactReplayReturnsOriginalAuditReference": true,
+    "changedReplayFailsClosed": true,
+    "dailyChecksumManifestRequired": true,
+    "encryptedImmutableBackupRequired": true,
+    "backupReadbackVerificationRequired": true,
+    "missingSequenceDuplicateIdOrChecksumMismatchAlertsRequired": true
+  },
+  "access": {
+    "analystDenied": true,
+    "operationsOwnAndOperationalEventsOnly": true,
+    "founderAllAuthorizedEvents": true,
+    "exactFiltersAndBoundedPaginationOnly": true,
+    "freeTextAcrossPayloadForbidden": true,
+    "rawDatabaseAndBulkRowExportForbidden": true,
+    "everyAuditViewAndDownloadAudited": true
+  },
+  "alerts": {
+    "requiredEventClasses": ["access_or_role", "recovery", "export", "economy", "player_mutation", "player_unmask", "support_session"],
+    "stateChangeOrEventOnceOnly": true,
+    "deliveryFailureRetriedWithoutDuplicatingEvent": true,
+    "deliveryCannotRollBackOrBlockCompletedOperation": true,
+    "secretFreeSummaryOnly": true,
+    "panelCannotSendArbitraryExternalMessage": true
+  },
+  "retention": {
+    "proposedDays": 365,
+    "privacyLegalApprovalRequired": true,
+    "deletionDisabledUntilApprovedPolicyAndVerifiedBackup": true,
+    "legalHoldRequiresSeparateApproval": true,
+    "playerAccountDeletionDoesNotDeleteSecurityAudit": true,
+    "targetIdentifiersRemainMaskedOrPseudonymous": true
+  },
+  "acceptanceScenarios": [
+    "server-timestamp", "server-role-snapshot", "client-actor-deny", "client-before-after-deny",
+    "mutation-authoritative-diff", "full-save-payload-deny", "reason-length-deny", "reason-secret-deny",
+    "before-after-size-deny-before-mutation", "password-redaction", "token-redaction", "authorization-redaction",
+    "request-body-redaction", "promo-plaintext-redaction", "promo-hash-redaction", "pii-masking",
+    "redaction-failure-deny", "application-update-deny", "application-delete-deny", "duplicate-event-id-deny",
+    "exact-idempotent-replay", "changed-replay", "daily-checksum-manifest", "backup-readback-evidence",
+    "checksum-mismatch-alert", "analyst-audit-deny", "operations-scope-deny", "founder-bounded-view",
+    "free-text-payload-search-deny", "raw-audit-export-deny", "audit-view-audited", "role-change-alert",
+    "economy-operation-alert", "support-session-alert", "delivery-retry-no-duplicate", "arbitrary-message-deny",
+    "retention-delete-deny", "account-delete-preserves-audit"
+  ],
+  "activation": {
+    "auditSchemaImplemented": false,
+    "serverRedactionImplemented": false,
+    "checksumAndBackupImplemented": false,
+    "queryApiImplemented": false,
+    "securityAlertsImplemented": false,
+    "privacyRetentionApproved": false,
+    "runtimeImplemented": false,
+    "phaseHCompletionRequired": true
+  }
+}

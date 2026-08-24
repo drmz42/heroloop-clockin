@@ -25,6 +25,7 @@
     "check:admin-player-support": "node scripts/check-admin-player-support-contract.mjs",
     "check:admin-operations": "node scripts/check-admin-operations-contract.mjs",
     "check:admin-access-governance": "node scripts/check-admin-access-governance-contract.mjs",
+    "check:admin-audit": "node scripts/check-admin-audit-contract.mjs",
     "simulate:acceleration-calendar": "node scripts/simulate-acceleration-calendar.mjs",
     "check:bag-expansion": "node scripts/check-bag-expansion-proposal.mjs",
     "check:codex-watchdog": "node scripts/check-codex-watchdog.mjs",
