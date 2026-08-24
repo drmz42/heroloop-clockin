@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "internal-admin-panel-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "surface": {
+    "hostname": "admin.heroloop.xyz",
+    "separateFromPlayerGame": true,
+    "separateFromTodoPanel": true,
+    "dnsApproved": false,
+    "publicRouteEnabled": false,
+    "hiddenUrlOrBasicAuthAloneForbidden": true
+  },
+  "access": {
+    "identityAwareProxyOrPrivateVpnRequired": true,
+    "founderControlledIdentityAllowlistRequired": true,
+    "phishingResistantWebAuthnPasskeyRequired": true,
+    "sharedAccountsForbidden": true,
+    "idleSessionMinutes": 15,
+    "absoluteSessionHours": 4,
+    "stepUpMaximumAgeMinutes": 5,
+    "sessionRevocationRequired": true,
+    "breakGlassDisabledUntilSeparateApproval": true
+  },
+  "architecture": {
+    "browserDatabaseCredentialForbidden": true,
+    "browserServiceCredentialForbidden": true,
+    "browserUsesLeastPrivilegeApi": true,
+    "serverSideBackendForFrontendRequired": true,
+    "productionAndStagingContextsVisiblySeparated": true,
+    "productionMutationDefault": "disabled",
+    "unknownOperationFailsClosed": true
+  },
+  "roles": {
+    "founder": ["aggregate-read", "masked-player-read", "operations-read", "approved-export", "support-session", "approved-role-change", "approved-player-operation", "approved-economy-operation", "promo-management"],
+    "operations_support": ["aggregate-read", "masked-player-read", "operations-read", "support-note-create"],
+    "analyst": ["aggregate-read"]
+  },
+  "views": {
+    "overview": ["ccu", "dau-wau-mau", "new-returning-churned", "sessions-playtime", "registration-funnel", "d1-d7-d30", "privacy-safe-cohorts", "version-adoption", "release-annotations"],
+    "economy": ["balance-percentiles", "issued-circulating-held-project", "faucet-sink-inflation", "market-gmv-fees", "first-party-settlement", "promo", "outliers", "reconciliation"],
+    "progression": ["account-hero-levels", "location-time-to-clear", "formation", "power-versus-recommended", "combat", "afk-boost", "chests-inventory", "equipment", "summon-pity-focus", "training", "tutorial-features"],
+    "players": ["identity-summary", "session-ban-state", "masked-balances", "progression", "roster-equipment", "inventory-resources", "settlement-history", "save-revision", "support-notes"],
+    "operations": ["api", "database", "cron-queues", "release-environment", "uptime-tls", "host-resources", "backup-restore-evidence", "abuse-alerts"]
+  },
+  "playerData": {
+    "defaultReadOnly": true,
+    "passwordTokenSignatureOrSecretNeverDisplayed": true,
+    "emailWalletIpAndProviderSubjectMaskedByDefault": true,
+    "unmaskFounderOnlyWithStepUpReasonAndAudit": true,
+    "searchExactIdentifiersOnlyNoBulkEnumeration": true,
+    "supportNotesNoSecretsOrSpecialCategoryData": true,
+    "exportPlayerRowsDisabled": true
+  },
+  "supportSession": {
+    "silentLoginAsPlayerForbidden": true,
+    "founderOnly": true,
+    "reasonRequired": true,
+    "stepUpRequired": true,
+    "maximumMinutes": 15,
+    "permanentVisibleBanner": true,
+    "readOnlyByDefault": true,
+    "blockedOperations": ["payment", "transfer", "economy-grant", "market", "account-delete", "credential-change", "security-change", "identity-link", "token-claim"],
+    "automaticExpiryAndRevocation": true,
+    "startAndEndAudited": true
+  },
+  "mutations": {
+    "reasonRequired": true,
+    "freshStepUpRequired": true,
+    "requestIdAndIdempotencyKeyRequired": true,
+    "authoritativeBeforeAfterRequired": true,
+    "dryRunPreviewRequired": true,
+    "productionOperationRequiresExistingFounderApproval": true,
+    "adminPanelCannotCreateItsOwnApproval": true,
+    "databaseConsoleOrGenericSqlForbidden": true,
+    "unrestrictedServiceRoleForbidden": true
+  },
+  "audit": {
+    "appendOnly": true,
+    "fields": ["environment", "actor_id", "role", "operation", "target_type", "target_id_masked", "reason", "before", "after", "request_id", "session_id", "ip_metadata", "created_at"],
+    "secretTokenPasswordSignatureForbidden": true,
+    "roleExportEconomyPlayerAndSupportSessionAlerts": true,
+    "retentionDays": 365,
+    "retentionRequiresPrivacyLegalApproval": true,
+    "encryptedImmutableBackupRequired": true
+  },
+  "webSecurity": {
+    "exactOriginCsrfProtection": true,
+    "strictCspNoUnsafeInline": true,
+    "frameAncestorsNone": true,
+    "hsts": true,
+    "noStore": true,
+    "perIdentityIpAndOperationRateLimits": true,
+    "genericErrorsWithRequestId": true,
+    "dependencyAndExportSizeCaps": true
+  },
+  "acceptanceScenarios": [
+    "no-public-route", "allowlist-deny", "passkey-required", "expired-session", "step-up-expired", "analyst-player-deny", "support-mutation-deny", "founder-unapproved-production-deny", "browser-db-credential-deny", "unknown-operation-deny", "csrf-reject", "csp-contract", "rate-limit", "masked-player-default", "unmask-audited", "support-session-banner", "support-session-expiry", "support-session-blocked-payment", "idempotent-mutation-replay", "changed-replay", "audit-secret-redaction", "immutable-backup-evidence", "staging-production-visual-separation"
+  ],
+  "activation": {
+    "dnsAndTrafficApproved": false,
+    "identityProxyOrVpnApproved": false,
+    "passkeyEnrollmentApproved": false,
+    "adminApiImplemented": false,
+    "auditAndBackupImplemented": false,
+    "privacyRetentionApproved": false,
+    "runtimeImplemented": false,
+    "phaseHCompletionRequired": true
+  }
+}
