@@ -74,6 +74,7 @@ export interface OwnedItem {
   power: number;
   serverOwned?: boolean;
   locked?: boolean;
+  isNew?: boolean;
   enchantLevel: number;   // 0–10, each +1 boosts all stats by +10%
   enchantStatsVersion?: 2; // v2 keeps original rolled stats; missing legacy values stored compounded stats
   rerollCount: number;    // how many times rerolled (affects cost)
@@ -220,6 +221,8 @@ export interface RotatingShopItem {
   itemId: string;
   price: number;
   sold: boolean;
+  rarity?: Rarity;
+  slot?: ItemSlot;
 }
 
 export interface SessionStats {

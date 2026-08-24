@@ -8,6 +8,7 @@ import {
   buildRegisteredState,
   STARTER_HERO_IDS,
 } from "../shared/registration.js";
+import { validRegistrationShell, validateAndMigrateGameState } from "../shared/save-schema.mjs";
 
 export type JsonRecord = Record<string, unknown>;
 
@@ -26,11 +27,7 @@ export function recordArray(value: unknown): JsonRecord[] {
 }
 
 export function validPersistentState(value: unknown): value is JsonRecord {
-  if (!isRecord(value)) return false;
-  return Array.isArray(value.ownedHeroes) && value.ownedHeroes.length > 0 && value.ownedHeroes.length <= 500 &&
-    Array.isArray(value.inventory) && value.inventory.length <= 200 &&
-    Array.isArray(value.chests) && value.chests.length <= 500 &&
-    Array.isArray(value.team) && value.team.length <= 3;
+  return validateAndMigrateGameState(value).ok;
 }
 
 function hasBlockedUsernameLanguage(value: string): boolean {
@@ -43,7 +40,8 @@ function hasBlockedUsernameLanguage(value: string): boolean {
   return blockedUsernameParts.some((part) => normalized.includes(part));
 }
 
-function clonePersistentState(value: JsonRecord, username: string, playerId: string): JsonRecord | null {
+function clonePersistentState(value: unknown, username: string, playerId: string): JsonRecord | null {
+  if (!isRecord(value)) return null;
   const serialized = JSON.stringify(value);
   if (serialized.length > 1_000_000) return null;
   const state = JSON.parse(serialized) as JsonRecord;
@@ -64,7 +62,7 @@ export function prepareRegistration(
   const starterHeroId = typeof payload.starter_hero_id === "string" ? payload.starter_hero_id : "";
   if (
     username.length < 3 || hasBlockedUsernameLanguage(username) ||
-    !STARTER_HERO_IDS.has(starterHeroId) || !validPersistentState(payload.state)
+    !STARTER_HERO_IDS.has(starterHeroId) || !validRegistrationShell(payload.state)
   ) {
     return { code: "invalid_registration", status: 400 };
   }
@@ -77,8 +75,9 @@ export function prepareRegistration(
     0,
     now,
   );
-  return validPersistentState(state)
-    ? { username, starterHeroId, state }
+  const validated = validateAndMigrateGameState(state);
+  return validated.ok
+    ? { username, starterHeroId, state: validated.state }
     : { code: "invalid_registration_state", status: 400 };
 }
 
@@ -89,12 +88,14 @@ export function prepareLegacyMigration(
 ): { state: JsonRecord } | { code: string; status: number } {
   const account = isRecord(context.account) ? context.account : null;
   if (!account) return { code: "account_required", status: 403 };
-  if (!validPersistentState(requestedValue)) return { code: "invalid_state", status: 400 };
+  if (!isRecord(requestedValue)) return { code: "invalid_state", status: 400 };
+  if (isRecord(context.state) && Number.isSafeInteger(Number(context.revision))) return { state: context.state };
   const state = clonePersistentState(requestedValue, String(account.username ?? ""), playerId);
   if (!state) return { code: "state_too_large", status: 413 };
   state.hero = Number(account.token_balance);
   state.summons = Number(account.summons);
-  return { state };
+  const validated = validateAndMigrateGameState(state, { allowMissingTeamReferences: true });
+  return validated.ok ? { state: validated.state } : { code: validated.code ?? "invalid_state", status: validated.code === "state_too_large" ? 413 : 400 };
 }
 
 export function missingFormationUids(state: JsonRecord): string[] {
@@ -263,15 +264,15 @@ function canonicalItem(item: JsonRecord, ledgerById: Map<string, JsonRecord>): J
 }
 
 export function canonicalizeLoadedState(context: JsonRecord):
-  | { state: JsonRecord | null; revision: number | null; migratedItems: number }
+  | { state: JsonRecord | null; revision: number | null; migratedItems: number; schemaMigrated: boolean }
   | { code: string; status: number } {
   if (context.state === null && context.revision === null) {
-    return { state: null, revision: null, migratedItems: 0 };
+    return { state: null, revision: null, migratedItems: 0, schemaMigrated: false };
   }
-  if (!validPersistentState(context.state) || !Number.isSafeInteger(Number(context.revision))) {
+  if (!isRecord(context.state) || !Number.isSafeInteger(Number(context.revision))) {
     return { code: "state_unavailable", status: 503 };
   }
-  const state = structuredClone(context.state) as JsonRecord;
+  let state = structuredClone(context.state) as JsonRecord;
   const ledger = recordArray(context.items);
   const ledgerById = new Map(ledger.map((row) => [String(row.id ?? ""), row]));
   const inventory = recordArray(state.inventory);
@@ -279,10 +280,17 @@ export function canonicalizeLoadedState(context: JsonRecord):
     return { code: "item_registry_incomplete", status: 409 };
   }
   state.inventory = inventory.map((item) => canonicalItem(item, ledgerById));
+  const validated = validateAndMigrateGameState(state, { allowMissingTeamReferences: true });
+  if (!validated.ok) {
+    console.error("stored state schema validation failed", { reason: validated.reason ?? "unknown" });
+    return { code: "state_unavailable", status: 503 };
+  }
+  state = validated.state;
   return {
     state,
     revision: Number(context.revision),
     migratedItems: Math.max(0, Math.floor(Number(context.migrated_items) || 0)),
+    schemaMigrated: validated.migrated === true,
   };
 }
 
@@ -294,7 +302,7 @@ export function mergeSaveState(
 ): { state: JsonRecord; revision: number } | { code: string; status: number; result?: JsonRecord } {
   const account = isRecord(context.account) ? context.account : null;
   if (!account) return { code: "account_required", status: 403 };
-  if (!validPersistentState(requestedValue)) return { code: "invalid_state", status: 400 };
+  if (!isRecord(requestedValue)) return { code: "invalid_state", status: 400 };
   const requested = clonePersistentState(requestedValue, String(account.username ?? ""), playerId);
   if (!requested) return { code: "state_too_large", status: 413 };
   requested.hero = Number(account.token_balance);
@@ -304,6 +312,10 @@ export function mergeSaveState(
     return { code: "state_unavailable", status: 503 };
   }
   const current = applyTrainingPurchases(context.state, recordArray(context.training_purchases), now) as JsonRecord;
+  const validated = validateAndMigrateGameState(requested, { canonicalState: current });
+  if (!validated.ok) return { code: validated.code ?? "invalid_state", status: validated.code === "state_too_large" ? 413 : 400 };
+  for (const key of Object.keys(requested)) delete requested[key];
+  Object.assign(requested, validated.state);
   const ledger = recordArray(context.items);
   const ledgerIds = new Set(ledger.map((row) => String(row.id ?? "")));
   const ledgerById = new Map(ledger.map((row) => [String(row.id ?? ""), row]));

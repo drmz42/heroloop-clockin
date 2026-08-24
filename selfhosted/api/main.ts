@@ -1027,9 +1027,21 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
               }
             }
           }
+          if (loaded.schemaMigrated && recoveredCount === 0) {
+            const committed = await databaseJson(
+              "SELECT heroloop_api.game_state_save_commit($1::uuid, $2::bigint, $3::jsonb) AS result",
+              [identity.playerId, revision, JSON.stringify(state)],
+            );
+            const committedRevision = Number(committed.revision);
+            if (committed.conflict !== true && Number.isSafeInteger(committedRevision) && committedRevision > revision) {
+              state = isRecord(committed.state) ? committed.state : state;
+              revision = committedRevision;
+            }
+          }
         }
         const result: JsonRecord = { state, revision };
         if (loaded.migratedItems > 0) result.migrated_items = loaded.migratedItems;
+        if (loaded.schemaMigrated) result.save_schema_migrated = true;
         if (recoveredCount > 0) result.recovered_formation_heroes = recoveredCount;
         return json(200, {
           ok: true,
