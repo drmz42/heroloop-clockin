@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "founder-packs-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "saleWindow": null,
+  "paymentProvider": null,
+  "refundAndChargebackPolicy": null,
+  "platformPolicy": "web-only-candidate-until-provider-and-platform-review",
+  "onePackTotalPerAccount": true,
+  "onePackTotalPerPaymentIdentity": true,
+  "packs": [
+    { "id": "founders-spark", "name": "Founder's Spark", "usd": 2, "totalLevelOneHeroes": 2, "summonScrolls": 5, "petChoices": [], "spellChoices": [], "auraChoices": [], "nicknameHighlight": "founder-bronze", "cosmetics": ["founder-spark-title"] },
+    { "id": "founders-oath", "name": "Founder's Oath", "usd": 5, "totalLevelOneHeroes": 2, "summonScrolls": 20, "petChoices": [{"role":"attack","rarity":"common","quantity":1}], "spellChoices": [], "auraChoices": [], "nicknameHighlight": "founder-silver", "cosmetics": ["founder-oath-title"] },
+    { "id": "founders-vanguard", "name": "Founder's Vanguard", "usd": 10, "totalLevelOneHeroes": 3, "summonScrolls": 50, "petChoices": [{"role":"attack","rarity":"common","quantity":1},{"role":"defense","rarity":"common","quantity":1},{"role":"support","rarity":"common","quantity":1}], "spellChoices": [{"slot":"attack_spell","rarity":"common","quantity":1},{"slot":"defense_spell","rarity":"common","quantity":1}], "auraChoices": [{"rarity":"common","quantity":1}], "nicknameHighlight": "founder-gold", "cosmetics": ["founder-vanguard-title","founder-static-frame"] },
+    { "id": "founders-covenant", "name": "Founder's Covenant", "usd": 50, "totalLevelOneHeroes": 3, "summonScrolls": 300, "petChoices": [{"role":"attack","rarity":"rare","quantity":1},{"role":"defense","rarity":"rare","quantity":1},{"role":"support","rarity":"rare","quantity":1}], "spellChoices": [{"slot":"attack_spell","rarity":"rare","quantity":1},{"slot":"defense_spell","rarity":"rare","quantity":1}], "auraChoices": [{"rarity":"rare","quantity":1}], "nicknameHighlight": "founder-crimson", "cosmetics": ["founder-covenant-title","founder-crest-frame","founder-banner"] },
+    { "id": "founders-legacy", "name": "Founder's Legacy", "usd": 100, "totalLevelOneHeroes": 3, "summonScrolls": 750, "petChoices": [{"role":"attack","rarity":"epic","quantity":1},{"role":"defense","rarity":"epic","quantity":1},{"role":"support","rarity":"epic","quantity":1}], "spellChoices": [{"slot":"attack_spell","rarity":"epic","quantity":1},{"slot":"defense_spell","rarity":"epic","quantity":1}], "auraChoices": [{"rarity":"epic","quantity":1}], "nicknameHighlight": "founder-celestial", "cosmetics": ["founder-legacy-title","founder-animated-frame","founder-banner","founder-arrival-effect"] }
+  ],
+  "heroSelection": {
+    "catalog": ["shepherd-common", "assassin-common", "knight-common", "druid-common", "archer-common"],
+    "starterCountsTowardTotal": true,
+    "newChoicesMustBeDistinctFromStarterAndEachOther": true,
+    "grantedLevel": 1,
+    "grantedXp": 0,
+    "grantedStars": 0,
+    "instanceUuidServerGenerated": true
+  },
+  "starterGear": {
+    "rarity": "common",
+    "itemLevel": 1,
+    "enchantLevel": 0,
+    "locked": true,
+    "equippedDirectly": true,
+    "oneFullSetPerPackHero": true,
+    "classSlots": [
+      {"slot":"class_weapon","itemIdPattern":"weapon-{class}-common","stat":{"key":"atk","value":2,"isPercent":false}},
+      {"slot":"offhand","itemIdPattern":"offhand-{class}-common","stat":{"key":"def","value":1,"isPercent":false}}
+    ],
+    "sharedSlots": [
+      {"slot":"helmet","itemId":"helmet-common","stat":{"key":"hp","value":8,"isPercent":false}},
+      {"slot":"chest","itemId":"armor-common","stat":{"key":"hp","value":8,"isPercent":false}},
+      {"slot":"gloves","itemId":"gloves-common","stat":{"key":"atk","value":2,"isPercent":false}},
+      {"slot":"boots","itemId":"boots-common","stat":{"key":"atkSpeed","value":3,"isPercent":false}},
+      {"slot":"ring","itemId":"ring-common","stat":{"key":"goldBonus","value":0.01,"isPercent":true}},
+      {"slot":"amulet","itemId":"amulet-common","stat":{"key":"xpBonus","value":0.01,"isPercent":true}}
+    ],
+    "statsAreFixedServerTemplateNotClientRng": true,
+    "itemUuidServerGenerated": true,
+    "canonicalPowerServerCalculated": true,
+    "allRowsCreatedBeforeEntitlementCommit": true
+  },
+  "preRegistration": {
+    "doubleOptInRequired": true,
+    "normalizedEmailHmacLookup": true,
+    "encryptedEmailAtRest": true,
+    "plaintextEmailLogsForbidden": true,
+    "verificationTokenStoredHashed": true,
+    "verificationTokenHours": 24,
+    "consentVersionRequired": true,
+    "withdrawalAndDeletionRequired": true,
+    "reservationIsNotPurchaseOrEntitlement": true
+  },
+  "receipt": {
+    "verifiedServerWebhookRequired": true,
+    "uniqueKey": ["environment", "provider", "provider_transaction_id"],
+    "signedAmountCurrencyProductAndStatusRequired": true,
+    "clientSuccessRedirectIsNotAuthority": true,
+    "bindOnceToVerifiedAccount": true,
+    "crossEnvironmentReplayForbidden": true,
+    "storedResultReturnedOnReplay": true
+  },
+  "fulfillment": {
+    "action": "founder_pack_claim",
+    "expectedRevisionRequired": true,
+    "idempotencyKeyRequired": true,
+    "atomicReceiptAccountHeroesItemsResourcesEntitlementsAndAudit": true,
+    "noPartialGrant": true,
+    "capacityCheckedBeforeClaim": true,
+    "capacityFailureLeavesReceiptClaimable": true,
+    "clientCannotSubmitContentsInstancesStatsPowerOrPaidStatus": true,
+    "immutableEventRequired": true,
+    "claimRequiresCleanLevelOneRegistrationState": true
+  },
+  "capacity": {
+    "heroCap": 500,
+    "equipmentBagSlotsConsumed": 0,
+    "gearEquippedDirectly": true,
+    "petCapSource": "config/balance/pets.v1.json",
+    "spellAuraCapSource": "config/balance/spells-auras.v1.json",
+    "unavailableSubsystemEntitlementsRemainDormant": true
+  },
+  "economy": {
+    "scrollCatalogueUsdEach": 0.02,
+    "noHeroCurrencyGrant": true,
+    "noGoldGrant": true,
+    "cosmeticsHaveNoCombatPower": true,
+    "founderGearExcludedFromMarket": true,
+    "financialActivationRequiresExplicitApproval": true
+  }
+}
