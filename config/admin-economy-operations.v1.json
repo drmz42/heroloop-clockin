@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "admin-economy-operations-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "authority": {
+    "defaultReadOnly": true,
+    "founderOnlyMutation": true,
+    "operationsAndAnalystMutationForbidden": true,
+    "browserAmountsBalancesSourceKeysAndLedgerEntriesForbidden": true,
+    "genericCreditDebitBalanceEditSqlAndServiceRoleCallForbidden": true,
+    "unknownOperationOrSourceFailsClosed": true
+  },
+  "operationCatalog": [
+    { "id": "reconciliation_run", "mode": "read-only", "enabled": false },
+    { "id": "reconciliation_report_view", "mode": "read-only", "enabled": false },
+    { "id": "compensating_correction_preview", "mode": "dry-run", "enabled": false },
+    { "id": "compensating_correction_execute", "mode": "mutation", "enabled": false }
+  ],
+  "reconciliation": {
+    "exactPostgresqlNumericRequired": true,
+    "environmentAndBalanceVersionRequired": true,
+    "verifiedBaselineRequired": true,
+    "sourceEventAndLedgerKeyParityRequired": true,
+    "absoluteDriftTolerance": 0,
+    "unknownGapDuplicateNegativeAndStaleVisible": true,
+    "coverageBlockersCannotRenderAsZeroDrift": true,
+    "reporterCannotMutatePlayerLedgerOrTreasury": true,
+    "dailyFounderChecksumCsvUsesExistingContract": true
+  },
+  "correction": {
+    "directOverwriteForbidden": true,
+    "appendOnlyCompensatingEventRequired": true,
+    "originalEventReferenceRequired": true,
+    "registeredCorrectionSourceKindRequired": true,
+    "rootCauseFixedBeforeExecutionRequired": true,
+    "affectedAssetDirectionExactAmountAndReasonRequired": true,
+    "serverRecomputesBeforeAfterAndLiability": true,
+    "previewCannotReserveOrMutate": true,
+    "atomicBalanceLedgerSourceAndAuditRequired": true,
+    "negativeOrOverCapResultRejected": true,
+    "bulkCorrectionForbidden": true,
+    "onePlayerOneAssetOneOriginalEventPerOperation": true,
+    "rollbackUsesNewCompensatingEventNeverDelete": true
+  },
+  "approval": {
+    "externalFounderApprovalRequiredForEveryProductionCorrection": true,
+    "financialFounderApprovalRequiredForHeroOrPaidValue": true,
+    "panelCannotCreateItsOwnApproval": true,
+    "reasonFreshStepUpRequestIdIdempotencyKeyAndTargetRevisionRequired": true,
+    "approvalBindsEnvironmentPlayerMaskedAssetAmountDirectionOriginalEventAndExpiry": true,
+    "expiredChangedOrReplayedApprovalFailsClosed": true,
+    "highValueThresholdsApproved": false,
+    "highValueExecutionDisabledUntilThresholdAndSecondApproverApproved": true
+  },
+  "idempotency": {
+    "uniqueKey": ["environment", "player_id", "operation", "idempotency_key"],
+    "requestHashRequired": true,
+    "exactReplayReturnsStoredResultAndAuditReference": true,
+    "changedReplayFailsClosed": true,
+    "concurrentTargetRevisionConflictFailsClosed": true
+  },
+  "treasury": {
+    "receiptIsNotCashRevenue": true,
+    "receiptIsNotAutomaticBurn": true,
+    "receiptIsNotAutomaticReserve": true,
+    "receiptIsNotAutomaticLiquidity": true,
+    "receiptIsNotAutomaticRedistribution": true,
+    "treatmentChangeRequiresSeparateEconomyApprovalAndSourceKind": true,
+    "noBlockchainTransaction": true
+  },
+  "auditAndAlerts": {
+    "previewAndExecuteAudited": true,
+    "authoritativeBeforeAfterSourceLedgerAndApprovalReferenceRequired": true,
+    "secretAndPlayerIdentifierRedactionRequired": true,
+    "everyCorrectionAndFailedIntegrityCheckAlerts": true,
+    "deliveryCannotChangeSettlementResult": true
+  },
+  "acceptanceScenarios": [
+    "analyst-mutation-deny", "operations-mutation-deny", "browser-amount-deny", "browser-source-key-deny",
+    "generic-credit-deny", "direct-balance-edit-deny", "generic-sql-deny", "unknown-source-deny",
+    "exact-reconciliation", "one-microunit-drift", "missing-source-row", "missing-ledger-row",
+    "duplicate-source-key", "negative-balance-alert", "stale-report-label", "coverage-blocker-visible",
+    "reporter-mutation-deny", "preview-no-mutation", "missing-original-event-deny", "unregistered-correction-kind-deny",
+    "unfixed-root-cause-deny", "server-recomputed-amount", "negative-result-deny", "over-cap-result-deny",
+    "bulk-correction-deny", "atomic-correction", "unapproved-production-correction-deny",
+    "hero-financial-approval-deny", "high-value-second-approval-deny", "approval-target-mismatch",
+    "expired-approval", "exact-idempotent-replay", "changed-replay", "concurrent-revision-conflict",
+    "rollback-compensating-event", "treasury-reclassification-deny", "correction-audit", "correction-alert"
+  ],
+  "activation": {
+    "reconciliationReporterImplemented": false,
+    "currentCoverageBlockersClosed": false,
+    "correctionSourceKindsApproved": false,
+    "correctionSettlementImplemented": false,
+    "highValueThresholdsApproved": false,
+    "secondApproverApproved": false,
+    "adminPanelIntegrated": false,
+    "runtimeImplemented": false,
+    "phaseHCompletionRequired": true
+  }
+}
