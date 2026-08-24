@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "admin-access-governance-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "identity": {
+    "founderControlledAllowlistRequired": true,
+    "verifiedUniqueIdentityRequired": true,
+    "sharedAccountsForbidden": true,
+    "emailDomainAloneInsufficient": true,
+    "identityAwareProxyOrPrivateVpnRequired": true,
+    "phishingResistantPasskeyRequired": true,
+    "passwordSmsTotpOrEmailFallbackAloneForbidden": true,
+    "playerAccountCannotImplyAdminAccess": true
+  },
+  "lifecycle": {
+    "states": ["invited", "enrollment_pending", "active", "suspended", "removed"],
+    "invitationSingleUse": true,
+    "invitationExpiryMinutes": 15,
+    "invitationBindsExactIdentityAndRole": true,
+    "activationRequiresPasskeyEnrollment": true,
+    "suspensionAndRemovalRevokeAllSessions": true,
+    "removedIdentityRequiresNewApprovalAndEnrollment": true,
+    "inactiveAccountReviewDays": 30,
+    "automaticPrivilegeExpansionForbidden": true
+  },
+  "roles": {
+    "founder": ["aggregate-read", "masked-player-read", "operations-read", "approved-export", "support-session", "approved-role-change", "approved-player-operation", "approved-economy-operation", "promo-management"],
+    "operations_support": ["aggregate-read", "masked-player-read", "operations-read", "support-note-create"],
+    "analyst": ["aggregate-read"],
+    "defaultRole": "analyst",
+    "denyByDefault": true,
+    "customOrCompositeRolesForbidden": true
+  },
+  "roleChanges": {
+    "founderOnly": true,
+    "externalFounderApprovalRequired": true,
+    "panelCannotCreateItsOwnApproval": true,
+    "reasonAndFreshStepUpRequired": true,
+    "requestIdIdempotencyKeyAndTargetRevisionRequired": true,
+    "dryRunBeforeAfterPreviewRequired": true,
+    "selfPromotionForbidden": true,
+    "actorCannotApproveOwnPrivilegeIncrease": true,
+    "operationsOrAnalystCannotGrantRoles": true,
+    "lastActiveFounderRemovalOrDemotionForbidden": true,
+    "concurrentRevisionConflictFailsClosed": true,
+    "exactReplayReturnsStoredResult": true,
+    "changedReplayFailsClosed": true
+  },
+  "sessions": {
+    "idleMinutes": 15,
+    "absoluteHours": 4,
+    "sensitiveStepUpMaximumAgeMinutes": 5,
+    "environmentBound": true,
+    "deviceBoundWhereProxySupportsIt": true,
+    "listAndRevokeOwnSessions": true,
+    "founderMayRevokeAnySessionWithReasonAndAudit": true,
+    "roleOrPasskeyChangeRevokesAllTargetSessions": true,
+    "tokenValuesNeverDisplayedOrLogged": true
+  },
+  "recovery": {
+    "breakGlassDisabled": true,
+    "passkeyLossRequiresFounderApprovedIdentityReverification": true,
+    "reEnrollmentRevokesPriorAuthenticatorsAndSessions": true,
+    "helpdeskBypassForbidden": true,
+    "recoverySecretInPanelForbidden": true,
+    "recoveryEventAlertsRequired": true
+  },
+  "audit": {
+    "appendOnly": true,
+    "inviteEnrollmentActivationSuspensionRemovalRolePasskeySessionAndRecoveryEventsRequired": true,
+    "actorTargetMaskedOldRoleNewRoleReasonRequestSessionIpAndTimestampRequired": true,
+    "secretCredentialChallengeAndAuthenticatorMaterialForbidden": true,
+    "privilegeAndRecoveryAlertsRequired": true,
+    "encryptedImmutableBackupRequired": true
+  },
+  "acceptanceScenarios": [
+    "no-public-route", "non-allowlisted-deny", "shared-account-deny", "email-domain-only-deny",
+    "player-account-admin-deny", "passkey-required", "password-only-deny", "expired-invitation",
+    "replayed-invitation", "invitation-identity-mismatch", "invitation-role-mismatch", "pending-enrollment-deny",
+    "default-analyst-least-privilege", "custom-role-deny", "analyst-role-change-deny",
+    "operations-role-change-deny", "self-promotion-deny", "own-privilege-approval-deny",
+    "missing-external-approval-deny", "last-founder-protection", "dry-run-role-change",
+    "concurrent-role-revision-conflict", "exact-idempotent-replay", "changed-replay",
+    "idle-session-expiry", "absolute-session-expiry", "step-up-expiry", "environment-session-mismatch",
+    "role-change-session-revocation", "passkey-change-session-revocation", "removed-account-session-revocation",
+    "helpdesk-bypass-deny", "break-glass-deny", "recovery-secret-redaction", "privilege-alert", "recovery-alert"
+  ],
+  "activation": {
+    "identityProxyOrVpnApproved": false,
+    "allowlistApproved": false,
+    "passkeyEnrollmentImplemented": false,
+    "roleApiImplemented": false,
+    "sessionRevocationImplemented": false,
+    "auditAndAlertsImplemented": false,
+    "runtimeImplemented": false,
+    "phaseHCompletionRequired": true
+  }
+}
