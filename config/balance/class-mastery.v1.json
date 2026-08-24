@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "class-mastery-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "unlock": { "accountLevel": 40, "heroLevel": 40, "masteryMaximumLevel": 30, "specializationPointMaximum": 20, "pointsAwardedThroughMasteryLevel": 20, "masteryXpForNextLevel": "100 * current_mastery_level" },
+  "progressOwnership": {
+    "masteryKey": ["player_id", "hero_catalog_id"],
+    "loadoutKey": ["player_id", "owned_hero_uid", "loadout_index"],
+    "sharedAcrossCopiesOfSameCatalogHero": true,
+    "classWideProgressForbidden": true,
+    "marketTransferCarriesSellerMastery": false,
+    "progressPersistsWithZeroOwnedCopies": true
+  },
+  "loadouts": { "savedPerOwnedHero": 2, "oneActive": true, "switchOnlyOutsideActiveEncounter": true, "switchCostGold": 0, "serverRevisionRequired": true },
+  "branches": [
+    { "class": "warrior", "id": "bastion", "role": "personal-survival", "nodes": [{"id":"unyielding","cost":3,"effect":"hp_percent","value":3},{"id":"forged-guard","cost":3,"effect":"def_percent","value":2},{"id":"last-rampart","cost":4,"effect":"emergency_shield_percent_max_hp","value":6,"cooldownSeconds":30}], "scenarioScores": {"survival":100,"damage":82,"team":88} },
+    { "class": "warrior", "id": "vanguard", "role": "pressure", "nodes": [{"id":"forward-edge","cost":3,"effect":"atk_percent","value":3},{"id":"battle-tempo","cost":3,"effect":"attack_speed_percent","value":2},{"id":"measured-counter","cost":4,"effect":"counter_damage_atk_percent","value":20,"cooldownSeconds":8}], "scenarioScores": {"survival":82,"damage":100,"team":88} },
+    { "class": "warrior", "id": "warden", "role": "formation-guard", "nodes": [{"id":"shared-plate","cost":3,"effect":"formation_def_percent","value":2},{"id":"interpose","cost":3,"effect":"lowest_ally_damage_reduction_percent","value":4},{"id":"rallying-wall","cost":4,"effect":"formation_shield_percent_max_hp","value":4,"cooldownSeconds":25}], "scenarioScores": {"survival":90,"damage":82,"team":100} },
+
+    { "class": "mage", "id": "arcanist", "role": "spell-efficiency", "nodes": [{"id":"focused-runes","cost":3,"effect":"spell_damage_percent","value":5},{"id":"ordered-casting","cost":3,"effect":"spell_cooldown_reduction_percent","value":5},{"id":"stable-echo","cost":4,"effect":"arcane_echo_damage_percent","value":10}], "scenarioScores": {"control":88,"damage":100,"survival":82} },
+    { "class": "mage", "id": "elementalist", "role": "lane-damage", "nodes": [{"id":"charged-core","cost":3,"effect":"atk_percent","value":3},{"id":"volatile-geometry","cost":3,"effect":"crit_damage_points","value":10},{"id":"forked-impact","cost":4,"effect":"secondary_lane_spell_damage_percent","value":20}], "scenarioScores": {"control":82,"damage":98,"survival":88} },
+    { "class": "mage", "id": "chronomancer", "role": "tempo-control", "nodes": [{"id":"quickened-thought","cost":3,"effect":"attack_speed_percent","value":3},{"id":"measured-slow","cost":3,"effect":"enemy_attack_speed_reduction_percent","value":5},{"id":"timefold","cost":4,"effect":"spell_cooldown_reduction_percent","value":8}], "scenarioScores": {"control":100,"damage":86,"survival":92} },
+
+    { "class": "assassin", "id": "executioner", "role": "finisher", "nodes": [{"id":"keen-edge","cost":3,"effect":"atk_percent","value":3},{"id":"fatal-window","cost":3,"effect":"crit_chance_points","value":2},{"id":"finish-the-mark","cost":4,"effect":"damage_below_25_percent_hp","value":8}], "scenarioScores": {"burst":100,"survival":82,"sustain":88} },
+    { "class": "assassin", "id": "shadow", "role": "avoidance", "nodes": [{"id":"soft-step","cost":3,"effect":"dodge_points","value":2},{"id":"rapid-entry","cost":3,"effect":"attack_speed_percent","value":3},{"id":"vanishing-beat","cost":4,"effect":"evade_one_hit","value":1,"cooldownSeconds":20}], "scenarioScores": {"burst":84,"survival":100,"sustain":90} },
+    { "class": "assassin", "id": "duelist", "role": "single-target-sustain", "nodes": [{"id":"find-gap","cost":3,"effect":"armor_penetration_percent","value":5},{"id":"precise-pain","cost":3,"effect":"crit_damage_points","value":10},{"id":"relentless-focus","cost":4,"effect":"same_target_damage_percent","value":5}], "scenarioScores": {"burst":90,"survival":84,"sustain":100} },
+
+    { "class": "druid", "id": "grovekeeper", "role": "healing", "nodes": [{"id":"deep-roots","cost":3,"effect":"hp_percent","value":3},{"id":"quiet-growth","cost":3,"effect":"passive_heal_percent_max_hp_per_second","value":0.15},{"id":"renewing-bark","cost":4,"effect":"healing_received_percent","value":6}], "scenarioScores": {"healing":100,"damage":82,"team":90} },
+    { "class": "druid", "id": "thornspeaker", "role": "counter-pressure", "nodes": [{"id":"thorned-will","cost":3,"effect":"atk_percent","value":3},{"id":"bramble-return","cost":3,"effect":"reflected_post_mitigation_damage_percent","value":5},{"id":"withering-bloom","cost":4,"effect":"enemy_atk_reduction_percent","value":4}], "scenarioScores": {"healing":84,"damage":100,"team":88} },
+    { "class": "druid", "id": "wild-kin", "role": "formation-support", "nodes": [{"id":"kindred-instinct","cost":3,"effect":"pet_effect_percent","value":5},{"id":"sheltering-canopy","cost":3,"effect":"formation_hp_percent","value":2},{"id":"shared-rhythm","cost":4,"effect":"support_cooldown_reduction_percent","value":8}], "scenarioScores": {"healing":90,"damage":84,"team":100} },
+
+    { "class": "crossbowman", "id": "sharpshooter", "role": "precision", "nodes": [{"id":"steady-sight","cost":3,"effect":"crit_chance_points","value":2},{"id":"draw-to-limit","cost":3,"effect":"crit_damage_points","value":10},{"id":"opening-bolt","cost":4,"effect":"first_hit_damage_percent","value":8}], "scenarioScores": {"precision":100,"lanes":84,"survival":86} },
+    { "class": "crossbowman", "id": "volley-master", "role": "multi-lane", "nodes": [{"id":"rapid-crank","cost":3,"effect":"attack_speed_percent","value":3},{"id":"split-bolt","cost":3,"effect":"secondary_lane_damage_percent","value":15},{"id":"quick-retarget","cost":4,"effect":"damage_after_target_change_percent","value":5}], "scenarioScores": {"precision":86,"lanes":100,"survival":84} },
+    { "class": "crossbowman", "id": "field-engineer", "role": "defensive-utility", "nodes": [{"id":"reinforced-stock","cost":3,"effect":"def_percent","value":3},{"id":"calibrated-focus","cost":3,"effect":"spell_effect_percent","value":5},{"id":"portable-cover","cost":4,"effect":"formation_shield_percent_max_hp","value":4,"cooldownSeconds":25}], "scenarioScores": {"precision":84,"lanes":88,"survival":100} }
+  ],
+  "respec": { "serverQuoteAction": "mastery_respec_quote", "commitAction": "mastery_respec_commit", "goldCost": "500 + 100 * allocated_points", "maximumGoldCost": 2500, "quoteTtlSeconds": 60, "refundsPriorGold": false, "heroCurrencyCost": 0, "idempotencyKeyRequired": true },
+  "progression": { "source": "server-settled-normal-wave-participation", "masteryXpPerEligibleWave": 1, "clientSubmittedXpForbidden": true, "bossDungeonQuestEventXpDisabledUntilVersioned": true },
+  "interactions": { "ascensionDuplicatesDoNotChangeMastery": true, "essenceSourceConsumptionCannotConsumeActiveLoadoutHero": true, "sellerMasteryNeverTransfers": true, "buyerStartsFromOwnCatalogMastery": true, "eventResourceGrantDisabled": true },
+  "migration": { "initialMasteryLevel": 0, "initialMasteryXp": 0, "retroactiveCombatCredit": false, "unknownNodeRejectsWholeLoadout": true, "idempotentVersionRequired": true },
+  "authority": { "serverOwnedPersistence": true, "expectedRevisionRequired": true, "idempotentSettlement": true, "immutableAuditEvents": true, "encounterSnapshotsActiveLoadout": true, "clientCannotSubmitPointsEffectsPowerOrCost": true },
+  "caps": { "rawStatPercentPerStatFromMastery": 5, "critChancePointsFromMastery": 2, "dodgePointsFromMastery": 2, "passiveHealingPercentMaxHpPerSecondFromMastery": 0.15, "simultaneousShieldPercentMaxHpFromMastery": 6, "globalClassAndCombatCapsRemainFinal": true },
+  "power": { "futureVersionRequired": true, "onlyActiveLoadoutCounts": true, "tacticalExpectedValueRequired": true, "combinedHeroItemPetSpellAuraMasterySimulationRequired": true, "heroIncomeExcludedUntilApprovedServerSettlement": true }
+}
