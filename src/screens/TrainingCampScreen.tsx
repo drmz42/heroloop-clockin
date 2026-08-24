@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Axe, ChevronDown, Clock3, Crosshair, Dumbbell, Info, LockKeyhole, Shield, ShieldCheck, Sparkles, Swords, Target, UserRoundPlus, X } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
@@ -40,7 +40,7 @@ function formatBoostTime(milliseconds: number): string {
 
 export function TrainingCampScreen({ game }: { game: Game }) {
   const { state } = game;
-  const [now, setNow] = useState(Date.now);
+  const now = game.presentationNow;
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [sort, setSort] = useState<SortKey>('power');
   const [classFilter, setClassFilter] = useState<'all' | HeroClass>('all');
@@ -53,24 +53,6 @@ export function TrainingCampScreen({ game }: { game: Game }) {
   const activeBoost = state.trainingCamp.boostMultiplier > 1 && state.trainingCamp.boostEndsAt > now;
   const boostTime = formatBoostTime(state.trainingCamp.boostEndsAt - now);
   const xpPerHour = baseXpPerHour * (activeBoost ? state.trainingCamp.boostMultiplier : 1);
-
-  useEffect(() => {
-    let timer: number | null = null;
-    const tick = () => setNow(Date.now());
-    const syncClock = () => {
-      if (timer !== null) window.clearInterval(timer);
-      timer = null;
-      if (document.visibilityState !== 'visible') return;
-      tick();
-      timer = window.setInterval(tick, 1_000);
-    };
-    document.addEventListener('visibilitychange', syncClock);
-    syncClock();
-    return () => {
-      if (timer !== null) window.clearInterval(timer);
-      document.removeEventListener('visibilitychange', syncClock);
-    };
-  }, []);
 
   const sortedHeroes = useMemo(() => state.ownedHeroes
     .filter((hero) => classFilter === 'all' || HERO_MAP[hero.heroId]?.heroClass === classFilter)

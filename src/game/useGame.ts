@@ -213,6 +213,7 @@ export function useGame() {
   const [autoProgress, setAutoProgress] = useState(true);
   const [paused, setPaused] = useState(false);
   const [respawnCountdowns, setRespawnCountdowns] = useState<Record<string, number>>({});
+  const [presentationNow, setPresentationNow] = useState(Date.now);
   const [potionFx, setPotionFx] = useState<{ uid: string; born: number } | null>(null);
   const [chestOpenResult, setChestOpenResult] = useState<OwnedItem[] | null>(null);
   const [chestOpening, setChestOpening] = useState(false);
@@ -661,6 +662,7 @@ export function useGame() {
     let timer: number | null = null;
     const tickRespawnClock = () => {
       const now = Date.now();
+      setPresentationNow(now);
       const st = stateRef.current;
       const countdown: Record<string, number> = {};
       let finished = false;
@@ -2092,7 +2094,7 @@ export function useGame() {
 
   return {
     state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, units, floaters, battleResult, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
-    offlineEarnings, respawnCountdowns, potionFx, chestOpenResult, enchantResult,
+    offlineEarnings, respawnCountdowns, presentationNow, potionFx, chestOpenResult, enchantResult,
     starUpHero, promoteAllHeroes, sellHero, sellHeroes, toggleHeroLock, markHeroSeen,
     summon, summonTen, summonHundred, summonBoss, syncBossKeys, toggleTeamMember, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,
