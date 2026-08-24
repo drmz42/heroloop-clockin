@@ -12,7 +12,7 @@
     { "id": "potion_xxl", "family": "potion", "status": "client-compatibility", "spendable": true, "deletable": false },
     { "id": "boss_key", "family": "key", "status": "mixed-compatibility", "spendable": true, "deletable": false },
     { "id": "summon_scroll", "family": "summon", "status": "client-compatibility", "spendable": true, "deletable": false },
-    { "id": "tutorial_chest", "family": "chest", "status": "runtime-candidate", "spendable": true, "deletable": false },
+    { "id": "tutorial_chest", "family": "chest", "status": "staging-runtime-accepted", "spendable": true, "deletable": false },
     { "id": "iron_scrap", "family": "crafting", "status": "proposal-only", "spendable": true, "deletable": false },
     { "id": "arcane_dust", "family": "crafting", "status": "proposal-only", "spendable": true, "deletable": false },
     { "id": "astral_shard", "family": "crafting", "status": "proposal-only", "spendable": true, "deletable": false },
