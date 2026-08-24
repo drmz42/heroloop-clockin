@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "shop-platform-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "direction": {
+    "recommendation": "retain-current-gold-rotation-and-rename-store-to-shop",
+    "premiumCatalogEnabled": false,
+    "adsEnabled": false,
+    "finalDecisionRequiresObservedData": true,
+    "oneServerGoodsCatalogAcrossPlatforms": true
+  },
+  "catalogZones": [
+    { "id": "gameplay", "contents": ["rotating-gold-equipment", "daily-free-resources"], "payment": "server-owned-game-currency", "availableNow": ["rotating-gold-equipment"] },
+    { "id": "premium", "contents": ["founder-packs", "promotions", "scroll-packs", "pets", "spells", "auras", "cosmetics"], "payment": "platform-specific-server-verified", "availableNow": [] },
+    { "id": "rewarded", "contents": ["ad-resource-pack", "ad-summon-scroll"], "payment": "verified-ad-completion", "availableNow": [] }
+  ],
+  "platforms": {
+    "web": {
+      "checkout": "unapproved-provider",
+      "heroQuoteCheckout": "financial-and-legal-approval-required",
+      "clientSuccessRedirectGrantsNothing": true,
+      "serverReceiptRequired": true
+    },
+    "ios": {
+      "digitalGoodsUseStoreKitIap": true,
+      "purchasedCurrencyCannotExpire": true,
+      "restorableProductsNeedRestoreFlow": true,
+      "randomizedPurchaseOddsDisclosedBeforePurchase": true,
+      "externalPurchaseCta": "disabled-unless-current-storefront-and-entitlement-review-explicitly-allows",
+      "crossPlatformEntitlement": "allowed-only-when-product-is-also-available-as-iap-in-app"
+    },
+    "googlePlay": {
+      "digitalGoodsUsePlayBilling": true,
+      "alternativeBillingOrLink": "disabled-unless-enrolled-region-program-explicitly-allows",
+      "outsideAppCommunicationAllowed": true,
+      "platformPriceParityRequired": false,
+      "consumptionOnlyMode": "possible-but-no-in-app-purchase-or-purchase-cta"
+    },
+    "steam": {
+      "inGamePurchasesUseSteamWalletMicroTxn": true,
+      "serverInitiatesAndFinalizesTransaction": true,
+      "grantOnlyAfterSuccessfulFinalize": true,
+      "reversalStatusRequiresEntitlementReviewOrClawback": true,
+      "sandboxRequiredBeforeLive": true
+    }
+  },
+  "currencyBoundary": {
+    "nativeAndSteamPaidCreditNonTransferable": true,
+    "paidCreditName": null,
+    "heroTokenNeverCreatedFromPlatformReceipt": true,
+    "sameGoodsMayHavePlatformSpecificPrice": true,
+    "serverProductIdMapsEveryPlatformSku": true,
+    "clientCannotConvertPaidCreditToHero": true
+  },
+  "rewardedAds": {
+    "provider": null,
+    "disabled": true,
+    "serverVerificationRequired": true,
+    "oneRewardPerProviderEvent": true,
+    "consentAgePrivacyAndSdkReviewRequired": true,
+    "declineOrUnavailableNeverBlocksGameplay": true,
+    "dailyCapsRequiredBeforeActivation": true
+  },
+  "receipt": {
+    "uniqueKey": ["environment", "platform", "transaction_id"],
+    "signedProductAmountCurrencyStatusAccountRequired": true,
+    "serverToServerVerification": true,
+    "storedReplayResult": true,
+    "refundChargebackReversalState": true,
+    "atomicEntitlementAndAudit": true,
+    "clientPricePaidFlagOrRedirectForbidden": true
+  },
+  "decisionTelemetry": {
+    "minimumObservationDays": 30,
+    "minimumMonthlyActiveAccounts": 500,
+    "metrics": ["shop-impressions", "offer-detail-opens", "daily-free-claims", "checkout-starts", "verified-purchases", "refunds", "chargebacks", "ad-opt-ins", "verified-ad-rewards", "d1-retention", "d7-retention", "d30-retention", "payer-retention", "nonpayer-retention", "arppu", "inventory-saturation", "economy-net-flow"],
+    "privacySafeCohortsOnly": true,
+    "balanceVersionRequired": true,
+    "noDecisionFromClientEventsAlone": true
+  },
+  "activation": {
+    "providerAndPlatformAccountsApproved": false,
+    "refundChargebackPolicyApproved": false,
+    "skuAndRegionalPriceMatrixApproved": false,
+    "taxConsumerPrivacyAgeReviewApproved": false,
+    "financialFounderApprovalRequired": true,
+    "phaseHCompletionRequired": true
+  },
+  "officialSources": {
+    "apple": "https://developer.apple.com/app-store/review/guidelines/",
+    "googlePlay": "https://support.google.com/googleplay/android-developer/answer/10281818",
+    "steam": "https://partner.steamgames.com/doc/features/microtransactions/implementation"
+  }
+}
