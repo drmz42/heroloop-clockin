@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "admin-control-plane-suite-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "contracts": [
+    { "id": "panel", "path": "config/admin-panel.v1.json", "check": "check:admin-panel", "stage": "foundation", "dependencies": [] },
+    { "id": "access", "path": "config/admin-access-governance.v1.json", "check": "check:admin-access-governance", "stage": "foundation", "dependencies": ["panel"] },
+    { "id": "audit", "path": "config/admin-audit.v1.json", "check": "check:admin-audit", "stage": "foundation", "dependencies": ["panel", "access"] },
+    { "id": "operations", "path": "config/admin-operations.v1.json", "check": "check:admin-operations", "stage": "read_only", "dependencies": ["panel", "access", "audit"] },
+    { "id": "analytics", "path": "config/telemetry/admin-analytics.v1.json", "check": "check:admin-analytics", "stage": "read_only", "dependencies": ["panel", "access", "audit"] },
+    { "id": "progression_dashboard", "path": "config/telemetry/balance-dashboard.v1.json", "check": "check:balance-dashboard", "stage": "read_only", "dependencies": ["analytics"] },
+    { "id": "player_support", "path": "config/admin-player-support.v1.json", "check": "check:admin-player-support", "stage": "bounded_support", "dependencies": ["panel", "access", "audit"] },
+    { "id": "promo_management", "path": "config/economy/promo-management.v1.json", "check": "check:promo-management", "stage": "economy_mutation", "dependencies": ["panel", "access", "audit", "analytics"] },
+    { "id": "economy_operations", "path": "config/admin-economy-operations.v1.json", "check": "check:admin-economy-operations", "stage": "economy_mutation", "dependencies": ["panel", "access", "audit", "analytics"] }
+  ],
+  "stageOrder": ["foundation", "read_only", "bounded_support", "economy_mutation"],
+  "activationRules": {
+    "oneImmutableCandidateRequired": true,
+    "allContractChecksRequired": true,
+    "dependencyStageMustBeAcceptedBeforeDependentStage": true,
+    "partialFailureKeepsDependentStageDisabled": true,
+    "unknownOrMissingContractFailsClosed": true,
+    "dnsPublicTrafficAndRouteRemainDisabledWithoutExplicitApproval": true,
+    "identityProxyVpnAllowlistAndPasskeyRequiredBeforeAnyRoute": true,
+    "auditRedactionIntegrityAndBackupRequiredBeforeAnyAuthenticatedUse": true,
+    "readOnlyBeforeAnySupportOrEconomyMutation": true,
+    "productionMutationDefaultDisabled": true,
+    "panelCannotCreateItsOwnApproval": true,
+    "stagingAndProductionCredentialsDataAndSessionsSeparated": true,
+    "rollbackDisablesRouteAndRevokesSessionsBeforeComponentRollback": true
+  },
+  "approvalGates": {
+    "dnsAndPublicTraffic": false,
+    "identityProxyOrVpn": false,
+    "adminAccountAndPrivilegeExpansion": false,
+    "passkeyEnrollment": false,
+    "privacyRetention": false,
+    "auditBackup": false,
+    "productionPlayerMutation": false,
+    "financialEconomyMutation": false,
+    "runtimeActivation": false
+  },
+  "validation": {
+    "componentContractChecks": true,
+    "noBrowserDatabaseOrServiceCredential": true,
+    "noGenericSqlCreditDebitRestoreDeployOrRemediation": true,
+    "roleMatrixParityRequired": true,
+    "secretRedactionFixturesRequired": true,
+    "idempotencyAndConcurrencyFixturesRequiredForMutations": true,
+    "privacySmallCohortFixturesRequired": true,
+    "publicSiteGateRequiredForAnyFutureRouteOrServerChange": true
+  },
+  "acceptanceScenarios": [
+    "missing-contract-deny", "unknown-contract-deny", "duplicate-contract-deny", "dependency-cycle-deny",
+    "dependency-stage-order-deny", "failed-foundation-keeps-read-only-disabled", "failed-audit-keeps-support-disabled",
+    "failed-analytics-keeps-economy-disabled", "route-before-iap-deny", "route-before-passkey-deny",
+    "route-before-audit-backup-deny", "production-mutation-default-deny", "self-approval-deny",
+    "staging-production-session-separation", "browser-credential-deny", "generic-sql-deny",
+    "generic-credit-debit-deny", "restore-deploy-remediation-deny", "secret-redaction-fixtures",
+    "mutation-idempotency-fixtures", "mutation-concurrency-fixtures", "small-cohort-fixtures",
+    "rollback-route-disable", "rollback-session-revoke", "immutable-candidate", "all-component-checks"
+  ],
+  "activation": {
+    "allDependenciesAccepted": false,
+    "allApprovalsRecorded": false,
+    "immutableCandidateBuilt": false,
+    "stagingAccepted": false,
+    "runtimeEnabled": false,
+    "phaseHCompletionRequired": true
+  }
+}
