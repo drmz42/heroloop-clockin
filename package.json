@@ -19,6 +19,7 @@
     "check:solana-web-auth": "node scripts/check-solana-web-auth-contract.mjs",
     "check:bot-protection": "node scripts/check-bot-protection-contract.mjs",
     "audit:runtime-performance": "node scripts/audit-runtime-performance-budget.mjs",
+    "check:staging-performance-baseline": "node scripts/check-staging-performance-baseline.mjs",
     "audit:runtime-images": "node scripts/audit-runtime-images.mjs",
     "check:admin-panel": "node scripts/check-admin-panel-contract.mjs",
     "check:admin-analytics": "node scripts/check-admin-analytics-contract.mjs",
