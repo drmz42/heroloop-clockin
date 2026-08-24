@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "solana-web-auth-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "walletDiscovery": {
+    "standard": "Wallet Standard",
+    "oneGenericConnectAction": true,
+    "hardCodedWalletButtonsForbidden": true,
+    "userSelectsCompatibleDetectedWallet": true,
+    "noWalletState": "show-install-or-wallet-help",
+    "walletConnectionAloneIsNotAuthentication": true
+  },
+  "signIn": {
+    "protocol": "Sign-In With Solana",
+    "preferredFeature": "solana:signIn",
+    "legacyFallback": "connect-plus-signMessage-with-identical-server-fields",
+    "transactionSignatureForbidden": true,
+    "serverGeneratesInput": true,
+    "requiredFields": ["domain", "address", "statement", "uri", "version", "chainId", "nonce", "issuedAt", "expirationTime", "requestId"],
+    "version": "1",
+    "nonceMinimumEntropyBits": 128,
+    "maximumLifetimeMinutes": 5,
+    "statement": "Signing is free, proves wallet ownership, moves no funds and costs no gas."
+  },
+  "serverVerification": {
+    "abnfMessageParsingRequired": true,
+    "exactServerInputMatchRequired": true,
+    "ed25519SignatureRequired": true,
+    "publicKeyMatchesAddressAndWalletOutput": true,
+    "environmentDomainUriAndChainAllowlistRequired": true,
+    "issuedAtSkewBoundRequired": true,
+    "notBeforeCheckedWhenPresent": true,
+    "expirationRequired": true,
+    "nonceAndRequestIdSingleUse": true,
+    "atomicNonceConsumeAndSessionIssue": true,
+    "plainClientAddressNeverAuthenticates": true
+  },
+  "identity": {
+    "provider": "solana",
+    "providerSubject": "verified-base58-public-key",
+    "oneWalletBelongsToOneHeroloopAccount": true,
+    "emailAutoMergeForbidden": true,
+    "linkRequiresCurrentSessionAndFreshSiws": true,
+    "collisionFailsClosed": true
+  },
+  "sessionLifecycle": {
+    "shortLivedAccessAndRotatingRefresh": true,
+    "silentReconnectRequiresValidServerSessionAndSameWallet": true,
+    "silentReconnectNeverPromptsOrAutoSigns": true,
+    "walletLockedUnavailableOrMismatchReturnsToLanding": true,
+    "disconnectRevokesLocalSession": true,
+    "accountChangeToDifferentAddressForcesLogout": true,
+    "tabFocusRechecksWalletAndServerSession": true,
+    "valuableActionsRequireFreshServerAuthorization": true
+  },
+  "browserSaveBoundary": {
+    "namespaceByVerifiedHeroloopAccountAndWallet": true,
+    "unverifiedWalletCannotReadAnotherNamespace": true,
+    "legacyImportRequiresExplicitVerifiedOwnerAndOneTimeMigration": true,
+    "walletSwitchNeverImportsPreviousWalletSave": true
+  },
+  "security": {
+    "challengeRateLimitedByIpAndSession": true,
+    "verificationRateLimitedByIpWalletAndChallenge": true,
+    "failedAttemptsBounded": true,
+    "logsExcludeSignatureSignedMessageNonceAndFullWallet": true,
+    "genericClientErrorsWithRequestId": true,
+    "noTransactionPermissionRequestedForLogin": true
+  },
+  "acceptanceScenarios": [
+    "wallet-standard-discovery", "no-wallet", "valid-siws-new-account", "valid-siws-link", "legacy-sign-message", "bad-ed25519-signature", "address-mismatch", "domain-mismatch", "uri-mismatch", "chain-mismatch", "expired-message", "future-issued-at", "nonce-replay", "request-id-replay", "subject-collision", "silent-same-wallet", "silent-wallet-locked", "silent-address-mismatch", "disconnect", "account-change", "tab-focus-mismatch", "legacy-save-owned-import", "legacy-save-cross-wallet-rejected", "rate-limit", "provider-unavailable"
+  ],
+  "activation": {
+    "productionDomainAndChainApproved": false,
+    "walletStandardDependenciesApproved": false,
+    "identitySchemaImplemented": false,
+    "challengeAndSessionEndpointsImplemented": false,
+    "legacySaveMigrationImplemented": false,
+    "runtimeImplemented": false,
+    "privacyAndRecoveryApproved": false,
+    "phaseHCompletionRequired": true
+  },
+  "officialSources": {
+    "siwsSpecification": "https://github.com/phantom/sign-in-with-solana",
+    "solanaWallets": "https://solana.com/wallets"
+  }
+}
