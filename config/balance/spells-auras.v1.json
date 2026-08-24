@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "spells-auras-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "formationSlots": ["attack_spell", "defense_spell", "aura"],
+  "maximumEquippedPerSlot": 1,
+  "maximumOwnedCombined": 200,
+  "raritySource": "config/balance/summon-family-pity.v1.json",
+  "rarityScales": { "common": 1, "rare": 1.35, "epic": 1.75, "legendary": 2.2, "mythic": 2.6 },
+  "levelScales": { "1": 1, "2": 1.15, "3": 1.3, "4": 1.45, "5": 1.6 },
+  "catalog": [
+    { "id": "cinder-lance", "slot": "attack_spell", "effect": "spell_damage_atk_percent", "baseValue": 20, "cooldownSeconds": 12 },
+    { "id": "armor-rend", "slot": "attack_spell", "effect": "enemy_def_reduction_percent", "baseValue": 2.4, "durationSeconds": 6, "cooldownSeconds": 18 },
+    { "id": "storm-chain", "slot": "attack_spell", "effect": "secondary_lane_damage_atk_percent", "baseValue": 10, "cooldownSeconds": 15 },
+    { "id": "guardian-veil", "slot": "defense_spell", "effect": "shield_lowest_percent_max_hp", "baseValue": 2.8, "cooldownSeconds": 20 },
+    { "id": "stone-vow", "slot": "defense_spell", "effect": "incoming_damage_reduction_percent", "baseValue": 1.9, "durationSeconds": 6, "cooldownSeconds": 18 },
+    { "id": "pure-tide", "slot": "defense_spell", "effect": "heal_lowest_percent_max_hp", "baseValue": 0.2, "cooldownSeconds": 15 },
+    { "id": "aura-might", "slot": "aura", "effect": "formation_atk_percent", "baseValue": 1.2 },
+    { "id": "aura-triune", "slot": "aura", "effect": "formation_primary_stats_percent", "baseValue": 0.72 },
+    { "id": "aura-spellweave", "slot": "aura", "effect": "spell_damage_percent", "baseValue": 2.4 },
+    { "id": "aura-kinship", "slot": "aura", "effect": "pet_effect_percent", "baseValue": 2.4 },
+    { "id": "aura-prosperity", "slot": "aura", "effect": "server_gold_reward_percent", "baseValue": 3.6 },
+    { "id": "aura-wisdom", "slot": "aura", "effect": "server_xp_reward_percent", "baseValue": 3.6 }
+  ],
+  "caps": {
+    "spell_damage_atk_percent": 85,
+    "enemy_def_reduction_percent": 10,
+    "secondary_lane_damage_atk_percent": 45,
+    "shield_lowest_percent_max_hp": 12,
+    "incoming_damage_reduction_percent": 8,
+    "heal_lowest_percent_max_hp": 1,
+    "formation_atk_percent": 5,
+    "formation_primary_stats_percent": 3,
+    "spell_damage_percent": 10,
+    "pet_effect_percent": 10,
+    "server_gold_reward_percent": 15,
+    "server_xp_reward_percent": 15,
+    "combinedPassiveHealingPercentMaxHpPerSecond": 2,
+    "simultaneousShieldPercentMaxHp": 25,
+    "combinedGoldBonusPercent": 30,
+    "combinedXpBonusPercent": 30
+  },
+  "leveling": {
+    "maximumLevel": 5,
+    "exactIdentityAndRarityDuplicatesForNextLevel": { "2": 1, "3": 2, "4": 4, "5": 8 },
+    "catalogueUsdForNextLevel": { "2": "0.01", "3": "0.02", "4": "0.04", "5": "0.08" },
+    "serverQuoteRequired": true,
+    "crossRarityConsumptionForbidden": true,
+    "equippedOrEscrowedConsumptionForbidden": true
+  },
+  "combat": {
+    "serverOwned": true,
+    "snapshotWithFormation": true,
+    "serverCombatClock": true,
+    "deterministicTargetRules": true,
+    "deadTargetsExcluded": true,
+    "spellCannotTriggerItselfOrExtraRewards": true,
+    "petsAndSpellsDoNotCreateEnemyLanes": true,
+    "reducedMotionKeepsIconTargetCastAndCountdown": true
+  },
+  "settlement": {
+    "actions": ["spell_summon", "spell_aura_equip_set", "spell_aura_level_up"],
+    "expectedRevisionRequired": true,
+    "idempotencyKeyRequired": true,
+    "atomicCapacitySpendConsumptionAndResult": true,
+    "clientCannotSubmitOddsResultPriceEffectOrTarget": true,
+    "immutableEventsRequired": true
+  },
+  "acquisition": {
+    "families": ["spell", "aura"],
+    "heroAndPetPityUntouched": true,
+    "rollCatalogueUsd": "0.01",
+    "stagingQuoteHeroPerUsd": 1000,
+    "packContents": null,
+    "freeSources": null,
+    "activationRequiresFinancialApproval": true
+  },
+  "power": {
+    "futureVersionRequired": true,
+    "expectedCooldownContributionRequired": true,
+    "goldAndXpAurasExcludedFromCombatPower": true,
+    "heroIncomePowerExcludedUntilApprovedServerSettlement": true,
+    "combinedHeroItemPetSpellAuraSimulationRequired": true
+  }
+}
