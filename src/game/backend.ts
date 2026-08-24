@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type Session } from '@supabase/supabase-js';
 
 export const backendMode = import.meta.env.VITE_BACKEND_MODE === 'selfhosted' ? 'selfhosted' : 'supabase';
 export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
@@ -14,16 +14,31 @@ export const demoTokenomicsEnabled = import.meta.env.VITE_DEMO_TOKENOMICS === 't
 // GoTrue retains the supported Supabase Auth protocol after the database/API exit.
 export const supabase = createClient(backendUrl, supabaseAnonKey);
 
+let replacementSession: Promise<Session | null> | null = null;
+
+async function replaceLocalSession(): Promise<Session | null> {
+  if (!replacementSession) {
+    replacementSession = (async () => {
+      // A session from an older backend/project cannot be refreshed. Clear only
+      // this browser's auth state, then establish a fresh anonymous identity.
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+      const { data, error } = await supabase.auth.signInAnonymously();
+      return error ? null : data.session;
+    })().finally(() => {
+      replacementSession = null;
+    });
+  }
+  return replacementSession;
+}
+
 export async function authHeaders(refresh = false): Promise<Record<string, string> | null> {
   let { data: { session } } = await supabase.auth.getSession();
   if (refresh && session) {
-    const refreshed = await supabase.auth.refreshSession();
-    session = refreshed.data.session;
+    const { data, error } = await supabase.auth.refreshSession();
+    session = error ? null : data.session;
   }
   if (!session) {
-    if (refresh) return null;
-    const { data } = await supabase.auth.signInAnonymously();
-    session = data.session;
+    session = await replaceLocalSession();
   }
   return session ? {
     'Content-Type': 'application/json',
