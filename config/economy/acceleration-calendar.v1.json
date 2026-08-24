@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "bounded-acceleration-calendar-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "normalization": {
+    "unit": "cohort-baseline-progression-day-equivalent",
+    "rollingWindowDays": 30,
+    "maximumCombinedGrantDayEquivalents": 4.5,
+    "maximumBaselineAccelerationPercent": 15,
+    "requiresObservedServerMedianPerResourceAndBand": true,
+    "clientValuesForbidden": true
+  },
+  "sources": [
+    { "id": "promo_code", "maximumDayEquivalentsPer30Days": 0.5, "claim": "explicit-code-once-per-account-campaign" },
+    { "id": "campaign", "maximumDayEquivalentsPer30Days": 1, "claim": "server-verified-objective" },
+    { "id": "seasonal_event", "maximumDayEquivalentsPer30Days": 1, "claim": "server-verified-event-objective" },
+    { "id": "achievement", "maximumDayEquivalentsPer30Days": 1.5, "claim": "one-time-threshold" },
+    { "id": "community", "maximumDayEquivalentsPer30Days": 0.5, "claim": "server-roster-snapshot-or-universal-grant" }
+  ],
+  "grantRules": {
+    "allowedResourceFamilies": ["summon_scroll", "progression_resource", "event_chest", "cosmetic"],
+    "directHeroOrEquipmentRarityGrantForbidden": true,
+    "directEssenceLevelGrantForbidden": true,
+    "rarityRollAndPityRemainCanonical": true,
+    "essenceRollingActivationCapRemains20LevelsPer30Days": true,
+    "publishedProgressionCapsUnchanged": true,
+    "paidPurchaseCannotMultiplyGrant": true,
+    "sameEligibilityAndAmountForPayerAndNonpayer": true,
+    "expiredUnclaimedGrantDoesNotAutoConvert": true
+  },
+  "settlement": {
+    "serverSourceLabelsRequired": ["source_kind", "campaign_id", "grant_version", "balance_version"],
+    "uniqueKey": ["account_id", "campaign_id", "grant_version", "claim_step"],
+    "serverEligibilityAndAmountRequired": true,
+    "atomicResourceCreditAndAudit": true,
+    "exactReplayReturnsStoredResult": true,
+    "changedReplayFailsClosed": true,
+    "globalAndPerSourceBudgetCheckedBeforeCredit": true,
+    "revocationOrCorrectionRequiresCompensatingEvent": true
+  },
+  "calendar": {
+    "nearTermMilestonesVisible": 3,
+    "fullCapAlwaysDiscoverable": true,
+    "hiddenPersonalizedRequirementsForbidden": true,
+    "overlappingEventsCountAgainstOneCombinedBudget": true,
+    "minimumNoticeDaysForExpiringClaim": 7
+  },
+  "model": {
+    "cohorts": [
+      { "id": "f2p", "dailyPacePercentiles": { "p10": 0.35, "p50": 0.55, "p90": 0.8 }, "grantClaimRate": 0.65 },
+      { "id": "active", "dailyPacePercentiles": { "p10": 0.8, "p50": 1, "p90": 1.2 }, "grantClaimRate": 0.9 },
+      { "id": "payer", "dailyPacePercentiles": { "p10": 1, "p50": 1.25, "p90": 1.5 }, "grantClaimRate": 0.9 }
+    ],
+    "milestones": [
+      { "id": "early", "baselineDayEquivalents": 30, "minimumElapsedDays": 14 },
+      { "id": "established", "baselineDayEquivalents": 120, "minimumElapsedDays": 45 },
+      { "id": "distant", "baselineDayEquivalents": 365, "minimumElapsedDays": 120 },
+      { "id": "essence_200", "baselineDayEquivalents": 633600, "minimumElapsedDays": 300, "paceScale": 150 }
+    ],
+    "maximumTimeReductionPercent": 15
+  },
+  "telemetryGate": {
+    "minimumObservationDays": 30,
+    "minimumCohortAccounts": 100,
+    "requiredPercentiles": ["p10", "p50", "p90"],
+    "requiredMetrics": ["resource-faucet", "resource-sink", "milestone-time", "claim-rate", "retention", "inventory-saturation"],
+    "privacySafeAggregatesOnly": true,
+    "balanceVersionRequired": true
+  },
+  "activation": {
+    "observedResourceMediansApproved": false,
+    "campaignCalendarApproved": false,
+    "issuanceBudgetApproved": false,
+    "settlementImplemented": false,
+    "phaseHCompletionRequired": true,
+    "financialFounderApprovalRequiredForHeroOrPaidValue": true
+  }
+}
