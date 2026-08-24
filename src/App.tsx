@@ -274,7 +274,7 @@ function App() {
 
   if (routePath === '/wiki') {
     return (
-      <div className="game-shell h-screen overflow-auto bg-px-bg text-px-text">
+      <div className={`game-shell game-motion-${game.state.battleAnimationMode} h-screen overflow-auto bg-px-bg text-px-text`}>
         <div className="sticky top-0 z-20 flex min-h-[54px] items-center justify-between gap-3 border-b border-[#59472d] bg-[#0b0c0a]/95 px-3 py-2 backdrop-blur">
           <img src="/assets/brand/heroloop-logo.png" alt="HeroLoop" width={154} height={46} className="h-9 w-auto max-w-[148px] object-contain" />
           <button type="button" onClick={closeWiki} className="game-control game-primary flex items-center gap-2 px-3 py-2 text-xs font-black">
@@ -294,7 +294,7 @@ function App() {
   }
 
   return (
-    <div className="game-shell flex h-screen flex-col overflow-hidden bg-px-bg text-px-text">
+    <div className={`game-shell game-motion-${game.state.battleAnimationMode} flex h-screen flex-col overflow-hidden bg-px-bg text-px-text`}>
       <GameNavBar
         tab={tab}
         onChange={(nextTab) => {
