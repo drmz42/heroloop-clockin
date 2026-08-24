@@ -8,7 +8,7 @@ import {
   buildRegisteredState,
   STARTER_HERO_IDS,
 } from "../shared/registration.js";
-import { validRegistrationShell, validateAndMigrateGameState } from "../shared/save-schema.mjs";
+import { applyResourceSnapshot, validRegistrationShell, validateAndMigrateGameState } from "../shared/save-schema.mjs";
 
 export type JsonRecord = Record<string, unknown>;
 
@@ -24,6 +24,11 @@ export function isRecord(value: unknown): value is JsonRecord {
 
 export function recordArray(value: unknown): JsonRecord[] {
   return Array.isArray(value) ? value.filter(isRecord) : [];
+}
+
+export function canonicalResourceState(value: unknown, resources: unknown): JsonRecord | null {
+  const result = applyResourceSnapshot(value, resources);
+  return result.ok ? result.state : null;
 }
 
 export function validPersistentState(value: unknown): value is JsonRecord {
@@ -242,6 +247,7 @@ export function prepareStatusResult(context: JsonRecord, now: number): JsonRecor
     boss_keys: player ? Number(player.boss_keys) || 0 : 0,
     resource_state: resource?.state ?? null,
     resource_revision: resource ? Number(resource.revision) : null,
+    resources: isRecord(context.resources) ? context.resources : null,
     rarity_capacity: rarityCapacity,
     rarity_supply: raritySupply,
   };
@@ -273,6 +279,9 @@ export function canonicalizeLoadedState(context: JsonRecord):
     return { code: "state_unavailable", status: 503 };
   }
   let state = structuredClone(context.state) as JsonRecord;
+  const resourceState = applyResourceSnapshot(state, context.resources);
+  if (!resourceState.ok) return { code: "resource_state_unavailable", status: 503 };
+  state = resourceState.state;
   const ledger = recordArray(context.items);
   const ledgerById = new Map(ledger.map((row) => [String(row.id ?? ""), row]));
   const inventory = recordArray(state.inventory);
@@ -311,7 +320,10 @@ export function mergeSaveState(
   if (!validPersistentState(context.state) || !Number.isSafeInteger(revision) || revision < 1) {
     return { code: "state_unavailable", status: 503 };
   }
-  const current = applyTrainingPurchases(context.state, recordArray(context.training_purchases), now) as JsonRecord;
+  let current = applyTrainingPurchases(context.state, recordArray(context.training_purchases), now) as JsonRecord;
+  const resourceState = applyResourceSnapshot(current, context.resources);
+  if (!resourceState.ok) return { code: "resource_state_unavailable", status: 503 };
+  current = resourceState.state;
   const validated = validateAndMigrateGameState(requested, { canonicalState: current });
   if (!validated.ok) return { code: validated.code ?? "invalid_state", status: validated.code === "state_too_large" ? 413 : 400 };
   for (const key of Object.keys(requested)) delete requested[key];

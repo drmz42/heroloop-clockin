@@ -1,6 +1,7 @@
 import { Pool } from "@db/postgres";
 import {
   canonicalizeLoadedState,
+  canonicalResourceState,
   mergeSaveState,
   missingFormationUids,
   prepareLeaderboardResult,
@@ -846,17 +847,18 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
     if (parsed.value.action === "summon_boss") {
       const payloadError = validatePayloadFields(payload, ["location"]);
       const location = Number(payload.location);
-      if (payloadError || !Number.isSafeInteger(location) || location < 1 || location > 10_000) {
+      const key = idempotencyKey(parsed.value);
+      if (payloadError || !key || !Number.isSafeInteger(location) || location < 1 || location > 10_000) {
         return errorResponse(400, payloadError ?? "invalid_boss_location", requestId);
       }
       try {
         const result = await databaseJson(
-          "SELECT heroloop_api.summon_boss($1::uuid, $2::integer) AS result",
-          [identity.playerId, location],
+          "SELECT heroloop_api.summon_boss($1::uuid, $2::integer, $3::uuid) AS result",
+          [identity.playerId, location, key],
         );
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
       } catch (error) {
-        const code = databaseErrorCode(error, ["boss_key_required", "active_encounter_exists"]);
+        const code = databaseErrorCode(error, ["resource_insufficient_balance", "resource_idempotency_conflict", "active_encounter_exists"]);
         if (code) return errorResponse(409, code, requestId);
         return errorResponse(503, "boss_summon_failed", requestId);
       }
@@ -982,6 +984,10 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
           "SELECT heroloop_api.status_context($1::uuid) AS result",
           [identity.playerId],
         );
+        context.resources = await databaseJson(
+          "SELECT heroloop_api.resource_snapshot($1::uuid) AS result",
+          [identity.playerId],
+        );
         return json(200, {
           ok: true,
           contract_version: 1,
@@ -1001,6 +1007,12 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
           "SELECT heroloop_api.game_state_load_context($1::uuid) AS result",
           [identity.playerId],
         );
+        if (isRecord(context.state)) {
+          context.resources = await databaseJson(
+            "SELECT heroloop_api.resource_snapshot($1::uuid) AS result",
+            [identity.playerId],
+          );
+        }
         const loaded = canonicalizeLoadedState(context);
         if ("code" in loaded) return errorResponse(loaded.status, loaded.code, requestId);
         let state = loaded.state;
@@ -1063,6 +1075,12 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
           "SELECT heroloop_api.game_state_save_context($1::uuid) AS result",
           [identity.playerId],
         );
+        if (isRecord(context.state)) {
+          context.resources = await databaseJson(
+            "SELECT heroloop_api.resource_snapshot($1::uuid) AS result",
+            [identity.playerId],
+          );
+        }
         const prepared = prepareLegacyMigration(context, payload.state, identity.playerId);
         if ("code" in prepared) return errorResponse(prepared.status, prepared.code, requestId);
         const result = await databaseJson(
@@ -1091,14 +1109,22 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
           "SELECT heroloop_api.game_state_save_context($1::uuid) AS result",
           [identity.playerId],
         );
+        if (isRecord(context.state)) {
+          context.resources = await databaseJson(
+            "SELECT heroloop_api.resource_snapshot($1::uuid) AS result",
+            [identity.playerId],
+          );
+        }
         const currentRevision = Number(context.revision);
         if (Number.isSafeInteger(currentRevision) && currentRevision !== requestedRevision) {
+          const conflictState = canonicalResourceState(context.state, context.resources);
+          if (!conflictState) return errorResponse(503, "resource_state_unavailable", requestId);
           return json(409, {
             ok: false,
             code: "state_conflict",
             request_id: requestId,
             revision: currentRevision,
-            result: { state: context.state, revision: currentRevision, conflict: true },
+            result: { state: conflictState, revision: currentRevision, conflict: true },
           });
         }
         const merged = mergeSaveState(context, payload.state, identity.playerId, Date.now());

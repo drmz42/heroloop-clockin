@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "status": "proposal-only",
-  "runtimeAdopted": false,
-  "schemaApproved": false,
+  "status": "staging-runtime-candidate",
+  "runtimeAdopted": true,
+  "schemaApproved": true,
   "catalog": [
     { "id": "potion_xs", "family": "potion", "status": "client-compatibility", "spendable": true, "deletable": false },
     { "id": "potion_sm", "family": "potion", "status": "client-compatibility", "spendable": true, "deletable": false },
@@ -57,15 +57,15 @@
     "changedPayloadReplay": "idempotency-conflict"
   },
   "integration": [
-    { "action": "tutorial-quest-claim", "resources": ["tutorial_chest", "potion_xs"], "direction": "credit", "atomicWith": "quest-claim-and-save-revision" },
-    { "action": "tutorial-chest-open", "resources": ["tutorial_chest"], "direction": "debit", "atomicWith": "canonical-item-creation-and-quest-progress" },
-    { "action": "summon-milestone-or-boss-reward", "resources": ["summon_scroll"], "direction": "credit", "atomicWith": "source-settlement" },
-    { "action": "free-summon", "resources": ["summon_scroll"], "direction": "debit", "atomicWith": "hero-roll-pity-capacity-and-save-revision" },
-    { "action": "boss-start", "resources": ["boss_key"], "direction": "debit", "atomicWith": "encounter-creation" },
-    { "action": "potion-use-or-auto-buy-use", "resources": ["potion_xs", "potion_sm", "potion_md", "potion_lg", "potion_xl", "potion_xxl"], "direction": "debit-or-credit-and-debit", "atomicWith": "gold-debit-and-canonical-combat-heal" },
-    { "action": "item-salvage", "resources": ["iron_scrap", "arcane_dust", "astral_shard", "godforged_core"], "direction": "credit", "atomicWith": "item-soft-delete-and-limited-slot-release" },
-    { "action": "item-craft", "resources": ["astral_shard", "godforged_core"], "direction": "debit", "atomicWith": "input-consumption-target-slot-reservation-and-output-create" },
-    { "action": "promo-code", "resources": ["boss_key", "summon_scroll"], "direction": "credit", "atomicWith": "promo-redemption" }
+    { "action": "tutorial-quest-claim", "resources": ["tutorial_chest", "potion_xs"], "direction": "credit", "atomicWith": "quest-claim-and-save-revision", "runtime": "planned-with-tutorial-settlement" },
+    { "action": "tutorial-chest-open", "resources": ["tutorial_chest"], "direction": "debit", "atomicWith": "canonical-item-creation-and-quest-progress", "runtime": "planned-with-tutorial-settlement" },
+    { "action": "summon-milestone-or-boss-reward", "resources": ["summon_scroll"], "direction": "credit", "atomicWith": "source-settlement", "runtime": "planned-with-reward-settlement" },
+    { "action": "free-summon", "resources": ["summon_scroll"], "direction": "debit", "atomicWith": "hero-roll-pity-capacity-and-save-revision", "runtime": "planned-with-free-summon" },
+    { "action": "boss-start", "resources": ["boss_key"], "direction": "debit", "atomicWith": "encounter-creation", "runtime": "integrated" },
+    { "action": "potion-use-or-auto-buy-use", "resources": ["potion_xs", "potion_sm", "potion_md", "potion_lg", "potion_xl", "potion_xxl"], "direction": "debit-or-credit-and-debit", "atomicWith": "gold-debit-and-canonical-combat-heal", "runtime": "planned-with-potion-settlement" },
+    { "action": "item-salvage", "resources": ["iron_scrap", "arcane_dust", "astral_shard", "godforged_core"], "direction": "credit", "atomicWith": "item-soft-delete-and-limited-slot-release", "runtime": "planned-with-salvage" },
+    { "action": "item-craft", "resources": ["astral_shard", "godforged_core"], "direction": "debit", "atomicWith": "input-consumption-target-slot-reservation-and-output-create", "runtime": "planned-with-crafting" },
+    { "action": "promo-code", "resources": ["boss_key", "summon_scroll"], "direction": "credit", "atomicWith": "promo-redemption", "runtime": "integrated" }
   ],
   "inventory": {
     "gridUniqueTypeCapacity": 64,

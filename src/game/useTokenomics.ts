@@ -17,6 +17,7 @@ export interface TokenomicsStatus {
   token_balance: number;
   resource_state?: unknown;
   resource_revision?: number | null;
+  resources?: { revision: string; balances: Record<string, string> } | null;
   boost: {
     active: boolean;
     login_days: number;
@@ -137,7 +138,7 @@ export function useTokenomics(power: number, accountLevel: number, username: str
   const summonBoss = useCallback(async (location: number) => {
     if (!tokenomicsEnabled) return null;
     try {
-      const data = await playerSync<{ encounter_id: string; remaining_keys: number }>('summon_boss', { location });
+      const data = await playerSync<{ encounter_id: string; remaining_keys: number }>('summon_boss', { location, idempotency_key: crypto.randomUUID() });
       if (!data) return null;
       setStatus((prev) => prev ? { ...prev, boss_keys: Number(data.remaining_keys) } : prev);
       return data;
