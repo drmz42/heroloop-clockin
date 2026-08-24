@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "admin-player-support-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "search": {
+    "exactMatchOnly": true,
+    "allowedKeys": ["player_id", "auth_user_id", "normalized_email", "wallet_public_key", "provider_subject"],
+    "prefixContainsFuzzyAndBulkEnumerationForbidden": true,
+    "minimumInputLengthByKeyRequired": true,
+    "resultLimit": 1,
+    "rateLimitedPerActorAndIp": true,
+    "reasonRequired": true,
+    "everySearchAudited": true,
+    "notFoundResponseDoesNotRevealAccountExistenceOutsideAuthorizedPanel": true
+  },
+  "playerView": {
+    "defaultReadOnly": true,
+    "maskedByDefault": ["email", "wallet_public_key", "provider_subject", "ip_metadata"],
+    "neverDisplayed": ["password", "password_hash", "access_token", "refresh_token", "jwt", "private_key", "signature", "recovery_code", "oauth_credential"],
+    "founderOnlyUnmaskWithFreshStepUpReasonAndAudit": true,
+    "operationsSupportCannotUnmask": true,
+    "environmentAndSaveRevisionAlwaysVisible": true,
+    "staleSnapshotVisiblyLabeled": true,
+    "rawRowExportForbidden": true
+  },
+  "supportNotes": {
+    "appendOnly": true,
+    "maximumCharacters": 2000,
+    "plainTextOnly": true,
+    "secretCredentialPaymentAndSpecialCategoryDataForbidden": true,
+    "correctionCreatesLinkedNote": true,
+    "authorRoleTimestampAndReasonRequired": true,
+    "retentionRequiresPrivacyLegalApproval": true,
+    "playerNeverSeesInternalNoteByDefault": true
+  },
+  "supportSession": {
+    "silentLoginForbidden": true,
+    "founderOnly": true,
+    "maximumMinutes": 15,
+    "permanentVisibleBanner": true,
+    "readOnlyByDefault": true,
+    "freshStepUpReasonRequestIdAndAuditRequired": true,
+    "automaticExpiryAndImmediateRevocationRequired": true,
+    "blockedOperations": ["payment", "transfer", "economy_grant", "market", "account_delete", "credential_change", "security_change", "identity_link", "token_claim", "save_write"]
+  },
+  "operations": {
+    "allowedCatalog": ["session_revoke", "account_suspend", "account_unsuspend"],
+    "operationsSupportMayRequestButNotExecute": true,
+    "founderOnlyExecution": true,
+    "reasonFreshStepUpRequestIdAndIdempotencyKeyRequired": true,
+    "authoritativeBeforeAfterAndTargetRevisionRequired": true,
+    "dryRunPreviewRequired": true,
+    "productionRequiresExistingExternalFounderApproval": true,
+    "panelCannotCreateItsOwnApproval": true,
+    "concurrentRevisionConflictFailsClosed": true,
+    "exactReplayReturnsStoredResult": true,
+    "changedReplayFailsClosed": true,
+    "accountDeleteUsesSeparateComplianceWorkflow": true
+  },
+  "forbiddenOperations": [
+    "password_view_or_set", "token_or_session_impersonation", "identity_link_or_unlink", "save_overwrite_or_revision_rollback",
+    "balance_or_reward_grant", "hero_roster_edit", "inventory_or_resource_edit", "pity_or_progression_edit",
+    "market_or_payment_edit", "ledger_repair", "account_delete", "generic_database_write", "generic_service_role_call"
+  ],
+  "audit": {
+    "appendOnly": true,
+    "searchViewUnmaskNoteSessionAndOperationEventsRequired": true,
+    "actorRoleEnvironmentTargetMaskedReasonRequestSessionIpAndTimestampRequired": true,
+    "secretRedactionRequired": true,
+    "suspendUnsuspendUnmaskAndSupportSessionAlertsRequired": true,
+    "encryptedImmutableBackupRequired": true
+  },
+  "acceptanceScenarios": [
+    "exact-player-id-search", "fuzzy-search-deny", "bulk-enumeration-deny", "search-rate-limit",
+    "unauthorized-existence-deny", "masked-default", "operations-unmask-deny", "founder-step-up-unmask",
+    "secret-field-redaction", "stale-save-revision-label", "raw-row-export-deny",
+    "note-secret-reject", "note-length-reject", "note-correction-append-only",
+    "silent-login-deny", "support-session-banner", "support-session-expiry", "support-save-write-deny",
+    "operations-request-only", "unapproved-production-operation-deny", "dry-run-before-operation",
+    "concurrent-revision-conflict", "exact-idempotent-replay", "changed-replay",
+    "economy-grant-deny", "save-overwrite-deny", "account-delete-deny", "generic-service-role-deny",
+    "audit-secret-redaction", "suspension-alert"
+  ],
+  "activation": {
+    "searchApiImplemented": false,
+    "maskingAndUnmaskAuditImplemented": false,
+    "supportNotesSchemaImplemented": false,
+    "supportSessionImplemented": false,
+    "operationApiImplemented": false,
+    "privacyRetentionApproved": false,
+    "runtimeImplemented": false,
+    "phaseHCompletionRequired": true
+  }
+}
