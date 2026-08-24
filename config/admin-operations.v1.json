@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "admin-operations-proposal-2026.08.24-v1",
+  "status": "proposal",
+  "live": false,
+  "authority": {
+    "readOnly": true,
+    "leastPrivilegeAdaptersRequired": true,
+    "browserHostJournalDatabaseOrServiceAccessForbidden": true,
+    "secretEnvironmentAuthorizationHeaderAndPlayerDataForbidden": true,
+    "restartDeployRollbackRestoreDeleteDnsFirewallAndServiceControlForbidden": true,
+    "automaticRemediationForbidden": true,
+    "unknownOperationFailsClosed": true
+  },
+  "views": {
+    "api": ["availability", "latency-percentiles", "error-rate", "rate-limit-rejections", "request-volume"],
+    "database": ["health", "size", "connections", "slow-query-count", "conflicts", "deadlocks", "replication-or-pitr-state"],
+    "cron_queues": ["enabled-state", "last-result", "last-success", "next-run", "lag", "retry-count"],
+    "release_environment": ["environment", "immutable-release", "commit", "deployed-at", "rollback-candidate"],
+    "uptime_tls": ["production", "staging", "todo", "assets", "dns-transport", "certificate-expiry"],
+    "host_resources": ["disk", "inodes", "memory", "load", "cpu-count", "boot-id-change"],
+    "backup_restore": ["timer-state", "last-result", "verified-at", "age", "checksum-readback", "isolated-restore-evidence"],
+    "abuse_alerts": ["multi-account-aggregate", "impossible-progression", "replay", "rate-limit", "alert-status"]
+  },
+  "sourceReadiness": [
+    { "id": "public-site-monitor", "status": "existing-not-connected", "environmentScope": ["staging", "production"] },
+    { "id": "host-health-monitors", "status": "existing-not-connected", "environmentScope": ["staging", "production"] },
+    { "id": "backup-recovery-status", "status": "existing-not-connected", "environmentScope": ["staging"] },
+    { "id": "api-database-safe-metrics", "status": "not-implemented", "environmentScope": ["staging", "production"] },
+    { "id": "abuse-aggregates", "status": "not-implemented", "environmentScope": ["staging", "production"] }
+  ],
+  "statusModel": {
+    "states": ["unknown", "healthy", "warning", "critical", "recovered", "informational"],
+    "sourceObservedAtRequired": true,
+    "sourceFreshUntilRequired": true,
+    "staleOrMalformedBecomesUnknown": true,
+    "missingNeverBecomesHealthyOrZero": true,
+    "environmentAndSourceAlwaysVisible": true,
+    "safeErrorSummaryOnly": true,
+    "thresholdsOwnedBySourceContract": true
+  },
+  "alertWorkflow": {
+    "stateChangeOnly": true,
+    "deduplicateByEnvironmentCheckAndFailureClass": true,
+    "acknowledgementDoesNotResolveOrRecover": true,
+    "recoveryRequiresFreshPassingSourceEvidence": true,
+    "founderAndOperationsMayAcknowledge": true,
+    "acknowledgementActorReasonAndTimestampRequired": true,
+    "silenceOrMaintenanceWindowDisabledUntilSeparatelyApproved": true,
+    "telegramDeliveryStateVisibleButTokensAndResponsesForbidden": true,
+    "externalCommunicationFromPanelForbidden": true
+  },
+  "privacy": {
+    "aggregateAbuseSignalsOnly": true,
+    "minimumAccountCohort": 5,
+    "ipAndDeviceValuesMaskedByDefault": true,
+    "exactPlayerDrilldownDelegatesToPlayerSupportContract": true,
+    "requestBodiesQueryTextDumpContentsAndJournalLinesForbidden": true,
+    "metricLabelsFreeTextAndHighCardinalityIdentifiersForbidden": true,
+    "boundedRetentionRequired": true
+  },
+  "audit": {
+    "viewAcknowledgeAndDrilldownEventsRequired": true,
+    "appendOnly": true,
+    "actorRoleEnvironmentCheckAlertReasonSessionIpAndTimestampRequired": true,
+    "secretsAndRawOperationalPayloadsForbidden": true,
+    "exportUsesAdminAnalyticsContract": true
+  },
+  "acceptanceScenarios": [
+    "no-public-route", "analyst-operations-deny", "operations-read", "browser-host-access-deny",
+    "browser-journal-access-deny", "browser-database-access-deny", "secret-redaction", "player-data-redaction",
+    "staging-production-separation", "missing-source-unknown", "stale-source-unknown", "malformed-source-unknown",
+    "safe-error-summary", "source-threshold-authority", "state-change-deduplication", "failure-class-separation",
+    "acknowledge-audited", "acknowledge-does-not-resolve", "fresh-evidence-recovery", "maintenance-silence-deny",
+    "telegram-token-redaction", "panel-external-message-deny", "abuse-small-cohort-suppression",
+    "masked-ip-device", "player-drilldown-delegation", "high-cardinality-label-deny",
+    "restart-deny", "deploy-deny", "rollback-deny", "restore-deny", "automatic-remediation-deny",
+    "backup-unverified-not-healthy", "database-metrics-unavailable-not-zero", "audit-raw-payload-redaction"
+  ],
+  "activation": {
+    "safeAdaptersImplemented": false,
+    "apiDatabaseMetricsImplemented": false,
+    "abuseAggregatesImplemented": false,
+    "alertAcknowledgementImplemented": false,
+    "retentionApproved": false,
+    "adminPanelIntegrated": false,
+    "runtimeImplemented": false,
+    "phaseHCompletionRequired": true
+  }
+}
