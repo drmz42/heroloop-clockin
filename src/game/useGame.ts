@@ -21,7 +21,7 @@ import {
 } from '@/game/items';
 import type { Rarity } from '@/game/types';
 import { recordBattleTelemetry } from '@/game/balance';
-import { advanceCombatFrame, combatResolution } from '@/game/combat-step.js';
+import { advanceCombatFrame, combatResolution, seededCombatRandom } from '../../supabase/functions/player-sync/combat-step.mjs';
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
 
 const COMBAT_SPEED = 1;
@@ -196,6 +196,28 @@ export interface ServerMarketSnapshot {
 
 export interface MarketActionResult { ok: boolean; error?: string }
 
+interface NormalCombatWave {
+  startKey: string;
+  completionKey: string;
+  location: number;
+  availableAt: number;
+}
+
+interface NormalCombatStartResult {
+  start_key: string;
+  location: number;
+  seed: number;
+  available_at: string;
+  initial_units: Array<Partial<CombatUnit> & Pick<CombatUnit, 'uid' | 'side'> & { lane: number }>;
+}
+
+interface NormalCombatCompleteResult {
+  revision: number;
+  state: unknown;
+  rewards: { gold: number; account_xp: number };
+  outcome: { all_cleared: boolean };
+}
+
 function updateQuestProgress(quests: DailyQuest[], type: string, amount: number): DailyQuest[] {
   const chain = type.replace(/-$/, '');
   return quests.map(q => {
@@ -239,6 +261,10 @@ export function useGame() {
   const heroHpRef = useRef<Map<string, number>>(new Map());
   const battleStartedAtRef = useRef(Date.now());
   const lastCombatRenderRef = useRef(0);
+  const combatAccumulatorRef = useRef(0);
+  const combatRandomRef = useRef<() => number>(Math.random);
+  const normalCombatWaveRef = useRef<NormalCombatWave | null>(null);
+  const combatSpawnSequenceRef = useRef(0);
   const offlineSettlementKeyRef = useRef('');
   const chestOpeningRef = useRef(false);
   const storeBusyRef = useRef(false);
@@ -262,12 +288,20 @@ export function useGame() {
         accountLevel: remote.accountLevel,
         ownedHeroes: remote.ownedHeroes.map((hero) => {
           const local = localHeroes.get(hero.uid);
-          return local ? { ...hero, equipped: local.equipped, locked: local.locked, isNew: local.isNew, respawnAt: local.respawnAt } : hero;
+          return local ? {
+            ...hero,
+            equipped: local.equipped,
+            locked: local.locked,
+            isNew: local.isNew,
+            respawnAt: hero.respawnAt ?? local.respawnAt,
+          } : hero;
         }),
         totalGoldEarned: remote.totalGoldEarned,
         totalKills: remote.totalKills,
         totalBossKills: remote.totalBossKills,
         highestLocation: remote.highestLocation,
+        dailyQuests: remote.dailyQuests,
+        milestoneQuests: remote.milestoneQuests,
         chests: remote.chests,
         chestsOpenedToday: remote.chestsOpenedToday,
         lastChestReset: remote.lastChestReset,
@@ -319,9 +353,70 @@ export function useGame() {
     });
   }, []);
 
-  const spawnBattle = useCallback((locationId: number, teamUids: string[], forceBoss?: boolean) => {
+  const spawnBattle = useCallback(async (locationId: number, teamUids: string[], forceBoss?: boolean) => {
     const st = stateRef.current;
     const now = Date.now();
+    const serverNormalCombat = tokenomicsEnabled && !forceBoss && !st.bossBattleActive;
+    const sequence = ++combatSpawnSequenceRef.current;
+    if (serverNormalCombat) {
+      resolvingRef.current = true;
+      unitsRef.current = [];
+      setUnits([]);
+      setBattleResult(null);
+      setFloaters([]);
+      const started = await playerSync<NormalCombatStartResult>('normal_combat_start', {
+        location: locationId,
+        idempotency_key: createIdempotencyKey(),
+      });
+      if (sequence !== combatSpawnSequenceRef.current) return;
+      if (!started || typeof started.start_key !== 'string' || !Array.isArray(started.initial_units)) {
+        resolvingRef.current = false;
+        setBattleResult({ win: false, gold: 0, xp: 0, tokens: 0, chest: false, overpowered: false });
+        return;
+      }
+      const serverLocation = Math.floor(Number(started.location));
+      const serverSeed = Number(started.seed);
+      const availableAt = Date.parse(started.available_at);
+      if (!Number.isSafeInteger(serverLocation) || serverLocation < 1 || serverLocation > 10
+        || !Number.isSafeInteger(serverSeed) || !Number.isFinite(availableAt)) {
+        resolvingRef.current = false;
+        setBattleResult({ win: false, gold: 0, xp: 0, tokens: 0, chest: false, overpowered: false });
+        return;
+      }
+      const location = buildLocation(serverLocation, Math.max(1, started.initial_units.filter((unit) => unit.side === 'hero').length), false);
+      const heroes = new Map(st.ownedHeroes.map((hero) => [hero.uid, hero]));
+      const nextUnits: CombatUnit[] = [];
+      for (const serverUnit of started.initial_units) {
+        const ownedHero = serverUnit.side === 'hero' ? heroes.get(serverUnit.uid) : null;
+        const enemy = serverUnit.side === 'enemy' ? location.enemies[serverUnit.lane] : null;
+        const base = ownedHero ? ownedToUnit(ownedHero, st.inventory)
+          : enemy ? enemyToUnit(enemy, serverUnit.lane) : null;
+        if (!base) {
+          resolvingRef.current = false;
+          setBattleResult({ win: false, gold: 0, xp: 0, tokens: 0, chest: false, overpowered: false });
+          return;
+        }
+        nextUnits.push({ ...base, ...serverUnit } as CombatUnit);
+      }
+      normalCombatWaveRef.current = {
+        startKey: started.start_key,
+        completionKey: createIdempotencyKey(),
+        location: serverLocation,
+        availableAt,
+      };
+      combatRandomRef.current = seededCombatRandom(serverSeed);
+      combatAccumulatorRef.current = 0;
+      unitsRef.current = nextUnits;
+      lastCombatRenderRef.current = performance.now();
+      battleStartedAtRef.current = now;
+      setUnits(nextUnits);
+      resolvingRef.current = false;
+      combatWakeRef.current();
+      return;
+    }
+    normalCombatWaveRef.current = null;
+    combatRandomRef.current = Math.random;
+    combatAccumulatorRef.current = 0;
     const fullTeam = teamUids
       .map((uid) => st.ownedHeroes.find((h) => h.uid === uid))
       .filter((h): h is OwnedHero => Boolean(h));
@@ -368,6 +463,55 @@ export function useGame() {
     // Combat and its rewards keep running continuously while the player is
     // online; only offline/hidden-tab catch-up is gated by the active window.
     if (!st.walletAddress) return;
+    const serverWave = normalCombatWaveRef.current;
+    if (tokenomicsEnabled && serverWave) {
+      normalCombatWaveRef.current = null;
+      deadHeroUids.forEach((uid) => heroHpRef.current.delete(uid));
+      const clearSeconds = Math.max(0, (Date.now() - battleStartedAtRef.current) / 1000);
+      const combatPower = teamPower(st.team.map((uid) => st.ownedHeroes.find((hero) => hero.uid === uid)).filter((hero): hero is OwnedHero => Boolean(hero)), st.inventory);
+      const equippedStatLines = st.team.reduce((total, uid) => {
+        const hero = st.ownedHeroes.find((owned) => owned.uid === uid);
+        return total + (hero ? getEquippedItems(hero, st.inventory).reduce((sum, item) => sum + item.stats.length, 0) : 0);
+      }, 0);
+      void (async () => {
+        const delay = Math.max(0, serverWave.availableAt - Date.now());
+        if (delay > 0) await new Promise((resolve) => window.setTimeout(resolve, delay));
+        const completed = await playerSync<NormalCombatCompleteResult>('normal_combat_complete', {
+          start_key: serverWave.startKey,
+          idempotency_key: serverWave.completionKey,
+        });
+        if (!completed) {
+          setBattleResult({ win: false, gold: 0, xp: 0, tokens: 0, chest: false, overpowered: false });
+          return;
+        }
+        mergeServerResourceState(completed.state);
+        const revision = Number(completed.revision);
+        if (Number.isSafeInteger(revision)) setServerRevisionHint(revision);
+        setState((current) => ({
+          ...current,
+          balanceTelemetry: recordBattleTelemetry(current.balanceTelemetry, {
+            locationId: serverWave.location,
+            teamSize: st.team.length,
+            power: combatPower,
+            boss: false,
+            win: allCleared,
+            clearSeconds,
+            heroDeaths: deadHeroUids.length,
+            equippedStatLines,
+          }),
+        }));
+        const authoritativeWin = completed.outcome?.all_cleared === true;
+        setBattleResult({
+          win: authoritativeWin,
+          gold: Math.max(0, Number(completed.rewards?.gold) || 0),
+          xp: Math.max(0, Number(completed.rewards?.account_xp) || 0),
+          tokens: 0,
+          chest: false,
+          overpowered: false,
+        });
+      })();
+      return;
+    }
     const loc = buildLocation(locationId, st.team.length, st.bossBattleActive);
     let goldPerEnemy = clearedLanes > 0 ? loc.goldReward : 0;
     const baseXpPerEnemy = clearedLanes > 0 ? loc.xpReward : 0;
@@ -461,7 +605,7 @@ export function useGame() {
       chest: tokenomicsEnabled ? false : chestDropped,
       overpowered,
     });
-  }, []);
+  }, [mergeServerResourceState]);
 
   const summonBoss = useCallback((remainingKeys?: number) => {
     const st = stateRef.current;
@@ -554,9 +698,17 @@ export function useGame() {
           );
         } else {
           const newFloaters: FloatingNumber[] = [];
-          const step = advanceCombatFrame(live, dt);
-          const finalUnits = step.units;
-          step.events.forEach((event) => {
+          let finalUnits = live;
+          let remaining = combatAccumulatorRef.current + dt;
+          const events: ReturnType<typeof advanceCombatFrame>['events'] = [];
+          while (remaining >= 20 && !combatResolution(finalUnits)) {
+            const step = advanceCombatFrame(finalUnits, 20, combatRandomRef.current);
+            finalUnits = step.units;
+            events.push(...step.events);
+            remaining -= 20;
+          }
+          combatAccumulatorRef.current = remaining;
+          events.forEach((event) => {
             if (event.kind === 'heal') {
               newFloaters.push({ id: floaterId.current++, targetUid: event.targetUid, value: event.amount, crit: false, heal: true, born: now });
             } else if (event.kind === 'miss') {
@@ -586,7 +738,7 @@ export function useGame() {
             setUnits(finalUnits);
           }
           if (newFloaters.length > 0) setFloaters((prev) => [...prev.slice(-24), ...newFloaters]);
-          tryAutoPotion();
+          if (!tokenomicsEnabled || !normalCombatWaveRef.current) tryAutoPotion();
         }
       }
       schedule();

@@ -1,4 +1,5 @@
 import { Pool } from "@db/postgres";
+import { buildNormalCombat } from "/app/shared/normal-combat.mjs";
 import {
   canonicalizeLoadedState,
   canonicalResourceState,
@@ -79,6 +80,8 @@ const commandActions = new Set([
   "dungeon_room_choose",
   "dungeon_abandon",
   "boss_claim",
+  "normal_combat_start",
+  "normal_combat_complete",
 ]);
 
 type JsonRecord = Record<string, unknown>;
@@ -948,6 +951,102 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
         }
         if (code) return errorResponse(409, code, requestId);
         return errorResponse(503, "dungeon_start_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "normal_combat_start") {
+      const payloadError = validatePayloadFields(payload, ["location"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const location = Number(payload.location);
+      if (payloadError || !requestKey || !Number.isSafeInteger(location) || location < 1 || location > 10_000) {
+        return errorResponse(400, payloadError ?? "normal_combat_invalid_location", requestId);
+      }
+      try {
+        const result = await withDatabase(async (client) => {
+          await client.queryArray("BEGIN");
+          try {
+            const preparedQuery = await client.queryObject<{ result: unknown }>(
+              "SELECT heroloop_api.normal_combat_prepare($1::uuid, $2::uuid, $3::integer) AS result",
+              [identity.playerId, requestKey, location],
+            );
+            const prepared = preparedQuery.rows[0]?.result;
+            if (preparedQuery.rows.length !== 1 || !isRecord(prepared)) {
+              throw new Error("invalid normal combat prepare response");
+            }
+            let settled = prepared;
+            if (prepared.needs_simulation === true) {
+              if (!isRecord(prepared.state) || !Array.isArray(prepared.ledger_items)) {
+                throw new Error("invalid normal combat simulation context");
+              }
+              const startKey = String(prepared.start_key ?? "");
+              const preparedLocation = Number(prepared.location);
+              const seed = Number(prepared.seed);
+              if (!uuidPattern.test(startKey) || !Number.isSafeInteger(preparedLocation) || !Number.isSafeInteger(seed)) {
+                throw new Error("invalid normal combat simulation identity");
+              }
+              const combat = buildNormalCombat(prepared.state, prepared.ledger_items, preparedLocation, seed);
+              const storedQuery = await client.queryObject<{ result: unknown }>(
+                "SELECT heroloop_api.normal_combat_store_outcome($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, $5::jsonb) AS result",
+                [
+                  identity.playerId,
+                  startKey,
+                  JSON.stringify(combat.initial_units),
+                  JSON.stringify(combat.reward_bonuses),
+                  JSON.stringify(combat.outcome),
+                ],
+              );
+              const stored = storedQuery.rows[0]?.result;
+              if (storedQuery.rows.length !== 1 || !isRecord(stored)) {
+                throw new Error("invalid normal combat outcome response");
+              }
+              settled = stored;
+            }
+            await client.queryArray("COMMIT");
+            delete settled.state;
+            delete settled.ledger_items;
+            delete settled.needs_simulation;
+            return settled;
+          } catch (error) {
+            await client.queryArray("ROLLBACK");
+            throw error;
+          }
+        });
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "normal_combat_invalid_location", "normal_combat_invalid_formation", "normal_combat_item_state_mismatch",
+          "active_encounter_exists", "idempotency_conflict", "save_not_found",
+        ]);
+        if (code === "save_not_found") return errorResponse(403, "account_required", requestId);
+        if (["normal_combat_invalid_location", "normal_combat_invalid_formation", "normal_combat_item_state_mismatch"].includes(String(code))) {
+          return errorResponse(400, String(code), requestId);
+        }
+        if (code) return errorResponse(409, code, requestId);
+        console.error("normal combat start failed", { requestId });
+        return errorResponse(503, "normal_combat_start_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "normal_combat_complete") {
+      const payloadError = validatePayloadFields(payload, ["start_key"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const startKey = payload.start_key;
+      if (payloadError || !requestKey || typeof startKey !== "string" || !uuidPattern.test(startKey)) {
+        return errorResponse(400, payloadError ?? "invalid_normal_combat_request", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.normal_combat_complete($1::uuid, $2::uuid, $3::uuid) AS result",
+          [identity.playerId, startKey, requestKey],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "normal_combat_not_found", "normal_combat_not_ready", "normal_combat_too_early",
+          "idempotency_conflict", "save_not_found",
+        ]);
+        if (code === "save_not_found") return errorResponse(403, "account_required", requestId);
+        if (code) return errorResponse(409, code, requestId);
+        console.error("normal combat completion failed", { requestId });
+        return errorResponse(503, "normal_combat_complete_failed", requestId);
       }
     }
     if (["dungeon_room_start", "dungeon_room_action", "dungeon_room_complete", "dungeon_room_choose", "dungeon_abandon", "boss_claim"].includes(String(parsed.value.action))) {
