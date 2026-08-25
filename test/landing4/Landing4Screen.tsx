@@ -151,70 +151,6 @@ const IconChevron = (p) => (
   </svg>
 );
 
-function EmberField() {
-  const ref = useRef(null);
-  useEffect(() => {
-    if (reducedMotion()) return;
-    const cv = ref.current;
-    if (!cv) return;
-    const ctx = cv.getContext("2d");
-    let w = 0, h = 0, dpr = 1, parts = [], raf = 0, t = 0, running = true;
-    const spawn = (anywhere) => ({
-      x: Math.random() * w,
-      y: anywhere ? Math.random() * h : h + Math.random() * h * 0.4,
-      r: 0.5 + Math.random() * 1.6,
-      s: 0.1 + Math.random() * 0.4,
-      o: 0.06 + Math.random() * 0.22,
-      hue: Math.random() < 0.7 ? 32 : 270,
-      ph: Math.random() * Math.PI * 2,
-      tw: 0.5 + Math.random() * 1.2,
-    });
-    const resize = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      w = window.innerWidth; h = window.innerHeight;
-      cv.width = w * dpr; cv.height = h * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      parts = Array.from({ length: Math.min(56, Math.round(w / 30)) }, () => spawn(true));
-    };
-    const loop = () => {
-      if (!running) return;
-      t += 16;
-      ctx.clearRect(0, 0, w, h);
-      ctx.globalCompositeOperation = "lighter";
-      for (let i = 0; i < parts.length; i++) {
-        const p = parts[i];
-        p.y -= p.s;
-        p.x += Math.sin(t * 0.0005 + p.ph) * 0.28;
-        const flick = 0.5 + 0.5 * Math.sin(t * 0.0015 * p.tw + p.ph);
-        const a = p.o * flick;
-        ctx.beginPath();
-        ctx.fillStyle = `hsla(${p.hue},58%,52%,${a})`;
-        ctx.shadowBlur = 6;
-        ctx.shadowColor = `hsla(${p.hue},58%,48%,${a})`;
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-        if (p.y < -12) parts[i] = spawn(false);
-      }
-      ctx.shadowBlur = 0;
-      raf = requestAnimationFrame(loop);
-    };
-    resize();
-    loop();
-    window.addEventListener("resize", resize);
-    const onVis = () => {
-      if (document.hidden) { running = false; cancelAnimationFrame(raf); }
-      else if (!running) { running = true; loop(); }
-    };
-    document.addEventListener("visibilitychange", onVis);
-    return () => {
-      running = false; cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
-      document.removeEventListener("visibilitychange", onVis);
-    };
-  }, []);
-  return <canvas ref={ref} className="hl-embers" aria-hidden="true" />;
-}
-
 function useReveal() {
   useEffect(() => {
     const els = Array.from(document.querySelectorAll("[data-reveal]"));
@@ -501,12 +437,7 @@ function CoinCluster() {
 }
 
 function RewardsSection({ onClaim }) {
-  const [sec, setSec] = useState(30245);
-  useEffect(() => {
-    if (reducedMotion()) return;
-    const id = setInterval(() => setSec((s) => s + 1), 1000);
-    return () => clearInterval(id);
-  }, []);
+  const sec = 30245;
   const hh = String(Math.floor(sec / 3600)).padStart(2, "0");
   const mm = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
   const ss = String(sec % 60).padStart(2, "0");
@@ -778,7 +709,6 @@ export default function App() {
     <div className="hl-root">
       <style>{CSS}</style>
       <ItemDefs />
-      <EmberField />
       <Nav onPlay={startPlaying} />
       <main>
         <HeroSection onStart={startPlaying} />
@@ -1391,6 +1321,8 @@ button{font-family:inherit}
 @media (max-width:380px){
   .hl-loot{grid-template-columns:repeat(2,1fr)}
 }
+
+.hl-fog--a,.hl-fog--b,.hl-rays,.hl-orb,.hl-scroll svg,.hl-card-aura,.rar-leg .hl-shine,.hl-stage-hero,.hl-stage-boss,.hl-chest-glow,.hl-seal,.mote,.hl-colon,.hl-pod-crown,.tf,.hl-modal-ring svg{animation:none!important}
 
 @media (prefers-reduced-motion: reduce){
   *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
