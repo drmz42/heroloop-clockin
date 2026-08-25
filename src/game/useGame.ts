@@ -246,14 +246,33 @@ function updateQuestProgress(quests: DailyQuest[], type: string, amount: number)
 
 export function useGame() {
   const [state, setState] = useState<GameState>(() => loadState());
-  const [units, setUnits] = useState<CombatUnit[]>([]);
-  const [floaters, setFloaters] = useState<FloatingNumber[]>([]);
+  const combatPresentationRef = useRef<{
+    units: CombatUnit[];
+    floaters: FloatingNumber[];
+    potionFx: { uid: string; born: number } | null;
+  }>({ units: [], floaters: [], potionFx: null });
+  const combatPresentationListenersRef = useRef(new Set<() => void>());
+  const getCombatPresentationSnapshot = useCallback(() => combatPresentationRef.current, []);
+  const subscribeCombatPresentation = useCallback((listener: () => void) => {
+    combatPresentationListenersRef.current.add(listener);
+    return () => combatPresentationListenersRef.current.delete(listener);
+  }, []);
+  const updateCombatPresentation = useCallback((next: Partial<typeof combatPresentationRef.current>) => {
+    combatPresentationRef.current = { ...combatPresentationRef.current, ...next };
+    combatPresentationListenersRef.current.forEach((listener) => listener());
+  }, []);
+  const setUnits = useCallback((units: CombatUnit[]) => updateCombatPresentation({ units }), [updateCombatPresentation]);
+  const setFloaters = useCallback((next: FloatingNumber[] | ((current: FloatingNumber[]) => FloatingNumber[])) => {
+    const current = combatPresentationRef.current.floaters;
+    const floaters = typeof next === 'function' ? next(current) : next;
+    if (floaters !== current) updateCombatPresentation({ floaters });
+  }, [updateCombatPresentation]);
+  const setPotionFx = useCallback((potionFx: { uid: string; born: number } | null) => updateCombatPresentation({ potionFx }), [updateCombatPresentation]);
   const [battleResult, setBattleResult] = useState<BattleResult | null>(null);
   const [autoProgress, setAutoProgress] = useState(true);
   const [paused, setPaused] = useState(false);
   const [respawnCountdowns, setRespawnCountdowns] = useState<Record<string, number>>({});
   const [presentationNow, setPresentationNow] = useState(Date.now);
-  const [potionFx, setPotionFx] = useState<{ uid: string; born: number } | null>(null);
   const [chestOpenResult, setChestOpenResult] = useState<OwnedItem[] | null>(null);
   const [chestOpening, setChestOpening] = useState(false);
   const [enchantResult, setEnchantResult] = useState<{ success: boolean; item?: OwnedItem } | null>(null);
@@ -292,7 +311,7 @@ export function useGame() {
     setUnits([]);
     unitsRef.current = [];
     heroHpRef.current.clear();
-  }, []);
+  }, [setUnits]);
 
   const mergeServerResourceState = useCallback((remoteState: unknown) => {
     const remote = normalizeState(remoteState as Partial<GameState>);
@@ -475,7 +494,7 @@ export function useGame() {
     setFloaters([]);
     resolvingRef.current = false;
     combatWakeRef.current();
-  }, []);
+  }, [setFloaters, setUnits]);
 
   const activeTeamKey = state.team.join('|');
   const respawnTeamKey = state.team.map((uid) => state.ownedHeroes.find((hero) => hero.uid === uid)?.respawnAt ?? 0).join('|');
@@ -689,7 +708,7 @@ export function useGame() {
         }
       }
     }
-  }, []);
+  }, [setFloaters, setPotionFx, setUnits]);
 
   // Combat loop
   useEffect(() => {
@@ -841,7 +860,7 @@ export function useGame() {
       if (wakeTimer !== 0) window.clearTimeout(wakeTimer);
       combatWakeRef.current = () => undefined;
     };
-  }, [awardBattle, tryAutoPotion]);
+  }, [awardBattle, setFloaters, setPotionFx, setUnits, tryAutoPotion]);
 
   useEffect(() => {
     if (!paused) combatWakeRef.current();
@@ -855,14 +874,29 @@ export function useGame() {
       lastCombatRenderRef.current = performance.now();
       setUnits(unitsRef.current);
     }
-  }, []);
+  }, [setFloaters, setPotionFx, setUnits]);
 
-  const hasFloaters = floaters.length > 0;
   useEffect(() => {
-    if (!hasFloaters) return;
-    const t = setInterval(() => { const now = performance.now(); setFloaters((prev) => prev.filter((f) => now - f.born < 850)); }, 300);
-    return () => clearInterval(t);
-  }, [hasFloaters]);
+    let timer = 0;
+    const schedule = () => {
+      if (timer !== 0 || combatPresentationRef.current.floaters.length === 0) return;
+      timer = window.setTimeout(() => {
+        timer = 0;
+        const now = performance.now();
+        setFloaters((current) => {
+          const next = current.filter((floater) => now - floater.born < 850);
+          return next.length === current.length ? current : next;
+        });
+        schedule();
+      }, 300);
+    };
+    const unsubscribe = subscribeCombatPresentation(schedule);
+    schedule();
+    return () => {
+      unsubscribe();
+      if (timer !== 0) window.clearTimeout(timer);
+    };
+  }, [setFloaters, subscribeCombatPresentation]);
 
   useEffect(() => {
     if (!battleResult || pausedRef.current || !autoRef.current) return;
@@ -2169,7 +2203,7 @@ export function useGame() {
     setUnits([]);
     unitsRef.current = [];
     heroHpRef.current.clear();
-  }, []);
+  }, [setUnits]);
 
   const completeWelcomeTutorial = useCallback(() => {
     setState((prev) => ({ ...prev, tutorial: { ...prev.tutorial, welcomeCompleted: true } }));
@@ -2297,8 +2331,9 @@ export function useGame() {
   }, []);
 
   return {
-    state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, units, floaters, battleResult, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
-    offlineEarnings, respawnCountdowns, presentationNow, potionFx, chestOpenResult, enchantResult,
+    state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, battleResult, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
+    offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
+    getCombatPresentationSnapshot, subscribeCombatPresentation,
     starUpHero, promoteAllHeroes, sellHero, sellHeroes, toggleHeroLock, markHeroSeen,
     summon, summonTen, summonHundred, summonBoss, syncBossKeys, toggleTeamMember, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,

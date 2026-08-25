@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, useMemo, useRef } from 'react';
+import { Fragment, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
 import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, ScrollText, DoorOpen, HeartPulse, Gem, Skull, BookOpen } from 'lucide-react';
 import { Arena } from '@/components/Arena';
 import { HeroPortrait } from '@/components/HeroPortrait';
@@ -23,6 +23,27 @@ const SAVE_KEY = 'afk-heroes-save-v7';
 
 const SLOTS: ItemSlot[] = ['class_weapon', 'offhand', 'helmet', 'chest', 'gloves', 'boots', 'ring', 'amulet'];
 const GRID_SIZE = 64;
+
+function CombatPresentationLayer({ game, activeDungeon, dungeonUnits, dungeonFloaters, dungeonBossScene, dungeonRoom }: {
+  game: GameApi;
+  activeDungeon: DungeonCheckpoint | null;
+  dungeonUnits: CombatUnit[];
+  dungeonFloaters: FloatingNumber[];
+  dungeonBossScene: Parameters<typeof Arena>[0]['dungeonBossScene'];
+  dungeonRoom: Parameters<typeof Arena>[0]['dungeonRoom'];
+}) {
+  const { units, floaters, potionFx } = useSyncExternalStore(
+    game.subscribeCombatPresentation,
+    game.getCombatPresentationSnapshot,
+    game.getCombatPresentationSnapshot,
+  );
+  return (
+    <>
+      {!activeDungeon && potionFx && <div key={potionFx.born} className="absolute inset-0 pointer-events-none anim-fade" style={{ background: 'radial-gradient(circle at 50% 70%, rgba(74,222,128,0.15), transparent 60%)' }} />}
+      <Arena units={activeDungeon ? dungeonUnits : units} floaters={activeDungeon ? dungeonFloaters : floaters} ownedHeroes={game.state.ownedHeroes} inventory={game.state.inventory} potionFx={activeDungeon ? null : potionFx} respawnCountdowns={activeDungeon ? {} : game.respawnCountdowns} animationMode={game.state.battleAnimationMode} dungeonPanelOpen={Boolean(activeDungeon)} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
+    </>
+  );
+}
 const TUTORIAL_QUESTS = [
   ['defeat-10-enemies', 'Defeat 10 enemies', 10, '10 Tutorial Chests'],
   ['open-10-tutorial-chests', 'Open 10 Tutorial Chests', 10, '500 Gold'],
@@ -103,7 +124,7 @@ function emptySlotArtworkId(slot: ItemSlot, heroClass: HeroClass): string {
 }
 
 export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void }) {
-  const { state, units, floaters, battleResult, potionFx, respawnCountdowns, paused, setPaused } = game;
+  const { state, battleResult, respawnCountdowns, paused, setPaused } = game;
   const tok = tokenomics;
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
   const [banner, setBanner] = useState<string | null>(null);
@@ -497,8 +518,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
               )}
             </div>
           )}
-          {!activeDungeon && potionFx && <div key={potionFx.born} className="absolute inset-0 pointer-events-none anim-fade" style={{ background: 'radial-gradient(circle at 50% 70%, rgba(74,222,128,0.15), transparent 60%)' }} />}
-          <Arena units={activeDungeon ? dungeonUnits : units} floaters={activeDungeon ? dungeonFloaters : floaters} ownedHeroes={state.ownedHeroes} inventory={state.inventory} potionFx={activeDungeon ? null : potionFx} respawnCountdowns={activeDungeon ? {} : respawnCountdowns} animationMode={state.battleAnimationMode} dungeonPanelOpen={Boolean(activeDungeon)} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
+          <CombatPresentationLayer game={game} activeDungeon={activeDungeon} dungeonUnits={dungeonUnits} dungeonFloaters={dungeonFloaters} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
           {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={setActiveDungeon} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type })} />}
           {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified the victory and granted one Boss Chest.' : 'The Abyss throne is silent. Final reward preview:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Package size={14} /> 1 BOSS CHEST</span><small>Granted atomically by the server</small></> : <><span><ScrollText size={14} /> 1 SUMMON SCROLL</span><span><Package size={14} /> 1 DUNGEON CHEST</span><small>Testing build · rewards are displayed but not minted</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
           {!activeDungeon && <div className="absolute right-3 top-3 z-30 flex items-center gap-1.5">
