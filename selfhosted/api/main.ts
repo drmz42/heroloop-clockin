@@ -983,7 +983,15 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
               if (!uuidPattern.test(startKey) || !Number.isSafeInteger(preparedLocation) || !Number.isSafeInteger(seed)) {
                 throw new Error("invalid normal combat simulation identity");
               }
-              const combat = buildNormalCombat(prepared.state, prepared.ledger_items, preparedLocation, seed);
+              const resourcesQuery = await client.queryObject<{ result: unknown }>(
+                "SELECT heroloop_api.resource_snapshot($1::uuid) AS result",
+                [identity.playerId],
+              );
+              const resources = resourcesQuery.rows[0]?.result;
+              if (resourcesQuery.rows.length !== 1 || !isRecord(resources)) {
+                throw new Error("invalid normal combat resource snapshot");
+              }
+              const combat = buildNormalCombat(prepared.state, prepared.ledger_items, preparedLocation, seed, resources);
               const storedQuery = await client.queryObject<{ result: unknown }>(
                 "SELECT heroloop_api.normal_combat_store_outcome($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, $5::jsonb) AS result",
                 [

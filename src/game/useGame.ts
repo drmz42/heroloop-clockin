@@ -201,6 +201,16 @@ interface NormalCombatWave {
   completionKey: string;
   location: number;
   availableAt: number;
+  elapsedMs: number;
+  nextAutoPotion: number;
+  autoPotions: NormalCombatAutoPotion[];
+}
+
+interface NormalCombatAutoPotion {
+  elapsed_ms: number;
+  hero_uid: string;
+  tier: PotionTier;
+  hp_restore: number;
 }
 
 interface NormalCombatStartResult {
@@ -209,6 +219,7 @@ interface NormalCombatStartResult {
   seed: number;
   available_at: string;
   initial_units: Array<Partial<CombatUnit> & Pick<CombatUnit, 'uid' | 'side'> & { lane: number }>;
+  outcome?: { auto_potions?: NormalCombatAutoPotion[] };
 }
 
 interface NormalCombatCompleteResult {
@@ -299,6 +310,7 @@ export function useGame() {
         totalGoldEarned: remote.totalGoldEarned,
         totalKills: remote.totalKills,
         totalBossKills: remote.totalBossKills,
+        potions: remote.potions,
         highestLocation: remote.highestLocation,
         dailyQuests: remote.dailyQuests,
         milestoneQuests: remote.milestoneQuests,
@@ -403,6 +415,9 @@ export function useGame() {
         completionKey: createIdempotencyKey(),
         location: serverLocation,
         availableAt,
+        elapsedMs: 0,
+        nextAutoPotion: 0,
+        autoPotions: Array.isArray(started.outcome?.auto_potions) ? started.outcome.auto_potions : [],
       };
       combatRandomRef.current = seededCombatRandom(serverSeed);
       combatAccumulatorRef.current = 0;
@@ -706,6 +721,21 @@ export function useGame() {
             finalUnits = step.units;
             events.push(...step.events);
             remaining -= 20;
+            const serverWave = normalCombatWaveRef.current;
+            if (serverWave) {
+              serverWave.elapsedMs += 20;
+              if (!combatResolution(finalUnits)) {
+                while (serverWave.nextAutoPotion < serverWave.autoPotions.length
+                  && serverWave.autoPotions[serverWave.nextAutoPotion].elapsed_ms <= serverWave.elapsedMs) {
+                  const potion = serverWave.autoPotions[serverWave.nextAutoPotion++];
+                  finalUnits = finalUnits.map((unit) => unit.uid === potion.hero_uid && unit.alive
+                    ? { ...unit, hp: Math.min(unit.maxHp, unit.hp + potion.hp_restore) }
+                    : unit);
+                  newFloaters.push({ id: floaterId.current++, targetUid: potion.hero_uid, value: potion.hp_restore, crit: false, heal: true, born: now });
+                  setPotionFx({ uid: potion.hero_uid, born: now });
+                }
+              }
+            }
           }
           combatAccumulatorRef.current = remaining;
           events.forEach((event) => {
