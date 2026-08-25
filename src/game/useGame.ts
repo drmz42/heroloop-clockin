@@ -26,6 +26,7 @@ import { playerSync, tokenomicsEnabled } from '@/game/backend';
 
 const COMBAT_SPEED = 1;
 const COMBAT_RENDER_INTERVAL_MS = 50;
+const COMBAT_LOOP_INTERVAL_MS = 50;
 const ACTIVE_CHEST_SECONDS = 86.4;
 const MAX_TRAINING_OFFLINE_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -677,6 +678,7 @@ export function useGame() {
   // Combat loop
   useEffect(() => {
     let raf = 0;
+    let wakeTimer = 0;
     let disposed = false;
     let last = performance.now();
     const canRun = () => document.visibilityState === 'visible'
@@ -684,10 +686,20 @@ export function useGame() {
       && !pausedRef.current
       && unitsRef.current.length > 0
       && !resolvingRef.current;
+    const requestLoop = () => {
+      if (!disposed && raf === 0 && canRun()) raf = requestAnimationFrame(loop);
+    };
     const schedule = (resetClock = false) => {
-      if (disposed || raf !== 0 || !canRun()) return;
-      if (resetClock) last = performance.now();
-      raf = requestAnimationFrame(loop);
+      if (disposed || raf !== 0 || wakeTimer !== 0 || !canRun()) return;
+      if (resetClock) {
+        last = performance.now();
+        requestLoop();
+        return;
+      }
+      wakeTimer = window.setTimeout(() => {
+        wakeTimer = 0;
+        requestLoop();
+      }, COMBAT_LOOP_INTERVAL_MS);
     };
     const loop = (now: number) => {
       raf = 0;
@@ -776,7 +788,9 @@ export function useGame() {
     const onVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         if (raf !== 0) cancelAnimationFrame(raf);
+        if (wakeTimer !== 0) window.clearTimeout(wakeTimer);
         raf = 0;
+        wakeTimer = 0;
         return;
       }
       schedule(true);
@@ -788,6 +802,7 @@ export function useGame() {
       disposed = true;
       document.removeEventListener('visibilitychange', onVisibilityChange);
       if (raf !== 0) cancelAnimationFrame(raf);
+      if (wakeTimer !== 0) window.clearTimeout(wakeTimer);
       combatWakeRef.current = () => undefined;
     };
   }, [awardBattle, tryAutoPotion]);
