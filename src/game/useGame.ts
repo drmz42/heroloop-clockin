@@ -21,6 +21,7 @@ import {
 } from '@/game/items';
 import type { Rarity } from '@/game/types';
 import { recordBattleTelemetry } from '@/game/balance';
+import { advanceCombatFrame, combatResolution } from '@/game/combat-step.js';
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
 
 const COMBAT_SPEED = 1;
@@ -539,61 +540,30 @@ export function useGame() {
         // A respawning hero does not freeze the whole battlefield: it simply
         // does not fight (spawned as hp:0/alive:false), while living heroes and
         // monsters in their own lanes keep fighting.
-        const heroes = live.filter((u) => u.side === 'hero' && u.alive);
-        const enemies = live.filter((u) => u.side === 'enemy' && u.alive);
-        const formations = {
-          heroes: live.filter((u) => u.side === 'hero'),
-          enemies: live.filter((u) => u.side === 'enemy'),
-        };
-        const activeLaneExists = formations.heroes.some((hero, lane) => hero.alive && formations.enemies[lane]?.alive);
-        if (heroes.length === 0 || enemies.length === 0 || !activeLaneExists) {
+        const resolution = combatResolution(live);
+        if (resolution) {
           resolvingRef.current = true;
           // Per-line rewards: each hero is rewarded only for the enemy in its own lane.
           // Other heroes keep fighting after one dies; a dead hero grants nothing for its lane.
-          const deadHeroes = formations.heroes.filter((h) => !h.alive).map((h) => h.uid);
-          const wonHeroUids = formations.enemies
-            .map((e, lane) => (e.alive ? null : formations.heroes[lane]?.uid))
-            .filter((uid): uid is string => Boolean(uid));
-          const clearedLanes = wonHeroUids.length;
-          const allCleared = formations.enemies.length > 0 && formations.enemies.every((e) => !e.alive);
-          awardBattle(stateRef.current.currentLocation, clearedLanes, wonHeroUids, deadHeroes, allCleared);
+          awardBattle(
+            stateRef.current.currentLocation,
+            resolution.clearedLanes,
+            resolution.wonHeroUids,
+            resolution.deadHeroUids,
+            resolution.allCleared,
+          );
         } else {
           const newFloaters: FloatingNumber[] = [];
-          const hpDelta = new Map<string, number>();
-          const updated = live.map((u) => {
-            if (!u.alive) return u;
-            if (u.heroClass === 'druid' && u.regenTimer !== undefined) {
-              const newRegen = u.regenTimer + dt;
-              if (newRegen >= 3000) {
-                const regenAmount = Math.min(Math.round(u.maxHp * 0.015), u.maxHp - u.hp);
-                if (regenAmount > 0) newFloaters.push({ id: floaterId.current++, targetUid: u.uid, value: regenAmount, crit: false, heal: true, born: now });
-                return { ...u, hp: u.hp + regenAmount, regenTimer: 0 };
-              }
-              u = { ...u, regenTimer: newRegen };
+          const step = advanceCombatFrame(live, dt);
+          const finalUnits = step.units;
+          step.events.forEach((event) => {
+            if (event.kind === 'heal') {
+              newFloaters.push({ id: floaterId.current++, targetUid: event.targetUid, value: event.amount, crit: false, heal: true, born: now });
+            } else if (event.kind === 'miss') {
+              newFloaters.push({ id: floaterId.current++, targetUid: event.targetUid, value: 0, crit: false, heal: false, miss: true, born: now });
+            } else {
+              newFloaters.push({ id: floaterId.current++, targetUid: event.targetUid, value: event.amount, crit: event.critical, heal: false, born: now });
             }
-            const timer = u.attackTimer + dt;
-            if (timer < u.attackInterval) return { ...u, attackTimer: timer };
-            const formation = live.filter((fighter) => fighter.side === u.side);
-            const opposingFormation = live.filter((fighter) => fighter.side !== u.side);
-            const lane = Math.max(0, formation.findIndex((fighter) => fighter.uid === u.uid));
-            const opposite = opposingFormation[lane];
-            if (!opposite?.alive) return { ...u, attackTimer: u.attackInterval };
-            const target = opposite;
-            if ((target.dodge ?? 0) > 0 && Math.random() < target.dodge!) {
-              newFloaters.push({ id: floaterId.current++, targetUid: target.uid, value: 0, crit: false, heal: false, miss: true, born: now });
-              return { ...u, attackTimer: 0 };
-            }
-            const isCrit = Math.random() < u.critChance;
-            const rawDmg = Math.max(u.atk - target.def * 0.5, u.atk * 0.12);
-            const dmg = Math.round(rawDmg * (isCrit ? u.critDamage : 1) * (0.9 + Math.random() * 0.2));
-            hpDelta.set(target.uid, (hpDelta.get(target.uid) || 0) + dmg);
-            newFloaters.push({ id: floaterId.current++, targetUid: target.uid, value: dmg, crit: isCrit, heal: false, born: now });
-            return { ...u, attackTimer: 0 };
-          });
-          const finalUnits = updated.map((u) => {
-            const dmg = hpDelta.get(u.uid);
-            if (dmg !== undefined) { const newHp = Math.max(0, u.hp - dmg); return { ...u, hp: newHp, alive: newHp > 0 }; }
-            return u;
           });
           const rewardLocation = buildLocation(stateRef.current.currentLocation, stateRef.current.team.length, stateRef.current.bossBattleActive);
           const finalHeroes = finalUnits.filter((fighter) => fighter.side === 'hero');
