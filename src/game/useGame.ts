@@ -1809,27 +1809,6 @@ export function useGame() {
 
   // ── Potions ──────────────────────────────────────────────────────────────
 
-  const buyPotion = useCallback((tier: PotionTier, qty: number = 1) => {
-    setState((prev) => {
-      const def = POTION_MAP[tier];
-      const cost = def.cost * qty;
-      if (prev.gold < cost) return prev;
-      return { ...prev, gold: prev.gold - cost, potions: { ...prev.potions, [tier]: prev.potions[tier] + qty } };
-    });
-  }, []);
-
-  const usePotion = useCallback((tier: PotionTier, heroUid: string) => {
-    const st = stateRef.current;
-    if (st.potions[tier] <= 0) return;
-    const def = POTION_MAP[tier];
-    setState((prev) => ({ ...prev, potions: { ...prev.potions, [tier]: prev.potions[tier] - 1 } }));
-    const healedUnits = unitsRef.current.map((unit) => unit.uid === heroUid ? { ...unit, hp: Math.min(unit.maxHp, unit.hp + def.hpRestore) } : unit);
-    unitsRef.current = healedUnits;
-    setUnits(healedUnits);
-    setFloaters((prev) => [...prev.slice(-20), { id: floaterId.current++, targetUid: heroUid, value: def.hpRestore, crit: false, heal: true, born: performance.now() }]);
-    setPotionFx({ uid: heroUid, born: performance.now() });
-  }, []);
-
   const setAutoPot = useCallback((cfg: Partial<GameState['autoPot']>) => {
     setState((prev) => ({ ...prev, autoPot: { ...prev.autoPot, ...cfg } }));
   }, []);
@@ -2252,7 +2231,7 @@ export function useGame() {
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,
     equipItem, unequipItem, unequipAll, equipmentError: () => equipmentErrorRef.current, sellItem, toggleItemLock, sellAllUnlocked,
     enchantItem, rerollItem, dismissEnchantResult,
-    buyPotion, usePotion, setAutoPot, setBattleAnimationMode,
+    setAutoPot, setBattleAnimationMode,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
     openChests, openTutorialChests, closeChestResult, refreshStore, buyRotatingItem, claimQuest, claimTutorialQuest,
     claimReferralReward, setUserProfile, resetAccount, hydrateServerState, mergeServerResourceState, completeWelcomeTutorial, setAvatarHero, loadMarket, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,

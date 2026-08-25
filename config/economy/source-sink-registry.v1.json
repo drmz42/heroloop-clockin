@@ -15,7 +15,7 @@
     { "id": "dungeon_gold", "asset": "gold", "direction": "faucet", "status": "proposal", "authority": "server", "telemetryAggregate": "currency_faucet" },
     { "id": "store_gold", "asset": "gold", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_sink" },
     { "id": "enchant_gold", "asset": "gold", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_sink" },
-    { "id": "potion_gold", "asset": "gold", "direction": "sink", "status": "client-compatibility", "authority": "client", "telemetryAggregate": "currency_sink", "blocksRealValue": true },
+    { "id": "potion_gold", "asset": "gold", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_sink" },
     { "id": "hero_stat_upgrade_gold", "asset": "gold", "direction": "sink", "status": "proposal", "authority": "server", "telemetryAggregate": "currency_sink" },
 
     { "id": "mining_pool_hero", "asset": "hero", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_faucet", "ledgerSourceKinds": ["mining_pool"] },
@@ -47,8 +47,8 @@
 
     { "id": "starter_potion", "asset": "potion", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "tutorial_potion", "asset": "potion", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
-    { "id": "potion_purchase", "asset": "potion", "direction": "faucet", "status": "client-compatibility", "authority": "client", "telemetryAggregate": "resource_flow", "blocksRealValue": true },
-    { "id": "potion_use", "asset": "potion", "direction": "sink", "status": "client-compatibility", "authority": "client", "telemetryAggregate": "resource_flow", "blocksRealValue": true },
+    { "id": "potion_purchase", "asset": "potion", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
+    { "id": "potion_use", "asset": "potion", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "promo_boss_key", "asset": "boss_key", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "tutorial_boss_key", "asset": "boss_key", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "boss_key_spend", "asset": "boss_key", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
