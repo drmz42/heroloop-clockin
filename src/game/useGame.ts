@@ -332,10 +332,21 @@ export function useGame() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
-      setState((prev) => advanceTrainingCamp(prev, Date.now()));
-    }, 10_000);
-    return () => window.clearInterval(timer);
+    let timer: number | null = null;
+    const advance = () => setState((prev) => advanceTrainingCamp(prev, Date.now()));
+    const syncTrainingClock = () => {
+      if (timer !== null) window.clearInterval(timer);
+      timer = null;
+      if (document.visibilityState !== 'visible') return;
+      advance();
+      timer = window.setInterval(advance, 10_000);
+    };
+    document.addEventListener('visibilitychange', syncTrainingClock);
+    syncTrainingClock();
+    return () => {
+      if (timer !== null) window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', syncTrainingClock);
+    };
   }, []);
 
   useEffect(() => {
@@ -821,8 +832,19 @@ export function useGame() {
   useEffect(() => {
     if (!battleResult || pausedRef.current || !autoRef.current) return;
     const delay = battleResult.win ? 1100 : 1600;
-    const t = setTimeout(() => spawnBattle(stateRef.current.currentLocation, stateRef.current.team), delay);
-    return () => clearTimeout(t);
+    let ready = false;
+    let spawned = false;
+    const spawnIfVisible = () => {
+      if (!ready || spawned || document.visibilityState !== 'visible') return;
+      spawned = true;
+      void spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
+    };
+    const t = window.setTimeout(() => { ready = true; spawnIfVisible(); }, delay);
+    document.addEventListener('visibilitychange', spawnIfVisible);
+    return () => {
+      window.clearTimeout(t);
+      document.removeEventListener('visibilitychange', spawnIfVisible);
+    };
   }, [battleResult, spawnBattle]);
 
   useEffect(() => {

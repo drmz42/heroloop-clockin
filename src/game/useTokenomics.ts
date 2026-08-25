@@ -213,12 +213,21 @@ export function useTokenomics(power: number, accountLevel: number, username: str
 
   useEffect(() => {
     if (!tokenomicsEnabled || !playerId) return;
-    const refresh = async () => {
-      await refreshIncome();
+    let refreshInterval: number | null = null;
+    const refresh = () => { void refreshIncome(); };
+    const syncRefresh = () => {
+      if (refreshInterval !== null) window.clearInterval(refreshInterval);
+      refreshInterval = null;
+      if (document.visibilityState !== 'visible') return;
+      refresh();
+      refreshInterval = window.setInterval(refresh, 30_000);
     };
-    void refresh();
-    const refreshInterval = setInterval(() => { void refresh(); }, 30_000);
-    return () => clearInterval(refreshInterval);
+    document.addEventListener('visibilitychange', syncRefresh);
+    syncRefresh();
+    return () => {
+      if (refreshInterval !== null) window.clearInterval(refreshInterval);
+      document.removeEventListener('visibilitychange', syncRefresh);
+    };
   }, [playerId, refreshIncome]);
 
   return { status, incomeStale, loading, claimTokens, spendTokens, setBoostMaxActive, summonBoss, reserveLimitedItem, removeLimitedItem, syncUp, fetchStatus, refreshIncome };
