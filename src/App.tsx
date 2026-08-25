@@ -239,6 +239,11 @@ function App() {
   const [showBoost, setShowBoost] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
   const [showPromoCode, setShowPromoCode] = useState(false);
+  const setCombatPresentationVisible = game.setCombatPresentationVisible;
+
+  useEffect(() => {
+    setCombatPresentationVisible(accountGate === 'verified' && routePath !== '/wiki' && tab === 'main');
+  }, [accountGate, routePath, tab, setCombatPresentationVisible]);
 
   const applyPromoRedemption = (result: PromoRedemption) => {
     hydrateServerState(result.state);

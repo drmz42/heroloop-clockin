@@ -25,8 +25,12 @@ import { advanceCombatFrame, combatResolution, seededCombatRandom } from '../../
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
 
 const COMBAT_SPEED = 1;
-const COMBAT_RENDER_INTERVAL_MS = 50;
 const COMBAT_LOOP_INTERVAL_MS = 50;
+const COMBAT_PRESENTATION_INTERVAL_MS: Record<GameState['battleAnimationMode'], number> = {
+  off: 1_000,
+  light: 750,
+  spectacular: 500,
+};
 const ACTIVE_CHEST_SECONDS = 86.4;
 const MAX_TRAINING_OFFLINE_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -266,6 +270,7 @@ export function useGame() {
   const autoRef = useRef(autoProgress); autoRef.current = autoProgress;
   const pausedRef = useRef(paused); pausedRef.current = paused;
   const combatWakeRef = useRef<() => void>(() => undefined);
+  const combatPresentationVisibleRef = useRef(true);
   const floaterId = useRef(0);
   const resolvingRef = useRef(false);
   const itemUpgradeBusyRef = useRef(false);
@@ -436,7 +441,7 @@ export function useGame() {
       unitsRef.current = nextUnits;
       lastCombatRenderRef.current = performance.now();
       battleStartedAtRef.current = now;
-      setUnits(nextUnits);
+      if (combatPresentationVisibleRef.current) setUnits(nextUnits);
       resolvingRef.current = false;
       combatWakeRef.current();
       return;
@@ -465,7 +470,7 @@ export function useGame() {
     unitsRef.current = nextUnits;
     lastCombatRenderRef.current = performance.now();
     battleStartedAtRef.current = now;
-    setUnits(nextUnits);
+    if (combatPresentationVisibleRef.current) setUnits(nextUnits);
     setBattleResult(null);
     setFloaters([]);
     resolvingRef.current = false;
@@ -692,6 +697,8 @@ export function useGame() {
     let wakeTimer = 0;
     let disposed = false;
     let last = performance.now();
+    let pendingFloaters: FloatingNumber[] = [];
+    let pendingPotionFx: { uid: string; born: number } | null = null;
     const canRun = () => document.visibilityState === 'visible'
       && Boolean(stateRef.current.walletAddress)
       && !pausedRef.current
@@ -724,6 +731,13 @@ export function useGame() {
         // monsters in their own lanes keep fighting.
         const resolution = combatResolution(live);
         if (resolution) {
+          if (combatPresentationVisibleRef.current && pendingFloaters.length > 0) {
+            setUnits(live);
+            setFloaters((prev) => [...prev.slice(-24), ...pendingFloaters.map((floater) => ({ ...floater, born: now }))]);
+            if (pendingPotionFx) setPotionFx({ ...pendingPotionFx, born: now });
+          }
+          pendingFloaters = [];
+          pendingPotionFx = null;
           resolvingRef.current = true;
           // Per-line rewards: each hero is rewarded only for the enemy in its own lane.
           // Other heroes keep fighting after one dies; a dead hero grants nothing for its lane.
@@ -755,7 +769,7 @@ export function useGame() {
                     ? { ...unit, hp: Math.min(unit.maxHp, unit.hp + potion.hp_restore) }
                     : unit);
                   newFloaters.push({ id: floaterId.current++, targetUid: potion.hero_uid, value: potion.hp_restore, crit: false, heal: true, born: now });
-                  setPotionFx({ uid: potion.hero_uid, born: now });
+                  pendingPotionFx = { uid: potion.hero_uid, born: now };
                 }
               }
             }
@@ -786,11 +800,20 @@ export function useGame() {
             if (u.side === 'hero') heroHpRef.current.set(u.uid, u.hp);
           });
           unitsRef.current = finalUnits;
-          if (now - lastCombatRenderRef.current >= COMBAT_RENDER_INTERVAL_MS) {
+          if (newFloaters.length > 0) pendingFloaters = [...pendingFloaters, ...newFloaters].slice(-24);
+          if (!combatPresentationVisibleRef.current) {
+            pendingFloaters = [];
+            pendingPotionFx = null;
+          }
+          const presentationInterval = COMBAT_PRESENTATION_INTERVAL_MS[stateRef.current.battleAnimationMode];
+          if (combatPresentationVisibleRef.current && now - lastCombatRenderRef.current >= presentationInterval) {
             lastCombatRenderRef.current = now;
             setUnits(finalUnits);
+            if (pendingFloaters.length > 0) setFloaters((prev) => [...prev.slice(-24), ...pendingFloaters.map((floater) => ({ ...floater, born: now }))]);
+            if (pendingPotionFx) setPotionFx({ ...pendingPotionFx, born: now });
+            pendingFloaters = [];
+            pendingPotionFx = null;
           }
-          if (newFloaters.length > 0) setFloaters((prev) => [...prev.slice(-24), ...newFloaters]);
           if (!tokenomicsEnabled || !normalCombatWaveRef.current) tryAutoPotion();
         }
       }
@@ -802,6 +825,8 @@ export function useGame() {
         if (wakeTimer !== 0) window.clearTimeout(wakeTimer);
         raf = 0;
         wakeTimer = 0;
+        pendingFloaters = [];
+        pendingPotionFx = null;
         return;
       }
       schedule(true);
@@ -821,6 +846,16 @@ export function useGame() {
   useEffect(() => {
     if (!paused) combatWakeRef.current();
   }, [paused]);
+
+  const setCombatPresentationVisible = useCallback((visible: boolean) => {
+    combatPresentationVisibleRef.current = visible;
+    setFloaters([]);
+    setPotionFx(null);
+    if (visible) {
+      lastCombatRenderRef.current = performance.now();
+      setUnits(unitsRef.current);
+    }
+  }, []);
 
   const hasFloaters = floaters.length > 0;
   useEffect(() => {
@@ -850,9 +885,10 @@ export function useGame() {
   useEffect(() => {
     let timer: number | null = null;
     const tickRespawnClock = () => {
+      const st = stateRef.current;
+      if (!st.walletAddress) return;
       const now = Date.now();
       setPresentationNow(now);
-      const st = stateRef.current;
       const countdown: Record<string, number> = {};
       let finished = false;
       st.ownedHeroes.forEach((h) => {
@@ -2268,7 +2304,7 @@ export function useGame() {
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,
     equipItem, unequipItem, unequipAll, equipmentError: () => equipmentErrorRef.current, sellItem, toggleItemLock, sellAllUnlocked,
     enchantItem, rerollItem, dismissEnchantResult,
-    setAutoPot, setBattleAnimationMode,
+    setAutoPot, setBattleAnimationMode, setCombatPresentationVisible,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
     openChests, openTutorialChests, closeChestResult, refreshStore, buyRotatingItem, claimQuest, claimTutorialQuest,
     claimReferralReward, setUserProfile, resetAccount, hydrateServerState, mergeServerResourceState, completeWelcomeTutorial, setAvatarHero, loadMarket, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
