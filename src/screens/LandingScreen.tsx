@@ -300,7 +300,7 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
       if (!account) { setError('Account service is unavailable. Please try again.'); return; }
       const address = `game-${account.account_id}`;
       if (account.exists && account.username) {
-        game.setUserProfile(account.username, address);
+        window.location.replace('/#game');
         return;
       }
       setAccountId(address);
@@ -317,12 +317,24 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
     setConnecting(true); setError('');
     try {
       const registrationState = makeRegisteredStarterState(username.trim(), accountId, starter);
-      const account = await accountRequest(playerSync<{ created: boolean; username: string; account_id: string; state: unknown; revision: number }>('account_register', {
+      let registrationError = '';
+      const register = () => accountRequest(playerSync<{ created: boolean; username: string; account_id: string; state: unknown; revision: number }>('account_register', {
         username: username.trim(),
         starter_hero_id: starter,
         state: registrationState,
-      }));
-      if (!account?.state || !Number.isSafeInteger(account.revision)) { setError('Registration failed. Please try again.'); return; }
+      }, message => { registrationError = message; }));
+      let account = await register();
+      if (!account && (!registrationError || registrationError === 'network_error' || registrationError === 'registration_unavailable')) {
+        registrationError = '';
+        account = await register();
+      }
+      if (!account?.state || !Number.isSafeInteger(account.revision)) {
+        const detail = registrationError === 'invalid_registration' || registrationError === 'invalid_registration_state'
+          ? 'Registration data was rejected. Reload the page and try again.'
+          : 'Registration service is unavailable. Please try again.';
+        setError(detail);
+        return;
+      }
       game.hydrateServerState(account.state);
       window.location.replace('/#game');
     } catch {

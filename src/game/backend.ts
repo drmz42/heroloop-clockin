@@ -32,7 +32,14 @@ async function replaceLocalSession(): Promise<Session | null> {
 }
 
 export async function authHeaders(refresh = false): Promise<Record<string, string> | null> {
-  let { data: { session } } = await supabase.auth.getSession();
+  let session: Session | null = null;
+  try {
+    ({ data: { session } } = await supabase.auth.getSession());
+  } catch {
+    // Corrupt or obsolete browser auth storage must not strand onboarding
+    // before its first API request. replaceLocalSession clears only this
+    // browser identity and establishes a fresh anonymous session.
+  }
   if (refresh && session) {
     const { data, error } = await supabase.auth.refreshSession();
     session = error ? null : data.session;
