@@ -8,6 +8,14 @@ import type { HeroBase, OwnedHero, Rarity } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
 
 const FILTER_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
+const INACTIVE_COMBAT_LABEL = 'Coming soon — not active in combat';
+const CLASS_TRAITS: Record<HeroBase['heroClass'], { effect: string; active: boolean }> = {
+  knight: { effect: '+5% DEF in server-settled normal combat', active: true },
+  assassin: { effect: '+8 percentage points Dodge in server-settled normal combat', active: true },
+  druid: { effect: 'Regenerates 1.5% max HP every 3 seconds in server-settled normal combat', active: true },
+  shepherd: { effect: 'No active class trait yet', active: false },
+  archer: { effect: 'No active class trait yet', active: false },
+};
 
 const STAR_COLORS = ['#fbbf24', '#a855f7', '#ef4444', '#ec4899'];
 const formatUsdCents = (cents: number) => `$${(cents / 100).toFixed(2)}`;
@@ -75,6 +83,7 @@ function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameA
   const isInTeam = game.state.team.includes(hero.uid);
   const power = Math.round(stats.atk + stats.hp / 10 + stats.def * 2);
   const teamPowerDelta = calculateTeamPower([hero], game.state.inventory);
+  const classTrait = CLASS_TRAITS[base.heroClass];
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 backdrop-blur-[2px] anim-fade" onClick={onClose}>
       <div className={`px-panel-raised rarity-${base.rarity} relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl`} onClick={(event) => event.stopPropagation()}>
@@ -85,7 +94,11 @@ function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameA
         </header>
         <div className="game-scrollbar min-h-0 overflow-y-auto p-3">
           <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6"><StatBox label="HP" value={formatNum(stats.hp)} /><StatBox label="ATK" value={formatNum(stats.atk)} /><StatBox label="DEF" value={formatNum(stats.def)} /><StatBox label="Crit" value={`${(stats.critChance * 100).toFixed(1)}%`} /><StatBox label="Dodge" value={`${(stats.dodge * 100).toFixed(1)}%`} /><StatBox label="Speed" value={`+${stats.atkSpeed}`} /></div>
-          <section className="mt-2 grid gap-2 sm:grid-cols-2"><div className="stat-tile p-2.5"><div className="text-[9px] font-bold uppercase tracking-wider text-[#827d72]">Passive</div><div className="mt-0.5 text-xs font-bold" style={{ color: rc }}>{base.passiveName}</div><div className="mt-0.5 text-[10px] text-[#aaa397]">{base.passiveDesc}</div></div><div className="stat-tile p-2.5"><div className="text-[9px] font-bold uppercase tracking-wider text-[#827d72]">Ability</div><div className="mt-0.5 text-xs font-bold" style={{ color: rc }}>{base.skillName}</div><div className="mt-0.5 text-[10px] text-[#aaa397]">{base.skillDesc}</div></div></section>
+          <section className="mt-2 grid gap-2 sm:grid-cols-2">
+            <div className="stat-tile p-2.5"><div className="text-[9px] font-bold uppercase tracking-wider text-[#827d72]">Passive</div><div className="mt-0.5 text-xs font-bold" style={{ color: rc }}>{base.passiveName}</div><div className="mt-0.5 text-[10px] text-[#777268]">{base.passiveDesc}</div><div className="mt-1 text-[9px] font-bold text-amber-300">{INACTIVE_COMBAT_LABEL}</div></div>
+            <div className="stat-tile p-2.5"><div className="text-[9px] font-bold uppercase tracking-wider text-[#827d72]">Ability</div><div className="mt-0.5 text-xs font-bold" style={{ color: rc }}>{base.skillName}</div><div className="mt-0.5 text-[10px] text-[#777268]">{base.skillDesc}</div><div className="mt-1 text-[9px] font-bold text-amber-300">{INACTIVE_COMBAT_LABEL}</div></div>
+          </section>
+          <section className="stat-tile mt-2 p-2.5"><div className="flex items-center justify-between gap-2"><div className="text-[9px] font-bold uppercase tracking-wider text-[#827d72]">Class Trait · {CLASS_LABEL[base.heroClass]}</div><span className={`rounded border px-1.5 py-0.5 text-[8px] font-black uppercase ${classTrait.active ? 'border-emerald-500/40 bg-emerald-950/35 text-emerald-300' : 'border-slate-600/50 bg-slate-950/30 text-slate-400'}`}>{classTrait.active ? 'Active · normal combat' : 'Unavailable'}</span></div><div className="mt-1 text-[10px] text-[#aaa397]">{classTrait.effect}</div></section>
           <section className="mt-2 rounded-lg border border-violet-700/35 bg-violet-950/15 p-2.5"><div className="flex items-center justify-between gap-2"><span className="flex items-center gap-1.5 text-xs font-bold text-violet-200"><Sparkles size={13} /> Star Up → {Math.min(MAX_HERO_STARS, hero.stars + 1)}</span><span className="text-right text-[10px] text-violet-300">{dupes.length}/{starCost.dupes} copies · {formatNum(starCost.hero)} $HERO<br /><span className="text-[9px] text-[#a99bb8]">Catalogue {formatUsdCents(starCost.usdCents)}</span></span></div>{hero.stars < MAX_HERO_STARS && <div className="mt-2" aria-label={`${dupes.length} of ${starCost.dupes} required duplicates available`}><div className="h-1.5 overflow-hidden rounded-full bg-black/55"><div className="h-full rounded-full bg-violet-400 transition-[width]" style={{ width: `${Math.min(100, dupes.length / starCost.dupes * 100)}%` }} /></div><div className="mt-1 text-[9px] text-[#9f94aa]">Exact unlocked zero-star copies · existing stars are grandfathered</div></div>}<button type="button" onClick={() => game.starUpHero(hero.uid)} disabled={dupes.length < starCost.dupes || game.state.hero < starCost.hero || hero.stars >= MAX_HERO_STARS} className="game-control mt-2 w-full px-3 text-xs font-bold">{hero.stars >= MAX_HERO_STARS ? 'Maximum ascension reached' : `Upgrade · ${starCost.dupes} copies + ${formatNum(starCost.hero)} $HERO`}</button></section>
           {powerNotice && <div aria-live="polite" className={`anim-banner mt-2 rounded border p-2 text-center text-sm font-black tabular-nums ${powerNotice.added ? 'border-emerald-400/55 bg-emerald-950/55 text-emerald-300' : 'border-red-400/55 bg-red-950/55 text-red-300'}`}>{powerNotice.added ? '+' : '−'}{formatNum(powerNotice.delta)} POWER</div>}
           {teamError && <div className="mt-2 rounded border border-red-500/45 bg-red-950/40 p-2 text-xs text-red-200">{teamError}</div>}
