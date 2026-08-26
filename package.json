@@ -64,6 +64,7 @@
     "check:legacy-market-recovery": "node scripts/check-legacy-market-recovery.mjs",
     "check:monitor-alerts": "node scripts/check-monitor-alert-accuracy.mjs",
     "check:operational-artifacts": "node scripts/check-operational-artifacts-contract.mjs",
+    "check:agent-health": "bash .agents/skills/heroloop-health-check/scripts/check-health-check.sh",
     "check:nginx-security": "node scripts/check-nginx-security-contract.mjs",
     "check:cloudflare-edge": "node scripts/check-cloudflare-production-edge-contract.mjs && bash scripts/check-cloudflare-credential-flow.sh && bash scripts/check-cloudflare-origin-manager.sh && bash scripts/check-cloudflare-firewall-manager.sh",
     "check:promote-all": "node scripts/check-promote-all-contract.mjs",
