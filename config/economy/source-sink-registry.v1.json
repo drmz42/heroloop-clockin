@@ -6,7 +6,7 @@
   "entries": [
     { "id": "starter_gold", "asset": "gold", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_faucet" },
     { "id": "combat_wave_gold", "asset": "gold", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_faucet" },
-    { "id": "boss_combat_gold", "asset": "gold", "direction": "faucet", "status": "client-compatibility", "authority": "client", "telemetryAggregate": "currency_faucet", "blocksRealValue": true },
+    { "id": "boss_combat_gold", "asset": "gold", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_faucet" },
     { "id": "item_sale_gold", "asset": "gold", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_faucet" },
     { "id": "promo_gold", "asset": "gold", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_faucet" },
     { "id": "tester_gold", "asset": "gold", "direction": "faucet", "status": "staging-only-server", "authority": "server", "telemetryAggregate": "currency_faucet" },
@@ -40,7 +40,7 @@
 
     { "id": "timed_standard_chest", "asset": "standard_chest", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "chest_flow" },
     { "id": "tutorial_chest", "asset": "tutorial_chest", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "chest_flow" },
-    { "id": "boss_chest", "asset": "boss_chest", "direction": "faucet", "status": "client-compatibility", "authority": "client", "telemetryAggregate": "chest_flow", "blocksRealValue": true },
+    { "id": "boss_chest", "asset": "boss_chest", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "chest_flow" },
     { "id": "dungeon_chest", "asset": "dungeon_chest", "direction": "faucet", "status": "proposal", "authority": "server", "telemetryAggregate": "chest_flow" },
     { "id": "chest_open", "asset": "chest", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "chest_flow" },
     { "id": "tutorial_chest_open", "asset": "tutorial_chest", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "chest_flow" },
