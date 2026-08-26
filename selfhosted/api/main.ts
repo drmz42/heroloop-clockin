@@ -58,6 +58,7 @@ const commandActions = new Set([
   "hero_ascend",
   "chest_open",
   "tutorial_quest_claim",
+  "quest_claim",
   "tutorial_chest_open",
   "item_mutate",
   "item_equip",
@@ -674,6 +675,22 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
       } catch (error) {
         const code = databaseErrorCode(error, ["state_conflict", "idempotency_conflict", "tutorial_completed", "tutorial_quest_locked", "tutorial_quest_incomplete"]);
         return code ? errorResponse(409, code, requestId) : errorResponse(400, "tutorial_claim_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "quest_claim") {
+      const payloadError = validatePayloadFields(payload, ["quest_id", "expected_revision"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const questId = payload.quest_id;
+      const revision = Number(payload.expected_revision);
+      if (payloadError || !requestKey || typeof questId !== "string" || !/^[a-z0-9-]{3,64}$/.test(questId) || !Number.isSafeInteger(revision) || revision < 1) {
+        return errorResponse(400, payloadError ?? "invalid_quest_claim", requestId);
+      }
+      try {
+        const result = await databaseJson("SELECT heroloop_api.quest_claim($1::uuid,$2::uuid,$3::text,$4::bigint) AS result", [identity.playerId, requestKey, questId, revision]);
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["state_conflict", "idempotency_conflict", "quest_unknown", "quest_catalogue_mismatch", "quest_already_claimed", "quest_incomplete"]);
+        return code ? errorResponse(409, code, requestId) : errorResponse(400, "quest_claim_failed", requestId);
       }
     }
     if (parsed.value.action === "tutorial_chest_open") {

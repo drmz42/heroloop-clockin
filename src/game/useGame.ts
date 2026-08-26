@@ -4,7 +4,7 @@ import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedI
 import {
   loadState, saveLegacyState, normalizeState, makeInitialState, makeRegisteredStarterState, starUpCost, summonCostHero,
   MAX_TEAM, MAX_HEROES, MAX_HERO_STARS, MAX_INVENTORY, MAX_CHESTS, MAX_ACCOUNT_XP, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
-  accountLevelFromXp, advanceHeroXp, heroSellValue, milestoneQuest, moscowDayKey,
+  accountLevelFromXp, advanceHeroXp, heroSellValue, moscowDayKey,
   heroXpForLevel, TRAINING_SLOT_COSTS, TRAINING_BOOST_COSTS,
   ACTIVE_SESSION_MS,
   trainingTokenPenalty,
@@ -2117,27 +2117,16 @@ export function useGame() {
 
   // ── Quests ───────────────────────────────────────────────────────────────
 
-  const claimQuest = useCallback((questId: string) => {
-    setState((prev) => {
-      const q = prev.dailyQuests.find((q) => q.id === questId) ?? prev.milestoneQuests.find((q) => q.id === questId);
-      if (!q || q.claimed || q.progress < q.target) return prev;
-      const overflow = Math.max(0, q.progress - q.target);
-      const nextProgress = q.chain === 'summon' ? prev.summons : overflow;
-      const nextMilestone = q.kind === 'milestone' && q.chain ? milestoneQuest(q.chain, (q.tier ?? 0) + 1, nextProgress) : null;
-      return {
-        ...prev,
-        gold: prev.gold + q.reward.gold,
-        hero: prev.hero + q.reward.hero,
-        summonScrolls: prev.summonScrolls + (q.reward.summonScrolls ?? 0),
-        totalTokensEarned: prev.totalTokensEarned + q.reward.hero,
-        tokensEarnedToday: prev.tokensEarnedToday + q.reward.hero,
-        dailyQuests: prev.dailyQuests.map((q) => q.id === questId ? { ...q, claimed: true } : q),
-        milestoneQuests: q.kind === 'milestone'
-          ? [...prev.milestoneQuests.filter((quest) => quest.id !== questId), ...(nextMilestone ? [nextMilestone] : [])]
-          : updateQuestProgress(prev.milestoneQuests, 'token-earned-', q.reward.hero),
-      };
+  const claimQuest = useCallback(async (questId: string): Promise<boolean> => {
+    if (!tokenomicsEnabled || !Number.isSafeInteger(serverRevisionHint)) return false;
+    const result = await playerSync<{ claimed: boolean; state: GameState; revision: number }>('quest_claim', {
+      quest_id: questId, expected_revision: serverRevisionHint, idempotency_key: createIdempotencyKey(),
     });
-  }, []);
+    if (!result?.state || !Number.isSafeInteger(result.revision)) return false;
+    setServerRevisionHint(result.revision);
+    hydrateServerState(result.state);
+    return result.claimed === true;
+  }, [hydrateServerState, serverRevisionHint]);
 
   const claimTutorialQuest = useCallback(async (questId: string): Promise<boolean> => {
     if (!tokenomicsEnabled || !Number.isSafeInteger(serverRevisionHint)) return false;

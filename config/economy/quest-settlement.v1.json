@@ -1,35 +1,29 @@
 {
   "version": 1,
-  "status": "proposal-only",
-  "runtimeAdopted": false,
-  "runtimeAdoption": { "tutorial": true, "daily": false, "milestone": false },
+  "status": "implemented",
+  "runtimeAdopted": true,
+  "runtimeAdoption": { "tutorial": true, "daily": true, "milestone": true },
   "economyChanged": false,
   "families": ["daily", "milestone", "tutorial"],
   "currentAudit": {
-    "claimExecution": "client-state-mutation",
+    "claimExecution": "revision-bound-server-settlement",
     "progressAuthority": {
       "chest": "server",
       "kill": "mixed-client-save-and-server-total",
       "boss": "client",
-      "summon": "client",
+      "summon": "server",
       "gold-earned": "client",
       "token-earned": "client",
       "token-spent": "client",
       "hero-owned": "client"
     },
     "rewardAuthority": {
-      "gold": "server-capped-from-current-quest-snapshot",
-      "hero": "not-credited-by-quest-settlement",
-      "summon-scrolls": "client-save-compatible",
+      "gold": "server-atomic-credit",
+      "hero": "server-atomic-credit-with-ledger",
+      "summon-scrolls": "server-resource-ledger",
       "tutorial-chests": "not-implemented"
     },
-    "blockers": [
-      "no-idempotent-quest-claim-command",
-      "client-can-submit-progress-claimed-and-reward-shape",
-      "no-surviving-quest-claim-ledger",
-      "no-atomic-gold-hero-resource-credit",
-      "no-server-owned-moscow-daily-instance"
-    ]
+    "blockers": []
   },
   "targetContract": {
     "catalogue": {
@@ -106,6 +100,6 @@
       "hero-ledger-reconciliation-zero-drift",
       "disposable-exact-candidate-staging-pass"
     ],
-    "status": "tutorial-accepted-on-staging-daily-and-milestone-remain-blocked"
+    "status": "implemented-pending-exact-candidate-staging-acceptance"
   }
 }
