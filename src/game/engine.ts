@@ -1,5 +1,5 @@
 import type { Enemy, Location, CombatUnit, OwnedHero, OwnedItem, Rarity } from './types';
-import { HERO_MAP } from './heroes';
+import { HERO_MAP, RARITY_INDEX } from './heroes';
 import { ITEM_MAP, maxChestRarityForLocation } from './items';
 import { recommendedTeamPower } from './balance';
 
@@ -9,9 +9,18 @@ export interface HeroFullStats {
   goldBonus: number; xpBonus: number; atkSpeed: number;
 }
 
-const HP_PER_LEVEL = 0.06;
-const ATK_PER_LEVEL = 0.05;
 const BASE_STAT_SCALE = 0.2;
+
+const CLASS_GROWTH: Record<string, { hp: number; atk: number; def: number }> = {
+  knight: { hp: .012, atk: .0055, def: .009 }, shepherd: { hp: .007, atk: .0115, def: .0035 },
+  assassin: { hp: .0065, atk: .01, def: .003 }, druid: { hp: .0105, atk: .0065, def: .0065 },
+  archer: { hp: .008, atk: .009, def: .0045 },
+};
+const CLASS_CAPS: Record<string, { def: number; dodge: number; crit: number; critDamage: number; atkSpeed: number }> = {
+  knight: { def: .6, dodge: .1, crit: .45, critDamage: 2, atkSpeed: .2 }, shepherd: { def: .4, dodge: .15, crit: .5, critDamage: 2.3, atkSpeed: .2 },
+  assassin: { def: .4, dodge: .3, crit: .6, critDamage: 2.5, atkSpeed: .25 }, druid: { def: .5, dodge: .15, crit: .45, critDamage: 2.1, atkSpeed: .2 },
+  archer: { def: .45, dodge: .2, crit: .55, critDamage: 2.7, atkSpeed: .25 },
+};
 
 export const SET_BONUS_PERCENT: Record<Rarity, number> = {
   common: 2, uncommon: 4, rare: 6, epic: 8, legendary: 10, mythic: 12,
@@ -35,26 +44,22 @@ export function equippedEnchantResonance(equippedItems: OwnedItem[]): { level: n
 }
 
 export function heroStarMultiplier(stars: number): number {
-  const safeStars = Math.max(0, Math.min(20, stars));
-  const gold = Math.min(5, safeStars);
-  const purple = Math.min(5, Math.max(0, safeStars - 5));
-  const red = Math.min(5, Math.max(0, safeStars - 10));
-  const pink = Math.min(5, Math.max(0, safeStars - 15));
-  return 1 + gold * 0.22 + purple * 0.15 + red * 0.12 + pink * 0.10;
+  return 1 + Math.max(0, Math.min(20, stars)) * .015;
 }
 
 export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
   const base = HERO_MAP[owned.heroId];
   if (!base) return null;
   const lvl = owned.level;
+  const tier = Math.min(8, RARITY_INDEX[base.rarity]);
+  const growth = CLASS_GROWTH[base.heroClass];
   const starMul = heroStarMultiplier(owned.stars);
-  const hpLvlMul = 1 + (lvl - 1) * HP_PER_LEVEL;
-  const atkLvlMul = 1 + (lvl - 1) * ATK_PER_LEVEL;
+  const rarityGrowth = 1 + tier * .02;
 
-  let hp = base.baseHp * BASE_STAT_SCALE * hpLvlMul * starMul;
-  let atk = base.baseAtk * BASE_STAT_SCALE * atkLvlMul * starMul;
-  let def = base.baseDef * BASE_STAT_SCALE * starMul;
-  const speed = base.baseSpeed + owned.stars * 4;
+  let hp = base.baseHp * BASE_STAT_SCALE * (1 + growth.hp * rarityGrowth * (lvl - 1)) * starMul;
+  let atk = base.baseAtk * BASE_STAT_SCALE * (1 + growth.atk * rarityGrowth * (lvl - 1)) * starMul;
+  let def = base.baseDef * BASE_STAT_SCALE * (1 + growth.def * rarityGrowth * (lvl - 1)) * starMul;
+  const speed = base.baseSpeed + owned.stars * .1;
   let critChance = base.critChance;
   let critDamage = base.critDamage;
   let dodge = 0;
@@ -64,10 +69,14 @@ export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
 
   if (equippedItems) {
     const setBonus = (equippedSetBonus(equippedItems)?.percent ?? 0) / 100;
-    const resonance = (equippedEnchantResonance(equippedItems)?.percent ?? 0) / 100;
+    const resonance = (equippedEnchantResonance(equippedItems.filter((item) => item.enchantStatsVersion !== 3))?.percent ?? 0) / 100;
     for (const item of equippedItems) {
-      const multiplier = 1 + Math.max(0, Math.min(10, item.enchantLevel)) * 0.10 + setBonus + resonance;
+      const level = Math.max(0, Math.min(10, item.enchantLevel));
       for (const s of item.stats) {
+        const enchantRate = item.enchantStatsVersion === 3
+          ? (s.key === 'hp' || s.key === 'atk' || s.key === 'def' ? .1 : s.key === 'goldBonus' || s.key === 'xpBonus' ? .025 : .05)
+          : .1;
+        const multiplier = 1 + level * enchantRate + setBonus + (item.enchantStatsVersion === 3 ? 0 : resonance);
         const value = s.isPercent
           ? Math.round(s.value * multiplier * 1000) / 1000
           : Math.round(s.value * multiplier);
@@ -88,7 +97,9 @@ export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
 
   const passive = classPassiveBonus(base.heroClass);
   dodge += passive.dodge ?? 0;
-  if (passive.defMult) def *= passive.defMult;
+  hp *= passive.hpMult ?? 1;
+  atkSpeed += passive.attackSpeed ?? 0;
+  const caps = CLASS_CAPS[base.heroClass];
 
   return {
     name: base.name, heroClass: base.heroClass, rarity: base.rarity, color: base.color,
@@ -96,17 +107,18 @@ export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
     passiveName: base.passiveName, passiveDesc: base.passiveDesc,
     hp: Math.round(hp), atk: Math.round(atk), def: Math.round(def),
     speed: Math.round(speed),
-    critChance: Math.min(critChance, 0.85), critDamage,
-    dodge: Math.min(dodge, 0.6), goldBonus, xpBonus, atkSpeed,
+    critChance: Math.min(critChance, caps.crit), critDamage: Math.min(critDamage, caps.critDamage),
+    dodge: Math.min(dodge, caps.dodge), goldBonus, xpBonus, atkSpeed: Math.min(atkSpeed, caps.atkSpeed),
   };
 }
 
-export function classPassiveBonus(heroClass: string): { dodge?: number; defMult?: number; healOnAttack?: number; regenPct?: number; } {
+export function classPassiveBonus(heroClass: string): { dodge?: number; hpMult?: number; dpsMult?: number; regenPct?: number; attackSpeed?: number } {
   switch (heroClass) {
-    case 'assassin': return { dodge: 0.08 };
-    case 'knight':   return { defMult: 1.05 };
-    case 'shepherd': return { healOnAttack: 0.05 };
-    case 'druid':    return { regenPct: 0.015 };
+    case 'assassin': return { dodge: .05 };
+    case 'knight':   return { hpMult: 1.15 };
+    case 'shepherd': return { dpsMult: 1.1 };
+    case 'druid':    return { hpMult: 1.1, regenPct: .004 };
+    case 'archer':   return { attackSpeed: .08 };
     default: return {};
   }
 }
@@ -120,7 +132,13 @@ export function teamPower(heroes: OwnedHero[], inventory: OwnedItem[]): number {
   return Math.round(heroes.reduce((acc, h) => {
     const s = heroStats(h, getEquippedItems(h, inventory));
     if (!s) return acc;
-    return acc + s.atk + s.hp * 0.08 + s.def * 1.5 + s.atkSpeed * 2;
+    const caps = CLASS_CAPS[s.heroClass];
+    const interval = Math.max(600, (1540 - Math.min(s.speed * 2.2, 700)) / (1 + s.atkSpeed));
+    const dps = s.atk * (1000 / interval) * (1 + s.critChance * (s.critDamage - 1)) * (classPassiveBonus(s.heroClass).dpsMult ?? 1);
+    const mitigation = Math.min(caps.def, s.def / (s.def + 200));
+    const effectiveHp = s.hp / (1 - mitigation) / (1 - s.dodge);
+    const sustain = s.hp * (classPassiveBonus(s.heroClass).regenPct ?? 0);
+    return acc + 4 * dps + .08 * effectiveHp + 1.5 * sustain;
   }, 0));
 }
 
@@ -155,11 +173,14 @@ const LOCATION_NAMES = [
   'Dreadmoor Spire',    // 8 — Lv 50-59
   'Abyssal Rift',       // 9 — Lv 60-69
   'The Void Beyond',    // 10 — Lv 70-79
+  'Shattered Crown', 'Astral Scar', 'Cinder Throne', 'Thorned Eclipse', 'Graveglass Expanse',
+  'Immortal Bastion', 'Cursed Meridian', 'Divine Crucible', 'Celestial Terminus', 'Godfall Nexus',
 ];
 
 // Unlock levels matching screenshot: 1-4, 5-9, 10-15, 16-22, 23-30, 31-39, 40-49, 50-59, 60-69, 70-79
 export const LOCATION_RANGES: [number, number][] = [
   [1,4],[5,9],[10,15],[16,22],[23,30],[31,39],[40,49],[50,59],[60,69],[70,79],
+  [80,81],[82,83],[84,85],[86,87],[88,89],[90,91],[92,93],[94,95],[96,97],[98,99],
 ];
 
 export function locationUnlockLevel(locationId: number): number {
@@ -231,8 +252,10 @@ export function buildLocation(id: number, teamSize: number = 1, forceBoss = fals
     });
   }
 
-  const goldReward = Math.max(1, (5 + id) * (isBoss ? 3 : 1));
-  const xpReward = Math.max(1, Math.round((4 + id * 1.2) * 0.55 * (isBoss ? 2 : 1)));
+  const endgameGold = [16, 17, 18, 19, 20, 21, 22, 23, 24, 25];
+  const endgameXp = [9, 10, 11, 11, 12, 13, 13, 14, 15, 15];
+  const goldReward = Math.max(1, (id > 10 ? endgameGold[id - 11] : 5 + id) * (isBoss ? 3 : 1));
+  const xpReward = Math.max(1, (id > 10 ? endgameXp[id - 11] : Math.round((4 + id * 1.2) * .55)) * (isBoss ? 2 : 1));
   const tokenReward = 0;
 
   return {
@@ -258,10 +281,11 @@ export function makeUnit(
   critChance: number, critDamage: number,
   heroClass?: import('./types').HeroClass,
   dodge?: number,
+  atkSpeed = 0,
 ): CombatUnit {
   // Attack interval: minimum 900ms at base, scaling down with speed
   // Slower base combat overall (base interval raised 10% = base attack speed -10%)
-  const interval = 1540 - Math.min(speed * 2.2, 700);
+  const interval = (1540 - Math.min(speed * 2.2, 700)) / (1 + Math.max(0, atkSpeed));
   return {
     uid, name, side, hp, maxHp: hp, atk, def, speed,
     combatSpeed: speed,
@@ -281,15 +305,13 @@ export function ownedToUnit(owned: OwnedHero, inventory: OwnedItem[] = []): Comb
     : s.heroClass === 'assassin' ? '🗡️'
     : s.heroClass === 'shepherd' ? '✨'
     : '🌿';
-  // atkSpeed adds to speed for attack frequency
-  const effectiveSpeed = s.speed + s.atkSpeed * 0.15;
   return makeUnit(
     owned.uid, s.name, 'hero',
-    s.hp, s.atk, s.def, effectiveSpeed,
+    s.hp, s.atk, s.def, s.speed,
     s.color, icon,
     s.critChance, s.critDamage,
     s.heroClass as import('./types').HeroClass,
-    s.dodge,
+    s.dodge, s.atkSpeed,
   );
 }
 

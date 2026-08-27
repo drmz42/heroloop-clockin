@@ -285,9 +285,10 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
       itemUids.add(uid);
       const enchantLevel = Math.max(0, Math.min(10, i.enchantLevel ?? 0));
       const storedStats = i.stats ?? [];
-      const powerFromStoredStats = itemPower(storedStats, enchantLevel);
+      const version: 2 | 3 = i.enchantStatsVersion === 3 ? 3 : 2;
+      const powerFromStoredStats = itemPower(storedStats, enchantLevel, version);
       const legacyStatsWereCompounded = enchantLevel > 0
-        && i.enchantStatsVersion !== 2
+        && i.enchantStatsVersion !== 2 && i.enchantStatsVersion !== 3
         && powerFromStoredStats > (i.power ?? 0) * 1.03 + 2;
       const legacyMultiplier = legacyStatsWereCompounded
         ? Array.from({ length: enchantLevel }, (_, index) => 1 + (index + 1) * 0.10).reduce((total, multiplier) => total * multiplier, 1)
@@ -305,9 +306,9 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
         : i.itemId,
       locked: i.locked ?? false,
       stats,
-      power: itemPower(stats, enchantLevel),
+      power: itemPower(stats, enchantLevel, version),
       enchantLevel,
-      enchantStatsVersion: 2 as const,
+      enchantStatsVersion: version,
       rerollCount: i.rerollCount ?? 0,
     });
     });

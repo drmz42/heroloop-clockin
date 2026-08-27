@@ -1,7 +1,7 @@
 import type { BalanceTelemetry } from './types';
 
-export const BALANCE_VERSION = '2026.08.02-v2';
-export const BASE_POWER_PER_LANE = [50, 150, 350, 700, 1200, 2000, 3200, 5000, 7500, 11000] as const;
+export const BALANCE_VERSION = 'hero-power-proposal-2026.08.12-v3@sha256:4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc';
+export const BASE_POWER_PER_LANE = [49, 98, 138, 186, 242, 292, 353, 427, 520, 603, 3947, 3998, 5055, 5117, 5479, 6421, 8169, 9208, 11029, 12166] as const;
 const MIN_SAMPLE = 20;
 const TARGET_WIN_RATE = 0.72;
 
@@ -47,8 +47,7 @@ export function recordBattleTelemetry(
 
 export function recommendedTeamPower(locationId: number, teamSize: number, telemetry?: BalanceTelemetry): number {
   const lanes = Math.max(1, Math.min(teamSize, 3));
-  const basePerLane = BASE_POWER_PER_LANE[Math.min(locationId - 1, BASE_POWER_PER_LANE.length - 1)]
-    * (1 + (locationId > 10 ? (locationId - 10) * 0.4 : 0));
+  const basePerLane = BASE_POWER_PER_LANE[Math.min(locationId - 1, BASE_POWER_PER_LANE.length - 1)];
   const baseline = basePerLane * lanes;
   if (!telemetry || telemetry.version !== BALANCE_VERSION) return Math.round(baseline);
   const samples = Object.values(telemetry.cohorts).filter((row) =>

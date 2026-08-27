@@ -27,37 +27,45 @@ const RARITY_STAT_COUNT: Record<Rarity, [number, number]> = {
 
 // HEAVILY NERFED — items give small bonuses at low rarity, only significant at late game
 const RARITY_MULT: Record<Rarity, number> = {
-  common: 0.3, uncommon: 0.7, rare: 1.4, epic: 2.8,
-  legendary: 4.6, mythic: 6.5, cosmic: 9, divine: 13, celestial: 18,
-  cursed: 0, immortal: 0, god: 0, relic: 6.5,
+  common: 1, uncommon: 1.15, rare: 1.35, epic: 1.6,
+  legendary: 1.9, mythic: 2.25, relic: 2.25, cosmic: 2.65, divine: 3.1, celestial: 3.6,
+  cursed: 4.1, immortal: 4.7, god: 5.4,
 };
 
 // Base stat ranges at level 1 (NERFED)
 const STAT_BASES: Record<ItemStatKey, [number, number]> = {
-  hp:         [8,  20],
-  atk:        [2,  5],
-  def:        [1,  4],
-  atkSpeed:   [3,  8],     // ms reduction
-  critChance: [0.005, 0.015],
-  critDamage: [0.02, 0.06],
-  goldBonus:  [0.01, 0.03],
-  xpBonus:    [0.01, 0.03],
-  dodge:      [0.005, 0.015],
+  hp:         [3.658817373, 4.573521716],
+  atk:        [.914704343, 1.143380429],
+  def:        [.335391593, .419239491],
+  atkSpeed:   [.003235908, .004044885],
+  critChance: [.003106472, .00388309],
+  critDamage: [.004400835, .005501044],
+  goldBonus:  [.005177453, .006471816],
+  xpBonus:    [.005177453, .006471816],
+  dodge:      [.001553236, .001941545],
 };
 
 const SLOT_STATS: Record<ItemSlot, ItemStatKey[]> = {
-  class_weapon: ['atk', 'critChance', 'critDamage', 'atkSpeed', 'hp', 'goldBonus'],
-  offhand: ['def', 'hp', 'critChance', 'critDamage', 'dodge', 'xpBonus'],
-  chest: ['hp', 'def', 'atk', 'goldBonus', 'dodge', 'critDamage'],
-  ring: ['goldBonus', 'xpBonus', 'critChance', 'hp', 'atk', 'dodge'],
-  weapon:  ['atk', 'critChance', 'critDamage', 'atkSpeed', 'hp', 'goldBonus'],
-  helmet:  ['hp', 'def', 'critChance', 'xpBonus', 'atk', 'dodge'],
-  armor:   ['hp', 'def', 'atk', 'goldBonus', 'dodge', 'critDamage'],
-  gloves:  ['atk', 'critChance', 'critDamage', 'def', 'atkSpeed', 'hp'],
-  boots:   ['atkSpeed', 'dodge', 'def', 'hp', 'goldBonus', 'critChance'],
-  ring1:   ['goldBonus', 'xpBonus', 'critChance', 'hp', 'atk', 'dodge'],
-  ring2:   ['critDamage', 'atk', 'goldBonus', 'critChance', 'def', 'xpBonus'],
-  amulet:  ['xpBonus', 'goldBonus', 'hp', 'critDamage', 'dodge', 'def'],
+  class_weapon: ['atk', 'atkSpeed', 'critChance', 'critDamage', 'hp'],
+  offhand: ['hp', 'def', 'atk', 'critChance', 'critDamage'],
+  chest: ['hp', 'def', 'dodge', 'atk', 'critDamage'],
+  ring: ['atk', 'critChance', 'critDamage', 'dodge', 'goldBonus', 'xpBonus', 'hp'],
+  weapon: ['atk', 'atkSpeed', 'critChance', 'critDamage', 'hp'],
+  helmet: ['hp', 'def', 'dodge', 'critChance', 'critDamage'],
+  armor: ['hp', 'def', 'dodge', 'atk', 'critDamage'],
+  gloves: ['atk', 'atkSpeed', 'critChance', 'critDamage', 'def'],
+  boots: ['hp', 'def', 'dodge', 'atkSpeed', 'critChance'],
+  ring1: ['atk', 'critChance', 'critDamage', 'dodge', 'goldBonus', 'xpBonus', 'hp'],
+  ring2: ['atk', 'critChance', 'critDamage', 'dodge', 'goldBonus', 'xpBonus', 'hp'],
+  amulet: ['hp', 'def', 'critDamage', 'dodge', 'goldBonus', 'xpBonus', 'critChance'],
+};
+
+const OFFHAND_STATS: Record<HeroClass, ItemStatKey[]> = {
+  knight: ['hp', 'def', 'dodge', 'atk', 'critChance'],
+  shepherd: ['atk', 'atkSpeed', 'critChance', 'critDamage', 'hp'],
+  assassin: ['atk', 'atkSpeed', 'critChance', 'critDamage', 'dodge'],
+  druid: ['hp', 'def', 'atk', 'critChance', 'critDamage'],
+  archer: ['atk', 'atkSpeed', 'critChance', 'critDamage', 'hp'],
 };
 
 // Max chest rarity per location tier
@@ -313,42 +321,44 @@ function rand(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }
 
-function rollStats(slot: ItemSlot, rarity: Rarity, level: number): ItemStatRoll[] {
+function rollStats(slot: ItemSlot, rarity: Rarity, level: number, itemId: string): ItemStatRoll[] {
   const [minC, maxC] = RARITY_STAT_COUNT[rarity];
   const count = minC + Math.floor(Math.random() * (maxC - minC + 1));
-  const pool = [...SLOT_STATS[slot]];
+  const itemClass = ITEM_MAP[itemId]?.heroClass;
+  const allowed = slot === 'offhand' && itemClass ? OFFHAND_STATS[itemClass] : SLOT_STATS[slot];
+  let pool = [...allowed];
   const mult = RARITY_MULT[rarity];
-  // Level scaling is slow — level 20 item is ~60% stronger than level 1
-  const lvlScale = 1 + (level - 1) * 0.03;
   const chosen: ItemStatKey[] = [];
-  for (let i = 0; i < count && pool.length > 0; i++) {
+  for (let i = 0; i < count; i++) {
+    if (pool.length === 0) pool = [...allowed];
     chosen.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
   }
   return chosen.map((key) => {
     const [b1, b2] = STAT_BASES[key];
-    const raw = rand(b1, b2) * mult * lvlScale;
+    const isMain = key === 'hp' || key === 'atk' || key === 'def';
+    const lvlScale = 1 + (level - 1) * (isMain ? .015 : .005) + .2 * Math.floor((level - 1) / 15);
+    const raw = rand(b1, b2) * (isMain ? mult : Math.sqrt(mult)) * lvlScale;
     const isPct = key === 'critChance' || key === 'critDamage'
       || key === 'goldBonus' || key === 'xpBonus' || key === 'dodge'
       || key === 'atkSpeed';
-    // atkSpeed is flat ms value (not percent) but treated as atkSpeed bonus
-    const isPctActual = key !== 'atkSpeed' && isPct;
     return {
       key,
-      value: isPctActual ? Math.round(raw * 1000) / 1000 : Math.round(raw),
-      isPercent: isPctActual,
+      value: isPct ? Math.round(raw * 1_000_000) / 1_000_000 : Math.round(raw),
+      isPercent: isPct,
     };
   });
 }
 
-export function itemPower(stats: ItemStatRoll[], enchantLevel = 0): number {
-  const mult = 1 + enchantLevel * 0.10;
+export function itemPower(stats: ItemStatRoll[], enchantLevel = 0, version: 2 | 3 = 3): number {
   return Math.round(stats.reduce((acc, s) => {
     const w: Record<ItemStatKey, number> = {
       atk: 4, critChance: 200, critDamage: 100, atkSpeed: 0.5,
       hp: 0.15, def: 2, goldBonus: 150, xpBonus: 100, dodge: 150,
     };
-    return acc + (s.isPercent ? s.value * (w[s.key] ?? 100) : s.value * (w[s.key] ?? 1));
-  }, 0) * mult);
+    const rate = version === 2 ? .1 : s.key === 'hp' || s.key === 'atk' || s.key === 'def' ? .1
+      : s.key === 'goldBonus' || s.key === 'xpBonus' ? .025 : .05;
+    return acc + (s.isPercent ? s.value * (w[s.key] ?? 100) : s.value * (w[s.key] ?? 1)) * (1 + enchantLevel * rate);
+  }, 0));
 }
 
 let itemUid = 0;
@@ -358,22 +368,22 @@ export function rollItem(itemId: string, level: number): OwnedItem {
   if (base.rarity === 'cursed' || base.rarity === 'immortal' || base.rarity === 'god') {
     throw new Error(`Craft-only rarity cannot be rolled: ${base.rarity}`);
   }
-  const stats = rollStats(base.slot, base.rarity, level);
+  const stats = rollStats(base.slot, base.rarity, level, itemId);
   return {
     uid: globalThis.crypto?.randomUUID?.() ?? `it-${Date.now().toString(36)}-${itemUid++}-${Math.random().toString(36).slice(2)}`,
     itemId, level, stats, power: itemPower(stats),
-    enchantLevel: 0, enchantStatsVersion: 2, rerollCount: 0,
+    enchantLevel: 0, enchantStatsVersion: 3, rerollCount: 0,
   };
 }
 
 export function rerollItemStats(item: OwnedItem): OwnedItem {
   const base = ITEM_MAP[item.itemId];
-  const newStats = rollStats(base.slot, base.rarity, item.level);
+  const newStats = rollStats(base.slot, base.rarity, item.level, item.itemId);
   return {
     ...item,
     stats: newStats,
-    power: itemPower(newStats, item.enchantLevel),
-    enchantStatsVersion: 2,
+    power: itemPower(newStats, item.enchantLevel, 3),
+    enchantStatsVersion: 3,
     rerollCount: item.rerollCount + 1,
   };
 }

@@ -76,7 +76,7 @@ export interface OwnedItem {
   locked?: boolean;
   isNew?: boolean;
   enchantLevel: number;   // 0–10, each +1 boosts all stats by +10%
-  enchantStatsVersion?: 2; // v2 keeps original rolled stats; missing legacy values stored compounded stats
+  enchantStatsVersion?: 2 | 3; // v2 keeps legacy Resonance; v3 uses checksum-bound per-stat curves
   rerollCount: number;    // how many times rerolled (affects cost)
 }
 

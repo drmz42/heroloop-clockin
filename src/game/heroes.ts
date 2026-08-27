@@ -351,13 +351,13 @@ const LEGACY_HEROES: HeroBase[] = [
 const CANONICAL_RARITIES: Exclude<Rarity, 'relic' | 'cursed'>[] = [
   'common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial',
 ];
-const RARITY_SCALE = [1, 1.5, 2.2, 3.2, 4.6, 6.5, 9, 13, 18];
+export const HERO_RARITY_SCALE = [1, 1.441163, 2.147372, 3.084756, 4.435796, 6.370091, 9.143236, 13.119459, 18.814853] as const;
 const HERO_ARCHETYPES: Omit<HeroBase, 'id' | 'name' | 'rarity'>[] = [
-  { heroClass: 'shepherd', faction: 'water', baseHp: 360, baseAtk: 72, baseDef: 14, baseSpeed: 108, critChance: .12, critDamage: 1.8, skillName: 'Mana Burst', skillDesc: 'Detonates gathered runes around the target', passiveName: 'Arcane Overflow', passiveDesc: 'Every fifth attack releases a second spell', color: '#3b82f6' },
-  { heroClass: 'assassin', faction: 'dark', baseHp: 320, baseAtk: 82, baseDef: 12, baseSpeed: 128, critChance: .22, critDamage: 2, skillName: 'Backstab', skillDesc: 'A precise strike from the shadows', passiveName: 'Critical Rhythm', passiveDesc: 'Critical hits briefly increase attack speed', color: '#14b8a6' },
-  { heroClass: 'knight', faction: 'fire', baseHp: 520, baseAtk: 55, baseDef: 28, baseSpeed: 92, critChance: .08, critDamage: 1.6, skillName: 'Shield Breaker', skillDesc: 'A crushing sword and shield combination', passiveName: 'Bulwark', passiveDesc: 'Reduces damage while below half health', color: '#ef4444' },
-  { heroClass: 'druid', faction: 'nature', baseHp: 430, baseAtk: 62, baseDef: 20, baseSpeed: 102, critChance: .1, critDamage: 1.7, skillName: 'Living Roots', skillDesc: 'Roots the enemy and restores health', passiveName: 'Wild Growth', passiveDesc: 'Regenerates health during sustained combat', color: '#84cc16' },
-  { heroClass: 'archer', faction: 'light', baseHp: 350, baseAtk: 68, baseDef: 15, baseSpeed: 122, critChance: .16, critDamage: 1.85, skillName: 'Rapid Bolts', skillDesc: 'Fires a fast mechanical crossbow volley', passiveName: 'Tempo', passiveDesc: 'Consecutive attacks become faster', color: '#f59e0b' },
+  { heroClass: 'shepherd', faction: 'water', baseHp: 340, baseAtk: 86, baseDef: 12, baseSpeed: 104, critChance: .12, critDamage: 1.85, skillName: 'Mana Burst', skillDesc: 'Detonates gathered runes around the target', passiveName: 'Arcane Overflow', passiveDesc: 'Deals 10% more sustained damage', color: '#3b82f6' },
+  { heroClass: 'assassin', faction: 'dark', baseHp: 310, baseAtk: 78, baseDef: 10, baseSpeed: 130, critChance: .23, critDamage: 2, skillName: 'Backstab', skillDesc: 'A precise strike from the shadows', passiveName: 'Critical Rhythm', passiveDesc: 'Begins with 5% dodge', color: '#14b8a6' },
+  { heroClass: 'knight', faction: 'fire', baseHp: 500, baseAtk: 56, baseDef: 28, baseSpeed: 92, critChance: .08, critDamage: 1.6, skillName: 'Shield Breaker', skillDesc: 'A crushing sword and shield combination', passiveName: 'Bulwark', passiveDesc: 'Increases maximum HP by 15%', color: '#ef4444' },
+  { heroClass: 'druid', faction: 'nature', baseHp: 450, baseAtk: 60, baseDef: 20, baseSpeed: 100, critChance: .1, critDamage: 1.7, skillName: 'Living Roots', skillDesc: 'Roots the enemy and restores health', passiveName: 'Wild Growth', passiveDesc: 'Regenerates 0.4% max HP each second', color: '#84cc16' },
+  { heroClass: 'archer', faction: 'light', baseHp: 360, baseAtk: 70, baseDef: 14, baseSpeed: 124, critChance: .15, critDamage: 2.15, skillName: 'Rapid Bolts', skillDesc: 'Fires a fast mechanical crossbow volley', passiveName: 'Tempo', passiveDesc: 'Starts with 8% attack speed', color: '#f59e0b' },
 ];
 const CANONICAL_CLASS_NAME: Record<HeroClass, string> = {
   shepherd: 'Mage', assassin: 'Assassin', knight: 'Warrior', druid: 'Druid', archer: 'Crossbowman',
@@ -365,7 +365,7 @@ const CANONICAL_CLASS_NAME: Record<HeroClass, string> = {
 
 export const HEROES: HeroBase[] = HERO_ARCHETYPES.flatMap((hero) =>
   CANONICAL_RARITIES.map((rarity, tier) => {
-    const scale = RARITY_SCALE[tier];
+    const scale = HERO_RARITY_SCALE[tier];
     const className = CANONICAL_CLASS_NAME[hero.heroClass];
     return {
       ...hero,
@@ -375,7 +375,7 @@ export const HEROES: HeroBase[] = HERO_ARCHETYPES.flatMap((hero) =>
       baseHp: Math.round(hero.baseHp * scale),
       baseAtk: Math.round(hero.baseAtk * scale),
       baseDef: Math.round(hero.baseDef * scale),
-      baseSpeed: Math.round(hero.baseSpeed * (1 + tier * .025)),
+      baseSpeed: hero.baseSpeed * (1 + tier * .01),
     };
   })
 );

@@ -1,5 +1,5 @@
 import { Pool } from "@db/postgres";
-import { buildNormalCombat } from "/app/shared/normal-combat.mjs";
+import { BALANCE_VERSION, buildNormalCombat } from "/app/shared/normal-combat.mjs";
 import {
   canonicalizeLoadedState,
   canonicalResourceState,
@@ -993,6 +993,9 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
             if (prepared.needs_simulation === true) {
               if (!isRecord(prepared.state) || !Array.isArray(prepared.ledger_items)) {
                 throw new Error("invalid normal combat simulation context");
+              }
+              if (prepared.balance_version !== BALANCE_VERSION) {
+                throw new Error("normal combat balance version mismatch");
               }
               const startKey = String(prepared.start_key ?? "");
               const preparedLocation = Number(prepared.location);

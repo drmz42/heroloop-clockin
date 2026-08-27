@@ -425,7 +425,7 @@ export function useGame() {
       const serverLocation = Math.floor(Number(started.location));
       const serverSeed = Number(started.seed);
       const availableAt = Date.parse(started.available_at);
-      if (!Number.isSafeInteger(serverLocation) || serverLocation < 1 || serverLocation > 10
+      if (!Number.isSafeInteger(serverLocation) || serverLocation < 1 || serverLocation > 20
         || !Number.isSafeInteger(serverSeed) || !Number.isFinite(availableAt)) {
         resolvingRef.current = false;
         setBattleResult({ win: false, gold: 0, xp: 0, tokens: 0, chest: false, overpowered: false });
@@ -1754,14 +1754,14 @@ export function useGame() {
     const success = useCharm ? true : Math.random() < baseChance;
     if (success) {
       const newEnchant = item.enchantLevel + 1;
-      const newPower = itemPower(item.stats, newEnchant);
+      const newPower = itemPower(item.stats, newEnchant, item.enchantStatsVersion === 3 ? 3 : 2);
       setState((prev) => ({
         ...prev,
         gold: prev.gold - baseCost.gold,
         hero: balance,
-        inventory: prev.inventory.map((i) => i.uid === itemUid ? { ...i, enchantLevel: newEnchant, enchantStatsVersion: 2, power: newPower } : i),
+        inventory: prev.inventory.map((i) => i.uid === itemUid ? { ...i, enchantLevel: newEnchant, enchantStatsVersion: item.enchantStatsVersion === 3 ? 3 : 2, power: newPower } : i),
       }));
-      setEnchantResult({ success: true, item: { ...item, enchantLevel: newEnchant, enchantStatsVersion: 2, power: newPower } });
+      setEnchantResult({ success: true, item: { ...item, enchantLevel: newEnchant, enchantStatsVersion: item.enchantStatsVersion === 3 ? 3 : 2, power: newPower } });
     } else {
       const nextState = {
         ...stateRef.current,
