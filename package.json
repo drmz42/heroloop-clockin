@@ -35,6 +35,7 @@
     "simulate:acceleration-calendar": "node scripts/simulate-acceleration-calendar.mjs",
     "check:bag-expansion": "node scripts/check-bag-expansion-proposal.mjs",
     "check:codex-watchdog": "node scripts/check-codex-watchdog.mjs",
+    "check:codex-weekly-limits": "node scripts/check-codex-weekly-limits.mjs",
     "check:combat-regression": "node scripts/check-combat-regression-matrix.mjs",
     "check:combat-runtime": "node scripts/check-combat-runtime.mjs",
     "check:crafting-settlement": "node scripts/check-crafting-settlement-proposal.mjs",
