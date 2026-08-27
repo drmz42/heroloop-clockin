@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "balanceVersion": "balance-v4",
-  "candidateVersion": "balance-v4-2026.08.27-v1",
+  "candidateVersion": "balance-v4-2026.08.27-v2",
   "status": "proposal",
   "live": false,
   "stagingBase": {
@@ -21,7 +21,7 @@
       "id": "enchant-1-20",
       "owner": "economy",
       "path": "config/economy/enchant-v4.v1.json",
-      "sha256": "a79085bc018833ee1b7236cbdd15f9397165233b671d4c3afad0ae2370423bf0",
+      "sha256": "4c18f4186df22256327f9377c373335cf63a83517fc38a3d20e393ff9abfc359",
       "includes": ["stat-curve", "success-chances", "destruction", "ordinary-prices", "guaranteed-prices", "legacy-migration", "resonance-boundary"]
     },
     {
