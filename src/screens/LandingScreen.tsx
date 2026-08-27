@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   ArrowDown, ArrowRight, Check, ChevronRight, Coins, Gamepad2,
-  Gem, Menu, Shield, Sparkles, Swords, Wallet, X, Zap,
+  Gem, Menu, Shield, Sparkles, Swords, UserRound, X, Zap,
 } from 'lucide-react';
 import type { useGame } from '@/game/useGame';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
@@ -238,7 +238,7 @@ export function LandingScreen({ game }: { game: GameApi }) {
           <div className="mx-auto max-w-3xl">
             <Shield className="mx-auto text-violet-300" size={34} />
             <h2 className="mt-6 font-pixel text-xl leading-relaxed text-white lg:text-3xl">YOUR ADVENTURE<br />STARTS NOW</h2>
-            <p className="mx-auto mt-5 max-w-xl text-slate-400">Choose your first hero, create the name that will appear on the leaderboard and connect your Solana wallet.</p>
+            <p className="mx-auto mt-5 max-w-xl text-slate-400">Continue with a temporary Guest account, choose your first hero and create the name that will appear on the leaderboard.</p>
             <button onClick={start} className="landing-cta mt-9 inline-flex items-center gap-3 px-8 py-4">
               Create hero <ChevronRight size={17} />
             </button>
@@ -281,9 +281,9 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
   const [step, setStep] = useState(1);
   const [starter, setStarter] = useState<StarterId>('shepherd-common');
   const [username, setUsername] = useState('');
-  const [walletReady, setWalletReady] = useState(false);
+  const [guestReady, setGuestReady] = useState(false);
   const [connecting, setConnecting] = useState(false);
-  const [accountId, setAccountId] = useState('');
+  const [guestId, setGuestId] = useState('');
   const [error, setError] = useState('');
   const blockedName = hasBlockedUsernameLanguage(username);
   const validName = /^[a-zA-Z0-9_]{3,16}$/.test(username) && !blockedName;
@@ -293,17 +293,17 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
     return { ...s, hero, svg: heroPortraitSrc(hero.id, hero.heroClass, hero.rarity, hero.color) };
   }), []);
 
-  const connectAndCheck = async () => {
-    setWalletReady(true); setConnecting(true); setError('');
+  const continueAsGuest = async () => {
+    setGuestReady(true); setConnecting(true); setError('');
     try {
       const account = await accountRequest(playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status'));
       if (!account) { setError('Account service is unavailable. Please try again.'); return; }
-      const address = `game-${account.account_id}`;
+      const temporaryGuestId = `game-${account.account_id}`;
       if (account.exists && account.username) {
         window.location.replace('/#game');
         return;
       }
-      setAccountId(address);
+      setGuestId(temporaryGuestId);
       setStep(2);
     } catch {
       setError('Account service is unavailable. Please try again.');
@@ -313,10 +313,10 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
   };
 
   const finish = async () => {
-    if (!validName || !walletReady || !accountId) return;
+    if (!validName || !guestReady || !guestId) return;
     setConnecting(true); setError('');
     try {
-      const registrationState = makeRegisteredStarterState(username.trim(), accountId, starter);
+      const registrationState = makeRegisteredStarterState(username.trim(), guestId, starter);
       let registrationError = '';
       const register = () => accountRequest(playerSync<{ created: boolean; username: string; account_id: string; state: unknown; revision: number }>('account_register', {
         username: username.trim(),
@@ -351,7 +351,7 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
           <X size={20} />
         </button>
         <div className="border-b border-white/10 px-6 py-5 sm:px-8">
-          <div className="text-[10px] uppercase tracking-[.25em] text-violet-300">{step === 1 ? 'Connect and check account' : 'Create your account'}</div>
+          <div className="text-[10px] uppercase tracking-[.25em] text-violet-300">{step === 1 ? 'Check guest account' : 'Create your account'}</div>
           <div className="mt-3 flex items-center gap-2">
             {[1, 2, 3].map(n => (
               <div key={n} className={`h-1.5 flex-1 ${n <= step ? 'bg-amber-300' : 'bg-white/10'}`} />
@@ -362,15 +362,15 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
         <div className="min-h-[470px] p-6 sm:p-8">
           {step === 1 && (
             <div className="mx-auto max-w-xl py-5">
-              <div className="mx-auto grid h-14 w-14 place-items-center border border-violet-400/40 bg-violet-400/10 text-violet-300"><Wallet size={26} /></div>
-              <h2 className="mt-6 text-center font-pixel text-sm text-white sm:text-lg">CONNECT SOLANA WALLET</h2>
-              <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-slate-400">One wallet sign-in checks for an existing HeroLoop account. New players continue to registration.</p>
-              <div className="mx-auto mt-7 w-fit border border-emerald-400/25 bg-emerald-400/[.06] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-emerald-300"><Shield size={12} className="mr-1.5 inline" /> Secure wallet sign-in</div>
-              <button onClick={connectAndCheck} disabled={connecting} className="landing-cta mx-auto mt-4 flex w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em] disabled:cursor-wait disabled:opacity-60">
-                <Wallet size={19} /> {connecting ? 'Checking account…' : 'Connect Solana Wallet to Play'}
+              <div className="mx-auto grid h-14 w-14 place-items-center border border-violet-400/40 bg-violet-400/10 text-violet-300"><UserRound size={26} /></div>
+              <h2 className="mt-6 text-center font-pixel text-sm text-white sm:text-lg">CONTINUE AS GUEST</h2>
+              <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-slate-400">The current beta uses a temporary server account. Existing guests enter directly; new guests continue to registration.</p>
+              <div className="mx-auto mt-7 w-fit border border-emerald-400/25 bg-emerald-400/[.06] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-emerald-300"><Shield size={12} className="mr-1.5 inline" /> Server-saved guest progress</div>
+              <button onClick={continueAsGuest} disabled={connecting} className="landing-cta mx-auto mt-4 flex w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em] disabled:cursor-wait disabled:opacity-60">
+                <UserRound size={19} /> {connecting ? 'Checking account…' : 'Continue as Guest'}
               </button>
               {error && <div className="mt-5 border border-rose-400/30 bg-rose-400/10 p-3 text-center text-sm text-rose-300">{error}</div>}
-              <div className="mx-auto mt-6 flex max-w-md items-start gap-3 border border-emerald-400/20 bg-emerald-400/[.05] p-4 text-xs leading-5 text-emerald-200/70"><Shield size={16} className="mt-0.5 shrink-0" /><span>Signing is free. Production wallet sign-in will use a message signature to prove ownership; it will never move funds, cost gas or ask for a seed phrase or private key.</span></div>
+              <div className="mx-auto mt-6 flex max-w-md items-start gap-3 border border-emerald-400/20 bg-emerald-400/[.05] p-4 text-xs leading-5 text-emerald-200/70"><Shield size={16} className="mt-0.5 shrink-0" /><span>Your Guest ID is not a wallet address and cannot receive funds. Verified wallet sign-in is a separate future feature.</span></div>
             </div>
           )}
 

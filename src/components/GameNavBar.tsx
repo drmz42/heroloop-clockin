@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Mail, ChevronLeft, ChevronRight, WalletCards, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus, Hammer } from 'lucide-react';
+import { Mail, ChevronLeft, ChevronRight, UserRound, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus, Hammer } from 'lucide-react';
 import type { Tab } from './TopMenu';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
@@ -61,7 +61,7 @@ export function GameNavBar({
           onClick={onWalletClick}
           className="game-control flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-[#c9c3b5]"
         >
-          <WalletCards size={16} /> <span className="hidden xl:inline">Wallet</span>
+          <UserRound size={16} /> <span className="hidden xl:inline">Account</span>
         </button>
         {/* Mail */}
         <button type="button" className="game-control relative grid h-9 w-9 place-items-center" title="Mailbox">

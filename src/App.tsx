@@ -373,7 +373,7 @@ function App() {
       )}
       {showWallet && (
         <GameWalletModal
-          address={game.state.walletAddress}
+          guestId={game.state.walletAddress}
           balance={game.state.hero}
           onClose={() => setShowWallet(false)}
         />

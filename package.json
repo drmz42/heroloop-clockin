@@ -74,6 +74,7 @@
     "check:promo-management": "node scripts/check-promo-management-contract.mjs",
     "check:referrals": "node scripts/check-referral-contract.mjs",
     "check:registration": "node scripts/check-registration-contract.mjs",
+    "check:guest-identity": "node scripts/check-guest-identity-contract.mjs",
     "check:save-schema-coverage": "node scripts/check-save-schema-coverage.mjs",
     "check:save-schema-vectors": "node scripts/check-save-schema-vectors.mjs",
     "check:resource-ledger": "node scripts/check-resource-ledger-proposal.mjs",
