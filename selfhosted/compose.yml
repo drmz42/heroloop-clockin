@@ -44,7 +44,7 @@ services:
       - ./postgres/init/zzzz-heroloop-worker-password.sh:/docker-entrypoint-initdb.d/zzzz-heroloop-worker-password.sh:ro
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres", "-h", "127.0.0.1", "-p", "5432"]
-      interval: 5s
+      interval: 30s
       timeout: 5s
       retries: 20
       start_period: 20s
@@ -84,7 +84,7 @@ services:
       GOTRUE_JWT_ISSUER: ${API_EXTERNAL_URL}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9999/health"]
-      interval: 5s
+      interval: 30s
       timeout: 5s
       retries: 10
       start_period: 20s
@@ -127,7 +127,7 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "deno", "eval", "const r=await fetch('http://127.0.0.1:8080/internal/health');if(!r.ok)Deno.exit(1)"]
-      interval: 5s
+      interval: 30s
       timeout: 5s
       retries: 10
       start_period: 10s
@@ -154,8 +154,8 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "deno", "eval", "const age=Date.now()-(await Deno.stat('/tmp/heroloop-worker-ready')).mtime.getTime();if(age>30000)Deno.exit(1)"]
-      interval: 10s
+      test: ["CMD", "deno", "eval", "const age=Date.now()-(await Deno.stat('/tmp/heroloop-worker-ready')).mtime.getTime();if(age>90000)Deno.exit(1)"]
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 10s
