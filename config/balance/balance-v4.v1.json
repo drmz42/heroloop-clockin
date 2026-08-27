@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "balanceVersion": "balance-v4",
-  "candidateVersion": "balance-v4-2026.08.27-v2",
+  "candidateVersion": "balance-v4-2026.08.27-v3",
   "status": "proposal",
   "live": false,
   "stagingBase": {
@@ -9,6 +9,24 @@
     "runtimeStamp": "hero-power-proposal-2026.08.12-v3@sha256:4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc"
   },
   "atomicActivation": true,
+  "itemOverrides": {
+    "matchingRaritySetBonusPercentByRarity": {
+      "common": 5,
+      "uncommon": 10,
+      "rare": 15,
+      "epic": 20,
+      "legendary": 30,
+      "mythic": 40,
+      "cosmic": 50,
+      "divine": 60,
+      "celestial": 70,
+      "cursed": 80,
+      "immortal": 90,
+      "god": 100
+    },
+    "appliesOnlyWhenAllEightItemsShareRarity": true,
+    "stacksAdditivelyWithEnchantAndResonance": true
+  },
   "components": [
     {
       "id": "coupled-core",
