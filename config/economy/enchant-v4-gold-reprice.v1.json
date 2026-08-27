@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "version": "enchant-v4-gold-reprice-2026.08.27-v1",
+  "balanceVersion": "balance-v4",
+  "status": "proposal",
+  "live": false,
+  "baseEconomyConfig": "config/economy/enchant-v4.v1.json",
+  "curveShape": "preserve-base-target-cost-shares",
+  "reference": {
+    "formationSize": 3,
+    "rewardHoursPerDay": 8,
+    "enchantAllocationPercent": 50
+  },
+  "allocationSensitivityPercent": [25, 50, 75],
+  "rarityTargets": {
+    "common": { "profile": "new", "fullSetDays": 14 },
+    "uncommon": { "profile": "early", "fullSetDays": 21 },
+    "rare": { "profile": "early", "fullSetDays": 30 },
+    "epic": { "profile": "mid", "fullSetDays": 45 },
+    "legendary": { "profile": "mid", "fullSetDays": 75 },
+    "mythic": { "profile": "high", "fullSetDays": 120 },
+    "cosmic": { "profile": "high", "fullSetDays": 180 },
+    "divine": { "profile": "endgame-veteran", "fullSetDays": 240 },
+    "celestial": { "profile": "endgame-veteran", "fullSetDays": 300 }
+  },
+  "futureCapitalRarities": {
+    "cursed": { "pricePolicy": "retain-base-candidate", "completionTarget": null },
+    "immortal": { "pricePolicy": "retain-base-candidate", "completionTarget": null },
+    "god": { "pricePolicy": "retain-base-candidate", "completionTarget": null }
+  },
+  "rounding": {
+    "perTargetGold": "ceil-to-10",
+    "fullPathGold": "sum-rounded-targets"
+  },
+  "activation": {
+    "requiresFounderApproval": true,
+    "requiresObservedV4Cohorts": true,
+    "requiresServerSettlementReplayQa": true,
+    "productionRequiresExactCandidateApproval": true
+  }
+}
