@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "balanceVersion": "balance-v4",
-  "candidateVersion": "balance-v4-2026.08.27-v3",
+  "candidateVersion": "balance-v4-2026.08.27-v4",
   "status": "proposal",
   "live": false,
   "stagingBase": {
@@ -10,6 +10,14 @@
   },
   "atomicActivation": true,
   "itemOverrides": {
+    "slotPoolAdditions": {
+      "helmet": ["goldBonus", "xpBonus"],
+      "chest": ["goldBonus", "xpBonus"],
+      "gloves": ["goldBonus", "xpBonus"],
+      "boots": ["goldBonus", "xpBonus"]
+    },
+    "economyStatEligibleSlots": ["helmet", "chest", "gloves", "boots", "ring", "amulet"],
+    "distinctStatsPerItem": true,
     "matchingRaritySetBonusPercentByRarity": {
       "common": 5,
       "uncommon": 10,
