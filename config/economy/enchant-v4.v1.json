@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "version": "enchant-v4-2026.08.27-v1",
+  "balanceVersion": "balance-v4",
+  "status": "proposal",
+  "live": false,
+  "scope": "all-equipment",
+  "maximumLevel": 20,
+  "statCurve": {
+    "bonusPerLevel": 0.05,
+    "maximumStatMultiplier": 2.0,
+    "legacyBonusPerLevel": 0.1,
+    "legacyLevelMapping": "candidateLevel = legacyLevel * 2",
+    "powerInflationAtMaximum": 0
+  },
+  "ordinary": {
+    "guaranteedThrough": 15,
+    "successChanceByTarget": {
+      "16": 0.9,
+      "17": 0.85,
+      "18": 0.8,
+      "19": 0.75,
+      "20": 0.7
+    },
+    "failureAtRiskDestroysItem": true,
+    "pity": false
+  },
+  "pricing": {
+    "owner": "economy",
+    "currencyAuthority": "server-locked-quote",
+    "mappedLegacyTarget": "ceil(candidateTarget / 2)",
+    "ordinaryMappedPriceFactors": [
+      { "targets": [1, 6], "factor": 0.3 },
+      { "targets": [7, 14], "factor": 0.4 },
+      { "targets": [15, 20], "factor": 0.5 }
+    ],
+    "rounding": { "gold": "ceil-to-10", "usdCatalogue": "nearest-0.000001" },
+    "legacyCatalogue": {
+      "earlyBaseGold": [50, 100, 200],
+      "itemLevelMultiplier": "1 + 0.01 * (itemLevel - 1)",
+      "rarityMultiplier": {
+        "common": 1,
+        "uncommon": 1.25,
+        "rare": 1.5,
+        "epic": 2,
+        "legendary": 3,
+        "mythic": 4,
+        "cosmic": 5,
+        "divine": 6,
+        "celestial": 7,
+        "cursed": 8,
+        "immortal": 9,
+        "god": 10
+      },
+      "goldByRarityForTargets4To10": {
+        "common": [400, 1000, 3000, 10000, 25000, 50000, 100000],
+        "uncommon": [800, 2500, 7500, 25000, 75000, 150000, 250000],
+        "rare": [2000, 7500, 25000, 75000, 250000, 500000, 1000000],
+        "epic": [5000, 20000, 75000, 250000, 1000000, 2500000, 5000000],
+        "legendary": [25000, 100000, 400000, 1500000, 5000000, 12000000, 25000000],
+        "mythic": [50000, 200000, 800000, 3000000, 10000000, 25000000, 50000000],
+        "cosmic": [100000, 400000, 1500000, 6000000, 20000000, 50000000, 100000000]
+      },
+      "usdByRarityForTargets4To10": {
+        "divine": [0.5, 1.5, 4, 10, 25, 60, 150],
+        "celestial": [1, 3, 8, 20, 50, 120, 250],
+        "cursed": [2, 5, 15, 35, 80, 180, 300],
+        "immortal": [5, 10, 25, 50, 100, 200, 350],
+        "god": [10, 20, 40, 80, 150, 300, 400]
+      },
+      "guaranteedRiskSurchargeUsd": 2
+    },
+    "guaranteed": {
+      "throughTarget15": "same-as-ordinary",
+      "targets16To20": "50% of mapped legacy Guaranteed price",
+      "successChance": 1
+    }
+  },
+  "resonance": {
+    "requiresAllEquipmentSlots": true,
+    "candidate20StepCurvePendingCoupledSimulation": true,
+    "weaponOnlyExceptionForbidden": true
+  },
+  "compatibility": {
+    "atomicMigrationRequired": true,
+    "existingStatsAndPowerPreserved": true,
+    "existingListingsPreservedAfterDisplayRefresh": true,
+    "noMigrationCharge": true,
+    "noMigrationDestruction": true
+  },
+  "activation": {
+    "stagingOnlyUntilAccepted": true,
+    "requiresObservedEconomyCohorts": true,
+    "requiresCoupledCombatPowerSimulation": true,
+    "requiresSettlementMigrationReplayContracts": true,
+    "productionRequiresExactCandidateFounderApproval": true
+  }
+}

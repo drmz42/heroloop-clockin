@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "balanceVersion": "balance-v4",
+  "candidateVersion": "balance-v4-2026.08.27-v1",
+  "status": "proposal",
+  "live": false,
+  "stagingBase": {
+    "balanceVersion": "hero-power-proposal-2026.08.12-v3",
+    "runtimeStamp": "hero-power-proposal-2026.08.12-v3@sha256:4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc"
+  },
+  "atomicActivation": true,
+  "components": [
+    {
+      "id": "coupled-core",
+      "owner": "balance",
+      "path": "config/balance/hero-power-model.v1.json",
+      "sha256": "4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc",
+      "includes": ["heroes", "items", "power", "defense", "normal-locations-1-10", "boss-hunt", "locations-11-20", "dungeons", "summon-economy"]
+    },
+    {
+      "id": "enchant-1-20",
+      "owner": "economy",
+      "path": "config/economy/enchant-v4.v1.json",
+      "sha256": "a79085bc018833ee1b7236cbdd15f9397165233b671d4c3afad0ae2370423bf0",
+      "includes": ["stat-curve", "success-chances", "destruction", "ordinary-prices", "guaranteed-prices", "legacy-migration", "resonance-boundary"]
+    },
+    {
+      "id": "power-acceptance",
+      "owner": "balance",
+      "path": "config/balance/power-target-bands.v1.json",
+      "sha256": "331a5077ef6953e217fd67ea778fea358588a9a1426076a02a05e15fa50fe2bf",
+      "includes": ["power-ratio-bands", "win-rate-targets", "clear-time-targets", "team-size-separation"]
+    },
+    {
+      "id": "economy-attribution",
+      "owner": "economy",
+      "path": "config/economy/source-sink-registry.v1.json",
+      "sha256": "82eb08d40f8f85dde3a24ba60e3aad354b0cfbf0fd22b219f0b9cf415365794d",
+      "includes": ["gold", "hero", "xp", "items", "chests", "resources", "faucets", "sinks"]
+    },
+    {
+      "id": "telemetry-acceptance",
+      "owner": "telemetry",
+      "path": "config/telemetry/economy-v1.json",
+      "sha256": "49ce54f76bf737aef7910c65728977d78c8a18365a3d33a2663eed9a4f5fcbeb",
+      "includes": ["server-stamped-version", "retention", "privacy", "minimum-cohorts"]
+    }
+  ],
+  "priceOwnership": {
+    "combatStatsInCoreModel": true,
+    "upgradePricesInEconomyConfig": true,
+    "duplicatePriceTablesForbidden": true,
+    "economyConfigChecksumRequiredByCandidate": true,
+    "serverLockedHeroQuoteRequired": true
+  },
+  "trackedExtensionsNotInCandidate": [
+    { "id": "formation-sets", "path": "config/balance/formation-set.v1.json", "sha256": "8b6a3dce7f568b283c61393c087787eb473513b92ca57dfe820c65f3586ae7a4" },
+    { "id": "hero-abilities", "path": "config/balance/hero-ability-availability.v1.json", "sha256": "2a6ab345d646c449254c9a815dc94adcf3dcba582d170461c07f6c9e8963da25" },
+    { "id": "pets", "path": "config/balance/pets.v1.json", "sha256": "1552b77e9141f148cfc6e19e19494bc9566223cb53da313f932494776dca108b" },
+    { "id": "spells-auras", "path": "config/balance/spells-auras.v1.json", "sha256": "5cb41ec496a51d51d19bedfaa4d081bb4347fc0afd3693cfd1de4c57b07bf837" },
+    { "id": "class-mastery", "path": "config/balance/class-mastery.v1.json", "sha256": "524856009b9b281e5304ed53b01b764ed12eea0a48927773f1e919d1b73664d5" },
+    { "id": "status-effects", "path": "config/balance/status-effects.v1.json", "sha256": "bf8ede0df3f5a34394f371b951a952ba714a6dfa8b1920bfa0b92cf7810a77cb" },
+    { "id": "summon-family-pity", "path": "config/balance/summon-family-pity.v1.json", "sha256": "2c87fcffce2661c8364d9270a06af021a2b97db948148126c4aed57cdbb66ec5" }
+  ],
+  "acceptance": {
+    "observedV4CombatAndEconomyCohortsRequired": true,
+    "oneTwoThreeHeroCalibrationRequired": true,
+    "locations1To20Required": true,
+    "cursedImmortalGodTargetsRequired": true,
+    "enchant0To20PowerAndSinkSimulationRequired": true,
+    "stagingMigrationAndReplayQaRequired": true,
+    "newDesignAcceptedOnStagingRequired": true,
+    "productionActivation": "new-explicit-founder-approval-for-exact-candidate"
+  }
+}
