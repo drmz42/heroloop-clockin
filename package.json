@@ -102,6 +102,7 @@
     "simulate:hero-ascension": "node scripts/simulate-hero-ascension.mjs",
     "simulate:post20-ascension": "node scripts/simulate-post20-ascension.mjs",
     "simulate:enchant-set": "node scripts/simulate-enchant-set-progression.mjs",
+    "simulate:enchant-20": "node scripts/simulate-enchant-20-proposal.mjs",
     "simulate:formation-set": "node scripts/simulate-formation-set.mjs",
     "simulate:pets": "node scripts/simulate-pet-budget.mjs",
     "simulate:spells-auras": "node scripts/simulate-spell-aura-budget.mjs",
