@@ -90,7 +90,7 @@ export function LandingScreen({ game }: { game: GameApi }) {
       <main>
         <section id="top" className="relative flex min-h-[760px] items-end overflow-hidden pt-16 lg:min-h-screen">
           <img
-            src="/assets/heroes/hero-classes-v3.png"
+            src="/assets/heroes/hero-classes-v3.webp"
             alt="The five HeroLoop classes"
             className="absolute inset-0 h-full w-full object-cover object-center"
           />

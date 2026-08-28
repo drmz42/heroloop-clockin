@@ -5,8 +5,8 @@ const HERO_ART: Record<string, string> = {
   ironfoot: '/assets/heroes/ironfoot-v2.png',
   greenscout: '/assets/heroes/greenscout-v2.png',
   cutpurse: '/assets/heroes/cutpurse-v2.png',
-  acolyte: '/assets/heroes/acolyte-v2.png',
-  shrubmage: '/assets/heroes/shrubmage-v2.png',
+  acolyte: '/assets/heroes/acolyte-v2.webp',
+  shrubmage: '/assets/heroes/shrubmage-v2.webp',
 };
 
 export function heroPortraitSrc(heroId: string, heroClass: HeroClass, rarity: Rarity, color: string): string {

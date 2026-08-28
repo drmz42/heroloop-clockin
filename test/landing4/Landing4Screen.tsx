@@ -15,7 +15,7 @@ const IMG = {
   chest: "https://image.qwenlm.ai/public_source/9544dfa5-1389-46dc-8251-0b19cf331428/1dca871af-b40d-4c1e-9491-b6b0aba82350.png",
   ranks: "https://image.qwenlm.ai/public_source/9544dfa5-1389-46dc-8251-0b19cf331428/117583e2c-fa7d-47e3-84d9-2708d0038336.png",
   final: "https://image.qwenlm.ai/public_source/9544dfa5-1389-46dc-8251-0b19cf331428/180cdd57b-8f52-40f4-8a45-f8d5a7526a7a.png",
-  token: "/assets/landing4/coin.png",
+  token: "/assets/landing4/coin.webp",
 };
 
 const reducedMotion = () =>
