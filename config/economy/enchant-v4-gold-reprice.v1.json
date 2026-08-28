@@ -21,7 +21,7 @@
     "mythic": { "profile": "high", "fullSetDays": 120 },
     "cosmic": { "profile": "high", "fullSetDays": 180 },
     "divine": { "profile": "endgame-veteran", "fullSetDays": 240 },
-    "celestial": { "profile": "endgame-veteran", "fullSetDays": 300 }
+    "celestial": { "profile": "endgame-veteran", "proposedFullSetGold": 429640800 }
   },
   "futureCapitalRarities": {
     "cursed": { "pricePolicy": "retain-base-candidate", "completionTarget": null },

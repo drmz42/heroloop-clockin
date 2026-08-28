@@ -86,7 +86,7 @@
     { "id": "spells-auras", "path": "config/balance/spells-auras.v1.json", "sha256": "5cb41ec496a51d51d19bedfaa4d081bb4347fc0afd3693cfd1de4c57b07bf837" },
     { "id": "class-mastery", "path": "config/balance/class-mastery.v1.json", "sha256": "524856009b9b281e5304ed53b01b764ed12eea0a48927773f1e919d1b73664d5" },
     { "id": "status-effects", "path": "config/balance/status-effects.v1.json", "sha256": "bf8ede0df3f5a34394f371b951a952ba714a6dfa8b1920bfa0b92cf7810a77cb" },
-    { "id": "enchant-gold-reprice", "path": "config/economy/enchant-v4-gold-reprice.v1.json", "sha256": "61007bae6184addec958b38dc2b8be6faacdb41d3f14ff4efd9ea2a47c1b836d" },
+    { "id": "enchant-gold-reprice", "path": "config/economy/enchant-v4-gold-reprice.v1.json", "sha256": "6f064fbe85fe5b23f93c604650cc5d5b8cf9d0a35c0254870b3b537c5cbf67ca" },
     { "id": "summon-family-pity", "path": "config/balance/summon-family-pity.v1.json", "sha256": "2c87fcffce2661c8364d9270a06af021a2b97db948148126c4aed57cdbb66ec5" }
   ],
   "acceptance": {
