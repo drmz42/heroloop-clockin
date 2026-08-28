@@ -245,7 +245,7 @@ export const STAR_DUPLICATE_BANDS: Partial<Record<Rarity, readonly [number, numb
   epic: [5, 10, 15, 20],
   legendary: [4, 8, 12, 16],
   mythic: [2, 4, 6, 8],
-  cosmic: [1, 2, 3, 4],
+  cosmic: [2, 3, 4, 5],
   divine: [2, 2, 2, 2],
   celestial: [1, 1, 1, 1],
 };
