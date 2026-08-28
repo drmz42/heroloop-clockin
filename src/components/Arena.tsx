@@ -150,7 +150,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
         <div className="whitespace-nowrap text-center text-[9px] font-bold tabular-nums text-[#bdb6a9]" aria-label={`${Math.ceil(unit.hp)} of ${unit.maxHp} health`}>{formatHealth(unit.hp)} / {formatHealth(unit.maxHp)}</div>
       </div>
       {/* Portrait */}
-      <div className={`relative ${unit.alive && motionEnabled ? 'anim-bob' : ''}`}>
+      <div className={`relative ${unit.alive && animationMode === 'spectacular' ? 'anim-bob' : ''}`}>
         <div
           className={`arena-portrait combatant-card relative h-16 w-16 overflow-hidden sm:h-[80px] sm:w-[80px] xl:h-[88px] xl:w-[88px] 2xl:h-[96px] 2xl:w-[96px] ${side === 'enemy' ? 'ring-1 ring-rose-950/70' : ''} ${hit ? 'anim-hit' : ''} ${attacking && side === 'hero' ? 'anim-attack-hero' : ''} ${attacking && side === 'enemy' ? 'anim-attack-enemy' : ''}`}
           style={{
