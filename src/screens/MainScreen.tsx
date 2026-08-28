@@ -372,7 +372,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
       {/* ── LEFT COLUMN ── */}
       <div className="material-panel game-scrollbar order-2 flex w-full shrink-0 flex-col overflow-y-auto lg:order-none lg:w-60 xl:w-64">
         <div className="border-b border-[#4f412e] p-3">
-          <div className="section-kicker mb-2">Account</div>
+          <div className="section-kicker mb-2">Commander</div>
           <div className="mb-2 flex items-center gap-2.5">
             <button type="button" onClick={() => setShowAvatarPicker(true)} className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-[#e0b45f] bg-black/30 shadow-[inset_0_1px_rgba(255,249,214,.28),0_0_14px_rgba(208,163,74,.24)]" title="Change account avatar">
               {avatarBase && <HeroPortrait heroId={avatarBase.id} heroClass={avatarBase.heroClass} rarity={avatarBase.rarity} color={avatarBase.color} size={46} />}
