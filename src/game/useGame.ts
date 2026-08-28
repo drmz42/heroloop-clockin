@@ -21,6 +21,7 @@ import {
 } from '@/game/items';
 import type { Rarity } from '@/game/types';
 import { recordBattleTelemetry } from '@/game/balance';
+import { goldRewardForLanes } from '@/game/goldRewards';
 import { advanceCombatFrame, combatResolution, seededCombatRandom } from '../../supabase/functions/player-sync/combat-step.mjs';
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
 
@@ -564,7 +565,6 @@ export function useGame() {
       return;
     }
     const loc = buildLocation(locationId, st.team.length, st.bossBattleActive);
-    let goldPerEnemy = clearedLanes > 0 ? loc.goldReward : 0;
     const baseXpPerEnemy = clearedLanes > 0 ? loc.xpReward : 0;
 
     const teamBonuses = st.team.reduce((acc, uid) => {
@@ -574,9 +574,8 @@ export function useGame() {
       if (!s) return acc;
       return { gold: acc.gold + s.goldBonus, xp: acc.xp + s.xpBonus };
     }, { gold: 0, xp: 0 });
-    goldPerEnemy = Math.round(goldPerEnemy * (1 + teamBonuses.gold));
     const xpPerEnemy = Math.round(baseXpPerEnemy * (1 + teamBonuses.xp));
-    const gold = goldPerEnemy * clearedLanes;
+    const gold = goldRewardForLanes(loc.goldReward, clearedLanes, teamBonuses.gold);
     const accountXpGain = xpPerEnemy * clearedLanes;
 
     const tokens = 0;
@@ -1022,7 +1021,7 @@ export function useGame() {
           const stats = hero ? heroStats(hero, getEquippedItems(hero, base.inventory)) : null;
           return stats ? { gold: acc.gold + stats.goldBonus, xp: acc.xp + stats.xpBonus } : acc;
         }, { gold: 0, xp: 0 });
-        const gold = tokenomicsEnabled ? 0 : Math.round(battles * loc.goldReward * (1 + teamBonuses.gold));
+        const gold = tokenomicsEnabled ? 0 : battles * goldRewardForLanes(loc.goldReward, loc.enemies.length, teamBonuses.gold);
         const heroXp = Math.round(battles * loc.xpReward * (1 + teamBonuses.xp));
         const accountXp = heroXp * loc.enemies.length;
         const kills = battles * loc.enemies.length;
@@ -1096,7 +1095,7 @@ export function useGame() {
         const stats = hero ? heroStats(hero, getEquippedItems(hero, st.inventory)) : null;
         return stats ? { gold: acc.gold + stats.goldBonus, xp: acc.xp + stats.xpBonus } : acc;
       }, { gold: 0, xp: 0 });
-      const gold = tokenomicsEnabled ? 0 : Math.round(battles * loc.goldReward * (1 + teamBonuses.gold));
+      const gold = tokenomicsEnabled ? 0 : battles * goldRewardForLanes(loc.goldReward, loc.enemies.length, teamBonuses.gold);
       const heroXp = Math.round(battles * loc.xpReward * (1 + teamBonuses.xp));
       const accountXp = heroXp * loc.enemies.length;
       const penalty = trainingTokenPenalty(st.trainingCamp.heroUids.filter(Boolean).length);
