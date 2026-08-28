@@ -66,7 +66,7 @@ const GUIDES: GuideEntry[] = [
   { category: 'Features', question: 'What is available in the Market?', answer: 'Legendary-or-higher wearable equipment can be listed, bought and cancelled through server escrow. Locked or equipped items cannot be listed.', status: 'Live' },
   { category: 'Features', question: 'How do promo codes work?', answer: 'Use Code in the bottom bar. A valid code is redeemed once by the server and can award Gold, $HERO, Summon Scrolls or Boss Keys. Invalid, expired, exhausted and previously used codes never change your balance.', status: 'Live' },
   { category: 'Features', question: 'Are Crafting, Salvage, Pets, Spells and Auras available?', answer: 'Not yet. Their controls or placeholders may be visible, but no undefined recipe, reward or bonus is active.', status: 'Coming soon' },
-  { category: 'Accessibility', question: 'Can I reduce battle motion?', answer: 'Yes. Battle animation modes include Light, Spectacular and Off. System Reduced Motion also suppresses nonessential effects.', status: 'Live' },
+  { category: 'Accessibility', question: 'Can I reduce battle motion?', answer: 'Yes. Battle animation modes include Standard, Spectacular and Off. System Reduced Motion also suppresses nonessential effects.', status: 'Live' },
 ];
 
 const CATEGORIES = ['All', ...Array.from(new Set(GUIDES.map((entry) => entry.category)))];
