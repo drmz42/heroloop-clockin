@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "version": "enchant-v4-gold-reprice-2026.08.28-v2",
+  "version": "enchant-v4-gold-reprice-2026.08.28-v3",
   "balanceVersion": "balance-v4",
-  "status": "proposal",
+  "status": "founder-approved-proposal",
   "live": false,
   "baseEconomyConfig": "config/economy/enchant-v4.v1.json",
-  "curveShape": "preserve-base-target-cost-shares",
+  "curveShape": "independent-nonlinear-rarity-curves",
   "reference": {
     "formationSize": 3,
     "equipmentSetsPerFullFormation": 3,
@@ -14,27 +14,41 @@
   },
   "allocationSensitivityPercent": [25, 50, 75],
   "rarityTargets": {
-    "common": { "profile": "new", "fullSetDays": 14 },
-    "uncommon": { "profile": "early", "fullSetDays": 21 },
-    "rare": { "profile": "early", "fullSetDays": 30 },
-    "epic": { "profile": "mid", "fullSetDays": 45 },
-    "legendary": { "profile": "mid", "fullSetDays": 75 },
-    "mythic": { "profile": "high", "fullSetDays": 120 },
-    "cosmic": { "profile": "high", "fullSetDays": 180 },
-    "divine": { "profile": "endgame-veteran", "fullSetDays": 240 },
-    "celestial": { "profile": "endgame-veteran", "fullSetDays": 365 }
+    "common": { "profile": "new" },
+    "uncommon": { "profile": "early" },
+    "rare": { "profile": "early" },
+    "epic": { "profile": "mid" },
+    "legendary": { "profile": "mid" },
+    "mythic": { "profile": "high" },
+    "cosmic": { "profile": "high" },
+    "divine": { "profile": "endgame-veteran" },
+    "celestial": { "profile": "endgame-veteran" }
   },
   "futureCapitalRarities": {
-    "cursed": { "pricePolicy": "retain-base-candidate", "completionTarget": null },
-    "immortal": { "pricePolicy": "retain-base-candidate", "completionTarget": null },
-    "god": { "pricePolicy": "retain-base-candidate", "completionTarget": null }
+    "cursed": { "pricePolicy": "extrapolated-curve-placeholder", "completionTarget": null },
+    "immortal": { "pricePolicy": "extrapolated-curve-placeholder", "completionTarget": null },
+    "god": { "pricePolicy": "extrapolated-curve-placeholder", "completionTarget": null }
+  },
+  "proposedGoldByTarget": {
+    "common": [100, 300, 800, 2000, 4000, 7000, 11000, 17000, 25000, 36000, 50000, 68000, 90000, 115000, 150000, 190000, 240000, 295000, 360000, 435000],
+    "uncommon": [150, 450, 1200, 3100, 6200, 11000, 17500, 27500, 40500, 59000, 82500, 115000, 150000, 200000, 255000, 330000, 415000, 520000, 640000, 785000],
+    "rare": [200, 650, 1800, 4600, 9300, 16500, 26000, 41000, 61000, 89000, 125000, 170000, 230000, 305000, 395000, 505000, 640000, 805000, 995000, 1200000],
+    "epic": [300, 1000, 2600, 6700, 13500, 24500, 39000, 61000, 91500, 135000, 190000, 260000, 350000, 465000, 605000, 780000, 995000, 1300000, 1600000, 1900000],
+    "legendary": [500, 1500, 4200, 10500, 22000, 39000, 62500, 98500, 150000, 220000, 310000, 430000, 580000, 770000, 1000000, 1300000, 1700000, 2100000, 2600000, 3300000],
+    "mythic": [800, 2500, 6700, 17500, 35500, 63500, 105000, 165000, 245000, 360000, 515000, 720000, 980000, 1300000, 1700000, 2200000, 2900000, 3600000, 4600000, 5700000],
+    "cosmic": [1300, 4000, 11000, 28500, 58000, 105000, 170000, 270000, 405000, 600000, 855000, 1200000, 1600000, 2200000, 2900000, 3700000, 4800000, 6100000, 7700000, 9600000],
+    "divine": [2000, 6200, 17000, 44500, 92500, 170000, 275000, 440000, 670000, 1000000, 1400000, 2000000, 2800000, 3800000, 5000000, 6600000, 8500000, 11000000, 13900000, 17400000],
+    "celestial": [3000, 9400, 26000, 68000, 140000, 255000, 420000, 680000, 1000000, 1600000, 2300000, 3200000, 4400000, 6000000, 8000000, 10500000, 13700000, 17700000, 22500000, 28300000],
+    "cursed": [4500, 14000, 39000, 100000, 215000, 390000, 635000, 1000000, 1600000, 2400000, 3400000, 4900000, 6700000, 9100000, 12200000, 16100000, 21000000, 27100000, 34500000, 43500000],
+    "immortal": [7000, 22000, 61000, 160000, 335000, 610000, 1000000, 1600000, 2500000, 3700000, 5400000, 7700000, 10600000, 14400000, 19300000, 25500000, 33400000, 43300000, 55100000, 69600000],
+    "god": [11000, 34500, 96000, 250000, 525000, 955000, 1600000, 2500000, 3900000, 5800000, 8500000, 12000000, 16600000, 22600000, 30200000, 40000000, 52300000, 67600000, 86200000, 110000000]
   },
   "rounding": {
-    "perTargetGold": "ceil-to-10",
-    "fullPathGold": "sum-rounded-targets"
+    "policy": "founder-approved-display-friendly-step-values",
+    "fullPathGold": "sum-targets"
   },
   "activation": {
-    "requiresFounderApproval": true,
+    "founderCurveApproved": true,
     "requiresObservedV4Cohorts": true,
     "requiresServerSettlementReplayQa": true,
     "productionRequiresExactCandidateApproval": true
