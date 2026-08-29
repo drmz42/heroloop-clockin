@@ -115,6 +115,7 @@
     "simulate:spells-auras": "node scripts/simulate-spell-aura-budget.mjs",
     "simulate:class-mastery": "node scripts/simulate-class-mastery-builds.mjs",
     "simulate:status-effects": "node scripts/simulate-status-effect-caps.mjs",
+    "simulate:status-effect-impact": "node scripts/simulate-status-effect-combat-impact.mjs",
     "simulate:market-fee-use": "node scripts/simulate-market-fee-use.mjs",
     "simulate:resource-ledger": "node scripts/simulate-resource-ledger.mjs",
     "simulate:bag-expansion": "node scripts/simulate-bag-expansion.mjs",
