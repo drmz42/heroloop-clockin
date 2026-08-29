@@ -242,11 +242,16 @@ export interface BalanceCohort {
   locationId: number;
   teamSize: number;
   powerBand: number;
+  recommendedPowerBand: number;
+  powerRatioBand: number;
   boss: boolean;
   attempts: number;
   wins: number;
   totalClearSeconds: number;
   totalPower: number;
+  totalRecommendedPower: number;
+  totalPowerRatio: number;
+  winningClearSecondsBuckets: number[];
   heroDeaths: number;
   totalEquippedStatLines: number;
 }
@@ -254,6 +259,17 @@ export interface BalanceCohort {
 export interface BalanceTelemetry {
   version: string;
   cohorts: Record<string, BalanceCohort>;
+}
+
+export interface BalanceTelemetrySummary {
+  teamSize: number;
+  boss: boolean;
+  powerRatioBand: number;
+  attempts: number;
+  wins: number;
+  winRate: number;
+  averagePowerRatio: number;
+  medianWinningClearSecondsUpperBound: number | null;
 }
 
 export interface MarketOwnedListing {

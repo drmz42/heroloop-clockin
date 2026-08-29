@@ -8,6 +8,7 @@
     "build": "node scripts/check-todo-task-routing.mjs && node scripts/check-todo-table-contract.mjs && vite build",
     "check:ascension-focus": "node scripts/check-ascension-focus-contract.mjs",
     "check:balance-version": "node scripts/check-balance-version-contract.mjs",
+    "check:balance-telemetry": "node scripts/check-balance-telemetry-contract.mjs",
     "check:balance-v4": "node scripts/check-balance-v4-contract.mjs",
     "check:balance-dashboard": "node scripts/check-balance-dashboard-contract.mjs",
     "check:founder-packs": "node scripts/check-founder-pack-contract.mjs",

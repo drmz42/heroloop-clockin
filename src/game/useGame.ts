@@ -20,7 +20,7 @@ import {
   meetsItemLevelRequirement,
 } from '@/game/items';
 import type { Rarity } from '@/game/types';
-import { recordBattleTelemetry } from '@/game/balance';
+import { recommendedTeamPower, recordBattleTelemetry } from '@/game/balance';
 import { goldRewardForLanes } from '@/game/goldRewards';
 import { advanceCombatFrame, combatResolution, seededCombatRandom } from '../../supabase/functions/player-sync/combat-step.mjs';
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
@@ -521,6 +521,7 @@ export function useGame() {
       deadHeroUids.forEach((uid) => heroHpRef.current.delete(uid));
       const clearSeconds = Math.max(0, (Date.now() - battleStartedAtRef.current) / 1000);
       const combatPower = teamPower(st.team.map((uid) => st.ownedHeroes.find((hero) => hero.uid === uid)).filter((hero): hero is OwnedHero => Boolean(hero)), st.inventory);
+      const combatRecommendedPower = recommendedTeamPower(serverWave.location, st.team.length, st.balanceTelemetry);
       const equippedStatLines = st.team.reduce((total, uid) => {
         const hero = st.ownedHeroes.find((owned) => owned.uid === uid);
         return total + (hero ? getEquippedItems(hero, st.inventory).reduce((sum, item) => sum + item.stats.length, 0) : 0);
@@ -539,20 +540,21 @@ export function useGame() {
         mergeServerResourceState(completed.state);
         const revision = Number(completed.revision);
         if (Number.isSafeInteger(revision)) setServerRevisionHint(revision);
+        const authoritativeWin = completed.outcome?.all_cleared === true;
         setState((current) => ({
           ...current,
           balanceTelemetry: recordBattleTelemetry(current.balanceTelemetry, {
             locationId: serverWave.location,
             teamSize: st.team.length,
             power: combatPower,
+            recommendedPower: combatRecommendedPower,
             boss: false,
-            win: allCleared,
+            win: authoritativeWin,
             clearSeconds,
             heroDeaths: deadHeroUids.length,
             equippedStatLines,
           }),
         }));
-        const authoritativeWin = completed.outcome?.all_cleared === true;
         setBattleResult({
           win: authoritativeWin,
           gold: Math.max(0, Number(completed.rewards?.gold) || 0),
@@ -588,6 +590,7 @@ export function useGame() {
 
     const now = Date.now();
     const combatPower = teamPower(st.team.map((uid) => st.ownedHeroes.find((hero) => hero.uid === uid)).filter((hero): hero is OwnedHero => Boolean(hero)), st.inventory);
+    const combatRecommendedPower = recommendedTeamPower(locationId, st.team.length, st.balanceTelemetry);
     const equippedStatLines = st.team.reduce((total, uid) => {
       const hero = st.ownedHeroes.find((owned) => owned.uid === uid);
       return total + (hero ? getEquippedItems(hero, st.inventory).reduce((sum, item) => sum + item.stats.length, 0) : 0);
@@ -599,7 +602,7 @@ export function useGame() {
         ? { ...prev }
         : { ...prev, combatXpAt: now, gold: prev.gold + gold, totalGoldEarned: prev.totalGoldEarned + gold };
       next.balanceTelemetry = recordBattleTelemetry(prev.balanceTelemetry, {
-        locationId, teamSize: st.team.length, power: combatPower, boss: Boolean(loc.boss),
+        locationId, teamSize: st.team.length, power: combatPower, recommendedPower: combatRecommendedPower, boss: Boolean(loc.boss),
         win: allCleared, clearSeconds, heroDeaths: deadHeroUids.length, equippedStatLines,
       });
       next.bossBattleActive = false;

@@ -1,7 +1,9 @@
-import type { BalanceTelemetry } from './types';
+import type { BalanceTelemetry, BalanceTelemetrySummary } from './types';
 
-export const BALANCE_VERSION = 'hero-power-proposal-2026.08.12-v3@sha256:4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc';
+export const BALANCE_VERSION = 'hero-power-proposal-2026.08.12-v3@sha256:4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc:telemetry-ratio-v1';
 export const BASE_POWER_PER_LANE = [49, 98, 138, 186, 242, 292, 353, 427, 520, 603, 3947, 3998, 5055, 5117, 5479, 6421, 8169, 9208, 11029, 12166] as const;
+export const WINNING_CLEAR_SECONDS_BUCKETS = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360] as const;
+const MAX_CLEAR_SECONDS = WINNING_CLEAR_SECONDS_BUCKETS[WINNING_CLEAR_SECONDS_BUCKETS.length - 1];
 const MIN_SAMPLE = 20;
 const TARGET_WIN_RATE = 0.72;
 
@@ -14,20 +16,46 @@ function powerBand(power: number): number {
   return 2 ** Math.floor(Math.log2(power));
 }
 
-function cohortKey(locationId: number, teamSize: number, power: number, boss: boolean): string {
-  return `${locationId}:${teamSize}:${powerBand(power)}:${boss ? 'boss' : 'wave'}`;
+function ratioBand(powerRatio: number): number {
+  const bounded = Math.max(0, Math.min(4, powerRatio));
+  return Math.floor(bounded * 4) / 4;
+}
+
+function clearSecondsBucket(seconds: number): number {
+  const bounded = Math.max(0, Math.min(MAX_CLEAR_SECONDS, seconds));
+  const index = WINNING_CLEAR_SECONDS_BUCKETS.findIndex((upperBound) => bounded <= upperBound);
+  return index < 0 ? WINNING_CLEAR_SECONDS_BUCKETS.length - 1 : index;
+}
+
+function normalizedBuckets(value: number[] | undefined): number[] {
+  return WINNING_CLEAR_SECONDS_BUCKETS.map((_, index) => Math.max(0, Math.floor(Number(value?.[index]) || 0)));
+}
+
+function cohortKey(locationId: number, teamSize: number, power: number, recommendedPower: number, boss: boolean): string {
+  const ratio = power / recommendedPower;
+  return `${locationId}:${teamSize}:${powerBand(power)}:${ratioBand(ratio)}:${boss ? 'boss' : 'wave'}`;
 }
 
 export function recordBattleTelemetry(
   telemetry: BalanceTelemetry,
-  input: { locationId: number; teamSize: number; power: number; boss: boolean; win: boolean; clearSeconds: number; heroDeaths: number; equippedStatLines: number },
+  input: { locationId: number; teamSize: number; power: number; recommendedPower: number; boss: boolean; win: boolean; clearSeconds: number; heroDeaths: number; equippedStatLines: number },
 ): BalanceTelemetry {
   const current = telemetry.version === BALANCE_VERSION ? telemetry : emptyBalanceTelemetry();
-  const key = cohortKey(input.locationId, input.teamSize, input.power, input.boss);
+  const safeLocationId = Math.max(1, Math.min(BASE_POWER_PER_LANE.length, Math.floor(Number(input.locationId) || 1)));
+  const safeTeamSize = Math.max(1, Math.min(3, Math.floor(Number(input.teamSize) || 1)));
+  const safePower = Math.max(0, Number(input.power) || 0);
+  const safeRecommendedPower = Math.max(1, Number(input.recommendedPower) || 1);
+  const safeClearSeconds = Math.max(0, Number(input.clearSeconds) || 0);
+  const powerRatio = safePower / safeRecommendedPower;
+  const key = cohortKey(safeLocationId, safeTeamSize, safePower, safeRecommendedPower, input.boss);
   const old = current.cohorts[key] ?? {
-    locationId: input.locationId, teamSize: input.teamSize, powerBand: powerBand(input.power), boss: input.boss,
-    attempts: 0, wins: 0, totalClearSeconds: 0, totalPower: 0, heroDeaths: 0, totalEquippedStatLines: 0,
+    locationId: safeLocationId, teamSize: safeTeamSize, powerBand: powerBand(safePower),
+    recommendedPowerBand: powerBand(safeRecommendedPower), powerRatioBand: ratioBand(powerRatio), boss: input.boss,
+    attempts: 0, wins: 0, totalClearSeconds: 0, totalPower: 0, totalRecommendedPower: 0, totalPowerRatio: 0,
+    winningClearSecondsBuckets: WINNING_CLEAR_SECONDS_BUCKETS.map(() => 0), heroDeaths: 0, totalEquippedStatLines: 0,
   };
+  const winningClearSecondsBuckets = normalizedBuckets(old.winningClearSecondsBuckets);
+  if (input.win) winningClearSecondsBuckets[clearSecondsBucket(safeClearSeconds)] += 1;
   return {
     ...current,
     cohorts: {
@@ -36,13 +64,56 @@ export function recordBattleTelemetry(
         ...old,
         attempts: old.attempts + 1,
         wins: old.wins + (input.win ? 1 : 0),
-        totalClearSeconds: old.totalClearSeconds + Math.max(0, input.clearSeconds),
-        totalPower: old.totalPower + Math.max(0, input.power),
+        totalClearSeconds: old.totalClearSeconds + safeClearSeconds,
+        totalPower: old.totalPower + safePower,
+        totalRecommendedPower: old.totalRecommendedPower + safeRecommendedPower,
+        totalPowerRatio: old.totalPowerRatio + powerRatio,
+        winningClearSecondsBuckets,
         heroDeaths: old.heroDeaths + Math.max(0, input.heroDeaths),
         totalEquippedStatLines: old.totalEquippedStatLines + Math.max(0, input.equippedStatLines),
       },
     },
   };
+}
+
+function medianWinningClearSecondsUpperBound(buckets: number[], wins: number): number | null {
+  if (wins <= 0) return null;
+  const rank = Math.ceil(wins / 2);
+  let cumulative = 0;
+  for (let index = 0; index < WINNING_CLEAR_SECONDS_BUCKETS.length; index += 1) {
+    cumulative += buckets[index] ?? 0;
+    if (cumulative >= rank) return WINNING_CLEAR_SECONDS_BUCKETS[index];
+  }
+  return MAX_CLEAR_SECONDS;
+}
+
+export function summarizeBalanceTelemetry(telemetry: BalanceTelemetry): BalanceTelemetrySummary[] {
+  if (telemetry.version !== BALANCE_VERSION) return [];
+  const groups = new Map<string, { teamSize: number; boss: boolean; powerRatioBand: number; attempts: number; wins: number; totalPowerRatio: number; buckets: number[] }>();
+  for (const cohort of Object.values(telemetry.cohorts)) {
+    const key = `${cohort.teamSize}:${cohort.powerRatioBand}:${cohort.boss ? 'boss' : 'wave'}`;
+    const group = groups.get(key) ?? {
+      teamSize: cohort.teamSize, boss: cohort.boss, powerRatioBand: cohort.powerRatioBand,
+      attempts: 0, wins: 0, totalPowerRatio: 0, buckets: WINNING_CLEAR_SECONDS_BUCKETS.map(() => 0),
+    };
+    group.attempts += cohort.attempts;
+    group.wins += cohort.wins;
+    group.totalPowerRatio += cohort.totalPowerRatio;
+    normalizedBuckets(cohort.winningClearSecondsBuckets).forEach((count, index) => { group.buckets[index] += count; });
+    groups.set(key, group);
+  }
+  return [...groups.values()]
+    .map((group) => ({
+      teamSize: group.teamSize,
+      boss: group.boss,
+      powerRatioBand: group.powerRatioBand,
+      attempts: group.attempts,
+      wins: group.wins,
+      winRate: group.attempts > 0 ? group.wins / group.attempts : 0,
+      averagePowerRatio: group.attempts > 0 ? group.totalPowerRatio / group.attempts : 0,
+      medianWinningClearSecondsUpperBound: medianWinningClearSecondsUpperBound(group.buckets, group.wins),
+    }))
+    .sort((left, right) => left.teamSize - right.teamSize || Number(left.boss) - Number(right.boss) || left.powerRatioBand - right.powerRatioBand);
 }
 
 export function recommendedTeamPower(locationId: number, teamSize: number, telemetry?: BalanceTelemetry): number {
