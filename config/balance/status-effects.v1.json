@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "modelVersion": "status-effects-proposal-2026.08.24-v1",
+  "modelVersion": "status-effects-proposal-2026.08.30-v2",
   "status": "proposal",
   "live": false,
   "effects": [
@@ -33,9 +33,41 @@
     "maximumAtkReductionPercent": 10,
     "maximumDamageTakenIncreasePercent": 8,
     "percentageTargetMaxHpDamageEnabled": false,
-    "bossStatusDamageScale": 0.6,
-    "pvpStatusDamageScale": 0.7
+    "statusDamageAgainstBossScale": 0.6,
+    "statusDamageInPvpScale": 0.7
   },
+  "bossVsHero": {
+    "statusDamageScale": 0.45,
+    "maximumStatusDamageConfiguredBossAtkPercentPerSecond": 9,
+    "maximumStatusDamageConfiguredBossAtkPercentPerApplication": 22,
+    "procChanceScale": 0.75,
+    "durationScale": 0.75,
+    "debuffMagnitudeScale": 0.75,
+    "maximumPoisonStacks": 2,
+    "maximumConcurrentHarmfulEffectsPerHero": 2,
+    "maximumConcurrentControlEffectsPerHero": 1,
+    "minimumApplicationIntervalPerHeroSeconds": 6,
+    "cleanseGraceSeconds": 3,
+    "telegraphedActionsOnly": true,
+    "basicAttacksCanApplyStatus": false,
+    "retinueCanApplyStatus": false,
+    "shockCanInterruptHeroActions": false,
+    "globalEnrageScalesStatusDamage": false,
+    "damageUsesConfiguredPreEnrageBossAtk": true,
+    "damageCeilingsPercentTargetMaxHp": {
+      "perTick": 4,
+      "perSecond": 6,
+      "perApplication": 18,
+      "rollingTenSeconds": 30
+    }
+  },
+  "bossProfiles": [
+    { "bossId": "iron-warden", "damageType": "physical", "effectId": "armor-break", "trigger": "heavy-strike", "statusCooldownSeconds": 20, "baseApplicationChance": 1, "avoidance": "dodge-then-resistance", "targets": "locked-hero" },
+    { "bossId": "ash-warlock", "damageType": "flame", "effectId": "burn", "trigger": "party-blast", "statusCooldownSeconds": 12, "baseApplicationChance": 1, "avoidance": "dodge-then-resistance", "targets": "living-heroes-hit" },
+    { "bossId": "thorn-shaman", "damageType": "toxin", "effectId": "poison", "trigger": "heavy-strike", "statusCooldownSeconds": 20, "baseApplicationChance": 1, "avoidance": "dodge-then-resistance", "targets": "locked-hero" },
+    { "bossId": "rift-behemoth", "damageType": "arcane", "effectId": "shock", "trigger": "heavy-strike", "statusCooldownSeconds": 20, "baseApplicationChance": 1, "avoidance": "dodge-then-resistance", "targets": "locked-hero" },
+    { "bossId": "grave-necromancer", "damageType": "frost", "effectId": "frost", "trigger": "summon-wave", "statusCooldownSeconds": 20, "baseApplicationChance": 1, "avoidance": "resistance-only", "targets": "living-heroes" }
+  ],
   "controlSafety": {
     "hardStunEnabled": false,
     "shockImmunitySecondsAfterEnd": 12,
