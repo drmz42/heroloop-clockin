@@ -30,6 +30,7 @@ function App() {
   const walletAddress = game.state.walletAddress;
   const hydrateServerState = game.hydrateServerState;
   const mergeServerResourceState = game.mergeServerResourceState;
+  const applyServerRevision = game.applyServerRevision;
   const [accountGate, setAccountGate] = useState<'landing' | 'checking' | 'verified' | 'error'>(tokenomicsEnabled ? 'checking' : (walletAddress ? 'verified' : 'landing'));
   const [accountCheckAttempt, setAccountCheckAttempt] = useState(0);
   const [serverStateReady, setServerStateReady] = useState(false);
@@ -204,6 +205,10 @@ function App() {
       setServerStateRevision(game.serverRevisionHint);
     }
   }, [game.serverRevisionHint]);
+
+  useEffect(() => {
+    if (serverStateRevision !== null) applyServerRevision(serverStateRevision);
+  }, [serverStateRevision, applyServerRevision]);
 
   useEffect(() => {
     if (!resourceState || !resourceRevision || resourceRevision <= (serverStateRevision ?? 0)) return;

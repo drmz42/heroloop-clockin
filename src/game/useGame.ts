@@ -315,6 +315,11 @@ export function useGame() {
     heroHpRef.current.clear();
   }, [setUnits]);
 
+  const applyServerRevision = useCallback((revision: number) => {
+    if (!Number.isSafeInteger(revision) || revision < 1) return;
+    setServerRevisionHint((current) => Math.max(current ?? 0, revision));
+  }, []);
+
   const mergeServerResourceState = useCallback((remoteState: unknown) => {
     const remote = normalizeState(remoteState as Partial<GameState>);
     setState((current) => {
@@ -903,7 +908,9 @@ export function useGame() {
 
   useEffect(() => {
     if (!battleResult || pausedRef.current || !autoRef.current) return;
-    const delay = battleResult.win ? 1100 : 1600;
+    // Keep the reward handoff visible without leaving cleared enemy lanes
+    // empty long enough to look stalled.
+    const delay = battleResult.win ? 250 : 800;
     let ready = false;
     let spawned = false;
     const spawnIfVisible = () => {
@@ -2334,7 +2341,7 @@ export function useGame() {
     setAutoPot, setBattleAnimationMode, setCombatPresentationVisible,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
     openChests, openTutorialChests, closeChestResult, refreshStore, buyRotatingItem, claimQuest, claimTutorialQuest,
-    claimReferralReward, setUserProfile, resetAccount, hydrateServerState, mergeServerResourceState, completeWelcomeTutorial, setAvatarHero, loadMarket, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
+    claimReferralReward, setUserProfile, resetAccount, hydrateServerState, mergeServerResourceState, applyServerRevision, completeWelcomeTutorial, setAvatarHero, loadMarket, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
     heroStatsFor: (uid: string) => {
       const owned = state.ownedHeroes.find((h) => h.uid === uid);
       if (!owned) return null;
