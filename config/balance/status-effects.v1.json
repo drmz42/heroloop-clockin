@@ -53,12 +53,19 @@
     "retinueCanApplyStatus": false,
     "shockCanInterruptHeroActions": false,
     "globalEnrageScalesStatusDamage": false,
+    "bossUtilityAffectsHeavyOrEnrageDamage": false,
     "damageUsesConfiguredPreEnrageBossAtk": true,
     "damageCeilingsPercentTargetMaxHp": {
       "perTick": 4,
       "perSecond": 6,
       "perApplication": 18,
       "rollingTenSeconds": 30
+    },
+    "simulationAcceptance": {
+      "maximumActualHeroHpPercentPerApplication": 5,
+      "maximumExpectedHeroHpPercentPerMinute": 10,
+      "maximumUtilityHpPressurePercentPerMinute": 5,
+      "maximumAverageUtilityMagnitudePercent": 2
     }
   },
   "bossProfiles": [
