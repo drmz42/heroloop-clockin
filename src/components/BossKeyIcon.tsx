@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 export function BossKeyIcon({ size = 24 }: { size?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    const image = new Image(); image.src = '/assets/ui/boss-key-v1.png';
+    const image = new Image(); image.src = '/assets/ui/boss-key-v1.webp';
     image.onload = () => {
       const canvas = ref.current; const context = canvas?.getContext('2d', { willReadFrequently: true }); if (!canvas || !context) return;
       context.drawImage(image, 0, 0, canvas.width, canvas.height); const pixels = context.getImageData(0, 0, canvas.width, canvas.height);

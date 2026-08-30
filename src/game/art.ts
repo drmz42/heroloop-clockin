@@ -42,7 +42,7 @@ export function enemyArtSrc(unitUid: string): string | null {
 export function itemArtSrc(itemId: string): string | null {
   const productPath = productItemPath(itemId);
   if (productPath) return productPath;
-  return ITEM_ATLAS_INDEX.has(itemId) ? '/assets/items/item-atlas-v2.png' : null;
+  return ITEM_ATLAS_INDEX.has(itemId) ? '/assets/items/item-atlas-v2.webp' : null;
 }
 
 export function itemArtStyle(itemId: string): Record<string, string> | null {
