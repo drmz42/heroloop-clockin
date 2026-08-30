@@ -67,6 +67,7 @@
     "check:instance-reset": "node scripts/check-instance-reset-contract.mjs",
     "check:legacy-market-recovery": "node scripts/check-legacy-market-recovery.mjs",
     "check:monitor-alerts": "node scripts/check-monitor-alert-accuracy.mjs",
+    "check:vps1-memory-guard": "node scripts/check-vps1-memory-guard.mjs",
     "check:operational-artifacts": "node scripts/check-operational-artifacts-contract.mjs",
     "check:agent-health": "bash .agents/skills/heroloop-health-check/scripts/check-health-check.sh",
     "check:task-efficiency": "bash scripts/check-task-efficiency.sh",
