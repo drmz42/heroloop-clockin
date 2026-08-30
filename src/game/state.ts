@@ -1,6 +1,7 @@
 import type { GameState, OwnedHero, DailyQuest, ItemSlot, TrainingBoostKey, Rarity } from './types';
 import { generateRotatingShop, itemPower } from './items';
 import { emptyBalanceTelemetry, BALANCE_VERSION } from './balance';
+import { MAX_ENCHANT_LEVEL } from './enchant';
 
 const STORAGE_KEY = 'afk-heroes-save-v7';
 
@@ -283,12 +284,12 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
     const inventory = (parsed.inventory ?? []).map((i) => {
       const uid = i.uid && !itemUids.has(i.uid) ? i.uid : genUid();
       itemUids.add(uid);
-      const enchantLevel = Math.max(0, Math.min(10, i.enchantLevel ?? 0));
+      const enchantLevel = Math.max(0, Math.min(MAX_ENCHANT_LEVEL, i.enchantLevel ?? 0));
       const storedStats = i.stats ?? [];
-      const version: 2 | 3 = i.enchantStatsVersion === 3 ? 3 : 2;
+      const version = 4 as const;
       const powerFromStoredStats = itemPower(storedStats, enchantLevel, version);
       const legacyStatsWereCompounded = enchantLevel > 0
-        && i.enchantStatsVersion !== 2 && i.enchantStatsVersion !== 3
+        && i.enchantStatsVersion !== 2 && i.enchantStatsVersion !== 3 && i.enchantStatsVersion !== 4
         && powerFromStoredStats > (i.power ?? 0) * 1.03 + 2;
       const legacyMultiplier = legacyStatsWereCompounded
         ? Array.from({ length: enchantLevel }, (_, index) => 1 + (index + 1) * 0.10).reduce((total, multiplier) => total * multiplier, 1)

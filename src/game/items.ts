@@ -1,5 +1,10 @@
 import type { HeroClass, ItemBase, ItemSlot, OwnedItem, ItemStatRoll, ItemStatKey, Rarity, PotionDef, PotionTier } from './types';
 import { RARITY_COLORS, RARITY_INDEX } from './heroes';
+import {
+  enchantGoldCost, enchantGuaranteedHeroCost, enchantMultiplier,
+} from './enchant';
+
+export { HERO_USD_QUOTE, enchantSuccessChance } from './enchant';
 
 export const SLOT_LABEL: Record<ItemSlot, string> = {
   class_weapon: 'Class Weapon', offhand: 'Off-hand', helmet: 'Helmet', chest: 'Chest Armor',
@@ -242,60 +247,19 @@ export const POTION_MAP: Record<PotionTier, PotionDef> = Object.fromEntries(
 
 // ── Enchanting ────────────────────────────────────────────────────────────
 
-// Success chance per enchant level (+1 to +10)
-export const ENCHANT_CHANCE = [1.0, 1.0, 1.0, 0.85, 0.70, 0.55, 0.40, 0.25, 0.15, 0.10];
-const ENCHANT_EARLY_GOLD = [50, 100, 200];
-const ENCHANT_EARLY_RARITY_MULTIPLIER: Record<Rarity, number> = {
-  common: 1, uncommon: 1.25, rare: 1.5, epic: 2, legendary: 3, mythic: 4,
-  relic: 4, cosmic: 5, divine: 6, celestial: 7, cursed: 8, immortal: 9, god: 10,
-};
-const ENCHANT_GOLD_BY_RARITY: Partial<Record<Rarity, number[]>> = {
-  common: [400, 1_000, 3_000, 10_000, 25_000, 50_000, 100_000],
-  uncommon: [800, 2_500, 7_500, 25_000, 75_000, 150_000, 250_000],
-  rare: [2_000, 7_500, 25_000, 75_000, 250_000, 500_000, 1_000_000],
-  epic: [5_000, 20_000, 75_000, 250_000, 1_000_000, 2_500_000, 5_000_000],
-  legendary: [25_000, 100_000, 400_000, 1_500_000, 5_000_000, 12_000_000, 25_000_000],
-  mythic: [50_000, 200_000, 800_000, 3_000_000, 10_000_000, 25_000_000, 50_000_000],
-  relic: [50_000, 200_000, 800_000, 3_000_000, 10_000_000, 25_000_000, 50_000_000],
-  cosmic: [100_000, 400_000, 1_500_000, 6_000_000, 20_000_000, 50_000_000, 100_000_000],
-};
-const ENCHANT_HERO_BY_RARITY: Partial<Record<Rarity, number[]>> = {
-  divine: [500, 1_500, 4_000, 10_000, 25_000, 60_000, 150_000],
-  celestial: [1_000, 3_000, 8_000, 20_000, 50_000, 120_000, 250_000],
-  cursed: [2_000, 5_000, 15_000, 35_000, 80_000, 180_000, 300_000],
-  immortal: [5_000, 10_000, 25_000, 50_000, 100_000, 200_000, 350_000],
-  god: [10_000, 20_000, 40_000, 80_000, 150_000, 300_000, 400_000],
-};
-export const ENCHANT_GUARANTEE_HERO_SURCHARGE = 2_000;
-export const HERO_USD_QUOTE = 0.001;
-
-export function enchantSuccessChance(currentEnchant: number): number {
-  return ENCHANT_CHANCE[currentEnchant] ?? 0.10;
-}
-
 export function enchantCost(item: OwnedItem): { gold: number; hero: number } {
   const rarity = ITEM_MAP[item.itemId]?.rarity ?? 'common';
-  const currentEnchant = Math.max(0, Math.min(9, item.enchantLevel));
-  if (currentEnchant < 3) {
-    const base = ENCHANT_EARLY_GOLD[currentEnchant];
-    const rarityMultiplier = ENCHANT_EARLY_RARITY_MULTIPLIER[rarity] ?? 1;
-    const levelMultiplier = 1 + 0.01 * (Math.max(1, Math.min(100, item.level)) - 1);
-    return { gold: Math.ceil(base * rarityMultiplier * levelMultiplier / 10) * 10, hero: 0 };
-  }
-  const index = currentEnchant - 3;
-  const hero = ENCHANT_HERO_BY_RARITY[rarity]?.[index];
-  if (hero !== undefined) return { gold: 0, hero };
-  return { gold: ENCHANT_GOLD_BY_RARITY[rarity]?.[index] ?? 0, hero: 0 };
+  return { gold: enchantGoldCost(rarity, item.enchantLevel), hero: 0 };
 }
 
 export function enchantCharmCost(currentEnchant: number): number {
-  return currentEnchant >= 3 ? ENCHANT_GUARANTEE_HERO_SURCHARGE : 0;
+  return enchantGuaranteedHeroCost(currentEnchant);
 }
 
 // Stats on item boosted by enchant level
 export function enchantedStats(stats: ItemStatRoll[], enchantLevel: number): ItemStatRoll[] {
   if (enchantLevel === 0) return stats;
-  const mult = 1 + enchantLevel * 0.10;
+  const mult = enchantMultiplier(enchantLevel);
   return stats.map(s => ({
     ...s,
     value: s.isPercent
@@ -349,15 +313,17 @@ function rollStats(slot: ItemSlot, rarity: Rarity, level: number, itemId: string
   });
 }
 
-export function itemPower(stats: ItemStatRoll[], enchantLevel = 0, version: 2 | 3 = 3): number {
+export function itemPower(stats: ItemStatRoll[], enchantLevel = 0, version: 2 | 3 | 4 = 4): number {
   return Math.round(stats.reduce((acc, s) => {
     const w: Record<ItemStatKey, number> = {
       atk: 4, critChance: 200, critDamage: 100, atkSpeed: 0.5,
       hp: 0.15, def: 2, goldBonus: 150, xpBonus: 100, dodge: 150,
     };
-    const rate = version === 2 ? .1 : s.key === 'hp' || s.key === 'atk' || s.key === 'def' ? .1
-      : s.key === 'goldBonus' || s.key === 'xpBonus' ? .025 : .05;
-    return acc + (s.isPercent ? s.value * (w[s.key] ?? 100) : s.value * (w[s.key] ?? 1)) * (1 + enchantLevel * rate);
+    const multiplier = version === 4 ? enchantMultiplier(enchantLevel) : 1 + enchantLevel * (
+      version === 2 ? .1 : s.key === 'hp' || s.key === 'atk' || s.key === 'def' ? .1
+        : s.key === 'goldBonus' || s.key === 'xpBonus' ? .025 : .05
+    );
+    return acc + (s.isPercent ? s.value * (w[s.key] ?? 100) : s.value * (w[s.key] ?? 1)) * multiplier;
   }, 0));
 }
 
@@ -372,7 +338,7 @@ export function rollItem(itemId: string, level: number): OwnedItem {
   return {
     uid: globalThis.crypto?.randomUUID?.() ?? `it-${Date.now().toString(36)}-${itemUid++}-${Math.random().toString(36).slice(2)}`,
     itemId, level, stats, power: itemPower(stats),
-    enchantLevel: 0, enchantStatsVersion: 3, rerollCount: 0,
+    enchantLevel: 0, enchantStatsVersion: 4, rerollCount: 0,
   };
 }
 
@@ -382,8 +348,8 @@ export function rerollItemStats(item: OwnedItem): OwnedItem {
   return {
     ...item,
     stats: newStats,
-    power: itemPower(newStats, item.enchantLevel, 3),
-    enchantStatsVersion: 3,
+    power: itemPower(newStats, item.enchantLevel, 4),
+    enchantStatsVersion: 4,
     rerollCount: item.rerollCount + 1,
   };
 }

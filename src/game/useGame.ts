@@ -21,6 +21,7 @@ import {
 } from '@/game/items';
 import type { Rarity } from '@/game/types';
 import { recommendedTeamPower, recordBattleTelemetry } from '@/game/balance';
+import { MAX_ENCHANT_LEVEL } from '@/game/enchant';
 import { goldRewardForLanes } from '@/game/goldRewards';
 import { advanceCombatFrame, combatResolution, seededCombatRandom } from '../../supabase/functions/player-sync/combat-step.mjs';
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
@@ -1713,7 +1714,7 @@ export function useGame() {
   const enchantItem = useCallback(async (itemUid: string, useCharm: boolean) => {
     const st = stateRef.current;
     const item = st.inventory.find((i) => i.uid === itemUid);
-    if (!item || item.enchantLevel >= 10) { setEnchantResult({ success: false }); return; }
+    if (!item || item.enchantLevel >= MAX_ENCHANT_LEVEL) { setEnchantResult({ success: false }); return; }
     if (tokenomicsEnabled && item.serverOwned) {
       if (itemUpgradeBusyRef.current) return;
       itemUpgradeBusyRef.current = true;
@@ -1756,14 +1757,14 @@ export function useGame() {
     const success = useCharm ? true : Math.random() < baseChance;
     if (success) {
       const newEnchant = item.enchantLevel + 1;
-      const newPower = itemPower(item.stats, newEnchant, item.enchantStatsVersion === 3 ? 3 : 2);
+      const newPower = itemPower(item.stats, newEnchant, 4);
       setState((prev) => ({
         ...prev,
         gold: prev.gold - baseCost.gold,
         hero: balance,
-        inventory: prev.inventory.map((i) => i.uid === itemUid ? { ...i, enchantLevel: newEnchant, enchantStatsVersion: item.enchantStatsVersion === 3 ? 3 : 2, power: newPower } : i),
+        inventory: prev.inventory.map((i) => i.uid === itemUid ? { ...i, enchantLevel: newEnchant, enchantStatsVersion: 4, power: newPower } : i),
       }));
-      setEnchantResult({ success: true, item: { ...item, enchantLevel: newEnchant, enchantStatsVersion: item.enchantStatsVersion === 3 ? 3 : 2, power: newPower } });
+      setEnchantResult({ success: true, item: { ...item, enchantLevel: newEnchant, enchantStatsVersion: 4, power: newPower } });
     } else {
       const nextState = {
         ...stateRef.current,

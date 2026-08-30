@@ -7,6 +7,7 @@ import { ItemArtwork } from '@/components/ItemArtwork';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import type { GameApi } from '@/game/useGame';
 import type { ItemStatKey, OwnedItem, ItemSlot } from '@/game/types';
+import { enchantBonusPercent, enchantGuaranteedUsd, MAX_ENCHANT_LEVEL } from '@/game/enchant';
 
 interface Props {
   item: OwnedItem;
@@ -31,7 +32,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
   const enchChance = enchantSuccessChance(item.enchantLevel);
   const enchCost = enchantCost(item);
   const charmCost = enchantCharmCost(item.enchantLevel);
-  const canEnchant = item.enchantLevel < 10;
+  const canEnchant = item.enchantLevel < MAX_ENCHANT_LEVEL;
   const rCost = rerollCost(base.rarity, item.rerollCount);
   const rerollAffordable = game.state.hero >= rCost;
   const enchantAffordable = game.state.gold >= enchCost.gold && game.state.hero >= enchCost.hero;
@@ -64,7 +65,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
         {item.stats.map((s, i) => (
           <div key={i} className="flex items-center justify-between text-[11px]">
             <span className="text-slate-400">{STAT_LABEL[s.key]}</span>
-            <span className="font-bold text-emerald-300">{formatStatValue(s)}{item.enchantLevel > 0 && <span className="text-amber-400/70 text-[8px] ml-0.5">(+{item.enchantLevel * 10}%)</span>}</span>
+            <span className="font-bold text-emerald-300">{formatStatValue(s)}{item.enchantLevel > 0 && <span className="text-amber-400/70 text-[8px] ml-0.5">(+{enchantBonusPercent(item.enchantLevel)}%)</span>}</span>
           </div>
         ))}
       </div>
@@ -101,8 +102,8 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
             <button data-item-action="equip" disabled={Boolean(equipDisabledReason)} onClick={() => onEquip(base.slot)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-0.5 text-[8px] font-black text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={equipDisabledReason || `Equip ${SLOT_LABEL[base.slot]}`}><ArrowUp size={12} /><span className="mt-0.5">Equip</span></button>
           ) : <div />}
 
-          <button disabled={!canEnchant || game.itemUpgradeBusy} onClick={() => setShowEnchant(s => !s)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 px-0.5 text-center text-[8px] font-black text-amber-300 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={canEnchant ? `Enchant +${item.enchantLevel + 1}: ${Math.round(enchChance * 100)}% chance, ${enchantCostText}` : 'Maximum enchant +10'}>
-            <ArrowUp size={12} /><span className="mt-0.5">{canEnchant ? `Enchant +${item.enchantLevel + 1}` : 'Max +10'}</span>{canEnchant && <span className="text-[7px] font-bold text-amber-100/70">{Math.round(enchChance * 100)}% · {enchCost.gold > 0 ? `${formatNum(enchCost.gold)} G` : `${formatNum(enchCost.hero)} HERO`}</span>}
+          <button disabled={!canEnchant || game.itemUpgradeBusy} onClick={() => setShowEnchant(s => !s)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 px-0.5 text-center text-[8px] font-black text-amber-300 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={canEnchant ? `Enchant +${item.enchantLevel + 1}: ${Math.round(enchChance * 100)}% chance, ${enchantCostText}` : `Maximum enchant +${MAX_ENCHANT_LEVEL}`}>
+            <ArrowUp size={12} /><span className="mt-0.5">{canEnchant ? `Enchant +${item.enchantLevel + 1}` : `Max +${MAX_ENCHANT_LEVEL}`}</span>{canEnchant && <span className="text-[7px] font-bold text-amber-100/70">{Math.round(enchChance * 100)}% · {formatNum(enchCost.gold)} G</span>}
           </button>
 
           <button disabled={!rerollAffordable || game.itemUpgradeBusy} onClick={() => setShowReroll(s => !s)} className="flex min-h-12 min-w-0 flex-col items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 px-0.5 text-[8px] font-black text-cyan-300 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={rerollAffordable ? `Reroll for ${rCost} $HERO` : `Need ${rCost - game.state.hero} more $HERO`}>
@@ -145,7 +146,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
                 title="100% success · the item cannot be destroyed"
                 className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-300 text-xs font-bold hover:bg-violet-500/25 disabled:opacity-40 transition"
               >
-                <ShieldCheck size={13} /> Guaranteed ({enchCost.gold > 0 ? <><Coins size={10} /> {formatNum(enchCost.gold)} + </> : enchCost.hero > 0 ? <><HeroTokenIcon size={10} /> {usd(enchCost.hero)} · {formatNum(enchCost.hero)} + </> : null}<HeroTokenIcon size={10} /> $2.00 · {formatNum(charmCost)})
+                <ShieldCheck size={13} /> Guaranteed (<Coins size={10} /> {formatNum(enchCost.gold)} + <HeroTokenIcon size={10} /> ${enchantGuaranteedUsd(item.enchantLevel).toFixed(2)} · {formatNum(charmCost)})
               </button>
             )}
           </div>

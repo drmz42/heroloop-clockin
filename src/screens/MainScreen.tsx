@@ -3,7 +3,8 @@ import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, 
 import { Arena } from '@/components/Arena';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
-import { buildLocation, canMineTokens, ENCHANT_RESONANCE_PERCENT, equippedEnchantResonance, equippedSetBonus, getEquippedItems, heroStats, locationUnlockLevel, locationLevelRange, LOCATION_RANGES, SET_BONUS_PERCENT, teamPower as calculateHeroPower } from '@/game/engine';
+import { buildLocation, canMineTokens, equippedEnchantResonance, equippedSetBonus, getEquippedItems, heroStats, locationUnlockLevel, locationLevelRange, LOCATION_RANGES, SET_BONUS_PERCENT, teamPower as calculateHeroPower } from '@/game/engine';
+import { ENCHANT_RESONANCE_PERCENT } from '@/game/enchant';
 import { formatNum, accountXpForLevel, accountXpProgress, heroXpForLevel } from '@/game/state';
 import { ITEM_MAP, SLOT_LABEL, POTIONS, sellValue, meetsItemLevelRequirement, canClassEquipItem, standardChestWeights } from '@/game/items';
 import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, CLASS_LABEL, RARITY_INDEX } from '@/game/heroes';

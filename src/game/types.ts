@@ -75,8 +75,8 @@ export interface OwnedItem {
   serverOwned?: boolean;
   locked?: boolean;
   isNew?: boolean;
-  enchantLevel: number;   // 0–10, each +1 boosts all stats by +10%
-  enchantStatsVersion?: 2 | 3; // v2 keeps legacy Resonance; v3 uses checksum-bound per-stat curves
+  enchantLevel: number;   // 0–20; Balance v4 uses four non-compounding stat bands
+  enchantStatsVersion?: 2 | 3 | 4; // v4 is checksum-bound tiered Enchant plus eight-slot Resonance
   rerollCount: number;    // how many times rerolled (affects cost)
 }
 

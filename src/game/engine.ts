@@ -2,6 +2,7 @@ import type { Enemy, Location, CombatUnit, OwnedHero, OwnedItem, Rarity } from '
 import { HERO_MAP, RARITY_INDEX } from './heroes';
 import { ITEM_MAP, maxChestRarityForLocation } from './items';
 import { recommendedTeamPower } from './balance';
+import { enchantMultiplier, enchantResonancePercent, MAX_ENCHANT_LEVEL } from './enchant';
 
 export interface HeroFullStats {
   hp: number; atk: number; def: number; speed: number;
@@ -23,11 +24,9 @@ const CLASS_CAPS: Record<string, { def: number; dodge: number; crit: number; cri
 };
 
 export const SET_BONUS_PERCENT: Record<Rarity, number> = {
-  common: 2, uncommon: 4, rare: 6, epic: 8, legendary: 10, mythic: 12,
-  relic: 12, cosmic: 14, divine: 16, celestial: 18, cursed: 20, immortal: 22, god: 25,
+  common: 5, uncommon: 10, rare: 15, epic: 20, legendary: 30, mythic: 40,
+  relic: 40, cosmic: 50, divine: 60, celestial: 70, cursed: 80, immortal: 90, god: 100,
 };
-
-export const ENCHANT_RESONANCE_PERCENT = [0, 1, 2, 4, 7, 11, 16, 22, 30, 39, 50] as const;
 
 export function equippedSetBonus(equippedItems: OwnedItem[]): { rarity: Rarity; percent: number } | null {
   if (equippedItems.length !== 8) return null;
@@ -38,9 +37,9 @@ export function equippedSetBonus(equippedItems: OwnedItem[]): { rarity: Rarity; 
 
 export function equippedEnchantResonance(equippedItems: OwnedItem[]): { level: number; percent: number } | null {
   if (equippedItems.length !== 8) return null;
-  const level = Math.min(...equippedItems.map((item) => Math.max(0, Math.min(10, item.enchantLevel))));
+  const level = Math.min(...equippedItems.map((item) => Math.max(0, Math.min(MAX_ENCHANT_LEVEL, item.enchantLevel))));
   if (level < 1) return null;
-  return { level, percent: ENCHANT_RESONANCE_PERCENT[level] };
+  return { level, percent: enchantResonancePercent(level) };
 }
 
 export function heroStarMultiplier(stars: number): number {
@@ -69,14 +68,15 @@ export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
 
   if (equippedItems) {
     const setBonus = (equippedSetBonus(equippedItems)?.percent ?? 0) / 100;
-    const resonance = (equippedEnchantResonance(equippedItems.filter((item) => item.enchantStatsVersion !== 3))?.percent ?? 0) / 100;
+    const resonance = (equippedEnchantResonance(equippedItems)?.percent ?? 0) / 100;
     for (const item of equippedItems) {
-      const level = Math.max(0, Math.min(10, item.enchantLevel));
+      const level = Math.max(0, Math.min(MAX_ENCHANT_LEVEL, item.enchantLevel));
       for (const s of item.stats) {
         const enchantRate = item.enchantStatsVersion === 3
           ? (s.key === 'hp' || s.key === 'atk' || s.key === 'def' ? .1 : s.key === 'goldBonus' || s.key === 'xpBonus' ? .025 : .05)
           : .1;
-        const multiplier = 1 + level * enchantRate + setBonus + (item.enchantStatsVersion === 3 ? 0 : resonance);
+        const baseMultiplier = item.enchantStatsVersion === 4 ? enchantMultiplier(level) : 1 + level * enchantRate;
+        const multiplier = baseMultiplier + setBonus + (item.enchantStatsVersion === 3 ? 0 : resonance);
         const value = s.isPercent
           ? Math.round(s.value * multiplier * 1000) / 1000
           : Math.round(s.value * multiplier);
