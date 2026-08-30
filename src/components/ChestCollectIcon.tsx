@@ -4,7 +4,7 @@ export function ChestCollectIcon({ size = 38 }: { size?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const image = new Image();
-    image.src = '/assets/ui/open-treasure-chest-v1.png';
+    image.src = '/assets/ui/open-treasure-chest-v1.webp';
     image.onload = () => {
       const canvas = ref.current;
       if (!canvas) return;

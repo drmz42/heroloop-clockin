@@ -2,9 +2,9 @@ import type { HeroClass, Rarity } from './types';
 import { RARITY_COLORS, RARITY_INDEX } from './heroes';
 
 const HERO_ART: Record<string, string> = {
-  ironfoot: '/assets/heroes/ironfoot-v2.png',
-  greenscout: '/assets/heroes/greenscout-v2.png',
-  cutpurse: '/assets/heroes/cutpurse-v2.png',
+  ironfoot: '/assets/heroes/ironfoot-v2.webp',
+  greenscout: '/assets/heroes/greenscout-v2.webp',
+  cutpurse: '/assets/heroes/cutpurse-v2.webp',
   acolyte: '/assets/heroes/acolyte-v2.webp',
   shrubmage: '/assets/heroes/shrubmage-v2.webp',
 };
