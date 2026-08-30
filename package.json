@@ -68,6 +68,7 @@
     "check:instance-reset": "node scripts/check-instance-reset-contract.mjs",
     "check:legacy-market-recovery": "node scripts/check-legacy-market-recovery.mjs",
     "check:monitor-alerts": "node scripts/check-monitor-alert-accuracy.mjs",
+    "check:telegram-bot-security": "node scripts/check-telegram-bot-security.mjs",
     "check:siem-light": "node scripts/check-siem-light.mjs",
     "check:vps1-memory-guard": "node scripts/check-vps1-memory-guard.mjs",
     "check:vps1-founder-ssh-exemption": "node scripts/check-vps1-founder-ssh-exemption.mjs",
