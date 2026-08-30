@@ -74,6 +74,7 @@
     "check:task-efficiency": "bash scripts/check-task-efficiency.sh",
     "check:todo-continuity": "bash scripts/check-todo-continuity.sh",
     "check:technical-tooling": "bash scripts/check-technical-tooling.sh",
+    "audit:dependencies": "npm audit --omit=dev --audit-level=high",
     "todo:query": "node scripts/todo-query.mjs",
     "todo:review": "bash scripts/todo-gemini-review.sh --working",
     "check:nginx-security": "node scripts/check-nginx-security-contract.mjs",
