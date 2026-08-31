@@ -81,6 +81,8 @@
     "check:task-efficiency": "bash scripts/check-task-efficiency.sh",
     "check:todo-continuity": "bash scripts/check-todo-continuity.sh",
     "check:todo-format": "node scripts/todo-format.mjs check",
+    "check:todo-integrity": "node scripts/check-todo-integrity.mjs",
+    "check:todo-transaction": "bash scripts/check-todo-transaction.sh",
     "check:technical-tooling": "bash scripts/check-technical-tooling.sh",
     "audit:dependencies": "npm audit --omit=dev --audit-level=high",
     "todo:query": "node scripts/todo-query.mjs",
