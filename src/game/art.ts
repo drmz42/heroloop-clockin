@@ -33,10 +33,15 @@ function productItemPath(itemId: string): string | null {
   return match ? `/assets/items/v4/${match[1]}-${match[2]}.png` : null;
 }
 
-export function enemyArtSrc(unitUid: string): string | null {
+const ENDGAME_ROLE_ART: Record<NonNullable<import('./types').CombatUnit['role']>, string> = {
+  tank: ENEMY_ART['boss-titan'], striker: ENEMY_ART.orc, skirmisher: ENEMY_ART.bat,
+  support: ENEMY_ART.ghost, caster: ENEMY_ART['boss-lich'],
+};
+
+export function enemyArtSrc(unitUid: string, role?: import('./types').CombatUnit['role']): string | null {
   const id = unitUid.replace(/^e\d+-/, '');
   const bossBase = id.match(/^(boss-(?:ogre|lich|dragon|titan))/)?.[1];
-  return ENEMY_ART[id] ?? (bossBase ? ENEMY_ART[bossBase] : null) ?? null;
+  return ENEMY_ART[id] ?? (bossBase ? ENEMY_ART[bossBase] : null) ?? (id.startsWith('endgame-') && role ? ENDGAME_ROLE_ART[role] : null) ?? null;
 }
 
 export function itemArtSrc(itemId: string): string | null {

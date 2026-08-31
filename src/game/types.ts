@@ -148,6 +148,14 @@ export interface CombatUnit {
   alive: boolean;
   dodge?: number;
   regenTimer?: number;
+  role?: 'tank' | 'striker' | 'skirmisher' | 'support' | 'caster';
+  eliteAffix?: 'guard-aura' | 'mending' | 'barrier' | 'enrage' | 'curse' | 'lane-blast' | 'summoner' | null;
+  shield?: number;
+  curseRemainingMs?: number;
+  enraged?: boolean;
+  summoned?: boolean;
+  abilityTimer?: number;
+  assistLowestHp?: boolean;
 }
 
 export interface FloatingNumber {

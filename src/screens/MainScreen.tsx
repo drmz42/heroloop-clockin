@@ -41,7 +41,7 @@ function CombatPresentationLayer({ game, activeDungeon, dungeonUnits, dungeonFlo
   return (
     <>
       {!activeDungeon && potionFx && <div key={potionFx.born} className="absolute inset-0 pointer-events-none anim-fade" style={{ background: 'radial-gradient(circle at 50% 70%, rgba(74,222,128,0.15), transparent 60%)' }} />}
-      <Arena units={activeDungeon ? dungeonUnits : units} floaters={activeDungeon ? dungeonFloaters : floaters} ownedHeroes={game.state.ownedHeroes} inventory={game.state.inventory} potionFx={activeDungeon ? null : potionFx} respawnCountdowns={activeDungeon ? {} : game.respawnCountdowns} animationMode={game.state.battleAnimationMode} dungeonPanelOpen={Boolean(activeDungeon)} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
+      <Arena units={activeDungeon ? dungeonUnits : units} floaters={activeDungeon ? dungeonFloaters : floaters} ownedHeroes={game.state.ownedHeroes} inventory={game.state.inventory} potionFx={activeDungeon ? null : potionFx} respawnCountdowns={activeDungeon ? {} : game.respawnCountdowns} animationMode={game.state.battleAnimationMode} dungeonPanelOpen={Boolean(activeDungeon)} locationId={activeDungeon ? undefined : game.state.currentLocation} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
     </>
   );
 }
@@ -585,8 +585,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
                   data-location={lid}
                   onClick={() => !locked && !notYetDiscovered && game.setLocation(lid)}
                   disabled={locked || notYetDiscovered}
-                  className={`location-card shrink-0 px-2.5 py-1.5 text-left transition ${current ? 'location-card-current' : ''} ${(locked || notYetDiscovered) ? 'location-card-locked' : ''} ${l.boss ? 'ring-1 ring-rose-800/60' : ''}`}
-                  style={{ minWidth: '150px' }}
+                  className={`location-card shrink-0 px-2.5 py-1.5 text-left transition ${lid > 10 ? 'location-card-endgame' : ''} ${current ? 'location-card-current' : ''} ${(locked || notYetDiscovered) ? 'location-card-locked' : ''} ${l.boss ? 'ring-1 ring-rose-800/60' : ''}`}
+                  style={{ minWidth: '150px', ...(lid > 10 ? { '--location-card-art': `url('/assets/locations/endgame/location-${lid}.webp')` } : {}) } as React.CSSProperties}
                 >
                   {/* Top row: number + boss + lock */}
                   <div className="flex items-center justify-between mb-0.5">

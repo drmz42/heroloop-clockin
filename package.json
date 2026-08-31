@@ -43,6 +43,7 @@
     "check:vps2-recovery-codex": "node scripts/check-vps2-recovery-codex.mjs",
     "check:combat-regression": "node scripts/check-combat-regression-matrix.mjs",
     "check:combat-runtime": "node scripts/check-combat-runtime.mjs",
+    "check:endgame-locations-runtime": "node scripts/check-endgame-locations-runtime.mjs",
     "check:crafting-settlement": "node scripts/check-crafting-settlement-proposal.mjs",
     "check:dev-news-resilience": "node scripts/check-dev-news-resilience.mjs",
     "check:daily-hero-accrual": "node scripts/check-daily-hero-accrual-contract.mjs",

@@ -43,6 +43,7 @@ interface ArenaProps {
   respawnCountdowns?: Record<string, number>;
   animationMode: GameState['battleAnimationMode'];
   dungeonPanelOpen?: boolean;
+  locationId?: number;
   dungeonBossScene?: {
     phase: 'retinue' | 'shared'; bossId: string; bossName: string; targetUid?: string;
     cast?: { name: string; remaining: number; impact: boolean } | null;
@@ -112,7 +113,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   }, [unit.hp, unit.alive, motionEnabled]);
 
   const portraitSrc = (() => {
-    if (side === 'enemy') return enemyArtSrc(unit.uid);
+    if (side === 'enemy') return enemyArtSrc(unit.uid, unit.role);
     if (!heroData) return null;
     const base = HERO_MAP[heroData.heroId];
     if (!base) return null;
@@ -164,13 +165,18 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
           {unit.alive && heal && <div className="anim-heal absolute inset-0 flex items-center justify-center text-3xl pointer-events-none">💚</div>}
           {side === 'hero' && heroData && <span className="battle-hero-level" aria-label={`Hero level ${heroData.level}`}>Lv {heroData.level}</span>}
           {side === 'hero' && heroData && <BattleHeroStars stars={heroData.stars} />}
+          {side === 'enemy' && unit.role && <span className="enemy-role-badge">{unit.role}</span>}
+          {side === 'enemy' && unit.eliteAffix && <span className="enemy-elite-badge">ELITE · {unit.eliteAffix.replace('-', ' ')}</span>}
+          {side === 'enemy' && (Boolean(unit.shield) || Boolean(unit.curseRemainingMs) || unit.enraged || unit.summoned) && <span className="enemy-status-badges" aria-label="Enemy combat statuses">
+            {Boolean(unit.shield) && <i title="Barrier">◆</i>}{Boolean(unit.curseRemainingMs) && <i title="Curse">☾</i>}{unit.enraged && <i title="Enraged">🔥</i>}{unit.summoned && <i title="Summoned">✦</i>}
+          </span>}
         </div>
       </div>
     </div>
   );
 }
 
-function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode, dungeonPanelOpen, dungeonBossScene, dungeonRoom }: ArenaProps) {
+function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode, dungeonPanelOpen, locationId, dungeonBossScene, dungeonRoom }: ArenaProps) {
   const heroes = units.filter((u) => u.side === 'hero');
   const enemies = units.filter((u) => u.side === 'enemy');
   const sharedBossActive = enemies.some((unit) => unit.uid.endsWith('-dungeon-shared') && unit.alive);
@@ -196,7 +202,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
   void inventory; void potionFx;
 
   return (
-    <div className={`arena-stage-inner arena-mode-${animationMode} ${dungeonPanelOpen ? 'dungeon-panel-open' : ''} ${dungeonRoom ? `dungeon-room dungeon-depth-${dungeonRoom.depth} dungeon-room-${dungeonRoom.room}` : ''} ${dungeonBossScene ? `dungeon-boss-phase-${dungeonBossScene.phase} dungeon-boss-${dungeonBossScene.bossId}` : ''} relative flex h-full w-full flex-col justify-end px-3 pb-4 pt-16 sm:px-6 ${shake ? 'anim-shake' : ''}`}>
+    <div className={`arena-stage-inner arena-mode-${animationMode} ${locationId && locationId > 10 ? 'arena-endgame-location' : ''} ${dungeonPanelOpen ? 'dungeon-panel-open' : ''} ${dungeonRoom ? `dungeon-room dungeon-depth-${dungeonRoom.depth} dungeon-room-${dungeonRoom.room}` : ''} ${dungeonBossScene ? `dungeon-boss-phase-${dungeonBossScene.phase} dungeon-boss-${dungeonBossScene.bossId}` : ''} relative flex h-full w-full flex-col justify-end px-3 pb-4 pt-16 sm:px-6 ${shake ? 'anim-shake' : ''}`} style={locationId && locationId > 10 ? { '--endgame-location-art': `url('/assets/locations/endgame/location-${locationId}.webp')` } as React.CSSProperties : undefined}>
       {animationMode === 'spectacular' && <div className="arena-spectacular-atmosphere pointer-events-none absolute inset-0" aria-hidden="true" />}
       {dungeonRoom && <div className="dungeon-route" aria-label={`Dungeon route, room ${dungeonRoom.room} of 4`}>
         {['GUARDS', 'ELITE', 'FATE', 'BOSS'].map((label, index) => <div key={label} className={index + 1 < dungeonRoom.room ? 'is-done' : index + 1 === dungeonRoom.room ? 'is-active' : ''}><i>{index + 1 < dungeonRoom.room ? '✓' : index + 1}</i><span>{label}</span></div>)}
