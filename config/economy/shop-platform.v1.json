@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "modelVersion": "shop-platform-proposal-2026.08.24-v1",
-  "status": "proposal",
+  "status": "direction-decided",
   "live": false,
   "direction": {
     "recommendation": "retain-current-gold-rotation-and-rename-store-to-shop",
     "premiumCatalogEnabled": false,
     "adsEnabled": false,
-    "finalDecisionRequiresObservedData": true,
+    "premiumCatalogDecisionRequiresObservedData": true,
     "oneServerGoodsCatalogAcrossPlatforms": true
   },
   "catalogZones": [
