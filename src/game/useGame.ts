@@ -271,6 +271,7 @@ export function useGame() {
   }, [updateCombatPresentation]);
   const setPotionFx = useCallback((potionFx: { uid: string; born: number } | null) => updateCombatPresentation({ potionFx }), [updateCombatPresentation]);
   const [battleResult, setBattleResult] = useState<BattleResult | null>(null);
+  const [combatStartRetry, setCombatStartRetry] = useState(0);
   const [autoProgress, setAutoProgress] = useState(true);
   const [paused, setPaused] = useState(false);
   const [respawnCountdowns, setRespawnCountdowns] = useState<Record<string, number>>({});
@@ -414,6 +415,7 @@ export function useGame() {
     const serverNormalCombat = tokenomicsEnabled && !forceBoss && !st.bossBattleActive;
     const sequence = ++combatSpawnSequenceRef.current;
     if (serverNormalCombat) {
+      setCombatStartRetry(0);
       resolvingRef.current = true;
       unitsRef.current = [];
       setUnits([]);
@@ -426,7 +428,8 @@ export function useGame() {
       if (sequence !== combatSpawnSequenceRef.current) return;
       if (!started || typeof started.start_key !== 'string' || !Array.isArray(started.initial_units)) {
         resolvingRef.current = false;
-        setBattleResult({ win: false, gold: 0, xp: 0, tokens: 0, chest: false, overpowered: false });
+        normalCombatWaveRef.current = null;
+        setCombatStartRetry((attempt) => attempt + 1);
         return;
       }
       const serverLocation = Math.floor(Number(started.location));
@@ -435,7 +438,8 @@ export function useGame() {
       if (!Number.isSafeInteger(serverLocation) || serverLocation < 1 || serverLocation > 20
         || !Number.isSafeInteger(serverSeed) || !Number.isFinite(availableAt)) {
         resolvingRef.current = false;
-        setBattleResult({ win: false, gold: 0, xp: 0, tokens: 0, chest: false, overpowered: false });
+        normalCombatWaveRef.current = null;
+        setCombatStartRetry((attempt) => attempt + 1);
         return;
       }
       const location = buildLocation(serverLocation, Math.max(1, started.initial_units.filter((unit) => unit.side === 'hero').length), false);
@@ -448,7 +452,8 @@ export function useGame() {
           : enemy ? enemyToUnit(enemy, serverUnit.lane) : null;
         if (!base) {
           resolvingRef.current = false;
-          setBattleResult({ win: false, gold: 0, xp: 0, tokens: 0, chest: false, overpowered: false });
+          normalCombatWaveRef.current = null;
+          setCombatStartRetry((attempt) => attempt + 1);
           return;
         }
         nextUnits.push({ ...base, ...serverUnit } as CombatUnit);
@@ -516,6 +521,14 @@ export function useGame() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.walletAddress, state.currentLocation, activeTeamKey, respawnTeamKey, hydrationVersion]);
 
+  useEffect(() => {
+    if (combatStartRetry === 0 || paused || !state.walletAddress || state.team.length === 0) return;
+    const timer = window.setTimeout(() => {
+      void spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [activeTeamKey, combatStartRetry, paused, spawnBattle, state.currentLocation, state.team.length, state.walletAddress]);
+
   const awardBattle = useCallback((locationId: number, clearedLanes: number, wonHeroUids: string[], deadHeroUids: string[], allCleared: boolean) => {
     const st = stateRef.current;
     // Combat and its rewards keep running continuously while the player is
@@ -540,7 +553,7 @@ export function useGame() {
           idempotency_key: serverWave.completionKey,
         });
         if (!completed) {
-          setBattleResult({ win: false, gold: 0, xp: 0, tokens: 0, chest: false, overpowered: false });
+          setCombatStartRetry((attempt) => attempt + 1);
           return;
         }
         mergeServerResourceState(completed.state);

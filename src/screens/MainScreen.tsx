@@ -194,6 +194,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
 
   const drop = battleResult?.drop;
   const dropBase = drop ? ITEM_MAP[drop.itemId] : null;
+  const hasBattleRewards = Boolean(battleResult && (battleResult.gold > 0 || battleResult.xp > 0 || dropBase || battleResult.chest));
   const power = game.teamPower();
   const selectedHero = selectedHeroUid ? state.ownedHeroes.find(h => h.uid === selectedHeroUid) : null;
   const selectedHeroBase = selectedHero ? HERO_MAP[selectedHero.heroId] : null;
@@ -510,7 +511,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
           {!activeDungeon && banner && (
             <div className="absolute inset-x-0 top-1/4 flex flex-col items-center z-30 pointer-events-none">
               <div className={`anim-banner font-pixel text-xl sm:text-2xl tracking-wider ${banner === 'VICTORY' ? 'text-px-bright' : 'text-px-red'}`} style={{ textShadow: banner === 'VICTORY' ? '0 0 20px #f5c518' : '0 0 20px #c02010' }}>{banner}</div>
-              {battleResult && (
+              {hasBattleRewards && battleResult && (
                 <div className="anim-banner stat-tile mt-2 flex flex-wrap items-center justify-center gap-2 px-3 py-2 font-vt text-sm">
                   {battleResult.gold > 0 && <span className="text-amber-300">+{formatNum(battleResult.gold)}g</span>}
                   {battleResult.xp > 0 && <span className="text-emerald-300">+{formatNum(battleResult.xp)} XP</span>}
