@@ -414,11 +414,37 @@ export function useGame() {
     const now = Date.now();
     const serverNormalCombat = tokenomicsEnabled && !forceBoss && !st.bossBattleActive;
     const sequence = ++combatSpawnSequenceRef.current;
+    const fullTeam = teamUids
+      .map((uid) => st.ownedHeroes.find((h) => h.uid === uid))
+      .filter((h): h is OwnedHero => Boolean(h));
+    const localLocation = buildLocation(locationId, fullTeam.length, forceBoss ?? st.bossBattleActive);
+    const localHeroUnits = fullTeam.map((owned) => {
+      const unit = ownedToUnit(owned, st.inventory);
+      if (!unit) return null;
+      if (owned.respawnAt && owned.respawnAt > now) return { ...unit, hp: 0, alive: false };
+      return unit;
+    }).filter((unit): unit is CombatUnit => Boolean(unit)).map((unit) => {
+      const carriedHp = heroHpRef.current.get(unit.uid);
+      return carriedHp === undefined
+        ? unit
+        : { ...unit, hp: Math.max(1, Math.min(unit.maxHp, carriedHp)), alive: carriedHp > 0 };
+    });
+    const localEnemyUnits = localLocation.enemies.map((enemy, index) => enemyToUnit(enemy, index));
+    const localUnits = [
+      ...localHeroUnits.map((unit) => ({ ...unit, attackTimer: 0 })),
+      ...localEnemyUnits.map((unit) => ({ ...unit, attackTimer: unit.attackInterval })),
+    ];
     if (serverNormalCombat) {
       setCombatStartRetry(0);
       resolvingRef.current = true;
-      unitsRef.current = [];
-      setUnits([]);
+      // Keep the resolved wave visible until its authoritative replacement is
+      // ready. On first entry, render a static local preview so network delay
+      // or a retry can never turn a valid formation into an empty battlefield.
+      if (unitsRef.current.length === 0 && localUnits.length > 0) {
+        unitsRef.current = localUnits;
+        lastCombatRenderRef.current = performance.now();
+        if (combatPresentationVisibleRef.current) setUnits(localUnits);
+      }
       setBattleResult(null);
       setFloaters([]);
       const started = await playerSync<NormalCombatStartResult>('normal_combat_start', {
@@ -480,28 +506,10 @@ export function useGame() {
     normalCombatWaveRef.current = null;
     combatRandomRef.current = Math.random;
     combatAccumulatorRef.current = 0;
-    const fullTeam = teamUids
-      .map((uid) => st.ownedHeroes.find((h) => h.uid === uid))
-      .filter((h): h is OwnedHero => Boolean(h));
-    const loc = buildLocation(locationId, fullTeam.length, forceBoss ?? st.bossBattleActive);
-    const heroUnits = fullTeam.map((o) => {
-      const unit = ownedToUnit(o, st.inventory);
-      if (!unit) return null;
-      if (o.respawnAt && o.respawnAt > now) return { ...unit, hp: 0, alive: false };
-      return unit;
-    }).filter((u): u is CombatUnit => Boolean(u)).map((u) => {
-      const carriedHp = heroHpRef.current.get(u.uid);
-      return carriedHp === undefined ? u : { ...u, hp: Math.max(1, Math.min(u.maxHp, carriedHp)), alive: carriedHp > 0 };
-    });
-    const enemyUnits = loc.enemies.map((e, i) => enemyToUnit(e, i));
-    const nextUnits = [
-      ...heroUnits.map((u) => ({ ...u, attackTimer: 0 })),
-      ...enemyUnits.map((u) => ({ ...u, attackTimer: u.attackInterval })),
-    ];
-    unitsRef.current = nextUnits;
+    unitsRef.current = localUnits;
     lastCombatRenderRef.current = performance.now();
     battleStartedAtRef.current = now;
-    if (combatPresentationVisibleRef.current) setUnits(nextUnits);
+    if (combatPresentationVisibleRef.current) setUnits(localUnits);
     setBattleResult(null);
     setFloaters([]);
     resolvingRef.current = false;
