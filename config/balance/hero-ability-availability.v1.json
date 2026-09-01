@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "auditVersion": "hero-ability-availability-2026.08.23-v1",
+  "auditVersion": "hero-ability-availability-2026.09.01-v2",
   "status": "repository-audit",
   "live": false,
   "catalogue": {
@@ -21,11 +21,11 @@
     "legacyDescriptionsDriveCombat": false
   },
   "classTraits": [
-    { "class": "knight", "label": "Warrior", "effect": "def_multiplier", "value": 1.05, "status": "implemented-server-normal-combat" },
-    { "class": "assassin", "label": "Assassin", "effect": "dodge_points", "value": 0.08, "status": "implemented-server-normal-combat" },
-    { "class": "druid", "label": "Druid", "effect": "max_hp_regen_every_3_seconds", "value": 0.015, "status": "implemented-server-normal-combat" },
-    { "class": "shepherd", "label": "Mage", "effect": "heal_on_attack", "value": 0.05, "status": "declared-not-consumed" },
-    { "class": "archer", "label": "Crossbowman", "effect": null, "value": null, "status": "unavailable" }
+    { "class": "knight", "label": "Warrior", "effect": "max_hp_multiplier", "value": 1.15, "status": "implemented-server-normal-combat" },
+    { "class": "assassin", "label": "Assassin", "effect": "dodge_points", "value": 0.05, "status": "implemented-server-normal-combat" },
+    { "class": "druid", "label": "Druid", "effect": "max_hp_multiplier", "value": 1.1, "secondaryEffect": "max_hp_regen_per_second", "secondaryValue": 0.004, "status": "implemented-server-normal-combat" },
+    { "class": "shepherd", "label": "Mage", "effect": "damage_multiplier", "value": 1.1, "status": "implemented-server-normal-combat" },
+    { "class": "archer", "label": "Crossbowman", "effect": "attack_speed", "value": 0.08, "status": "implemented-server-normal-combat" }
   ],
   "playerVisiblePolicy": {
     "unavailableAbilityLabel": "Coming soon — not active in combat",
