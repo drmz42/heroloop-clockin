@@ -496,6 +496,9 @@ export function useGame() {
       combatRandomRef.current = seededCombatRandom(serverSeed);
       combatAccumulatorRef.current = 0;
       unitsRef.current = nextUnits;
+      nextUnits.forEach((unit) => {
+        if (unit.side === 'hero') heroHpRef.current.set(unit.uid, unit.hp);
+      });
       lastCombatRenderRef.current = performance.now();
       battleStartedAtRef.current = now;
       if (combatPresentationVisibleRef.current) setUnits(nextUnits);
