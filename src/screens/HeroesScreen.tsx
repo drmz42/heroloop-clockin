@@ -10,11 +10,11 @@ import type { GameApi } from '@/game/useGame';
 const FILTER_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
 const INACTIVE_COMBAT_LABEL = 'Coming soon — not active in combat';
 const CLASS_TRAITS: Record<HeroBase['heroClass'], { effect: string; active: boolean }> = {
-  knight: { effect: '+5% DEF in server-settled normal combat', active: true },
-  assassin: { effect: '+8 percentage points Dodge in server-settled normal combat', active: true },
-  druid: { effect: 'Regenerates 1.5% max HP every 3 seconds in server-settled normal combat', active: true },
-  shepherd: { effect: 'No active class trait yet', active: false },
-  archer: { effect: 'No active class trait yet', active: false },
+  knight: { effect: '+15% max HP in server-settled normal combat', active: true },
+  assassin: { effect: '+5 percentage points Dodge in server-settled normal combat', active: true },
+  druid: { effect: '+10% max HP and restores 1.2% max HP every 3 seconds in server-settled normal combat', active: true },
+  shepherd: { effect: '+10% damage in server-settled normal combat', active: true },
+  archer: { effect: '+8% attack speed in server-settled normal combat', active: true },
 };
 
 const STAR_COLORS = ['#fbbf24', '#a855f7', '#ef4444', '#ec4899'];

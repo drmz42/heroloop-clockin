@@ -831,7 +831,7 @@ export function useGame() {
               newFloaters.push({ id: floaterId.current++, targetUid: event.targetUid, value: event.amount, crit: false, heal: true, born: now });
             } else if (event.kind === 'miss') {
               newFloaters.push({ id: floaterId.current++, targetUid: event.targetUid, value: 0, crit: false, heal: false, miss: true, born: now });
-            } else {
+            } else if (event.kind === 'damage') {
               newFloaters.push({ id: floaterId.current++, targetUid: event.targetUid, value: event.amount, crit: event.critical, heal: false, born: now });
             }
           });

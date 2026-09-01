@@ -154,6 +154,8 @@ export interface CombatUnit {
   curseRemainingMs?: number;
   enraged?: boolean;
   summoned?: boolean;
+  effectCooldowns?: Record<string, number>;
+  /** @deprecated Legacy pending-wave snapshots migrate this value into effectCooldowns. */
   abilityTimer?: number;
   assistLowestHp?: boolean;
 }

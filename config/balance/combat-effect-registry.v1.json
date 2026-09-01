@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "registryVersion": "combat-effects-v1",
+  "runtimeBalanceVersion": "balance-v4-2026.09.01-v6-combat-effects-v1",
+  "activation": {
+    "staging": true,
+    "production": false,
+    "serverAuthoritative": true
+  },
+  "classTraits": {
+    "knight": { "maxHpMultiplier": 1.15 },
+    "assassin": { "dodgePoints": 5 },
+    "druid": { "maxHpMultiplier": 1.1, "regenMaxHpPerSecond": 0.004, "settlementIntervalMs": 3000 },
+    "shepherd": { "damageMultiplier": 1.1 },
+    "archer": { "attackSpeedMultiplier": 1.08 }
+  },
+  "damageTypes": {
+    "physical": { "runtime": true, "resistance": "defense" },
+    "flame": { "runtime": false, "resistance": "reserved" },
+    "toxin": { "runtime": false, "resistance": "reserved" },
+    "frost": { "runtime": false, "resistance": "reserved" },
+    "arcane": { "runtime": false, "resistance": "reserved" }
+  },
+  "penetration": {
+    "runtime": false,
+    "futureCapPoints": 35,
+    "futureMinimumAppliedResistancePoints": 25,
+    "activationRequiresServerOwnedStatsAndPowerRecalibration": true
+  },
+  "stacking": {
+    "roleAndAffixCooldownsAreIndependent": true,
+    "barrierKeepsHigherRemainingShield": true,
+    "curseAttackMultiplier": 0.88,
+    "minimumAttackIntervalMs": 600
+  },
+  "runtimeEffects": {
+    "role.support-heal": { "cooldownMs": 12000, "amount": { "kind": "targetMaxHpFraction", "value": 0.06 } },
+    "affix.mending-heal": { "cooldownMs": 14000, "amount": { "kind": "targetMaxHpFraction", "value": 0.06 } },
+    "role.caster-blast": { "cooldownMs": 10000, "amount": { "kind": "sourceAttackMultiplier", "value": 1.2 } },
+    "affix.lane-blast": { "cooldownMs": 12000, "amount": { "kind": "sourceAttackMultiplier", "value": 1.15 } },
+    "affix.barrier": { "cooldownMs": 14000, "amount": { "kind": "targetMaxHpFraction", "value": 0.1 } },
+    "affix.curse": { "cooldownMs": 14000, "durationMs": 8000, "attackMultiplier": 0.88 }
+  },
+  "events": {
+    "kinds": ["damage", "heal", "miss", "effect"],
+    "effectFields": ["effectId", "sourceUid", "targetUid", "amount", "durationMs"]
+  },
+  "migration": {
+    "legacyField": "abilityTimer",
+    "targetField": "effectCooldowns",
+    "rule": "Seed every active role and affix effect missing its own timer from the legacy value on the first live frame, then remove the legacy field."
+  },
+  "powerModel": {
+    "version": "power-v4-combat-effects-2026.09.01-v1",
+    "formulaChanged": false,
+    "included": ["five-live-generic-class-traits"],
+    "excludedUntilSimulationAndApproval": ["typed-elemental-damage", "resistances", "penetration", "named-hero-abilities", "status-effects"]
+  }
+}
