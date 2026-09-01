@@ -88,6 +88,7 @@
     "check:technical-tooling": "bash scripts/check-technical-tooling.sh",
     "audit:dependencies": "npm audit --omit=dev --audit-level=high",
     "todo:query": "node scripts/todo-query.mjs",
+    "todo:list": "sudo -n /usr/local/sbin/heroloop-todo-transaction list",
     "todo:format": "node scripts/todo-format.mjs",
     "todo:review": "bash scripts/todo-gemini-review.sh --working",
     "check:nginx-security": "node scripts/check-nginx-security-contract.mjs",
