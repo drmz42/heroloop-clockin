@@ -25,6 +25,7 @@ import { MAX_ENCHANT_LEVEL } from '@/game/enchant';
 import { goldRewardForLanes } from '@/game/goldRewards';
 import { advanceCombatFrame, combatResolution, seededCombatRandom } from '../../supabase/functions/player-sync/combat-step.mjs';
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
+import { createCombatSession } from '@/game/combat-session.mjs';
 
 const COMBAT_SPEED = 1;
 const COMBAT_LOOP_INTERVAL_MS = 50;
@@ -303,7 +304,7 @@ export function useGame() {
   const combatAccumulatorRef = useRef(0);
   const combatRandomRef = useRef<() => number>(Math.random);
   const normalCombatWaveRef = useRef<NormalCombatWave | null>(null);
-  const combatSpawnSequenceRef = useRef(0);
+  const combatSessionRef = useRef(createCombatSession());
   const offlineSettlementKeyRef = useRef('');
   const chestOpeningRef = useRef(false);
   const storeBusyRef = useRef(false);
@@ -311,10 +312,7 @@ export function useGame() {
   const hydrateServerState = useCallback((remoteState: unknown) => {
     setState(normalizeState(remoteState as Partial<GameState>));
     setHydrationVersion((version) => version + 1);
-    setUnits([]);
-    unitsRef.current = [];
-    heroHpRef.current.clear();
-  }, [setUnits]);
+  }, []);
 
   const applyServerRevision = useCallback((revision: number) => {
     if (!Number.isSafeInteger(revision) || revision < 1) return;
@@ -413,7 +411,8 @@ export function useGame() {
     const st = stateRef.current;
     const now = Date.now();
     const serverNormalCombat = tokenomicsEnabled && !forceBoss && !st.bossBattleActive;
-    const sequence = ++combatSpawnSequenceRef.current;
+    const generation = combatSessionRef.current.begin({ locationId, teamUids: [...teamUids], forceBoss: Boolean(forceBoss) });
+    if (generation === null) return;
     const fullTeam = teamUids
       .map((uid) => st.ownedHeroes.find((h) => h.uid === uid))
       .filter((h): h is OwnedHero => Boolean(h));
@@ -451,10 +450,11 @@ export function useGame() {
         location: locationId,
         idempotency_key: createIdempotencyKey(),
       });
-      if (sequence !== combatSpawnSequenceRef.current) return;
+      if (!combatSessionRef.current.isCurrent(generation)) return;
       if (!started || typeof started.start_key !== 'string' || !Array.isArray(started.initial_units)) {
         resolvingRef.current = false;
         normalCombatWaveRef.current = null;
+        combatSessionRef.current.markRecovering(generation);
         setCombatStartRetry((attempt) => attempt + 1);
         return;
       }
@@ -465,6 +465,7 @@ export function useGame() {
         || !Number.isSafeInteger(serverSeed) || !Number.isFinite(availableAt)) {
         resolvingRef.current = false;
         normalCombatWaveRef.current = null;
+        combatSessionRef.current.markRecovering(generation);
         setCombatStartRetry((attempt) => attempt + 1);
         return;
       }
@@ -479,6 +480,7 @@ export function useGame() {
         if (!base) {
           resolvingRef.current = false;
           normalCombatWaveRef.current = null;
+          combatSessionRef.current.markRecovering(generation);
           setCombatStartRetry((attempt) => attempt + 1);
           return;
         }
@@ -502,6 +504,7 @@ export function useGame() {
       lastCombatRenderRef.current = performance.now();
       battleStartedAtRef.current = now;
       if (combatPresentationVisibleRef.current) setUnits(nextUnits);
+      combatSessionRef.current.markPlaying(generation);
       resolvingRef.current = false;
       combatWakeRef.current();
       return;
@@ -515,6 +518,7 @@ export function useGame() {
     if (combatPresentationVisibleRef.current) setUnits(localUnits);
     setBattleResult(null);
     setFloaters([]);
+    combatSessionRef.current.markPlaying(generation);
     resolvingRef.current = false;
     combatWakeRef.current();
   }, [setFloaters, setUnits]);
@@ -525,8 +529,12 @@ export function useGame() {
     if (state.walletAddress && state.team.length > 0) {
       spawnBattle(state.currentLocation, state.team);
     } else {
+      combatSessionRef.current.reset();
+      normalCombatWaveRef.current = null;
+      resolvingRef.current = false;
       unitsRef.current = [];
       setUnits([]);
+      heroHpRef.current.clear();
     }
     // Keep battle units and portraits aligned with the exact saved formation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -546,6 +554,8 @@ export function useGame() {
     // online; only offline/hidden-tab catch-up is gated by the active window.
     if (!st.walletAddress) return;
     const serverWave = normalCombatWaveRef.current;
+    const combatGeneration = combatSessionRef.current.markSettling();
+    if (combatGeneration === null) return;
     if (tokenomicsEnabled && serverWave) {
       normalCombatWaveRef.current = null;
       deadHeroUids.forEach((uid) => heroHpRef.current.delete(uid));
@@ -563,7 +573,9 @@ export function useGame() {
           start_key: serverWave.startKey,
           idempotency_key: serverWave.completionKey,
         });
+        if (!combatSessionRef.current.isCurrent(combatGeneration)) return;
         if (!completed) {
+          combatSessionRef.current.markRecovering(combatGeneration);
           setCombatStartRetry((attempt) => attempt + 1);
           return;
         }
@@ -585,6 +597,7 @@ export function useGame() {
             equippedStatLines,
           }),
         }));
+        combatSessionRef.current.markIdle(combatGeneration);
         setBattleResult({
           win: authoritativeWin,
           gold: Math.max(0, Number(completed.rewards?.gold) || 0),
@@ -680,6 +693,7 @@ export function useGame() {
       }
       return next;
     });
+    combatSessionRef.current.markIdle(combatGeneration);
     setBattleResult({
       win: allCleared,
       gold: tokenomicsEnabled ? 0 : gold,
@@ -931,7 +945,9 @@ export function useGame() {
   }, [setFloaters, subscribeCombatPresentation]);
 
   useEffect(() => {
-    if (!battleResult || pausedRef.current || !autoRef.current) return;
+    if (!battleResult || pausedRef.current) return;
+    const pendingRequest = combatSessionRef.current.snapshot().pendingRequest;
+    if (!pendingRequest && !autoRef.current) return;
     // Keep the reward handoff visible without leaving cleared enemy lanes
     // empty long enough to look stalled.
     const delay = battleResult.win ? 250 : 800;
@@ -940,7 +956,11 @@ export function useGame() {
     const spawnIfVisible = () => {
       if (!ready || spawned || document.visibilityState !== 'visible') return;
       spawned = true;
-      void spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
+      void spawnBattle(
+        pendingRequest?.locationId ?? stateRef.current.currentLocation,
+        pendingRequest?.teamUids ?? stateRef.current.team,
+        pendingRequest?.forceBoss,
+      );
     };
     const t = window.setTimeout(() => { ready = true; spawnIfVisible(); }, delay);
     document.addEventListener('visibilitychange', spawnIfVisible);
@@ -2217,6 +2237,9 @@ export function useGame() {
 
   const resetAccount = useCallback(() => {
     const initial = makeInitialState();
+    combatSessionRef.current.reset();
+    normalCombatWaveRef.current = null;
+    resolvingRef.current = false;
     setState(initial);
     setUnits([]);
     unitsRef.current = [];
