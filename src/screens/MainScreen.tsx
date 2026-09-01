@@ -1086,6 +1086,8 @@ function TestControls({ game }: { game: GameApi }) {
   const [busy, setBusy] = useState(false);
   const [crediting, setCrediting] = useState(false);
   const [creditingGold, setCreditingGold] = useState(false);
+  const [creditingAccountXp, setCreditingAccountXp] = useState(false);
+  const [creditingFormationXp, setCreditingFormationXp] = useState(false);
   const [done, setDone] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const armed = confirm.toUpperCase() === 'DELETE';
@@ -1103,6 +1105,20 @@ function TestControls({ game }: { game: GameApi }) {
     setCreditingGold(true);
     await game.creditTestGold();
     setCreditingGold(false);
+  };
+
+  const creditAccountXp = async () => {
+    if (creditingAccountXp) return;
+    setCreditingAccountXp(true);
+    await game.creditTestAccountXp();
+    setCreditingAccountXp(false);
+  };
+
+  const creditFormationXp = async () => {
+    if (creditingFormationXp) return;
+    setCreditingFormationXp(true);
+    await game.creditTestFormationXp();
+    setCreditingFormationXp(false);
   };
 
   const wipe = async () => {
@@ -1126,8 +1142,8 @@ function TestControls({ game }: { game: GameApi }) {
       <div className="absolute right-3 top-14 z-40 flex flex-col items-stretch gap-1">
         <span className="test-marker">TESTER</span>
         <button type="button" className="test-btn test-btn-gold" disabled={creditingGold} onClick={() => void creditGold()}>{creditingGold ? 'Crediting…' : '+10k Gold'}</button>
-        <button type="button" className="test-btn test-btn-gold" onClick={() => game.creditTestAccountXp(2000)}>+2k Account XP</button>
-        <button type="button" className="test-btn test-btn-gold" onClick={() => game.creditTestFormationXp(2000)}>+2k Formation XP</button>
+        <button type="button" className="test-btn test-btn-gold" disabled={creditingAccountXp} onClick={() => void creditAccountXp()}>{creditingAccountXp ? 'Crediting…' : '+2k Account XP'}</button>
+        <button type="button" className="test-btn test-btn-gold" disabled={creditingFormationXp} onClick={() => void creditFormationXp()}>{creditingFormationXp ? 'Crediting…' : '+2k Formation XP'}</button>
         <button type="button" className="test-btn test-btn-green" disabled={crediting} onClick={() => void creditTokens()}>{crediting ? 'Crediting…' : '+10k $HERO'}</button>
         <button type="button" className="test-btn test-btn-reset" onClick={() => setOpen(true)}>Delete account</button>
       </div>

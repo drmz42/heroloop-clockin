@@ -53,6 +53,8 @@ const commandActions = new Set([
   "promo_redeem",
   "tester_credit_tokens",
   "tester_credit_gold",
+  "tester_credit_account_xp",
+  "tester_credit_formation_xp",
   "hero_summon",
   "ascension_focus_set",
   "hero_ascend",
@@ -370,7 +372,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
     try {
       const requestedAction = String(parsed.value.action);
       const rateLimit = await consumeRateLimit(identity.playerId,
-        requestedAction === "tester_credit_gold" ? "tester_credit_tokens" : requestedAction);
+        requestedAction.startsWith("tester_credit_") ? "tester_credit_tokens" : requestedAction);
       if (!rateLimit.allowed) {
         return errorResponse(429, "rate_limited", requestId, {
           "retry-after": String(rateLimit.retryAfter),
@@ -508,6 +510,21 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
         const result = await databaseJson(
           "SELECT heroloop_api.tester_credit_gold($1::uuid) AS result",
           [identity.playerId],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        return errorResponse(400, "tester_credit_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "tester_credit_account_xp" || parsed.value.action === "tester_credit_formation_xp") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      if (!testerControlsEnabled) return errorResponse(404, "not_found", requestId);
+      try {
+        const kind = parsed.value.action === "tester_credit_account_xp" ? "account_xp" : "formation_xp";
+        const result = await databaseJson(
+          "SELECT heroloop_api.tester_credit_progression($1::uuid, $2::text) AS result",
+          [identity.playerId, kind],
         );
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
       } catch {

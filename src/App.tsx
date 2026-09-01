@@ -74,7 +74,6 @@ function App() {
   const applyServerPityStatus = game.applyServerPityStatus;
   const applyServerAscensionFocus = game.applyServerAscensionFocus;
   const setServerTokenBalance = game.setServerTokenBalance;
-  const hydrationVersion = game.hydrationVersion;
   const pendingTokens = tokenomics.status?.pending_tokens ?? 0;
   const boostStatus = tokenomics.status?.boost ?? null;
   const pityStatus = tokenomics.status?.pity ?? null;
@@ -177,7 +176,7 @@ function App() {
   useEffect(() => {
     if (serverTokenBalance === undefined) return;
     setServerTokenBalance(serverTokenBalance);
-  }, [serverTokenBalance, hydrationVersion, setServerTokenBalance]);
+  }, [serverTokenBalance, setServerTokenBalance]);
 
   useEffect(() => {
     if (!boostStatus) return;

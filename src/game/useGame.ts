@@ -1196,26 +1196,21 @@ export function useGame() {
     return true;
   }, []);
 
-  const creditTestAccountXp = useCallback((amount: number) => {
-    const safeAmount = Math.max(0, Math.floor(amount));
-    if (safeAmount <= 0) return;
-    setState((prev) => ({ ...prev, accountXp: Math.min(MAX_ACCOUNT_XP, prev.accountXp + safeAmount), accountLevel: accountLevelFromXp(Math.min(MAX_ACCOUNT_XP, prev.accountXp + safeAmount)) }));
-  }, []);
+  const creditTestAccountXp = useCallback(async (): Promise<boolean> => {
+    const result = await playerSync<{ state: GameState; revision: number }>('tester_credit_account_xp');
+    if (!result?.state || !Number.isSafeInteger(result.revision)) return false;
+    setServerRevisionHint(result.revision);
+    hydrateServerState(result.state);
+    return true;
+  }, [hydrateServerState]);
 
-  const creditTestFormationXp = useCallback((amount: number) => {
-    const safeAmount = Math.max(0, Math.floor(amount));
-    if (safeAmount <= 0) return;
-    setState((prev) => ({
-      ...prev,
-      ownedHeroes: prev.ownedHeroes.map((hero) => {
-        if (!prev.team.includes(hero.uid) || hero.level >= prev.accountLevel) return hero;
-        const advanced = advanceHeroXp(hero.level, hero.xp, safeAmount);
-        return advanced.level >= prev.accountLevel
-          ? { ...hero, level: prev.accountLevel, xp: 0 }
-          : { ...hero, level: advanced.level, xp: advanced.remaining };
-      }),
-    }));
-  }, []);
+  const creditTestFormationXp = useCallback(async (): Promise<boolean> => {
+    const result = await playerSync<{ state: GameState; revision: number }>('tester_credit_formation_xp');
+    if (!result?.state || !Number.isSafeInteger(result.revision)) return false;
+    setServerRevisionHint(result.revision);
+    hydrateServerState(result.state);
+    return true;
+  }, [hydrateServerState]);
 
   const creditServerTokens = useCallback((amount: number) => {
     const safeAmount = Math.max(0, Math.floor(amount));
