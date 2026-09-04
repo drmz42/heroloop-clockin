@@ -260,6 +260,22 @@ function isStatementTimeout(error: unknown): boolean {
   return code === "57014" || message.includes("canceling statement due to statement timeout");
 }
 
+function isLockTimeout(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  const code = isRecord(error) && typeof error.code === "string" ? error.code : "";
+  return code === "55P03" || message.includes("canceling statement due to lock timeout");
+}
+
+async function retryLockTimeoutOnce<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (!isLockTimeout(error)) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return await operation();
+  }
+}
+
 async function databaseJsonReadRetryOnce(queryText: string, args: unknown[]): Promise<JsonRecord> {
   try {
     return await databaseJson(queryText, args);
@@ -995,7 +1011,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
         return errorResponse(400, payloadError ?? "normal_combat_invalid_location", requestId);
       }
       try {
-        const result = await withDatabase(async (client) => {
+        const result = await retryLockTimeoutOnce(() => withDatabase(async (client) => {
           await client.queryArray("BEGIN");
           try {
             const preparedQuery = await client.queryObject<{ result: unknown }>(
@@ -1056,7 +1072,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
             await client.queryArray("ROLLBACK");
             throw error;
           }
-        });
+        }));
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
       } catch (error) {
         const code = databaseErrorCode(error, [
