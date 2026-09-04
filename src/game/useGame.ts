@@ -26,6 +26,8 @@ import { goldRewardForLanes } from '@/game/goldRewards';
 import { advanceCombatFrame, combatResolution, seededCombatRandom } from '../../supabase/functions/player-sync/combat-step.mjs';
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
 import { createCombatSession } from '@/game/combat-session.mjs';
+import { COMBAT_TIMELINE_VERSION, parseCombatTimeline } from '../../supabase/functions/player-sync/combat-timeline.mjs';
+import type { CombatTimelineEvent } from '../../supabase/functions/player-sync/combat-timeline.mjs';
 
 const COMBAT_SPEED = 1;
 const COMBAT_LOOP_INTERVAL_MS = 50;
@@ -212,6 +214,8 @@ interface NormalCombatWave {
   elapsedMs: number;
   nextAutoPotion: number;
   autoPotions: NormalCombatAutoPotion[];
+  timeline: CombatTimelineEvent[] | null;
+  nextTimeline: number;
 }
 
 interface NormalCombatAutoPotion {
@@ -227,7 +231,29 @@ interface NormalCombatStartResult {
   seed: number;
   available_at: string;
   initial_units: Array<Partial<CombatUnit> & Pick<CombatUnit, 'uid' | 'side'> & { lane: number }>;
-  outcome?: { auto_potions?: NormalCombatAutoPotion[] };
+  outcome?: { auto_potions?: NormalCombatAutoPotion[]; elapsed_ms?: number; timeline_version?: number; timeline?: unknown };
+}
+
+function combatFloater(event: {
+  kind: CombatTimelineEvent['kind']; sourceUid: string; targetUid: string;
+  amount?: number; critical?: boolean; effectId?: string;
+}, id: number, born: number): FloatingNumber {
+  const amount = Math.max(0, Math.floor(event.amount ?? 0));
+  if (event.kind === 'miss') return { id, sourceUid: event.sourceUid, targetUid: event.targetUid, value: 0, crit: false, heal: false, miss: true, born };
+  if (event.kind === 'damage') return { id, sourceUid: event.sourceUid, targetUid: event.targetUid, value: amount, crit: Boolean(event.critical), heal: false, born };
+  if (event.kind === 'heal' || event.kind === 'potion') return {
+    id, targetUid: event.targetUid, value: amount, crit: false, heal: true,
+    label: event.kind === 'potion' ? `POTION +${amount}` : undefined, effect: event.kind === 'potion', born,
+  };
+  const effect = {
+    'role.support-heal': [`MEND +${amount}`, true],
+    'affix.mending-heal': [`MEND +${amount}`, true],
+    'role.caster-blast': [`BLAST -${amount}`, false],
+    'affix.lane-blast': [`BLAST -${amount}`, false],
+    'affix.barrier': [`BARRIER +${amount}`, false],
+    'affix.curse': ['CURSE', false],
+  }[event.effectId ?? ''] as [string, boolean] | undefined;
+  return { id, sourceUid: event.sourceUid, targetUid: event.targetUid, value: amount, crit: false, heal: effect?.[1] ?? false, label: effect?.[0] ?? 'EFFECT', effect: true, born };
 }
 
 interface NormalCombatCompleteResult {
@@ -494,7 +520,25 @@ export function useGame() {
         elapsedMs: 0,
         nextAutoPotion: 0,
         autoPotions: Array.isArray(started.outcome?.auto_potions) ? started.outcome.auto_potions : [],
+        timeline: null,
+        nextTimeline: 0,
       };
+      const timelinePayload = started.outcome?.timeline;
+      const timelineVersion = Number(started.outcome?.timeline_version);
+      const timelineElapsed = Number(started.outcome?.elapsed_ms);
+      if (timelinePayload !== undefined || started.outcome?.timeline_version !== undefined) {
+        const timeline = timelineVersion === COMBAT_TIMELINE_VERSION && Number.isSafeInteger(timelineElapsed)
+          ? parseCombatTimeline(timelinePayload, new Set(nextUnits.map((unit) => unit.uid)), timelineElapsed)
+          : null;
+        if (!timeline) {
+          resolvingRef.current = false;
+          normalCombatWaveRef.current = null;
+          combatSessionRef.current.markRecovering(generation);
+          setCombatStartRetry((attempt) => attempt + 1);
+          return;
+        }
+        normalCombatWaveRef.current.timeline = timeline;
+      }
       combatRandomRef.current = seededCombatRandom(serverSeed);
       combatAccumulatorRef.current = 0;
       unitsRef.current = nextUnits;
@@ -833,22 +877,23 @@ export function useGame() {
                   finalUnits = finalUnits.map((unit) => unit.uid === potion.hero_uid && unit.alive
                     ? { ...unit, hp: Math.min(unit.maxHp, unit.hp + potion.hp_restore) }
                     : unit);
-                  newFloaters.push({ id: floaterId.current++, targetUid: potion.hero_uid, value: potion.hp_restore, crit: false, heal: true, born: now });
+                  if (!serverWave.timeline) newFloaters.push({ id: floaterId.current++, sourceUid: potion.hero_uid, targetUid: potion.hero_uid, value: potion.hp_restore, crit: false, heal: true, born: now });
                   pendingPotionFx = { uid: potion.hero_uid, born: now };
                 }
               }
             }
           }
           combatAccumulatorRef.current = remaining;
-          events.forEach((event) => {
-            if (event.kind === 'heal') {
-              newFloaters.push({ id: floaterId.current++, targetUid: event.targetUid, value: event.amount, crit: false, heal: true, born: now });
-            } else if (event.kind === 'miss') {
-              newFloaters.push({ id: floaterId.current++, targetUid: event.targetUid, value: 0, crit: false, heal: false, miss: true, born: now });
-            } else if (event.kind === 'damage') {
-              newFloaters.push({ id: floaterId.current++, targetUid: event.targetUid, value: event.amount, crit: event.critical, heal: false, born: now });
+          const serverTimeline = normalCombatWaveRef.current;
+          const presentationEvents = serverTimeline?.timeline ? (() => {
+            const due: CombatTimelineEvent[] = [];
+            while (serverTimeline.nextTimeline < serverTimeline.timeline.length
+              && serverTimeline.timeline[serverTimeline.nextTimeline].elapsedMs <= serverTimeline.elapsedMs) {
+              due.push(serverTimeline.timeline[serverTimeline.nextTimeline++]);
             }
-          });
+            return due;
+          })() : events.map((event) => ({ ...event, sourceUid: 'sourceUid' in event ? event.sourceUid : event.targetUid }));
+          presentationEvents.forEach((event) => newFloaters.push(combatFloater(event, floaterId.current++, now)));
           const rewardLocation = buildLocation(stateRef.current.currentLocation, stateRef.current.team.length, stateRef.current.bossBattleActive);
           const finalHeroes = finalUnits.filter((fighter) => fighter.side === 'hero');
           const finalEnemies = finalUnits.filter((fighter) => fighter.side === 'enemy');

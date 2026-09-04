@@ -65,52 +65,52 @@ function HealthBar({ hp, maxHp, color }: { hp: number; maxHp: number; color: str
 }
 
 function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAlive, animationMode, targeted = false }: { unit: CombatUnit; floaters: FloatingNumber[]; side: 'hero' | 'enemy'; heroData?: OwnedHero; respawnSeconds?: number; opponentAlive: boolean; animationMode: GameState['battleAnimationMode']; targeted?: boolean }) {
-  const prevHp = useRef(unit.hp);
-  const prevTimer = useRef(unit.attackTimer);
+  const lastOutgoing = useRef(0);
+  const lastIncoming = useRef(0);
   const [attacking, setAttacking] = useState(false);
   const [hit, setHit] = useState(false);
   const [slash, setSlash] = useState(false);
   const [heal, setHeal] = useState(false);
   const [artFailed, setArtFailed] = useState(false);
   const myFloaters = floaters.filter((f) => f.targetUid === unit.uid);
+  const outgoingEvent = [...floaters].reverse().find((event) => event.sourceUid === unit.uid && event.id > lastOutgoing.current);
+  const incomingEvent = [...myFloaters].reverse().find((event) => event.id > lastIncoming.current && event.rewardGold === undefined);
   const motionEnabled = animationMode !== 'off';
 
   useEffect(() => {
     if (!motionEnabled || !unit.alive || !opponentAlive) {
       setAttacking(false); setHit(false); setSlash(false); setHeal(false);
-      prevHp.current = unit.hp;
-      prevTimer.current = unit.attackTimer;
       return undefined;
     }
-    if (prevTimer.current > unit.attackTimer && unit.attackTimer < 30 && unit.alive && opponentAlive) {
+    if (outgoingEvent) {
+      lastOutgoing.current = outgoingEvent.id;
       setAttacking(true);
       const t = setTimeout(() => setAttacking(false), 520);
       return () => clearTimeout(t);
     }
-    prevTimer.current = unit.attackTimer;
-  }, [unit.attackTimer, unit.alive, unit.hp, opponentAlive, motionEnabled]);
+    return undefined;
+  }, [outgoingEvent, unit.alive, opponentAlive, motionEnabled]);
 
   useEffect(() => {
     if (!motionEnabled) {
       setHit(false); setSlash(false); setHeal(false);
-      prevHp.current = unit.hp;
       return undefined;
     }
-    if (unit.hp < prevHp.current && unit.alive) {
+    if (!incomingEvent) return undefined;
+    lastIncoming.current = incomingEvent.id;
+    if (!incomingEvent.heal && (!incomingEvent.effect || incomingEvent.label?.startsWith('BLAST')) && unit.alive) {
       setHit(true); setSlash(true);
       const t1 = setTimeout(() => setHit(false), 220);
       const t2 = setTimeout(() => setSlash(false), 420);
-      prevHp.current = unit.hp;
       return () => { clearTimeout(t1); clearTimeout(t2); };
     }
-    if (unit.hp > prevHp.current) {
+    if (incomingEvent.heal) {
       setHeal(true);
       const t = setTimeout(() => setHeal(false), 620);
-      prevHp.current = unit.hp;
       return () => clearTimeout(t);
     }
-    prevHp.current = unit.hp;
-  }, [unit.hp, unit.alive, motionEnabled]);
+    return undefined;
+  }, [incomingEvent, unit.alive, motionEnabled]);
 
   const portraitSrc = (() => {
     if (side === 'enemy') return enemyArtSrc(unit.uid, unit.role);
@@ -134,13 +134,13 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
       {/* Floating damage numbers */}
       <div className="absolute -top-4 left-1/2 -translate-x-1/2 pointer-events-none z-20 w-24 h-16">
         {myFloaters.map((f) => (
-          <div key={f.id} className={`anim-float absolute left-1/2 -translate-x-1/2 font-bold whitespace-nowrap font-vt ${f.crit && !f.heal ? 'crit-floater' : f.rewardGold !== undefined ? 'text-amber-300 text-lg' : f.heal ? 'text-px-green text-2xl' : f.miss ? 'text-px-dim text-lg' : 'text-white text-2xl'}`} style={{ textShadow: f.crit ? '0 0 8px #f5c518, 2px 2px 0 #3d2008' : '2px 2px 0 #000' }}>
+          <div key={f.id} className={`anim-float absolute left-1/2 -translate-x-1/2 font-bold whitespace-nowrap font-vt ${f.crit && !f.heal ? 'crit-floater' : f.rewardGold !== undefined ? 'text-amber-300 text-lg' : f.effect ? 'text-cyan-200 text-sm' : f.heal ? 'text-px-green text-2xl' : f.miss ? 'text-px-dim text-lg' : 'text-white text-2xl'}`} style={{ textShadow: f.crit ? '0 0 8px #f5c518, 2px 2px 0 #3d2008' : '2px 2px 0 #000' }}>
             {f.crit && !f.heal && f.value > 0 ? (
               <span className="crit-hit-number" aria-label={`Critical hit, ${f.value} damage`}>
                 <span className="crit-blood crit-blood-a" /><span className="crit-blood crit-blood-b" /><span className="crit-blood crit-blood-c" />
                 <span className="crit-label">CRIT!</span><span className="crit-damage">-{f.value}</span>
               </span>
-            ) : f.rewardGold !== undefined ? `+${f.rewardGold} Gold · +${f.rewardXp} XP` : f.miss ? 'MISS' : f.heal ? `+${f.value}` : `-${f.value}`}
+            ) : f.label ?? (f.rewardGold !== undefined ? `+${f.rewardGold} Gold · +${f.rewardXp} XP` : f.miss ? 'MISS' : f.heal ? `+${f.value}` : `-${f.value}`)}
           </div>
         ))}
       </div>

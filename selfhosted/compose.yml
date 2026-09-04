@@ -114,6 +114,7 @@ services:
       - ./api:/app/api:ro
       - ../supabase/functions/player-sync/authority.mjs:/app/shared/authority.mjs:ro
       - ../supabase/functions/player-sync/combat-step.mjs:/app/shared/combat-step.mjs:ro
+      - ../supabase/functions/player-sync/combat-timeline.mjs:/app/shared/combat-timeline.mjs:ro
       - ../supabase/functions/player-sync/normal-combat.mjs:/app/shared/normal-combat.mjs:ro
       - ../supabase/functions/player-sync/registration.js:/app/shared/registration.js:ro
       - ../supabase/functions/player-sync/save-schema.mjs:/app/shared/save-schema.mjs:ro

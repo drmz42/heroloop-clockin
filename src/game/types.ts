@@ -170,6 +170,9 @@ export interface FloatingNumber {
   rewardGold?: number;
   rewardXp?: number;
   born: number;
+  sourceUid?: string;
+  label?: string;
+  effect?: boolean;
 }
 
 // ── Daily Quests ──────────────────────────────────────────────────────────
