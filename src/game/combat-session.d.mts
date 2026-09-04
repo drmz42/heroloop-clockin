@@ -11,12 +11,14 @@ export interface CombatSessionSnapshot {
   generation: number;
   activeRequest: CombatSessionRequest | null;
   pendingRequest: CombatSessionRequest | null;
+  lastProgressAt: number;
 }
 
 export interface CombatSession {
   begin(request: CombatSessionRequest): number | null;
   isCurrent(generation: number): boolean;
   markPlaying(generation: number): boolean;
+  markProgress(generation: number): boolean;
   markSettling(): number | null;
   markIdle(generation: number): boolean;
   markRecovering(generation: number): boolean;
@@ -24,4 +26,10 @@ export interface CombatSession {
   snapshot(): CombatSessionSnapshot;
 }
 
-export function createCombatSession(): CombatSession;
+export function createCombatSession(now?: () => number): CombatSession;
+export function combatRecoveryDelay(attempt: number, reason: string): number;
+export function stalledCombatGeneration(
+  snapshot: CombatSessionSnapshot,
+  observedAt: number,
+  limits?: Partial<Record<CombatSessionPhase, number>>,
+): number | null;

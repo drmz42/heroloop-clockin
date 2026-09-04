@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
 import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, ScrollText, DoorOpen, HeartPulse, Gem, Skull, BookOpen } from 'lucide-react';
 import { Arena } from '@/components/Arena';
+import { CombatErrorBoundary } from '@/components/CombatErrorBoundary';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
 import { buildLocation, canMineTokens, equippedEnchantResonance, equippedSetBonus, getEquippedItems, heroStats, locationUnlockLevel, locationLevelRange, LOCATION_RANGES, SET_BONUS_PERCENT, teamPower as calculateHeroPower } from '@/game/engine';
@@ -521,7 +522,20 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
               )}
             </div>
           )}
-          <CombatPresentationLayer game={game} activeDungeon={activeDungeon} dungeonUnits={dungeonUnits} dungeonFloaters={dungeonFloaters} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
+          <CombatErrorBoundary
+            resetKey={`${activeDungeon?.encounter_id ?? 'normal'}:${game.state.currentLocation}:${game.state.team.join('|')}`}
+            onRetry={activeDungeon ? undefined : game.retry}
+          >
+            <CombatPresentationLayer game={game} activeDungeon={activeDungeon} dungeonUnits={dungeonUnits} dungeonFloaters={dungeonFloaters} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
+          </CombatErrorBoundary>
+          {!activeDungeon && game.combatRecovery.status !== 'healthy' && (
+            <div className="absolute inset-x-0 bottom-3 z-30 flex justify-center px-3" data-combat-recovery={game.combatRecovery.status}>
+              <div className="game-control flex items-center gap-2 bg-[#17130d]/95 px-3 py-2 font-vt text-xs text-amber-100">
+                <span>{game.combatRecovery.status === 'retrying' ? `Battle link recovering · attempt ${game.combatRecovery.attempt}/5` : 'Battle link paused after repeated failures'}</span>
+                {game.combatRecovery.status === 'failed' && <button type="button" className="font-bold text-amber-300 underline" onClick={game.retry}>Retry</button>}
+              </div>
+            </div>
+          )}
           {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={setActiveDungeon} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold })} />}
           {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Final reward preview:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Granted together exactly once by the server</small></> : <><span><ScrollText size={14} /> 1 SUMMON SCROLL</span><span><Package size={14} /> 1 DUNGEON CHEST</span><small>Testing build · rewards are displayed but not minted</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
           {!activeDungeon && <div className="absolute right-3 top-3 z-30 flex items-center gap-1.5">

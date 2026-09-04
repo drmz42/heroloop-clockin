@@ -25,12 +25,13 @@ import { MAX_ENCHANT_LEVEL } from '@/game/enchant';
 import { goldRewardForLanes } from '@/game/goldRewards';
 import { advanceCombatFrame, combatResolution, seededCombatRandom } from '../../supabase/functions/player-sync/combat-step.mjs';
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
-import { createCombatSession } from '@/game/combat-session.mjs';
+import { combatRecoveryDelay, createCombatSession, stalledCombatGeneration } from '@/game/combat-session.mjs';
 import { COMBAT_TIMELINE_VERSION, parseCombatTimeline } from '../../supabase/functions/player-sync/combat-timeline.mjs';
 import type { CombatTimelineEvent } from '../../supabase/functions/player-sync/combat-timeline.mjs';
 
 const COMBAT_SPEED = 1;
 const COMBAT_LOOP_INTERVAL_MS = 50;
+const NORMAL_COMBAT_START_INTERVAL_MS = 3_100;
 const COMBAT_PRESENTATION_INTERVAL_MS: Record<GameState['battleAnimationMode'], number> = {
   off: 1_000,
   light: 750,
@@ -225,6 +226,16 @@ interface NormalCombatAutoPotion {
   hp_restore: number;
 }
 
+export interface CombatRecoveryState {
+  status: 'healthy' | 'retrying' | 'failed';
+  attempt: number;
+  retryAt: number | null;
+  reason: string;
+}
+
+const MAX_COMBAT_RECOVERY_ATTEMPTS = 5;
+const HEALTHY_COMBAT: CombatRecoveryState = { status: 'healthy', attempt: 0, retryAt: null, reason: '' };
+
 interface NormalCombatStartResult {
   start_key: string;
   location: number;
@@ -298,7 +309,7 @@ export function useGame() {
   }, [updateCombatPresentation]);
   const setPotionFx = useCallback((potionFx: { uid: string; born: number } | null) => updateCombatPresentation({ potionFx }), [updateCombatPresentation]);
   const [battleResult, setBattleResult] = useState<BattleResult | null>(null);
-  const [combatStartRetry, setCombatStartRetry] = useState(0);
+  const [combatRecovery, setCombatRecovery] = useState<CombatRecoveryState>(HEALTHY_COMBAT);
   const [autoProgress, setAutoProgress] = useState(true);
   const [paused, setPaused] = useState(false);
   const [respawnCountdowns, setRespawnCountdowns] = useState<Record<string, number>>({});
@@ -331,6 +342,8 @@ export function useGame() {
   const combatRandomRef = useRef<() => number>(Math.random);
   const normalCombatWaveRef = useRef<NormalCombatWave | null>(null);
   const combatSessionRef = useRef(createCombatSession());
+  const combatRecoveryAttemptRef = useRef(0);
+  const lastNormalCombatStartAtRef = useRef(0);
   const offlineSettlementKeyRef = useRef('');
   const chestOpeningRef = useRef(false);
   const storeBusyRef = useRef(false);
@@ -384,6 +397,24 @@ export function useGame() {
           combatProgressSeconds: remote.boost.combatProgressSeconds,
         },
       };
+    });
+  }, []);
+
+  const queueCombatRecovery = useCallback((generation: number, reason: string) => {
+    if (!combatSessionRef.current.markRecovering(generation)) return;
+    resolvingRef.current = false;
+    normalCombatWaveRef.current = null;
+    const attempt = combatRecoveryAttemptRef.current + 1;
+    combatRecoveryAttemptRef.current = attempt;
+    if (attempt > MAX_COMBAT_RECOVERY_ATTEMPTS) {
+      setCombatRecovery({ status: 'failed', attempt, retryAt: null, reason });
+      return;
+    }
+    setCombatRecovery({
+      status: 'retrying',
+      attempt,
+      retryAt: Date.now() + combatRecoveryDelay(attempt, reason),
+      reason,
     });
   }, []);
 
@@ -460,7 +491,6 @@ export function useGame() {
       ...localEnemyUnits.map((unit) => ({ ...unit, attackTimer: unit.attackInterval })),
     ];
     if (serverNormalCombat) {
-      setCombatStartRetry(0);
       resolvingRef.current = true;
       // Keep the resolved wave visible until its authoritative replacement is
       // ready. On first entry, render a static local preview so network delay
@@ -472,16 +502,18 @@ export function useGame() {
       }
       setBattleResult(null);
       setFloaters([]);
+      const startWait = Math.max(0, lastNormalCombatStartAtRef.current + NORMAL_COMBAT_START_INTERVAL_MS - Date.now());
+      if (startWait > 0) await new Promise((resolve) => window.setTimeout(resolve, startWait));
+      if (!combatSessionRef.current.isCurrent(generation)) return;
+      lastNormalCombatStartAtRef.current = Date.now();
+      let startError = 'start_failed';
       const started = await playerSync<NormalCombatStartResult>('normal_combat_start', {
         location: locationId,
         idempotency_key: createIdempotencyKey(),
-      });
+      }, (message) => { startError = message; });
       if (!combatSessionRef.current.isCurrent(generation)) return;
       if (!started || typeof started.start_key !== 'string' || !Array.isArray(started.initial_units)) {
-        resolvingRef.current = false;
-        normalCombatWaveRef.current = null;
-        combatSessionRef.current.markRecovering(generation);
-        setCombatStartRetry((attempt) => attempt + 1);
+        queueCombatRecovery(generation, startError);
         return;
       }
       const serverLocation = Math.floor(Number(started.location));
@@ -489,10 +521,7 @@ export function useGame() {
       const availableAt = Date.parse(started.available_at);
       if (!Number.isSafeInteger(serverLocation) || serverLocation < 1 || serverLocation > 20
         || !Number.isSafeInteger(serverSeed) || !Number.isFinite(availableAt)) {
-        resolvingRef.current = false;
-        normalCombatWaveRef.current = null;
-        combatSessionRef.current.markRecovering(generation);
-        setCombatStartRetry((attempt) => attempt + 1);
+        queueCombatRecovery(generation, 'invalid_start');
         return;
       }
       const location = buildLocation(serverLocation, Math.max(1, started.initial_units.filter((unit) => unit.side === 'hero').length), false);
@@ -504,10 +533,7 @@ export function useGame() {
         const base = ownedHero ? ownedToUnit(ownedHero, st.inventory)
           : enemy ? enemyToUnit(enemy, serverUnit.lane) : null;
         if (!base) {
-          resolvingRef.current = false;
-          normalCombatWaveRef.current = null;
-          combatSessionRef.current.markRecovering(generation);
-          setCombatStartRetry((attempt) => attempt + 1);
+          queueCombatRecovery(generation, 'invalid_units');
           return;
         }
         nextUnits.push({ ...base, ...serverUnit } as CombatUnit);
@@ -531,10 +557,7 @@ export function useGame() {
           ? parseCombatTimeline(timelinePayload, new Set(nextUnits.map((unit) => unit.uid)), timelineElapsed)
           : null;
         if (!timeline) {
-          resolvingRef.current = false;
-          normalCombatWaveRef.current = null;
-          combatSessionRef.current.markRecovering(generation);
-          setCombatStartRetry((attempt) => attempt + 1);
+          queueCombatRecovery(generation, 'invalid_timeline');
           return;
         }
         normalCombatWaveRef.current.timeline = timeline;
@@ -549,6 +572,7 @@ export function useGame() {
       battleStartedAtRef.current = now;
       if (combatPresentationVisibleRef.current) setUnits(nextUnits);
       combatSessionRef.current.markPlaying(generation);
+      setCombatRecovery(HEALTHY_COMBAT);
       resolvingRef.current = false;
       combatWakeRef.current();
       return;
@@ -563,9 +587,11 @@ export function useGame() {
     setBattleResult(null);
     setFloaters([]);
     combatSessionRef.current.markPlaying(generation);
+    combatRecoveryAttemptRef.current = 0;
+    setCombatRecovery(HEALTHY_COMBAT);
     resolvingRef.current = false;
     combatWakeRef.current();
-  }, [setFloaters, setUnits]);
+  }, [queueCombatRecovery, setFloaters, setUnits]);
 
   const activeTeamKey = state.team.join('|');
   const respawnTeamKey = state.team.map((uid) => state.ownedHeroes.find((hero) => hero.uid === uid)?.respawnAt ?? 0).join('|');
@@ -576,6 +602,8 @@ export function useGame() {
       combatSessionRef.current.reset();
       normalCombatWaveRef.current = null;
       resolvingRef.current = false;
+      combatRecoveryAttemptRef.current = 0;
+      setCombatRecovery(HEALTHY_COMBAT);
       unitsRef.current = [];
       setUnits([]);
       heroHpRef.current.clear();
@@ -585,12 +613,12 @@ export function useGame() {
   }, [state.walletAddress, state.currentLocation, activeTeamKey, respawnTeamKey, hydrationVersion]);
 
   useEffect(() => {
-    if (combatStartRetry === 0 || paused || !state.walletAddress || state.team.length === 0) return;
+    if (combatRecovery.status !== 'retrying' || combatRecovery.retryAt === null || paused || !state.walletAddress || state.team.length === 0) return;
     const timer = window.setTimeout(() => {
       void spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
-    }, 3000);
+    }, Math.max(0, combatRecovery.retryAt - Date.now()));
     return () => window.clearTimeout(timer);
-  }, [activeTeamKey, combatStartRetry, paused, spawnBattle, state.currentLocation, state.team.length, state.walletAddress]);
+  }, [activeTeamKey, combatRecovery, paused, spawnBattle, state.team.length, state.walletAddress]);
 
   const awardBattle = useCallback((locationId: number, clearedLanes: number, wonHeroUids: string[], deadHeroUids: string[], allCleared: boolean) => {
     const st = stateRef.current;
@@ -613,14 +641,14 @@ export function useGame() {
       void (async () => {
         const delay = Math.max(0, serverWave.availableAt - Date.now());
         if (delay > 0) await new Promise((resolve) => window.setTimeout(resolve, delay));
+        let completionError = 'complete_failed';
         const completed = await playerSync<NormalCombatCompleteResult>('normal_combat_complete', {
           start_key: serverWave.startKey,
           idempotency_key: serverWave.completionKey,
-        });
+        }, (message) => { completionError = message; });
         if (!combatSessionRef.current.isCurrent(combatGeneration)) return;
         if (!completed) {
-          combatSessionRef.current.markRecovering(combatGeneration);
-          setCombatStartRetry((attempt) => attempt + 1);
+          queueCombatRecovery(combatGeneration, completionError);
           return;
         }
         mergeServerResourceState(completed.state);
@@ -642,6 +670,8 @@ export function useGame() {
           }),
         }));
         combatSessionRef.current.markIdle(combatGeneration);
+        combatRecoveryAttemptRef.current = 0;
+        setCombatRecovery(HEALTHY_COMBAT);
         setBattleResult({
           win: authoritativeWin,
           gold: Math.max(0, Number(completed.rewards?.gold) || 0),
@@ -746,7 +776,7 @@ export function useGame() {
       chest: tokenomicsEnabled ? false : chestDropped,
       overpowered,
     });
-  }, [mergeServerResourceState]);
+  }, [mergeServerResourceState, queueCombatRecovery]);
 
   const summonBoss = useCallback((remainingKeys?: number) => {
     const st = stateRef.current;
@@ -835,6 +865,8 @@ export function useGame() {
       last = now;
       const live = unitsRef.current;
       if (stateRef.current.walletAddress && !pausedRef.current && live.length > 0 && !resolvingRef.current) {
+        const activeGeneration = combatSessionRef.current.snapshot().generation;
+        combatSessionRef.current.markProgress(activeGeneration);
         // A respawning hero does not freeze the whole battlefield: it simply
         // does not fight (spawned as hp:0/alive:false), while living heroes and
         // monsters in their own lanes keep fighting.
@@ -939,6 +971,8 @@ export function useGame() {
         pendingPotionFx = null;
         return;
       }
+      const snapshot = combatSessionRef.current.snapshot();
+      combatSessionRef.current.markProgress(snapshot.generation);
       schedule(true);
     };
     combatWakeRef.current = () => schedule(true);
@@ -952,6 +986,28 @@ export function useGame() {
       combatWakeRef.current = () => undefined;
     };
   }, [awardBattle, setFloaters, setPotionFx, setUnits, tryAutoPotion]);
+
+  useEffect(() => {
+    if (!tokenomicsEnabled) return;
+    const check = () => {
+      if (document.visibilityState !== 'visible' || pausedRef.current || !stateRef.current.walletAddress) return;
+      const snapshot = combatSessionRef.current.snapshot();
+      const stalledGeneration = stalledCombatGeneration(snapshot, Date.now());
+      if (stalledGeneration !== null) queueCombatRecovery(stalledGeneration, `watchdog_${snapshot.phase}`);
+    };
+    const resume = () => {
+      if (document.visibilityState !== 'visible') return;
+      const snapshot = combatSessionRef.current.snapshot();
+      combatSessionRef.current.markProgress(snapshot.generation);
+      combatWakeRef.current();
+    };
+    const timer = window.setInterval(check, 5_000);
+    document.addEventListener('visibilitychange', resume);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', resume);
+    };
+  }, [queueCombatRecovery]);
 
   useEffect(() => {
     if (!paused) combatWakeRef.current();
@@ -2397,7 +2453,14 @@ export function useGame() {
   }, [settleServerEquipment, spawnBattle]);
 
   const collectOffline = useCallback(() => setOfflineEarnings(null), []);
-  const retry = useCallback(() => spawnBattle(stateRef.current.currentLocation, stateRef.current.team), [spawnBattle]);
+  const retry = useCallback(() => {
+    combatSessionRef.current.reset();
+    normalCombatWaveRef.current = null;
+    resolvingRef.current = false;
+    combatRecoveryAttemptRef.current = 0;
+    setCombatRecovery(HEALTHY_COMBAT);
+    void spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
+  }, [spawnBattle]);
 
   // ── Referrals ────────────────────────────────────────────────────────────
   const claimReferralReward = useCallback(() => {
@@ -2417,7 +2480,7 @@ export function useGame() {
   }, []);
 
   return {
-    state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, battleResult, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
+    state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, battleResult, combatRecovery, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
     offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
     starUpHero, promoteAllHeroes, sellHero, sellHeroes, toggleHeroLock, markHeroSeen,
