@@ -24,7 +24,7 @@ import { playerSync, supabase } from '@/game/backend';
 const SAVE_KEY = 'afk-heroes-save-v7';
 
 const SLOTS: ItemSlot[] = ['class_weapon', 'offhand', 'helmet', 'chest', 'gloves', 'boots', 'ring', 'amulet'];
-const EQUIPPED_SLOT_LABEL: Partial<Record<ItemSlot, string>> = { class_weapon: 'Weapon', chest: 'Chest' };
+const EQUIPPED_SLOT_LABEL: Partial<Record<ItemSlot, string>> = { class_weapon: 'Weapon', offhand: 'Offhand', chest: 'Chest' };
 const GRID_SIZE = 64;
 
 function CombatPresentationLayer({ game, activeDungeon, dungeonUnits, dungeonFloaters, dungeonBossScene, dungeonRoom }: {
