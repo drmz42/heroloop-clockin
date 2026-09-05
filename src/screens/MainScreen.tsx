@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
-import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, ScrollText, DoorOpen, HeartPulse, Gem, Skull, BookOpen } from 'lucide-react';
+import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, ScrollText, DoorOpen, HeartPulse, Gem, Skull, BookOpen } from 'lucide-react';
 import { Arena } from '@/components/Arena';
 import { CombatErrorBoundary } from '@/components/CombatErrorBoundary';
 import { HeroPortrait } from '@/components/HeroPortrait';
@@ -141,6 +141,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
   const [selectedResource, setSelectedResource] = useState<'summon-scroll' | 'boss-key' | null>(null);
   const [showDropRates, setShowDropRates] = useState(false);
   const [showZoomTip, setShowZoomTip] = useState(true);
+  const [showHeroDetails, setShowHeroDetails] = useState(true);
   const [showDungeonInfo, setShowDungeonInfo] = useState(false);
   const [activeDungeon, setActiveDungeon] = useState<DungeonCheckpoint | null>(null);
   const [dungeonFloaters, setDungeonFloaters] = useState<FloatingNumber[]>([]);
@@ -405,23 +406,46 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
             </div>
           )}
           {selectedHeroStats && (
-            <div className="grid grid-cols-2 gap-1">
-              {[
-                ['Attack', formatNum(selectedHeroStats.atk)],
-                ['Health', formatNum(selectedHeroStats.hp)],
-                ['Armor', formatNum(selectedHeroStats.def)],
-                ['Dodge', `${(selectedHeroStats.dodge * 100).toFixed(1)}%`],
-                ['Attack Speed', formatNum(selectedHeroStats.speed + selectedHeroStats.atkSpeed)],
-                ['Crit', `${(selectedHeroStats.critChance * 100).toFixed(1)}%`],
-                ['Crit Damage', `+${(selectedHeroStats.critDamage * 100).toFixed(0)}%`],
-                ['XP Bonus', `+${(activeTeamBonuses.xp * 100).toFixed(1)}%`],
-                ['Gold Bonus', `+${(activeTeamBonuses.gold * 100).toFixed(1)}%`],
-              ].map(([label, value]) => (
-                <div key={label} className="stat-tile flex min-h-[42px] flex-col justify-center px-2 py-1.5">
-                  <span className="text-[9px] font-semibold text-[#837f75]">{label}</span>
-                  <span className="mt-0.5 text-[13px] font-bold tabular-nums text-[#e8e1d3]">{value}</span>
+            <div className="stat-tile overflow-hidden">
+              <button
+                type="button"
+                className="flex min-h-8 w-full items-center justify-between gap-2 px-2 py-1 text-left"
+                aria-expanded={showHeroDetails}
+                aria-controls="commander-hero-details"
+                onClick={() => setShowHeroDetails((visible) => !visible)}
+              >
+                <span className="text-[9px] font-bold uppercase tracking-[.1em] text-[#a59b88]">Hero characteristics</span>
+                <span className="flex items-center gap-1 text-[9px] font-semibold text-[#d5bd85]">
+                  {showHeroDetails ? 'Hide' : 'Show'}
+                  <ChevronDown size={12} aria-hidden="true" className={`transition-transform ${showHeroDetails ? 'rotate-180' : ''}`} />
+                </span>
+              </button>
+              {showHeroDetails && (
+                <div id="commander-hero-details" className="border-t border-[#4f412e] px-1.5 py-1.5">
+                  <div className="grid grid-cols-2 gap-1">
+                    {[
+                      ['Attack', formatNum(selectedHeroStats.atk)],
+                      ['Health', formatNum(selectedHeroStats.hp)],
+                      ['Armor', formatNum(selectedHeroStats.def)],
+                      ['Dodge', `${(selectedHeroStats.dodge * 100).toFixed(1)}%`],
+                      ['Attack Speed', formatNum(selectedHeroStats.speed + selectedHeroStats.atkSpeed)],
+                      ['Crit', `${(selectedHeroStats.critChance * 100).toFixed(1)}%`],
+                      ['Crit Damage', `+${(selectedHeroStats.critDamage * 100).toFixed(0)}%`],
+                      ['XP Bonus', `+${(activeTeamBonuses.xp * 100).toFixed(1)}%`],
+                      ['Gold Bonus', `+${(activeTeamBonuses.gold * 100).toFixed(1)}%`],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex min-w-0 items-baseline justify-between gap-1 rounded border border-[#4a4032]/70 bg-black/10 px-1.5 py-1">
+                        <span className="truncate text-[9px] font-semibold text-[#8f897d]">{label}</span>
+                        <span className="shrink-0 text-[11px] font-bold tabular-nums text-[#e8e1d3]">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-[#4f412e]/80 px-1 pt-1.5">
+                    <span className="text-[8px] font-bold uppercase tracking-[.08em] text-[#777269]">Passives · Skills · Auras</span>
+                    <span className="shrink-0 text-[8px] font-semibold text-[#9b8862]">Coming soon</span>
+                  </div>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
