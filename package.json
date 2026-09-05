@@ -82,6 +82,8 @@
     "check:agent-health": "bash .agents/skills/heroloop-health-check/scripts/check-health-check.sh",
     "check:task-efficiency": "bash scripts/check-task-efficiency.sh",
     "check:todo-continuity": "bash scripts/check-todo-continuity.sh",
+    "check:todo-audit": "node scripts/check-todo-audit.mjs",
+    "check:todo-panel": "node scripts/check-todo-panel.mjs",
     "check:todo-format": "node scripts/todo-format.mjs check",
     "check:todo-integrity": "node scripts/check-todo-integrity.mjs",
     "check:todo-transaction": "bash scripts/check-todo-transaction.sh",
