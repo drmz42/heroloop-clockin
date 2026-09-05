@@ -409,7 +409,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
             <div className="stat-tile overflow-hidden">
               <button
                 type="button"
-                className="flex min-h-8 w-full items-center justify-between gap-2 px-2 py-1 text-left"
+                className="flex min-h-11 w-full items-center justify-between gap-2 px-2 py-1 text-left"
                 aria-expanded={showHeroDetails}
                 aria-controls="commander-hero-details"
                 onClick={() => setShowHeroDetails((visible) => !visible)}
@@ -420,8 +420,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
                   <ChevronDown size={12} aria-hidden="true" className={`transition-transform ${showHeroDetails ? 'rotate-180' : ''}`} />
                 </span>
               </button>
-              {showHeroDetails && (
-                <div id="commander-hero-details" className="border-t border-[#4f412e] px-1.5 py-1.5">
+              <div id="commander-hero-details" hidden={!showHeroDetails} className="border-t border-[#4f412e] px-1.5 py-1.5">
                   <div className="grid grid-cols-2 gap-1">
                     {[
                       ['Attack', formatNum(selectedHeroStats.atk)],
@@ -434,7 +433,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
                       ['XP Bonus', `+${(activeTeamBonuses.xp * 100).toFixed(1)}%`],
                       ['Gold Bonus', `+${(activeTeamBonuses.gold * 100).toFixed(1)}%`],
                     ].map(([label, value]) => (
-                      <div key={label} className="flex min-w-0 items-baseline justify-between gap-1 rounded border border-[#4a4032]/70 bg-black/10 px-1.5 py-1">
+                      <div key={label} className="flex min-w-0 items-baseline justify-between gap-1 rounded border border-[#4a4032]/70 bg-black/10 px-1.5 py-0.5">
                         <span className="truncate text-[9px] font-semibold text-[#8f897d]">{label}</span>
                         <span className="shrink-0 text-[11px] font-bold tabular-nums text-[#e8e1d3]">{value}</span>
                       </div>
@@ -444,8 +443,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
                     <span className="text-[8px] font-bold uppercase tracking-[.08em] text-[#777269]">Passives · Skills · Auras</span>
                     <span className="shrink-0 text-[8px] font-semibold text-[#9b8862]">Coming soon</span>
                   </div>
-                </div>
-              )}
+              </div>
             </div>
           )}
         </div>
