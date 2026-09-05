@@ -24,6 +24,7 @@ import { playerSync, supabase } from '@/game/backend';
 const SAVE_KEY = 'afk-heroes-save-v7';
 
 const SLOTS: ItemSlot[] = ['class_weapon', 'offhand', 'helmet', 'chest', 'gloves', 'boots', 'ring', 'amulet'];
+const EQUIPPED_SLOT_LABEL: Partial<Record<ItemSlot, string>> = { class_weapon: 'Weapon', chest: 'Chest' };
 const GRID_SIZE = 64;
 
 function CombatPresentationLayer({ game, activeDungeon, dungeonUnits, dungeonFloaters, dungeonBossScene, dungeonRoom }: {
@@ -697,6 +698,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
                 const item = eqUid ? state.inventory.find(i => i.uid === eqUid) : null;
                 const ib = item ? ITEM_MAP[item.itemId] : null;
                 const ic = ib ? RARITY_COLORS[ib.rarity] : undefined;
+                const slotLabel = EQUIPPED_SLOT_LABEL[slot] ?? SLOT_LABEL[slot];
                 return <div key={slot} className="min-w-0 text-center">
                   <button
                     data-equipped-item-uid={item?.uid}
@@ -704,19 +706,20 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
                     className={`item-slot group aspect-square w-full min-w-0 flex items-center justify-center overflow-hidden text-lg border transition hover:-translate-y-0.5 relative ${ib ? `rarity-${ib.rarity}` : ''}`}
                     style={{ borderColor: ic ? `${ic}99` : 'rgba(255,255,255,0.08)', background: 'linear-gradient(145deg,#151c27,#090c11)' }}
                     title={ib ? `${ib.name} +${item!.enchantLevel}` : `Empty ${SLOT_LABEL[slot]}`}
+                    aria-label={ib ? `${ib.name}, ${slotLabel}, enchant level ${item!.enchantLevel}` : `Empty ${SLOT_LABEL[slot]}`}
                   >
                     {ib ? (
                       <ItemArtwork itemId={ib.id} name={ib.name} fallback={ib.icon} />
                     ) : (
-                      <span className="pointer-events-none absolute inset-1 opacity-55 saturate-[.4] brightness-75">
-                        <ItemArtwork itemId={emptySlotArtworkId(slot, selectedHeroBase.heroClass)} name={`Empty ${SLOT_LABEL[slot]}`} fallback="" />
+                      <span aria-hidden="true" className="pointer-events-none absolute inset-1 opacity-55 saturate-[.4] brightness-75">
+                        <ItemArtwork itemId={emptySlotArtworkId(slot, selectedHeroBase.heroClass)} name="" fallback="" />
                       </span>
                     )}
                     {ib && item!.enchantLevel > 0 && <div className="absolute top-0 left-0 text-[11px] font-bold text-amber-400 font-vt leading-none px-0.5">+{item!.enchantLevel}</div>}
                     {ib?.heroClass && <div className="item-class-badge absolute right-0 top-0" title={`${CLASS_LABEL[ib.heroClass]} only`}>{CLASS_SHORT_LABEL[ib.heroClass]}</div>}
                     {ib && <div className="absolute bottom-0 right-0 text-[12px] font-bold font-vt px-1 leading-tight" style={{ background: ic, color: '#000' }}>{item!.level}</div>}
                   </button>
-                  <div className="mt-1 whitespace-nowrap text-center text-[7px] font-bold uppercase tracking-[-.02em] text-[#77756e]">{slot === 'class_weapon' ? 'Weapon' : SLOT_LABEL[slot]}</div>
+                  <div className="mt-1 min-w-0 truncate text-center text-[7px] font-bold uppercase tracking-[-.02em] text-[#77756e]" title={SLOT_LABEL[slot]}>{slotLabel}</div>
                 </div>;
               })}
             </div>
