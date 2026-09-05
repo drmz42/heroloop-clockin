@@ -396,7 +396,7 @@ export function mergeSaveState(
       equipped,
       locked: candidate.locked,
       isNew: candidate.isNew,
-      respawnAt: candidate.respawnAt,
+      respawnAt: authoritative.respawnAt,
     }];
   });
   if (recordArray(requested.ownedHeroes).length === 0) return { code: "invalid_owned_heroes", status: 400 };
