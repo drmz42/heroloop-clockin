@@ -25,6 +25,7 @@
     "audit:runtime-performance": "node scripts/audit-runtime-performance-budget.mjs",
     "check:staging-performance-baseline": "node scripts/check-staging-performance-baseline.mjs",
     "check:staging2-infrastructure": "node scripts/check-staging2-infrastructure.mjs",
+    "check:staging-cleanup": "node scripts/check-staging-cleanup-contract.mjs",
     "audit:runtime-images": "node scripts/audit-runtime-images.mjs",
     "check:admin-panel": "node scripts/check-admin-panel-contract.mjs",
     "check:admin-analytics": "node scripts/check-admin-analytics-contract.mjs",
