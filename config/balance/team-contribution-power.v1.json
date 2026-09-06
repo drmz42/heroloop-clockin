@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "power-v5-team-contributions-candidate-2026.09.06-v1",
+  "status": "founder-approved-values-provisional-not-live",
+  "live": false,
+  "baseHeroPowerModel": "hero-power-proposal-2026.08.12-v3",
+  "combatEffectRegistry": "combat-effects-v2-team-contributions-candidate-2026.09.06-v1",
+  "scope": "encounter-adjusted-recommended-power-only",
+  "rules": {
+    "heroDisplayPowerUnchanged": true,
+    "baseTeamPowerIsSumOfCanonicalHeroPower": true,
+    "contributionUsesBaseTeamPowerPercent": true,
+    "identicalEffectMagnitudeInstances": 1,
+    "duplicateSourcesMayImproveUptimeButNotPowerMagnitude": true,
+    "otherAllyEffectsRequirePartySize": 2,
+    "maximumContributionPercentPerEffect": 6,
+    "maximumTotalContributionPercent": 15,
+    "clientSubmittedPowerAllowed": false
+  },
+  "contributions": {
+    "warrior": { "runtimeClass": "knight", "effectId": "team.warrior.guardian-aegis", "capability": "protection", "fullValuePercent": 5 },
+    "mage": { "runtimeClass": "shepherd", "effectId": "team.mage.arcane-mark", "capability": "focus", "fullValuePercent": 4, "requiresOtherAlly": true },
+    "assassin": { "runtimeClass": "assassin", "effectId": "team.assassin.expose", "capability": "armour-break", "fullValuePercent": 4, "requiresOtherAlly": true },
+    "druid": { "runtimeClass": "druid", "effectId": "team.druid.wild-growth-heal", "capability": "healing", "fullValuePercent": 5 },
+    "crossbowman": { "runtimeClass": "archer", "effectId": "team.crossbowman.suppressing-fire", "capability": "suppression", "fullValuePercent": 4 }
+  },
+  "encounters": [
+    { "id": "normal", "kind": "normal-wave", "relevance": { "protection": 0.35, "focus": 0.15, "armour-break": 0.2, "healing": 0.4, "suppression": 0.3 } },
+    { "id": "improved", "kind": "improved-wave", "relevance": { "protection": 0.6, "focus": 0.45, "armour-break": 0.65, "healing": 0.55, "suppression": 0.5 } },
+    { "id": "elite", "kind": "elite-wave", "relevance": { "protection": 0.8, "focus": 0.7, "armour-break": 0.8, "healing": 0.7, "suppression": 0.75 } },
+    { "id": "shared-boss", "kind": "boss", "relevance": { "protection": 1, "focus": 1, "armour-break": 0.9, "healing": 0.85, "suppression": 0.9 } },
+    { "id": "persistent-dungeon", "kind": "dungeon", "relevance": { "protection": 0.8, "focus": 0.6, "armour-break": 0.65, "healing": 1, "suppression": 0.75 } }
+  ],
+  "cohorts": [
+    { "id": "early", "level": 10, "rarityId": "rare", "stars": 3, "essenceLevel": 0, "gearProfile": "typical" },
+    { "id": "mid", "level": 40, "rarityId": "legendary", "stars": 10, "essenceLevel": 0, "gearProfile": "typical" },
+    { "id": "endgame", "level": 80, "rarityId": "celestial", "stars": 20, "essenceLevel": 0, "gearProfile": "maximum" }
+  ],
+  "acceptance": {
+    "formationCount": 55,
+    "minimumDistinctTopFormationsAcrossEncounters": 3,
+    "everyClassHasPositiveContextualContribution": true,
+    "homogeneousTeamsCannotMultiplyContributionMagnitude": true,
+    "noNamedClassRequiredForEntry": true,
+    "activationRequiresEncounterRuntimeEvidence": true,
+    "activationRequiresFounderApproval": true
+  }
+}

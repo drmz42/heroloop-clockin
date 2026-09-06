@@ -50,6 +50,7 @@
     "check:combat-effects-v2-runtime": "node scripts/check-combat-effects-v2-runtime.mjs",
     "simulate:combat-effects": "node scripts/simulate-combat-effect-registry.mjs",
     "simulate:team-contributions": "node scripts/simulate-team-contributions.mjs",
+    "simulate:team-contribution-power": "node scripts/simulate-team-contribution-power.mjs",
     "check:combat-capsule": "node scripts/check-combat-capsule.mjs",
     "check:endgame-locations-runtime": "node scripts/check-endgame-locations-runtime.mjs",
     "check:location-backgrounds": "node scripts/check-location-backgrounds.mjs",

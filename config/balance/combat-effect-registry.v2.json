@@ -217,11 +217,12 @@
   },
   "powerModel": {
     "candidateVersion": "power-v5-team-contributions-candidate-2026.09.06-v1",
+    "candidateConfig": "config/balance/team-contribution-power.v1.json",
     "runtimeVersionUnchanged": true,
     "targetContributionPercentRange": [4, 6],
     "requiresAllFormationSimulation": true,
     "requiresEnemyRecommendedPowerRecalibration": true,
-    "simulationCommand": "npm run simulate:team-contributions",
+    "simulationCommands": ["npm run simulate:team-contributions", "npm run simulate:team-contribution-power"],
     "activationRequiresFounderApprovalAfterStaging": true
   }
 }
