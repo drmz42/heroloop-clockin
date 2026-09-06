@@ -54,6 +54,8 @@
     "version": "power-v4-combat-effects-2026.09.01-v1",
     "formulaChanged": false,
     "included": ["five-live-generic-class-traits"],
-    "excludedUntilSimulationAndApproval": ["typed-elemental-damage", "resistances", "penetration", "named-hero-abilities", "status-effects"]
+    "excludedUntilSimulationAndApproval": ["typed-elemental-damage", "resistances", "penetration", "named-hero-abilities", "status-effects"],
+    "reservedStatusContract": "status-effects-proposal-2026.08.30-v2",
+    "simulationCommand": "npm run simulate:combat-effects"
   }
 }
