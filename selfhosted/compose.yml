@@ -113,6 +113,7 @@ services:
     volumes:
       - ./api:/app/api:ro
       - ../supabase/functions/player-sync/authority.mjs:/app/shared/authority.mjs:ro
+      - ../supabase/functions/player-sync/combat-effects-v2.mjs:/app/shared/combat-effects-v2.mjs:ro
       - ../supabase/functions/player-sync/combat-step.mjs:/app/shared/combat-step.mjs:ro
       - ../supabase/functions/player-sync/combat-timeline.mjs:/app/shared/combat-timeline.mjs:ro
       - ../supabase/functions/player-sync/normal-combat.mjs:/app/shared/normal-combat.mjs:ro
