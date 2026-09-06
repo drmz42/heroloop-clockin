@@ -83,6 +83,7 @@
     "check:operational-artifacts": "node scripts/check-operational-artifacts-contract.mjs",
     "check:agent-health": "bash .agents/skills/heroloop-health-check/scripts/check-health-check.sh",
     "check:agent-prompt": "node scripts/check-agent-prompt-contract.mjs",
+    "check:agent-tools": "npm run check:agent-prompt && npm run check:technical-tooling",
     "check:task-efficiency": "bash scripts/check-task-efficiency.sh",
     "check:todo-continuity": "bash scripts/check-todo-continuity.sh",
     "check:todo-audit": "node scripts/check-todo-audit.mjs",
