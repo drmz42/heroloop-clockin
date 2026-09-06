@@ -82,6 +82,7 @@
     "check:vps1-founder-ssh-exemption": "node scripts/check-vps1-founder-ssh-exemption.mjs",
     "check:operational-artifacts": "node scripts/check-operational-artifacts-contract.mjs",
     "check:agent-health": "bash .agents/skills/heroloop-health-check/scripts/check-health-check.sh",
+    "check:agent-prompt": "node scripts/check-agent-prompt-contract.mjs",
     "check:task-efficiency": "bash scripts/check-task-efficiency.sh",
     "check:todo-continuity": "bash scripts/check-todo-continuity.sh",
     "check:todo-audit": "node scripts/check-todo-audit.mjs",
