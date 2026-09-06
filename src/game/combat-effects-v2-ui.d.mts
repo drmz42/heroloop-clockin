@@ -5,5 +5,5 @@ export interface CombatEffectV2Preview {
   team: { id: string; name: string; capability: string; description: string };
 }
 export const COMBAT_EFFECTS_V2_UI_VERSION: string;
-export const COMBAT_EFFECTS_V2_UI_ACTIVE: false;
+export const COMBAT_EFFECTS_V2_PRODUCTION_ACTIVE: false;
 export const COMBAT_EFFECTS_V2_PREVIEW: Readonly<Record<HeroClass, CombatEffectV2Preview>>;

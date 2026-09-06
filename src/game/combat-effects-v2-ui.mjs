@@ -1,5 +1,5 @@
 export const COMBAT_EFFECTS_V2_UI_VERSION = 'combat-effects-v2-team-contributions-candidate-2026.09.06-v1';
-export const COMBAT_EFFECTS_V2_UI_ACTIVE = false;
+export const COMBAT_EFFECTS_V2_PRODUCTION_ACTIVE = false;
 
 export const COMBAT_EFFECTS_V2_PREVIEW = Object.freeze({
   knight: {

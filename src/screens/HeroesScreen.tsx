@@ -4,7 +4,7 @@ import { HeroPortrait } from '@/components/HeroPortrait';
 import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, RARITY_INDEX, CLASS_LABEL } from '@/game/heroes';
 import { formatNum, starUpCost, heroXpForLevel, heroSellValue, MAX_HEROES, MAX_HERO_STARS } from '@/game/state';
 import { heroStats, getEquippedItems, teamPower as calculateTeamPower } from '@/game/engine';
-import { COMBAT_EFFECTS_V2_PREVIEW, COMBAT_EFFECTS_V2_UI_ACTIVE } from '@/game/combat-effects-v2-ui.mjs';
+import { COMBAT_EFFECTS_V2_PREVIEW, COMBAT_EFFECTS_V2_PRODUCTION_ACTIVE } from '@/game/combat-effects-v2-ui.mjs';
 import type { HeroBase, OwnedHero, Rarity } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
 
@@ -102,7 +102,7 @@ function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameA
           </section>
           <section className="stat-tile mt-2 p-2.5"><div className="flex items-center justify-between gap-2"><div className="text-[9px] font-bold uppercase tracking-wider text-[#827d72]">Class Trait · {CLASS_LABEL[base.heroClass]}</div><span className={`rounded border px-1.5 py-0.5 text-[8px] font-black uppercase ${classTrait.active ? 'border-emerald-500/40 bg-emerald-950/35 text-emerald-300' : 'border-slate-600/50 bg-slate-950/30 text-slate-400'}`}>{classTrait.active ? 'Active · normal combat' : 'Unavailable'}</span></div><div className="mt-1 text-[10px] text-[#aaa397]">{classTrait.effect}</div></section>
           <section className="mt-2 rounded-lg border border-sky-700/35 bg-sky-950/15 p-2.5" aria-label={`${CLASS_LABEL[base.heroClass]} combat v2 preview`}>
-            <div className="flex items-center justify-between gap-2"><div className="text-[9px] font-bold uppercase tracking-wider text-sky-200">Combat v2 preview</div><span className="rounded border border-amber-500/35 bg-amber-950/25 px-1.5 py-0.5 text-[8px] font-black uppercase text-amber-300">{COMBAT_EFFECTS_V2_UI_ACTIVE ? 'Active' : 'Candidate · not active'}</span></div>
+            <div className="flex items-center justify-between gap-2"><div className="text-[9px] font-bold uppercase tracking-wider text-sky-200">Combat v2 preview</div><span className="rounded border border-amber-500/35 bg-amber-950/25 px-1.5 py-0.5 text-[8px] font-black uppercase text-amber-300">{COMBAT_EFFECTS_V2_PRODUCTION_ACTIVE ? 'Active' : 'Staging candidate · Production off'}</span></div>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <div><div className="text-[8px] font-black uppercase tracking-wide text-[#7fa8ba]">Core Trait</div><div className="mt-0.5 text-xs font-bold text-sky-100">{combatV2.core.name}</div><div className="mt-0.5 text-[10px] leading-relaxed text-[#9ba7aa]">{combatV2.core.description}</div></div>
               <div className="border-t border-sky-900/45 pt-2 sm:border-l sm:border-t-0 sm:pl-2 sm:pt-0"><div className="flex items-center justify-between gap-2"><div className="text-[8px] font-black uppercase tracking-wide text-[#7fa8ba]">Team Contribution</div><span className="text-[8px] font-bold uppercase text-sky-300">{combatV2.team.capability}</span></div><div className="mt-0.5 text-xs font-bold text-sky-100">{combatV2.team.name}</div><div className="mt-0.5 text-[10px] leading-relaxed text-[#9ba7aa]">{combatV2.team.description}</div></div>

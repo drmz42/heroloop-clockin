@@ -1,5 +1,6 @@
 import { Pool } from "@db/postgres";
-import { BALANCE_VERSION, buildNormalCombat } from "/app/shared/normal-combat.mjs";
+import { BALANCE_VERSION, COMBAT_EFFECTS_V2_BALANCE_VERSION, buildNormalCombat } from "/app/shared/normal-combat.mjs";
+import { COMBAT_EFFECTS_V2_VERSION } from "/app/shared/combat-effects-v2.mjs";
 import {
   canonicalizeLoadedState,
   canonicalResourceState,
@@ -19,6 +20,13 @@ const jsonHeaders = {
 };
 const authInternalUrl = Deno.env.get("AUTH_INTERNAL_URL") ?? "http://auth:9999";
 const testerControlsEnabled = Deno.env.get("TESTER_CONTROLS_ENABLED") === "true";
+const combatEffectsVersion = Deno.env.get("COMBAT_EFFECTS_VERSION") ?? "combat-effects-v1";
+if (!["combat-effects-v1", COMBAT_EFFECTS_V2_VERSION].includes(combatEffectsVersion)) {
+  throw new Error("invalid COMBAT_EFFECTS_VERSION");
+}
+const normalCombatBalanceVersion = combatEffectsVersion === COMBAT_EFFECTS_V2_VERSION
+  ? COMBAT_EFFECTS_V2_BALANCE_VERSION
+  : BALANCE_VERSION;
 const databasePool = new Pool({
   applicationName: "heroloop-api",
   database: Deno.env.get("PGDATABASE"),
@@ -1014,6 +1022,10 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
         const result = await retryLockTimeoutOnce(() => withDatabase(async (client) => {
           await client.queryArray("BEGIN");
           try {
+            await client.queryArray(
+              "SELECT set_config('heroloop.normal_combat_balance_version', $1::text, true)",
+              [normalCombatBalanceVersion],
+            );
             const preparedQuery = await client.queryObject<{ result: unknown }>(
               "SELECT heroloop_api.normal_combat_prepare($1::uuid, $2::uuid, $3::integer) AS result",
               [identity.playerId, requestKey, location],
@@ -1027,7 +1039,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
               if (!isRecord(prepared.state) || !Array.isArray(prepared.ledger_items)) {
                 throw new Error("invalid normal combat simulation context");
               }
-              if (prepared.balance_version !== BALANCE_VERSION) {
+              if (![BALANCE_VERSION, COMBAT_EFFECTS_V2_BALANCE_VERSION].includes(String(prepared.balance_version))) {
                 throw new Error("normal combat balance version mismatch");
               }
               const startKey = String(prepared.start_key ?? "");
@@ -1046,7 +1058,10 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
               if (resourcesQuery.rows.length !== 1 || !isRecord(resources)) {
                 throw new Error("invalid normal combat resource snapshot");
               }
-              const combat = buildNormalCombat(prepared.state, prepared.ledger_items, preparedLocation, seed, resources, startedAtMs);
+              const preparedEffectsVersion = prepared.balance_version === COMBAT_EFFECTS_V2_BALANCE_VERSION
+                ? COMBAT_EFFECTS_V2_VERSION
+                : null;
+              const combat = buildNormalCombat(prepared.state, prepared.ledger_items, preparedLocation, seed, resources, startedAtMs, preparedEffectsVersion);
               const storedQuery = await client.queryObject<{ result: unknown }>(
                 "SELECT heroloop_api.normal_combat_store_outcome($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, $5::jsonb) AS result",
                 [

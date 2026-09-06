@@ -1,11 +1,11 @@
 {
   "schemaVersion": 2,
   "registryVersion": "combat-effects-v2-team-contributions-candidate-2026.09.06-v1",
-  "status": "founder-approved-provisional-not-live",
+  "status": "vps1-staging-candidate-production-off",
   "inheritsRuntimeRegistry": "combat-effects-v1",
   "activation": {
-    "runtime": false,
-    "staging": false,
+    "runtime": true,
+    "staging": true,
     "production": false,
     "serverAuthoritativeRequired": true
   },

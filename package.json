@@ -49,6 +49,7 @@
     "check:combat-effects-v2-settlement": "node scripts/check-combat-effects-v2-settlement.mjs",
     "check:combat-effects-v2-runtime": "node scripts/check-combat-effects-v2-runtime.mjs",
     "check:combat-effects-v2-ui": "node scripts/check-combat-effects-v2-ui.mjs",
+    "check:combat-effects-v2-activation": "node scripts/check-combat-effects-v2-activation.mjs",
     "simulate:combat-effects": "node scripts/simulate-combat-effect-registry.mjs",
     "simulate:team-contributions": "node scripts/simulate-team-contributions.mjs",
     "simulate:team-contribution-power": "node scripts/simulate-team-contribution-power.mjs",
