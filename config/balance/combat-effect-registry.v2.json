@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 2,
+  "registryVersion": "combat-effects-v2-team-contributions-candidate-2026.09.06-v1",
+  "status": "founder-approved-provisional-not-live",
+  "inheritsRuntimeRegistry": "combat-effects-v1",
+  "activation": {
+    "runtime": false,
+    "staging": false,
+    "production": false,
+    "serverAuthoritativeRequired": true
+  },
+  "sharedRules": {
+    "coreTraitsApplyPerHero": true,
+    "sourceCooldownsAreIndependent": true,
+    "identicalTargetEffectsShareMagnitudeCap": true,
+    "duplicateSourceMayRefreshButNotMultiply": true,
+    "mixedClassBonus": false,
+    "sameClassPenalty": false,
+    "clientSubmittedEffectsAllowed": false
+  },
+  "classes": {
+    "knight": {
+      "displayClass": "Warrior",
+      "coreTrait": {
+        "id": "core.warrior.bulwark",
+        "kind": "stat-modifier",
+        "source": "self",
+        "targets": "self",
+        "trigger": { "kind": "snapshot" },
+        "cooldownKey": null,
+        "magnitude": { "maxHpMultiplier": 1.15, "defMitigationCap": 0.6 },
+        "durationMs": null,
+        "stacking": "per-source-self-only",
+        "cap": { "maxHpMultiplier": 1.15, "defMitigationCap": 0.6 },
+        "resistance": null,
+        "penetration": null,
+        "eventKind": "trait-snapshot",
+        "descriptionKey": "class_trait.warrior.bulwark"
+      },
+      "teamContribution": {
+        "id": "team.warrior.guardian-aegis",
+        "kind": "barrier",
+        "source": "hero",
+        "targets": "living-ally-lowest-hp-percent",
+        "trigger": { "kind": "cooldown", "cooldownMs": 10000 },
+        "cooldownKey": "team.warrior.guardian-aegis",
+        "magnitude": { "sourceMaxHpFraction": 0.06 },
+        "durationMs": 5000,
+        "stacking": "keep-higher-remaining-and-refresh-duration",
+        "cap": { "sourceMaxHpFraction": 0.06, "activePerTarget": 1 },
+        "resistance": null,
+        "penetration": null,
+        "eventKind": "barrier-applied",
+        "descriptionKey": "team_contribution.warrior.guardian_aegis",
+        "targetEffectiveTeamPowerPercent": 5
+      }
+    },
+    "shepherd": {
+      "displayClass": "Mage",
+      "coreTrait": {
+        "id": "core.mage.arcane-echo",
+        "kind": "echo-damage",
+        "source": "self",
+        "targets": "same-target-as-trigger-hit",
+        "trigger": { "kind": "landed-hit-count", "every": 5 },
+        "cooldownKey": "core.mage.arcane-echo.hit-count",
+        "magnitude": { "triggerFinalDamageFraction": 0.5, "inheritsCriticalResult": true },
+        "durationMs": null,
+        "stacking": "one-echo-per-fifth-hit",
+        "cap": { "echoesPerTrigger": 1, "recursiveTriggers": 0 },
+        "resistance": "same-as-trigger-hit",
+        "penetration": "same-as-trigger-hit",
+        "eventKind": "echo-damage",
+        "descriptionKey": "class_trait.mage.arcane_echo"
+      },
+      "teamContribution": {
+        "id": "team.mage.arcane-mark",
+        "kind": "ally-damage-amplifier",
+        "source": "hero",
+        "targets": "arcane-echo-target",
+        "trigger": { "kind": "core-effect", "effectId": "core.mage.arcane-echo" },
+        "cooldownKey": "team.mage.arcane-mark.echo-trigger",
+        "magnitude": { "otherAllyDamageMultiplier": 1.04 },
+        "durationMs": 4000,
+        "stacking": "shared-target-refresh-no-magnitude-stack",
+        "cap": { "otherAllyDamageMultiplier": 1.04, "activePerTarget": 1 },
+        "resistance": "arcane",
+        "penetration": "reserved-not-live",
+        "eventKind": "status-applied",
+        "descriptionKey": "team_contribution.mage.arcane_mark",
+        "targetEffectiveTeamPowerPercent": 4
+      }
+    },
+    "assassin": {
+      "displayClass": "Assassin",
+      "coreTrait": {
+        "id": "core.assassin.predator",
+        "kind": "stat-modifier",
+        "source": "self",
+        "targets": "self",
+        "trigger": { "kind": "snapshot" },
+        "cooldownKey": null,
+        "magnitude": { "criticalChancePoints": 0.05, "baseDodgePointsRetained": 0.05 },
+        "durationMs": null,
+        "stacking": "per-source-self-only",
+        "cap": { "classCriticalChanceCap": 0.6 },
+        "resistance": null,
+        "penetration": null,
+        "eventKind": "trait-snapshot",
+        "descriptionKey": "class_trait.assassin.predator"
+      },
+      "teamContribution": {
+        "id": "team.assassin.expose",
+        "kind": "defense-penetration-debuff",
+        "source": "hero",
+        "targets": "critical-hit-target",
+        "trigger": { "kind": "critical-hit", "cooldownMs": 6000 },
+        "cooldownKey": "team.assassin.expose",
+        "magnitude": { "allyDefenseIgnoreFraction": 0.06 },
+        "durationMs": 4000,
+        "stacking": "shared-target-refresh-no-magnitude-stack",
+        "cap": { "allyDefenseIgnoreFraction": 0.06, "activePerTarget": 1 },
+        "resistance": "physical",
+        "penetration": "effect-is-bounded-penetration",
+        "eventKind": "status-applied",
+        "descriptionKey": "team_contribution.assassin.expose",
+        "targetEffectiveTeamPowerPercent": 4
+      }
+    },
+    "druid": {
+      "displayClass": "Druid",
+      "coreTrait": {
+        "id": "core.druid.wild-growth",
+        "kind": "stat-modifier",
+        "source": "self",
+        "targets": "self",
+        "trigger": { "kind": "snapshot" },
+        "cooldownKey": null,
+        "magnitude": { "maxHpMultiplier": 1.1 },
+        "durationMs": null,
+        "stacking": "per-source-self-only",
+        "cap": { "maxHpMultiplier": 1.1 },
+        "resistance": null,
+        "penetration": null,
+        "eventKind": "trait-snapshot",
+        "descriptionKey": "class_trait.druid.wild_growth"
+      },
+      "teamContribution": {
+        "id": "team.druid.wild-growth-heal",
+        "kind": "team-heal",
+        "source": "hero",
+        "targets": "all-living-allies",
+        "trigger": { "kind": "cooldown", "cooldownMs": 3000 },
+        "cooldownKey": "team.druid.wild-growth-heal",
+        "magnitude": { "targetMaxHpFraction": 0.012 },
+        "durationMs": null,
+        "stacking": "one-team-heal-instance-per-frame",
+        "cap": { "targetMaxHpFractionPerSettlement": 0.012 },
+        "resistance": null,
+        "penetration": null,
+        "eventKind": "team-heal",
+        "descriptionKey": "team_contribution.druid.wild_growth_heal",
+        "targetEffectiveTeamPowerPercent": 5
+      }
+    },
+    "archer": {
+      "displayClass": "Crossbowman",
+      "coreTrait": {
+        "id": "core.crossbowman.deadeye",
+        "kind": "stat-modifier",
+        "source": "self",
+        "targets": "self",
+        "trigger": { "kind": "snapshot" },
+        "cooldownKey": null,
+        "magnitude": { "attackSpeedPoints": 0.08, "criticalDamagePoints": 0.25 },
+        "durationMs": null,
+        "stacking": "per-source-self-only",
+        "cap": { "classAttackSpeedCap": 0.25, "classCriticalDamageCap": 2.7 },
+        "resistance": null,
+        "penetration": null,
+        "eventKind": "trait-snapshot",
+        "descriptionKey": "class_trait.crossbowman.deadeye"
+      },
+      "teamContribution": {
+        "id": "team.crossbowman.suppressing-fire",
+        "kind": "attack-speed-debuff",
+        "source": "hero",
+        "targets": "fifth-hit-target",
+        "trigger": { "kind": "landed-hit-count", "every": 5 },
+        "cooldownKey": "team.crossbowman.suppressing-fire.hit-count",
+        "magnitude": { "attackSpeedReductionFraction": 0.08 },
+        "durationMs": 4000,
+        "stacking": "shared-target-refresh-no-magnitude-stack",
+        "cap": { "attackSpeedReductionFraction": 0.08, "activePerTarget": 1 },
+        "resistance": "frost",
+        "penetration": "reserved-not-live",
+        "eventKind": "status-applied",
+        "descriptionKey": "team_contribution.crossbowman.suppressing_fire",
+        "targetEffectiveTeamPowerPercent": 4
+      }
+    }
+  },
+  "events": {
+    "schemaVersion": 2,
+    "kinds": ["trait-snapshot", "echo-damage", "barrier-applied", "team-heal", "status-applied", "status-refreshed", "status-expired"],
+    "requiredFields": ["sequence", "elapsedMs", "effectId", "sourceUid", "targetUid"],
+    "optionalFields": ["amount", "durationMs", "magnitude", "inheritedCritical", "refresh"]
+  },
+  "damageAndStatusContract": {
+    "modelVersion": "status-effects-proposal-2026.08.30-v2",
+    "runtime": false,
+    "damageTypes": ["physical", "flame", "toxin", "frost", "arcane"],
+    "resistanceCapsPercent": { "hero": 60, "normalEnemy": 50, "boss": 75 },
+    "minimumAppliedEffectPercent": 25,
+    "globalMinimumAttackIntervalMs": 600,
+    "unexplainedImmunityForbidden": true
+  },
+  "powerModel": {
+    "candidateVersion": "power-v5-team-contributions-candidate-2026.09.06-v1",
+    "runtimeVersionUnchanged": true,
+    "targetContributionPercentRange": [4, 6],
+    "requiresAllFormationSimulation": true,
+    "requiresEnemyRecommendedPowerRecalibration": true,
+    "simulationCommand": "npm run simulate:team-contributions",
+    "activationRequiresFounderApprovalAfterStaging": true
+  }
+}
