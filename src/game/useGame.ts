@@ -1502,6 +1502,41 @@ export function useGame() {
     };
   }, []);
 
+  const releaseHero = useCallback(async (uid: string): Promise<{ ok: true } | { ok: false; error: string }> => {
+    const expectedRevision = serverRevisionHint;
+    if (!tokenomicsEnabled || typeof expectedRevision !== 'number' || !Number.isSafeInteger(expectedRevision)) {
+      return { ok: false, error: 'state_unavailable' };
+    }
+    let failure = 'hero_release_failed';
+    const result = await playerSync<{
+      released_uid: string;
+      owned_heroes: OwnedHero[];
+      remaining_heroes: number;
+      avatar_hero_id: string;
+      revision: number;
+    }>('hero_release', {
+      hero_uid: uid,
+      expected_revision: expectedRevision,
+      idempotency_key: createIdempotencyKey(),
+    }, (code) => { failure = code; });
+    if (!result || result.released_uid !== uid || !Array.isArray(result.owned_heroes)
+      || !Number.isSafeInteger(result.revision) || result.revision <= expectedRevision
+      || result.remaining_heroes !== result.owned_heroes.length || result.remaining_heroes < 1
+      || typeof result.avatar_hero_id !== 'string' || result.owned_heroes.some((hero) => hero.uid === uid)
+      || result.owned_heroes.some((hero) => !hero || typeof hero.uid !== 'string' || !HERO_MAP[hero.heroId])) {
+      return { ok: false, error: failure };
+    }
+    const nextState = {
+      ...stateRef.current,
+      ownedHeroes: result.owned_heroes,
+      avatarHeroId: result.avatar_hero_id,
+    };
+    stateRef.current = nextState;
+    setState(nextState);
+    setServerRevisionHint(result.revision);
+    return { ok: true };
+  }, [serverRevisionHint]);
+
   const settleHeroSpend = useCallback(async (amount: number, actionKind: string): Promise<number | null> => {
     const safeAmount = Math.max(0, Math.floor(amount));
     if (safeAmount === 0) return stateRef.current.hero;
@@ -2448,7 +2483,7 @@ export function useGame() {
     state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, battleResult, combatRecovery, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
     offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
-    starUpHero, promoteAllHeroes, toggleHeroLock, markHeroSeen,
+    starUpHero, promoteAllHeroes, releaseHero, toggleHeroLock, markHeroSeen,
     summon, summonTen, summonHundred, summonBoss, syncBossKeys, toggleTeamMember, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,
     equipItem, unequipItem, unequipAll, equipmentError: () => equipmentErrorRef.current, sellItem, toggleItemLock, sellAllUnlocked,

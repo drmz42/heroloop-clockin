@@ -66,6 +66,7 @@ const commandActions = new Set([
   "hero_summon",
   "ascension_focus_set",
   "hero_ascend",
+  "hero_release",
   "chest_open",
   "tutorial_quest_claim",
   "quest_claim",
@@ -707,6 +708,32 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
         if (code) return errorResponse(409, code, requestId);
         console.error("hero_ascend database adapter failed", { requestId });
         return errorResponse(503, "ascension_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "hero_release") {
+      const payloadError = validatePayloadFields(payload, ["hero_uid", "expected_revision"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const heroUid = typeof payload.hero_uid === "string" ? payload.hero_uid : "";
+      const expectedRevision = Number(payload.expected_revision);
+      if (payloadError || !requestKey || heroUid.length < 1 || heroUid.length > 100 ||
+        !Number.isSafeInteger(expectedRevision) || expectedRevision < 1) {
+        return errorResponse(400, payloadError ?? "invalid_hero_release", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.hero_release($1::uuid, $2::uuid, $3::text, $4::bigint) AS result",
+          [identity.playerId, requestKey, heroUid, expectedRevision],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "state_conflict", "hero_not_found", "last_hero", "hero_locked", "hero_in_team",
+          "hero_in_training", "hero_has_equipment", "hero_in_market", "hero_in_active_encounter",
+          "idempotency_conflict",
+        ]);
+        if (code) return errorResponse(409, code, requestId);
+        console.error("hero_release database adapter failed", { requestId });
+        return errorResponse(503, "hero_release_failed", requestId);
       }
     }
     if (parsed.value.action === "chest_open") {

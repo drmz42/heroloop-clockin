@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Star, Lock, Unlock, Search, X, Sparkles, Users, Swords, Shield } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Star, Lock, Unlock, Search, X, Sparkles, Users, Swords, Shield, AlertTriangle } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, RARITY_INDEX, CLASS_LABEL } from '@/game/heroes';
 import { formatNum, starUpCost, heroXpForLevel, MAX_HEROES, MAX_HERO_STARS } from '@/game/state';
@@ -19,6 +19,19 @@ const CLASS_TRAITS: Record<HeroBase['heroClass'], { effect: string; active: bool
 };
 
 const STAR_COLORS = ['#fbbf24', '#a855f7', '#ef4444', '#ec4899'];
+const RELEASE_ERROR_MESSAGES: Record<string, string> = {
+  state_unavailable: 'Release is unavailable right now. Try again shortly.',
+  state_conflict: 'Your save changed while releasing. Review the hero and try again.',
+  hero_not_found: 'That hero no longer exists in your roster.',
+  last_hero: 'You cannot release your last owned hero.',
+  hero_locked: 'Unlock this hero before releasing it.',
+  hero_in_team: 'Remove this hero from the active team before releasing it.',
+  hero_in_training: 'Remove this hero from Training Camp before releasing it.',
+  hero_has_equipment: 'Unequip this hero before releasing it.',
+  hero_in_market: 'Cancel this hero\'s Marketplace listing before releasing it.',
+  hero_in_active_encounter: 'Complete or abandon the active encounter before releasing this hero.',
+};
+const RELEASE_FALLBACK_MESSAGE = 'Release could not be completed. Your hero is unchanged.';
 const formatUsdCents = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 function HeroStars({ stars, size }: { stars: number; size: number }) {
   const clamped = Math.max(0, Math.min(MAX_HERO_STARS, stars));
@@ -67,11 +80,34 @@ function StateBadge({ label, tone }: { label: string; tone: 'gold' | 'green' | '
 function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameApi; onClose: () => void }) {
   const [teamError, setTeamError] = useState('');
   const [powerNotice, setPowerNotice] = useState<{ delta: number; added: boolean } | null>(null);
+  const [releaseOpen, setReleaseOpen] = useState(false);
+  const [releaseBusy, setReleaseBusy] = useState(false);
+  const [releaseError, setReleaseError] = useState('');
+  const releaseDialogRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!powerNotice) return undefined;
     const timeout = window.setTimeout(() => setPowerNotice(null), 1800);
     return () => window.clearTimeout(timeout);
   }, [powerNotice]);
+  useEffect(() => {
+    if (!releaseOpen) return undefined;
+    releaseDialogRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape' && !releaseBusy) setReleaseOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [releaseOpen, releaseBusy]);
+  const runRelease = useCallback(async () => {
+    if (releaseBusy) return;
+    setReleaseBusy(true);
+    setReleaseError('');
+    const result = await game.releaseHero(hero.uid);
+    setReleaseBusy(false);
+    if (result.ok) {
+      onClose();
+      return;
+    }
+    setReleaseError(RELEASE_ERROR_MESSAGES[result.error] ?? RELEASE_FALLBACK_MESSAGE);
+  }, [releaseBusy, game, hero.uid, onClose]);
   const base = HERO_MAP[hero.heroId];
   const items = getEquippedItems(hero, game.state.inventory);
   const stats = heroStats(hero, items);
@@ -85,6 +121,14 @@ function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameA
   const teamPowerDelta = calculateTeamPower([hero], game.state.inventory);
   const classTrait = CLASS_TRAITS[base.heroClass];
   const combatV2 = COMBAT_EFFECTS_V2_PREVIEW[base.heroClass];
+  const releaseBlockers = [
+    { active: game.state.ownedHeroes.length <= 1, label: 'This is your last owned hero' },
+    { active: isInTeam, label: 'Remove from the active team first' },
+    { active: game.state.trainingCamp.heroUids.includes(hero.uid), label: 'Remove from Training Camp first' },
+    { active: Boolean(hero.locked), label: 'Unlock this hero first' },
+    { active: items.length > 0, label: 'Unequip all items first' },
+  ].filter((blocker) => blocker.active).map((blocker) => blocker.label);
+  const releaseBlocked = releaseBlockers.length > 0;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 backdrop-blur-[2px] anim-fade" onClick={onClose}>
       <div className={`px-panel-raised rarity-${base.rarity} relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl`} onClick={(event) => event.stopPropagation()}>
@@ -111,8 +155,21 @@ function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameA
           {powerNotice && <div aria-live="polite" className={`anim-banner mt-2 rounded border p-2 text-center text-sm font-black tabular-nums ${powerNotice.added ? 'border-emerald-400/55 bg-emerald-950/55 text-emerald-300' : 'border-red-400/55 bg-red-950/55 text-red-300'}`}>{powerNotice.added ? '+' : '−'}{formatNum(powerNotice.delta)} POWER</div>}
           {teamError && <div className="mt-2 rounded border border-red-500/45 bg-red-950/40 p-2 text-xs text-red-200">{teamError}</div>}
         </div>
-        <footer className="grid grid-cols-[minmax(0,1fr)_92px] gap-2 border-t border-[#54442e] bg-black/20 p-3"><button type="button" onClick={async () => { const result = await game.toggleTeamMember(hero.uid); const succeeded = result === 'added' || result === 'removed'; setTeamError(result === 'inventory-full' ? 'Cannot remove hero: there is not enough room for equipped items. Free bag slots first.' : result === 'blocked' ? 'Team change is unavailable right now.' : ''); setPowerNotice(succeeded ? { delta: teamPowerDelta, added: result === 'added' } : null); }} className={`game-control h-9 px-2 text-[10px] font-black ${isInTeam ? 'game-danger' : 'game-primary'}`}>{isInTeam ? 'Remove from Team' : 'Add to Team'}</button><button type="button" onClick={() => game.toggleHeroLock(hero.uid)} className="game-control flex h-9 items-center justify-center gap-1.5 px-2 text-[10px] font-black" title={hero.locked ? 'Unlock hero' : 'Lock hero'}>{hero.locked ? <Lock size={14} className="text-amber-300" /> : <Unlock size={14} />} {hero.locked ? 'UNLOCK' : 'LOCK'}</button></footer>
+        <footer className="border-t border-[#54442e] bg-black/20 p-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_92px] gap-2"><button type="button" onClick={async () => { const result = await game.toggleTeamMember(hero.uid); const succeeded = result === 'added' || result === 'removed'; setTeamError(result === 'inventory-full' ? 'Cannot remove hero: there is not enough room for equipped items. Free bag slots first.' : result === 'blocked' ? 'Team change is unavailable right now.' : ''); setPowerNotice(succeeded ? { delta: teamPowerDelta, added: result === 'added' } : null); }} className={`game-control h-9 px-2 text-[10px] font-black ${isInTeam ? 'game-danger' : 'game-primary'}`}>{isInTeam ? 'Remove from Team' : 'Add to Team'}</button><button type="button" onClick={() => game.toggleHeroLock(hero.uid)} className="game-control flex h-9 items-center justify-center gap-1.5 px-2 text-[10px] font-black" title={hero.locked ? 'Unlock hero' : 'Lock hero'}>{hero.locked ? <Lock size={14} className="text-amber-300" /> : <Unlock size={14} />} {hero.locked ? 'UNLOCK' : 'LOCK'}</button></div>
+          <button type="button" onClick={() => { setReleaseOpen(true); setReleaseError(''); }} disabled={releaseBlocked || releaseBusy || isInTeam} className="game-control mt-2 flex h-9 w-full items-center justify-center gap-1.5 border-red-900/45 bg-red-950/25 px-2 text-[10px] font-black text-red-200/90 disabled:cursor-not-allowed disabled:opacity-45" title={releaseBlocked ? releaseBlockers[0] : 'Permanently release this hero'}>Release Hero</button>
+          {releaseBlocked && <p className="mt-1 text-center text-[9px] text-red-200/70">{releaseBlockers.join(' · ')}</p>}
+        </footer>
       </div>
+      {releaseOpen && (
+        <div role="dialog" aria-modal="true" aria-labelledby="release-confirm-title" className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-4 backdrop-blur-[2px] anim-fade" onClick={(event) => { event.stopPropagation(); if (!releaseBusy) setReleaseOpen(false); }}>
+          <div ref={releaseDialogRef} tabIndex={-1} className="w-full max-w-sm overflow-hidden rounded-2xl border border-red-900/50 bg-[#17120d] p-4 shadow-[0_20px_60px_rgba(0,0,0,.6)] outline-none" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start gap-2"><AlertTriangle size={18} className="mt-0.5 shrink-0 text-red-400" /><div><h2 id="release-confirm-title" className="text-sm font-black text-[#eee4d3]">Release {base.name}?</h2><p className="mt-1 text-xs leading-relaxed text-[#aaa397]"><b className="text-[#d9cfbd]">{base.name}</b> (Lv {hero.level}, {RARITY_LABEL[base.rarity]}) will be permanently removed from your Heroes. This is <b className="text-red-300">irreversible</b> and cannot be undone.</p><p className="mt-1 text-xs leading-relaxed text-[#aaa397]">You receive <b className="text-red-300">no reward</b>: no Gold, $HERO, items, XP, dust, refunds or anything else.</p></div></div>
+            {releaseError && <p role="alert" className="mt-2 rounded border border-red-500/45 bg-red-950/40 p-2 text-xs leading-relaxed text-red-200">{releaseError}</p>}
+            <div className="mt-3 grid grid-cols-2 gap-2"><button type="button" onClick={() => setReleaseOpen(false)} disabled={releaseBusy} className="game-control h-10 px-3 text-xs font-black disabled:opacity-55">Cancel</button><button type="button" onClick={() => void runRelease()} disabled={releaseBusy} className="game-control game-danger h-10 px-3 text-xs font-black disabled:opacity-55">{releaseBusy ? 'Releasing…' : 'Release'}</button></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
