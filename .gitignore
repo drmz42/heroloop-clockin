@@ -27,8 +27,10 @@ dist-ssr
 supabase/.temp/
 .playwright-mcp/
 dist.permission-backup/
+/.worktrees/
 /*.png
 todo/.htpasswd
+todo/health.txt
 todo/codex-usage.json
 todo/task-history.json
 todo/runtime/
