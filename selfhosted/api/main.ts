@@ -262,6 +262,31 @@ async function databaseJson(
   return result;
 }
 
+async function databaseJsonWithCombatEffectsVersion(
+  queryText: string,
+  args: unknown[],
+): Promise<JsonRecord> {
+  return await withDatabase(async (client) => {
+    await client.queryArray("BEGIN");
+    try {
+      await client.queryArray(
+        "SELECT set_config('heroloop.dungeon_combat_effects_version', $1::text, true)",
+        [combatEffectsVersion],
+      );
+      const query = await client.queryObject<{ result: unknown }>(queryText, args);
+      const result = query.rows[0]?.result;
+      if (query.rows.length !== 1 || !isRecord(result)) {
+        throw new Error("invalid database adapter response");
+      }
+      await client.queryArray("COMMIT");
+      return result;
+    } catch (error) {
+      await client.queryArray("ROLLBACK");
+      throw error;
+    }
+  });
+}
+
 function isStatementTimeout(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error ?? "");
   const code = isRecord(error) && typeof error.code === "string" ? error.code : "";
@@ -945,7 +970,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
         return errorResponse(400, payloadError ?? "invalid_boss_location", requestId);
       }
       try {
-        const result = await databaseJson(
+        const result = await databaseJsonWithCombatEffectsVersion(
           "SELECT heroloop_api.summon_boss($1::uuid, $2::integer, $3::uuid) AS result",
           [identity.playerId, location, key],
         );
@@ -993,7 +1018,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
         return errorResponse(400, payloadError ?? "dungeon_invalid_depth", requestId);
       }
       try {
-        const result = await databaseJson(
+        const result = await databaseJsonWithCombatEffectsVersion(
           "SELECT heroloop_api.dungeon_start($1::uuid, $2::integer, $3::uuid) AS result",
           [identity.playerId, depth, requestKey],
         );
