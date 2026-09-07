@@ -509,6 +509,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
           profile.username !== prepared.username || profile.avatar_hero_id !== prepared.avatarHeroId ||
           Number(profile.power) !== Number(prepared.summary.power) ||
           Number(profile.combat_power) !== Number(prepared.summary.combat_power) ||
+          Number(profile.collection_power) !== Number(prepared.summary.collection_power) ||
           Number(profile.account_level) !== Number(prepared.summary.account_level) ||
           Number(profile.heroes_owned) !== Number(prepared.summary.heroes_owned) ||
           Number(profile.highest_location) !== Number(prepared.summary.highest_location)
