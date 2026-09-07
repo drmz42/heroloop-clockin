@@ -4,7 +4,7 @@ import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedI
 import {
   loadState, saveLegacyState, normalizeState, makeInitialState, makeRegisteredStarterState, starUpCost, summonCostHero,
   MAX_TEAM, MAX_HEROES, MAX_HERO_STARS, MAX_INVENTORY, MAX_CHESTS, MAX_ACCOUNT_XP, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
-  accountLevelFromXp, advanceHeroXp, heroSellValue, moscowDayKey,
+  accountLevelFromXp, advanceHeroXp, moscowDayKey,
   heroXpForLevel, TRAINING_SLOT_COSTS, TRAINING_BOOST_COSTS,
   ACTIVE_SESSION_MS,
   trainingTokenPenalty,
@@ -1620,41 +1620,6 @@ export function useGame() {
     return summary;
   }, [settleHeroSpend, settleServerPromotionAll]);
 
-  const sellHero = useCallback((uid: string) => {
-    setState((prev) => {
-      const hero = prev.ownedHeroes.find((h) => h.uid === uid);
-      const isLastAvatarCopy = hero && hero.heroId === prev.avatarHeroId && prev.ownedHeroes.filter((owned) => owned.heroId === hero.heroId).length <= 1;
-      if (!hero || hero.locked || prev.team.includes(uid) || prev.trainingCamp.heroUids.includes(uid) || prev.ownedHeroes.length <= 1 || isLastAvatarCopy) return prev;
-      const base = HERO_MAP[hero.heroId];
-      if (!base) return prev;
-      const refund = heroSellValue(base.rarity, hero.stars);
-      return { ...prev, gold: prev.gold + refund, ownedHeroes: prev.ownedHeroes.filter((h) => h.uid !== uid), team: prev.team.filter((t) => t !== uid) };
-    });
-  }, []);
-
-  const sellHeroes = useCallback((uids: string[]) => {
-    setState((prev) => {
-      const requested = new Set(uids);
-      const remainingByType = new Map<string, number>();
-      prev.ownedHeroes.forEach((hero) => remainingByType.set(hero.heroId, (remainingByType.get(hero.heroId) ?? 0) + 1));
-      const eligible = prev.ownedHeroes.filter((hero) => {
-        if (!requested.has(hero.uid) || hero.locked || prev.team.includes(hero.uid) || prev.trainingCamp.heroUids.includes(hero.uid)) return false;
-        const remaining = remainingByType.get(hero.heroId) ?? 0;
-        if (hero.heroId === prev.avatarHeroId && remaining <= 1) return false;
-        remainingByType.set(hero.heroId, remaining - 1);
-        return true;
-      });
-      const sellable = eligible.slice(0, Math.max(0, prev.ownedHeroes.length - 1));
-      if (sellable.length === 0) return prev;
-      const sold = new Set(sellable.map((hero) => hero.uid));
-      const refund = sellable.reduce((total, hero) => {
-        const base = HERO_MAP[hero.heroId];
-        return total + (base ? heroSellValue(base.rarity, hero.stars) : 0);
-      }, 0);
-      return { ...prev, gold: prev.gold + refund, ownedHeroes: prev.ownedHeroes.filter((hero) => !sold.has(hero.uid)) };
-    });
-  }, []);
-
   const toggleHeroLock = useCallback((uid: string) => {
     setState((prev) => ({ ...prev, ownedHeroes: prev.ownedHeroes.map((h) => h.uid === uid ? { ...h, locked: !h.locked } : h) }));
   }, []);
@@ -2483,7 +2448,7 @@ export function useGame() {
     state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, battleResult, combatRecovery, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
     offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
-    starUpHero, promoteAllHeroes, sellHero, sellHeroes, toggleHeroLock, markHeroSeen,
+    starUpHero, promoteAllHeroes, toggleHeroLock, markHeroSeen,
     summon, summonTen, summonHundred, summonBoss, syncBossKeys, toggleTeamMember, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,
     equipItem, unequipItem, unequipAll, equipmentError: () => equipmentErrorRef.current, sellItem, toggleItemLock, sellAllUnlocked,

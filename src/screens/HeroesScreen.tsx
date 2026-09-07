@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Star, Trash2, Lock, Unlock, Search, X, Sparkles, Users, Swords, Shield } from 'lucide-react';
+import { Star, Lock, Unlock, Search, X, Sparkles, Users, Swords, Shield } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, RARITY_INDEX, CLASS_LABEL } from '@/game/heroes';
-import { formatNum, starUpCost, heroXpForLevel, heroSellValue, MAX_HEROES, MAX_HERO_STARS } from '@/game/state';
+import { formatNum, starUpCost, heroXpForLevel, MAX_HEROES, MAX_HERO_STARS } from '@/game/state';
 import { heroStats, getEquippedItems, teamPower as calculateTeamPower } from '@/game/engine';
 import { COMBAT_EFFECTS_V2_PREVIEW, COMBAT_EFFECTS_V2_PRODUCTION_ACTIVE } from '@/game/combat-effects-v2-ui.mjs';
 import type { HeroBase, OwnedHero, Rarity } from '@/game/types';
@@ -31,7 +31,7 @@ function HeroStars({ stars, size }: { stars: number; size: number }) {
   })}</span>;
 }
 
-function HeroGridCard({ base, hero, game, selected, selectionMode, selectable, onSelect }: { base: HeroBase; hero: OwnedHero; game: GameApi; selected: boolean; selectionMode: boolean; selectable: boolean; onSelect: () => void }) {
+function HeroGridCard({ base, hero, game, selected, onSelect }: { base: HeroBase; hero: OwnedHero; game: GameApi; selected: boolean; onSelect: () => void }) {
   const rc = RARITY_COLORS[base.rarity];
   const isInTeam = game.state.team.includes(hero.uid);
   const respawn = game.respawnCountdowns[hero.uid] ?? 0;
@@ -41,8 +41,7 @@ function HeroGridCard({ base, hero, game, selected, selectionMode, selectable, o
   const stats = heroStats(hero, getEquippedItems(hero, game.state.inventory));
   const power = stats ? Math.round(stats.atk + stats.hp / 10 + stats.def * 2) : 0;
   return (
-    <div role="button" tabIndex={selectable || !selectionMode ? 0 : -1} aria-disabled={selectionMode && !selectable} onClick={() => { if (!selectionMode || selectable) onSelect(); }} onKeyDown={(event) => { if ((event.key === 'Enter' || event.key === ' ') && (!selectionMode || selectable)) onSelect(); }} className={`premium-hero-card rarity-${base.rarity} min-w-0 p-1.5 transition ${selectable || !selectionMode ? 'cursor-pointer' : 'cursor-not-allowed opacity-55'} ${selected ? 'premium-hero-card-selected' : ''} ${isInTeam ? 'premium-hero-card-active-team' : ''}`}>
-      {selectionMode && <span className={`absolute right-1.5 top-1.5 z-20 grid h-5 w-5 place-items-center rounded border text-[11px] font-black ${selected ? 'border-red-400 bg-red-600 text-white' : 'border-[#777064] bg-black/70 text-transparent'}`}>✓</span>}
+    <div role="button" tabIndex={0} onClick={onSelect} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelect(); }} className={`premium-hero-card rarity-${base.rarity} min-w-0 p-1.5 transition cursor-pointer ${selected ? 'premium-hero-card-selected' : ''} ${isInTeam ? 'premium-hero-card-active-team' : ''}`}>
       <div className="relative mx-auto w-fit">
         <HeroPortrait heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={80} active={isInTeam} badge={hero.level} respawn={respawn} />
       </div>
@@ -55,7 +54,7 @@ function HeroGridCard({ base, hero, game, selected, selectionMode, selectable, o
         {isInTeam && <StateBadge label="Selected" tone="green" />}
         {upgradeable && <StateBadge label="Upgrade" tone="purple" />}
       </div>
-      {hero.locked && !selectionMode && <Lock size={12} className="absolute right-2 top-2 z-10 text-amber-300" />}
+      {hero.locked && <Lock size={12} className="absolute right-2 top-2 z-10 text-amber-300" />}
     </div>
   );
 }
@@ -112,7 +111,7 @@ function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameA
           {powerNotice && <div aria-live="polite" className={`anim-banner mt-2 rounded border p-2 text-center text-sm font-black tabular-nums ${powerNotice.added ? 'border-emerald-400/55 bg-emerald-950/55 text-emerald-300' : 'border-red-400/55 bg-red-950/55 text-red-300'}`}>{powerNotice.added ? '+' : '−'}{formatNum(powerNotice.delta)} POWER</div>}
           {teamError && <div className="mt-2 rounded border border-red-500/45 bg-red-950/40 p-2 text-xs text-red-200">{teamError}</div>}
         </div>
-        <footer className="grid grid-cols-[minmax(0,1fr)_92px_44px] gap-2 border-t border-[#54442e] bg-black/20 p-3"><button type="button" onClick={async () => { const result = await game.toggleTeamMember(hero.uid); const succeeded = result === 'added' || result === 'removed'; setTeamError(result === 'inventory-full' ? 'Cannot remove hero: there is not enough room for equipped items. Free bag slots first.' : result === 'blocked' ? 'Team change is unavailable right now.' : ''); setPowerNotice(succeeded ? { delta: teamPowerDelta, added: result === 'added' } : null); }} className={`game-control h-9 px-2 text-[10px] font-black ${isInTeam ? 'game-danger' : 'game-primary'}`}>{isInTeam ? 'Remove from Team' : 'Add to Team'}</button><button type="button" onClick={() => game.toggleHeroLock(hero.uid)} className="game-control flex h-9 items-center justify-center gap-1.5 px-2 text-[10px] font-black" title={hero.locked ? 'Unlock hero' : 'Lock hero'}>{hero.locked ? <Lock size={14} className="text-amber-300" /> : <Unlock size={14} />} {hero.locked ? 'UNLOCK' : 'LOCK'}</button><button type="button" disabled={hero.locked || isInTeam || game.state.ownedHeroes.length <= 1 || (hero.heroId === game.state.avatarHeroId && game.state.ownedHeroes.filter((owned) => owned.heroId === hero.heroId).length <= 1)} onClick={() => { game.sellHero(hero.uid); onClose(); }} className="game-control game-danger h-9 disabled:cursor-not-allowed disabled:opacity-35" title={hero.heroId === game.state.avatarHeroId ? 'Change avatar before selling the last copy' : hero.locked ? 'Unlock before selling' : isInTeam ? 'Remove from team before selling' : 'Sell hero'}><Trash2 size={15} className="mx-auto" /></button></footer>
+        <footer className="grid grid-cols-[minmax(0,1fr)_92px] gap-2 border-t border-[#54442e] bg-black/20 p-3"><button type="button" onClick={async () => { const result = await game.toggleTeamMember(hero.uid); const succeeded = result === 'added' || result === 'removed'; setTeamError(result === 'inventory-full' ? 'Cannot remove hero: there is not enough room for equipped items. Free bag slots first.' : result === 'blocked' ? 'Team change is unavailable right now.' : ''); setPowerNotice(succeeded ? { delta: teamPowerDelta, added: result === 'added' } : null); }} className={`game-control h-9 px-2 text-[10px] font-black ${isInTeam ? 'game-danger' : 'game-primary'}`}>{isInTeam ? 'Remove from Team' : 'Add to Team'}</button><button type="button" onClick={() => game.toggleHeroLock(hero.uid)} className="game-control flex h-9 items-center justify-center gap-1.5 px-2 text-[10px] font-black" title={hero.locked ? 'Unlock hero' : 'Lock hero'}>{hero.locked ? <Lock size={14} className="text-amber-300" /> : <Unlock size={14} />} {hero.locked ? 'UNLOCK' : 'LOCK'}</button></footer>
       </div>
     </div>
   );
@@ -128,9 +127,6 @@ export function HeroesScreen({ game }: { game: GameApi }) {
   const [levelFilter, setLevelFilter] = useState<'all' | '1-19' | '20-39' | '40-59' | '60-79' | '80-99'>('all');
   const [search, setSearch] = useState('');
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedUids, setSelectedUids] = useState<Set<string>>(new Set());
-  const [confirmSale, setConfirmSale] = useState(false);
   const [promotionNotice, setPromotionNotice] = useState('');
   const [promoting, setPromoting] = useState(false);
   const activeTeamPower = useMemo(() => calculateTeamPower(state.ownedHeroes.filter((hero) => state.team.includes(hero.uid)), state.inventory), [state.team, state.ownedHeroes, state.inventory]);
@@ -155,12 +151,6 @@ export function HeroesScreen({ game }: { game: GameApi }) {
 
   const selected = selectedUid ? state.ownedHeroes.find((hero) => hero.uid === selectedUid) ?? null : null;
   const openHero = (hero: OwnedHero) => { game.markHeroSeen(hero.uid); setSelectedUid(hero.uid); };
-  const canSell = (hero: OwnedHero) => !hero.locked && !state.team.includes(hero.uid) && !(hero.heroId === state.avatarHeroId && state.ownedHeroes.filter((owned) => owned.heroId === hero.heroId).length <= 1);
-  const toggleSelected = (uid: string) => setSelectedUids((current) => { const next = new Set(current); if (next.has(uid)) next.delete(uid); else next.add(uid); return next; });
-  const selectVisible = () => setSelectedUids(new Set(entries.filter(({ hero }) => canSell(hero)).map(({ hero }) => hero.uid)));
-  const selectRarity = (rarity: string) => { if (rarity !== 'all') setSelectedUids(new Set(state.ownedHeroes.filter((hero) => HERO_MAP[hero.heroId]?.rarity === rarity && canSell(hero)).map((hero) => hero.uid))); };
-  const selectedRefund = state.ownedHeroes.filter((hero) => selectedUids.has(hero.uid)).reduce((total, hero) => { const base = HERO_MAP[hero.heroId]; return total + (base ? heroSellValue(base.rarity, hero.stars) : 0); }, 0);
-  const finishSale = () => { game.sellHeroes([...selectedUids]); setSelectedUids(new Set()); setConfirmSale(false); setSelectionMode(false); };
   const promoteAll = async () => {
     if (promoting) return;
     setPromoting(true);
@@ -186,7 +176,6 @@ export function HeroesScreen({ game }: { game: GameApi }) {
                   <button type="button" onClick={() => { setClassFilter('all'); setRarityFilter('all'); setLevelFilter('all'); setSearch(''); }} className="game-control h-8 px-2 text-[8px] font-black uppercase"><X size={11} className="mr-1 inline" />Clear filters</button>
                   <button type="button" disabled={promoting} onClick={() => void promoteAll()} className="game-control game-primary flex h-8 w-full items-center justify-center gap-1 px-2 text-[8px] font-black uppercase disabled:opacity-55"><Sparkles size={11} /> {promoting ? 'Promoting…' : 'Promote All'}</button>
                   {(['stars', 'power', 'level'] as const).map((value) => <button type="button" key={value} onClick={() => setSort(value)} className={`game-control h-8 px-2 text-[8px] font-bold uppercase ${sort === value ? 'game-primary' : ''}`}>{value}</button>)}
-                  <button type="button" onClick={() => { setSelectionMode((value) => !value); setSelectedUids(new Set()); }} className={`game-control h-8 px-2 text-[8px] font-black uppercase ${selectionMode ? 'game-primary' : ''}`}>{selectionMode ? 'Cancel selection' : 'Select heroes'}</button>
             </div>
           </div>
           <section className="relative overflow-hidden rounded-xl border border-[#a87b35] bg-[radial-gradient(circle_at_50%_0%,rgba(190,137,55,.2),transparent_58%),linear-gradient(160deg,#211b12,#0c0d0c)] p-3 shadow-[inset_0_1px_rgba(255,226,163,.12),0_8px_25px_rgba(0,0,0,.35)]">
@@ -201,11 +190,9 @@ export function HeroesScreen({ game }: { game: GameApi }) {
           </section>
         </div>
         {promotionNotice && <div className="anim-banner mt-2 flex items-start gap-2 rounded-lg border border-violet-500/45 bg-violet-950/45 px-3 py-2 text-xs font-bold text-violet-200"><span className="flex-1 text-center"><Sparkles size={13} className="mr-1 inline text-amber-300" />{promotionNotice}</span><button type="button" onClick={() => setPromotionNotice('')} aria-label="Dismiss promotion result"><X size={14} /></button></div>}
-        {selectionMode && <div className="mt-2 flex flex-wrap items-center gap-1.5"><button type="button" onClick={selectVisible} className="game-control px-3 text-[10px] font-bold">All visible</button><Filter value="all" onChange={selectRarity} label="Select rarity" options={['all', ...FILTER_RARITIES]} /><button type="button" onClick={() => setSelectedUids(new Set())} className="game-control px-3 text-[10px] font-bold">Clear</button><button type="button" disabled={selectedUids.size === 0} onClick={() => setConfirmSale(true)} className="game-control game-danger ml-auto px-3 text-[10px] font-black disabled:opacity-35"><Trash2 size={12} className="mr-1 inline" />Sell selected ({selectedUids.size})</button></div>}
       </header>
-      <div className="game-scrollbar min-h-0 flex-1 overflow-y-auto p-2"><div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">{entries.map(({ base, hero }) => <HeroGridCard key={hero.uid} base={base} hero={hero} game={game} selected={selectionMode ? selectedUids.has(hero.uid) : selected?.uid === hero.uid} selectionMode={selectionMode} selectable={canSell(hero)} onSelect={() => selectionMode ? toggleSelected(hero.uid) : openHero(hero)} />)}</div>{entries.length === 0 && <div className="material-panel mx-auto mt-16 max-w-sm p-6 text-center"><Shield className="mx-auto text-[#806b49]" /><div className="mt-2 font-bold text-[#d4c9b7]">No owned heroes match these filters</div><div className="mt-1 text-xs text-[#827c72]">Change class, rarity, level or search.</div></div>}</div>
+      <div className="game-scrollbar min-h-0 flex-1 overflow-y-auto p-2"><div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">{entries.map(({ base, hero }) => <HeroGridCard key={hero.uid} base={base} hero={hero} game={game} selected={selected?.uid === hero.uid} onSelect={() => openHero(hero)} />)}</div>{entries.length === 0 && <div className="material-panel mx-auto mt-16 max-w-sm p-6 text-center"><Shield className="mx-auto text-[#806b49]" /><div className="mt-2 font-bold text-[#d4c9b7]">No owned heroes match these filters</div><div className="mt-1 text-xs text-[#827c72]">Change class, rarity, level or search.</div></div>}</div>
       {selected && <HeroDetailModal hero={selected} game={game} onClose={() => setSelectedUid(null)} />}
-      {confirmSale && <div className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4 backdrop-blur-sm"><div className="material-panel w-full max-w-sm p-5 text-center"><Trash2 className="mx-auto text-red-400" /><h3 className="mt-2 text-lg font-black text-[#eee4d3]">Sell {selectedUids.size} heroes?</h3><p className="mt-1 text-xs text-[#a49c90]">This cannot be undone. You will receive {formatNum(selectedRefund)} Gold.</p><div className="mt-4 flex gap-2"><button type="button" onClick={() => setConfirmSale(false)} className="game-control flex-1 px-3 text-xs font-bold">Cancel</button><button type="button" onClick={finishSale} className="game-control game-danger flex-1 px-3 text-xs font-black">Confirm sale</button></div></div></div>}
     </div>
   );
 }
