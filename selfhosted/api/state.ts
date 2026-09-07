@@ -2,6 +2,7 @@ import {
   allowedGoldCredit,
   applyTrainingPurchases,
   deriveServerSummary,
+  preserveHeroOwnership,
   serverLocationCap,
 } from "../shared/authority.mjs";
 import {
@@ -380,25 +381,13 @@ export function mergeSaveState(
   }
   const currentListings = recordArray(current.marketListings);
   const escrowHeroes = currentListings.flatMap((listing) => isRecord(listing.hero) ? [listing.hero] : []);
-  const serverHeroes = [...recordArray(current.ownedHeroes), ...escrowHeroes];
-  requested.ownedHeroes = recordArray(requested.ownedHeroes).flatMap((candidate) => {
-    const authoritative = serverHeroes.find((hero) => String(hero.uid ?? "") === String(candidate.uid ?? ""));
-    if (!authoritative) return [];
-    const requestedEquipped = isRecord(candidate.equipped) ? candidate.equipped : {};
-    const authoritativeEquipped = isRecord(authoritative.equipped) ? authoritative.equipped : {};
-    const equipped = Object.fromEntries(Object.entries(requestedEquipped)
-      .filter(([, uid]) => savedInventoryIds.has(String(uid ?? "")) && !ledgerIds.has(String(uid ?? ""))));
-    for (const [slot, uid] of Object.entries(authoritativeEquipped)) {
-      if (ledgerIds.has(String(uid ?? ""))) equipped[slot] = uid;
-    }
-    return [{
-      ...authoritative,
-      equipped,
-      locked: candidate.locked,
-      isNew: candidate.isNew,
-      respawnAt: authoritative.respawnAt,
-    }];
-  });
+  requested.ownedHeroes = preserveHeroOwnership(
+    current.ownedHeroes,
+    escrowHeroes,
+    requested.ownedHeroes,
+    savedInventoryIds,
+    ledgerIds,
+  );
   if (recordArray(requested.ownedHeroes).length === 0) return { code: "invalid_owned_heroes", status: 400 };
   const savedHeroUids = new Set(recordArray(requested.ownedHeroes).map((hero) => String(hero.uid ?? "")));
   const requestedTeam = Array.isArray(requested.team)

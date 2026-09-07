@@ -462,11 +462,3 @@ export function formatNum(n: number): string {
   if (n < 1_000_000_000) return (n / 1_000_000).toFixed(2) + 'M';
   return (n / 1_000_000_000).toFixed(2) + 'B';
 }
-
-export function heroSellValue(rarity: string, stars: number): number {
-  const base: Record<string, number> = {
-    common: 15, uncommon: 40, rare: 100, epic: 250, legendary: 700,
-    mythic: 1800, relic: 1800, cursed: 1800, cosmic: 5000, divine: 15000, celestial: 40000,
-  };
-  return Math.round((base[rarity] ?? 15) * (1 + stars * 0.3));
-}
