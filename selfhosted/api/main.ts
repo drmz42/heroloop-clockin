@@ -668,8 +668,8 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
       }
       try {
         const result = await databaseJson(
-          "SELECT heroloop_api.hero_summon_quote($1::uuid, $2::bigint, $3::integer) AS result",
-          [identity.playerId, expectedRevision, count],
+          "SELECT heroloop_api.hero_summon_quote($1::uuid, $2::bigint, $3::integer, $4::boolean) AS result",
+          [identity.playerId, expectedRevision, count, testerControlsEnabled],
         );
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
       } catch (error) {

@@ -1414,7 +1414,7 @@ export function useGame() {
   }, [applyServerAscensionFocus]);
 
   const quoteHeroSummon = useCallback(async (count: 1 | 10 | 100): Promise<
-    { ok: true; quote: { quoteId: string; count: 1 | 10 | 100; usdMicros: number; tokenCost: number; dexSource: string; expiresAt: string } }
+    { ok: true; quote: { quoteId: string; count: 1 | 10 | 100; tokenCost: number; expiresAt: string } }
     | { ok: false; error: string }
   > => {
     const expectedRevision = serverRevisionHint;
@@ -1423,19 +1423,17 @@ export function useGame() {
     }
     let failure = 'hero_summon_quote_failed';
     const result = await playerSync<{
-      quote_id: string; summon_count: number; catalogue_usd_micros: number;
-      token_cost: number; dex_source: string; expires_at: string;
+      quote_id: string; summon_count: number; pricing_mode: string;
+      token_cost: number; expires_at: string;
     }>('hero_summon_quote', { count, expected_revision: expectedRevision }, (code) => { failure = code; });
     if (!result || typeof result.quote_id !== 'string' || result.summon_count !== count
-      || result.catalogue_usd_micros !== count * 20_000
-      || !Number.isSafeInteger(result.token_cost) || result.token_cost <= 0
-      || typeof result.dex_source !== 'string' || !result.dex_source
+      || result.pricing_mode !== 'test_hero'
+      || result.token_cost !== count * 20
       || typeof result.expires_at !== 'string' || !Number.isFinite(Date.parse(result.expires_at))) {
       return { ok: false, error: failure };
     }
     return { ok: true, quote: {
-      quoteId: result.quote_id, count, usdMicros: result.catalogue_usd_micros,
-      tokenCost: result.token_cost, dexSource: result.dex_source, expiresAt: result.expires_at,
+      quoteId: result.quote_id, count, tokenCost: result.token_cost, expiresAt: result.expires_at,
     } };
   }, [serverRevisionHint]);
 
