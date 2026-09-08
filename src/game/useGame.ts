@@ -1537,7 +1537,49 @@ export function useGame() {
     return { ok: true };
   }, [serverRevisionHint]);
 
-  const upgradeHeroCapacity = useCallback(async (): Promise<{ ok: true; spent: number } | { ok: false; error: string }> => {
+  const quoteHeroCapacity = useCallback(async (): Promise<
+    { ok: true; quote: { quoteId: string; previousCapacity: number; heroCapacity: number; usdCents: number; tokenCost: number; dexSource: string; expiresAt: string } }
+    | { ok: false; error: string }
+  > => {
+    const current = stateRef.current;
+    const expectedRevision = serverRevisionHint;
+    if (!tokenomicsEnabled || typeof expectedRevision !== 'number' || !Number.isSafeInteger(expectedRevision) || current.heroCapacity >= MAX_HERO_CAPACITY) {
+      return { ok: false, error: current.heroCapacity >= MAX_HERO_CAPACITY ? 'maximum_capacity' : 'state_unavailable' };
+    }
+    let failure = 'hero_capacity_quote_failed';
+    const result = await playerSync<{
+      quote_id: string;
+      previous_capacity: number;
+      hero_capacity: number;
+      catalogue_usd_cents: number;
+      token_cost: number;
+      dex_source: string;
+      expires_at: string;
+    }>('hero_capacity_quote', { expected_revision: expectedRevision }, (code) => { failure = code; });
+    if (!result || typeof result.quote_id !== 'string'
+      || result.previous_capacity !== current.heroCapacity
+      || result.hero_capacity !== current.heroCapacity + HERO_CAPACITY_STEP
+      || !Number.isSafeInteger(result.catalogue_usd_cents) || result.catalogue_usd_cents < 100
+      || !Number.isSafeInteger(result.token_cost) || result.token_cost <= 0
+      || typeof result.dex_source !== 'string' || !result.dex_source
+      || typeof result.expires_at !== 'string' || !Number.isFinite(Date.parse(result.expires_at))) {
+      return { ok: false, error: failure };
+    }
+    return {
+      ok: true,
+      quote: {
+        quoteId: result.quote_id,
+        previousCapacity: result.previous_capacity,
+        heroCapacity: result.hero_capacity,
+        usdCents: result.catalogue_usd_cents,
+        tokenCost: result.token_cost,
+        dexSource: result.dex_source,
+        expiresAt: result.expires_at,
+      },
+    };
+  }, [serverRevisionHint]);
+
+  const upgradeHeroCapacity = useCallback(async (quoteId: string): Promise<{ ok: true; spent: number } | { ok: false; error: string }> => {
     const current = stateRef.current;
     const expectedRevision = serverRevisionHint;
     if (!tokenomicsEnabled || typeof expectedRevision !== 'number' || !Number.isSafeInteger(expectedRevision) || current.heroCapacity >= MAX_HERO_CAPACITY) {
@@ -1552,6 +1594,7 @@ export function useGame() {
       revision: number;
     }>('hero_capacity_upgrade', {
       expected_revision: expectedRevision,
+      quote_id: quoteId,
       idempotency_key: createIdempotencyKey(),
     }, (code) => { failure = code; });
     if (!result || result.previous_capacity !== current.heroCapacity
@@ -2520,7 +2563,7 @@ export function useGame() {
     state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, battleResult, combatRecovery, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
     offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
-    starUpHero, promoteAllHeroes, releaseHero, upgradeHeroCapacity, toggleHeroLock, markHeroSeen,
+    starUpHero, promoteAllHeroes, releaseHero, quoteHeroCapacity, upgradeHeroCapacity, toggleHeroLock, markHeroSeen,
     summon, summonTen, summonHundred, summonBoss, syncBossKeys, toggleTeamMember, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,
     equipItem, unequipItem, unequipAll, equipmentError: () => equipmentErrorRef.current, sellItem, toggleItemLock, sellAllUnlocked,

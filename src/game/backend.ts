@@ -99,8 +99,8 @@ export async function playerSync<T>(
             ...(detail.revision === undefined ? {} : { revision: detail.revision }),
           } as T;
         }
-        if (action === 'spend_tokens' || action === 'hero_ascend' || action === 'hero_capacity_upgrade') {
-          const label = action === 'hero_ascend' ? 'Ascension' : action === 'hero_capacity_upgrade' ? 'Hero capacity upgrade' : '$HERO purchase';
+        if (action === 'spend_tokens' || action === 'hero_ascend') {
+          const label = action === 'hero_ascend' ? 'Ascension' : '$HERO purchase';
           window.alert(`${label} failed: ${message}`);
         }
         return null;
@@ -131,8 +131,8 @@ export async function playerSync<T>(
     );
     if (retrySafe && networkRetry < 1) return playerSync<T>(action, payload, onError, networkRetry + 1);
     onError?.(message);
-    if (action === 'spend_tokens' || action === 'hero_ascend' || action === 'hero_capacity_upgrade') {
-      const label = action === 'hero_ascend' ? 'Ascension' : action === 'hero_capacity_upgrade' ? 'Hero capacity upgrade' : '$HERO purchase';
+    if (action === 'spend_tokens' || action === 'hero_ascend') {
+      const label = action === 'hero_ascend' ? 'Ascension' : '$HERO purchase';
       window.alert(`${label} failed: ${message}`);
     }
   }

@@ -67,6 +67,7 @@ const commandActions = new Set([
   "ascension_focus_set",
   "hero_ascend",
   "hero_release",
+  "hero_capacity_quote",
   "hero_capacity_upgrade",
   "chest_open",
   "tutorial_quest_claim",
@@ -737,22 +738,43 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
         return errorResponse(503, "hero_release_failed", requestId);
       }
     }
-    if (parsed.value.action === "hero_capacity_upgrade") {
+    if (parsed.value.action === "hero_capacity_quote") {
       const payloadError = validatePayloadFields(payload, ["expected_revision"]);
+      const expectedRevision = Number(payload.expected_revision);
+      if (payloadError || !Number.isSafeInteger(expectedRevision) || expectedRevision < 1) {
+        return errorResponse(400, payloadError ?? "invalid_hero_capacity_quote", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.hero_capacity_quote($1::uuid, $2::bigint) AS result",
+          [identity.playerId, expectedRevision],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["state_conflict", "maximum_capacity", "dex_quote_unavailable"]);
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(503, "hero_capacity_quote_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "hero_capacity_upgrade") {
+      const payloadError = validatePayloadFields(payload, ["expected_revision", "quote_id"]);
       const requestKey = idempotencyKey(parsed.value);
       const expectedRevision = Number(payload.expected_revision);
-      if (payloadError || !requestKey || !Number.isSafeInteger(expectedRevision) || expectedRevision < 1) {
+      const quoteId = typeof payload.quote_id === "string" && uuidPattern.test(payload.quote_id) ? payload.quote_id : "";
+      if (payloadError || !requestKey || !quoteId || !Number.isSafeInteger(expectedRevision) || expectedRevision < 1) {
         return errorResponse(400, payloadError ?? "invalid_hero_capacity_upgrade", requestId);
       }
       try {
         const result = await databaseJson(
-          "SELECT heroloop_api.hero_capacity_upgrade($1::uuid, $2::uuid, $3::bigint) AS result",
-          [identity.playerId, requestKey, expectedRevision],
+          "SELECT heroloop_api.hero_capacity_upgrade($1::uuid, $2::uuid, $3::bigint, $4::uuid) AS result",
+          [identity.playerId, requestKey, expectedRevision, quoteId],
         );
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
       } catch (error) {
         const code = databaseErrorCode(error, [
           "state_conflict", "insufficient_tokens", "maximum_capacity", "idempotency_conflict",
+          "hero_capacity_quote_not_found", "quote_revision_mismatch", "hero_capacity_quote_expired",
+          "hero_capacity_quote_stale", "dex_quote_unavailable",
         ]);
         if (code) return errorResponse(409, code, requestId);
         console.error("hero_capacity_upgrade database adapter failed", { requestId });

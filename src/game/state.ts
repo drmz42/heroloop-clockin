@@ -255,14 +255,13 @@ export const STAR_DUPLICATE_BANDS: Partial<Record<Rarity, readonly [number, numb
   celestial: [1, 1, 1, 1],
 };
 export const STAGING_HERO_USD_MICROS = 1_000;
-export function heroCapacityUpgradeCost(capacity: number): { nextCapacity: number; hero: number; usdCents: number } | null {
+export function heroCapacityUpgradeCost(capacity: number): { nextCapacity: number; usdCents: number } | null {
   const normalized = BASE_HERO_CAPACITY + Math.floor((capacity - BASE_HERO_CAPACITY) / HERO_CAPACITY_STEP) * HERO_CAPACITY_STEP;
   const tier = (normalized - BASE_HERO_CAPACITY) / HERO_CAPACITY_STEP;
   const usdCents = HERO_CAPACITY_UPGRADE_USD_CENTS[tier];
   if (normalized < BASE_HERO_CAPACITY || normalized >= MAX_HERO_CAPACITY || usdCents === undefined) return null;
   return {
     nextCapacity: normalized + HERO_CAPACITY_STEP,
-    hero: Math.ceil((usdCents * 10_000) / STAGING_HERO_USD_MICROS),
     usdCents,
   };
 }

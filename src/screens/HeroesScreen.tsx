@@ -186,10 +186,22 @@ export function HeroesScreen({ game }: { game: GameApi }) {
   const [promotionNotice, setPromotionNotice] = useState('');
   const [promoting, setPromoting] = useState(false);
   const [capacityBusy, setCapacityBusy] = useState(false);
+  const [capacityQuote, setCapacityQuote] = useState<{
+    quoteId: string; previousCapacity: number; heroCapacity: number; usdCents: number;
+    tokenCost: number; dexSource: string; expiresAt: string;
+  } | null>(null);
   const [capacityNotice, setCapacityNotice] = useState('');
   const [capacityNoticeError, setCapacityNoticeError] = useState(false);
   const activeTeamPower = useMemo(() => calculateTeamPower(state.ownedHeroes.filter((hero) => state.team.includes(hero.uid)), state.inventory), [state.team, state.ownedHeroes, state.inventory]);
   const capacityUpgrade = heroCapacityUpgradeCost(state.heroCapacity);
+  useEffect(() => {
+    if (!capacityQuote) return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !capacityBusy) setCapacityQuote(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [capacityQuote, capacityBusy]);
 
   const entries = useMemo(() => {
     const list = state.ownedHeroes.map((hero) => ({ base: HERO_MAP[hero.heroId], hero })).filter((entry): entry is { base: HeroBase; hero: OwnedHero } => Boolean(entry.base)).filter(({ base, hero }) => {
@@ -221,21 +233,42 @@ export function HeroesScreen({ game }: { game: GameApi }) {
       setPromoting(false);
     }
   };
-  const upgradeCapacity = async () => {
+  const openCapacityUpgrade = async () => {
     if (!capacityUpgrade || capacityBusy) return;
     setCapacityBusy(true);
     setCapacityNotice('');
     setCapacityNoticeError(false);
     try {
-      const result = await game.upgradeHeroCapacity();
+      const result = await game.quoteHeroCapacity();
+      if (result.ok) {
+        setCapacityQuote(result.quote);
+        return;
+      }
+      setCapacityNoticeError(!result.ok);
+      setCapacityNotice(result.error === 'dex_quote_unavailable'
+        ? 'DEX price is unavailable · Capacity purchase is safely paused'
+        : result.error === 'maximum_capacity'
+          ? 'Maximum Hero capacity reached'
+          : 'Capacity quote unavailable · No $HERO was spent');
+    } finally {
+      setCapacityBusy(false);
+    }
+  };
+  const confirmCapacityUpgrade = async () => {
+    if (!capacityQuote || capacityBusy) return;
+    setCapacityBusy(true);
+    setCapacityNotice('');
+    try {
+      const result = await game.upgradeHeroCapacity(capacityQuote.quoteId);
       setCapacityNoticeError(!result.ok);
       setCapacityNotice(result.ok
-        ? `Hero capacity expanded to ${capacityUpgrade.nextCapacity} · ${formatNum(result.spent)} $HERO spent`
+        ? `Hero capacity expanded to ${capacityQuote.heroCapacity} · ${formatNum(result.spent)} $HERO spent`
         : result.error === 'insufficient_tokens'
-          ? 'Not enough $HERO for this capacity upgrade'
-          : result.error === 'maximum_capacity'
-            ? 'Maximum Hero capacity reached'
+          ? 'Not enough $HERO · No tokens were spent'
+          : result.error.includes('expired') || result.error.includes('stale') || result.error === 'state_conflict'
+            ? 'The DEX quote expired or your roster changed · Request a new quote'
             : 'Capacity upgrade unavailable · No $HERO was spent');
+      if (result.ok) setCapacityQuote(null);
     } finally {
       setCapacityBusy(false);
     }
@@ -246,7 +279,7 @@ export function HeroesScreen({ game }: { game: GameApi }) {
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="min-w-0">
             <div className="section-kicker">Hall of Champions</div>
-            <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2"><h2 className="text-xl font-black text-[#eee4d3]">My Heroes <span className="text-sm text-[#8f897e]">{state.ownedHeroes.length}/{state.heroCapacity}</span></h2><button type="button" onClick={() => void upgradeCapacity()} disabled={!capacityUpgrade || capacityBusy || (capacityUpgrade?.hero ?? 0) > state.hero} aria-busy={capacityBusy} className="game-control game-primary flex h-8 items-center gap-1 px-2 text-[8px] font-black uppercase disabled:cursor-not-allowed disabled:opacity-45" aria-label={capacityUpgrade ? `Expand Hero capacity to ${capacityUpgrade.nextCapacity} for ${formatNum(capacityUpgrade.hero)} HERO` : `Maximum Hero capacity ${MAX_HERO_CAPACITY}`} title={capacityUpgrade ? `$${(capacityUpgrade.usdCents / 100).toFixed(2)} catalogue · ${formatNum(capacityUpgrade.hero)} $HERO` : `Maximum capacity ${MAX_HERO_CAPACITY}`}><UserPlus size={12} />{capacityBusy ? 'Expanding…' : capacityUpgrade ? `+100 · ${formatNum(capacityUpgrade.hero)} HERO` : `MAX ${MAX_HERO_CAPACITY}`}</button></div>
+            <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2"><h2 className="text-xl font-black text-[#eee4d3]">My Heroes <span className="text-sm text-[#8f897e]">{state.ownedHeroes.length}/{state.heroCapacity}</span></h2><button type="button" onClick={() => void openCapacityUpgrade()} disabled={!capacityUpgrade || capacityBusy} aria-busy={capacityBusy} className="game-control game-primary flex min-h-11 items-center gap-1 px-3 text-[9px] font-black uppercase disabled:cursor-not-allowed disabled:opacity-45" aria-label={capacityUpgrade ? `Get DEX quote to expand Hero capacity to ${capacityUpgrade.nextCapacity}; USD catalogue price $${(capacityUpgrade.usdCents / 100).toFixed(2)}` : `Maximum Hero capacity ${MAX_HERO_CAPACITY}`} title={capacityUpgrade ? `USD catalogue $${(capacityUpgrade.usdCents / 100).toFixed(2)} · $HERO amount comes from a fresh DEX quote` : `Maximum capacity ${MAX_HERO_CAPACITY}`}><UserPlus size={12} />{capacityBusy ? 'Getting quote…' : capacityUpgrade ? `+100 · $${(capacityUpgrade.usdCents / 100).toFixed(2)}` : `MAX ${MAX_HERO_CAPACITY}`}</button></div>
             {capacityNotice && <div role={capacityNoticeError ? 'alert' : 'status'} className={`mt-1 text-[10px] font-bold ${capacityNoticeError ? 'text-red-300' : 'text-amber-200'}`}>{capacityNotice}</div>}
             <div className="mt-3 grid grid-cols-2 gap-1 sm:grid-cols-5">
                 <label className="relative block h-8"><Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#736d62]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search heroes" className="game-control h-8 w-full bg-transparent pl-7 pr-2 text-[10px] outline-none" /></label>
@@ -273,6 +306,26 @@ export function HeroesScreen({ game }: { game: GameApi }) {
       </header>
       <div className="game-scrollbar min-h-0 flex-1 overflow-y-auto p-2"><div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">{entries.map(({ base, hero }) => <HeroGridCard key={hero.uid} base={base} hero={hero} game={game} selected={selected?.uid === hero.uid} onSelect={() => openHero(hero)} />)}</div>{entries.length === 0 && <div className="material-panel mx-auto mt-16 max-w-sm p-6 text-center"><Shield className="mx-auto text-[#806b49]" /><div className="mt-2 font-bold text-[#d4c9b7]">No owned heroes match these filters</div><div className="mt-1 text-xs text-[#827c72]">Change class, rarity, level or search.</div></div>}</div>
       {selected && <HeroDetailModal hero={selected} game={game} onClose={() => setSelectedUid(null)} />}
+      {capacityQuote && (
+        <div className="fixed inset-0 z-[90] grid place-items-center bg-black/80 p-3 backdrop-blur-sm">
+          <section role="dialog" aria-modal="true" aria-labelledby="capacity-quote-title" tabIndex={-1} autoFocus className="material-panel game-scrollbar max-h-[calc(100vh-24px)] w-full max-w-md overflow-y-auto p-4 shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div><div className="section-kicker">Permanent storage</div><h3 id="capacity-quote-title" className="mt-1 text-lg font-black text-[#eee4d3]">Expand to {capacityQuote.heroCapacity} Heroes</h3></div>
+              <button type="button" onClick={() => setCapacityQuote(null)} disabled={capacityBusy} aria-label="Close capacity quote" className="game-control grid min-h-11 min-w-11 place-items-center"><X size={16} /></button>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <StatBox label="Catalogue price" value={`$${(capacityQuote.usdCents / 100).toFixed(2)}`} />
+              <StatBox label="Current DEX quote" value={`${formatNum(capacityQuote.tokenCost)} $HERO`} />
+            </div>
+            <p className="mt-3 text-sm leading-relaxed text-[#aaa397]">The USD price is fixed for this tier. The $HERO amount was calculated by the server from <b className="text-[#e6d5b4]">{capacityQuote.dexSource}</b> and is locked only until {new Date(capacityQuote.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.</p>
+            {capacityQuote.tokenCost > state.hero && <p role="alert" className="mt-2 rounded border border-red-500/45 bg-red-950/35 p-2 text-xs text-red-200">Not enough $HERO · need {formatNum(capacityQuote.tokenCost - state.hero)} more</p>}
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => setCapacityQuote(null)} disabled={capacityBusy} className="game-control min-h-11 text-sm font-black">Cancel</button>
+              <button type="button" onClick={() => void confirmCapacityUpgrade()} disabled={capacityBusy || capacityQuote.tokenCost > state.hero} aria-busy={capacityBusy} className="game-control game-primary min-h-11 px-3 text-sm font-black disabled:opacity-45">{capacityBusy ? 'Confirming…' : `Pay ${formatNum(capacityQuote.tokenCost)} $HERO`}</button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
