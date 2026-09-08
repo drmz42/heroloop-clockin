@@ -8,7 +8,10 @@ const STORAGE_KEY = 'afk-heroes-save-v7';
 export const STARTER_HERO_ID = 'shepherd-common';
 export const RESPAWN_TIME_MS = 15_000;
 export const MAX_TEAM = 3;
-export const MAX_HEROES = 500;
+export const BASE_HERO_CAPACITY = 500;
+export const MAX_HERO_CAPACITY = 1_000;
+export const HERO_CAPACITY_STEP = 100;
+export const HERO_CAPACITY_UPGRADE_USD_CENTS = [100, 200, 300, 400, 500] as const;
 export const MAX_INVENTORY = 64;
 export const MAX_CHESTS = 500;
 export const ROTATING_REFRESH_MS = 4 * 60 * 60 * 1000;
@@ -128,6 +131,7 @@ export function makeInitialState(): GameState {
     hero: STARTING_HERO_TOKENS,
     accountXp: 0,
     accountLevel: 1,
+    heroCapacity: BASE_HERO_CAPACITY,
     ownedHeroes: [hero],
     team: [hero.uid],
     inventory: [],
@@ -251,6 +255,17 @@ export const STAR_DUPLICATE_BANDS: Partial<Record<Rarity, readonly [number, numb
   celestial: [1, 1, 1, 1],
 };
 export const STAGING_HERO_USD_MICROS = 1_000;
+export function heroCapacityUpgradeCost(capacity: number): { nextCapacity: number; hero: number; usdCents: number } | null {
+  const normalized = BASE_HERO_CAPACITY + Math.floor((capacity - BASE_HERO_CAPACITY) / HERO_CAPACITY_STEP) * HERO_CAPACITY_STEP;
+  const tier = (normalized - BASE_HERO_CAPACITY) / HERO_CAPACITY_STEP;
+  const usdCents = HERO_CAPACITY_UPGRADE_USD_CENTS[tier];
+  if (normalized < BASE_HERO_CAPACITY || normalized >= MAX_HERO_CAPACITY || usdCents === undefined) return null;
+  return {
+    nextCapacity: normalized + HERO_CAPACITY_STEP,
+    hero: Math.ceil((usdCents * 10_000) / STAGING_HERO_USD_MICROS),
+    usdCents,
+  };
+}
 export const STAR_UP_BASE_USD_CENTS: Partial<Record<Rarity, number>> = {
   common: 1,
   uncommon: 2,
@@ -394,6 +409,10 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
       hero: parsed.hero ?? LEGACY_MISSING_HERO_TOKENS,
       accountXp,
       accountLevel,
+      heroCapacity: Math.min(
+        MAX_HERO_CAPACITY,
+        BASE_HERO_CAPACITY + Math.floor((Math.max(BASE_HERO_CAPACITY, parsed.heroCapacity ?? BASE_HERO_CAPACITY) - BASE_HERO_CAPACITY) / HERO_CAPACITY_STEP) * HERO_CAPACITY_STEP,
+      ),
       totalKills: parsed.totalKills ?? 0,
       totalBossKills: parsed.totalBossKills ?? parsed.session?.bossKills ?? 0,
       summonScrolls: Math.max(0, Math.floor(parsed.summonScrolls ?? 0)),

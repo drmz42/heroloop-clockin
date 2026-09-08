@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Star, Lock, Unlock, Trash2, Search, X, Sparkles, Users, Swords, Shield, AlertTriangle } from 'lucide-react';
+import { Star, Lock, Unlock, Trash2, Search, X, Sparkles, Users, Swords, Shield, AlertTriangle, UserPlus } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, RARITY_INDEX, CLASS_LABEL } from '@/game/heroes';
-import { formatNum, starUpCost, heroXpForLevel, MAX_HEROES, MAX_HERO_STARS } from '@/game/state';
+import { formatNum, starUpCost, heroXpForLevel, heroCapacityUpgradeCost, MAX_HERO_CAPACITY, MAX_HERO_STARS } from '@/game/state';
 import { heroStats, getEquippedItems, teamPower as calculateTeamPower } from '@/game/engine';
 import { COMBAT_EFFECTS_V2_PREVIEW, COMBAT_EFFECTS_V2_PRODUCTION_ACTIVE } from '@/game/combat-effects-v2-ui.mjs';
 import type { HeroBase, OwnedHero, Rarity } from '@/game/types';
@@ -185,7 +185,11 @@ export function HeroesScreen({ game }: { game: GameApi }) {
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
   const [promotionNotice, setPromotionNotice] = useState('');
   const [promoting, setPromoting] = useState(false);
+  const [capacityBusy, setCapacityBusy] = useState(false);
+  const [capacityNotice, setCapacityNotice] = useState('');
+  const [capacityNoticeError, setCapacityNoticeError] = useState(false);
   const activeTeamPower = useMemo(() => calculateTeamPower(state.ownedHeroes.filter((hero) => state.team.includes(hero.uid)), state.inventory), [state.team, state.ownedHeroes, state.inventory]);
+  const capacityUpgrade = heroCapacityUpgradeCost(state.heroCapacity);
 
   const entries = useMemo(() => {
     const list = state.ownedHeroes.map((hero) => ({ base: HERO_MAP[hero.heroId], hero })).filter((entry): entry is { base: HeroBase; hero: OwnedHero } => Boolean(entry.base)).filter(({ base, hero }) => {
@@ -217,13 +221,33 @@ export function HeroesScreen({ game }: { game: GameApi }) {
       setPromoting(false);
     }
   };
+  const upgradeCapacity = async () => {
+    if (!capacityUpgrade || capacityBusy) return;
+    setCapacityBusy(true);
+    setCapacityNotice('');
+    setCapacityNoticeError(false);
+    try {
+      const result = await game.upgradeHeroCapacity();
+      setCapacityNoticeError(!result.ok);
+      setCapacityNotice(result.ok
+        ? `Hero capacity expanded to ${capacityUpgrade.nextCapacity} · ${formatNum(result.spent)} $HERO spent`
+        : result.error === 'insufficient_tokens'
+          ? 'Not enough $HERO for this capacity upgrade'
+          : result.error === 'maximum_capacity'
+            ? 'Maximum Hero capacity reached'
+            : 'Capacity upgrade unavailable · No $HERO was spent');
+    } finally {
+      setCapacityBusy(false);
+    }
+  };
   return (
     <div className="premium-screen themed-screen themed-screen-heroes flex h-full flex-col overflow-hidden">
       <header className="material-panel m-2 mb-0 shrink-0 p-3">
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="min-w-0">
             <div className="section-kicker">Hall of Champions</div>
-            <h2 className="mt-0.5 text-xl font-black text-[#eee4d3]">My Heroes <span className="text-sm text-[#8f897e]">{state.ownedHeroes.length}/{MAX_HEROES}</span></h2>
+            <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2"><h2 className="text-xl font-black text-[#eee4d3]">My Heroes <span className="text-sm text-[#8f897e]">{state.ownedHeroes.length}/{state.heroCapacity}</span></h2><button type="button" onClick={() => void upgradeCapacity()} disabled={!capacityUpgrade || capacityBusy || (capacityUpgrade?.hero ?? 0) > state.hero} aria-busy={capacityBusy} className="game-control game-primary flex h-8 items-center gap-1 px-2 text-[8px] font-black uppercase disabled:cursor-not-allowed disabled:opacity-45" aria-label={capacityUpgrade ? `Expand Hero capacity to ${capacityUpgrade.nextCapacity} for ${formatNum(capacityUpgrade.hero)} HERO` : `Maximum Hero capacity ${MAX_HERO_CAPACITY}`} title={capacityUpgrade ? `$${(capacityUpgrade.usdCents / 100).toFixed(2)} catalogue · ${formatNum(capacityUpgrade.hero)} $HERO` : `Maximum capacity ${MAX_HERO_CAPACITY}`}><UserPlus size={12} />{capacityBusy ? 'Expanding…' : capacityUpgrade ? `+100 · ${formatNum(capacityUpgrade.hero)} HERO` : `MAX ${MAX_HERO_CAPACITY}`}</button></div>
+            {capacityNotice && <div role={capacityNoticeError ? 'alert' : 'status'} className={`mt-1 text-[10px] font-bold ${capacityNoticeError ? 'text-red-300' : 'text-amber-200'}`}>{capacityNotice}</div>}
             <div className="mt-3 grid grid-cols-2 gap-1 sm:grid-cols-5">
                 <label className="relative block h-8"><Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#736d62]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search heroes" className="game-control h-8 w-full bg-transparent pl-7 pr-2 text-[10px] outline-none" /></label>
                   <Filter value={classFilter} onChange={setClassFilter} label="Class" options={['all', 'knight', 'archer', 'assassin', 'shepherd', 'druid']} />

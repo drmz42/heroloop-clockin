@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey } from '@/game/types';
 import {
   loadState, saveLegacyState, normalizeState, makeInitialState, makeRegisteredStarterState, starUpCost, summonCostHero,
-  MAX_TEAM, MAX_HEROES, MAX_HERO_STARS, MAX_INVENTORY, MAX_CHESTS, MAX_ACCOUNT_XP, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
+  MAX_TEAM, BASE_HERO_CAPACITY, MAX_HERO_CAPACITY, HERO_CAPACITY_STEP, MAX_HERO_STARS, MAX_INVENTORY, MAX_CHESTS, MAX_ACCOUNT_XP, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
   accountLevelFromXp, advanceHeroXp, moscowDayKey,
   heroXpForLevel, TRAINING_SLOT_COSTS, TRAINING_BOOST_COSTS,
   ACTIVE_SESSION_MS,
@@ -1537,6 +1537,43 @@ export function useGame() {
     return { ok: true };
   }, [serverRevisionHint]);
 
+  const upgradeHeroCapacity = useCallback(async (): Promise<{ ok: true; spent: number } | { ok: false; error: string }> => {
+    const current = stateRef.current;
+    const expectedRevision = serverRevisionHint;
+    if (!tokenomicsEnabled || typeof expectedRevision !== 'number' || !Number.isSafeInteger(expectedRevision) || current.heroCapacity >= MAX_HERO_CAPACITY) {
+      return { ok: false, error: current.heroCapacity >= MAX_HERO_CAPACITY ? 'maximum_capacity' : 'state_unavailable' };
+    }
+    let failure = 'hero_capacity_upgrade_failed';
+    const result = await playerSync<{
+      previous_capacity: number;
+      hero_capacity: number;
+      token_balance: number;
+      spent: number;
+      revision: number;
+    }>('hero_capacity_upgrade', {
+      expected_revision: expectedRevision,
+      idempotency_key: createIdempotencyKey(),
+    }, (code) => { failure = code; });
+    if (!result || result.previous_capacity !== current.heroCapacity
+      || result.hero_capacity !== current.heroCapacity + HERO_CAPACITY_STEP
+      || result.hero_capacity < BASE_HERO_CAPACITY || result.hero_capacity > MAX_HERO_CAPACITY
+      || !Number.isSafeInteger(result.token_balance) || result.token_balance < 0
+      || !Number.isSafeInteger(result.spent) || result.spent <= 0
+      || !Number.isSafeInteger(result.revision) || result.revision <= expectedRevision) {
+      return { ok: false, error: failure };
+    }
+    const nextState = {
+      ...stateRef.current,
+      hero: result.token_balance,
+      heroCapacity: result.hero_capacity,
+      milestoneQuests: updateQuestProgress(stateRef.current.milestoneQuests, 'token-spent-', result.spent),
+    };
+    stateRef.current = nextState;
+    setState(nextState);
+    setServerRevisionHint(result.revision);
+    return { ok: true, spent: result.spent };
+  }, [serverRevisionHint]);
+
   const settleHeroSpend = useCallback(async (amount: number, actionKind: string): Promise<number | null> => {
     const safeAmount = Math.max(0, Math.floor(amount));
     if (safeAmount === 0) return stateRef.current.hero;
@@ -1709,7 +1746,7 @@ export function useGame() {
 
   const summon = useCallback(async (): Promise<OwnedHero | null> => {
     const cost = summonCostHero();
-    if ((!tokenomicsEnabled && stateRef.current.hero < cost) || stateRef.current.ownedHeroes.length >= MAX_HEROES) return null;
+    if ((!tokenomicsEnabled && stateRef.current.hero < cost) || stateRef.current.ownedHeroes.length >= stateRef.current.heroCapacity) return null;
     const settled = await settleServerSummon(1);
     if (!settled) return null;
     const owned = settled.heroes[0];
@@ -1719,7 +1756,7 @@ export function useGame() {
 
   const summonTen = useCallback(async (): Promise<OwnedHero[]> => {
     const cost = summonCostHero() * 10;
-    if ((!tokenomicsEnabled && stateRef.current.hero < cost) || stateRef.current.ownedHeroes.length + 10 > MAX_HEROES) return [];
+    if ((!tokenomicsEnabled && stateRef.current.hero < cost) || stateRef.current.ownedHeroes.length + 10 > stateRef.current.heroCapacity) return [];
     const settled = await settleServerSummon(10);
     if (!settled) return [];
     const results = settled.heroes;
@@ -1730,7 +1767,7 @@ export function useGame() {
   const summonHundred = useCallback(async (): Promise<OwnedHero[]> => {
     const count = 100;
     const cost = summonCostHero() * count;
-    if ((!tokenomicsEnabled && stateRef.current.hero < cost) || stateRef.current.ownedHeroes.length + count > MAX_HEROES) return [];
+    if ((!tokenomicsEnabled && stateRef.current.hero < cost) || stateRef.current.ownedHeroes.length + count > stateRef.current.heroCapacity) return [];
     const settled = await settleServerSummon(100);
     if (!settled) return [];
     const results = settled.heroes;
@@ -2483,7 +2520,7 @@ export function useGame() {
     state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, battleResult, combatRecovery, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
     offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
-    starUpHero, promoteAllHeroes, releaseHero, toggleHeroLock, markHeroSeen,
+    starUpHero, promoteAllHeroes, releaseHero, upgradeHeroCapacity, toggleHeroLock, markHeroSeen,
     summon, summonTen, summonHundred, summonBoss, syncBossKeys, toggleTeamMember, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,
     equipItem, unequipItem, unequipAll, equipmentError: () => equipmentErrorRef.current, sellItem, toggleItemLock, sellAllUnlocked,

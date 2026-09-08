@@ -327,6 +327,7 @@ export interface GameState {
   hero: number;
   accountXp: number;
   accountLevel: number;
+  heroCapacity: number;
   ownedHeroes: OwnedHero[];
   team: string[];
   inventory: OwnedItem[];

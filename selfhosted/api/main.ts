@@ -67,6 +67,7 @@ const commandActions = new Set([
   "ascension_focus_set",
   "hero_ascend",
   "hero_release",
+  "hero_capacity_upgrade",
   "chest_open",
   "tutorial_quest_claim",
   "quest_claim",
@@ -734,6 +735,28 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
         if (code) return errorResponse(409, code, requestId);
         console.error("hero_release database adapter failed", { requestId });
         return errorResponse(503, "hero_release_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "hero_capacity_upgrade") {
+      const payloadError = validatePayloadFields(payload, ["expected_revision"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const expectedRevision = Number(payload.expected_revision);
+      if (payloadError || !requestKey || !Number.isSafeInteger(expectedRevision) || expectedRevision < 1) {
+        return errorResponse(400, payloadError ?? "invalid_hero_capacity_upgrade", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.hero_capacity_upgrade($1::uuid, $2::uuid, $3::bigint) AS result",
+          [identity.playerId, requestKey, expectedRevision],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "state_conflict", "insufficient_tokens", "maximum_capacity", "idempotency_conflict",
+        ]);
+        if (code) return errorResponse(409, code, requestId);
+        console.error("hero_capacity_upgrade database adapter failed", { requestId });
+        return errorResponse(503, "hero_capacity_upgrade_failed", requestId);
       }
     }
     if (parsed.value.action === "chest_open") {

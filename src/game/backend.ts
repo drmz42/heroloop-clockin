@@ -99,8 +99,8 @@ export async function playerSync<T>(
             ...(detail.revision === undefined ? {} : { revision: detail.revision }),
           } as T;
         }
-        if (action === 'spend_tokens' || action === 'hero_ascend') {
-          const label = action === 'hero_ascend' ? 'Ascension' : '$HERO purchase';
+        if (action === 'spend_tokens' || action === 'hero_ascend' || action === 'hero_capacity_upgrade') {
+          const label = action === 'hero_ascend' ? 'Ascension' : action === 'hero_capacity_upgrade' ? 'Hero capacity upgrade' : '$HERO purchase';
           window.alert(`${label} failed: ${message}`);
         }
         return null;
@@ -120,7 +120,7 @@ export async function playerSync<T>(
   } catch (error) {
     const message = error instanceof Error ? error.message : 'network_error';
     const retrySafe = typeof payload.idempotency_key === 'string' && (
-      action === 'hero_summon' || action === 'hero_ascend' || action === 'hero_release' || action === 'ascension_focus_set' || action === 'promo_redeem' || action === 'spend_tokens' || action === 'chest_open'
+      action === 'hero_summon' || action === 'hero_ascend' || action === 'hero_release' || action === 'hero_capacity_upgrade' || action === 'ascension_focus_set' || action === 'promo_redeem' || action === 'spend_tokens' || action === 'chest_open'
       || action === 'tutorial_quest_claim' || action === 'quest_claim' || action === 'tutorial_chest_open'
       || action === 'item_mutate' || action === 'item_equip' || action === 'item_upgrade' || action === 'market_list_item'
       || action === 'market_cancel_listing' || action === 'market_buy_listing' || action === 'store_buy_item'
@@ -131,8 +131,8 @@ export async function playerSync<T>(
     );
     if (retrySafe && networkRetry < 1) return playerSync<T>(action, payload, onError, networkRetry + 1);
     onError?.(message);
-    if (action === 'spend_tokens' || action === 'hero_ascend') {
-      const label = action === 'hero_ascend' ? 'Ascension' : '$HERO purchase';
+    if (action === 'spend_tokens' || action === 'hero_ascend' || action === 'hero_capacity_upgrade') {
+      const label = action === 'hero_ascend' ? 'Ascension' : action === 'hero_capacity_upgrade' ? 'Hero capacity upgrade' : '$HERO purchase';
       window.alert(`${label} failed: ${message}`);
     }
   }

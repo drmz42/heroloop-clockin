@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, ChevronDown, Info, Sparkles, Target, X } from 'lucide-react';
 import { HERO_MAP, RARITY_COLORS, RARITY_GLOW, RARITY_INDEX, RARITY_LABEL, RARITY_WEIGHT } from '@/game/heroes';
-import { summonCostHero, formatNum, MAX_HEROES } from '@/game/state';
+import { summonCostHero, formatNum } from '@/game/state';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import type { OwnedHero, Rarity } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
@@ -80,9 +80,9 @@ export function SummonScreen({ game }: { game: GameApi }) {
   const [showFocus, setShowFocus] = useState(false);
   const [showPityInfo, setShowPityInfo] = useState(false);
   const cost = summonCostHero();
-  const singleHasSpace = state.ownedHeroes.length < MAX_HEROES;
-  const tenHasSpace = state.ownedHeroes.length + 10 <= MAX_HEROES;
-  const hundredHasSpace = state.ownedHeroes.length + 100 <= MAX_HEROES;
+  const singleHasSpace = state.ownedHeroes.length < state.heroCapacity;
+  const tenHasSpace = state.ownedHeroes.length + 10 <= state.heroCapacity;
+  const hundredHasSpace = state.ownedHeroes.length + 100 <= state.heroCapacity;
   const canSingle = singleHasSpace && state.hero >= cost;
   const canTen = tenHasSpace && state.hero >= cost * 10;
   const canHundred = hundredHasSpace && state.hero >= cost * 100;
@@ -221,7 +221,7 @@ export function SummonScreen({ game }: { game: GameApi }) {
         <div className="section-kicker mb-2">Summon account</div>
         <div className="rounded-lg border border-cyan-500/25 bg-cyan-950/15 px-3 py-2.5">
           <span className="flex items-center gap-1.5 text-sm font-black text-cyan-200"><HeroTokenIcon size={16} /> {formatNum(state.hero)} $HERO</span>
-          <span className="mt-1 block text-[9px] font-medium text-slate-500">{state.summons} summons · {state.ownedHeroes.length}/{MAX_HEROES} heroes</span>
+          <span className="mt-1 block text-[9px] font-medium text-slate-500">{state.summons} summons · {state.ownedHeroes.length}/{state.heroCapacity} heroes</span>
         </div>
         <div className="mb-1 mt-3 text-[9px] font-black uppercase tracking-[.14em] text-[#ad9ab5]">Base summon rates</div>
         <div className="summon-rate-panel grid gap-1">
