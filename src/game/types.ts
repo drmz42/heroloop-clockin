@@ -77,6 +77,7 @@ export interface OwnedItem {
   isNew?: boolean;
   enchantLevel: number;   // 0–20; Balance v4 uses four non-compounding stat bands
   enchantStatsVersion?: 2 | 3 | 4; // v4 is checksum-bound tiered Enchant plus eight-slot Resonance
+  itemRollVersion?: 2 | 3 | 4 | 5; // base-stat roll model; v5 is the Option-A generated contract
   rerollCount: number;    // how many times rerolled (affects cost)
 }
 

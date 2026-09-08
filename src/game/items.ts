@@ -3,6 +3,7 @@ import { RARITY_COLORS, RARITY_INDEX } from './heroes';
 import {
   enchantGoldCost, enchantGuaranteedHeroCost, enchantMultiplier,
 } from './enchant';
+import { itemRollV5Power, itemRollV5RollItem } from './item-roll-runtime.generated';
 
 export { HERO_USD_QUOTE, enchantSuccessChance } from './enchant';
 
@@ -23,54 +24,11 @@ export const STAT_LABEL: Record<ItemStatKey, string> = {
   goldBonus: 'Gold Bonus', xpBonus: 'XP Bonus', dodge: 'Dodge',
 };
 
-// How many stats per rarity
-const RARITY_STAT_COUNT: Record<Rarity, [number, number]> = {
-  common: [1, 1], uncommon: [1, 1], rare: [2, 2], epic: [2, 2],
-  legendary: [3, 3], mythic: [3, 3], cosmic: [4, 4], divine: [4, 4], celestial: [5, 5],
-  cursed: [5, 5], immortal: [6, 6], god: [6, 6], relic: [3, 3],
-};
-
 // HEAVILY NERFED — items give small bonuses at low rarity, only significant at late game
 const RARITY_MULT: Record<Rarity, number> = {
   common: 1, uncommon: 1.15, rare: 1.35, epic: 1.6,
   legendary: 1.9, mythic: 2.25, relic: 2.25, cosmic: 2.65, divine: 3.1, celestial: 3.6,
   cursed: 4.1, immortal: 4.7, god: 5.4,
-};
-
-// Base stat ranges at level 1 (NERFED)
-const STAT_BASES: Record<ItemStatKey, [number, number]> = {
-  hp:         [3.658817373, 4.573521716],
-  atk:        [.914704343, 1.143380429],
-  def:        [.335391593, .419239491],
-  atkSpeed:   [.003235908, .004044885],
-  critChance: [.003106472, .00388309],
-  critDamage: [.004400835, .005501044],
-  goldBonus:  [.005177453, .006471816],
-  xpBonus:    [.005177453, .006471816],
-  dodge:      [.001553236, .001941545],
-};
-
-const SLOT_STATS: Record<ItemSlot, ItemStatKey[]> = {
-  class_weapon: ['atk', 'atkSpeed', 'critChance', 'critDamage', 'hp'],
-  offhand: ['hp', 'def', 'atk', 'critChance', 'critDamage'],
-  chest: ['hp', 'def', 'dodge', 'atk', 'critDamage'],
-  ring: ['atk', 'critChance', 'critDamage', 'dodge', 'goldBonus', 'xpBonus', 'hp'],
-  weapon: ['atk', 'atkSpeed', 'critChance', 'critDamage', 'hp'],
-  helmet: ['hp', 'def', 'dodge', 'critChance', 'critDamage'],
-  armor: ['hp', 'def', 'dodge', 'atk', 'critDamage'],
-  gloves: ['atk', 'atkSpeed', 'critChance', 'critDamage', 'def'],
-  boots: ['hp', 'def', 'dodge', 'atkSpeed', 'critChance'],
-  ring1: ['atk', 'critChance', 'critDamage', 'dodge', 'goldBonus', 'xpBonus', 'hp'],
-  ring2: ['atk', 'critChance', 'critDamage', 'dodge', 'goldBonus', 'xpBonus', 'hp'],
-  amulet: ['hp', 'def', 'critDamage', 'dodge', 'goldBonus', 'xpBonus', 'critChance'],
-};
-
-const OFFHAND_STATS: Record<HeroClass, ItemStatKey[]> = {
-  knight: ['hp', 'def', 'dodge', 'atk', 'critChance'],
-  shepherd: ['atk', 'atkSpeed', 'critChance', 'critDamage', 'hp'],
-  assassin: ['atk', 'atkSpeed', 'critChance', 'critDamage', 'dodge'],
-  druid: ['hp', 'def', 'atk', 'critChance', 'critDamage'],
-  archer: ['atk', 'atkSpeed', 'critChance', 'critDamage', 'hp'],
 };
 
 // Max chest rarity per location tier
@@ -281,36 +239,11 @@ export function rerollCost(rarity: Rarity, rerollCount: number): number {
 
 // ── Stat rolling ──────────────────────────────────────────────────────────
 
-function rand(min: number, max: number): number {
-  return min + Math.random() * (max - min);
-}
-
 function rollStats(slot: ItemSlot, rarity: Rarity, level: number, itemId: string): ItemStatRoll[] {
-  const [minC, maxC] = RARITY_STAT_COUNT[rarity];
-  const count = minC + Math.floor(Math.random() * (maxC - minC + 1));
-  const itemClass = ITEM_MAP[itemId]?.heroClass;
-  const allowed = slot === 'offhand' && itemClass ? OFFHAND_STATS[itemClass] : SLOT_STATS[slot];
-  let pool = [...allowed];
-  const mult = RARITY_MULT[rarity];
-  const chosen: ItemStatKey[] = [];
-  for (let i = 0; i < count; i++) {
-    if (pool.length === 0) pool = [...allowed];
-    chosen.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
-  }
-  return chosen.map((key) => {
-    const [b1, b2] = STAT_BASES[key];
-    const isMain = key === 'hp' || key === 'atk' || key === 'def';
-    const lvlScale = 1 + (level - 1) * (isMain ? .015 : .005) + .2 * Math.floor((level - 1) / 15);
-    const raw = rand(b1, b2) * (isMain ? mult : Math.sqrt(mult)) * lvlScale;
-    const isPct = key === 'critChance' || key === 'critDamage'
-      || key === 'goldBonus' || key === 'xpBonus' || key === 'dodge'
-      || key === 'atkSpeed';
-    return {
-      key,
-      value: isPct ? Math.round(raw * 1_000_000) / 1_000_000 : Math.round(raw),
-      isPercent: isPct,
-    };
-  });
+  const canonicalSlot = slot === 'weapon' ? 'class_weapon'
+    : slot === 'armor' ? 'chest'
+      : slot === 'ring1' || slot === 'ring2' ? 'ring' : slot;
+  return itemRollV5RollItem(canonicalSlot, rarity, level, itemId, () => Math.random()) as ItemStatRoll[];
 }
 
 export function itemPower(stats: ItemStatRoll[], enchantLevel = 0, version: 2 | 3 | 4 = 4): number {
@@ -337,8 +270,8 @@ export function rollItem(itemId: string, level: number): OwnedItem {
   const stats = rollStats(base.slot, base.rarity, level, itemId);
   return {
     uid: globalThis.crypto?.randomUUID?.() ?? `it-${Date.now().toString(36)}-${itemUid++}-${Math.random().toString(36).slice(2)}`,
-    itemId, level, stats, power: itemPower(stats),
-    enchantLevel: 0, enchantStatsVersion: 4, rerollCount: 0,
+    itemId, level, stats, power: itemRollV5Power(stats, 0),
+    enchantLevel: 0, enchantStatsVersion: 4, itemRollVersion: 5, rerollCount: 0,
   };
 }
 
@@ -348,8 +281,9 @@ export function rerollItemStats(item: OwnedItem): OwnedItem {
   return {
     ...item,
     stats: newStats,
-    power: itemPower(newStats, item.enchantLevel, 4),
+    power: itemRollV5Power(newStats, item.enchantLevel),
     enchantStatsVersion: 4,
+    itemRollVersion: 5,
     rerollCount: item.rerollCount + 1,
   };
 }
@@ -417,7 +351,7 @@ export function standardChestWeights(playerLevel: number, availability: LimitedA
 }
 
 function rollItemLevel(playerLevel: number): number {
-  return Math.max(1, playerLevel + Math.floor(Math.random() * 5) - 2);
+  return Math.min(99, Math.max(1, playerLevel + Math.floor(Math.random() * 5) - 2));
 }
 
 function rollFromWeights(weights: Record<Rarity, number>, playerLevel: number): OwnedItem | null {
