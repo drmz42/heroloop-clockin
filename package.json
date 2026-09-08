@@ -82,6 +82,8 @@
     "check:game-functions": "node scripts/check-game-functions.mjs",
     "check:hero-ascension": "node scripts/check-hero-ascension-pricing.mjs",
     "check:item-level-scaling": "node scripts/check-item-level-scaling.mjs",
+    "check:item-roll-runtime": "node scripts/check-item-roll-runtime.mjs",
+    "check:item-roll-runtime:sql": "bash scripts/check-item-roll-runtime-sql.sh",
     "check:instance-reset": "node scripts/check-instance-reset-contract.mjs",
     "check:legacy-market-recovery": "node scripts/check-legacy-market-recovery.mjs",
     "check:monitor-alerts": "node scripts/check-monitor-alert-accuracy.mjs",
