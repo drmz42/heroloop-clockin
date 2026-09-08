@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "status": "approved-not-live",
-  "live": false,
+  "status": "staging-live",
+  "live": true,
   "resourceKey": "summon_scroll",
   "spendBatches": [1, 10, 100],
   "scrollsPerSummon": 1,

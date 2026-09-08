@@ -134,6 +134,7 @@
     "check:server-items": "node scripts/check-server-item-ledger.mjs",
     "check:hero-release": "node scripts/check-server-hero-release.mjs",
     "check:hero-capacity": "node scripts/check-server-hero-capacity.mjs",
+    "check:heronomics-summon": "node scripts/check-heronomics-summon-target.mjs",
     "check:server-market": "node scripts/check-server-market.mjs",
     "check:summon-scrolls": "node scripts/check-summon-scroll-contract.mjs",
     "check:tutorial-quests": "node scripts/check-tutorial-quests-contract.mjs",

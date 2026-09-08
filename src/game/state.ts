@@ -19,7 +19,7 @@ export const STARTING_HERO_TOKENS = 0;
 const LEGACY_MISSING_HERO_TOKENS = 20_000;
 export const STARTING_GOLD = 500;
 export const ACTIVE_SESSION_MS = 8 * 60 * 60 * 1000;
-export const SUMMON_COST_HERO = 30;
+export const SUMMON_CATALOGUE_USD_MICROS = 20_000;
 export const TRAINING_SLOT_COSTS = [0, 0, 50, 100, 200, 400, 800, 1_600, 3_200, 6_400] as const;
 export const TRAINING_BOOST_COSTS = {
   '2x-1h': 25,
@@ -287,8 +287,8 @@ export function starUpCost(stars: number, rarity: Rarity): { dupes: number; hero
   return { dupes, hero: heroCost, usdCents };
 }
 
-export function summonCostHero(): number {
-  return SUMMON_COST_HERO;
+export function summonCatalogueUsd(count: 1 | 10 | 100): number {
+  return SUMMON_CATALOGUE_USD_MICROS * count / 1_000_000;
 }
 
 export function normalizeState(parsed: Partial<GameState>): GameState {

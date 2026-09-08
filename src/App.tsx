@@ -341,7 +341,7 @@ function App() {
             </button>
             <div className="min-h-0 flex-1 overflow-auto">
               {tab === 'heroes'      && <HeroesScreen game={game} />}
-              {tab === 'summon'      && <SummonScreen game={game} />}
+              {tab === 'summon'      && <SummonScreen game={game} rarityCapacity={tokenomics.status?.rarity_capacity} />}
               {tab === 'training'    && <TrainingCampScreen game={game} />}
               {tab === 'crafting'    && <CraftingScreen />}
               {tab === 'shop'        && <ShopScreen game={game} />}

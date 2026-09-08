@@ -63,6 +63,7 @@ const commandActions = new Set([
   "tester_credit_gold",
   "tester_credit_account_xp",
   "tester_credit_formation_xp",
+  "hero_summon_quote",
   "hero_summon",
   "ascension_focus_set",
   "hero_ascend",
@@ -658,24 +659,53 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
         return errorResponse(400, "ascension_focus_failed", requestId);
       }
     }
+    if (parsed.value.action === "hero_summon_quote") {
+      const payloadError = validatePayloadFields(payload, ["count", "expected_revision"]);
+      const count = Math.floor(Number(payload.count) || 0);
+      const expectedRevision = Number(payload.expected_revision);
+      if (payloadError || ![1, 10, 100].includes(count) || !Number.isSafeInteger(expectedRevision) || expectedRevision < 1) {
+        return errorResponse(400, payloadError ?? "invalid_hero_summon_quote", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.hero_summon_quote($1::uuid, $2::bigint, $3::integer) AS result",
+          [identity.playerId, expectedRevision, count],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["state_conflict", "hero_capacity_exceeded", "dex_quote_unavailable"]);
+        if (code) return errorResponse(409, code, requestId);
+        return errorResponse(503, "hero_summon_quote_failed", requestId);
+      }
+    }
     if (parsed.value.action === "hero_summon") {
-      const payloadError = validatePayloadFields(payload, ["count"]);
+      const payloadError = validatePayloadFields(payload, ["count", "expected_revision", "payment_method", "quote_id"]);
       if (payloadError) return errorResponse(400, payloadError, requestId);
       const requestKey = idempotencyKey(parsed.value);
       const count = Math.floor(Number(payload.count) || 0);
-      if (!requestKey || ![1, 10, 100].includes(count)) {
+      const expectedRevision = Number(payload.expected_revision);
+      const paymentMethod = payload.payment_method === "paid" || payload.payment_method === "scroll" ? payload.payment_method : "";
+      const quoteId = payload.quote_id === null ? null
+        : typeof payload.quote_id === "string" && uuidPattern.test(payload.quote_id) ? payload.quote_id : "";
+      if (!requestKey || ![1, 10, 100].includes(count) || !Number.isSafeInteger(expectedRevision) || expectedRevision < 1
+        || !paymentMethod || (paymentMethod === "paid" && !quoteId) || (paymentMethod === "scroll" && quoteId !== null)) {
         return errorResponse(400, "invalid_summon", requestId);
       }
       try {
         const result = await databaseJson(
-          "SELECT heroloop_api.hero_summon($1::uuid, $2::uuid, $3::integer) AS result",
-          [identity.playerId, requestKey, count],
+          "SELECT heroloop_api.hero_summon($1::uuid, $2::uuid, $3::integer, $4::bigint, $5::text, $6::uuid) AS result",
+          [identity.playerId, requestKey, count, expectedRevision, paymentMethod, quoteId],
         );
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
       } catch (error) {
-        const code = databaseErrorCode(error, ["insufficient_tokens", "hero_capacity_exceeded", "idempotency_conflict"]);
+        const code = databaseErrorCode(error, [
+          "state_conflict", "insufficient_tokens", "resource_insufficient_balance", "hero_capacity_exceeded",
+          "hero_summon_quote_not_found", "hero_summon_quote_mismatch", "hero_summon_quote_expired",
+          "hero_summon_quote_used", "dex_quote_unavailable", "rarity_supply_unavailable",
+          "summon_rarity_unavailable", "resource_idempotency_conflict", "idempotency_conflict",
+        ]);
         if (code) return errorResponse(409, code, requestId);
-        return errorResponse(400, "summon_failed", requestId);
+        return errorResponse(503, "summon_failed", requestId);
       }
     }
     if (parsed.value.action === "hero_ascend") {

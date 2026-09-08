@@ -52,17 +52,17 @@ export const RARITY_LABEL: Record<Rarity, string> = {
 
 // Server-authoritative hero summon percentages. Keep total at exactly 100.
 export const RARITY_WEIGHT: Record<Rarity, number> = {
-  common:    55,
-  uncommon:  27,
-  rare:      12,
-  epic:      4,
-  legendary: 1.5,
+  common:    62.25,
+  uncommon:  28,
+  rare:      5,
+  epic:      3,
+  legendary: 1.2,
   mythic:    0.4,
   relic:     0,
   cursed:    0,
-  cosmic:    0.08,
-  divine:    0.018,
-  celestial: 0.002,
+  cosmic:    0.1,
+  divine:    0.04,
+  celestial: 0.01,
   immortal:  0,
   god:       0,
 };

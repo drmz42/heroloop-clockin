@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey } from '@/game/types';
 import {
-  loadState, saveLegacyState, normalizeState, makeInitialState, makeRegisteredStarterState, starUpCost, summonCostHero,
+  loadState, saveLegacyState, normalizeState, makeInitialState, makeRegisteredStarterState, starUpCost,
   MAX_TEAM, BASE_HERO_CAPACITY, MAX_HERO_CAPACITY, HERO_CAPACITY_STEP, MAX_HERO_STARS, MAX_INVENTORY, MAX_CHESTS, MAX_ACCOUNT_XP, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
   accountLevelFromXp, advanceHeroXp, moscowDayKey,
   heroXpForLevel, TRAINING_SLOT_COSTS, TRAINING_BOOST_COSTS,
@@ -1413,12 +1413,47 @@ export function useGame() {
     return true;
   }, [applyServerAscensionFocus]);
 
-  const settleServerSummon = useCallback(async (count: 1 | 10 | 100) => {
-    if (!tokenomicsEnabled) return null;
+  const quoteHeroSummon = useCallback(async (count: 1 | 10 | 100): Promise<
+    { ok: true; quote: { quoteId: string; count: 1 | 10 | 100; usdMicros: number; tokenCost: number; dexSource: string; expiresAt: string } }
+    | { ok: false; error: string }
+  > => {
+    const expectedRevision = serverRevisionHint;
+    if (!tokenomicsEnabled || typeof expectedRevision !== 'number' || !Number.isSafeInteger(expectedRevision)) {
+      return { ok: false, error: 'state_unavailable' };
+    }
+    let failure = 'hero_summon_quote_failed';
+    const result = await playerSync<{
+      quote_id: string; summon_count: number; catalogue_usd_micros: number;
+      token_cost: number; dex_source: string; expires_at: string;
+    }>('hero_summon_quote', { count, expected_revision: expectedRevision }, (code) => { failure = code; });
+    if (!result || typeof result.quote_id !== 'string' || result.summon_count !== count
+      || result.catalogue_usd_micros !== count * 20_000
+      || !Number.isSafeInteger(result.token_cost) || result.token_cost <= 0
+      || typeof result.dex_source !== 'string' || !result.dex_source
+      || typeof result.expires_at !== 'string' || !Number.isFinite(Date.parse(result.expires_at))) {
+      return { ok: false, error: failure };
+    }
+    return { ok: true, quote: {
+      quoteId: result.quote_id, count, usdMicros: result.catalogue_usd_micros,
+      tokenCost: result.token_cost, dexSource: result.dex_source, expiresAt: result.expires_at,
+    } };
+  }, [serverRevisionHint]);
+
+  const settleServerSummon = useCallback(async (
+    count: 1 | 10 | 100,
+    paymentMethod: 'paid' | 'scroll',
+    quoteId: string | null,
+  ) => {
+    const expectedRevision = serverRevisionHint;
+    if (!tokenomicsEnabled || typeof expectedRevision !== 'number' || !Number.isSafeInteger(expectedRevision)) return null;
     setSummonError('');
     const result = await playerSync<{
       heroes: OwnedHero[];
       token_balance: number;
+      spent: number;
+      scrolls_spent: number;
+      summon_scrolls: number;
+      payment_method: 'paid' | 'scroll';
       revision: number;
       pity_legendary: number;
       pity_mythic: number;
@@ -1426,8 +1461,18 @@ export function useGame() {
       pity_divine: number;
       pity_celestial: number;
       ascension_focus: Partial<Record<Rarity, string>>;
-    }>('hero_summon', { count, idempotency_key: createIdempotencyKey() }, setSummonError);
-    if (!result || !Array.isArray(result.heroes) || result.heroes.length !== count) {
+    }>('hero_summon', {
+      count, expected_revision: expectedRevision, payment_method: paymentMethod,
+      quote_id: quoteId, idempotency_key: createIdempotencyKey(),
+    }, setSummonError);
+    if (!result || !Array.isArray(result.heroes) || result.heroes.length !== count
+      || result.payment_method !== paymentMethod || !Number.isSafeInteger(result.spent) || result.spent < 0
+      || !Number.isSafeInteger(result.scrolls_spent) || result.scrolls_spent < 0
+      || !Number.isSafeInteger(result.summon_scrolls) || result.summon_scrolls < 0
+      || !Number.isSafeInteger(result.token_balance) || result.token_balance < 0
+      || !Number.isSafeInteger(result.revision) || result.revision <= expectedRevision
+      || (paymentMethod === 'paid' && (result.spent <= 0 || result.scrolls_spent !== 0))
+      || (paymentMethod === 'scroll' && (result.spent !== 0 || result.scrolls_spent !== count))) {
       if (result) setSummonError('invalid_server_response');
       return null;
     }
@@ -1445,8 +1490,11 @@ export function useGame() {
     });
     applyServerAscensionFocus(result.ascension_focus);
     if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
-    return { heroes, balance: Math.max(0, Math.floor(result.token_balance)) };
-  }, [applyServerAscensionFocus]);
+    return {
+      heroes, balance: Math.max(0, Math.floor(result.token_balance)), spent: result.spent,
+      scrollsSpent: result.scrolls_spent, summonScrolls: result.summon_scrolls,
+    };
+  }, [applyServerAscensionFocus, serverRevisionHint]);
 
   const settleServerAscension = useCallback(async (targetUid: string, repeat: boolean) => {
     if (!tokenomicsEnabled) return null;
@@ -1787,35 +1835,31 @@ export function useGame() {
     setState((prev) => prev.ownedHeroes.some((hero) => hero.heroId === heroId) ? { ...prev, avatarHeroId: heroId } : prev);
   }, []);
 
-  const summon = useCallback(async (): Promise<OwnedHero | null> => {
-    const cost = summonCostHero();
-    if ((!tokenomicsEnabled && stateRef.current.hero < cost) || stateRef.current.ownedHeroes.length >= stateRef.current.heroCapacity) return null;
-    const settled = await settleServerSummon(1);
-    if (!settled) return null;
-    const owned = settled.heroes[0];
-    setState((prev) => ({ ...prev, hero: settled.balance, ownedHeroes: [...prev.ownedHeroes, owned], summons: prev.summons + 1, dailyQuests: updateQuestProgress(prev.dailyQuests, 'summon-', 1), milestoneQuests: updateQuestProgress(updateQuestProgress(updateQuestProgress(prev.milestoneQuests, 'summon-', 1), 'hero-owned-', 1), 'token-spent-', cost) }));
-    return owned;
-  }, [settleServerSummon]);
-
-  const summonTen = useCallback(async (): Promise<OwnedHero[]> => {
-    const cost = summonCostHero() * 10;
-    if ((!tokenomicsEnabled && stateRef.current.hero < cost) || stateRef.current.ownedHeroes.length + 10 > stateRef.current.heroCapacity) return [];
-    const settled = await settleServerSummon(10);
+  const summonHeroes = useCallback(async (
+    count: 1 | 10 | 100,
+    paymentMethod: 'paid' | 'scroll',
+    quoteId: string | null = null,
+  ): Promise<OwnedHero[]> => {
+    if (!tokenomicsEnabled || stateRef.current.ownedHeroes.length + count > stateRef.current.heroCapacity
+      || (paymentMethod === 'scroll' && stateRef.current.summonScrolls < count)) return [];
+    const settled = await settleServerSummon(count, paymentMethod, quoteId);
     if (!settled) return [];
-    const results = settled.heroes;
-    setState((prev) => ({ ...prev, hero: settled.balance, ownedHeroes: [...prev.ownedHeroes, ...results], summons: prev.summons + 10, dailyQuests: updateQuestProgress(prev.dailyQuests, 'summon-', 10), milestoneQuests: updateQuestProgress(updateQuestProgress(updateQuestProgress(prev.milestoneQuests, 'summon-', 10), 'hero-owned-', 10), 'token-spent-', cost) }));
-    return results;
-  }, [settleServerSummon]);
-
-  const summonHundred = useCallback(async (): Promise<OwnedHero[]> => {
-    const count = 100;
-    const cost = summonCostHero() * count;
-    if ((!tokenomicsEnabled && stateRef.current.hero < cost) || stateRef.current.ownedHeroes.length + count > stateRef.current.heroCapacity) return [];
-    const settled = await settleServerSummon(100);
-    if (!settled) return [];
-    const results = settled.heroes;
-    setState((prev) => ({ ...prev, hero: settled.balance, ownedHeroes: [...prev.ownedHeroes, ...results], summons: prev.summons + count, dailyQuests: updateQuestProgress(prev.dailyQuests, 'summon-', count), milestoneQuests: updateQuestProgress(updateQuestProgress(updateQuestProgress(prev.milestoneQuests, 'summon-', count), 'hero-owned-', count), 'token-spent-', cost) }));
-    return results;
+    setState((prev) => {
+      let milestones = updateQuestProgress(
+        updateQuestProgress(prev.milestoneQuests, 'summon-', count), 'hero-owned-', count,
+      );
+      if (settled.spent > 0) milestones = updateQuestProgress(milestones, 'token-spent-', settled.spent);
+      return {
+        ...prev,
+        hero: settled.balance,
+        summonScrolls: settled.summonScrolls,
+        ownedHeroes: [...prev.ownedHeroes, ...settled.heroes],
+        summons: prev.summons + count,
+        dailyQuests: updateQuestProgress(prev.dailyQuests, 'summon-', count),
+        milestoneQuests: milestones,
+      };
+    });
+    return settled.heroes;
   }, [settleServerSummon]);
 
   const settleServerEquipment = useCallback(async (nextState: GameState): Promise<boolean> => {
@@ -2564,7 +2608,7 @@ export function useGame() {
     offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
     starUpHero, promoteAllHeroes, releaseHero, quoteHeroCapacity, upgradeHeroCapacity, toggleHeroLock, markHeroSeen,
-    summon, summonTen, summonHundred, summonBoss, syncBossKeys, toggleTeamMember, setLocation,
+    quoteHeroSummon, summonHeroes, summonBoss, syncBossKeys, toggleTeamMember, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,
     equipItem, unequipItem, unequipAll, equipmentError: () => equipmentErrorRef.current, sellItem, toggleItemLock, sellAllUnlocked,
     enchantItem, rerollItem, dismissEnchantResult,
