@@ -93,6 +93,7 @@
     "check:vps1-founder-ssh-exemption": "node scripts/check-vps1-founder-ssh-exemption.mjs",
     "check:operational-artifacts": "node scripts/check-operational-artifacts-contract.mjs",
     "check:agent-health": "bash .agents/skills/heroloop-health-check/scripts/check-health-check.sh",
+    "check:session-handoff": "node scripts/check-session-handoff.mjs",
     "check:agent-prompt": "node scripts/check-agent-prompt-contract.mjs",
     "check:agent-runner": "node scripts/check-agent-runner.mjs && bash agent_runner.sh --self-test",
     "check:agent-tools": "npm run check:agent-prompt && npm run check:technical-tooling",
