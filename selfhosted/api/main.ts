@@ -43,6 +43,15 @@ const databasePool = new Pool({
   tls: { enabled: false, enforce: false },
 }, Number(Deno.env.get("PGPOOL_SIZE") ?? "4"), true);
 const maxBodyBytes = 256 * 1024;
+const maxStorageBodyBytes = 5 * 1024 * 1024;
+const storageRoot = "/var/lib/heroloop-storage";
+const storageMimeTypes = new Set([
+  "application/octet-stream",
+  "text/plain",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const commandActions = new Set([
@@ -224,6 +233,63 @@ async function sha256Hex(value: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+async function sha256BytesHex(value: Uint8Array): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", Uint8Array.from(value));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function readStorageBody(request: Request): Promise<Uint8Array | null> {
+  const declaredLength = Number(request.headers.get("content-length") ?? "0");
+  if (!Number.isFinite(declaredLength) || declaredLength < 0 || declaredLength > maxStorageBodyBytes) return null;
+  const reader = request.body?.getReader();
+  if (!reader) return new Uint8Array();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxStorageBodyBytes) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
+
+function storageObjectRoute(pathname: string): { bucket: string; name: string } | null {
+  const prefix = "/storage/v1/object/";
+  if (!pathname.startsWith(prefix)) return null;
+  try {
+    const decoded = decodeURIComponent(pathname.slice(prefix.length));
+    const separator = decoded.indexOf("/");
+    if (separator < 1) return null;
+    const bucket = decoded.slice(0, separator);
+    const name = decoded.slice(separator + 1);
+    if (bucket !== "player-files" || name.length < 1 || name.length > 200 ||
+      !/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(name) || /(^|\/)\.\.(\/|$)/.test(name) || name.includes("//")) {
+      return null;
+    }
+    return { bucket, name };
+  } catch {
+    return null;
+  }
+}
+
+function storageFilePath(relativePath: unknown): string | null {
+  return typeof relativePath === "string" &&
+      /^objects\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(relativePath)
+    ? `${storageRoot}/${relativePath}`
+    : null;
+}
+
 async function withDatabase<T>(operation: (client: Awaited<ReturnType<Pool["connect"]>>) => Promise<T>): Promise<T> {
   const client = await databasePool.connect();
   try {
@@ -383,6 +449,16 @@ async function dependenciesHealthy(): Promise<boolean> {
   }
 }
 
+async function storageHealthy(): Promise<boolean> {
+  try {
+    const root = await Deno.stat(storageRoot);
+    const result = await databaseJson("SELECT heroloop_api.storage_health() AS result", []);
+    return root.isDirectory && result.ready === true && Number.isSafeInteger(Number(result.ready_objects));
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
   const url = new URL(request.url);
   const requestId = crypto.randomUUID();
@@ -400,6 +476,84 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
     return await dependenciesHealthy()
       ? json(200, { ok: true })
       : errorResponse(503, "dependency_unavailable", requestId);
+  }
+
+  if (url.pathname === "/storage/v1/health") {
+    if (request.method !== "GET") return errorResponse(405, "method_not_allowed", requestId, { allow: "GET" });
+    return await storageHealthy()
+      ? json(200, { ok: true, private: true, max_file_bytes: maxStorageBodyBytes })
+      : errorResponse(503, "storage_unavailable", requestId);
+  }
+
+  const storageRoute = storageObjectRoute(url.pathname);
+  if (storageRoute) {
+    if (!["PUT", "GET"].includes(request.method)) {
+      return errorResponse(405, "method_not_allowed", requestId, { allow: "PUT, GET" });
+    }
+    const identity = await authenticate(request, requestId);
+    if (identity instanceof Response) return identity;
+    if (request.method === "PUT") {
+      const mimeType = (request.headers.get("content-type") ?? "application/octet-stream")
+        .split(";", 1)[0].trim().toLowerCase();
+      if (!storageMimeTypes.has(mimeType)) return errorResponse(415, "storage_mime_type_rejected", requestId);
+      const bytes = await readStorageBody(request);
+      if (!bytes) return errorResponse(413, "storage_object_too_large", requestId);
+      const checksum = await sha256BytesHex(bytes);
+      let reservation: JsonRecord;
+      try {
+        reservation = await databaseJson(
+          "SELECT heroloop_api.storage_reserve($1::uuid,$2::text,$3::text,$4::bigint,$5::text,$6::text) AS result",
+          [identity.playerId, storageRoute.bucket, storageRoute.name, bytes.byteLength, mimeType, checksum],
+        );
+      } catch (error) {
+        const code = databaseErrorCode(error, ["storage_object_exists", "invalid_storage_object"]);
+        return errorResponse(code === "storage_object_exists" ? 409 : 400, code ?? "storage_reservation_failed", requestId);
+      }
+      const objectId = typeof reservation.id === "string" && uuidPattern.test(reservation.id) ? reservation.id : "";
+      const finalPath = storageFilePath(reservation.file_path);
+      if (!objectId || !finalPath) return errorResponse(503, "storage_reservation_failed", requestId);
+      const temporaryPath = `${storageRoot}/objects/.upload-${crypto.randomUUID()}`;
+      try {
+        await Deno.mkdir(`${storageRoot}/objects`, { recursive: true, mode: 0o700 });
+        await Deno.writeFile(temporaryPath, bytes, { createNew: true, mode: 0o600 });
+        await Deno.rename(temporaryPath, finalPath);
+        const result = await databaseJson(
+          "SELECT heroloop_api.storage_commit($1::uuid,$2::uuid) AS result",
+          [identity.playerId, objectId],
+        );
+        return json(201, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        await Deno.remove(temporaryPath).catch(() => undefined);
+        await Deno.remove(finalPath).catch(() => undefined);
+        await databaseJson("SELECT heroloop_api.storage_abort($1::uuid,$2::uuid) AS result", [identity.playerId, objectId])
+          .catch(() => undefined);
+        return errorResponse(503, "storage_write_failed", requestId);
+      }
+    }
+    try {
+      const metadata = await databaseJson(
+        "SELECT heroloop_api.storage_open($1::uuid,$2::text,$3::text) AS result",
+        [identity.playerId, storageRoute.bucket, storageRoute.name],
+      );
+      const filePath = storageFilePath(metadata.file_path);
+      if (!filePath) return errorResponse(404, "storage_object_not_found", requestId);
+      const bytes = await Deno.readFile(filePath);
+      if (bytes.byteLength !== Number(metadata.size_bytes) || await sha256BytesHex(bytes) !== metadata.sha256) {
+        return errorResponse(503, "storage_integrity_failed", requestId);
+      }
+      return new Response(bytes, {
+        status: 200,
+        headers: {
+          "cache-control": "private, no-store",
+          "content-type": String(metadata.mime_type),
+          "content-length": String(bytes.byteLength),
+          "etag": `"${metadata.sha256}"`,
+          "x-content-type-options": "nosniff",
+        },
+      });
+    } catch {
+      return errorResponse(404, "storage_object_not_found", requestId);
+    }
   }
 
   if (url.pathname === "/api/v1/player/commands") {

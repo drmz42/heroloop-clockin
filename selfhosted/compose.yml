@@ -100,7 +100,7 @@ services:
 
   api:
     <<: *deno-service
-    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=AUTH_INTERNAL_URL,PGHOST,PGPORT,PGDATABASE,PGUSER,PGPASSWORD,PGPOOL_SIZE,TESTER_CONTROLS_ENABLED,COMBAT_EFFECTS_VERSION", "--allow-net=0.0.0.0:8080,auth:9999,postgres:5432", "/app/api/main.ts"]
+    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=AUTH_INTERNAL_URL,PGHOST,PGPORT,PGDATABASE,PGUSER,PGPASSWORD,PGPOOL_SIZE,TESTER_CONTROLS_ENABLED,COMBAT_EFFECTS_VERSION", "--allow-net=0.0.0.0:8080,auth:9999,postgres:5432", "--allow-read=/var/lib/heroloop-storage", "--allow-write=/var/lib/heroloop-storage", "/app/api/main.ts"]
     environment:
       AUTH_INTERNAL_URL: http://auth:9999
       PGHOST: postgres
@@ -123,6 +123,7 @@ services:
       - ./deno.json:/app/deno.json:ro
       - ./deno.lock:/app/deno.lock:ro
       - ./vendor:/app/vendor:ro
+      - ${STORAGE_DATA_PATH:?set the environment-specific private Storage path}:/var/lib/heroloop-storage
     depends_on:
       postgres:
         condition: service_healthy
