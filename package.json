@@ -95,6 +95,8 @@
     "check:agent-health": "bash .agents/skills/heroloop-health-check/scripts/check-health-check.sh",
     "check:session-handoff": "node scripts/check-session-handoff.mjs",
     "check:agent-prompt": "node scripts/check-agent-prompt-contract.mjs",
+    "check:agent-workflow-optimization": "node scripts/check-agent-workflow-optimization.mjs",
+    "benchmark:agent-workflows": "node scripts/benchmark-agent-workflows.mjs",
     "check:agent-runner": "node scripts/check-agent-runner.mjs && bash agent_runner.sh --self-test",
     "check:agent-tools": "npm run check:agent-prompt && npm run check:technical-tooling",
     "check:task-efficiency": "bash scripts/check-task-efficiency.sh",
