@@ -116,6 +116,7 @@
     "audit:dependencies": "npm audit --omit=dev --audit-level=high",
     "todo:query": "node scripts/todo-query.mjs",
     "todo:list": "sudo -n /usr/local/sbin/heroloop-todo-transaction list",
+    "todo:closure-check": "sudo -n /usr/local/sbin/heroloop-todo-transaction closure-check",
     "todo:format": "node scripts/todo-format.mjs",
     "todo:audit": "npm run check:todo-format && npm run check:todo-integrity",
     "todo:review": "bash scripts/todo-gemini-review.sh --working",
