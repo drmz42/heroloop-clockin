@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "status": "proposal-only",
-  "runtimeAdopted": false,
+  "status": "implemented",
+  "runtimeAdopted": true,
   "pricesChanged": false,
   "currentAudit": {
-    "assignment": "client-hook-then-general-save",
+    "assignment": "revisioned-server-action",
     "saveValidation": [
       "slot-is-unlocked",
       "hero-is-owned",
@@ -12,9 +12,9 @@
       "hero-is-not-in-active-formation",
       "hero-level-is-below-account-level"
     ],
-    "remainingAuthorityGap": "client-selects-the-persisted-training-uid-array",
+    "remainingAuthorityGap": "none-general-save-preserves-server-occupancy",
     "economicImpact": "deriveServerSummary-counts-saved-training-uids-for-hero-mining-penalty",
-    "blocksRealValue": true
+    "blocksRealValue": false
   },
   "targetContract": {
     "action": "training_assignment_set",
@@ -43,7 +43,7 @@
     "sameKeyReplay": "return-original-result-with-zero-xp-or-state-mutation",
     "changedPayloadReplay": "idempotency-conflict",
     "staleRevision": "state-conflict-with-canonical-state",
-    "response": ["slot_index", "hero_uid", "hero_uids", "training_hero_count", "penalty", "power", "combat_power", "revision"]
+    "response": ["slot_index", "hero_uid", "hero_uids", "owned_heroes", "training_camp", "training_hero_count", "penalty", "power", "combat_power", "revision"]
   },
   "sharedMutationBoundary": {
     "generalSaveTrainingUids": "read-only-from-server",
@@ -85,6 +85,6 @@
       "migration-dry-run-and-idempotent-replay",
       "disposable-exact-candidate-staging-pass"
     ],
-    "status": "blocked-until-implemented-after-phase-h-and-approved-for-live-economy"
+    "status": "implemented-staging-acceptance-required-production-activation-approval-gated"
   }
 }

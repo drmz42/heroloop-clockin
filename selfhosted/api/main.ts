@@ -77,6 +77,7 @@ const commandActions = new Set([
   "ascension_focus_set",
   "hero_ascend",
   "hero_release",
+  "training_assignment_set",
   "hero_capacity_quote",
   "hero_capacity_upgrade",
   "chest_open",
@@ -920,6 +921,37 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
         if (code) return errorResponse(409, code, requestId);
         console.error("hero_release database adapter failed", { requestId });
         return errorResponse(503, "hero_release_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "training_assignment_set") {
+      const payloadError = validatePayloadFields(payload, ["slot_index", "hero_uid", "expected_revision"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const slotIndex = Number(payload.slot_index);
+      const expectedRevision = Number(payload.expected_revision);
+      const heroUid = payload.hero_uid === null ? null : payload.hero_uid;
+      if (payloadError || !requestKey || !Number.isSafeInteger(slotIndex) || slotIndex < 0 || slotIndex > 9
+        || !Number.isSafeInteger(expectedRevision) || expectedRevision < 1
+        || (heroUid !== null && (typeof heroUid !== "string" || heroUid.length < 1 || heroUid.length > 100))) {
+        return errorResponse(400, payloadError ?? "invalid_training_assignment", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.training_assignment_set($1::uuid, $2::uuid, $3::integer, $4::text, $5::bigint) AS result",
+          [identity.playerId, requestKey, slotIndex, heroUid, expectedRevision],
+        );
+        const revision = Number(result.revision);
+        if (!Number.isSafeInteger(revision) || revision < 2 || !Array.isArray(result.hero_uids)
+          || result.hero_uids.length !== 10 || !Array.isArray(result.owned_heroes)
+          || !isRecord(result.training_camp)) throw new Error("invalid training assignment response");
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, revision, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "idempotency_conflict", "state_conflict", "save_not_found", "player_not_found",
+          "training_slot_locked", "hero_not_found", "hero_in_team", "hero_already_training", "hero_level_capped",
+        ]);
+        if (code) return errorResponse(code === "save_not_found" || code === "player_not_found" ? 404 : 409, code, requestId);
+        console.error("training_assignment_set database adapter failed", { requestId });
+        return errorResponse(503, "training_assignment_failed", requestId);
       }
     }
     if (parsed.value.action === "hero_capacity_quote") {

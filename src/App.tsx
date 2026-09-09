@@ -206,6 +206,10 @@ function App() {
   }, [game.serverRevisionHint]);
 
   useEffect(() => {
+    if (game.trainingIncomeRevision !== null) void tokenomics.refreshIncome(game.trainingIncomeRevision);
+  }, [game.trainingIncomeRevision, tokenomics.refreshIncome]);
+
+  useEffect(() => {
     if (serverStateRevision !== null) applyServerRevision(serverStateRevision);
   }, [serverStateRevision, applyServerRevision]);
 

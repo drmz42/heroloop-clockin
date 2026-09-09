@@ -322,6 +322,7 @@ export function useGame() {
   const [ascensionFocus, setAscensionFocus] = useState<Partial<Record<Rarity, string>>>({});
   const [summonError, setSummonError] = useState('');
   const [serverRevisionHint, setServerRevisionHint] = useState<number | null>(null);
+  const [trainingIncomeRevision, setTrainingIncomeRevision] = useState<number | null>(null);
   const [storeBusy, setStoreBusy] = useState(false);
   const [itemUpgradeBusy, setItemUpgradeBusy] = useState(false);
 
@@ -347,6 +348,7 @@ export function useGame() {
   const offlineSettlementKeyRef = useRef('');
   const chestOpeningRef = useRef(false);
   const storeBusyRef = useRef(false);
+  const trainingAssignmentBusyRef = useRef(false);
 
   const hydrateServerState = useCallback((remoteState: unknown) => {
     setState(normalizeState(remoteState as Partial<GameState>));
@@ -2196,11 +2198,41 @@ export function useGame() {
     setState((prev) => ({ ...prev, battleAnimationMode: mode }));
   }, []);
 
-  const setTrainingHero = useCallback((slot: number, heroUid: string | null): boolean => {
+  const setTrainingHero = useCallback(async (slot: number, heroUid: string | null): Promise<boolean> => {
     const st = stateRef.current;
     if (slot < 0 || slot >= st.trainingCamp.unlockedSlots) return false;
     const hero = heroUid ? st.ownedHeroes.find((owned) => owned.uid === heroUid) : null;
     if (heroUid && (!hero || hero.level >= st.accountLevel || st.team.includes(heroUid) || st.trainingCamp.heroUids.includes(heroUid))) return false;
+    if (tokenomicsEnabled) {
+      const expectedRevision = serverRevisionHint;
+      if (typeof expectedRevision !== 'number' || !Number.isSafeInteger(expectedRevision) || trainingAssignmentBusyRef.current) return false;
+      trainingAssignmentBusyRef.current = true;
+      try {
+        const result = await playerSync<{
+          hero_uids: Array<string | null>; owned_heroes: OwnedHero[];
+          training_camp: GameState['trainingCamp']; training_hero_count: number;
+          penalty: number; power: number; combat_power: number; revision: number;
+        }>('training_assignment_set', {
+          slot_index: slot, hero_uid: heroUid, expected_revision: expectedRevision,
+          idempotency_key: createIdempotencyKey(),
+        });
+        if (!result || !Array.isArray(result.hero_uids) || result.hero_uids.length !== 10
+          || !Array.isArray(result.owned_heroes) || !result.training_camp
+          || !Number.isSafeInteger(result.revision) || result.revision <= expectedRevision) return false;
+        const nextState = {
+          ...stateRef.current,
+          ownedHeroes: result.owned_heroes,
+          trainingCamp: { ...result.training_camp, heroUids: result.hero_uids },
+        };
+        stateRef.current = nextState;
+        setState(nextState);
+        setServerRevisionHint(result.revision);
+        setTrainingIncomeRevision(result.revision);
+        return true;
+      } finally {
+        trainingAssignmentBusyRef.current = false;
+      }
+    }
     const heroUids = st.trainingCamp.heroUids.map((uid, index) => index === slot ? heroUid : uid);
     stateRef.current = { ...st, trainingCamp: { ...st.trainingCamp, heroUids } };
     setState((prev) => ({
@@ -2208,7 +2240,7 @@ export function useGame() {
       trainingCamp: { ...prev.trainingCamp, heroUids },
     }));
     return true;
-  }, []);
+  }, [serverRevisionHint]);
 
   const unlockTrainingSlot = useCallback(async (): Promise<boolean> => {
     const st = stateRef.current;
@@ -2602,7 +2634,7 @@ export function useGame() {
   }, []);
 
   return {
-    state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, battleResult, combatRecovery, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
+    state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, trainingIncomeRevision, battleResult, combatRecovery, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
     offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
     starUpHero, promoteAllHeroes, releaseHero, quoteHeroCapacity, upgradeHeroCapacity, toggleHeroLock, markHeroSeen,

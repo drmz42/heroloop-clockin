@@ -353,6 +353,19 @@ export function mergeSaveState(
   const resourceState = applyResourceSnapshot(current, context.resources);
   if (!resourceState.ok) return { code: "resource_state_unavailable", status: 503 };
   current = resourceState.state;
+  const serverTraining = isRecord(current.trainingCamp) ? current.trainingCamp : {};
+  const unlockedSlots = Math.max(2, Math.min(10, Math.floor(Number(serverTraining.unlockedSlots) || 2)));
+  const serverTrainingUids = Array.isArray(serverTraining.heroUids) ? serverTraining.heroUids : [];
+  const canonicalTrainingUids = Array.from({ length: 10 }, (_, index) =>
+    index < unlockedSlots && typeof serverTrainingUids[index] === "string" ? serverTrainingUids[index] : null
+  );
+  const requestedTeamBeforeValidation = Array.isArray(requested.team)
+    ? requested.team.filter((uid): uid is string => typeof uid === "string")
+    : [];
+  if (requestedTeamBeforeValidation.some((uid) => canonicalTrainingUids.includes(uid))) {
+    return { code: "hero_in_training", status: 409, result: { revision, state: current, conflict: true } };
+  }
+  requested.trainingCamp = { ...serverTraining, heroUids: canonicalTrainingUids };
   const validated = validateAndMigrateGameState(requested, { canonicalState: current });
   if (!validated.ok) return { code: validated.code ?? "invalid_state", status: validated.code === "state_too_large" ? 413 : 400 };
   for (const key of Object.keys(requested)) delete requested[key];
@@ -397,24 +410,6 @@ export function mergeSaveState(
   if (requestedTeam.some((uid) => !savedHeroUids.has(uid))) {
     return { code: "invalid_team_reference", status: 409, result: { revision, state: current, conflict: true } };
   }
-  const serverTraining = isRecord(current.trainingCamp) ? current.trainingCamp : {};
-  const requestedTraining = isRecord(requested.trainingCamp) ? requested.trainingCamp : {};
-  const unlockedSlots = Math.max(2, Math.min(10, Math.floor(Number(serverTraining.unlockedSlots) || 2)));
-  const requestedTrainingUids = Array.isArray(requestedTraining.heroUids) ? requestedTraining.heroUids : [];
-  const seen = new Set<string>();
-  const ownedHeroes = recordArray(requested.ownedHeroes);
-  const accountLevel = Number(current.accountLevel);
-  requested.trainingCamp = {
-    ...serverTraining,
-    heroUids: Array.from({ length: 10 }, (_, index) => {
-      if (index >= unlockedSlots) return null;
-      const uid = typeof requestedTrainingUids[index] === "string" ? requestedTrainingUids[index] : null;
-      const hero = uid ? ownedHeroes.find((entry) => entry.uid === uid) : null;
-      if (!uid || !hero || seen.has(uid) || requestedTeam.includes(uid) || Number(hero.level) >= accountLevel) return null;
-      seen.add(uid);
-      return uid;
-    }),
-  };
   for (const field of [
     "accountXp", "accountLevel", "highestLocation", "totalGoldEarned", "totalKills", "totalBossKills",
     "chestsOpenedToday", "lastChestReset", "combatXpAt",
