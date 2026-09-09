@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/check-todo-task-routing.mjs && node scripts/check-todo-table-contract.mjs && vite build",
+    "build": "npm run check:game-functions:integration && npm run check:game-functions:registry && node scripts/check-todo-task-routing.mjs && node scripts/check-todo-table-contract.mjs && vite build",
     "check:ascension-focus": "node scripts/check-ascension-focus-contract.mjs",
     "check:balance-version": "node scripts/check-balance-version-contract.mjs",
     "check:balance-telemetry": "node scripts/check-balance-telemetry-contract.mjs",
@@ -80,6 +80,8 @@
     "check:hero-income-refresh": "node scripts/check-hero-income-refresh-proposal.mjs",
     "check:gold-reward-parity": "node scripts/check-gold-reward-parity.mjs",
     "check:game-functions": "node scripts/check-game-functions.mjs",
+    "check:game-functions:registry": "node scripts/check-game-functions.mjs",
+    "check:game-functions:integration": "node scripts/check-game-function-checker.mjs",
     "check:hero-ascension": "node scripts/check-hero-ascension-pricing.mjs",
     "check:item-level-scaling": "node scripts/check-item-level-scaling.mjs",
     "check:item-roll-runtime": "node scripts/check-item-roll-runtime.mjs",
