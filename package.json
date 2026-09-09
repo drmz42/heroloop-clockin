@@ -153,6 +153,7 @@
     "check:selfhosted-restored-baseline": "sudo -n bash scripts/check-selfhosted-restored-baseline.sh",
     "check:selfhosted-empty-schema": "bash scripts/check-selfhosted-empty-schema.sh",
     "check:selfhosted-production-backup": "node scripts/check-selfhosted-production-backup-schedule.mjs",
+    "check:selfhosted-production-upgrade": "node scripts/check-selfhosted-production-upgrade-contract.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "balance:hero-power-proposal": "node scripts/generate-hero-balance-proposal.mjs && node scripts/run-balance-simulation.mjs --hero-rarity-proposal",
