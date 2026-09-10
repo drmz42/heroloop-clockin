@@ -68,7 +68,7 @@
       "id": "telemetry-acceptance",
       "owner": "telemetry",
       "path": "config/telemetry/economy-v1.json",
-      "sha256": "3e71d7e66af3be799b87638024d1c4b05a8ebcbaf5d0c7a57e35166ea9b26e9a",
+      "sha256": "88cc8b0c86c39a06710197e4f3162cebb9c74527459a87ce5ba2a2b953787362",
       "includes": ["server-stamped-version", "retention", "privacy", "minimum-cohorts"]
     }
   ],
