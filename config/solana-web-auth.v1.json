@@ -70,8 +70,9 @@
   },
   "implementation": {
     "challengeFoundationImplemented": true,
+    "challengeEndpointImplemented": true,
     "challengeRouteExposed": false,
-    "challengePersistenceImplemented": false,
+    "challengePersistenceImplemented": true,
     "walletSigningImplemented": false,
     "verificationAndSessionImplemented": false
   },

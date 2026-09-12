@@ -1,6 +1,7 @@
 import { Pool } from "@db/postgres";
 import { BALANCE_VERSION, COMBAT_EFFECTS_V2_BALANCE_VERSION, buildNormalCombat } from "/app/shared/normal-combat.mjs";
 import { COMBAT_EFFECTS_V2_VERSION } from "/app/shared/combat-effects-v2.mjs";
+import { handleSiwsChallenge } from "./siws_challenge_endpoint.ts";
 import {
   canonicalizeLoadedState,
   canonicalResourceState,
@@ -20,6 +21,13 @@ const jsonHeaders = {
 };
 const authInternalUrl = Deno.env.get("AUTH_INTERNAL_URL") ?? "http://auth:9999";
 const testerControlsEnabled = Deno.env.get("TESTER_CONTROLS_ENABLED") === "true";
+const siwsChallengeEnabled = Deno.env.get("SIWS_CHALLENGE_ENABLED") === "true";
+const siwsEndpointConfig = {
+  chainId: Deno.env.get("SIWS_CHAIN_ID") ?? "",
+  domain: Deno.env.get("SIWS_DOMAIN") ?? "",
+  hashPepper: Deno.env.get("SIWS_HASH_PEPPER") ?? "",
+  uri: Deno.env.get("SIWS_URI") ?? "",
+};
 const combatEffectsVersion = Deno.env.get("COMBAT_EFFECTS_VERSION") ?? "combat-effects-v1";
 if (!["combat-effects-v1", COMBAT_EFFECTS_V2_VERSION].includes(combatEffectsVersion)) {
   throw new Error("invalid COMBAT_EFFECTS_VERSION");
@@ -460,7 +468,7 @@ async function storageHealthy(): Promise<boolean> {
   }
 }
 
-Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
+Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
   const url = new URL(request.url);
   const requestId = crypto.randomUUID();
 
@@ -477,6 +485,30 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request) => {
     return await dependenciesHealthy()
       ? json(200, { ok: true })
       : errorResponse(503, "dependency_unavailable", requestId);
+  }
+
+  if (url.pathname === "/api/v1/auth/solana/challenge") {
+    if (!siwsChallengeEnabled) return errorResponse(404, "not_found", requestId);
+    const forwarded = request.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim();
+    const clientAddress = forwarded || info.remoteAddr.hostname;
+    return await handleSiwsChallenge(
+      request,
+      requestId,
+      clientAddress,
+      siwsEndpointConfig,
+      async (challenge) => await databaseJson(
+        "SELECT heroloop_api.issue_siws_challenge($1::uuid,$2::text,$3::text,$4::text,$5::text,$6::timestamptz,$7::timestamptz) AS result",
+        [
+          challenge.requestId,
+          challenge.nonceHash,
+          challenge.messageHash,
+          challenge.walletHash,
+          challenge.rateSubjectHash,
+          challenge.issuedAt,
+          challenge.expiresAt,
+        ],
+      ) as { allowed: boolean; retry_after?: number },
+    );
   }
 
   if (url.pathname === "/storage/v1/health") {
