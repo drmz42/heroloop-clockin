@@ -74,6 +74,7 @@
     "challengeRouteExposed": false,
     "challengePersistenceImplemented": true,
     "walletSigningImplemented": true,
+    "serverProofVerifierImplemented": true,
     "verificationAndSessionImplemented": false
   },
   "acceptanceScenarios": [
