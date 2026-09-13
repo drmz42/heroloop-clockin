@@ -78,7 +78,8 @@
     "challengeConsumptionImplemented": true,
     "verificationEndpointImplemented": true,
     "verificationRouteExposed": false,
-    "verificationAndSessionImplemented": false
+    "walletSessionImplemented": true,
+    "verificationAndSessionImplemented": true
   },
   "acceptanceScenarios": [
     "wallet-standard-discovery", "no-wallet", "valid-siws-new-account", "valid-siws-link", "legacy-sign-message", "bad-ed25519-signature", "address-mismatch", "domain-mismatch", "uri-mismatch", "chain-mismatch", "expired-message", "future-issued-at", "nonce-replay", "request-id-replay", "subject-collision", "silent-same-wallet", "silent-wallet-locked", "silent-address-mismatch", "disconnect", "account-change", "tab-focus-mismatch", "legacy-save-owned-import", "legacy-save-cross-wallet-rejected", "rate-limit", "provider-unavailable"

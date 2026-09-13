@@ -1,7 +1,9 @@
 import { createSiwsChallenge } from "./siws_challenge.ts";
 import {
+  handleSiwsSession,
   handleSiwsVerification,
   type SiwsConsumeAttempt,
+  type SiwsSessionIssue,
 } from "./siws_verify_endpoint.ts";
 import {
   type SiwsProofRequest,
@@ -16,6 +18,7 @@ const CONFIG = {
   hashPepper: "p".repeat(48),
   uri: "https://staging.heroloop.xyz/",
 };
+const SESSION_BYTES = new Uint8Array(32).fill(0xef);
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -73,38 +76,61 @@ function request(body: unknown, method = "POST"): Request {
   });
 }
 
-Deno.test("valid proof consumes matching hashes exactly once", async () => {
+Deno.test("valid proof atomically issues one hashed wallet session", async () => {
   const proof = await proofFixture();
-  let attempt: SiwsConsumeAttempt | undefined;
+  let failedAttemptCalled = false;
+  let session: SiwsSessionIssue | undefined;
   const result = await handleSiwsVerification(
     request(proof),
     REQUEST_ID,
     CONFIG,
+    () => {
+      failedAttemptCalled = true;
+      return Promise.resolve({ consumed: false });
+    },
     (value) => {
-      attempt = value;
-      return Promise.resolve({ consumed: true });
+      session = value;
+      return Promise.resolve({ issued: true, expires_at: value.expiresAt });
     },
     NOW,
+    () => SESSION_BYTES,
   );
   const body = await result.json();
   assert(
     result.status === 200 && body.result?.verified,
     "proof was not verified",
   );
-  assert(attempt?.proofValid === true, "valid proof was not consumed as valid");
+  assert(!failedAttemptCalled, "valid proof spent a failed attempt");
   assert(
-    attempt?.requestId === proof.request_id,
+    session?.requestId === proof.request_id,
     "challenge request ID differs",
   );
   assert(
-    [attempt?.messageHash, attempt?.nonceHash, attempt?.walletHash].every((
+    [
+      session?.messageHash,
+      session?.nonceHash,
+      session?.walletHash,
+      session?.tokenHash,
+    ].every((
       hash,
     ) => typeof hash === "string" && /^[0-9a-f]{64}$/.test(hash)),
-    "consume hashes are invalid",
+    "session hashes are invalid",
+  );
+  assert(session?.address === proof.address, "session wallet binding differs");
+  assert(
+    /^hlw_[A-Za-z0-9_-]{43}$/.test(body.result.session.wallet_session_token),
+    "session token shape differs",
   );
   assert(
-    !JSON.stringify(attempt).includes(proof.signature),
-    "signature leaked to storage",
+    body.result.session.expires_at === session?.expiresAt,
+    "session expiry differs",
+  );
+  assert(
+    !JSON.stringify(session).includes(
+      body.result.session.wallet_session_token,
+    ) &&
+      !JSON.stringify(session).includes(proof.signature),
+    "plaintext credential leaked to storage",
   );
 });
 
@@ -114,6 +140,7 @@ Deno.test("replay returns the generic proof error", async () => {
     REQUEST_ID,
     CONFIG,
     () => Promise.resolve({ consumed: false }),
+    () => Promise.resolve({ issued: false }),
     NOW,
   );
   const body = await result.json();
@@ -139,6 +166,7 @@ Deno.test("matching invalid signature spends a failed attempt", async () => {
       attempt = value;
       return Promise.resolve({ consumed: false });
     },
+    () => Promise.reject(new Error("session issue must not run")),
     NOW,
   );
   assert(result.status === 401, "invalid signature response differs");
@@ -150,6 +178,7 @@ Deno.test("matching invalid signature spends a failed attempt", async () => {
 
 Deno.test("malformed proof never reaches challenge storage", async () => {
   let called = false;
+  let issueCalled = false;
   const result = await handleSiwsVerification(
     request({ request_id: "untrusted" }),
     REQUEST_ID,
@@ -158,9 +187,16 @@ Deno.test("malformed proof never reaches challenge storage", async () => {
       called = true;
       return Promise.resolve({ consumed: false });
     },
+    () => {
+      issueCalled = true;
+      return Promise.resolve({ issued: false });
+    },
     NOW,
   );
-  assert(result.status === 401 && !called, "malformed proof reached storage");
+  assert(
+    result.status === 401 && !called && !issueCalled,
+    "malformed proof reached storage",
+  );
 });
 
 Deno.test("fails closed for methods, configuration and database errors", async () => {
@@ -170,6 +206,7 @@ Deno.test("fails closed for methods, configuration and database errors", async (
     REQUEST_ID,
     CONFIG,
     () => Promise.resolve({ consumed: false }),
+    () => Promise.resolve({ issued: false }),
   );
   assert(
     method.status === 405 && method.headers.get("allow") === "POST",
@@ -180,6 +217,7 @@ Deno.test("fails closed for methods, configuration and database errors", async (
     REQUEST_ID,
     { ...CONFIG, hashPepper: "short" },
     () => Promise.resolve({ consumed: true }),
+    () => Promise.resolve({ issued: true }),
     NOW,
   );
   assert(missingPepper.status === 503, "short pepper accepted");
@@ -187,6 +225,7 @@ Deno.test("fails closed for methods, configuration and database errors", async (
     request(proof),
     REQUEST_ID,
     CONFIG,
+    () => Promise.resolve({ consumed: false }),
     () => Promise.reject(new Error("fixture")),
     NOW,
   );
@@ -195,4 +234,51 @@ Deno.test("fails closed for methods, configuration and database errors", async (
     unavailable.status === 503 && body.code === "verification_unavailable",
     "database failure leaked",
   );
+});
+
+Deno.test("validates a wallet-bound bearer session without exposing its hash", async () => {
+  const token = `hlw_${
+    base64(SESSION_BYTES).replaceAll("+", "-").replaceAll("/", "_").replace(
+      /=+$/,
+      "",
+    )
+  }`;
+  let tokenHash = "";
+  const result = await handleSiwsSession(
+    new Request("https://staging.heroloop.xyz/api/v1/auth/solana/session", {
+      headers: { authorization: `Bearer ${token}` },
+    }),
+    REQUEST_ID,
+    CONFIG,
+    (hash) => {
+      tokenHash = hash;
+      return Promise.resolve({
+        address: "11111111111111111111111111111111",
+        expires_at: "2026-09-13T13:15:00.000Z",
+        valid: true,
+      });
+    },
+    NOW,
+  );
+  const body = await result.json();
+  assert(
+    result.status === 200 && body.result?.valid,
+    "session was not validated",
+  );
+  assert(
+    /^[0-9a-f]{64}$/.test(tokenHash),
+    "plaintext token reached storage lookup",
+  );
+  assert(
+    !JSON.stringify(body).includes(tokenHash),
+    "token hash leaked to client",
+  );
+
+  const invalid = await handleSiwsSession(
+    new Request("https://staging.heroloop.xyz/api/v1/auth/solana/session"),
+    REQUEST_ID,
+    CONFIG,
+    () => Promise.resolve({ valid: false }),
+  );
+  assert(invalid.status === 401, "missing bearer token was accepted");
 });

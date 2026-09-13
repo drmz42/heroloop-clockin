@@ -2,7 +2,10 @@ import { Pool } from "@db/postgres";
 import { BALANCE_VERSION, COMBAT_EFFECTS_V2_BALANCE_VERSION, buildNormalCombat } from "/app/shared/normal-combat.mjs";
 import { COMBAT_EFFECTS_V2_VERSION } from "/app/shared/combat-effects-v2.mjs";
 import { handleSiwsChallenge } from "./siws_challenge_endpoint.ts";
-import { handleSiwsVerification } from "./siws_verify_endpoint.ts";
+import {
+  handleSiwsSession,
+  handleSiwsVerification,
+} from "./siws_verify_endpoint.ts";
 import {
   canonicalizeLoadedState,
   canonicalResourceState,
@@ -529,6 +532,32 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
           attempt.proofValid,
         ],
       ) as { consumed: boolean },
+      async (session) => await databaseJson(
+        "SELECT heroloop_api.consume_siws_challenge_and_issue_session($1::uuid,$2::text,$3::text,$4::text,$5::text,$6::text,$7::timestamptz,$8::timestamptz) AS result",
+        [
+          session.requestId,
+          session.nonceHash,
+          session.messageHash,
+          session.walletHash,
+          session.address,
+          session.tokenHash,
+          session.issuedAt,
+          session.expiresAt,
+        ],
+      ) as { expires_at?: string; issued: boolean },
+    );
+  }
+
+  if (url.pathname === "/api/v1/auth/solana/session") {
+    if (!siwsVerificationEnabled) return errorResponse(404, "not_found", requestId);
+    return await handleSiwsSession(
+      request,
+      requestId,
+      siwsEndpointConfig,
+      async (tokenHash) => await databaseJson(
+        "SELECT heroloop_api.validate_siws_wallet_session($1::text) AS result",
+        [tokenHash],
+      ) as { address?: string; expires_at?: string; valid: boolean },
     );
   }
 
