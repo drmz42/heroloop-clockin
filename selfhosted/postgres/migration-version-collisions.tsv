@@ -1,0 +1,4 @@
+# timestamp	filename	sha256
+# Both migrations were independently applied under their full filename before the timestamp collision was detected.
+20260908130000	20260908130000_api_heronomics_summon_target.sql	3037f1af0474a8487bba90cb470cd3b28599b395aa4b8de8179c810cb0eb05a0
+20260908130000	20260908130000_item_roll_v5_primitives.sql	1ad2ddeafd0f8f644c519365f5e7fc39f9134c6740d9d5475760e45e4c014098
