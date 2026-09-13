@@ -22,8 +22,15 @@ import { GuidesScreen } from '@/screens/GuidesScreen';
 import type { Tab } from '@/components/TopMenu';
 import { canMineTokens, teamPower as calculateAccountPower } from '@/game/engine';
 import { useTokenomics } from '@/game/useTokenomics';
-import { demoTokenomicsEnabled, playerSync, tokenomicsEnabled } from '@/game/backend';
+import { demoTokenomicsEnabled, playerSync, supabase, tokenomicsEnabled } from '@/game/backend';
 import { clearLegacyState } from '@/game/state';
+import {
+  compatibleSolanaWallets,
+  restoreSolanaWalletSession,
+  revokeSolanaWalletSession,
+  solanaAuthEnabled,
+  watchSolanaWalletSession,
+} from '@/game/solanaWalletSession';
 
 function App() {
   const game = useGame();
@@ -90,9 +97,31 @@ function App() {
     if (!tokenomicsEnabled) { setAccountGate('verified'); return; }
     let cancelled = false;
     setAccountGate('checking');
-    const request = accountStatusRequestRef.current ?? playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status');
-    accountStatusRequestRef.current = request;
-    void request.then((account) => {
+    let stopWalletEvents: () => void = () => undefined;
+    const loadAccount = async () => {
+      if (solanaAuthEnabled) {
+        const walletSession = await restoreSolanaWalletSession();
+        if (!walletSession) {
+          await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+          if (!cancelled) setAccountGate('landing');
+          return;
+        }
+        const wallet = compatibleSolanaWallets().find((candidate) =>
+          candidate.name === walletSession.walletName && candidate.accounts.some((account) => account.address === walletSession.address));
+        if (!wallet) {
+          await revokeSolanaWalletSession('wallet_disconnect');
+          await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+          if (!cancelled) setAccountGate('landing');
+          return;
+        }
+        stopWalletEvents = watchSolanaWalletSession(walletSession, wallet, (reason) => {
+          void revokeSolanaWalletSession(reason).finally(() =>
+            supabase.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/')));
+        });
+      }
+      const request = accountStatusRequestRef.current ?? playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status');
+      accountStatusRequestRef.current = request;
+      await request.then((account) => {
       if (cancelled) return;
       if (!account) { setAccountGate('error'); return; }
       if (!account.exists || !account.username) {
@@ -110,6 +139,7 @@ function App() {
           setAccountGate('verified');
           return;
         }
+        if (solanaAuthEnabled) { setAccountGate('error'); return; }
         void playerSync<{ state: unknown; revision: number; migrated: boolean }>('game_state_migrate', { state: legacyStateRef.current }).then((migrated) => {
           if (cancelled || !migrated) { setAccountGate('error'); return; }
           hydrateServerState(migrated.state);
@@ -120,10 +150,20 @@ function App() {
           setAccountGate('verified');
         });
       });
-    }).finally(() => {
-      if (accountStatusRequestRef.current === request) accountStatusRequestRef.current = null;
-    });
-    return () => { cancelled = true; };
+      }).finally(() => {
+        if (accountStatusRequestRef.current === request) accountStatusRequestRef.current = null;
+      });
+    };
+    void loadAccount();
+    const onFocus = () => {
+      if (!solanaAuthEnabled || document.visibilityState !== 'visible') return;
+      void restoreSolanaWalletSession().then((session) => {
+        if (session || cancelled) return;
+        void supabase.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/'));
+      });
+    };
+    document.addEventListener('visibilitychange', onFocus);
+    return () => { cancelled = true; stopWalletEvents(); document.removeEventListener('visibilitychange', onFocus); };
   }, [accountCheckAttempt, hydrateServerState]);
 
   flushServerSaveRef.current = () => {

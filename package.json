@@ -20,7 +20,8 @@
     "check:google-android-auth": "node scripts/check-google-android-auth-contract.mjs",
     "check:apple-ios-auth": "node scripts/check-apple-ios-auth-contract.mjs",
     "check:steam-auth": "node scripts/check-steam-auth-contract.mjs",
-    "check:solana-web-auth": "node scripts/check-solana-web-auth-contract.mjs && bash scripts/check-solana-web-auth-step1.sh && bash scripts/check-solana-web-auth-step2.sh && bash scripts/check-solana-web-auth-step4.sh",
+    "check:solana-web-auth": "node scripts/check-solana-web-auth-contract.mjs && bash scripts/check-solana-web-auth-step1.sh && bash scripts/check-solana-web-auth-step2.sh && bash scripts/check-solana-web-auth-step4.sh && bash scripts/check-solana-web-auth-step5.sh",
+    "check:solana-wallet-ui": "VITE_ENABLE_SOLANA_AUTH=true VITE_BACKEND_MODE=selfhosted VITE_SELFHOSTED_URL=https://staging.heroloop.xyz vite build && node scripts/check-solana-wallet-ui.mjs",
     "check:bot-protection": "node scripts/check-bot-protection-contract.mjs",
     "audit:runtime-performance": "node scripts/audit-runtime-performance-budget.mjs",
     "check:staging-performance-baseline": "node scripts/check-staging-performance-baseline.mjs",
@@ -190,6 +191,7 @@
   "dependencies": {
     "@solana/wallet-standard-features": "^1.5.0",
     "@supabase/supabase-js": "^2.57.4",
+    "@wallet-standard/app": "^1.1.1",
     "@wallet-standard/base": "^1.1.1",
     "@wallet-standard/features": "^1.1.1",
     "lucide-react": "^0.344.0",

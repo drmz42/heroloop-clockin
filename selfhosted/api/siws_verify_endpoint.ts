@@ -39,7 +39,12 @@ export type IssueSiwsWalletSession = (
 
 export type ValidateSiwsWalletSession = (
   tokenHash: string,
-) => Promise<{ address?: string; expires_at?: string; valid: boolean }>;
+) => Promise<{
+  account_id?: string | null;
+  address?: string;
+  expires_at?: string;
+  valid: boolean;
+}>;
 
 function response(status: number, body: JsonRecord): Response {
   return new Response(JSON.stringify(body), {
@@ -257,6 +262,9 @@ export async function handleSiwsSession(
       ok: true,
       request_id: requestId,
       result: {
+        account_id: typeof session.account_id === "string"
+          ? session.account_id
+          : null,
         address: session.address,
         expires_at: session.expires_at,
         valid: true,

@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { Wallet } from '@wallet-standard/base';
 import {
   ArrowDown, ArrowRight, Check, ChevronRight, Coins, Gamepad2,
   Gem, Menu, Shield, Sparkles, Swords, UserRound, X, Zap,
@@ -9,6 +10,11 @@ import { HERO_MAP } from '@/game/heroes';
 import { playerSync } from '@/game/backend';
 import { hasBlockedUsernameLanguage } from '@/game/username';
 import { makeRegisteredStarterState } from '@/game/state';
+import {
+  connectSolanaWallet,
+  observeCompatibleSolanaWallets,
+  solanaAuthEnabled,
+} from '@/game/solanaWalletSession';
 
 type GameApi = ReturnType<typeof useGame>;
 type StarterId = 'shepherd-common' | 'assassin-common' | 'knight-common' | 'druid-common' | 'archer-common';
@@ -285,6 +291,8 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
   const [connecting, setConnecting] = useState(false);
   const [guestId, setGuestId] = useState('');
   const [error, setError] = useState('');
+  const [wallets, setWallets] = useState<readonly Wallet[]>([]);
+  const [selectedWallet, setSelectedWallet] = useState('');
   const blockedName = hasBlockedUsernameLanguage(username);
   const validName = /^[a-zA-Z0-9_]{3,16}$/.test(username) && !blockedName;
 
@@ -292,6 +300,47 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
     const hero = HERO_MAP[s.id];
     return { ...s, hero, svg: heroPortraitSrc(hero.id, hero.heroClass, hero.rarity, hero.color) };
   }), []);
+
+  useEffect(() => {
+    if (!solanaAuthEnabled) return;
+    return observeCompatibleSolanaWallets((available) => {
+      setWallets(available);
+      setSelectedWallet((current) => available.some((wallet) => wallet.name === current)
+        ? current
+        : available[0]?.name ?? '');
+    });
+  }, []);
+
+  const connectWallet = async () => {
+    const wallet = wallets.find((candidate) => candidate.name === selectedWallet);
+    if (!wallet) { setError('No compatible Solana wallet is available.'); return; }
+    setConnecting(true); setError('');
+    try {
+      const session = await accountRequest(connectSolanaWallet(wallet));
+      if (!session) { setError('Wallet authentication timed out. Please try again.'); return; }
+      const account = await accountRequest(playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status'));
+      if (!account || account.account_id !== session.accountId) {
+        setError('Account service is unavailable. Please try again.');
+        return;
+      }
+      if (account.exists && account.username) {
+        window.location.replace('/#game');
+        return;
+      }
+      setGuestReady(true);
+      setGuestId(`game-${account.account_id}`);
+      setStep(2);
+    } catch (reason) {
+      const code = reason && typeof reason === 'object' && 'code' in reason ? String(reason.code) : '';
+      setError(code === 'wallet_already_linked'
+        ? 'This wallet already belongs to another HeroLoop account.'
+        : code === 'wallet_signature_rejected'
+        ? 'The signature request was cancelled.'
+        : 'Wallet authentication failed. Please try again.');
+    } finally {
+      setConnecting(false);
+    }
+  };
 
   const continueAsGuest = async () => {
     setGuestReady(true); setConnecting(true); setError('');
@@ -351,7 +400,7 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
           <X size={20} />
         </button>
         <div className="border-b border-white/10 px-6 py-5 sm:px-8">
-          <div className="text-[10px] uppercase tracking-[.25em] text-violet-300">{step === 1 ? 'Check guest account' : 'Create your account'}</div>
+          <div className="text-[10px] uppercase tracking-[.25em] text-violet-300">{step === 1 ? (solanaAuthEnabled ? 'Verify wallet ownership' : 'Check guest account') : 'Create your account'}</div>
           <div className="mt-3 flex items-center gap-2">
             {[1, 2, 3].map(n => (
               <div key={n} className={`h-1.5 flex-1 ${n <= step ? 'bg-amber-300' : 'bg-white/10'}`} />
@@ -362,15 +411,24 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
         <div className="min-h-[470px] p-6 sm:p-8">
           {step === 1 && (
             <div className="mx-auto max-w-xl py-5">
-              <div className="mx-auto grid h-14 w-14 place-items-center border border-violet-400/40 bg-violet-400/10 text-violet-300"><UserRound size={26} /></div>
-              <h2 className="mt-6 text-center font-pixel text-sm text-white sm:text-lg">CONTINUE AS GUEST</h2>
-              <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-slate-400">The current beta uses a temporary server account. Existing guests enter directly; new guests continue to registration.</p>
-              <div className="mx-auto mt-7 w-fit border border-emerald-400/25 bg-emerald-400/[.06] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-emerald-300"><Shield size={12} className="mr-1.5 inline" /> Server-saved guest progress</div>
-              <button onClick={continueAsGuest} disabled={connecting} className="landing-cta mx-auto mt-4 flex w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em] disabled:cursor-wait disabled:opacity-60">
-                <UserRound size={19} /> {connecting ? 'Checking account…' : 'Continue as Guest'}
+              <div className="mx-auto grid h-14 w-14 place-items-center border border-violet-400/40 bg-violet-400/10 text-violet-300">{solanaAuthEnabled ? <Shield size={26} /> : <UserRound size={26} />}</div>
+              <h2 className="mt-6 text-center font-pixel text-sm text-white sm:text-lg">{solanaAuthEnabled ? 'CONNECT SOLANA WALLET' : 'CONTINUE AS GUEST'}</h2>
+              <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-slate-400">{solanaAuthEnabled ? 'Choose a compatible Wallet Standard provider. Sign one free message to prove ownership—no transaction and no gas.' : 'The current beta uses a temporary server account. Existing guests enter directly; new guests continue to registration.'}</p>
+              {solanaAuthEnabled && wallets.length > 1 && (
+                <label className="mx-auto mt-7 block max-w-md text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">
+                  Available wallet
+                  <select value={selectedWallet} onChange={(event) => setSelectedWallet(event.target.value)} className="mt-2 min-h-11 w-full border border-white/15 bg-black/40 px-4 text-sm text-white outline-none focus:border-amber-300">
+                    {wallets.map((wallet) => <option key={wallet.name} value={wallet.name}>{wallet.name}</option>)}
+                  </select>
+                </label>
+              )}
+              <div className="mx-auto mt-7 w-fit border border-emerald-400/25 bg-emerald-400/[.06] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-emerald-300"><Shield size={12} className="mr-1.5 inline" /> {solanaAuthEnabled ? 'Free ownership proof' : 'Server-saved guest progress'}</div>
+              <button onClick={solanaAuthEnabled ? connectWallet : continueAsGuest} disabled={connecting || (solanaAuthEnabled && wallets.length === 0)} className="landing-cta mx-auto mt-4 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em] disabled:cursor-not-allowed disabled:opacity-60">
+                {solanaAuthEnabled ? <Shield size={19} /> : <UserRound size={19} />} {connecting ? 'Checking account…' : solanaAuthEnabled ? 'Connect Solana Wallet' : 'Continue as Guest'}
               </button>
+              {solanaAuthEnabled && wallets.length === 0 && <div className="mx-auto mt-4 max-w-md text-center text-xs text-slate-400">No compatible wallet detected. <a className="text-amber-300 underline underline-offset-4" href="https://solana.com/wallets" target="_blank" rel="noreferrer">Wallet help</a></div>}
               {error && <div className="mt-5 border border-rose-400/30 bg-rose-400/10 p-3 text-center text-sm text-rose-300">{error}</div>}
-              <div className="mx-auto mt-6 flex max-w-md items-start gap-3 border border-emerald-400/20 bg-emerald-400/[.05] p-4 text-xs leading-5 text-emerald-200/70"><Shield size={16} className="mt-0.5 shrink-0" /><span>Your Guest ID is not a wallet address and cannot receive funds. Verified wallet sign-in is a separate future feature.</span></div>
+              <div className="mx-auto mt-6 flex max-w-md items-start gap-3 border border-emerald-400/20 bg-emerald-400/[.05] p-4 text-xs leading-5 text-emerald-200/70"><Shield size={16} className="mt-0.5 shrink-0" /><span>{solanaAuthEnabled ? 'HeroLoop never asks for a transaction signature during login. A different wallet cannot inherit this account or its saves.' : 'Your Guest ID is not a wallet address and cannot receive funds. Verified wallet sign-in is a separate future feature.'}</span></div>
             </div>
           )}
 

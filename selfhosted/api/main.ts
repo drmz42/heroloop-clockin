@@ -3,6 +3,10 @@ import { BALANCE_VERSION, COMBAT_EFFECTS_V2_BALANCE_VERSION, buildNormalCombat }
 import { COMBAT_EFFECTS_V2_VERSION } from "/app/shared/combat-effects-v2.mjs";
 import { handleSiwsChallenge } from "./siws_challenge_endpoint.ts";
 import {
+  handleSiwsIdentityLink,
+  handleSiwsSessionRevoke,
+} from "./siws_identity_endpoint.ts";
+import {
   handleSiwsSession,
   handleSiwsVerification,
 } from "./siws_verify_endpoint.ts";
@@ -557,7 +561,36 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       async (tokenHash) => await databaseJson(
         "SELECT heroloop_api.validate_siws_wallet_session($1::text) AS result",
         [tokenHash],
-      ) as { address?: string; expires_at?: string; valid: boolean },
+      ) as { account_id?: string | null; address?: string; expires_at?: string; valid: boolean },
+    );
+  }
+
+  if (url.pathname === "/api/v1/auth/solana/link") {
+    if (!siwsVerificationEnabled) return errorResponse(404, "not_found", requestId);
+    const authentication = await authenticate(request, requestId);
+    if (authentication instanceof Response) return authentication;
+    return await handleSiwsIdentityLink(
+      request,
+      requestId,
+      siwsEndpointConfig,
+      authentication.playerId,
+      async (accountId, tokenHash, key) => await databaseJson(
+        "SELECT heroloop_api.link_siws_wallet_session($1::uuid,$2::text,$3::uuid) AS result",
+        [accountId, tokenHash, key],
+      ) as { account_id?: string; address?: string; code?: string; linked: boolean },
+    );
+  }
+
+  if (url.pathname === "/api/v1/auth/solana/session/revoke") {
+    if (!siwsVerificationEnabled) return errorResponse(404, "not_found", requestId);
+    return await handleSiwsSessionRevoke(
+      request,
+      requestId,
+      siwsEndpointConfig,
+      async (tokenHash, key, reason) => await databaseJson(
+        "SELECT heroloop_api.revoke_siws_wallet_session($1::text,$2::uuid,$3::text) AS result",
+        [tokenHash, key, reason],
+      ) as { revoked: boolean },
     );
   }
 
