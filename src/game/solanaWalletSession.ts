@@ -1,5 +1,5 @@
 import type { Wallet } from '@wallet-standard/base';
-import { authHeaders, backendUrl, supabase } from './backend';
+import { backendUrl, supabase } from './backend';
 import { createSolanaWalletProof, SolanaWalletAuthError } from './solanaWalletAuth';
 export {
   compatibleSolanaWallets,
@@ -110,6 +110,8 @@ export async function connectSolanaWallet(
   options: SolanaSessionOptions = {},
 ): Promise<SolanaWalletSession> {
   const fetchImpl = options.fetch ?? globalThis.fetch;
+  const existing = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+  if (existing.data.session?.user.is_anonymous === false) fail('account_session_conflict');
   const proof = await createSolanaWalletProof(wallet, {
     challengeEndpoint: `${backendUrl}/api/v1/auth/solana/challenge`,
     fetch: fetchImpl,
@@ -132,46 +134,53 @@ export async function connectSolanaWallet(
     fail('wallet_session_unavailable');
   }
 
-  const headers = await authHeaders();
-  if (!headers) {
-    await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
-    fail('account_session_unavailable');
-  }
   const key = crypto.randomUUID();
-  let linked: Response;
+  let login: Response;
   try {
-    linked = await fetchImpl(`${backendUrl}/api/v1/auth/solana/link`, {
+    login = await fetchImpl(`${backendUrl}/api/v1/auth/solana/login`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
-        ...headers,
+        'content-type': 'application/json',
         'x-heroloop-wallet-session': token,
         'x-idempotency-key': key,
       },
+      body: JSON.stringify(proof),
     });
   } catch {
     await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
-    fail('wallet_link_unavailable');
+    fail('account_session_unavailable');
   }
-  if (!linked.ok) {
+  if (!login.ok) {
     await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
-    fail(linked.status === 409 ? 'wallet_already_linked' : 'wallet_link_unavailable');
+    fail(login.status === 409 ? 'wallet_already_linked' : 'account_session_unavailable');
   }
-  let linkedEnvelope: Record<string, unknown>;
+  let loginEnvelope: Record<string, unknown>;
   try {
-    linkedEnvelope = await json(linked);
+    loginEnvelope = await json(login);
   } catch {
     await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
-    return fail('wallet_link_unavailable');
+    return fail('account_session_unavailable');
   }
-  const linkedResult = linkedEnvelope.result as Record<string, unknown> | undefined;
-  if (linkedResult?.linked !== true || linkedResult.address !== proof.address ||
-    typeof linkedResult.account_id !== 'string' || !UUID_PATTERN.test(linkedResult.account_id)) {
+  const loginResult = loginEnvelope.result as Record<string, unknown> | undefined;
+  const auth = loginResult?.auth as Record<string, unknown> | undefined;
+  if (loginResult?.address !== proof.address || typeof loginResult.account_id !== 'string' ||
+    !UUID_PATTERN.test(loginResult.account_id) || typeof auth?.access_token !== 'string' ||
+    typeof auth.refresh_token !== 'string' || auth.token_type !== 'bearer') {
     await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
-    fail('wallet_link_unavailable');
+    fail('account_session_unavailable');
+  }
+  const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+    access_token: auth.access_token,
+    refresh_token: auth.refresh_token,
+  }).catch(() => ({ data: { session: null }, error: new Error('account_session_unavailable') }));
+  if (sessionError || !sessionData.session || sessionData.session.user.id !== loginResult.account_id) {
+    await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    fail('account_session_unavailable');
   }
   const accepted: StoredSession = {
-    accountId: linkedResult.account_id,
+    accountId: loginResult.account_id,
     address: proof.address,
     expiresAt,
     token,

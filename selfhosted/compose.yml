@@ -98,11 +98,57 @@ services:
     networks:
       - backend
 
+  auth-wallet:
+    profiles: ["wallet-auth"]
+    image: supabase/gotrue:v2.189.0@sha256:385184459f57569c54c25209f51f3b2be99ddd7c4ce9e3555b5d3eea8447b7cf
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: "9999"
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL:?set the environment-specific external Auth URL}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@postgres:5432/postgres
+      GOTRUE_SITE_URL: ${SITE_URL:?set the environment-specific site URL}
+      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS:?set the exact environment redirect allowlist}
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: "false"
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "false"
+      GOTRUE_EXTERNAL_WEB3_SOLANA_ENABLED: "true"
+      GOTRUE_EXTERNAL_WEB3_SOLANA_MAXIMUM_VALIDITY_DURATION: 5m
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: ${JWT_EXPIRY:-3600}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_KEYS: ${JWT_KEYS:?set a JSON array containing the environment-specific asymmetric signing key}
+      GOTRUE_JWT_ISSUER: ${API_EXTERNAL_URL}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9999/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    cpus: 0.20
+    mem_limit: 192m
+    pids_limit: 96
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+
   api:
     <<: *deno-service
-    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=AUTH_INTERNAL_URL,PGHOST,PGPORT,PGDATABASE,PGUSER,PGPASSWORD,PGPOOL_SIZE,TESTER_CONTROLS_ENABLED,COMBAT_EFFECTS_VERSION,SIWS_CHALLENGE_ENABLED,SIWS_VERIFICATION_ENABLED,SIWS_CHAIN_ID,SIWS_DOMAIN,SIWS_URI,SIWS_HASH_PEPPER", "--allow-net=0.0.0.0:8080,auth:9999,postgres:5432", "--allow-read=/var/lib/heroloop-storage", "--allow-write=/var/lib/heroloop-storage", "/app/api/main.ts"]
+    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=AUTH_INTERNAL_URL,AUTH_WALLET_INTERNAL_URL,PGHOST,PGPORT,PGDATABASE,PGUSER,PGPASSWORD,PGPOOL_SIZE,TESTER_CONTROLS_ENABLED,COMBAT_EFFECTS_VERSION,SIWS_CHALLENGE_ENABLED,SIWS_VERIFICATION_ENABLED,SIWS_ACCOUNT_LOGIN_ENABLED,SIWS_CHAIN_ID,SIWS_DOMAIN,SIWS_URI,SIWS_HASH_PEPPER", "--allow-net=0.0.0.0:8080,auth:9999,auth-wallet:9999,postgres:5432", "--allow-read=/var/lib/heroloop-storage", "--allow-write=/var/lib/heroloop-storage", "/app/api/main.ts"]
     environment:
       AUTH_INTERNAL_URL: http://auth:9999
+      AUTH_WALLET_INTERNAL_URL: http://auth-wallet:9999
       PGHOST: postgres
       PGPORT: "5432"
       PGDATABASE: postgres
@@ -113,6 +159,7 @@ services:
       COMBAT_EFFECTS_VERSION: ${COMBAT_EFFECTS_VERSION:-combat-effects-v1}
       SIWS_CHALLENGE_ENABLED: ${SIWS_CHALLENGE_ENABLED:-false}
       SIWS_VERIFICATION_ENABLED: ${SIWS_VERIFICATION_ENABLED:-false}
+      SIWS_ACCOUNT_LOGIN_ENABLED: ${SIWS_ACCOUNT_LOGIN_ENABLED:-false}
       SIWS_CHAIN_ID: ${SIWS_CHAIN_ID:-}
       SIWS_DOMAIN: ${SIWS_DOMAIN:-}
       SIWS_URI: ${SIWS_URI:-}

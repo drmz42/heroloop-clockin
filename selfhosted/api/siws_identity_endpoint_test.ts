@@ -1,7 +1,10 @@
 import {
+  handleSiwsAccountLogin,
   handleSiwsIdentityLink,
   handleSiwsSessionRevoke,
 } from "./siws_identity_endpoint.ts";
+import { createSiwsChallenge } from "./siws_challenge.ts";
+import { solanaAddressFromPublicKey } from "./siws_verify.ts";
 
 const REQUEST_ID = "123e4567-e89b-42d3-a456-426614174099";
 const ACCOUNT_ID = "123e4567-e89b-42d3-a456-426614174088";
@@ -13,6 +16,7 @@ const CONFIG = {
   hashPepper: "p".repeat(48),
   uri: "https://staging.heroloop.xyz/",
 };
+const NOW = new Date("2026-09-13T13:00:00.000Z");
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -27,6 +31,63 @@ function request(path: string, extra: Record<string, string> = {}): Request {
       ...extra,
     },
   });
+}
+
+function base64(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+async function loginRequest(): Promise<{ address: string; request: Request }> {
+  const keys = await crypto.subtle.generateKey({ name: "Ed25519" }, true, [
+    "sign",
+    "verify",
+  ]) as CryptoKeyPair;
+  const publicKey = new Uint8Array(
+    await crypto.subtle.exportKey("raw", keys.publicKey),
+  );
+  const address = solanaAddressFromPublicKey(publicKey);
+  const challenge = createSiwsChallenge(
+    {
+      address,
+      chainId: CONFIG.chainId,
+      domain: CONFIG.domain,
+      uri: CONFIG.uri,
+    },
+    {
+      now: () => NOW,
+      randomBytes: () => new Uint8Array(16).fill(0xcd),
+      requestId: () => "123e4567-e89b-42d3-a456-426614174000",
+    },
+  );
+  const message = new TextEncoder().encode(challenge.message);
+  const signature = new Uint8Array(
+    await crypto.subtle.sign("Ed25519", keys.privateKey, message),
+  );
+  return {
+    address,
+    request: new Request(
+      "https://staging.heroloop.xyz/api/v1/auth/solana/login",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-heroloop-wallet-session": TOKEN,
+          "x-idempotency-key": KEY,
+        },
+        body: JSON.stringify({
+          address,
+          method: "solana:signIn",
+          public_key: base64(publicKey),
+          request_id: challenge.signInInput.requestId,
+          signature: base64(signature),
+          signature_type: "ed25519",
+          signed_message: base64(message),
+        }),
+      },
+    ),
+  };
 }
 
 Deno.test("links only the authenticated account using a hashed wallet bearer", async () => {
@@ -107,5 +168,97 @@ Deno.test("revokes the exact hashed wallet session with a bounded reason", async
   assert(
     result.status === 204 && seenReason === "wallet_disconnect",
     "session was not revoked",
+  );
+});
+
+Deno.test("wallet login burns the verified bearer and returns one linked rotating Auth session", async () => {
+  const fixture = await loginRequest();
+  let claimedHash = "";
+  let forwardedMessage = "";
+  const result = await handleSiwsAccountLogin(
+    fixture.request,
+    REQUEST_ID,
+    CONFIG,
+    (tokenHash, key) => {
+      claimedHash = tokenHash;
+      assert(key === KEY, "login claim idempotency key differs");
+      return Promise.resolve({
+        claimed: true,
+        address: fixture.address,
+        account_id: null,
+      });
+    },
+    (message, signature) => {
+      forwardedMessage = message;
+      assert(signature.length === 88, "signature forwarding differs");
+      return Promise.resolve({
+        access_token: `eyJ${"a".repeat(64)}`,
+        expires_at: 1_900_000_000,
+        expires_in: 3600,
+        refresh_token: "r".repeat(32),
+        token_type: "bearer",
+        user: { id: ACCOUNT_ID },
+      });
+    },
+    (accountId, tokenHash, key) =>
+      Promise.resolve({
+        account_id: accountId,
+        address: fixture.address,
+        linked: tokenHash === claimedHash && key === KEY,
+      }),
+    () => Promise.reject(new Error("successful login must not revoke")),
+    NOW,
+  );
+  const body = await result.json();
+  assert(
+    result.status === 200 && body.result?.account_id === ACCOUNT_ID,
+    "account login failed",
+  );
+  assert(
+    /^[0-9a-f]{64}$/.test(claimedHash) && claimedHash !== TOKEN,
+    "plaintext bearer reached claim",
+  );
+  assert(
+    forwardedMessage.includes(`\n${fixture.address}\n`),
+    "verified message was not forwarded",
+  );
+  assert(
+    body.result.auth.refresh_token === "r".repeat(32),
+    "rotating session was not returned",
+  );
+});
+
+Deno.test("wallet login rejects account collisions and revokes the unreturned Auth session", async () => {
+  const fixture = await loginRequest();
+  let revoked = "";
+  const accessToken = `eyJ${"b".repeat(64)}`;
+  const result = await handleSiwsAccountLogin(
+    fixture.request,
+    REQUEST_ID,
+    CONFIG,
+    () =>
+      Promise.resolve({
+        claimed: true,
+        address: fixture.address,
+        account_id: "123e4567-e89b-42d3-a456-426614174066",
+      }),
+    () =>
+      Promise.resolve({
+        access_token: accessToken,
+        expires_in: 3600,
+        refresh_token: "r".repeat(32),
+        token_type: "bearer",
+        user: { id: ACCOUNT_ID },
+      }),
+    () => Promise.reject(new Error("collision must not link")),
+    (token) => {
+      revoked = token;
+      return Promise.resolve();
+    },
+    NOW,
+  );
+  assert(
+    result.status === 409 && revoked === accessToken,
+    "collision did not fail closed and revoke",
   );
 });

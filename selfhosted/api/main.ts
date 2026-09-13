@@ -3,6 +3,7 @@ import { BALANCE_VERSION, COMBAT_EFFECTS_V2_BALANCE_VERSION, buildNormalCombat }
 import { COMBAT_EFFECTS_V2_VERSION } from "/app/shared/combat-effects-v2.mjs";
 import { handleSiwsChallenge } from "./siws_challenge_endpoint.ts";
 import {
+  handleSiwsAccountLogin,
   handleSiwsIdentityLink,
   handleSiwsSessionRevoke,
 } from "./siws_identity_endpoint.ts";
@@ -28,9 +29,11 @@ const jsonHeaders = {
   "content-type": "application/json; charset=utf-8",
 };
 const authInternalUrl = Deno.env.get("AUTH_INTERNAL_URL") ?? "http://auth:9999";
+const authWalletInternalUrl = Deno.env.get("AUTH_WALLET_INTERNAL_URL") ?? "http://auth-wallet:9999";
 const testerControlsEnabled = Deno.env.get("TESTER_CONTROLS_ENABLED") === "true";
 const siwsChallengeEnabled = Deno.env.get("SIWS_CHALLENGE_ENABLED") === "true";
 const siwsVerificationEnabled = Deno.env.get("SIWS_VERIFICATION_ENABLED") === "true";
+const siwsAccountLoginEnabled = Deno.env.get("SIWS_ACCOUNT_LOGIN_ENABLED") === "true";
 const siwsEndpointConfig = {
   chainId: Deno.env.get("SIWS_CHAIN_ID") ?? "",
   domain: Deno.env.get("SIWS_DOMAIN") ?? "",
@@ -467,6 +470,34 @@ async function dependenciesHealthy(): Promise<boolean> {
   }
 }
 
+async function signInWalletAccount(message: string, signature: string): Promise<JsonRecord> {
+  const response = await fetch(`${authWalletInternalUrl}/token?grant_type=web3`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ chain: "solana", message, signature }),
+    signal: AbortSignal.timeout(5_000),
+  });
+  if (!response.ok) throw new Error("wallet_auth_rejected");
+  const declared = Number(response.headers.get("content-length") ?? "0");
+  if (!Number.isFinite(declared) || declared < 0 || declared > 32_768) {
+    throw new Error("wallet_auth_response_invalid");
+  }
+  const body = await response.text();
+  if (body.length > 32_768) throw new Error("wallet_auth_response_invalid");
+  const parsed: unknown = JSON.parse(body);
+  if (!isRecord(parsed)) throw new Error("wallet_auth_response_invalid");
+  return parsed;
+}
+
+async function revokeWalletAccountSession(accessToken: string): Promise<void> {
+  const response = await fetch(`${authWalletInternalUrl}/logout?scope=local`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(2_000),
+  });
+  if (!response.ok) throw new Error("wallet_auth_revoke_failed");
+}
+
 async function storageHealthy(): Promise<boolean> {
   try {
     const root = await Deno.stat(storageRoot);
@@ -562,6 +593,27 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         "SELECT heroloop_api.validate_siws_wallet_session($1::text) AS result",
         [tokenHash],
       ) as { account_id?: string | null; address?: string; expires_at?: string; valid: boolean },
+    );
+  }
+
+  if (url.pathname === "/api/v1/auth/solana/login") {
+    if (!siwsVerificationEnabled || !siwsAccountLoginEnabled) {
+      return errorResponse(404, "not_found", requestId);
+    }
+    return await handleSiwsAccountLogin(
+      request,
+      requestId,
+      siwsEndpointConfig,
+      async (tokenHash, key) => await databaseJson(
+        "SELECT heroloop_api.claim_siws_account_login($1::text,$2::uuid) AS result",
+        [tokenHash, key],
+      ) as { account_id?: string | null; address?: string; claimed: boolean; code?: string },
+      signInWalletAccount,
+      async (accountId, tokenHash, key) => await databaseJson(
+        "SELECT heroloop_api.link_siws_wallet_session($1::uuid,$2::text,$3::uuid) AS result",
+        [accountId, tokenHash, key],
+      ) as { account_id?: string; address?: string; code?: string; linked: boolean },
+      revokeWalletAccountSession,
     );
   }
 
