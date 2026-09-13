@@ -2,6 +2,7 @@ import { Pool } from "@db/postgres";
 import { BALANCE_VERSION, COMBAT_EFFECTS_V2_BALANCE_VERSION, buildNormalCombat } from "/app/shared/normal-combat.mjs";
 import { COMBAT_EFFECTS_V2_VERSION } from "/app/shared/combat-effects-v2.mjs";
 import { handleSiwsChallenge } from "./siws_challenge_endpoint.ts";
+import { handleSiwsVerification } from "./siws_verify_endpoint.ts";
 import {
   canonicalizeLoadedState,
   canonicalResourceState,
@@ -22,6 +23,7 @@ const jsonHeaders = {
 const authInternalUrl = Deno.env.get("AUTH_INTERNAL_URL") ?? "http://auth:9999";
 const testerControlsEnabled = Deno.env.get("TESTER_CONTROLS_ENABLED") === "true";
 const siwsChallengeEnabled = Deno.env.get("SIWS_CHALLENGE_ENABLED") === "true";
+const siwsVerificationEnabled = Deno.env.get("SIWS_VERIFICATION_ENABLED") === "true";
 const siwsEndpointConfig = {
   chainId: Deno.env.get("SIWS_CHAIN_ID") ?? "",
   domain: Deno.env.get("SIWS_DOMAIN") ?? "",
@@ -508,6 +510,25 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
           challenge.expiresAt,
         ],
       ) as { allowed: boolean; retry_after?: number },
+    );
+  }
+
+  if (url.pathname === "/api/v1/auth/solana/verify") {
+    if (!siwsVerificationEnabled) return errorResponse(404, "not_found", requestId);
+    return await handleSiwsVerification(
+      request,
+      requestId,
+      siwsEndpointConfig,
+      async (attempt) => await databaseJson(
+        "SELECT heroloop_api.consume_siws_challenge($1::uuid,$2::text,$3::text,$4::text,$5::boolean) AS result",
+        [
+          attempt.requestId,
+          attempt.nonceHash,
+          attempt.messageHash,
+          attempt.walletHash,
+          attempt.proofValid,
+        ],
+      ) as { consumed: boolean },
     );
   }
 

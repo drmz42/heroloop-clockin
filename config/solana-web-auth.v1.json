@@ -76,6 +76,8 @@
     "walletSigningImplemented": true,
     "serverProofVerifierImplemented": true,
     "challengeConsumptionImplemented": true,
+    "verificationEndpointImplemented": true,
+    "verificationRouteExposed": false,
     "verificationAndSessionImplemented": false
   },
   "acceptanceScenarios": [

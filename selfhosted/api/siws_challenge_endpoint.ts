@@ -1,7 +1,7 @@
 import { createSiwsChallenge, type SiwsChallenge } from "./siws_challenge.ts";
+import { SIWS_HASH_PATTERN, siwsHmacHex } from "./siws_hash.ts";
 
 const MAX_BODY_BYTES = 256;
-const HASH_PATTERN = /^[0-9a-f]{64}$/;
 const IP_PATTERN = /^[0-9a-f:.]{2,64}$/i;
 
 type JsonRecord = Record<string, unknown>;
@@ -84,22 +84,6 @@ async function readBody(request: Request): Promise<JsonRecord | null> {
   }
 }
 
-async function hmacHex(pepper: string, value: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(pepper),
-    { hash: "SHA-256", name: "HMAC" },
-    false,
-    ["sign"],
-  );
-  const bytes = new Uint8Array(
-    await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value)),
-  );
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
-    "",
-  );
-}
-
 async function storageRecord(
   challenge: SiwsChallenge,
   clientAddress: string,
@@ -108,11 +92,11 @@ async function storageRecord(
   const record = {
     expiresAt: challenge.signInInput.expirationTime,
     issuedAt: challenge.signInInput.issuedAt,
-    messageHash: await hmacHex(pepper, challenge.message),
-    nonceHash: await hmacHex(pepper, challenge.signInInput.nonce),
-    rateSubjectHash: await hmacHex(pepper, clientAddress),
+    messageHash: await siwsHmacHex(pepper, challenge.message),
+    nonceHash: await siwsHmacHex(pepper, challenge.signInInput.nonce),
+    rateSubjectHash: await siwsHmacHex(pepper, clientAddress),
     requestId: challenge.signInInput.requestId,
-    walletHash: await hmacHex(pepper, challenge.signInInput.address),
+    walletHash: await siwsHmacHex(pepper, challenge.signInInput.address),
   };
   if (
     ![
@@ -120,7 +104,7 @@ async function storageRecord(
       record.nonceHash,
       record.rateSubjectHash,
       record.walletHash,
-    ].every((hash) => HASH_PATTERN.test(hash))
+    ].every((hash) => SIWS_HASH_PATTERN.test(hash))
   ) {
     throw new Error("invalid_challenge_hash");
   }

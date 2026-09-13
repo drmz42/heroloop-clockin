@@ -1,5 +1,6 @@
 import { createSiwsChallenge, type SiwsChallenge } from "./siws_challenge.ts";
 import {
+  evaluateSiwsProof,
   type SiwsProofRequest,
   SiwsVerificationError,
   solanaAddressFromPublicKey,
@@ -101,9 +102,14 @@ Deno.test("rejects invalid Ed25519 signatures", async () => {
     (value) => value.charCodeAt(0),
   );
   signature[0] ^= 0xff;
-  await rejects(() =>
-    verifySiwsProof({ ...proof, signature: base64(signature) }, CONFIG, NOW)
+  const invalidProof = { ...proof, signature: base64(signature) };
+  const evaluated = await evaluateSiwsProof(invalidProof, CONFIG, NOW);
+  assert(!evaluated.signatureValid, "invalid signature was marked valid");
+  assert(
+    evaluated.proof.requestId === proof.request_id,
+    "attempt reference differs",
   );
+  await rejects(() => verifySiwsProof(invalidProof, CONFIG, NOW));
 });
 
 Deno.test("rejects public-key, address and request-ID mismatches", async () => {

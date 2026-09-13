@@ -41,6 +41,11 @@ export type VerifiedSiwsProof = {
   requestId: string;
 };
 
+export type EvaluatedSiwsProof = {
+  proof: VerifiedSiwsProof;
+  signatureValid: boolean;
+};
+
 export class SiwsVerificationError extends Error {
   readonly code = "invalid_wallet_proof";
 
@@ -176,11 +181,11 @@ function validateConfig(config: SiwsVerificationConfig): void {
   ) fail();
 }
 
-export async function verifySiwsProof(
+export async function evaluateSiwsProof(
   value: unknown,
   config: SiwsVerificationConfig,
   now = new Date(),
-): Promise<VerifiedSiwsProof> {
+): Promise<EvaluatedSiwsProof> {
   if (
     !value || typeof value !== "object" || Array.isArray(value) ||
     !(now instanceof Date) || !Number.isFinite(now.getTime())
@@ -262,15 +267,26 @@ export async function verifySiwsProof(
   } catch {
     return fail();
   }
-  if (!validSignature) fail();
-
   return {
-    address: proof.address,
-    expirationTime: fields.expirationTime,
-    issuedAt: fields.issuedAt,
-    message,
-    method: proof.method,
-    nonce: fields.nonce,
-    requestId: fields.requestId,
+    proof: {
+      address: proof.address,
+      expirationTime: fields.expirationTime,
+      issuedAt: fields.issuedAt,
+      message,
+      method: proof.method,
+      nonce: fields.nonce,
+      requestId: fields.requestId,
+    },
+    signatureValid: validSignature,
   };
+}
+
+export async function verifySiwsProof(
+  value: unknown,
+  config: SiwsVerificationConfig,
+  now = new Date(),
+): Promise<VerifiedSiwsProof> {
+  const evaluated = await evaluateSiwsProof(value, config, now);
+  if (!evaluated.signatureValid) fail();
+  return evaluated.proof;
 }
