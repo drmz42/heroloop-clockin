@@ -75,6 +75,7 @@
     "challengePersistenceImplemented": true,
     "walletSigningImplemented": true,
     "serverProofVerifierImplemented": true,
+    "challengeConsumptionImplemented": true,
     "verificationAndSessionImplemented": false
   },
   "acceptanceScenarios": [
