@@ -73,7 +73,7 @@
     "challengeEndpointImplemented": true,
     "challengeRouteExposed": false,
     "challengePersistenceImplemented": true,
-    "walletSigningImplemented": false,
+    "walletSigningImplemented": true,
     "verificationAndSessionImplemented": false
   },
   "acceptanceScenarios": [
