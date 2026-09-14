@@ -37,6 +37,18 @@ export type ClaimSiwsAccountLogin = (
   code?: string;
 }>;
 
+export type BindSiwsAccountLogin = (
+  authSubject: string,
+  tokenHash: string,
+  idempotencyKey: string,
+) => Promise<{
+  account_id?: string;
+  address?: string;
+  auth_subject?: string;
+  code?: string;
+  linked: boolean;
+}>;
+
 type GoTrueSession = {
   access_token?: string;
   expires_at?: number;
@@ -125,7 +137,7 @@ export async function handleSiwsAccountLogin(
   config: SiwsVerifyEndpointConfig,
   claim: ClaimSiwsAccountLogin,
   signIn: SignInWithSolana,
-  link: LinkSiwsIdentity,
+  bind: BindSiwsAccountLogin,
   revokeAuth: RevokeGoTrueSession,
   now = new Date(),
 ): Promise<Response> {
@@ -184,7 +196,9 @@ export async function handleSiwsAccountLogin(
   if (!claimed.claimed || claimed.address !== proof.proof.address) {
     const rateLimited = claimed.code === "rate_limited";
     const denied = response(rateLimited ? 429 : 401, {
-      code: rateLimited ? "wallet_login_rate_limited" : "invalid_wallet_session",
+      code: rateLimited
+        ? "wallet_login_rate_limited"
+        : "invalid_wallet_session",
       ok: false,
       request_id: requestId,
     });
@@ -205,15 +219,14 @@ export async function handleSiwsAccountLogin(
       request_id: requestId,
     });
   }
-  const accountId = auth.user?.id;
+  const authSubject = auth.user?.id;
   if (
-    !UUID_PATTERN.test(accountId ?? "") ||
+    !UUID_PATTERN.test(authSubject ?? "") ||
     !validSecret(auth.access_token, 20, 8192) ||
     !validSecret(auth.refresh_token, 8, 1024) || auth.token_type !== "bearer" ||
     typeof auth.expires_in !== "number" ||
     !Number.isSafeInteger(auth.expires_in) ||
-    auth.expires_in < 60 || auth.expires_in > 86_400 ||
-    (claimed.account_id != null && claimed.account_id !== accountId)
+    auth.expires_in < 60 || auth.expires_in > 86_400
   ) {
     if (validSecret(auth.access_token, 20, 8192)) {
       await revokeAuth(auth.access_token).catch(() => undefined);
@@ -227,8 +240,8 @@ export async function handleSiwsAccountLogin(
 
   let linked;
   try {
-    linked = await link(
-      accountId!,
+    linked = await bind(
+      authSubject!,
       await siwsHmacHex(config.hashPepper, token),
       key,
     );
@@ -241,7 +254,9 @@ export async function handleSiwsAccountLogin(
     });
   }
   if (
-    !linked.linked || linked.account_id !== accountId ||
+    !linked.linked || linked.auth_subject !== authSubject ||
+    !UUID_PATTERN.test(linked.account_id ?? "") ||
+    (claimed.account_id != null && claimed.account_id !== linked.account_id) ||
     linked.address !== proof.proof.address
   ) {
     await revokeAuth(auth.access_token!).catch(() => undefined);
@@ -256,7 +271,8 @@ export async function handleSiwsAccountLogin(
     ok: true,
     request_id: requestId,
     result: {
-      account_id: accountId,
+      account_id: linked.account_id,
+      auth_subject_id: authSubject,
       address: proof.proof.address,
       auth: {
         access_token: auth.access_token,

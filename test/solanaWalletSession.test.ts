@@ -45,6 +45,7 @@ test('wallet account changes invalidate the bound session', () => {
   const selected = wallet('Test', [account('11111111111111111111111111111111')], (value) => { listener = value; });
   const stop = watchSolanaWalletSession({
     accountId: '123e4567-e89b-42d3-a456-426614174088',
+    authSubjectId: '123e4567-e89b-42d3-a456-426614174099',
     address: '11111111111111111111111111111111',
     expiresAt: '2099-01-01T00:00:00.000Z',
     token: `hlw_${'a'.repeat(43)}`,

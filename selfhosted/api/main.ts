@@ -453,7 +453,20 @@ async function authenticate(
   ) {
     return errorResponse(503, "authentication_unavailable", requestId);
   }
-  return { playerId: user.id };
+  let resolved: JsonRecord;
+  try {
+    resolved = await databaseJson(
+      "SELECT heroloop_api.resolve_authenticated_account($1::uuid) AS result",
+      [user.id],
+    );
+  } catch {
+    return errorResponse(503, "authentication_unavailable", requestId);
+  }
+  if (resolved.authenticated !== true || typeof resolved.account_id !== "string" ||
+    !uuidPattern.test(resolved.account_id)) {
+    return errorResponse(401, "invalid_session", requestId);
+  }
+  return { playerId: resolved.account_id };
 }
 
 async function dependenciesHealthy(): Promise<boolean> {
@@ -609,10 +622,16 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         [tokenHash, key],
       ) as { account_id?: string | null; address?: string; claimed: boolean; code?: string },
       signInWalletAccount,
-      async (accountId, tokenHash, key) => await databaseJson(
-        "SELECT heroloop_api.link_siws_wallet_session($1::uuid,$2::text,$3::uuid) AS result",
-        [accountId, tokenHash, key],
-      ) as { account_id?: string; address?: string; code?: string; linked: boolean },
+      async (authSubject, tokenHash, key) => await databaseJson(
+        "SELECT heroloop_api.bind_siws_account_login($1::uuid,$2::text,$3::uuid) AS result",
+        [authSubject, tokenHash, key],
+      ) as {
+        account_id?: string;
+        address?: string;
+        auth_subject?: string;
+        code?: string;
+        linked: boolean;
+      },
       revokeWalletAccountSession,
     );
   }

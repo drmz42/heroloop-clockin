@@ -8,6 +8,7 @@ import { solanaAddressFromPublicKey } from "./siws_verify.ts";
 
 const REQUEST_ID = "123e4567-e89b-42d3-a456-426614174099";
 const ACCOUNT_ID = "123e4567-e89b-42d3-a456-426614174088";
+const LEGACY_ACCOUNT_ID = "123e4567-e89b-42d3-a456-426614174066";
 const KEY = "123e4567-e89b-42d3-a456-426614174077";
 const TOKEN = `hlw_${"a".repeat(43)}`;
 const CONFIG = {
@@ -185,7 +186,7 @@ Deno.test("wallet login burns the verified bearer and returns one linked rotatin
       return Promise.resolve({
         claimed: true,
         address: fixture.address,
-        account_id: null,
+        account_id: LEGACY_ACCOUNT_ID,
       });
     },
     (message, signature) => {
@@ -200,10 +201,11 @@ Deno.test("wallet login burns the verified bearer and returns one linked rotatin
         user: { id: ACCOUNT_ID },
       });
     },
-    (accountId, tokenHash, key) =>
+    (authSubject, tokenHash, key) =>
       Promise.resolve({
-        account_id: accountId,
+        account_id: LEGACY_ACCOUNT_ID,
         address: fixture.address,
+        auth_subject: authSubject,
         linked: tokenHash === claimedHash && key === KEY,
       }),
     () => Promise.reject(new Error("successful login must not revoke")),
@@ -211,7 +213,8 @@ Deno.test("wallet login burns the verified bearer and returns one linked rotatin
   );
   const body = await result.json();
   assert(
-    result.status === 200 && body.result?.account_id === ACCOUNT_ID,
+    result.status === 200 && body.result?.account_id === LEGACY_ACCOUNT_ID &&
+      body.result?.auth_subject_id === ACCOUNT_ID,
     "account login failed",
   );
   assert(
@@ -240,7 +243,7 @@ Deno.test("wallet login rejects account collisions and revokes the unreturned Au
       Promise.resolve({
         claimed: true,
         address: fixture.address,
-        account_id: "123e4567-e89b-42d3-a456-426614174066",
+        account_id: LEGACY_ACCOUNT_ID,
       }),
     () =>
       Promise.resolve({
@@ -250,7 +253,13 @@ Deno.test("wallet login rejects account collisions and revokes the unreturned Au
         token_type: "bearer",
         user: { id: ACCOUNT_ID },
       }),
-    () => Promise.reject(new Error("collision must not link")),
+    (authSubject) =>
+      Promise.resolve({
+        account_id: ACCOUNT_ID,
+        address: fixture.address,
+        auth_subject: authSubject,
+        linked: true,
+      }),
     (token) => {
       revoked = token;
       return Promise.resolve();

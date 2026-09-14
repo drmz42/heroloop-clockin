@@ -16,6 +16,14 @@
       "cascadeOnAccountDeletion": true,
       "directClientWriteForbidden": true
     },
+    "account_auth_subjects": {
+      "primaryKey": "auth_subject:uuid",
+      "fields": ["identity_id:uuid", "created_at:timestamptz"],
+      "identityUnique": true,
+      "canonicalAccountDerivedFromIdentity": true,
+      "cascadeOnAuthSubjectOrIdentityDeletion": true,
+      "directClientReadWriteForbidden": true
+    },
     "identity_challenges": {
       "primaryKey": "challenge_id:uuid",
       "fields": ["account_id:uuid", "provider:text", "purpose:link|unlink|reauth|recovery", "nonce_hash:text", "expires_at:timestamptz", "consumed_at:timestamptz?", "attempt_count:smallint", "created_at:timestamptz"],
@@ -34,6 +42,14 @@
     }
   },
   "operations": {
+    "crossDeviceLogin": {
+      "requiresFreshSingleUseProviderProof": true,
+      "serverDerivesCanonicalAccount": true,
+      "legacyAccountUuidPreserved": true,
+      "gameplayRowsNeverCopied": true,
+      "subjectAndIdentityConflictsFailClosed": true,
+      "revokedIdentityCannotResolve": true
+    },
     "link": {
       "requiresAuthenticatedCurrentAccount": true,
       "requiresFreshProviderProof": true,
@@ -77,7 +93,7 @@
     "steam": ["fresh_session_ticket", "expected_app_id", "ownership", "steam_id_64"]
   },
   "acceptanceScenarios": [
-    "fresh-link", "exact-link-replay", "changed-replay", "email-match-no-merge", "cross-account-subject-collision", "unlink-with-two-identities", "last-identity-unlink-rejected", "expired-challenge", "consumed-challenge-replay", "provider-revocation", "recovery-locked", "account-delete"
+    "fresh-link", "exact-link-replay", "changed-replay", "email-match-no-merge", "cross-account-subject-collision", "legacy-auth-subject-alias", "revoked-auth-subject-resolution", "unlink-with-two-identities", "last-identity-unlink-rejected", "expired-challenge", "consumed-challenge-replay", "provider-revocation", "recovery-locked", "account-delete"
   ],
   "activation": {
     "schemaMigrationApproved": false,

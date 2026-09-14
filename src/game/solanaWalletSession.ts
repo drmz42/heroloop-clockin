@@ -8,7 +8,7 @@ export {
 } from './solanaWalletRegistry';
 import { compatibleSolanaWallets } from './solanaWalletRegistry';
 
-const STORAGE_KEY = 'heroloop.siws.wallet-session.v1';
+const STORAGE_KEY = 'heroloop.siws.wallet-session.v2';
 const TOKEN_PATTERN = /^hlw_[A-Za-z0-9_-]{43}$/;
 const ADDRESS_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -18,6 +18,7 @@ export const solanaAuthEnabled = env?.VITE_ENABLE_SOLANA_AUTH === 'true';
 
 export type SolanaWalletSession = {
   accountId: string;
+  authSubjectId: string;
   address: string;
   expiresAt: string;
   token: string;
@@ -51,7 +52,8 @@ function parseStored(now = Date.now()): StoredSession | null {
     if (!raw) return null;
     const value = JSON.parse(raw) as Partial<StoredSession>;
     if (!TOKEN_PATTERN.test(value.token ?? '') || !ADDRESS_PATTERN.test(value.address ?? '') ||
-      !UUID_PATTERN.test(value.accountId ?? '') || typeof value.walletName !== 'string' ||
+      !UUID_PATTERN.test(value.accountId ?? '') || !UUID_PATTERN.test(value.authSubjectId ?? '') ||
+      typeof value.walletName !== 'string' ||
       typeof value.expiresAt !== 'string' || !Number.isFinite(Date.parse(value.expiresAt)) ||
       Date.parse(value.expiresAt) <= now) return null;
     return value as StoredSession;
@@ -165,7 +167,8 @@ export async function connectSolanaWallet(
   const loginResult = loginEnvelope.result as Record<string, unknown> | undefined;
   const auth = loginResult?.auth as Record<string, unknown> | undefined;
   if (loginResult?.address !== proof.address || typeof loginResult.account_id !== 'string' ||
-    !UUID_PATTERN.test(loginResult.account_id) || typeof auth?.access_token !== 'string' ||
+    !UUID_PATTERN.test(loginResult.account_id) || typeof loginResult.auth_subject_id !== 'string' ||
+    !UUID_PATTERN.test(loginResult.auth_subject_id) || typeof auth?.access_token !== 'string' ||
     typeof auth.refresh_token !== 'string' || auth.token_type !== 'bearer') {
     await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
     fail('account_session_unavailable');
@@ -174,13 +177,14 @@ export async function connectSolanaWallet(
     access_token: auth.access_token,
     refresh_token: auth.refresh_token,
   }).catch(() => ({ data: { session: null }, error: new Error('account_session_unavailable') }));
-  if (sessionError || !sessionData.session || sessionData.session.user.id !== loginResult.account_id) {
+  if (sessionError || !sessionData.session || sessionData.session.user.id !== loginResult.auth_subject_id) {
     await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
     await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
     fail('account_session_unavailable');
   }
   const accepted: StoredSession = {
     accountId: loginResult.account_id,
+    authSubjectId: loginResult.auth_subject_id,
     address: proof.address,
     expiresAt,
     token,
@@ -204,7 +208,7 @@ export async function restoreSolanaWalletSession(options: SolanaSessionOptions =
     candidate.accounts.some((account) => account.address === stored.address));
   if (!wallet) { clearSolanaWalletSession(); return null; }
   const { data: { session: accountSession } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
-  if (!accountSession || accountSession.user.id !== stored.accountId) { clearSolanaWalletSession(); return null; }
+  if (!accountSession || accountSession.user.id !== stored.authSubjectId) { clearSolanaWalletSession(); return null; }
   const response = await (options.fetch ?? globalThis.fetch)(`${backendUrl}/api/v1/auth/solana/session`, {
     headers: { authorization: `Bearer ${stored.token}` },
     credentials: 'same-origin',

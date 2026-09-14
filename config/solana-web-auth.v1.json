@@ -83,6 +83,7 @@
     "identityLinkImplemented": true,
     "accountLoginImplemented": true,
     "internalOnlyWeb3ExchangeImplemented": true,
+    "legacyAuthSubjectAliasImplemented": true,
     "sessionRevocationImplemented": true,
     "walletLifecycleImplemented": true,
     "crossWalletSaveIsolationImplemented": true,
