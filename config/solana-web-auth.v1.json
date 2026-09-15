@@ -88,6 +88,8 @@
     "walletLifecycleImplemented": true,
     "crossWalletSaveIsolationImplemented": true,
     "walletUiImplemented": true,
+    "stagingRuntimeConfigured": true,
+    "stagingWalletUiConfigured": true,
     "runtimeEnabled": false
   },
   "acceptanceScenarios": [
