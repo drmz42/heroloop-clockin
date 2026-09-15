@@ -31,6 +31,26 @@ async function replaceLocalSession(): Promise<Session | null> {
   return replacementSession;
 }
 
+export async function validatedGuestSession(): Promise<Session | null> {
+  let session: Session | null = null;
+  try {
+    ({ data: { session } } = await supabase.auth.getSession());
+  } catch {
+    // Corrupt local auth state is replaced below.
+  }
+  if (session?.user.is_anonymous === false) return session;
+  if (session) {
+    try {
+      const { data, error } = await supabase.auth.getUser(session.access_token);
+      if (!error && data.user?.id === session.user.id && data.user.is_anonymous === true) return session;
+      if (error && ![400, 401, 403].includes(error.status ?? 0)) return null;
+    } catch {
+      return null;
+    }
+  }
+  return replaceLocalSession();
+}
+
 export async function authHeaders(refresh = false): Promise<Record<string, string> | null> {
   let session: Session | null = null;
   try {

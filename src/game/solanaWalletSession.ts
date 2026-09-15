@@ -1,5 +1,5 @@
 import type { Wallet } from '@wallet-standard/base';
-import { backendUrl, supabase } from './backend';
+import { backendUrl, supabase, validatedGuestSession } from './backend';
 import { createSolanaWalletProof, SolanaWalletAuthError } from './solanaWalletAuth';
 export {
   compatibleSolanaWallets,
@@ -132,8 +132,9 @@ export async function connectSolanaWallet(
   options: SolanaSessionOptions = {},
 ): Promise<SolanaWalletSession> {
   const fetchImpl = options.fetch ?? globalThis.fetch;
-  const existing = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
-  if (existing.data.session?.user.is_anonymous === false) fail('account_session_conflict');
+  const existing = await validatedGuestSession();
+  if (!existing) fail('account_session_unavailable');
+  if (existing.user.is_anonymous === false) fail('account_session_conflict');
   const proof = await createSolanaWalletProof(wallet, {
     challengeEndpoint: `${backendUrl}/api/v1/auth/solana/challenge`,
     fetch: fetchImpl,
@@ -156,13 +157,11 @@ export async function connectSolanaWallet(
     fail('wallet_session_unavailable');
   }
 
-  if (existing.data.session?.user.is_anonymous === true) {
-    try {
-      await linkAnonymousAccount(existing.data.session, token, fetchImpl);
-    } catch (error) {
-      await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
-      throw error;
-    }
+  try {
+    await linkAnonymousAccount(existing, token, fetchImpl);
+  } catch (error) {
+    await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
+    throw error;
   }
 
   const key = crypto.randomUUID();
