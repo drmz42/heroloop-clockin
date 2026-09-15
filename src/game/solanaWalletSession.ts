@@ -251,7 +251,8 @@ export async function restoreSolanaWalletSession(options: SolanaSessionOptions =
   }
   const result = envelope.result as Record<string, unknown> | undefined;
   if (result?.valid !== true || result.address !== stored.address || result.account_id !== stored.accountId ||
-    result.expires_at !== stored.expiresAt) {
+    typeof result.expires_at !== 'string' ||
+    Date.parse(result.expires_at) !== Date.parse(stored.expiresAt)) {
     clearSolanaWalletSession();
     return null;
   }
