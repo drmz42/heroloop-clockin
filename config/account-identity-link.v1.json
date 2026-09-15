@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "modelVersion": "account-identity-link-proposal-2026.08.24-v1",
-  "status": "proposal",
+  "status": "staging-candidate",
   "live": false,
   "tables": {
     "heroloop_accounts": {
@@ -91,6 +91,16 @@
     "google": ["server_verified_code_or_token", "issuer", "audience", "subject", "issued_at", "expiration"],
     "apple": ["server_verified_credential", "issuer", "audience", "subject", "issued_at", "expiration", "revocation_state"],
     "steam": ["fresh_session_ticket", "expected_app_id", "ownership", "steam_id_64"]
+  },
+  "implementation": {
+    "solanaLink": true,
+    "solanaUnlink": true,
+    "lastIdentityProtection": true,
+    "solanaProviderWideRevocation": true,
+    "recoveryLock": true,
+    "legacyAuthSubjectAlias": true,
+    "explicitLegacyImport": true,
+    "productionEnabled": false
   },
   "acceptanceScenarios": [
     "fresh-link", "exact-link-replay", "changed-replay", "email-match-no-merge", "cross-account-subject-collision", "legacy-auth-subject-alias", "revoked-auth-subject-resolution", "unlink-with-two-identities", "last-identity-unlink-rejected", "expired-challenge", "consumed-challenge-replay", "provider-revocation", "recovery-locked", "account-delete"

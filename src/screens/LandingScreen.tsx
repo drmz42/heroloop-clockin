@@ -9,7 +9,7 @@ import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { HERO_MAP } from '@/game/heroes';
 import { playerSync } from '@/game/backend';
 import { hasBlockedUsernameLanguage } from '@/game/username';
-import { makeRegisteredStarterState } from '@/game/state';
+import { clearLegacyState, makeRegisteredStarterState } from '@/game/state';
 import {
   connectSolanaWallet,
   observeCompatibleSolanaWallets,
@@ -46,7 +46,7 @@ const LOOP = [
   { icon: Coins, n: '04', title: 'EARN $HERO', text: 'Claim your accumulated rewards, spend tokens in-game or hold them to unlock BOOST MAX.' },
 ];
 
-export function LandingScreen({ game }: { game: GameApi }) {
+export function LandingScreen({ game, legacyWalletMode = null }: { game: GameApi; legacyWalletMode?: 'link' | 'import' | null }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [onboarding, setOnboarding] = useState(false);
 
@@ -259,7 +259,7 @@ export function LandingScreen({ game }: { game: GameApi }) {
         </div>
       </footer>
 
-      {onboarding && <Onboarding game={game} onClose={() => setOnboarding(false)} />}
+      {onboarding && <Onboarding game={game} legacyWalletMode={legacyWalletMode} onClose={() => setOnboarding(false)} />}
     </div>
   );
 }
@@ -283,7 +283,7 @@ function Benefit({ title, text }: { title: string; text: string }) {
   );
 }
 
-export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => void }) {
+export function Onboarding({ game, legacyWalletMode = null, onClose }: { game: GameApi; legacyWalletMode?: 'link' | 'import' | null; onClose: () => void }) {
   const [step, setStep] = useState(1);
   const [starter, setStarter] = useState<StarterId>('shepherd-common');
   const [username, setUsername] = useState('');
@@ -293,6 +293,7 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
   const [error, setError] = useState('');
   const [wallets, setWallets] = useState<readonly Wallet[]>([]);
   const [selectedWallet, setSelectedWallet] = useState('');
+  const [legacyImportConfirmed, setLegacyImportConfirmed] = useState(false);
   const blockedName = hasBlockedUsernameLanguage(username);
   const validName = /^[a-zA-Z0-9_]{3,16}$/.test(username) && !blockedName;
 
@@ -314,8 +315,23 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
   const connectWallet = async () => {
     const wallet = wallets.find((candidate) => candidate.name === selectedWallet);
     if (!wallet) { setError('No compatible Solana wallet is available.'); return; }
+    if (legacyWalletMode === 'import' && !legacyImportConfirmed) {
+      setError('Confirm the one-time import before connecting your wallet.');
+      return;
+    }
     setConnecting(true); setError('');
     try {
+      if (legacyWalletMode === 'import') {
+        const migrated = await accountRequest(playerSync<{ state: unknown; revision: number; migrated: boolean }>('game_state_migrate', {
+          state: game.state,
+        }));
+        if (!migrated?.state || !Number.isSafeInteger(migrated.revision)) {
+          setError('Legacy progress could not be imported safely. Nothing was linked.');
+          return;
+        }
+        game.hydrateServerState(migrated.state);
+        clearLegacyState();
+      }
       const session = await accountRequest(connectSolanaWallet(wallet));
       if (!session) { setError('Wallet authentication timed out. Please try again.'); return; }
       const account = await accountRequest(playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status'));
@@ -414,6 +430,19 @@ export function Onboarding({ game, onClose }: { game: GameApi; onClose: () => vo
               <div className="mx-auto grid h-14 w-14 place-items-center border border-violet-400/40 bg-violet-400/10 text-violet-300">{solanaAuthEnabled ? <Shield size={26} /> : <UserRound size={26} />}</div>
               <h2 className="mt-6 text-center font-pixel text-sm text-white sm:text-lg">{solanaAuthEnabled ? 'CONNECT SOLANA WALLET' : 'CONTINUE AS GUEST'}</h2>
               <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-slate-400">{solanaAuthEnabled ? 'Choose a compatible Wallet Standard provider. Sign one free message to prove ownership—no transaction and no gas.' : 'The current beta uses a temporary server account. Existing guests enter directly; new guests continue to registration.'}</p>
+              {solanaAuthEnabled && legacyWalletMode && (
+                <div className="mx-auto mt-5 max-w-md border border-amber-300/25 bg-amber-300/[.06] p-4 text-xs leading-5 text-amber-100/80">
+                  {legacyWalletMode === 'link'
+                    ? 'Existing server progress was found. The verified wallet will be linked to this exact account; heroes, items and saves will not be copied.'
+                    : 'Browser-only progress was found for this signed-in Guest. Import happens once into that exact server account before the verified wallet is linked.'}
+                  {legacyWalletMode === 'import' && (
+                    <label className="mt-3 flex min-h-11 cursor-pointer items-start gap-3 text-left text-slate-200">
+                      <input type="checkbox" checked={legacyImportConfirmed} onChange={(event) => setLegacyImportConfirmed(event.target.checked)} className="mt-1 h-4 w-4 accent-amber-300" />
+                      <span>I own this browser progress and approve its one-time import to the wallet I am about to verify.</span>
+                    </label>
+                  )}
+                </div>
+              )}
               {solanaAuthEnabled && wallets.length > 1 && (
                 <label className="mx-auto mt-7 block max-w-md text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">
                   Available wallet

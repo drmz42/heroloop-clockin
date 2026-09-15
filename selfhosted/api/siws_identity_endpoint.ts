@@ -27,6 +27,18 @@ export type RevokeSiwsSession = (
   reason: RevokeReason,
 ) => Promise<{ revoked: boolean }>;
 
+export type UnlinkSiwsIdentity = (
+  accountId: string,
+  tokenHash: string,
+  idempotencyKey: string,
+  providerRevoke: boolean,
+) => Promise<{
+  account_state?: string;
+  code?: string;
+  replayed?: boolean;
+  unlinked: boolean;
+}>;
+
 export type ClaimSiwsAccountLogin = (
   tokenHash: string,
   idempotencyKey: string,
@@ -342,6 +354,83 @@ export async function handleSiwsIdentityLink(
   } catch {
     return response(503, {
       code: "wallet_link_unavailable",
+      ok: false,
+      request_id: requestId,
+    });
+  }
+}
+
+export async function handleSiwsIdentityUnlink(
+  request: Request,
+  requestId: string,
+  config: SiwsVerifyEndpointConfig,
+  accountId: string,
+  unlink: UnlinkSiwsIdentity,
+): Promise<Response> {
+  if (request.method !== "POST") {
+    const result = response(405, {
+      code: "method_not_allowed",
+      ok: false,
+      request_id: requestId,
+    });
+    result.headers.set("allow", "POST");
+    return result;
+  }
+  const token = sessionToken(request);
+  const key = idempotencyKey(request);
+  const body = await readBody(request);
+  const action = body && typeof body === "object" && !Array.isArray(body)
+    ? (body as JsonRecord).action
+    : null;
+  if (
+    config.hashPepper.length < 43 || !SESSION_TOKEN_PATTERN.test(token) ||
+    !UUID_PATTERN.test(key) ||
+    !["unlink", "provider_revoke"].includes(String(action)) ||
+    Object.keys((body ?? {}) as JsonRecord).some((field) => field !== "action")
+  ) {
+    return response(401, {
+      code: "invalid_wallet_session",
+      ok: false,
+      request_id: requestId,
+    });
+  }
+  try {
+    const result = await unlink(
+      accountId,
+      await siwsHmacHex(config.hashPepper, token),
+      key,
+      action === "provider_revoke",
+    );
+    if (!result.unlinked) {
+      const status = result.code === "rate_limited"
+        ? 429
+        : result.code === "last_identity"
+        ? 409
+        : 401;
+      const denied = response(status, {
+        code: result.code === "last_identity"
+          ? "last_identity_required"
+          : status === 429
+          ? "wallet_unlink_rate_limited"
+          : "wallet_unlink_rejected",
+        ok: false,
+        request_id: requestId,
+      });
+      if (status === 429) denied.headers.set("retry-after", "60");
+      return denied;
+    }
+    return response(200, {
+      ok: true,
+      request_id: requestId,
+      result: {
+        account_state: result.account_state,
+        action,
+        unlinked: true,
+      },
+    });
+  } catch {
+    return response(503, {
+      code: "wallet_unlink_unavailable",
       ok: false,
       request_id: requestId,
     });

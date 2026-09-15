@@ -40,6 +40,7 @@ function App() {
   const applyServerRevision = game.applyServerRevision;
   const [accountGate, setAccountGate] = useState<'landing' | 'checking' | 'verified' | 'error'>(tokenomicsEnabled ? 'checking' : (walletAddress ? 'verified' : 'landing'));
   const [accountCheckAttempt, setAccountCheckAttempt] = useState(0);
+  const [legacyWalletMode, setLegacyWalletMode] = useState<'link' | 'import' | null>(null);
   const [serverStateReady, setServerStateReady] = useState(false);
   const [serverStateRevision, setServerStateRevision] = useState<number | null>(null);
   const serverStateRevisionRef = useRef<number | null>(null);
@@ -75,6 +76,7 @@ function App() {
   const autoClaimingRef = useRef(false);
   const demoTokenRemainderRef = useRef(0);
   const claimTokens = tokenomics.claimTokens;
+  const refreshIncome = tokenomics.refreshIncome;
   const creditServerTokens = game.creditServerTokens;
   const applyServerTokenClaim = game.applyServerTokenClaim;
   const applyServerBoostStatus = game.applyServerBoostStatus;
@@ -98,26 +100,31 @@ function App() {
     let cancelled = false;
     setAccountGate('checking');
     let stopWalletEvents: () => void = () => undefined;
+    let walletBoundSession = false;
     const loadAccount = async () => {
       if (solanaAuthEnabled) {
-        const walletSession = await restoreSolanaWalletSession();
-        if (!walletSession) {
-          await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
-          if (!cancelled) setAccountGate('landing');
-          return;
+        const current = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+        if (current.data.session?.user.is_anonymous !== true) {
+          const walletSession = await restoreSolanaWalletSession();
+          if (!walletSession) {
+            await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+            if (!cancelled) setAccountGate('landing');
+            return;
+          }
+          const wallet = compatibleSolanaWallets().find((candidate) =>
+            candidate.name === walletSession.walletName && candidate.accounts.some((account) => account.address === walletSession.address));
+          if (!wallet) {
+            await revokeSolanaWalletSession('wallet_disconnect');
+            await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+            if (!cancelled) setAccountGate('landing');
+            return;
+          }
+          walletBoundSession = true;
+          stopWalletEvents = watchSolanaWalletSession(walletSession, wallet, (reason) => {
+            void revokeSolanaWalletSession(reason).finally(() =>
+              supabase.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/')));
+          });
         }
-        const wallet = compatibleSolanaWallets().find((candidate) =>
-          candidate.name === walletSession.walletName && candidate.accounts.some((account) => account.address === walletSession.address));
-        if (!wallet) {
-          await revokeSolanaWalletSession('wallet_disconnect');
-          await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
-          if (!cancelled) setAccountGate('landing');
-          return;
-        }
-        stopWalletEvents = watchSolanaWalletSession(walletSession, wallet, (reason) => {
-          void revokeSolanaWalletSession(reason).finally(() =>
-            supabase.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/')));
-        });
       }
       const request = accountStatusRequestRef.current ?? playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status');
       accountStatusRequestRef.current = request;
@@ -125,6 +132,7 @@ function App() {
       if (cancelled) return;
       if (!account) { setAccountGate('error'); return; }
       if (!account.exists || !account.username) {
+        setLegacyWalletMode(null);
         setAccountGate('landing');
         return;
       }
@@ -136,10 +144,20 @@ function App() {
           serverStateRevisionRef.current = saved.revision;
           setServerStateRevision(saved.revision);
           setServerStateReady(true);
-          setAccountGate('verified');
+          if (solanaAuthEnabled && !walletBoundSession) {
+            setLegacyWalletMode('link');
+            setAccountGate('landing');
+          } else {
+            setLegacyWalletMode(null);
+            setAccountGate('verified');
+          }
           return;
         }
-        if (solanaAuthEnabled) { setAccountGate('error'); return; }
+        if (solanaAuthEnabled && !walletBoundSession) {
+          setLegacyWalletMode('import');
+          setAccountGate('landing');
+          return;
+        }
         void playerSync<{ state: unknown; revision: number; migrated: boolean }>('game_state_migrate', { state: legacyStateRef.current }).then((migrated) => {
           if (cancelled || !migrated) { setAccountGate('error'); return; }
           hydrateServerState(migrated.state);
@@ -156,7 +174,7 @@ function App() {
     };
     void loadAccount();
     const onFocus = () => {
-      if (!solanaAuthEnabled || document.visibilityState !== 'visible') return;
+      if (!solanaAuthEnabled || !walletBoundSession || document.visibilityState !== 'visible') return;
       void restoreSolanaWalletSession().then((session) => {
         if (session || cancelled) return;
         void supabase.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/'));
@@ -246,8 +264,8 @@ function App() {
   }, [game.serverRevisionHint]);
 
   useEffect(() => {
-    if (game.trainingIncomeRevision !== null) void tokenomics.refreshIncome(game.trainingIncomeRevision);
-  }, [game.trainingIncomeRevision, tokenomics.refreshIncome]);
+    if (game.trainingIncomeRevision !== null) void refreshIncome(game.trainingIncomeRevision);
+  }, [game.trainingIncomeRevision, refreshIncome]);
 
   useEffect(() => {
     if (serverStateRevision !== null) applyServerRevision(serverStateRevision);
@@ -342,7 +360,7 @@ function App() {
   }
 
   if (accountGate !== 'verified') {
-    if (accountGate === 'landing') return <LandingScreen game={game} />;
+    if (accountGate === 'landing') return <LandingScreen game={game} legacyWalletMode={legacyWalletMode} />;
     return <div className="grid h-screen place-items-center bg-[#07090d] p-4 text-center text-[#d9d0c0]"><div className="material-panel max-w-sm p-5"><div className="section-kicker">Account verification</div><div className="mt-2 text-sm">{accountGate === 'error' ? 'Account service is unavailable.' : 'Checking your registered account…'}</div>{accountGate === 'error' && <button type="button" onClick={() => setAccountCheckAttempt((value) => value + 1)} className="game-control game-primary mt-4 px-4 text-xs font-black">Retry</button>}</div></div>;
   }
 

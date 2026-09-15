@@ -81,6 +81,9 @@
     "walletSessionImplemented": true,
     "verificationAndSessionImplemented": true,
     "identityLinkImplemented": true,
+    "identityUnlinkImplemented": true,
+    "lastIdentityProtectionImplemented": true,
+    "providerWideRevocationImplemented": true,
     "accountLoginImplemented": true,
     "internalOnlyWeb3ExchangeImplemented": true,
     "legacyAuthSubjectAliasImplemented": true,
@@ -90,6 +93,7 @@
     "walletUiImplemented": true,
     "stagingRuntimeConfigured": true,
     "stagingWalletUiConfigured": true,
+    "legacySaveOwnedImportImplemented": true,
     "runtimeEnabled": false
   },
   "acceptanceScenarios": [
@@ -97,11 +101,11 @@
   ],
   "activation": {
     "productionDomainAndChainApproved": false,
-    "walletStandardDependenciesApproved": false,
-    "identitySchemaImplemented": false,
-    "challengeAndSessionEndpointsImplemented": false,
-    "legacySaveMigrationImplemented": false,
-    "runtimeImplemented": false,
+    "walletStandardDependenciesApproved": true,
+    "identitySchemaImplemented": true,
+    "challengeAndSessionEndpointsImplemented": true,
+    "legacySaveMigrationImplemented": true,
+    "runtimeImplemented": true,
     "privacyAndRecoveryApproved": false,
     "phaseHCompletionRequired": true
   },

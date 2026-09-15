@@ -1,6 +1,7 @@
 import {
   handleSiwsAccountLogin,
   handleSiwsIdentityLink,
+  handleSiwsIdentityUnlink,
   handleSiwsSessionRevoke,
 } from "./siws_identity_endpoint.ts";
 import { createSiwsChallenge } from "./siws_challenge.ts";
@@ -147,6 +148,58 @@ Deno.test("identity collision and malformed credentials fail generically", async
     () => Promise.reject(new Error("must not run")),
   );
   assert(malformed.status === 401, "missing bearer accepted");
+});
+
+Deno.test("unlink requires recent wallet proof and protects the last identity", async () => {
+  const makeRequest = (action: string) => new Request(
+    "https://staging.heroloop.xyz/api/v1/auth/solana/unlink",
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-heroloop-wallet-session": TOKEN,
+        "x-idempotency-key": KEY,
+      },
+      body: JSON.stringify({ action }),
+    },
+  );
+  let providerRevoke = false;
+  const accepted = await handleSiwsIdentityUnlink(
+    makeRequest("unlink"),
+    REQUEST_ID,
+    CONFIG,
+    ACCOUNT_ID,
+    (accountId, tokenHash, key, revokeProvider) => {
+      assert(accountId === ACCOUNT_ID && /^[0-9a-f]{64}$/.test(tokenHash) && key === KEY,
+        "unlink trusted inputs differ");
+      providerRevoke = revokeProvider;
+      return Promise.resolve({ account_state: "active", code: "unlinked", unlinked: true });
+    },
+  );
+  assert(accepted.status === 200 && !providerRevoke, "unlink was not accepted");
+
+  const protectedResult = await handleSiwsIdentityUnlink(
+    makeRequest("unlink"),
+    REQUEST_ID,
+    CONFIG,
+    ACCOUNT_ID,
+    () => Promise.resolve({ code: "last_identity", unlinked: false }),
+  );
+  const protectedBody = await protectedResult.json();
+  assert(protectedResult.status === 409 && protectedBody.code === "last_identity_required",
+    "last identity was not protected");
+
+  const locked = await handleSiwsIdentityUnlink(
+    makeRequest("provider_revoke"),
+    REQUEST_ID,
+    CONFIG,
+    ACCOUNT_ID,
+    (_accountId, _tokenHash, _key, revokeProvider) => {
+      providerRevoke = revokeProvider;
+      return Promise.resolve({ account_state: "recovery_locked", code: "recovery_locked", unlinked: true });
+    },
+  );
+  assert(locked.status === 200 && providerRevoke, "provider-wide revocation was not accepted");
 });
 
 Deno.test("revokes the exact hashed wallet session with a bounded reason", async () => {

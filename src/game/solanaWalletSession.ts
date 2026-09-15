@@ -107,6 +107,26 @@ async function revokeToken(
   }).catch(() => undefined);
 }
 
+async function linkAnonymousAccount(
+  accountSession: { access_token: string; user: { id: string } },
+  token: string,
+  fetchImpl: Fetch,
+): Promise<void> {
+  const response = await fetchImpl(`${backendUrl}/api/v1/auth/solana/link`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      authorization: `Bearer ${accountSession.access_token}`,
+      'x-heroloop-wallet-session': token,
+      'x-idempotency-key': crypto.randomUUID(),
+    },
+  }).catch(() => fail('wallet_link_unavailable'));
+  if (!response.ok) fail(response.status === 409 ? 'wallet_already_linked' : 'wallet_link_unavailable');
+  const envelope = await json(response);
+  const result = envelope.result as Record<string, unknown> | undefined;
+  if (result?.linked !== true || result.account_id !== accountSession.user.id) fail('wallet_link_unavailable');
+}
+
 export async function connectSolanaWallet(
   wallet: Wallet,
   options: SolanaSessionOptions = {},
@@ -134,6 +154,15 @@ export async function connectSolanaWallet(
   if (result?.verified !== true || result.address !== proof.address || typeof token !== 'string' ||
     !TOKEN_PATTERN.test(token) || typeof expiresAt !== 'string' || Date.parse(expiresAt) <= (options.now ?? Date.now)()) {
     fail('wallet_session_unavailable');
+  }
+
+  if (existing.data.session?.user.is_anonymous === true) {
+    try {
+      await linkAnonymousAccount(existing.data.session, token, fetchImpl);
+    } catch (error) {
+      await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
+      throw error;
+    }
   }
 
   const key = crypto.randomUUID();
@@ -238,4 +267,38 @@ export async function revokeSolanaWalletSession(
   clearSolanaWalletSession();
   if (!stored) return;
   await revokeToken(backendUrl, stored.token, reason, fetchImpl);
+}
+
+export async function unlinkSolanaIdentity(
+  action: 'unlink' | 'provider_revoke',
+  fetchImpl: Fetch = globalThis.fetch,
+): Promise<{ accountState: string; unlinked: true }> {
+  const stored = parseStored(0);
+  if (!stored) fail('wallet_session_unavailable');
+  const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+  if (!session || session.user.id !== stored.authSubjectId) fail('account_session_unavailable');
+  const response = await fetchImpl(`${backendUrl}/api/v1/auth/solana/unlink`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      authorization: `Bearer ${session.access_token}`,
+      'content-type': 'application/json',
+      'x-heroloop-wallet-session': stored.token,
+      'x-idempotency-key': crypto.randomUUID(),
+    },
+    body: JSON.stringify({ action }),
+  }).catch(() => fail('wallet_unlink_unavailable'));
+  if (!response.ok) {
+    if (response.status === 409) fail('last_identity_required');
+    if (response.status === 429) fail('wallet_rate_limited');
+    fail('wallet_unlink_unavailable');
+  }
+  const envelope = await json(response);
+  const result = envelope.result as Record<string, unknown> | undefined;
+  if (result?.unlinked !== true || result.action !== action || typeof result.account_state !== 'string') {
+    fail('wallet_unlink_unavailable');
+  }
+  clearSolanaWalletSession();
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+  return { accountState: result.account_state, unlinked: true };
 }

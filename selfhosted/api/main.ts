@@ -5,6 +5,7 @@ import { handleSiwsChallenge } from "./siws_challenge_endpoint.ts";
 import {
   handleSiwsAccountLogin,
   handleSiwsIdentityLink,
+  handleSiwsIdentityUnlink,
   handleSiwsSessionRevoke,
 } from "./siws_identity_endpoint.ts";
 import {
@@ -649,6 +650,22 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         "SELECT heroloop_api.link_siws_wallet_session($1::uuid,$2::text,$3::uuid) AS result",
         [accountId, tokenHash, key],
       ) as { account_id?: string; address?: string; code?: string; linked: boolean },
+    );
+  }
+
+  if (url.pathname === "/api/v1/auth/solana/unlink") {
+    if (!siwsVerificationEnabled) return errorResponse(404, "not_found", requestId);
+    const authentication = await authenticate(request, requestId);
+    if (authentication instanceof Response) return authentication;
+    return await handleSiwsIdentityUnlink(
+      request,
+      requestId,
+      siwsEndpointConfig,
+      authentication.playerId,
+      async (accountId, tokenHash, key, providerRevoke) => await databaseJson(
+        "SELECT heroloop_api.unlink_siws_identity($1::uuid,$2::text,$3::uuid,$4::boolean) AS result",
+        [accountId, tokenHash, key, providerRevoke],
+      ) as { account_state?: string; code?: string; replayed?: boolean; unlinked: boolean },
     );
   }
 
