@@ -48,7 +48,8 @@
       "legacyAccountUuidPreserved": true,
       "gameplayRowsNeverCopied": true,
       "subjectAndIdentityConflictsFailClosed": true,
-      "revokedIdentityCannotResolve": true
+      "revokedIdentityCannotResolve": true,
+      "inactiveAccountCannotBind": true
     },
     "link": {
       "requiresAuthenticatedCurrentAccount": true,
@@ -103,7 +104,7 @@
     "productionEnabled": false
   },
   "acceptanceScenarios": [
-    "fresh-link", "exact-link-replay", "changed-replay", "email-match-no-merge", "cross-account-subject-collision", "legacy-auth-subject-alias", "revoked-auth-subject-resolution", "unlink-with-two-identities", "last-identity-unlink-rejected", "expired-challenge", "consumed-challenge-replay", "provider-revocation", "recovery-locked", "account-delete"
+    "fresh-link", "exact-link-replay", "changed-replay", "email-match-no-merge", "cross-account-subject-collision", "legacy-auth-subject-alias", "revoked-auth-subject-resolution", "recovery-locked-login-rejected", "deletion-pending-login-rejected", "unlink-with-two-identities", "last-identity-unlink-rejected", "expired-challenge", "consumed-challenge-replay", "provider-revocation", "recovery-locked", "account-delete"
   ],
   "activation": {
     "schemaMigrationApproved": false,
