@@ -59,6 +59,14 @@ function fail(code: string): never {
   throw new SolanaWalletAuthError(code);
 }
 
+function isUserRejected(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as { code?: unknown; message?: unknown; cause?: unknown };
+  if (candidate.code === 4001 || candidate.code === '4001') return true;
+  if (typeof candidate.message === 'string' && /cancel|declin|reject/i.test(candidate.message)) return true;
+  return candidate.cause !== error && isUserRejected(candidate.cause);
+}
+
 function feature<T>(wallet: Wallet, name: `${string}:${string}`): T | null {
   const value = wallet.features[name];
   return value && typeof value === 'object' ? value as T : null;
@@ -248,13 +256,19 @@ export async function createSolanaWalletProof(wallet: Wallet, options: SolanaWal
     let outputs: readonly SolanaSignInOutput[];
     try {
       outputs = await signIn(challenge.signInInput);
-    } catch {
-      return fail('wallet_signature_rejected');
+    } catch (error) {
+      if (isUserRejected(error)) return fail('wallet_signature_rejected');
+      if (typeof signMessage !== 'function' || !account.features.includes(SolanaSignMessage)) {
+        return fail('wallet_signing_unavailable');
+      }
+      outputs = [];
     }
-    if (outputs.length !== 1 || outputs[0].account.address !== account.address ||
-      !exactBytes(new Uint8Array(outputs[0].account.publicKey), new Uint8Array(account.publicKey)) ||
-      outputs[0].signatureType && outputs[0].signatureType !== 'ed25519') fail('wallet_proof_invalid');
-    return proofPayload(account, challenge, SolanaSignIn, outputs[0]);
+    if (outputs.length > 0) {
+      if (outputs.length !== 1 || outputs[0].account.address !== account.address ||
+        !exactBytes(new Uint8Array(outputs[0].account.publicKey), new Uint8Array(account.publicKey)) ||
+        outputs[0].signatureType && outputs[0].signatureType !== 'ed25519') fail('wallet_proof_invalid');
+      return proofPayload(account, challenge, SolanaSignIn, outputs[0]);
+    }
   }
 
   if (typeof signMessage !== 'function' || !account.features.includes(SolanaSignMessage)) {
@@ -263,8 +277,8 @@ export async function createSolanaWalletProof(wallet: Wallet, options: SolanaWal
   let outputs: readonly SolanaSignMessageOutput[];
   try {
     outputs = await signMessage({ account, message: new TextEncoder().encode(challenge.message) });
-  } catch {
-    return fail('wallet_signature_rejected');
+  } catch (error) {
+    return fail(isUserRejected(error) ? 'wallet_signature_rejected' : 'wallet_signing_unavailable');
   }
   if (outputs.length !== 1 || outputs[0].signatureType && outputs[0].signatureType !== 'ed25519') {
     fail('wallet_proof_invalid');

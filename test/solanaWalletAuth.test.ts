@@ -126,6 +126,27 @@ test('falls back to the identical canonical message through solana:signMessage',
   assert.equal(proof.method, SolanaSignMessage);
 });
 
+test('falls back to signMessage when Phantom signIn fails technically after approval', async () => {
+  let fallbackCalls = 0;
+  const selected = account();
+  const proof = await createSolanaWalletProof(wallet({
+    accounts: [selected],
+    features: {
+      [StandardConnect]: { version: '1.0.0', connect: async () => ({ accounts: [selected] }) },
+      [SolanaSignIn]: { version: '1.0.0', signIn: async () => { throw new Error('provider response unavailable'); } },
+      [SolanaSignMessage]: {
+        version: '1.0.0',
+        signMessage: async ({ message }: { message: Uint8Array }) => {
+          fallbackCalls += 1;
+          return [{ signature: new Uint8Array(64), signedMessage: message }];
+        },
+      },
+    },
+  }), options);
+  assert.equal(fallbackCalls, 1);
+  assert.equal(proof.method, SolanaSignMessage);
+});
+
 test('never invokes transaction-only features for login', async () => {
   let fetched = false;
   await rejectsCode(() => createSolanaWalletProof(wallet({
@@ -175,12 +196,18 @@ test('maps rate limiting and rejected signing to bounded errors', async () => {
     ...options,
     fetch: async () => new Response('{}', { status: 429, headers: { 'content-type': 'application/json' } }),
   }), 'challenge_rate_limited');
-  const selected = account([SolanaSignIn]);
+  const selected = account([SolanaSignIn, SolanaSignMessage]);
+  let fallbackCalls = 0;
   await rejectsCode(() => createSolanaWalletProof(wallet({
     accounts: [selected],
     features: {
       [StandardConnect]: { version: '1.0.0', connect: async () => ({ accounts: [selected] }) },
-      [SolanaSignIn]: { version: '1.0.0', signIn: async () => { throw new Error('private wallet detail'); } },
+      [SolanaSignIn]: { version: '1.0.0', signIn: async () => { throw Object.assign(new Error('User rejected request'), { code: 4001 }); } },
+      [SolanaSignMessage]: {
+        version: '1.0.0',
+        signMessage: async () => { fallbackCalls += 1; return []; },
+      },
     },
   }), options), 'wallet_signature_rejected');
+  assert.equal(fallbackCalls, 0);
 });
