@@ -9,6 +9,7 @@ function hasFeature(wallet: Wallet, name: `${string}:${string}`): boolean {
 
 export function compatibleSolanaWallets(wallets: readonly Wallet[] = getWallets().get()): readonly Wallet[] {
   return wallets.filter((wallet) =>
+    wallet.name.trim().toLowerCase() === 'phantom' &&
     hasFeature(wallet, StandardConnect) &&
     (hasFeature(wallet, SolanaSignIn) || hasFeature(wallet, SolanaSignMessage)) &&
     (wallet.chains.some((chain) => chain.startsWith('solana:')) ||

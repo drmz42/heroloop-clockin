@@ -32,11 +32,11 @@ function wallet(name: string, accounts: readonly WalletAccount[], on?: (listener
   } as Wallet;
 }
 
-test('discovers compatible Solana wallets without provider hard-coding', () => {
-  const solana = wallet('Zulu', [account('11111111111111111111111111111111')]);
-  const second = wallet('Alpha', [account('11111111111111111111111111111112')]);
+test('discovers only Phantom through Wallet Standard', () => {
+  const phantom = wallet('Phantom', [account('11111111111111111111111111111111')]);
+  const solflare = wallet('Solflare', [account('11111111111111111111111111111112')]);
   const incompatible = { ...wallet('Other', []), chains: ['ethereum:1'], features: {} } as Wallet;
-  assert.deepEqual(compatibleSolanaWallets([solana, incompatible, second]).map((entry) => entry.name), ['Alpha', 'Zulu']);
+  assert.deepEqual(compatibleSolanaWallets([solflare, incompatible, phantom]).map((entry) => entry.name), ['Phantom']);
 });
 
 test('wallet account changes invalidate the bound session', () => {

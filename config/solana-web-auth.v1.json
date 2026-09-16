@@ -7,7 +7,9 @@
     "standard": "Wallet Standard",
     "oneGenericConnectAction": true,
     "hardCodedWalletButtonsForbidden": true,
-    "userSelectsCompatibleDetectedWallet": true,
+    "phantomOnly": true,
+    "allowedWalletNames": ["Phantom"],
+    "userSelectsCompatibleDetectedWallet": false,
     "noWalletState": "show-install-or-wallet-help",
     "walletConnectionAloneIsNotAuthentication": true
   },

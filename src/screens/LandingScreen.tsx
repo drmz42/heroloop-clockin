@@ -429,7 +429,7 @@ export function Onboarding({ game, legacyWalletMode = null, onClose }: { game: G
             <div className="mx-auto max-w-xl py-5">
               <div className="mx-auto grid h-14 w-14 place-items-center border border-violet-400/40 bg-violet-400/10 text-violet-300">{solanaAuthEnabled ? <Shield size={26} /> : <UserRound size={26} />}</div>
               <h2 className="mt-6 text-center font-pixel text-sm text-white sm:text-lg">{solanaAuthEnabled ? 'CONNECT SOLANA WALLET' : 'CONTINUE AS GUEST'}</h2>
-              <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-slate-400">{solanaAuthEnabled ? 'Choose a compatible Wallet Standard provider. Sign one free message to prove ownership—no transaction and no gas.' : 'The current beta uses a temporary server account. Existing guests enter directly; new guests continue to registration.'}</p>
+              <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-slate-400">{solanaAuthEnabled ? 'Connect Phantom and sign one free message to prove ownership—no transaction and no gas.' : 'The current beta uses a temporary server account. Existing guests enter directly; new guests continue to registration.'}</p>
               {solanaAuthEnabled && legacyWalletMode && (
                 <div className="mx-auto mt-5 max-w-md border border-amber-300/25 bg-amber-300/[.06] p-4 text-xs leading-5 text-amber-100/80">
                   {legacyWalletMode === 'link'
@@ -443,19 +443,11 @@ export function Onboarding({ game, legacyWalletMode = null, onClose }: { game: G
                   )}
                 </div>
               )}
-              {solanaAuthEnabled && wallets.length > 1 && (
-                <label className="mx-auto mt-7 block max-w-md text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">
-                  Available wallet
-                  <select value={selectedWallet} onChange={(event) => setSelectedWallet(event.target.value)} className="mt-2 min-h-11 w-full border border-white/15 bg-black/40 px-4 text-sm text-white outline-none focus:border-amber-300">
-                    {wallets.map((wallet) => <option key={wallet.name} value={wallet.name}>{wallet.name}</option>)}
-                  </select>
-                </label>
-              )}
               <div className="mx-auto mt-7 w-fit border border-emerald-400/25 bg-emerald-400/[.06] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-emerald-300"><Shield size={12} className="mr-1.5 inline" /> {solanaAuthEnabled ? 'Free ownership proof' : 'Server-saved guest progress'}</div>
               <button onClick={solanaAuthEnabled ? connectWallet : continueAsGuest} disabled={connecting || (solanaAuthEnabled && wallets.length === 0)} className="landing-cta mx-auto mt-4 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em] disabled:cursor-not-allowed disabled:opacity-60">
-                {solanaAuthEnabled ? <Shield size={19} /> : <UserRound size={19} />} {connecting ? 'Checking account…' : solanaAuthEnabled ? 'Connect Solana Wallet' : 'Continue as Guest'}
+                {solanaAuthEnabled ? <Shield size={19} /> : <UserRound size={19} />} {connecting ? 'Checking account…' : solanaAuthEnabled ? 'Connect Phantom' : 'Continue as Guest'}
               </button>
-              {solanaAuthEnabled && wallets.length === 0 && <div className="mx-auto mt-4 max-w-md text-center text-xs text-slate-400">No compatible wallet detected. <a className="text-amber-300 underline underline-offset-4" href="https://solana.com/wallets" target="_blank" rel="noreferrer">Wallet help</a></div>}
+              {solanaAuthEnabled && wallets.length === 0 && <div className="mx-auto mt-4 max-w-md text-center text-xs text-slate-400">Phantom was not detected. <a className="text-amber-300 underline underline-offset-4" href="https://phantom.com/" target="_blank" rel="noreferrer">Get Phantom</a></div>}
               {error && <div className="mt-5 border border-rose-400/30 bg-rose-400/10 p-3 text-center text-sm text-rose-300">{error}</div>}
               <div className="mx-auto mt-6 flex max-w-md items-start gap-3 border border-emerald-400/20 bg-emerald-400/[.05] p-4 text-xs leading-5 text-emerald-200/70"><Shield size={16} className="mt-0.5 shrink-0" /><span>{solanaAuthEnabled ? 'HeroLoop never asks for a transaction signature during login. A different wallet cannot inherit this account or its saves.' : 'Your Guest ID is not a wallet address and cannot receive funds. Verified wallet sign-in is a separate future feature.'}</span></div>
             </div>
