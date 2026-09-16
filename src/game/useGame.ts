@@ -2423,9 +2423,27 @@ export function useGame() {
 
   const claimQuest = useCallback(async (questId: string): Promise<boolean> => {
     if (!tokenomicsEnabled || !Number.isSafeInteger(serverRevisionHint)) return false;
-    const result = await playerSync<{ claimed: boolean; state: GameState; revision: number }>('quest_claim', {
-      quest_id: questId, expected_revision: serverRevisionHint, idempotency_key: createIdempotencyKey(),
-    });
+    const idempotencyKey = createIdempotencyKey();
+    let expectedRevision = serverRevisionHint;
+    let claimError = '';
+    const attemptClaim = () => {
+      claimError = '';
+      return playerSync<{ claimed: boolean; state: GameState; revision: number }>('quest_claim', {
+        quest_id: questId, expected_revision: expectedRevision, idempotency_key: idempotencyKey,
+      }, (error) => { claimError = error; });
+    };
+    let result = await attemptClaim();
+    if (!result && claimError === 'state_conflict') {
+      const refreshed = await playerSync<{ state: GameState; revision: number }>('game_state_load');
+      if (!refreshed?.state || !Number.isSafeInteger(refreshed.revision)) return false;
+      expectedRevision = refreshed.revision;
+      result = await attemptClaim();
+      if (!result) {
+        setServerRevisionHint(refreshed.revision);
+        hydrateServerState(refreshed.state);
+        return false;
+      }
+    }
     if (!result?.state || !Number.isSafeInteger(result.revision)) return false;
     setServerRevisionHint(result.revision);
     hydrateServerState(result.state);
