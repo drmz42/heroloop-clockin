@@ -332,8 +332,10 @@ export function Onboarding({ game, legacyWalletMode = null, onClose }: { game: G
         game.hydrateServerState(migrated.state);
         clearLegacyState();
       }
-      const session = await accountRequest(connectSolanaWallet(wallet));
-      if (!session) { setError('Wallet authentication timed out. Please try again.'); return; }
+      // Wallet approval is human-paced. Do not race it against the 12-second
+      // API timeout: the underlying SIWS flow would continue and could finish
+      // after the UI incorrectly reported failure.
+      const session = await connectSolanaWallet(wallet);
       const account = await accountRequest(playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status'));
       if (!account || account.account_id !== session.accountId) {
         setError('Account service is unavailable. Please try again.');
