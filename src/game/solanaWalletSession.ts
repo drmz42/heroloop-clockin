@@ -29,6 +29,7 @@ type StoredSession = Omit<SolanaWalletSession, 'walletName'> & { walletName: str
 type Fetch = typeof globalThis.fetch;
 
 export type SolanaSessionOptions = {
+  allowExistingAccountLogin?: boolean;
   fetch?: Fetch;
   now?: () => number;
   wallets?: readonly Wallet[];
@@ -111,7 +112,7 @@ async function linkAnonymousAccount(
   accountSession: { access_token: string; user: { id: string } },
   token: string,
   fetchImpl: Fetch,
-): Promise<void> {
+): Promise<'existing' | 'linked'> {
   const response = await fetchImpl(`${backendUrl}/api/v1/auth/solana/link`, {
     method: 'POST',
     credentials: 'same-origin',
@@ -121,10 +122,12 @@ async function linkAnonymousAccount(
       'x-idempotency-key': crypto.randomUUID(),
     },
   }).catch(() => fail('wallet_link_unavailable'));
-  if (!response.ok) fail(response.status === 409 ? 'wallet_already_linked' : 'wallet_link_unavailable');
+  if (response.status === 409) return 'existing';
+  if (!response.ok) fail('wallet_link_unavailable');
   const envelope = await json(response);
   const result = envelope.result as Record<string, unknown> | undefined;
   if (result?.linked !== true || result.account_id !== accountSession.user.id) fail('wallet_link_unavailable');
+  return 'linked';
 }
 
 export async function connectSolanaWallet(
@@ -134,7 +137,6 @@ export async function connectSolanaWallet(
   const fetchImpl = options.fetch ?? globalThis.fetch;
   const existing = await validatedGuestSession();
   if (!existing) fail('account_session_unavailable');
-  if (existing.user.is_anonymous === false) fail('account_session_conflict');
   const proof = await createSolanaWalletProof(wallet, {
     challengeEndpoint: `${backendUrl}/api/v1/auth/solana/challenge`,
     fetch: fetchImpl,
@@ -157,11 +159,16 @@ export async function connectSolanaWallet(
     fail('wallet_session_unavailable');
   }
 
-  try {
-    await linkAnonymousAccount(existing, token, fetchImpl);
-  } catch (error) {
-    await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
-    throw error;
+  if (existing.user.is_anonymous !== false) {
+    try {
+      const link = await linkAnonymousAccount(existing, token, fetchImpl);
+      if (link === 'existing' && options.allowExistingAccountLogin !== true) {
+        fail('wallet_already_linked');
+      }
+    } catch (error) {
+      await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
+      throw error;
+    }
   }
 
   const key = crypto.randomUUID();
