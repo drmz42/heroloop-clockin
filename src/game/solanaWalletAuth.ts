@@ -252,13 +252,13 @@ export async function createSolanaWalletProof(wallet: Wallet, options: SolanaWal
   );
   if (!account.chains.some((chain) => chain === challenge.signInInput.chainId)) fail('wallet_chain_mismatch');
 
-  if (typeof signIn === 'function' && account.features.includes(SolanaSignIn)) {
+  if (typeof signIn === 'function') {
     let outputs: readonly SolanaSignInOutput[];
     try {
       outputs = await signIn(challenge.signInInput);
     } catch (error) {
       if (isUserRejected(error)) return fail('wallet_signature_rejected');
-      if (typeof signMessage !== 'function' || !account.features.includes(SolanaSignMessage)) {
+      if (typeof signMessage !== 'function') {
         return fail('wallet_signing_unavailable');
       }
       outputs = [];
@@ -271,7 +271,7 @@ export async function createSolanaWalletProof(wallet: Wallet, options: SolanaWal
     }
   }
 
-  if (typeof signMessage !== 'function' || !account.features.includes(SolanaSignMessage)) {
+  if (typeof signMessage !== 'function') {
     fail('wallet_signing_unsupported');
   }
   let outputs: readonly SolanaSignMessageOutput[];

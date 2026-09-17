@@ -128,7 +128,10 @@ test('falls back to the identical canonical message through solana:signMessage',
 
 test('falls back to signMessage when Phantom signIn fails technically after approval', async () => {
   let fallbackCalls = 0;
-  const selected = account();
+  // Phantom exposes signing methods on the wallet feature registry. Its selected
+  // account feature list can omit the legacy fallback even though the method is
+  // available and must still be called.
+  const selected = account([SolanaSignIn]);
   const proof = await createSolanaWalletProof(wallet({
     accounts: [selected],
     features: {
