@@ -132,18 +132,27 @@ test('falls back to signMessage when Phantom signIn fails technically after appr
   // account feature list can omit the legacy fallback even though the method is
   // available and must still be called.
   const selected = account([SolanaSignIn]);
+  const signInFeature = {
+    version: '1.0.0',
+    async signIn(this: unknown) {
+      assert.equal(this, signInFeature);
+      throw new Error('provider response unavailable');
+    },
+  };
+  const signMessageFeature = {
+    version: '1.0.0',
+    async signMessage(this: unknown, { message }: { message: Uint8Array }) {
+      assert.equal(this, signMessageFeature);
+      fallbackCalls += 1;
+      return [{ signature: new Uint8Array(64), signedMessage: message }];
+    },
+  };
   const proof = await createSolanaWalletProof(wallet({
     accounts: [selected],
     features: {
       [StandardConnect]: { version: '1.0.0', connect: async () => ({ accounts: [selected] }) },
-      [SolanaSignIn]: { version: '1.0.0', signIn: async () => { throw new Error('provider response unavailable'); } },
-      [SolanaSignMessage]: {
-        version: '1.0.0',
-        signMessage: async ({ message }: { message: Uint8Array }) => {
-          fallbackCalls += 1;
-          return [{ signature: new Uint8Array(64), signedMessage: message }];
-        },
-      },
+      [SolanaSignIn]: signInFeature,
+      [SolanaSignMessage]: signMessageFeature,
     },
   }), options);
   assert.equal(fallbackCalls, 1);

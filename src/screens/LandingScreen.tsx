@@ -356,8 +356,10 @@ export function Onboarding({ game, legacyWalletMode = null, onClose }: { game: G
         ? 'This wallet already belongs to another HeroLoop account.'
         : code === 'wallet_signature_rejected'
         ? 'The signature request was cancelled.'
-        : code === 'wallet_signing_unavailable'
-        ? 'Phantom could not return the signed message. Unlock Phantom and try again.'
+        : code === 'wallet_sign_in_unavailable'
+        ? 'Phantom sign-in could not start. Reload Phantom and try again.'
+        : code === 'wallet_sign_message_unavailable'
+        ? 'Phantom sign-message could not start. Reload Phantom and try again.'
         : 'Wallet authentication failed. Please try again.');
     } finally {
       setConnecting(false);
