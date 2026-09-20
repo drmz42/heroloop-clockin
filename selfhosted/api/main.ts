@@ -401,6 +401,16 @@ async function retryLockTimeoutOnce<T>(operation: () => Promise<T>): Promise<T> 
   }
 }
 
+async function retryDatabaseTimeoutOnce<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (!isLockTimeout(error) && !isStatementTimeout(error)) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return await operation();
+  }
+}
+
 async function databaseJsonReadRetryOnce(queryText: string, args: unknown[]): Promise<JsonRecord> {
   try {
     return await databaseJson(queryText, args);
@@ -1244,7 +1254,10 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         return errorResponse(400, payloadError ?? "invalid_quest_claim", requestId);
       }
       try {
-        const result = await databaseJson("SELECT heroloop_api.quest_claim($1::uuid,$2::uuid,$3::text,$4::bigint) AS result", [identity.playerId, requestKey, questId, revision]);
+        const result = await retryDatabaseTimeoutOnce(() => databaseJson(
+          "SELECT heroloop_api.quest_claim($1::uuid,$2::uuid,$3::text,$4::bigint) AS result",
+          [identity.playerId, requestKey, questId, revision],
+        ));
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
       } catch (error) {
         const code = databaseErrorCode(error, ["state_conflict", "idempotency_conflict", "quest_unknown", "quest_catalogue_mismatch", "quest_already_claimed", "quest_incomplete"]);
@@ -1865,10 +1878,10 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
             ? json(merged.status, { ok: false, code: merged.code, request_id: requestId, result: merged.result })
             : errorResponse(merged.status, merged.code, requestId);
         }
-        const committed = await databaseJson(
+        const committed = await retryDatabaseTimeoutOnce(() => databaseJson(
           "SELECT heroloop_api.game_state_save_commit($1::uuid, $2::bigint, $3::jsonb) AS result",
           [identity.playerId, merged.revision, JSON.stringify(merged.state)],
-        );
+        ));
         const revision = Number(committed.revision);
         if (committed.conflict === true) {
           return json(409, {
