@@ -23,6 +23,7 @@ type SignMessageApi = SolanaSignMessageFeature[typeof SolanaSignMessage];
 
 type PhantomPublicKey = { toBase58: () => string };
 type PhantomProvider = {
+  connect?: (options?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey?: PhantomPublicKey }>;
   isPhantom?: boolean;
   publicKey?: PhantomPublicKey | null;
   signMessage?: (message: Uint8Array, display?: 'utf8') => Promise<{
@@ -244,8 +245,10 @@ function proofPayload(
 function injectedPhantomProvider(): PhantomProvider | null {
   const root = globalThis as typeof globalThis & {
     phantom?: { solana?: PhantomProvider };
+    solana?: PhantomProvider;
   };
-  return root.phantom?.solana ?? null;
+  const provider = root.phantom?.solana ?? root.solana;
+  return provider?.isPhantom === true ? provider : null;
 }
 
 async function signWithInjectedPhantom(
@@ -255,14 +258,15 @@ async function signWithInjectedPhantom(
   provider: PhantomProvider | null,
 ): Promise<SolanaSignMessageOutput | null> {
   if (wallet.name.trim().toLowerCase() !== 'phantom' || provider?.isPhantom !== true ||
-    typeof provider.signMessage !== 'function') return null;
+    typeof provider.connect !== 'function' || typeof provider.signMessage !== 'function') return null;
   let providerAddress: string;
   try {
-    providerAddress = provider.publicKey?.toBase58() ?? '';
-  } catch {
-    return null;
+    const connected = await provider.connect();
+    providerAddress = (connected.publicKey ?? provider.publicKey)?.toBase58() ?? '';
+  } catch (error) {
+    return fail(isUserRejected(error) ? 'wallet_connect_rejected' : 'wallet_sign_message_unavailable');
   }
-  if (providerAddress !== account.address) return null;
+  if (providerAddress !== account.address) fail('wallet_account_unavailable');
   try {
     const output = await provider.signMessage(message, 'utf8');
     if (output.publicKey && output.publicKey.toBase58() !== account.address) fail('wallet_proof_invalid');
@@ -304,6 +308,15 @@ export async function createSolanaWalletProof(wallet: Wallet, options: SolanaWal
   );
   if (!account.chains.some((chain) => chain === challenge.signInInput.chainId)) fail('wallet_chain_mismatch');
 
+  const message = new TextEncoder().encode(challenge.message);
+  const injectedOutput = await signWithInjectedPhantom(
+    wallet,
+    account,
+    message,
+    options.phantomProvider === undefined ? injectedPhantomProvider() : options.phantomProvider,
+  );
+  if (injectedOutput) return proofPayload(account, challenge, SolanaSignMessage, injectedOutput);
+
   if (canSignIn) {
     let outputs: readonly SolanaSignInOutput[];
     try {
@@ -327,22 +340,13 @@ export async function createSolanaWalletProof(wallet: Wallet, options: SolanaWal
     fail('wallet_signing_unsupported');
   }
   let outputs: readonly SolanaSignMessageOutput[];
-  const message = new TextEncoder().encode(challenge.message);
   try {
     outputs = await signMessage.call(signMessageFeature, {
       account,
       message,
     });
   } catch (error) {
-    if (isUserRejected(error)) return fail('wallet_signature_rejected');
-    const fallback = await signWithInjectedPhantom(
-      wallet,
-      account,
-      message,
-      options.phantomProvider === undefined ? injectedPhantomProvider() : options.phantomProvider,
-    );
-    if (!fallback) return fail('wallet_sign_message_unavailable');
-    outputs = [fallback];
+    return fail(isUserRejected(error) ? 'wallet_signature_rejected' : 'wallet_sign_message_unavailable');
   }
   if (outputs.length !== 1 || outputs[0].signatureType && outputs[0].signatureType !== 'ed25519') {
     fail('wallet_proof_invalid');

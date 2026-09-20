@@ -156,8 +156,10 @@ test('falls back to signMessage when Phantom signIn fails technically after appr
   assert.equal(proof.method, SolanaSignMessage);
 });
 
-test('uses the address-matched Phantom provider when its Wallet Standard signMessage bridge fails', async () => {
+test('connects and uses the address-matched Phantom provider before Wallet Standard signing', async () => {
+  let connectCalls = 0;
   let providerCalls = 0;
+  let standardCalls = 0;
   const selected = account([SolanaSignMessage]);
   const proof = await createSolanaWalletProof(wallet({
     name: 'Phantom',
@@ -165,14 +167,18 @@ test('uses the address-matched Phantom provider when its Wallet Standard signMes
       [StandardConnect]: { version: '1.0.0', connect: async () => ({ accounts: [selected] }) },
       [SolanaSignMessage]: {
         version: '1.0.0',
-        signMessage: async () => { throw new Error('Wallet Standard bridge unavailable'); },
+        signMessage: async () => { standardCalls += 1; throw new Error('Wallet Standard bridge unavailable'); },
       },
     },
   }), {
     ...options,
     phantomProvider: {
       isPhantom: true,
-      publicKey: { toBase58: () => ADDRESS },
+      publicKey: null,
+      connect: async () => {
+        connectCalls += 1;
+        return { publicKey: { toBase58: () => ADDRESS } };
+      },
       signMessage: async (message, display) => {
         providerCalls += 1;
         assert.equal(display, 'utf8');
@@ -183,7 +189,9 @@ test('uses the address-matched Phantom provider when its Wallet Standard signMes
       },
     },
   });
+  assert.equal(connectCalls, 1);
   assert.equal(providerCalls, 1);
+  assert.equal(standardCalls, 0);
   assert.equal(proof.method, SolanaSignMessage);
   assert.equal(Buffer.from(proof.signed_message, 'base64').toString(), MESSAGE);
 });
@@ -204,10 +212,10 @@ test('never uses an injected Phantom provider for a different connected address'
     ...options,
     phantomProvider: {
       isPhantom: true,
-      publicKey: { toBase58: () => 'SysvarRent111111111111111111111111111111111' },
+      connect: async () => ({ publicKey: { toBase58: () => 'SysvarRent111111111111111111111111111111111' } }),
       signMessage: async () => { providerCalls += 1; return { signature: new Uint8Array(64) }; },
     },
-  }), 'wallet_sign_message_unavailable');
+  }), 'wallet_account_unavailable');
   assert.equal(providerCalls, 0);
 });
 
