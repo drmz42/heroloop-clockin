@@ -128,10 +128,7 @@ test('falls back to the identical canonical message through solana:signMessage',
 
 test('falls back to signMessage when Phantom signIn fails technically after approval', async () => {
   let fallbackCalls = 0;
-  // Phantom exposes signing methods on the wallet feature registry. Its selected
-  // account feature list can omit the legacy fallback even though the method is
-  // available and must still be called.
-  const selected = account([SolanaSignIn]);
+  const selected = account([SolanaSignIn, SolanaSignMessage]);
   const signInFeature = {
     version: '1.0.0',
     async signIn(this: unknown) {
@@ -159,12 +156,50 @@ test('falls back to signMessage when Phantom signIn fails technically after appr
   assert.equal(proof.method, SolanaSignMessage);
 });
 
+test('refreshes an already-authorized Phantom account before choosing signing features', async () => {
+  let connectCalls = 0;
+  let staleSignInCalls = 0;
+  let signMessageCalls = 0;
+  const stale = account([SolanaSignIn]);
+  const refreshed = account([SolanaSignMessage]);
+  const proof = await createSolanaWalletProof(wallet({
+    accounts: [stale],
+    features: {
+      [StandardConnect]: {
+        version: '1.0.0',
+        connect: async () => {
+          connectCalls += 1;
+          return { accounts: [refreshed] };
+        },
+      },
+      [SolanaSignIn]: {
+        version: '1.0.0',
+        signIn: async () => {
+          staleSignInCalls += 1;
+          throw new Error('stale account must not be used');
+        },
+      },
+      [SolanaSignMessage]: {
+        version: '1.0.0',
+        signMessage: async ({ message }: { message: Uint8Array }) => {
+          signMessageCalls += 1;
+          return [{ signature: new Uint8Array(64), signedMessage: message }];
+        },
+      },
+    },
+  }), options);
+  assert.equal(connectCalls, 1);
+  assert.equal(staleSignInCalls, 0);
+  assert.equal(signMessageCalls, 1);
+  assert.equal(proof.method, SolanaSignMessage);
+});
+
 test('never invokes transaction-only features for login', async () => {
   let fetched = false;
   await rejectsCode(() => createSolanaWalletProof(wallet({
     accounts: [account(['solana:signTransaction'])],
     features: {
-      [StandardConnect]: { version: '1.0.0', connect: async () => ({ accounts: [] }) },
+      [StandardConnect]: { version: '1.0.0', connect: async () => ({ accounts: [account(['solana:signTransaction'])] }) },
       'solana:signTransaction': { version: '1.0.0', signTransaction: () => assert.fail('transaction requested') },
     },
   }), { ...options, fetch: async () => { fetched = true; return challengeResponse(); } }), 'wallet_signing_unsupported');
@@ -200,7 +235,14 @@ test('rejects modified signed bytes and malformed server challenges', async () =
 
 test('requires explicit selection when a wallet exposes multiple Solana accounts', async () => {
   const second = { ...account(), address: 'SysvarRent111111111111111111111111111111111' };
-  await rejectsCode(() => createSolanaWalletProof(wallet({ accounts: [account(), second] }), options), 'wallet_account_selection_required');
+  const first = account();
+  await rejectsCode(() => createSolanaWalletProof(wallet({
+    accounts: [first, second],
+    features: {
+      [StandardConnect]: { version: '1.0.0', connect: async () => ({ accounts: [first, second] }) },
+      [SolanaSignIn]: { version: '1.0.0', signIn: async () => [] },
+    },
+  }), options), 'wallet_account_selection_required');
 });
 
 test('maps rate limiting and rejected signing to bounded errors', async () => {

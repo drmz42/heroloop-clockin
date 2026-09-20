@@ -92,10 +92,11 @@ async function authorizeAccount(wallet: Wallet, requested?: string): Promise<Wal
   const connectFeature = feature<ConnectApi>(wallet, StandardConnect);
   const connect = connectFeature?.connect;
   if (typeof connect !== 'function') fail('wallet_connect_unsupported');
-  const current = wallet.accounts.filter(isUsableAccount);
-  if (current.length > 0) return chooseAccount(current, requested);
   let accounts: readonly WalletAccount[];
   try {
+    // Refresh authorization on every explicit Connect Phantom click. Reusing
+    // wallet.accounts skipped Phantom's working connect path after the first
+    // login and could leave us calling signing features with a stale account.
     ({ accounts } = await connect.call(connectFeature));
   } catch {
     return fail('wallet_connect_rejected');
@@ -245,7 +246,9 @@ export async function createSolanaWalletProof(wallet: Wallet, options: SolanaWal
   const signMessageFeature = feature<SignMessageApi>(wallet, SolanaSignMessage);
   const signIn = signInFeature?.signIn;
   const signMessage = signMessageFeature?.signMessage;
-  if (typeof signIn !== 'function' && typeof signMessage !== 'function') fail('wallet_signing_unsupported');
+  const canSignIn = typeof signIn === 'function' && account.features.includes(SolanaSignIn);
+  const canSignMessage = typeof signMessage === 'function' && account.features.includes(SolanaSignMessage);
+  if (!canSignIn && !canSignMessage) fail('wallet_signing_unsupported');
 
   const challenge = await requestChallenge(
     endpoint.toString(),
@@ -255,13 +258,13 @@ export async function createSolanaWalletProof(wallet: Wallet, options: SolanaWal
   );
   if (!account.chains.some((chain) => chain === challenge.signInInput.chainId)) fail('wallet_chain_mismatch');
 
-  if (typeof signIn === 'function') {
+  if (canSignIn) {
     let outputs: readonly SolanaSignInOutput[];
     try {
       outputs = await signIn.call(signInFeature, challenge.signInInput);
     } catch (error) {
       if (isUserRejected(error)) return fail('wallet_signature_rejected');
-      if (typeof signMessage !== 'function') {
+      if (!canSignMessage) {
         return fail('wallet_sign_in_unavailable');
       }
       outputs = [];
@@ -274,7 +277,7 @@ export async function createSolanaWalletProof(wallet: Wallet, options: SolanaWal
     }
   }
 
-  if (typeof signMessage !== 'function') {
+  if (!canSignMessage) {
     fail('wallet_signing_unsupported');
   }
   let outputs: readonly SolanaSignMessageOutput[];
