@@ -1641,10 +1641,10 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         return errorResponse(400, payloadError ?? "invalid_normal_combat_request", requestId);
       }
       try {
-        const result = await databaseJson(
+        const result = await retryDatabaseTimeoutOnce(() => databaseJson(
           "SELECT heroloop_api.normal_combat_complete($1::uuid, $2::uuid, $3::uuid) AS result",
           [identity.playerId, startKey, requestKey],
-        );
+        ));
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
       } catch (error) {
         const code = databaseErrorCode(error, [
