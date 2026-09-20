@@ -156,9 +156,9 @@ test('falls back to signMessage when Phantom signIn fails technically after appr
   assert.equal(proof.method, SolanaSignMessage);
 });
 
-test('refreshes an already-authorized Phantom account before choosing signing features', async () => {
+test('uses wallet-level Phantom signIn with the refreshed account', async () => {
   let connectCalls = 0;
-  let staleSignInCalls = 0;
+  let signInCalls = 0;
   let signMessageCalls = 0;
   const stale = account([SolanaSignIn]);
   const refreshed = account([SolanaSignMessage]);
@@ -175,8 +175,12 @@ test('refreshes an already-authorized Phantom account before choosing signing fe
       [SolanaSignIn]: {
         version: '1.0.0',
         signIn: async () => {
-          staleSignInCalls += 1;
-          throw new Error('stale account must not be used');
+          signInCalls += 1;
+          return [{
+            account: refreshed,
+            signature: new Uint8Array(64),
+            signedMessage: new TextEncoder().encode(MESSAGE),
+          }];
         },
       },
       [SolanaSignMessage]: {
@@ -189,9 +193,9 @@ test('refreshes an already-authorized Phantom account before choosing signing fe
     },
   }), options);
   assert.equal(connectCalls, 1);
-  assert.equal(staleSignInCalls, 0);
-  assert.equal(signMessageCalls, 1);
-  assert.equal(proof.method, SolanaSignMessage);
+  assert.equal(signInCalls, 1);
+  assert.equal(signMessageCalls, 0);
+  assert.equal(proof.method, SolanaSignIn);
 });
 
 test('never invokes transaction-only features for login', async () => {

@@ -246,7 +246,10 @@ export async function createSolanaWalletProof(wallet: Wallet, options: SolanaWal
   const signMessageFeature = feature<SignMessageApi>(wallet, SolanaSignMessage);
   const signIn = signInFeature?.signIn;
   const signMessage = signMessageFeature?.signMessage;
-  const canSignIn = typeof signIn === 'function' && account.features.includes(SolanaSignIn);
+  // Phantom exposes SIWS as a wallet-level feature. Unlike signMessage, its
+  // input has no account field; the returned account is checked against the
+  // freshly connected account before the proof is accepted.
+  const canSignIn = typeof signIn === 'function';
   const canSignMessage = typeof signMessage === 'function' && account.features.includes(SolanaSignMessage);
   if (!canSignIn && !canSignMessage) fail('wallet_signing_unsupported');
 
