@@ -156,6 +156,61 @@ test('falls back to signMessage when Phantom signIn fails technically after appr
   assert.equal(proof.method, SolanaSignMessage);
 });
 
+test('uses the address-matched Phantom provider when its Wallet Standard signMessage bridge fails', async () => {
+  let providerCalls = 0;
+  const selected = account([SolanaSignMessage]);
+  const proof = await createSolanaWalletProof(wallet({
+    name: 'Phantom',
+    features: {
+      [StandardConnect]: { version: '1.0.0', connect: async () => ({ accounts: [selected] }) },
+      [SolanaSignMessage]: {
+        version: '1.0.0',
+        signMessage: async () => { throw new Error('Wallet Standard bridge unavailable'); },
+      },
+    },
+  }), {
+    ...options,
+    phantomProvider: {
+      isPhantom: true,
+      publicKey: { toBase58: () => ADDRESS },
+      signMessage: async (message, display) => {
+        providerCalls += 1;
+        assert.equal(display, 'utf8');
+        return {
+          publicKey: { toBase58: () => ADDRESS },
+          signature: new Uint8Array(64),
+        };
+      },
+    },
+  });
+  assert.equal(providerCalls, 1);
+  assert.equal(proof.method, SolanaSignMessage);
+  assert.equal(Buffer.from(proof.signed_message, 'base64').toString(), MESSAGE);
+});
+
+test('never uses an injected Phantom provider for a different connected address', async () => {
+  let providerCalls = 0;
+  const selected = account([SolanaSignMessage]);
+  await rejectsCode(() => createSolanaWalletProof(wallet({
+    name: 'Phantom',
+    features: {
+      [StandardConnect]: { version: '1.0.0', connect: async () => ({ accounts: [selected] }) },
+      [SolanaSignMessage]: {
+        version: '1.0.0',
+        signMessage: async () => { throw new Error('Wallet Standard bridge unavailable'); },
+      },
+    },
+  }), {
+    ...options,
+    phantomProvider: {
+      isPhantom: true,
+      publicKey: { toBase58: () => 'SysvarRent111111111111111111111111111111111' },
+      signMessage: async () => { providerCalls += 1; return { signature: new Uint8Array(64) }; },
+    },
+  }), 'wallet_sign_message_unavailable');
+  assert.equal(providerCalls, 0);
+});
+
 test('uses wallet-level Phantom signIn with the refreshed account', async () => {
   let connectCalls = 0;
   let signInCalls = 0;
