@@ -57,9 +57,9 @@ const databasePool = new Pool({
   user: Deno.env.get("PGUSER"),
   connection: { attempts: 1, interval: 250 },
   options: {
-    idle_in_transaction_session_timeout: "2000",
-    lock_timeout: "1000",
-    statement_timeout: "2000",
+    idle_in_transaction_session_timeout: "5000",
+    lock_timeout: "3000",
+    statement_timeout: "5000",
   },
   tls: { enabled: false, enforce: false },
 }, Number(Deno.env.get("PGPOOL_SIZE") ?? "4"), true);
