@@ -134,7 +134,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
       {/* Floating damage numbers */}
       <div className="absolute -top-4 left-1/2 -translate-x-1/2 pointer-events-none z-20 w-24 h-16">
         {myFloaters.map((f) => (
-          <div key={f.id} className={`anim-float absolute left-1/2 -translate-x-1/2 font-bold whitespace-nowrap font-vt ${f.crit && !f.heal ? 'crit-floater' : f.rewardGold !== undefined ? 'text-amber-300 text-lg' : f.effect ? 'text-cyan-200 text-sm' : f.heal ? 'text-px-green text-2xl' : f.miss ? 'text-px-dim text-lg' : 'text-white text-2xl'}`} style={{ textShadow: f.crit ? '0 0 8px #f5c518, 2px 2px 0 #3d2008' : '2px 2px 0 #000' }}>
+          <div key={f.id} className={`${f.rewardGold !== undefined ? 'anim-float-reward' : 'anim-float'} absolute left-1/2 -translate-x-1/2 font-bold whitespace-nowrap font-vt ${f.crit && !f.heal ? 'crit-floater' : f.rewardGold !== undefined ? 'text-amber-300 text-lg' : f.effect ? 'text-cyan-200 text-sm' : f.heal ? 'text-px-green text-2xl' : f.miss ? 'text-px-dim text-lg' : 'text-white text-2xl'}`} style={{ textShadow: f.crit ? '0 0 8px #f5c518, 2px 2px 0 #3d2008' : '2px 2px 0 #000' }}>
             {f.crit && !f.heal && f.value > 0 ? (
               <span className="crit-hit-number" aria-label={`Critical hit, ${f.value} damage`}>
                 <span className="crit-blood crit-blood-a" /><span className="crit-blood crit-blood-b" /><span className="crit-blood crit-blood-c" />

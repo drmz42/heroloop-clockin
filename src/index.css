@@ -496,6 +496,7 @@ html { scroll-behavior: smooth; }
 @keyframes unit-attack-enemy { 0%{transform:translateX(0)}40%{transform:translateX(-22px) scale(1.08)}100%{transform:translateX(0)} }
 @keyframes unit-hit    { 0%,100%{filter:brightness(1)}50%{filter:brightness(2.4) saturate(1.5)} }
 @keyframes unit-die    { 0%{opacity:1;transform:scale(1) rotate(0)}100%{opacity:0;transform:scale(.6) rotate(12deg) translateY(20px)} }
+@keyframes float-up-reward { 0%{opacity:0;transform:translateY(0) scale(.6)}8%{opacity:1;transform:translateY(-8px) scale(1.1)}70%{opacity:1;transform:translateY(-30px) scale(1)}100%{opacity:0;transform:translateY(-52px) scale(1)} }
 @keyframes float-up    { 0%{opacity:0;transform:translateY(0) scale(.6)}15%{opacity:1;transform:translateY(-8px) scale(1.1)}100%{opacity:0;transform:translateY(-52px) scale(1)} }
 @keyframes crit-hit-pop { 0%{opacity:0;transform:scale(.55) rotate(-5deg)}18%{opacity:1;transform:scale(1.18) rotate(2deg)}42%{transform:scale(1) rotate(-1deg)}100%{opacity:0;transform:translateY(-44px) scale(.92)} }
 @keyframes crit-label-pop { 0%{opacity:0;transform:translate(-50%,10px) scale(.4)}25%{opacity:1;transform:translate(-50%,0) scale(1.05)}100%{opacity:0;transform:translate(-50%,-18px) scale(1)} }
@@ -523,11 +524,12 @@ html { scroll-behavior: smooth; }
 .anim-attack-enemy { animation:unit-attack-enemy .35s ease-out; }
 .anim-hit          { animation:unit-hit    .2s ease-out; }
 .anim-die          { animation:unit-die    .5s ease-in forwards; }
-.anim-float        { animation:float-up   .85s ease-out forwards; }
+.anim-float        { animation:float-up   1.5s ease-out forwards; }
+.anim-float-reward { animation:float-up-reward 2.6s ease-out forwards; }
 .crit-floater      { z-index:30; }
-.crit-hit-number   { position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:78px;color:#fff4d2;line-height:1;filter:drop-shadow(0 0 5px rgba(255,69,47,.8));animation:crit-hit-pop .95s cubic-bezier(.18,.9,.25,1.1) forwards; }
+.crit-hit-number   { position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:78px;color:#fff4d2;line-height:1;filter:drop-shadow(0 0 5px rgba(255,69,47,.8));animation:crit-hit-pop 1.6s cubic-bezier(.18,.9,.25,1.1) forwards; }
 .crit-damage       { position:relative;z-index:2;font-size:1.6em;letter-spacing:.02em;-webkit-text-stroke:2px #5a1016;text-shadow:0 0 5px #ffb347,0 0 12px #d3262f,3px 3px 0 #29090d; }
-.crit-label        { position:absolute;left:50%;top:-.8em;z-index:3;color:#ffb34d;font-family:inherit;font-size:.62em;letter-spacing:.12em;-webkit-text-stroke:1px #4a0b11;text-shadow:0 0 7px #e21f2f;animation:crit-label-pop .85s ease-out forwards; }
+.crit-label        { position:absolute;left:50%;top:-.8em;z-index:3;color:#ffb34d;font-family:inherit;font-size:.62em;letter-spacing:.12em;-webkit-text-stroke:1px #4a0b11;text-shadow:0 0 7px #e21f2f;animation:crit-label-pop 1.5s ease-out forwards; }
 .crit-blood        { position:absolute;z-index:1;width:7px;height:10px;border-radius:65% 35% 60% 40%;background:linear-gradient(145deg,#ff5b4d,#7f0d18 70%);box-shadow:0 0 5px rgba(255,40,35,.7);animation:blood-splatter .7s ease-out forwards; }
 .crit-blood-a     { --blood-x:-34px;--blood-y:-18px;left:22%;top:45%; }
 .crit-blood-b     { --blood-x:36px;--blood-y:-24px;right:18%;top:42%;width:5px;height:8px;animation-delay:.04s; }
