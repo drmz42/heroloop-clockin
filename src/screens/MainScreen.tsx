@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, ScrollText, DoorOpen, HeartPulse, Gem, Skull, BookOpen } from 'lucide-react';
 import { Arena } from '@/components/Arena';
 import { CombatErrorBoundary } from '@/components/CombatErrorBoundary';
@@ -141,6 +142,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
   const [inventoryTab, setInventoryTab] = useState<1 | 2 | 3 | 4 | 'resources'>(1);
   const [selectedResource, setSelectedResource] = useState<'summon-scroll' | 'boss-key' | null>(null);
   const [showDropRates, setShowDropRates] = useState(false);
+  const dropRatesButtonRef = useRef<HTMLButtonElement>(null);
+  const [dropRatesPos, setDropRatesPos] = useState<{ right: number; bottom: number; maxHeight: number } | null>(null);
   const [showZoomTip, setShowZoomTip] = useState(true);
   const [showHeroDetails, setShowHeroDetails] = useState(true);
   const [showDungeonInfo, setShowDungeonInfo] = useState(false);
@@ -166,6 +169,24 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
     const t = setTimeout(() => setBanner(null), 2600);
     return () => clearTimeout(t);
   }, [banner]);
+
+  useEffect(() => {
+    if (!showDropRates) { setDropRatesPos(null); return undefined; }
+    // The popup is portalled to <body>, so anchor it to the button's viewport rectangle.
+    const place = () => {
+      const rect = dropRatesButtonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setDropRatesPos({
+        right: Math.max(8, window.innerWidth - rect.right),
+        bottom: window.innerHeight - rect.top + 8,
+        maxHeight: Math.max(120, rect.top - 16),
+      });
+    };
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true); };
+  }, [showDropRates]);
 
   useEffect(() => {
     if (selectedHeroUid && !state.team.includes(selectedHeroUid)) setSelectedHeroUid(state.team[0] ?? null);
@@ -582,13 +603,13 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
           </div>}
           {!activeDungeon && import.meta.env.MODE === 'staging' && <TestControls game={game} />}
           {!activeDungeon && <div className="absolute bottom-3 right-3 z-30 flex items-end gap-1.5">
-            {showDropRates && <div className="fixed bottom-14 right-3 z-[100] w-56 rounded-lg border border-[#80683f] bg-[#11130f]/98 p-2.5 shadow-2xl backdrop-blur-sm">
+            {showDropRates && dropRatesPos && createPortal(<div role="dialog" aria-label="Chest drop rate" className="fixed z-[100] w-56 overflow-y-auto rounded-lg border border-[#80683f] bg-[#11130f]/98 p-2.5 shadow-2xl backdrop-blur-sm" style={{ right: dropRatesPos.right, bottom: dropRatesPos.bottom, maxHeight: dropRatesPos.maxHeight }}>
               <div className="flex items-center justify-between gap-2"><strong className="text-[10px] uppercase tracking-wider text-[#efd18a]">Chest drop rate</strong><button type="button" onClick={() => setShowDropRates(false)} aria-label="Close drop rates"><X size={13} /></button></div>
               <p className="mt-1 text-[9px] text-[#978f81]">Current Account Level {state.accountLevel}. Rates update with account level and global rarity availability.</p>
               <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">{chestRateRows.map(([rarity, weight]) => <Fragment key={rarity}><span className="text-[9px] font-bold" style={{ color: RARITY_COLORS[rarity as keyof typeof RARITY_COLORS] }}>{RARITY_LABEL[rarity as keyof typeof RARITY_LABEL]}</span><span className="text-right text-[9px] tabular-nums text-[#ddd4c4]">{(weight / chestWeightTotal * 100).toFixed(2).replace(/\.?0+$/, '')}%</span></Fragment>)}</div>
               {state.chests.some((chest) => chest.boss) && <p className="mt-2 border-t border-white/10 pt-2 text-[9px] text-rose-200">Boss Chests use the same level table with a Rare/Epic minimum.</p>}
-            </div>}
-            <button type="button" onClick={() => setShowDropRates((value) => !value)} className="game-control grid h-8 w-8 place-items-center" aria-label="Show chest drop rates" aria-expanded={showDropRates}><Info size={15} /></button>
+            </div>, document.body)}
+            <button ref={dropRatesButtonRef} type="button" onClick={() => setShowDropRates((value) => !value)} className="game-control grid h-8 w-8 place-items-center" aria-label="Show chest drop rates" aria-expanded={showDropRates}><Info size={15} /></button>
             <div className="flex flex-col gap-1.5">
               <button type="button" onClick={onBoostClick} className={`game-control flex h-8 w-36 items-center justify-center gap-1 px-2 py-0.5 text-[9px] font-black ${state.boost.active ? 'boost-max-active' : 'boost-max-ready'}`} title="Boost your offline earnings to 24/7"><Rocket size={15} /><span>{state.boost.active ? 'BOOST ON' : 'BOOST MAX'}</span></button>
               <button
