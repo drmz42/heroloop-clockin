@@ -562,7 +562,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
           </div>
           {!activeDungeon && banner && (
             <div className="absolute inset-x-0 top-1/4 flex flex-col items-center z-30 pointer-events-none">
-              <div className={`anim-banner font-pixel text-xl sm:text-2xl tracking-wider ${banner.win ? 'text-px-bright' : 'text-px-red'}`} style={{ textShadow: banner.win ? '0 0 20px #f5c518' : '0 0 20px #c02010' }}>{banner.win ? 'VICTORY' : 'DEFEAT'}</div>
+              <div className={`anim-banner battle-result-title font-pixel text-2xl sm:text-3xl tracking-wider ${banner.win ? 'is-victory' : 'is-defeat'}`}>{banner.win ? 'VICTORY' : 'DEFEAT'}</div>
               {hasBattleRewards && (
                 <div className="anim-banner stat-tile mt-2 flex flex-wrap items-center justify-center gap-2 px-3 py-2 font-vt text-sm">
                   {banner.gold > 0 && <span className="text-amber-300">+{formatNum(banner.gold)}g</span>}

@@ -570,6 +570,10 @@ html { scroll-behavior: smooth; }
 .summon-portal-mote{position:absolute;left:50%;top:50%;height:4px;width:4px;border-radius:999px;background:#f4ce75;box-shadow:0 0 8px #ca70ff;animation:summon-mote-orbit 5s linear infinite;animation-delay:calc(var(--mote-index)*-.28s)}
 .anim-reveal       { animation:card-reveal .5s ease-out forwards; }
 .anim-banner       { animation:banner-slide 2.6s ease-in-out forwards; }
+/* Result title: dark outline + shadow keep it readable on light battle backgrounds. */
+.battle-result-title { padding:2px 26px;background:radial-gradient(ellipse at center,rgba(8,6,3,.62),rgba(8,6,3,0) 72%);-webkit-text-stroke:3px #241304;paint-order:stroke fill;text-shadow:0 3px 0 #160c02,0 0 14px rgba(0,0,0,.85); }
+.battle-result-title.is-victory { color:#ffd76a;text-shadow:0 3px 0 #160c02,0 0 14px rgba(0,0,0,.85),0 0 28px rgba(245,197,24,.6); }
+.battle-result-title.is-defeat { color:#ff8b93;-webkit-text-stroke-color:#2a0508;text-shadow:0 3px 0 #160204,0 0 14px rgba(0,0,0,.85),0 0 28px rgba(192,32,16,.6); }
 .anim-slide-up     { animation:slide-up-in .25s ease-out; }
 .anim-fade         { animation:fade-in    .25s ease-out; }
 .anim-flicker      { animation:px-flicker 4s ease-in-out infinite; }
