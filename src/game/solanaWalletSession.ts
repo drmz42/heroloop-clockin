@@ -7,6 +7,7 @@ export {
   watchSolanaWalletSession,
 } from './solanaWalletRegistry';
 import { compatibleSolanaWallets } from './solanaWalletRegistry';
+import { clearWalletBinding, readWalletBinding, walletBindingRestorable, writeWalletBinding } from './solanaWalletBinding';
 
 const STORAGE_KEY = 'heroloop.siws.wallet-session.v2';
 const TOKEN_PATTERN = /^hlw_[A-Za-z0-9_-]{43}$/;
@@ -75,6 +76,7 @@ function persist(session: StoredSession): void {
 
 export function clearSolanaWalletSession(): void {
   try { sessionStore()?.removeItem(STORAGE_KEY); } catch { /* fail closed in memory */ }
+  clearWalletBinding();
 }
 
 async function json(response: Response): Promise<Record<string, unknown>> {
@@ -227,6 +229,7 @@ export async function connectSolanaWallet(
   };
   try {
     persist(accepted);
+    writeWalletBinding({ accountId: accepted.accountId, address: accepted.address, authSubjectId: accepted.authSubjectId, walletName: accepted.walletName });
   } catch {
     await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
     throw new SolanaWalletAuthError('wallet_session_unavailable');
@@ -237,8 +240,19 @@ export async function connectSolanaWallet(
 export async function restoreSolanaWalletSession(options: SolanaSessionOptions = {}): Promise<SolanaWalletSession | null> {
   const now = (options.now ?? Date.now)();
   const stored = parseStored(now);
-  if (!stored) { clearSolanaWalletSession(); return null; }
   const wallets = compatibleSolanaWallets(options.wallets);
+  if (!stored) {
+    // The short-lived wallet proof is missing or expired. Keep the account
+    // signed in only while its non-anonymous session belongs to the bound
+    // wallet and that wallet still exposes the same address; never prompts.
+    const binding = readWalletBinding();
+    const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+    if (binding && walletBindingRestorable(binding, session, wallets)) {
+      return { ...binding, expiresAt: new Date(0).toISOString(), token: '' };
+    }
+    clearSolanaWalletSession();
+    return null;
+  }
   const wallet = wallets.find((candidate) => candidate.name === stored.walletName &&
     candidate.accounts.some((account) => account.address === stored.address));
   if (!wallet) { clearSolanaWalletSession(); return null; }

@@ -58,7 +58,9 @@ export function GameWalletModal({
       window.location.replace('/');
     } catch (reason) {
       const code = reason && typeof reason === 'object' && 'code' in reason ? String(reason.code) : '';
-      setIdentityError(code === 'last_identity_required'
+      setIdentityError(code === 'wallet_session_unavailable'
+        ? 'Your wallet proof expired. Log out, reconnect Phantom, then try again.'
+        : code === 'last_identity_required'
         ? 'This wallet is your last active identity. Add another verified sign-in method before unlinking it.'
         : code === 'wallet_rate_limited'
         ? 'Too many identity changes. Wait one minute and try again.'
