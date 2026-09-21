@@ -74,7 +74,8 @@ function floaterOffset(f: FloatingNumber): { x: number; y: number } {
 function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAlive, animationMode, targeted = false }: { unit: CombatUnit; floaters: FloatingNumber[]; side: 'hero' | 'enemy'; heroData?: OwnedHero; respawnSeconds?: number; opponentAlive: boolean; animationMode: GameState['battleAnimationMode']; targeted?: boolean }) {
   const lastOutgoing = useRef(0);
   const lastIncoming = useRef(0);
-  const [attacking, setAttacking] = useState(false);
+  const [attackPhase, setAttackPhase] = useState<0 | 1 | 2>(0);
+  const attackTimer = useRef(0);
   const [hit, setHit] = useState(false);
   const [slash, setSlash] = useState(false);
   const [heal, setHeal] = useState(false);
@@ -86,17 +87,21 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
 
   useEffect(() => {
     if (!motionEnabled || !unit.alive || !opponentAlive) {
-      setAttacking(false); setHit(false); setSlash(false); setHeal(false);
-      return undefined;
+      window.clearTimeout(attackTimer.current);
+      setAttackPhase(0); setHit(false); setSlash(false); setHeal(false);
+      return;
     }
     if (outgoingEvent) {
       lastOutgoing.current = outgoingEvent.id;
-      setAttacking(true);
-      const t = setTimeout(() => setAttacking(false), 520);
-      return () => clearTimeout(t);
+      // Alternate two identical animations so every attack restarts the lunge; the reset timer must
+      // outlive this effect run (the event is consumed on the next render).
+      setAttackPhase((phase) => (phase === 1 ? 2 : 1));
+      window.clearTimeout(attackTimer.current);
+      attackTimer.current = window.setTimeout(() => setAttackPhase(0), 520);
     }
-    return undefined;
   }, [outgoingEvent, unit.alive, opponentAlive, motionEnabled]);
+
+  useEffect(() => () => window.clearTimeout(attackTimer.current), []);
 
   useEffect(() => {
     if (!motionEnabled) {
@@ -138,7 +143,15 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
     <div className={`arena-unit relative flex items-center gap-2 transition-opacity duration-300 ${side === 'enemy' ? 'flex-row-reverse' : ''} ${dungeonBoss ? 'dungeon-shared-boss' : ''} ${protectedBoss ? 'dungeon-protected-boss' : ''} ${targeted ? 'dungeon-heavy-target' : ''} ${unit.alive ? 'opacity-100' : 'opacity-40 grayscale'}`}>
       {targeted && <div className="dungeon-target-sigil" aria-hidden="true" />}
       {targeted && <div className="dungeon-target-label"><Crosshair size={11} /> HEAVY TARGET</div>}
-      {/* Floating damage numbers */}
+      {/* Unit name + HP bar + HP numbers */}
+      <div className="arena-unit-info grid h-[64px] w-[88px] shrink-0 grid-rows-[24px_10px_14px] content-center gap-1 rounded-lg border border-[#4b4234] bg-black/45 px-2 shadow-[0_6px_14px_rgba(0,0,0,.25)] sm:w-[104px]" aria-label={`${unit.name}, ${side}`}>
+        <div className={`arena-unit-name flex items-center justify-center text-center font-bold ${side === 'enemy' ? 'text-rose-200' : 'text-[#eee5d5]'}`}>{unit.name}</div>
+        <HealthBar hp={unit.hp} maxHp={unit.maxHp} color={unit.color} />
+        <div className="whitespace-nowrap text-center text-[9px] font-bold tabular-nums text-[#bdb6a9]" aria-label={`${Math.ceil(unit.hp)} of ${unit.maxHp} health`}>{formatHealth(unit.hp)} / {formatHealth(unit.maxHp)}</div>
+      </div>
+      {/* Portrait */}
+      <div className="relative">
+      {/* Floating combat numbers sit over the portrait */}
       <div className="absolute -top-4 left-1/2 -translate-x-1/2 pointer-events-none z-20 w-24 h-16">
         {myFloaters.map((f) => {
           const { x, y } = floaterOffset(f);
@@ -156,16 +169,9 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
           );
         })}
       </div>
-      {/* Unit name + HP bar + HP numbers */}
-      <div className="arena-unit-info grid h-[64px] w-[88px] shrink-0 grid-rows-[24px_10px_14px] content-center gap-1 rounded-lg border border-[#4b4234] bg-black/45 px-2 shadow-[0_6px_14px_rgba(0,0,0,.25)] sm:w-[104px]" aria-label={`${unit.name}, ${side}`}>
-        <div className={`arena-unit-name flex items-center justify-center text-center font-bold ${side === 'enemy' ? 'text-rose-200' : 'text-[#eee5d5]'}`}>{unit.name}</div>
-        <HealthBar hp={unit.hp} maxHp={unit.maxHp} color={unit.color} />
-        <div className="whitespace-nowrap text-center text-[9px] font-bold tabular-nums text-[#bdb6a9]" aria-label={`${Math.ceil(unit.hp)} of ${unit.maxHp} health`}>{formatHealth(unit.hp)} / {formatHealth(unit.maxHp)}</div>
-      </div>
-      {/* Portrait */}
       <div className={`relative ${unit.alive && motionEnabled ? 'anim-bob' : ''}`}>
         <div
-          className={`arena-portrait combatant-card relative h-16 w-16 overflow-hidden sm:h-[80px] sm:w-[80px] xl:h-[88px] xl:w-[88px] 2xl:h-[96px] 2xl:w-[96px] ${side === 'enemy' ? 'ring-1 ring-rose-950/70' : ''} ${attacking && side === 'hero' ? 'anim-attack-hero' : ''} ${attacking && side === 'enemy' ? 'anim-attack-enemy' : ''}`}
+          className={`arena-portrait combatant-card relative h-16 w-16 overflow-hidden sm:h-[80px] sm:w-[80px] xl:h-[88px] xl:w-[88px] 2xl:h-[96px] 2xl:w-[96px] ${side === 'enemy' ? 'ring-1 ring-rose-950/70' : ''} ${side === 'hero' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-hero' : 'anim-attack-hero-b') : ''} ${side === 'enemy' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-enemy' : 'anim-attack-enemy-b') : ''}`}
           style={{
             borderColor: portraitColor,
             boxShadow: unit.alive ? `inset 0 1px rgba(255,255,255,.08), inset 0 0 0 3px rgba(0,0,0,.22), 0 18px 38px rgba(0,0,0,.42), 0 0 20px ${portraitColor}22` : 'none',
@@ -185,6 +191,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
             </span>}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

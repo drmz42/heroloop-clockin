@@ -493,6 +493,8 @@ html { scroll-behavior: smooth; }
 
 /* ── Combat animations ─────────────────────────────────────────────────── */
 @keyframes unit-attack-hero  { 0%{transform:translateX(0)}40%{transform:translateX(22px) scale(1.08)}100%{transform:translateX(0)} }
+@keyframes unit-attack-hero-b  { 0%{transform:translateX(0)}40%{transform:translateX(22px) scale(1.08)}100%{transform:translateX(0)} }
+@keyframes unit-attack-enemy-b { 0%{transform:translateX(0)}40%{transform:translateX(-22px) scale(1.08)}100%{transform:translateX(0)} }
 @keyframes unit-attack-enemy { 0%{transform:translateX(0)}40%{transform:translateX(-22px) scale(1.08)}100%{transform:translateX(0)} }
 @keyframes unit-hit    { 0%,100%{filter:brightness(1)}50%{filter:brightness(2.4) saturate(1.5)} }
 @keyframes unit-die    { 0%{opacity:1;transform:scale(1) rotate(0)}100%{opacity:0;transform:scale(.6) rotate(12deg) translateY(20px)} }
@@ -521,6 +523,8 @@ html { scroll-behavior: smooth; }
 
 .anim-attack-hero  { animation:unit-attack-hero  .35s ease-out; }
 .anim-attack-enemy { animation:unit-attack-enemy .35s ease-out; }
+.anim-attack-hero-b  { animation:unit-attack-hero-b  .35s ease-out; }
+.anim-attack-enemy-b { animation:unit-attack-enemy-b .35s ease-out; }
 .anim-hit          { animation:unit-hit    .2s ease-out; }
 .anim-die          { animation:unit-die    .5s ease-in forwards; }
 .anim-float        { animation:float-up   1.5s ease-out both; }
@@ -541,7 +545,7 @@ html { scroll-behavior: smooth; }
 .anim-shake        { animation:screen-shake .3s ease-out; }
 .arena-spectacular-atmosphere { background:radial-gradient(circle at 28% 58%,rgba(83,155,255,.13),transparent 28%),radial-gradient(circle at 72% 56%,rgba(255,70,70,.13),transparent 28%),radial-gradient(ellipse at 50% 82%,rgba(246,191,79,.15),transparent 45%);animation:arena-spectacular-breathe 2.4s ease-in-out infinite;mix-blend-mode:screen; }
 .arena-mode-spectacular .arena-portrait { filter:drop-shadow(0 0 10px rgba(245,194,91,.3)); }
-.arena-mode-spectacular .anim-attack-hero,.arena-mode-spectacular .anim-attack-enemy { filter:brightness(1.25) saturate(1.2) drop-shadow(0 0 10px rgba(255,205,104,.5)); }
+.arena-mode-spectacular .anim-attack-hero,.arena-mode-spectacular .anim-attack-enemy,.arena-mode-spectacular .anim-attack-hero-b,.arena-mode-spectacular .anim-attack-enemy-b { filter:brightness(1.25) saturate(1.2) drop-shadow(0 0 10px rgba(255,205,104,.5)); }
 .arena-mode-spectacular .anim-hit { filter:brightness(1.35) saturate(1.35) drop-shadow(0 0 12px rgba(255,63,63,.58)); }
 .arena-mode-off .arena-unit,.arena-mode-off .arena-portrait,.arena-mode-off .arena-portrait img { transition:none!important;animation:none!important;transform:none!important; }
 @keyframes arena-spectacular-breathe { 0%,100%{opacity:.55}50%{opacity:1} }
