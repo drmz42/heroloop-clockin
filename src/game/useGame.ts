@@ -32,7 +32,6 @@ import type { CombatTimelineEvent } from '../../supabase/functions/player-sync/c
 const COMBAT_SPEED = 1;
 const COMBAT_LOOP_INTERVAL_MS = 50;
 const FLOATER_LIFETIME_MS = 1_500;
-const REWARD_FLOATER_LIFETIME_MS = 2_600;
 const MAX_LIVE_FLOATERS = 36;
 const NORMAL_COMBAT_START_INTERVAL_MS = 3_100;
 const COMBAT_PRESENTATION_INTERVAL_MS: Record<GameState['battleAnimationMode'], number> = {
@@ -931,18 +930,6 @@ export function useGame() {
             return due;
           })() : events.map((event) => ({ ...event, sourceUid: 'sourceUid' in event ? event.sourceUid : event.targetUid }));
           presentationEvents.forEach((event) => newFloaters.push(combatFloater(event, floaterId.current++, now)));
-          const rewardLocation = buildLocation(stateRef.current.currentLocation, stateRef.current.team.length, stateRef.current.bossBattleActive);
-          const finalHeroes = finalUnits.filter((fighter) => fighter.side === 'hero');
-          const finalEnemies = finalUnits.filter((fighter) => fighter.side === 'enemy');
-          finalEnemies.forEach((unit, lane) => {
-            const previous = live.find((candidate) => candidate.uid === unit.uid);
-            if (unit.side === 'enemy' && previous?.alive && !unit.alive) {
-              newFloaters.push({
-                id: floaterId.current++, targetUid: finalHeroes[lane]?.uid ?? unit.uid, value: 0, crit: false, heal: false,
-                rewardGold: rewardLocation.goldReward, rewardXp: rewardLocation.xpReward, born: now,
-              });
-            }
-          });
           finalUnits.forEach((u) => {
             if (u.side === 'hero') heroHpRef.current.set(u.uid, u.hp);
           });
@@ -1036,7 +1023,7 @@ export function useGame() {
         timer = 0;
         const now = performance.now();
         setFloaters((current) => {
-          const next = current.filter((floater) => now - floater.born < (floater.rewardGold !== undefined ? REWARD_FLOATER_LIFETIME_MS : FLOATER_LIFETIME_MS));
+          const next = current.filter((floater) => now - floater.born < FLOATER_LIFETIME_MS);
           return next.length === current.length ? current : next;
         });
         schedule();

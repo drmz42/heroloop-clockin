@@ -168,8 +168,6 @@ export interface FloatingNumber {
   crit: boolean;
   heal: boolean;
   miss?: boolean;
-  rewardGold?: number;
-  rewardXp?: number;
   born: number;
   sourceUid?: string;
   label?: string;
