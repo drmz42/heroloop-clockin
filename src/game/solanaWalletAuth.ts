@@ -13,7 +13,7 @@ import { StandardConnect, type StandardConnectFeature } from '@wallet-standard/f
 const MAX_CHALLENGE_BYTES = 8_192;
 const MAX_CLOCK_SKEW_MS = 30_000;
 const CHALLENGE_LIFETIME_MS = 5 * 60 * 1_000;
-const SIWS_STATEMENT = 'Signing is free, proves wallet ownership, moves no funds and costs no gas.';
+const SIWS_STATEMENT = 'Sign in to HeroLoop. This will not trigger a transaction or cost gas.';
 const BASE58_ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -132,7 +132,7 @@ function hasExactKeys(value: Record<string, unknown>, keys: readonly string[]): 
 }
 
 function canonicalMessage(input: SiwsSignInInput): string {
-  return `${input.domain} wants you to sign in with your Solana account:\n${input.address}\n\n${input.statement}\n\nURI: ${input.uri}\nVersion: ${input.version}\nChain ID: ${input.chainId}\nNonce: ${input.nonce}\nIssued At: ${input.issuedAt}\nExpiration Time: ${input.expirationTime}\nRequest ID: ${input.requestId}`;
+  return `${input.domain} wants you to sign in with your Solana account:\n${input.address}\n\n${input.statement}\n\nURI: ${input.uri}\nVersion: ${input.version}\nNonce: ${input.nonce}\nIssued At: ${input.issuedAt}`;
 }
 
 function parseChallenge(value: unknown, address: string, now: number): Challenge {
@@ -330,7 +330,9 @@ export async function createSolanaWalletProof(wallet: Wallet, options: SolanaWal
   if (canSignIn) {
     let outputs: readonly SolanaSignInOutput[];
     try {
-      outputs = await signIn.call(signInFeature, challenge.signInInput);
+      const { address, domain, issuedAt, nonce, statement, uri, version } = challenge.signInInput;
+      // Send only the signed fields so the wallet builds exactly the compact message.
+      outputs = await signIn.call(signInFeature, { address, domain, issuedAt, nonce, statement, uri, version });
     } catch (error) {
       if (isUserRejected(error)) return fail('wallet_signature_rejected');
       if (!canSignMessage) {

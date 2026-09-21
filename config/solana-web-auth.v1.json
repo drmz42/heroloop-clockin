@@ -19,11 +19,12 @@
     "legacyFallback": "connect-plus-signMessage-with-identical-server-fields",
     "transactionSignatureForbidden": true,
     "serverGeneratesInput": true,
+    "signedMessageFields": ["domain", "address", "statement", "uri", "version", "nonce", "issuedAt"],
     "requiredFields": ["domain", "address", "statement", "uri", "version", "chainId", "nonce", "issuedAt", "expirationTime", "requestId"],
     "version": "1",
     "nonceMinimumEntropyBits": 128,
     "maximumLifetimeMinutes": 5,
-    "statement": "Signing is free, proves wallet ownership, moves no funds and costs no gas."
+    "statement": "Sign in to HeroLoop. This will not trigger a transaction or cost gas."
   },
   "serverVerification": {
     "abnfMessageParsingRequired": true,

@@ -16,7 +16,7 @@ const DOMAIN_PATTERN =
 
 export const SIWS_CHALLENGE_LIFETIME_MS = 5 * 60 * 1000;
 export const SIWS_STATEMENT =
-  "Signing is free, proves wallet ownership, moves no funds and costs no gas.";
+  "Sign in to HeroLoop. This will not trigger a transaction or cost gas.";
 
 export type SiwsChallengeRequest = {
   address: string;
@@ -123,7 +123,7 @@ function toHex(bytes: Uint8Array): string {
 }
 
 function createSiwsMessage(input: SiwsSignInInput): string {
-  return `${input.domain} wants you to sign in with your Solana account:\n${input.address}\n\n${input.statement}\n\nURI: ${input.uri}\nVersion: ${input.version}\nChain ID: ${input.chainId}\nNonce: ${input.nonce}\nIssued At: ${input.issuedAt}\nExpiration Time: ${input.expirationTime}\nRequest ID: ${input.requestId}`;
+  return `${input.domain} wants you to sign in with your Solana account:\n${input.address}\n\n${input.statement}\n\nURI: ${input.uri}\nVersion: ${input.version}\nNonce: ${input.nonce}\nIssued At: ${input.issuedAt}`;
 }
 
 export function createSiwsChallenge(

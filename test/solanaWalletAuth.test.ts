@@ -8,7 +8,7 @@ import { createSolanaWalletProof, SolanaWalletAuthError } from '../src/game/sola
 const NOW = Date.parse('2026-09-13T00:00:00.000Z');
 const ADDRESS = '11111111111111111111111111111111';
 const REQUEST_ID = '123e4567-e89b-42d3-a456-426614174000';
-const MESSAGE = `test.invalid wants you to sign in with your Solana account:\n${ADDRESS}\n\nSigning is free, proves wallet ownership, moves no funds and costs no gas.\n\nURI: https://test.invalid/\nVersion: 1\nChain ID: solana:devnet\nNonce: abcdef0123456789abcdef0123456789\nIssued At: 2026-09-13T00:00:00.000Z\nExpiration Time: 2026-09-13T00:05:00.000Z\nRequest ID: ${REQUEST_ID}`;
+const MESSAGE = `test.invalid wants you to sign in with your Solana account:\n${ADDRESS}\n\nSign in to HeroLoop. This will not trigger a transaction or cost gas.\n\nURI: https://test.invalid/\nVersion: 1\nNonce: abcdef0123456789abcdef0123456789\nIssued At: 2026-09-13T00:00:00.000Z`;
 
 function account(features: readonly string[] = [SolanaSignIn, SolanaSignMessage]): WalletAccount {
   return {
@@ -34,7 +34,7 @@ function challengeResponse(overrides: Record<string, unknown> = {}): Response {
         issuedAt: '2026-09-13T00:00:00.000Z',
         nonce: 'abcdef0123456789abcdef0123456789',
         requestId: REQUEST_ID,
-        statement: 'Signing is free, proves wallet ownership, moves no funds and costs no gas.',
+        statement: 'Sign in to HeroLoop. This will not trigger a transaction or cost gas.',
         uri: 'https://test.invalid/',
         version: '1',
       },
@@ -99,7 +99,7 @@ test('prefers solana:signIn and returns a bounded server-verification payload', 
       },
     },
   }), options);
-  assert.equal((input as { requestId: string }).requestId, REQUEST_ID);
+  assert.deepEqual(Object.keys(input as Record<string, unknown>).sort(), ['address', 'domain', 'issuedAt', 'nonce', 'statement', 'uri', 'version']);
   assert.equal(proof.method, SolanaSignIn);
   assert.equal(proof.address, ADDRESS);
   assert.equal(proof.request_id, REQUEST_ID);

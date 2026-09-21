@@ -112,7 +112,7 @@ Deno.test("rejects invalid Ed25519 signatures", async () => {
   await rejects(() => verifySiwsProof(invalidProof, CONFIG, NOW));
 });
 
-Deno.test("rejects public-key, address and request-ID mismatches", async () => {
+Deno.test("rejects public-key, address and malformed request-ID", async () => {
   const first = await fixture();
   const second = await fixture();
   await rejects(() =>
@@ -129,16 +129,14 @@ Deno.test("rejects public-key, address and request-ID mismatches", async () => {
       NOW,
     )
   );
+  // The compact message carries no request ID; challenge consumption binds
+  // request_id to the stored nonce, message and wallet hashes instead.
   await rejects(() =>
-    verifySiwsProof(
-      { ...first.proof, request_id: "223e4567-e89b-42d3-a456-426614174000" },
-      CONFIG,
-      NOW,
-    )
+    verifySiwsProof({ ...first.proof, request_id: "untrusted" }, CONFIG, NOW)
   );
 });
 
-Deno.test("rejects domain, URI and chain substitution", async () => {
+Deno.test("rejects domain and URI substitution", async () => {
   const { proof } = await fixture();
   await rejects(() =>
     verifySiwsProof(proof, {
@@ -152,9 +150,6 @@ Deno.test("rejects domain, URI and chain substitution", async () => {
       ...CONFIG,
       uri: "https://staging.heroloop.xyz/auth",
     }, NOW)
-  );
-  await rejects(() =>
-    verifySiwsProof(proof, { ...CONFIG, chainId: "solana:mainnet" }, NOW)
   );
 });
 

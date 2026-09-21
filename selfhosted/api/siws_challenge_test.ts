@@ -58,11 +58,8 @@ Deno.test("creates one deterministic five-minute SIWS challenge", () => {
         `${SIWS_STATEMENT}\n\n` +
         "URI: https://staging.heroloop.xyz/\n" +
         "Version: 1\n" +
-        "Chain ID: solana:devnet\n" +
         `Nonce: ${"ab".repeat(16)}\n` +
-        "Issued At: 2026-09-12T12:00:00.000Z\n" +
-        "Expiration Time: 2026-09-12T12:05:00.000Z\n" +
-        "Request ID: 123e4567-e89b-42d3-a456-426614174000",
+        "Issued At: 2026-09-12T12:00:00.000Z",
     "canonical SIWS text differs",
   );
 });

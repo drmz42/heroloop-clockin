@@ -11,7 +11,7 @@ const DOMAIN_PATTERN =
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const MESSAGE_PATTERN =
-  /^(?<domain>[^\r\n]{1,253}) wants you to sign in with your Solana account:\n(?<address>[1-9A-HJ-NP-Za-km-z]{32,44})\n\n(?<statement>[^\r\n]+)\n\nURI: (?<uri>[^\r\n]{1,2048})\nVersion: (?<version>[^\r\n]+)\nChain ID: (?<chainId>[^\r\n]+)\nNonce: (?<nonce>[^\r\n]+)\nIssued At: (?<issuedAt>[^\r\n]+)\nExpiration Time: (?<expirationTime>[^\r\n]+)\nRequest ID: (?<requestId>[^\r\n]+)$/;
+  /^(?<domain>[^\r\n]{1,253}) wants you to sign in with your Solana account:\n(?<address>[1-9A-HJ-NP-Za-km-z]{32,44})\n\n(?<statement>[^\r\n]+)\n\nURI: (?<uri>[^\r\n]{1,2048})\nVersion: (?<version>[^\r\n]+)\nNonce: (?<nonce>[^\r\n]+)\nIssued At: (?<issuedAt>[^\r\n]+)$/;
 const MAX_MESSAGE_BYTES = 4_096;
 const MAX_CLOCK_SKEW_MS = 30_000;
 
@@ -223,7 +223,9 @@ export async function evaluateSiwsProof(
   }
   const fields = parseMessage(message);
   const issuedAt = exactUtc(fields.issuedAt);
-  const expirationTime = exactUtc(fields.expirationTime);
+  // Expiry and request binding are server-owned: the challenge row stores the
+  // five-minute expiry and the message hash, so they are not signed text.
+  const expirationTime = issuedAt + SIWS_CHALLENGE_LIFETIME_MS;
   let messageUri: URL;
   try {
     messageUri = new URL(fields.uri);
@@ -232,16 +234,14 @@ export async function evaluateSiwsProof(
   }
   if (
     fields.domain !== config.domain || fields.uri !== config.uri ||
-    fields.chainId !== config.chainId || fields.address !== proof.address ||
+    fields.address !== proof.address ||
     !exactBytes(publicKeyFromSolanaAddress(proof.address), publicKey) ||
     fields.statement !== SIWS_STATEMENT || fields.version !== "1" ||
     !/^[0-9a-f]{32}$/.test(fields.nonce) ||
-    !UUID_PATTERN.test(fields.requestId) ||
-    fields.requestId !== proof.request_id ||
+    !UUID_PATTERN.test(proof.request_id) ||
     messageUri.protocol !== "https:" || messageUri.host !== fields.domain ||
     issuedAt > now.getTime() + MAX_CLOCK_SKEW_MS ||
-    expirationTime <= now.getTime() ||
-    expirationTime - issuedAt !== SIWS_CHALLENGE_LIFETIME_MS
+    expirationTime <= now.getTime()
   ) fail();
 
   let verificationKey: CryptoKey;
@@ -270,12 +270,12 @@ export async function evaluateSiwsProof(
   return {
     proof: {
       address: proof.address,
-      expirationTime: fields.expirationTime,
+      expirationTime: new Date(expirationTime).toISOString(),
       issuedAt: fields.issuedAt,
       message,
       method: proof.method,
       nonce: fields.nonce,
-      requestId: fields.requestId,
+      requestId: proof.request_id,
     },
     signatureValid: validSignature,
   };
