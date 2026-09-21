@@ -131,7 +131,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
   const tok = tokenomics;
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
   const battleAnimationLabel = state.battleAnimationMode === 'spectacular' ? 'Maximum' : state.battleAnimationMode === 'light' ? 'Medium' : 'Minimum';
-  const [banner, setBanner] = useState<string | null>(null);
+  const [banner, setBanner] = useState<typeof battleResult>(null);
   const [showPotSettings, setShowPotSettings] = useState(false);
   const [showBattleSettings, setShowBattleSettings] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
@@ -156,9 +156,16 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
   const locationRailRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (battleResult) { setBanner(battleResult.win ? 'VICTORY' : 'DEFEAT'); const t = setTimeout(() => setBanner(null), 2600); return () => clearTimeout(t); }
-    return undefined;
+    // The banner keeps its own snapshot: the next wave clears battleResult
+    // within ~250ms, which must not cut the reward tile short.
+    if (battleResult) setBanner(battleResult);
   }, [battleResult]);
+
+  useEffect(() => {
+    if (!banner) return undefined;
+    const t = setTimeout(() => setBanner(null), 2600);
+    return () => clearTimeout(t);
+  }, [banner]);
 
   useEffect(() => {
     if (selectedHeroUid && !state.team.includes(selectedHeroUid)) setSelectedHeroUid(state.team[0] ?? null);
@@ -195,9 +202,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
     return `${action} failed · ${(EQUIPMENT_ERROR_LABELS[code] ?? code) || 'unknown error'}`;
   };
 
-  const drop = battleResult?.drop;
+  const drop = banner?.drop;
   const dropBase = drop ? ITEM_MAP[drop.itemId] : null;
-  const hasBattleRewards = Boolean(battleResult && (battleResult.gold > 0 || battleResult.xp > 0 || dropBase || battleResult.chest));
+  const hasBattleRewards = Boolean(banner && (banner.gold > 0 || banner.xp > 0 || dropBase || banner.chest));
   const power = game.teamPower();
   const selectedHero = selectedHeroUid ? state.ownedHeroes.find(h => h.uid === selectedHeroUid) : null;
   const selectedHeroBase = selectedHero ? HERO_MAP[selectedHero.heroId] : null;
@@ -534,13 +541,13 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
           </div>
           {!activeDungeon && banner && (
             <div className="absolute inset-x-0 top-1/4 flex flex-col items-center z-30 pointer-events-none">
-              <div className={`anim-banner font-pixel text-xl sm:text-2xl tracking-wider ${banner === 'VICTORY' ? 'text-px-bright' : 'text-px-red'}`} style={{ textShadow: banner === 'VICTORY' ? '0 0 20px #f5c518' : '0 0 20px #c02010' }}>{banner}</div>
-              {hasBattleRewards && battleResult && (
+              <div className={`anim-banner font-pixel text-xl sm:text-2xl tracking-wider ${banner.win ? 'text-px-bright' : 'text-px-red'}`} style={{ textShadow: banner.win ? '0 0 20px #f5c518' : '0 0 20px #c02010' }}>{banner.win ? 'VICTORY' : 'DEFEAT'}</div>
+              {hasBattleRewards && (
                 <div className="anim-banner stat-tile mt-2 flex flex-wrap items-center justify-center gap-2 px-3 py-2 font-vt text-sm">
-                  {battleResult.gold > 0 && <span className="text-amber-300">+{formatNum(battleResult.gold)}g</span>}
-                  {battleResult.xp > 0 && <span className="text-emerald-300">+{formatNum(battleResult.xp)} XP</span>}
+                  {banner.gold > 0 && <span className="text-amber-300">+{formatNum(banner.gold)}g</span>}
+                  {banner.xp > 0 && <span className="text-emerald-300">+{formatNum(banner.xp)} XP</span>}
                   {dropBase && <span style={{ color: RARITY_COLORS[dropBase.rarity] }} className="flex items-center gap-1"><Package size={11} /> {dropBase.name}</span>}
-                  {battleResult.chest && <span className="text-amber-200 flex items-center gap-1">+1 chest</span>}
+                  {banner.chest && <span className="text-amber-200 flex items-center gap-1">+1 chest</span>}
                 </div>
               )}
             </div>
