@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run check:game-functions:integration && npm run check:game-functions:registry && node scripts/check-todo-task-routing.mjs && node scripts/check-todo-table-contract.mjs && node scripts/check-storage-passports.mjs && node scripts/check-storage-retention-report.mjs && node scripts/check-storage-retention-apply.mjs && vite build",
+    "build": "npm run check:game-functions:integration && npm run check:game-functions:registry && node scripts/check-todo-task-routing.mjs && node scripts/check-todo-table-contract.mjs && node scripts/check-storage-passports.mjs && node scripts/check-storage-retention-report.mjs && node scripts/check-storage-retention-apply.mjs && node scripts/check-agent-tooling.mjs && vite build",
     "check:ascension-focus": "node scripts/check-ascension-focus-contract.mjs",
     "check:balance-version": "node scripts/check-balance-version-contract.mjs",
     "check:balance-telemetry": "node scripts/check-balance-telemetry-contract.mjs",
@@ -52,6 +52,8 @@
     "check:storage-passports": "node scripts/check-storage-passports.mjs",
     "check:storage-retention": "node scripts/check-storage-retention-report.mjs",
     "check:storage-retention-apply": "node scripts/check-storage-retention-apply.mjs",
+    "check:agent-tooling": "node scripts/check-agent-tooling.mjs",
+    "sync:claude-skills": "node scripts/sync-claude-skills.mjs",
     "check:combat-effects": "node scripts/check-combat-effect-registry.mjs",
     "check:combat-effects-v2": "node scripts/check-combat-effect-registry-v2.mjs",
     "check:combat-effects-v2-settlement": "node scripts/check-combat-effects-v2-settlement.mjs",
