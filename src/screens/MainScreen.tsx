@@ -130,7 +130,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
   const { state, battleResult, respawnCountdowns, paused, setPaused } = game;
   const tok = tokenomics;
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
-  const battleAnimationLabel = state.battleAnimationMode === 'spectacular' ? 'High' : state.battleAnimationMode === 'light' ? 'Standard' : 'Light';
+  const battleAnimationLabel = state.battleAnimationMode === 'spectacular' ? 'Maximum' : state.battleAnimationMode === 'light' ? 'Medium' : 'Minimum';
   const [banner, setBanner] = useState<string | null>(null);
   const [showPotSettings, setShowPotSettings] = useState(false);
   const [showBattleSettings, setShowBattleSettings] = useState(false);
@@ -521,13 +521,13 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
               {showPotSettings && <PotionSettings game={game} onClose={() => setShowPotSettings(false)} />}
             </div> : <div className="game-control flex h-9 items-center gap-2 border-violet-500/60 bg-violet-950/40 px-3 text-[9px] font-black uppercase text-violet-200"><DoorOpen size={15} /> {activeDungeon.type === 'boss_hunt' ? 'Boss Hunt' : `Depth ${activeDungeon.depth} · Room ${activeDungeon.room}/4`}</div>}
             <div className="relative">
-              <button type="button" onClick={() => setShowBattleSettings((value) => !value)} className="game-control flex h-7 items-center gap-1.5 px-2 text-[9px] font-black uppercase" aria-label="Battle animation settings" aria-expanded={showBattleSettings}><Settings2 size={14} /><span className="hidden sm:inline">{battleAnimationLabel}</span></button>
+              <button type="button" onClick={() => setShowBattleSettings((value) => !value)} className="game-control flex h-7 items-center gap-1.5 px-2 text-[9px] font-black uppercase" aria-label="Battle graphics quality settings" aria-expanded={showBattleSettings}><Settings2 size={14} /><span className="hidden sm:inline">{battleAnimationLabel}</span></button>
               {showBattleSettings && <div className="absolute left-0 top-full z-[111] mt-1 w-56 rounded-lg border border-[#80683f] bg-[#11130f]/97 p-2 shadow-2xl backdrop-blur-sm">
-                <div className="mb-1.5 text-[9px] font-black uppercase tracking-[.14em] text-[#efd18a]">Battle animation</div>
+                <div className="mb-1.5 text-[9px] font-black uppercase tracking-[.14em] text-[#efd18a]">Battle graphics</div>
                 {([
-                  ['spectacular', 'High', 'Maximum battle effects'],
-                  ['light', 'Standard', 'Normal battle movement and effects'],
-                  ['off', 'Light', 'Static portraits; essential feedback only'],
+                  ['spectacular', 'Maximum', 'Full battle movement and effects'],
+                  ['light', 'Medium', 'Standard battle movement and effects'],
+                  ['off', 'Minimum', 'Static portraits; essential feedback only'],
                 ] as const).map(([mode, label, description]) => <button key={mode} type="button" onClick={() => { game.setBattleAnimationMode(mode); setShowBattleSettings(false); }} className={`mt-1 w-full rounded-md border px-2 py-1.5 text-left ${state.battleAnimationMode === mode ? 'border-amber-400/60 bg-amber-400/12' : 'border-white/10 bg-black/25 hover:border-white/20'}`}><span className="block text-[10px] font-black text-[#e8decd]">{label}</span><span className="block text-[8px] text-[#8f887b]">{description}</span></button>)}
               </div>}
             </div>

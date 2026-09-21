@@ -153,23 +153,25 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
       {/* Portrait */}
       <div className={`relative ${unit.alive && motionEnabled ? 'anim-bob' : ''}`}>
         <div
-          className={`arena-portrait combatant-card relative h-16 w-16 overflow-hidden sm:h-[80px] sm:w-[80px] xl:h-[88px] xl:w-[88px] 2xl:h-[96px] 2xl:w-[96px] ${side === 'enemy' ? 'ring-1 ring-rose-950/70' : ''} ${hit ? 'anim-hit' : ''} ${attacking && side === 'hero' ? 'anim-attack-hero' : ''} ${attacking && side === 'enemy' ? 'anim-attack-enemy' : ''}`}
+          className={`arena-portrait combatant-card relative h-16 w-16 overflow-hidden sm:h-[80px] sm:w-[80px] xl:h-[88px] xl:w-[88px] 2xl:h-[96px] 2xl:w-[96px] ${side === 'enemy' ? 'ring-1 ring-rose-950/70' : ''} ${attacking && side === 'hero' ? 'anim-attack-hero' : ''} ${attacking && side === 'enemy' ? 'anim-attack-enemy' : ''}`}
           style={{
             borderColor: portraitColor,
             boxShadow: unit.alive ? `inset 0 1px rgba(255,255,255,.08), inset 0 0 0 3px rgba(0,0,0,.22), 0 18px 38px rgba(0,0,0,.42), 0 0 20px ${portraitColor}22` : 'none',
           }}
         >
-          {portraitSrc && !artFailed ? <img src={portraitSrc} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" style={{ ...portraitCrop, filter: unit.alive ? 'none' : 'grayscale(1)' }} onError={() => setArtFailed(true)} /> : <span className="grid h-full w-full place-items-center text-3xl sm:text-4xl select-none" style={{ filter: unit.alive ? 'none' : 'grayscale(1)' }}>{unit.icon}</span>}
-          {!unit.alive && <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/65"><Skull size={30} className="text-[#d9d1c3] drop-shadow-[0_0_8px_rgba(0,0,0,.9)]" />{side === 'hero' && Boolean(respawnSeconds) && <strong className="mt-0.5 rounded bg-black/75 px-1.5 py-0.5 text-[10px] tabular-nums text-rose-300">{respawnSeconds}s</strong>}<span className="sr-only">Dead</span></span>}
-          {unit.alive && slash && <div className="anim-slash absolute inset-0 flex items-center justify-center text-4xl pointer-events-none">⚡</div>}
-          {unit.alive && heal && <div className="anim-heal absolute inset-0 flex items-center justify-center text-3xl pointer-events-none">💚</div>}
-          {side === 'hero' && heroData && <span className="battle-hero-level" aria-label={`Hero level ${heroData.level}`}>Lv {heroData.level}</span>}
-          {side === 'hero' && heroData && <BattleHeroStars stars={heroData.stars} />}
-          {side === 'enemy' && unit.role && <span className="enemy-role-badge">{unit.role}</span>}
-          {side === 'enemy' && unit.eliteAffix && <span className="enemy-elite-badge">ELITE · {unit.eliteAffix.replace('-', ' ')}</span>}
-          {side === 'enemy' && (Boolean(unit.shield) || Boolean(unit.curseRemainingMs) || unit.enraged || unit.summoned) && <span className="enemy-status-badges" aria-label="Enemy combat statuses">
-            {Boolean(unit.shield) && <i title="Barrier">◆</i>}{Boolean(unit.curseRemainingMs) && <i title="Curse">☾</i>}{unit.enraged && <i title="Enraged">🔥</i>}{unit.summoned && <i title="Summoned">✦</i>}
-          </span>}
+          <div className={`arena-portrait-impact-layer absolute inset-0 ${hit ? 'anim-hit' : ''}`}>
+            {portraitSrc && !artFailed ? <img src={portraitSrc} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" style={{ ...portraitCrop, filter: unit.alive ? 'none' : 'grayscale(1)' }} onError={() => setArtFailed(true)} /> : <span className="grid h-full w-full place-items-center text-3xl sm:text-4xl select-none" style={{ filter: unit.alive ? 'none' : 'grayscale(1)' }}>{unit.icon}</span>}
+            {!unit.alive && <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/65"><Skull size={30} className="text-[#d9d1c3] drop-shadow-[0_0_8px_rgba(0,0,0,.9)]" />{side === 'hero' && Boolean(respawnSeconds) && <strong className="mt-0.5 rounded bg-black/75 px-1.5 py-0.5 text-[10px] tabular-nums text-rose-300">{respawnSeconds}s</strong>}<span className="sr-only">Dead</span></span>}
+            {unit.alive && slash && <div className="anim-slash absolute inset-0 flex items-center justify-center text-4xl pointer-events-none">⚡</div>}
+            {unit.alive && heal && <div className="anim-heal absolute inset-0 flex items-center justify-center text-3xl pointer-events-none">💚</div>}
+            {side === 'hero' && heroData && <span className="battle-hero-level" aria-label={`Hero level ${heroData.level}`}>Lv {heroData.level}</span>}
+            {side === 'hero' && heroData && <BattleHeroStars stars={heroData.stars} />}
+            {side === 'enemy' && unit.role && <span className="enemy-role-badge">{unit.role}</span>}
+            {side === 'enemy' && unit.eliteAffix && <span className="enemy-elite-badge">ELITE · {unit.eliteAffix.replace('-', ' ')}</span>}
+            {side === 'enemy' && (Boolean(unit.shield) || Boolean(unit.curseRemainingMs) || unit.enraged || unit.summoned) && <span className="enemy-status-badges" aria-label="Enemy combat statuses">
+              {Boolean(unit.shield) && <i title="Barrier">◆</i>}{Boolean(unit.curseRemainingMs) && <i title="Curse">☾</i>}{unit.enraged && <i title="Enraged">🔥</i>}{unit.summoned && <i title="Summoned">✦</i>}
+            </span>}
+          </div>
         </div>
       </div>
     </div>

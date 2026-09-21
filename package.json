@@ -46,6 +46,7 @@
     "check:vps2-recovery-codex": "node scripts/check-vps2-recovery-codex.mjs",
     "check:combat-regression": "node scripts/check-combat-regression-matrix.mjs",
     "check:combat-runtime": "node scripts/check-combat-runtime.mjs",
+    "check:battle-animation-ui": "node scripts/check-battle-animation-ui.mjs",
     "check:combat-effects": "node scripts/check-combat-effect-registry.mjs",
     "check:combat-effects-v2": "node scripts/check-combat-effect-registry-v2.mjs",
     "check:combat-effects-v2-settlement": "node scripts/check-combat-effects-v2-settlement.mjs",
