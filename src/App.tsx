@@ -27,7 +27,10 @@ import { clearLegacyState } from '@/game/state';
 import {
   compatibleSolanaWallets,
   restoreSolanaWalletSession,
+  readWalletBinding,
   revokeSolanaWalletSession,
+  setWalletBindingBoost,
+  walletBindingExpired,
   solanaAuthEnabled,
   watchSolanaWalletSession,
 } from '@/game/solanaWalletSession';
@@ -90,6 +93,11 @@ function App() {
   const serverTokenBalance = tokenomics.status?.token_balance;
   const resourceState = tokenomics.status?.resource_state;
   const resourceRevision = tokenomics.status?.resource_revision;
+  const boostActiveKnown = tokenomics.status ? Boolean(tokenomics.status.boost?.active) : undefined;
+  useEffect(() => {
+    // Boost Max extends the wallet sign-in limit from 8 to 24 hours.
+    if (boostActiveKnown !== undefined) setWalletBindingBoost(boostActiveKnown);
+  }, [boostActiveKnown]);
 
   useEffect(() => {
     if (!serverStateReady) legacyStateRef.current = game.state;
@@ -101,6 +109,7 @@ function App() {
     setAccountGate('checking');
     let stopWalletEvents: () => void = () => undefined;
     let walletBoundSession = false;
+    let limitTimer: number | undefined;
     const loadAccount = async () => {
       if (solanaAuthEnabled) {
         const current = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
@@ -121,6 +130,12 @@ function App() {
           }
           walletBoundSession = true;
           if (!cancelled) setLinkedWalletAddress(walletSession.address);
+          limitTimer = window.setInterval(() => {
+            const binding = readWalletBinding();
+            if (!binding || !walletBindingExpired(binding)) return;
+            void revokeSolanaWalletSession('logout').finally(() =>
+              supabase.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/')));
+          }, 60_000);
           stopWalletEvents = watchSolanaWalletSession(walletSession, wallet, (reason) => {
             void revokeSolanaWalletSession(reason).finally(() =>
               supabase.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/')));
@@ -182,7 +197,7 @@ function App() {
       });
     };
     document.addEventListener('visibilitychange', onFocus);
-    return () => { cancelled = true; stopWalletEvents(); document.removeEventListener('visibilitychange', onFocus); };
+    return () => { cancelled = true; stopWalletEvents(); window.clearInterval(limitTimer); document.removeEventListener('visibilitychange', onFocus); };
   }, [accountCheckAttempt, hydrateServerState]);
 
   const [linkedWalletAddress, setLinkedWalletAddress] = useState<string | null>(null);

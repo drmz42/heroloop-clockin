@@ -4,6 +4,10 @@ import type { Wallet, WalletAccount } from '@wallet-standard/base';
 import {
   clearWalletBinding,
   readWalletBinding,
+  setWalletBindingBoost,
+  WALLET_SESSION_BOOST_LIMIT_MS,
+  WALLET_SESSION_LIMIT_MS,
+  walletBindingExpired,
   walletBindingRestorable,
   writeWalletBinding,
   type WalletBinding,
@@ -14,6 +18,8 @@ const BINDING: WalletBinding = {
   accountId: '123e4567-e89b-42d3-a456-426614174000',
   address: ADDRESS,
   authSubjectId: '223e4567-e89b-42d3-a456-426614174001',
+  boostMax: false,
+  signedInAt: 1_800_000_000_000,
   walletName: 'Phantom',
 };
 
@@ -42,7 +48,7 @@ test('stores only a non-secret wallet binding and can clear it', () => {
   const store = memoryStore();
   writeWalletBinding(BINDING, store);
   assert.deepEqual(readWalletBinding(store), BINDING);
-  assert.deepEqual(Object.keys(JSON.parse(store.getItem('heroloop.siws.wallet-binding.v1')!)).sort(), ['accountId', 'address', 'authSubjectId', 'walletName']);
+  assert.deepEqual(Object.keys(JSON.parse(store.getItem('heroloop.siws.wallet-binding.v1')!)).sort(), ['accountId', 'address', 'authSubjectId', 'boostMax', 'signedInAt', 'walletName']);
   clearWalletBinding(store);
   assert.equal(readWalletBinding(store), null);
 });
@@ -50,6 +56,12 @@ test('stores only a non-secret wallet binding and can clear it', () => {
 test('rejects malformed or tampered bindings', () => {
   const store = memoryStore();
   store.setItem('heroloop.siws.wallet-binding.v1', JSON.stringify({ ...BINDING, address: 'not-an-address' }));
+  assert.equal(readWalletBinding(store), null);
+  store.setItem('heroloop.siws.wallet-binding.v1', JSON.stringify({ ...BINDING, signedInAt: 0 }));
+  assert.equal(readWalletBinding(store), null);
+  const withoutBoost: Partial<WalletBinding> = { ...BINDING };
+  delete withoutBoost.boostMax;
+  store.setItem('heroloop.siws.wallet-binding.v1', JSON.stringify(withoutBoost));
   assert.equal(readWalletBinding(store), null);
   store.setItem('heroloop.siws.wallet-binding.v1', '{"accountId":');
   assert.equal(readWalletBinding(store), null);
@@ -65,4 +77,28 @@ test('restores only for the same non-anonymous account and still-exposed wallet'
   assert.equal(walletBindingRestorable(BINDING, session, [wallet('Phantom', '11111111111111111111111111111113')]), false);
   assert.equal(walletBindingRestorable(BINDING, session, [wallet('Solflare', ADDRESS)]), false);
   assert.equal(walletBindingRestorable(BINDING, session, []), false);
+});
+
+test('a sign-in lasts 8 hours, or 24 hours with Boost Max', () => {
+  assert.equal(WALLET_SESSION_LIMIT_MS, 8 * 3_600_000);
+  assert.equal(WALLET_SESSION_BOOST_LIMIT_MS, 24 * 3_600_000);
+  const at = BINDING.signedInAt;
+  assert.equal(walletBindingExpired(BINDING, at + WALLET_SESSION_LIMIT_MS - 1), false);
+  assert.equal(walletBindingExpired(BINDING, at + WALLET_SESSION_LIMIT_MS), true);
+  const boosted = { ...BINDING, boostMax: true };
+  assert.equal(walletBindingExpired(boosted, at + WALLET_SESSION_LIMIT_MS + 1), false);
+  assert.equal(walletBindingExpired(boosted, at + WALLET_SESSION_BOOST_LIMIT_MS - 1), false);
+  assert.equal(walletBindingExpired(boosted, at + WALLET_SESSION_BOOST_LIMIT_MS), true);
+});
+
+test('Boost Max state is stored on an existing binding only', () => {
+  const store = memoryStore();
+  setWalletBindingBoost(true, store);
+  assert.equal(readWalletBinding(store), null);
+  writeWalletBinding(BINDING, store);
+  setWalletBindingBoost(true, store);
+  assert.equal(readWalletBinding(store)?.boostMax, true);
+  assert.equal(readWalletBinding(store)?.signedInAt, BINDING.signedInAt);
+  setWalletBindingBoost(false, store);
+  assert.equal(readWalletBinding(store)?.boostMax, false);
 });

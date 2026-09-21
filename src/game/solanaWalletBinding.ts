@@ -14,8 +14,20 @@ export type WalletBinding = {
   accountId: string;
   address: string;
   authSubjectId: string;
+  /** Last server-confirmed Boost Max state; it extends the session limit. */
+  boostMax: boolean;
+  /** Epoch milliseconds of the wallet sign-in that created this binding. */
+  signedInAt: number;
   walletName: string;
 };
+
+/** A sign-in lasts as long as the offline-earnings window: 8 hours, or 24 hours with Boost Max. */
+export const WALLET_SESSION_LIMIT_MS = 8 * 60 * 60 * 1_000;
+export const WALLET_SESSION_BOOST_LIMIT_MS = 24 * 60 * 60 * 1_000;
+
+export function walletBindingExpired(binding: WalletBinding, now = Date.now()): boolean {
+  return now - binding.signedInAt >= (binding.boostMax ? WALLET_SESSION_BOOST_LIMIT_MS : WALLET_SESSION_LIMIT_MS);
+}
 
 function localStore(): Storage | null {
   try {
@@ -31,8 +43,12 @@ export function readWalletBinding(store: Storage | null = localStore()): WalletB
     if (!raw) return null;
     const value = JSON.parse(raw) as Partial<WalletBinding>;
     if (!ADDRESS_PATTERN.test(value.address ?? '') || !UUID_PATTERN.test(value.accountId ?? '') ||
-      !UUID_PATTERN.test(value.authSubjectId ?? '') || typeof value.walletName !== 'string' || !value.walletName) return null;
-    return { accountId: value.accountId!, address: value.address!, authSubjectId: value.authSubjectId!, walletName: value.walletName };
+      !UUID_PATTERN.test(value.authSubjectId ?? '') || typeof value.walletName !== 'string' || !value.walletName ||
+      !Number.isSafeInteger(value.signedInAt) || (value.signedInAt as number) <= 0 || typeof value.boostMax !== 'boolean') return null;
+    return {
+      accountId: value.accountId!, address: value.address!, authSubjectId: value.authSubjectId!,
+      boostMax: value.boostMax, signedInAt: value.signedInAt as number, walletName: value.walletName,
+    };
   } catch {
     return null;
   }
@@ -40,6 +56,12 @@ export function readWalletBinding(store: Storage | null = localStore()): WalletB
 
 export function writeWalletBinding(binding: WalletBinding, store: Storage | null = localStore()): void {
   try { store?.setItem(BINDING_KEY, JSON.stringify(binding)); } catch { /* the proof session still works without it */ }
+}
+
+/** Records the server-confirmed Boost Max state so a returning tab knows its 8h or 24h limit. */
+export function setWalletBindingBoost(boostMax: boolean, store: Storage | null = localStore()): void {
+  const binding = readWalletBinding(store);
+  if (binding && binding.boostMax !== boostMax) writeWalletBinding({ ...binding, boostMax }, store);
 }
 
 export function clearWalletBinding(store: Storage | null = localStore()): void {

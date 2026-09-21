@@ -7,7 +7,8 @@ export {
   watchSolanaWalletSession,
 } from './solanaWalletRegistry';
 import { compatibleSolanaWallets } from './solanaWalletRegistry';
-import { clearWalletBinding, readWalletBinding, walletBindingRestorable, writeWalletBinding } from './solanaWalletBinding';
+import { clearWalletBinding, readWalletBinding, walletBindingExpired, walletBindingRestorable, writeWalletBinding } from './solanaWalletBinding';
+export { readWalletBinding, setWalletBindingBoost, walletBindingExpired } from './solanaWalletBinding';
 
 const STORAGE_KEY = 'heroloop.siws.wallet-session.v2';
 const TOKEN_PATTERN = /^hlw_[A-Za-z0-9_-]{43}$/;
@@ -229,7 +230,7 @@ export async function connectSolanaWallet(
   };
   try {
     persist(accepted);
-    writeWalletBinding({ accountId: accepted.accountId, address: accepted.address, authSubjectId: accepted.authSubjectId, walletName: accepted.walletName });
+    writeWalletBinding({ accountId: accepted.accountId, address: accepted.address, authSubjectId: accepted.authSubjectId, boostMax: false, signedInAt: Date.now(), walletName: accepted.walletName });
   } catch {
     await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
     throw new SolanaWalletAuthError('wallet_session_unavailable');
@@ -241,6 +242,8 @@ export async function restoreSolanaWalletSession(options: SolanaSessionOptions =
   const now = (options.now ?? Date.now)();
   const stored = parseStored(now);
   const wallets = compatibleSolanaWallets(options.wallets);
+  const limitBinding = readWalletBinding();
+  if (limitBinding && walletBindingExpired(limitBinding, now)) { clearSolanaWalletSession(); return null; }
   if (!stored) {
     // The short-lived wallet proof is missing or expired. Keep the account
     // signed in only while its non-anonymous session belongs to the bound
