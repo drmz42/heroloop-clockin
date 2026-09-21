@@ -120,6 +120,7 @@ function App() {
             return;
           }
           walletBoundSession = true;
+          if (!cancelled) setLinkedWalletAddress(walletSession.address);
           stopWalletEvents = watchSolanaWalletSession(walletSession, wallet, (reason) => {
             void revokeSolanaWalletSession(reason).finally(() =>
               supabase.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/')));
@@ -184,6 +185,7 @@ function App() {
     return () => { cancelled = true; stopWalletEvents(); document.removeEventListener('visibilitychange', onFocus); };
   }, [accountCheckAttempt, hydrateServerState]);
 
+  const [linkedWalletAddress, setLinkedWalletAddress] = useState<string | null>(null);
   const loggingOutRef = useRef(false);
   const logout = async () => {
     if (loggingOutRef.current) return;
@@ -398,7 +400,9 @@ function App() {
         gold={game.state.gold}
         hero={game.state.hero}
         mailCount={0}
+        walletAddress={linkedWalletAddress}
         onWalletClick={() => setShowWallet(true)}
+        onTokensClick={() => setShowBoost(true)}
       />
 
       <div className="flex-1 min-h-0 overflow-hidden">
@@ -435,7 +439,7 @@ function App() {
         </div>
       )}
 
-      <FooterBar game={game} onLogout={() => void logout()} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} />
+      <FooterBar onLogout={() => void logout()} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} />
 
       {game.offlineEarnings && (
         <OfflineModal
@@ -460,7 +464,11 @@ function App() {
       {showWallet && (
         <GameWalletModal
           guestId={game.state.walletAddress}
+          walletAddress={linkedWalletAddress}
           balance={game.state.hero}
+          pending={tokenomics.status?.pending_tokens ?? 0}
+          claimed={tokenomics.status?.total_claimed ?? 0}
+          earned={game.state.totalTokensEarned}
           onClose={() => setShowWallet(false)}
         />
       )}

@@ -1,7 +1,8 @@
 import { useRef } from 'react';
-import { Mail, ChevronLeft, ChevronRight, UserRound, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus, Hammer } from 'lucide-react';
+import { Mail, ChevronLeft, ChevronRight, UserRound, Wallet, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus, Hammer } from 'lucide-react';
 import type { Tab } from './TopMenu';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
+import { shortWalletAddress } from '@/components/walletAddress';
 
 const TABS = [
   { id: 'heroes',      label: 'Heroes',   icon: Shield },
@@ -17,11 +18,13 @@ const TABS = [
 const formatResource = (value: number) => Math.floor(value).toLocaleString('en-US').replace(/,/g, ' ');
 
 export function GameNavBar({
-  tab, onChange, gold, hero, mailCount, onWalletClick,
+  tab, onChange, gold, hero, mailCount, walletAddress, onWalletClick, onTokensClick,
 }: {
   tab: Tab; onChange: (t: Tab) => void;
   gold: number; hero: number; mailCount: number;
+  walletAddress: string | null;
   onWalletClick: () => void;
+  onTokensClick: () => void;
 }) {
   const navRef = useRef<HTMLDivElement>(null);
   const scrollNav = (direction: -1 | 1) => navRef.current?.scrollBy({ left: direction * 180, behavior: 'smooth' });
@@ -60,8 +63,12 @@ export function GameNavBar({
           type="button"
           onClick={onWalletClick}
           className="game-control flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-[#c9c3b5]"
+          aria-label={walletAddress ? `Open wallet ${shortWalletAddress(walletAddress)}` : 'Open account'}
+          title={walletAddress ?? 'Account'}
         >
-          <UserRound size={16} /> <span className="hidden xl:inline">Account</span>
+          {walletAddress
+            ? <><Wallet size={16} className="text-[#e0a83c]" /> <span className="font-mono text-xs tracking-wide">{shortWalletAddress(walletAddress)}</span></>
+            : <><UserRound size={16} /> <span className="hidden xl:inline">Account</span></>}
         </button>
         {/* Mail */}
         <button type="button" className="game-control relative grid h-9 w-9 place-items-center" title="Mailbox">
@@ -76,12 +83,18 @@ export function GameNavBar({
           <span className="text-[9px] font-bold uppercase tracking-[.12em] text-[#9a8b70]">Gold</span>
         </div>
 
-        {/* $HERO */}
-        <div className="flex h-8 items-center gap-2 rounded-full border border-lime-500/40 bg-[linear-gradient(180deg,#12150d_0%,#080a07_100%)] px-3 shadow-[inset_0_1px_0_rgba(255,255,255,.05),0_3px_10px_rgba(0,0,0,.3)]">
+        {/* $HERO: opens Rewards & Tokenomics */}
+        <button
+          type="button"
+          onClick={onTokensClick}
+          className="flex h-8 items-center gap-2 rounded-full border border-lime-500/40 bg-[linear-gradient(180deg,#12150d_0%,#080a07_100%)] px-3 shadow-[inset_0_1px_0_rgba(255,255,255,.05),0_3px_10px_rgba(0,0,0,.3)] transition hover:border-lime-400/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-lime-300"
+          aria-label="Open Rewards and Tokenomics"
+          title="Rewards & Tokenomics"
+        >
           <HeroTokenIcon size={12} />
           <span className="text-sm font-black tabular-nums text-lime-300">{formatResource(hero)}</span>
           <span className="text-[9px] font-bold uppercase tracking-[.1em] text-[#7f8a69]">$Hero</span>
-        </div>
+        </button>
       </div>
     </div>
   );

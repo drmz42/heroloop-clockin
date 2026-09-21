@@ -1,9 +1,8 @@
-import { MessageCircle, BookOpen, KeyRound, LogOut, Globe, Send, Twitter, User } from 'lucide-react';
+import { MessageCircle, BookOpen, KeyRound, LogOut, Globe, Send, Twitter } from 'lucide-react';
 import { useState } from 'react';
-import type { GameApi } from '@/game/useGame';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
-export function FooterBar({ game, onLogout, onGuidesClick, onCodeClick }: { game: GameApi; onLogout: () => void; onGuidesClick: () => void; onCodeClick: () => void }) {
+export function FooterBar({ onLogout, onGuidesClick, onCodeClick }: { onLogout: () => void; onGuidesClick: () => void; onCodeClick: () => void }) {
   const [copied, setCopied] = useState(false);
   const tokenCA = 'HERO...p7Xq9M'; // placeholder contract address
 
@@ -38,11 +37,7 @@ export function FooterBar({ game, onLogout, onGuidesClick, onCodeClick }: { game
 
       <div className="flex-1" />
 
-      {/* Support + logout */}
-      <div className="game-control flex min-h-7 items-center gap-1 whitespace-nowrap px-2 py-1 font-vt text-xs text-[#d6d0c4]" title="Account nickname">
-        <User size={13} className="text-[#9a9386]" />
-        <span className="max-w-32 truncate">{game.state.username || 'player'}</span>
-      </div>
+      {/* Support + logout; the account nickname is not shown here */}
       <FooterLink icon={<MessageCircle size={13} />} label="Support" href="#" />
       <button onClick={onLogout} className="game-control game-danger flex min-h-7 items-center gap-1 whitespace-nowrap px-2 py-1 font-vt text-xs">
         <LogOut size={13} /> Logout
