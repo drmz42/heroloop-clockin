@@ -184,6 +184,26 @@ function App() {
     return () => { cancelled = true; stopWalletEvents(); document.removeEventListener('visibilitychange', onFocus); };
   }, [accountCheckAttempt, hydrateServerState]);
 
+  const loggingOutRef = useRef(false);
+  const logout = async () => {
+    if (loggingOutRef.current) return;
+    const current = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+    // An anonymous Guest has no recovery path: signing out would orphan its progress.
+    if (current.data.session?.user.is_anonymous === true &&
+      !window.confirm('Guest progress cannot be recovered after logout. Log out anyway?')) return;
+    loggingOutRef.current = true;
+    // Best-effort final save; saves are debounced, so flush twice within a short bound.
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+      flushServerSaveRef.current();
+      const deadline = Date.now() + 2_000;
+      while (saveInFlightRef.current && Date.now() < deadline) await new Promise((resolve) => window.setTimeout(resolve, 100));
+    }
+    await revokeSolanaWalletSession('logout').catch(() => undefined);
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    window.location.replace('/');
+  };
+
   flushServerSaveRef.current = () => {
     const revision = serverStateRevisionRef.current;
     if (!serverStateReady || revision === null || saveInFlightRef.current) return;
@@ -415,7 +435,7 @@ function App() {
         </div>
       )}
 
-      <FooterBar game={game} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} />
+      <FooterBar game={game} onLogout={() => void logout()} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} />
 
       {game.offlineEarnings && (
         <OfflineModal
