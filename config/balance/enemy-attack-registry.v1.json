@@ -1,0 +1,560 @@
+{
+  "schemaVersion": 1,
+  "status": "approved-design-step-2-not-live",
+  "title": "HeroLoop enemy attack registry and presentation cadence",
+  "catalog": {
+    "source": "config/balance/enemy-catalog.v1.json",
+    "schemaVersion": 1,
+    "enemyCount": 41
+  },
+  "authority": {
+    "presentationOnly": true,
+    "combatOutcomeOwner": "server timeline",
+    "rules": [
+      "Attack presentation never changes attack timers, targets, damage, healing, rewards or resolution.",
+      "Client staggering reorders only visual playback of already-decided server events; numeric outcome feedback is never withheld beyond the deferral cap.",
+      "Every telegraph carries an icon and a text label; colour, motion and particles are never the only carrier of information.",
+      "Maximum, Medium and Minimum receive identical combat state, target, telegraph identity and outcome."
+    ]
+  },
+  "qualityModes": [
+    {
+      "id": "maximum",
+      "label": "Maximum",
+      "persistedValue": "spectacular",
+      "gpuBudgetPercent": 20,
+      "maxSimultaneousEnemyAttackAnimations": 3,
+      "maxAnimatedLayersPerEnemy": 2,
+      "particlesPerAttack": 12,
+      "telegraphForm": "motion-frame-icon-label",
+      "cameraShake": true
+    },
+    {
+      "id": "medium",
+      "label": "Medium",
+      "persistedValue": "light",
+      "gpuBudgetPercent": 12,
+      "maxSimultaneousEnemyAttackAnimations": 2,
+      "maxAnimatedLayersPerEnemy": 1,
+      "particlesPerAttack": 4,
+      "telegraphForm": "frame-icon-label",
+      "cameraShake": false
+    },
+    {
+      "id": "minimum",
+      "label": "Minimum",
+      "persistedValue": "off",
+      "gpuBudgetPercent": 6,
+      "maxSimultaneousEnemyAttackAnimations": 0,
+      "maxAnimatedLayersPerEnemy": 0,
+      "particlesPerAttack": 0,
+      "telegraphForm": "static-icon-label",
+      "cameraShake": false
+    }
+  ],
+  "reducedMotion": "System Reduced Motion downgrades Maximum to the Medium telegraph form and removes nonessential travel; Minimum is unchanged.",
+  "cadence": {
+    "baselineAttackIntervalMs": 1540,
+    "sourceOfTiming": "server combat timeline; the registry never supplies an interval",
+    "visualStagger": {
+      "minSpacingMs": 120,
+      "maxDeferralMs": 360,
+      "orderedBy": "server event sequence, then lane index",
+      "appliesTo": "enemy attack presentation starting within the same 100 ms window"
+    },
+    "familyOffsetStepMs": 90,
+    "deterministicJitterMs": [
+      0,
+      60
+    ],
+    "jitterSeed": "combat event id plus enemy uid; never Math.random",
+    "hiddenTabPolicy": "no presentation is queued while the document is hidden; settlement continues without animation"
+  },
+  "telegraph": {
+    "minLeadMsByRank": {
+      "normal": 0,
+      "veteran": 450,
+      "elite": 450,
+      "epic": 600,
+      "field-boss": 800,
+      "dungeon-boss": 900
+    },
+    "normalRankRule": "Normal enemies may attack without a separate telegraph; their archetype windup is the only cue.",
+    "requiredFields": [
+      "iconId",
+      "label",
+      "shape"
+    ],
+    "maxConcurrentTelegraphs": 3
+  },
+  "archetypes": [
+    {
+      "id": "melee-lunge",
+      "movement": "Short forward lunge along the lane, snap back",
+      "hitEffect": "hook, blade or claw arc",
+      "timingMs": {
+        "windup": 380,
+        "strike": 140,
+        "recover": 260
+      }
+    },
+    {
+      "id": "heavy-slam",
+      "movement": "Slow overhead raise, hard drop, brief ground recoil",
+      "hitEffect": "impact ring under the target",
+      "timingMs": {
+        "windup": 620,
+        "strike": 120,
+        "recover": 420
+      }
+    },
+    {
+      "id": "ranged-projectile",
+      "movement": "Small recoil at the launcher, single travelling projectile",
+      "hitEffect": "projectile trail ending in a hit flash",
+      "timingMs": {
+        "windup": 420,
+        "strike": 240,
+        "recover": 240
+      }
+    },
+    {
+      "id": "caster-channel",
+      "movement": "Rooted lift with a gathering mark on the target",
+      "hitEffect": "mark then burst on the target",
+      "timingMs": {
+        "windup": 560,
+        "strike": 160,
+        "recover": 320
+      }
+    },
+    {
+      "id": "swoop-dive",
+      "movement": "Rise off-lane then dive across it",
+      "hitEffect": "arc trail and clipped hit flash",
+      "timingMs": {
+        "windup": 400,
+        "strike": 220,
+        "recover": 280
+      }
+    },
+    {
+      "id": "pounce",
+      "movement": "Crouch then fast forward leap",
+      "hitEffect": "paired claw or fang marks",
+      "timingMs": {
+        "windup": 360,
+        "strike": 120,
+        "recover": 300
+      }
+    },
+    {
+      "id": "pulse-burst",
+      "movement": "Body swell then outward pulse, no travel",
+      "hitEffect": "expanding ring from the body",
+      "timingMs": {
+        "windup": 480,
+        "strike": 140,
+        "recover": 300
+      }
+    },
+    {
+      "id": "guard-bash",
+      "movement": "Shield or plate shove forward, short hold",
+      "hitEffect": "flat shock wedge",
+      "timingMs": {
+        "windup": 440,
+        "strike": 120,
+        "recover": 340
+      }
+    },
+    {
+      "id": "rift-blink",
+      "movement": "Fade out and reappear at the target lane edge",
+      "hitEffect": "tear line and delayed hit flash",
+      "timingMs": {
+        "windup": 500,
+        "strike": 180,
+        "recover": 300
+      }
+    }
+  ],
+  "familyProfiles": [
+    {
+      "familyId": "raiders",
+      "movementLanguage": "quick scavenger hops and improvised swings",
+      "hitLanguage": "hooked scrape, thrown scrap and hex sparks",
+      "telegraphShape": "hook-shaped flash",
+      "laneCadenceOffsetMs": 0
+    },
+    {
+      "familyId": "undead",
+      "movementLanguage": "stiff rattling steps and drifting glides",
+      "hitLanguage": "cold slash, spectral grip and bell toll",
+      "telegraphShape": "pale rune ring",
+      "laneCadenceOffsetMs": 90
+    },
+    {
+      "familyId": "beasts",
+      "movementLanguage": "low fast lunges, dives and leaps",
+      "hitLanguage": "claw pairs, bite flash and web strand",
+      "telegraphShape": "claw-mark flash",
+      "laneCadenceOffsetMs": 180
+    },
+    {
+      "familyId": "oozes",
+      "movementLanguage": "squash-and-stretch swell without lane travel",
+      "hitLanguage": "splash, ember burst and star shard fizz",
+      "telegraphShape": "core glow swell",
+      "laneCadenceOffsetMs": 270
+    },
+    {
+      "familyId": "warclans",
+      "movementLanguage": "heavy forward steps and full-body swings",
+      "hitLanguage": "wide arc, shockwave and war-paint flare",
+      "telegraphShape": "weapon raise and paint flare",
+      "laneCadenceOffsetMs": 360
+    },
+    {
+      "familyId": "constructs",
+      "movementLanguage": "mechanical hold, rune charge then release",
+      "hitLanguage": "stone thud, plate clang and rune beam",
+      "telegraphShape": "rune brighten and line",
+      "laneCadenceOffsetMs": 450
+    },
+    {
+      "familyId": "voidborn",
+      "movementLanguage": "blink, drift and tear-open strikes",
+      "hitLanguage": "negative-space slice and delayed collapse",
+      "telegraphShape": "tear line",
+      "laneCadenceOffsetMs": 540
+    },
+    {
+      "familyId": "fallen",
+      "movementLanguage": "graceful wing-beat approach and precise strikes",
+      "hitLanguage": "light lance, shattered halo and god-shard ray",
+      "telegraphShape": "halo crack",
+      "laneCadenceOffsetMs": 630
+    }
+  ],
+  "rankPresentation": [
+    {
+      "rankId": "normal",
+      "attackAnimation": "archetype only",
+      "maxTelegraphedAbilities": 0,
+      "extraLayers": 0
+    },
+    {
+      "rankId": "veteran",
+      "attackAnimation": "archetype plus silver chevron pulse",
+      "maxTelegraphedAbilities": 1,
+      "extraLayers": 0
+    },
+    {
+      "rankId": "elite",
+      "attackAnimation": "archetype plus gold frame flash and one affix mark",
+      "maxTelegraphedAbilities": 2,
+      "extraLayers": 1
+    },
+    {
+      "rankId": "epic",
+      "attackAnimation": "archetype plus named title flash and one bounded signature aura",
+      "maxTelegraphedAbilities": 3,
+      "extraLayers": 1
+    },
+    {
+      "rankId": "field-boss",
+      "attackAnimation": "dedicated Boss frame with a large telegraph banner",
+      "maxTelegraphedAbilities": 3,
+      "extraLayers": 2
+    },
+    {
+      "rankId": "dungeon-boss",
+      "attackAnimation": "arena-scale telegraph with phase banner",
+      "maxTelegraphedAbilities": 4,
+      "extraLayers": 2
+    }
+  ],
+  "enemyProfiles": [
+    {
+      "enemyId": "dock-goblin",
+      "archetypeId": "melee-lunge",
+      "attackLabel": "Hook Slash",
+      "familyId": "raiders"
+    },
+    {
+      "enemyId": "scrap-slinger",
+      "archetypeId": "ranged-projectile",
+      "attackLabel": "Scrap Shot",
+      "familyId": "raiders"
+    },
+    {
+      "enemyId": "mire-hexer",
+      "archetypeId": "caster-channel",
+      "attackLabel": "Mire Hex",
+      "familyId": "raiders"
+    },
+    {
+      "enemyId": "bone-guard",
+      "archetypeId": "guard-bash",
+      "attackLabel": "Shield Rattle",
+      "familyId": "undead"
+    },
+    {
+      "enemyId": "wraith",
+      "archetypeId": "swoop-dive",
+      "attackLabel": "Spectral Grasp",
+      "familyId": "undead"
+    },
+    {
+      "enemyId": "gravecaller",
+      "archetypeId": "caster-channel",
+      "attackLabel": "Bell Toll",
+      "familyId": "undead"
+    },
+    {
+      "enemyId": "cave-bat",
+      "archetypeId": "swoop-dive",
+      "attackLabel": "Diving Bite",
+      "familyId": "beasts"
+    },
+    {
+      "enemyId": "dire-wolf",
+      "archetypeId": "pounce",
+      "attackLabel": "Rending Pounce",
+      "familyId": "beasts"
+    },
+    {
+      "enemyId": "giant-spider",
+      "archetypeId": "ranged-projectile",
+      "attackLabel": "Web Spit",
+      "familyId": "beasts"
+    },
+    {
+      "enemyId": "toxic-slime",
+      "archetypeId": "pulse-burst",
+      "attackLabel": "Toxic Splash",
+      "familyId": "oozes"
+    },
+    {
+      "enemyId": "ember-ooze",
+      "archetypeId": "ranged-projectile",
+      "attackLabel": "Ember Spit",
+      "familyId": "oozes"
+    },
+    {
+      "enemyId": "astral-ooze",
+      "archetypeId": "caster-channel",
+      "attackLabel": "Star Fizz",
+      "familyId": "oozes"
+    },
+    {
+      "enemyId": "orc-brute",
+      "archetypeId": "heavy-slam",
+      "attackLabel": "Axe Chop",
+      "familyId": "warclans"
+    },
+    {
+      "enemyId": "ash-berserker",
+      "archetypeId": "melee-lunge",
+      "attackLabel": "Twin Ember Slash",
+      "familyId": "warclans"
+    },
+    {
+      "enemyId": "frost-troll",
+      "archetypeId": "heavy-slam",
+      "attackLabel": "Frost Club",
+      "familyId": "warclans"
+    },
+    {
+      "enemyId": "rune-golem",
+      "archetypeId": "guard-bash",
+      "attackLabel": "Rune Shove",
+      "familyId": "constructs"
+    },
+    {
+      "enemyId": "bastion-sentinel",
+      "archetypeId": "guard-bash",
+      "attackLabel": "Bastion Bash",
+      "familyId": "constructs"
+    },
+    {
+      "enemyId": "crucible-colossus",
+      "archetypeId": "heavy-slam",
+      "attackLabel": "Furnace Smash",
+      "familyId": "constructs"
+    },
+    {
+      "enemyId": "rift-crawler",
+      "archetypeId": "rift-blink",
+      "attackLabel": "Crawl Tear",
+      "familyId": "voidborn"
+    },
+    {
+      "enemyId": "nullborn",
+      "archetypeId": "rift-blink",
+      "attackLabel": "Hollow Step",
+      "familyId": "voidborn"
+    },
+    {
+      "enemyId": "void-reaper",
+      "archetypeId": "melee-lunge",
+      "attackLabel": "Crescent Reap",
+      "familyId": "voidborn"
+    },
+    {
+      "enemyId": "starbound-knight",
+      "archetypeId": "melee-lunge",
+      "attackLabel": "Broken Lance",
+      "familyId": "fallen"
+    },
+    {
+      "enemyId": "fallen-seraph",
+      "archetypeId": "swoop-dive",
+      "attackLabel": "Halo Dive",
+      "familyId": "fallen"
+    },
+    {
+      "enemyId": "godshard-horror",
+      "archetypeId": "caster-channel",
+      "attackLabel": "Shard Ray",
+      "familyId": "fallen"
+    },
+    {
+      "enemyId": "grizzlehook-dock-tyrant",
+      "archetypeId": "heavy-slam",
+      "attackLabel": "Anchor Drag",
+      "familyId": "raiders"
+    },
+    {
+      "enemyId": "morvane-bell-of-graves",
+      "archetypeId": "caster-channel",
+      "attackLabel": "Grave Knell",
+      "familyId": "undead"
+    },
+    {
+      "enemyId": "fenrakk-moonfang-alpha",
+      "archetypeId": "pounce",
+      "attackLabel": "Moonfang Rend",
+      "familyId": "beasts"
+    },
+    {
+      "enemyId": "ochre-maw-endless",
+      "archetypeId": "pulse-burst",
+      "attackLabel": "Devouring Swell",
+      "familyId": "oozes"
+    },
+    {
+      "enemyId": "kharzug-ash-crowned",
+      "archetypeId": "heavy-slam",
+      "attackLabel": "Crownfire Maul",
+      "familyId": "warclans"
+    },
+    {
+      "enemyId": "axiom-9-last-sentinel",
+      "archetypeId": "caster-channel",
+      "attackLabel": "Rune Engine Beam",
+      "familyId": "constructs"
+    },
+    {
+      "enemyId": "nhal-eater-between-stars",
+      "archetypeId": "rift-blink",
+      "attackLabel": "Orbit Collapse",
+      "familyId": "voidborn"
+    },
+    {
+      "enemyId": "seraphel-fallen-dawn",
+      "archetypeId": "swoop-dive",
+      "attackLabel": "Splitting Dawn",
+      "familyId": "fallen"
+    },
+    {
+      "enemyId": "boss-ogre",
+      "archetypeId": "heavy-slam",
+      "attackLabel": "Warlord Slam",
+      "telegraphs": [
+        "Ground Slam",
+        "Warcry Rally"
+      ]
+    },
+    {
+      "enemyId": "boss-lich",
+      "archetypeId": "caster-channel",
+      "attackLabel": "Crown Curse",
+      "telegraphs": [
+        "Crown Curse",
+        "Bone Volley"
+      ]
+    },
+    {
+      "enemyId": "boss-dragon",
+      "archetypeId": "swoop-dive",
+      "attackLabel": "Dragon Strafe",
+      "telegraphs": [
+        "Wing Strafe",
+        "Frost-Fire Breath"
+      ]
+    },
+    {
+      "enemyId": "boss-titan",
+      "archetypeId": "heavy-slam",
+      "attackLabel": "Titan Stomp",
+      "telegraphs": [
+        "Titan Stomp",
+        "Ice Armour Surge"
+      ]
+    },
+    {
+      "enemyId": "iron-warden",
+      "archetypeId": "guard-bash",
+      "attackLabel": "Warden Charge",
+      "telegraphs": [
+        "Shield Wall",
+        "Warden Charge"
+      ]
+    },
+    {
+      "enemyId": "ash-warlock",
+      "archetypeId": "caster-channel",
+      "attackLabel": "Ash Ritual",
+      "telegraphs": [
+        "Flame Ritual",
+        "Ash Nova"
+      ]
+    },
+    {
+      "enemyId": "thorn-shaman",
+      "archetypeId": "caster-channel",
+      "attackLabel": "Living Roots",
+      "telegraphs": [
+        "Root Snare",
+        "Living Eye Gaze"
+      ]
+    },
+    {
+      "enemyId": "rift-behemoth",
+      "archetypeId": "rift-blink",
+      "attackLabel": "Behemoth Fall",
+      "telegraphs": [
+        "Rift Fall",
+        "Stone Suspension"
+      ]
+    },
+    {
+      "enemyId": "grave-necromancer",
+      "archetypeId": "caster-channel",
+      "attackLabel": "Soul Chain",
+      "telegraphs": [
+        "Soul Chain",
+        "Grave Summon"
+      ]
+    }
+  ],
+  "releaseBoundary": {
+    "runtimeImportsThisFile": false,
+    "step2ChangesCombat": false,
+    "changesTimersDamageRewardsOrEconomy": false,
+    "nextStep": "Step 3: deterministic server rank selection and abilities with simulation inputs; client authority stays absent.",
+    "production": "unchanged"
+  }
+}
