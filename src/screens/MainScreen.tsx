@@ -706,15 +706,15 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
                   <button type="button" className={`set-bonus-badge h-6 w-[62px] px-1 text-[7px] rarity-${selectedSetBonus?.rarity ?? 'common'} ${selectedSetBonus ? 'set-bonus-active' : ''}`} aria-label="Set bonus details">
                     Set bonus {selectedSetBonus ? `+${selectedSetBonus.percent}%` : '—'}
                   </button>
-                  <span className="set-bonus-tooltip pointer-events-none absolute right-0 top-full z-[70] mt-1 hidden w-64 max-w-[calc(100vw-2rem)] whitespace-normal break-words rounded-lg border border-[#6f5833] bg-[#10120f]/[.98] p-2 text-left text-[9px] leading-4 text-[#bbb2a2] shadow-2xl group-hover/set:block group-focus-within/set:block">
+                  <span className="set-bonus-tooltip pointer-events-none absolute right-0 top-full z-[70] mt-1 hidden w-80 max-w-[calc(100vw-2rem)] whitespace-normal break-words rounded-lg border border-[#6f5833] bg-[#10120f]/[.98] p-3 text-left text-[11px] leading-5 text-[#bbb2a2] shadow-2xl group-hover/set:block group-focus-within/set:block">
                     Equip all 8 item slots with one rarity to increase every stat granted by those items.
-                    <span className="mt-1 grid grid-cols-3 gap-1">
-                      {(['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial', 'cursed', 'immortal', 'god'] as const).map((rarity) => <span key={rarity} className={`set-bonus-rarity rarity-${rarity}`} style={{ color: RARITY_COLORS[rarity] }}>{RARITY_LABEL[rarity]} +{SET_BONUS_PERCENT[rarity]}%</span>)}
+                    <span className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+                      {(['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial', 'cursed', 'immortal', 'god'] as const).map((rarity) => <span key={rarity} className={`set-bonus-rarity flex items-baseline justify-between gap-2 rarity-${rarity}`} style={{ color: RARITY_COLORS[rarity] }}><span>{RARITY_LABEL[rarity]}</span><span className="tabular-nums">+{SET_BONUS_PERCENT[rarity]}%</span></span>)}
                     </span>
                     <span className="mt-2 block border-t border-[#4f412e] pt-1 font-black text-amber-200">Enchant Resonance {selectedEnchantResonance ? `+${selectedEnchantResonance.percent}%` : '—'}</span>
                     <span className="block">Fill all 8 slots. The lowest Enchant level sets the bonus; rarity matching is not required.</span>
-                    <span className="mt-1 grid grid-cols-5 gap-1">
-                      {ENCHANT_RESONANCE_PERCENT.slice(1).map((percent, index) => <span key={index} className="set-bonus-rarity text-amber-200">+{index + 1}: {percent}%</span>)}
+                    <span className="mt-2 grid grid-cols-4 gap-x-2 gap-y-1">
+                      {ENCHANT_RESONANCE_PERCENT.slice(1).map((percent, index) => <span key={index} className="set-bonus-rarity flex items-baseline justify-between gap-1 text-amber-200"><span>+{index + 1}</span><span className="tabular-nums">{percent}%</span></span>)}
                     </span>
                   </span>
                 </span>
