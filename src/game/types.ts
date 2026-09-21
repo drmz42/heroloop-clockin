@@ -172,6 +172,7 @@ export interface FloatingNumber {
   sourceUid?: string;
   label?: string;
   effect?: boolean;
+  delayMs?: number;
 }
 
 // ── Daily Quests ──────────────────────────────────────────────────────────

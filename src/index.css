@@ -523,7 +523,7 @@ html { scroll-behavior: smooth; }
 .anim-attack-enemy { animation:unit-attack-enemy .35s ease-out; }
 .anim-hit          { animation:unit-hit    .2s ease-out; }
 .anim-die          { animation:unit-die    .5s ease-in forwards; }
-.anim-float        { animation:float-up   1.5s ease-out forwards; }
+.anim-float        { animation:float-up   1.5s ease-out both; }
 .crit-floater      { z-index:30; }
 .crit-hit-number   { position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:78px;color:#fff4d2;line-height:1;filter:drop-shadow(0 0 5px rgba(255,69,47,.8));animation:crit-hit-pop 1.6s cubic-bezier(.18,.9,.25,1.1) forwards; }
 .crit-damage       { position:relative;z-index:2;font-size:1.6em;letter-spacing:.02em;-webkit-text-stroke:2px #5a1016;text-shadow:0 0 5px #ffb347,0 0 12px #d3262f,3px 3px 0 #29090d; }
@@ -532,6 +532,9 @@ html { scroll-behavior: smooth; }
 .crit-blood-a     { --blood-x:-34px;--blood-y:-18px;left:22%;top:45%; }
 .crit-blood-b     { --blood-x:36px;--blood-y:-24px;right:18%;top:42%;width:5px;height:8px;animation-delay:.04s; }
 .crit-blood-c     { --blood-x:22px;--blood-y:20px;right:28%;bottom:34%;width:4px;height:6px;animation-delay:.08s; }
+.crit-hit-number,.crit-label,.crit-blood-a { animation-delay:var(--float-delay,0ms); }
+.crit-blood-b { animation-delay:calc(var(--float-delay,0ms) + .04s); }
+.crit-blood-c { animation-delay:calc(var(--float-delay,0ms) + .08s); }
 .anim-bob          { animation:idle-bob   2.8s ease-in-out infinite; }
 .anim-slash        { animation:slash-fx   .4s ease-out forwards; }
 .anim-heal         { animation:heal-fx    .6s ease-out forwards; }

@@ -64,6 +64,13 @@ function HealthBar({ hp, maxHp, color }: { hp: number; maxHp: number; color: str
   );
 }
 
+// Damage always sits on the left of a fighter; everything else (heals, MISS, text effects such as
+// poison or Barrier) sits on the right. Numbers also play in a short time queue (floater-queue.mjs).
+function floaterOffset(f: FloatingNumber): { x: number; y: number } {
+  if (!f.effect && !f.label && !f.miss && !f.heal) return { x: -24, y: 0 };
+  return { x: 24, y: f.id % 2 === 0 ? 0 : -14 };
+}
+
 function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAlive, animationMode, targeted = false }: { unit: CombatUnit; floaters: FloatingNumber[]; side: 'hero' | 'enemy'; heroData?: OwnedHero; respawnSeconds?: number; opponentAlive: boolean; animationMode: GameState['battleAnimationMode']; targeted?: boolean }) {
   const lastOutgoing = useRef(0);
   const lastIncoming = useRef(0);
@@ -133,16 +140,21 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
       {targeted && <div className="dungeon-target-label"><Crosshair size={11} /> HEAVY TARGET</div>}
       {/* Floating damage numbers */}
       <div className="absolute -top-4 left-1/2 -translate-x-1/2 pointer-events-none z-20 w-24 h-16">
-        {myFloaters.map((f) => (
-          <div key={f.id} className={`anim-float absolute left-1/2 -translate-x-1/2 font-bold whitespace-nowrap font-vt ${f.crit && !f.heal ? 'crit-floater' : f.effect ? 'text-cyan-200 text-sm' : f.heal ? 'text-px-green text-2xl' : f.miss ? 'text-px-dim text-lg' : 'text-white text-2xl'}`} style={{ textShadow: f.crit ? '0 0 8px #f5c518, 2px 2px 0 #3d2008' : '2px 2px 0 #000' }}>
-            {f.crit && !f.heal && f.value > 0 ? (
-              <span className="crit-hit-number" aria-label={`Critical hit, ${f.value} damage`}>
-                <span className="crit-blood crit-blood-a" /><span className="crit-blood crit-blood-b" /><span className="crit-blood crit-blood-c" />
-                <span className="crit-label">CRIT!</span><span className="crit-damage">-{f.value}</span>
-              </span>
-            ) : f.label ?? (f.miss ? 'MISS' : f.heal ? `+${f.value}` : `-${f.value}`)}
+        {myFloaters.map((f) => {
+          const { x, y } = floaterOffset(f);
+          return (
+          <div key={f.id} className="absolute pointer-events-none" style={{ left: `calc(50% + ${x}px)`, top: y, transform: 'translateX(-50%)', zIndex: f.crit && !f.heal ? 30 : undefined }}>
+            <div className={`anim-float font-bold whitespace-nowrap font-vt ${f.crit && !f.heal ? 'crit-floater' : f.effect ? 'text-cyan-200 text-sm' : f.heal ? 'text-px-green text-2xl' : f.miss ? 'text-px-dim text-lg' : 'text-white text-2xl'}`} style={{ textShadow: f.crit ? '0 0 8px #f5c518, 2px 2px 0 #3d2008' : '2px 2px 0 #000', animationDelay: `${f.delayMs ?? 0}ms`, ['--float-delay' as string]: `${f.delayMs ?? 0}ms` }}>
+              {f.crit && !f.heal && f.value > 0 ? (
+                <span className="crit-hit-number" aria-label={`Critical hit, ${f.value} damage`}>
+                  <span className="crit-blood crit-blood-a" /><span className="crit-blood crit-blood-b" /><span className="crit-blood crit-blood-c" />
+                  <span className="crit-label">CRIT!</span><span className="crit-damage">-{f.value}</span>
+                </span>
+              ) : f.label ?? (f.miss ? 'MISS' : f.heal ? `+${f.value}` : `-${f.value}`)}
+            </div>
           </div>
-        ))}
+          );
+        })}
       </div>
       {/* Unit name + HP bar + HP numbers */}
       <div className="arena-unit-info grid h-[64px] w-[88px] shrink-0 grid-rows-[24px_10px_14px] content-center gap-1 rounded-lg border border-[#4b4234] bg-black/45 px-2 shadow-[0_6px_14px_rgba(0,0,0,.25)] sm:w-[104px]" aria-label={`${unit.name}, ${side}`}>

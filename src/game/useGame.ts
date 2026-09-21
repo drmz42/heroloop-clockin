@@ -25,6 +25,7 @@ import { MAX_ENCHANT_LEVEL } from '@/game/enchant';
 import { goldRewardForLanes } from '@/game/goldRewards';
 import { advanceCombatFrame, combatResolution, seededCombatRandom } from '../../supabase/functions/player-sync/combat-step.mjs';
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
+import { scheduleFloaters } from '@/game/floater-queue.mjs';
 import { combatRecoveryDelay, createCombatSession, stalledCombatGeneration } from '@/game/combat-session.mjs';
 import { COMBAT_TIMELINE_VERSION, parseCombatTimeline } from '../../supabase/functions/player-sync/combat-timeline.mjs';
 import type { CombatTimelineEvent } from '../../supabase/functions/player-sync/combat-timeline.mjs';
@@ -335,6 +336,7 @@ export function useGame() {
   const combatWakeRef = useRef<() => void>(() => undefined);
   const combatPresentationVisibleRef = useRef(true);
   const floaterId = useRef(0);
+  const floaterQueueRef = useRef(new Map<string, number>());
   const resolvingRef = useRef(false);
   const itemUpgradeBusyRef = useRef(false);
   const equipmentErrorRef = useRef('');
@@ -826,7 +828,7 @@ export function useGame() {
           const healedUnits = unitsRef.current.map((unit) => unit.uid === hero.uid ? { ...unit, hp: Math.min(unit.maxHp, unit.hp + def.hpRestore) } : unit);
           unitsRef.current = healedUnits;
           setUnits(healedUnits);
-          setFloaters((prev) => [...prev.slice(-MAX_LIVE_FLOATERS), { id: floaterId.current++, targetUid: hero.uid, value: def.hpRestore, crit: false, heal: true, born: performance.now() }]);
+          setFloaters((prev) => [...prev.slice(-MAX_LIVE_FLOATERS), ...scheduleFloaters([{ id: floaterId.current++, targetUid: hero.uid, value: def.hpRestore, crit: false, heal: true, born: 0 }], performance.now(), floaterQueueRef.current)]);
           setPotionFx({ uid: hero.uid, born: performance.now() });
           return;
         }
@@ -878,7 +880,7 @@ export function useGame() {
         if (resolution) {
           if (combatPresentationVisibleRef.current && pendingFloaters.length > 0) {
             setUnits(live);
-            setFloaters((prev) => [...prev.slice(-MAX_LIVE_FLOATERS), ...pendingFloaters.map((floater) => ({ ...floater, born: now }))]);
+            setFloaters((prev) => [...prev.slice(-MAX_LIVE_FLOATERS), ...scheduleFloaters(pendingFloaters, now, floaterQueueRef.current)]);
             if (pendingPotionFx) setPotionFx({ ...pendingPotionFx, born: now });
           }
           pendingFloaters = [];
@@ -943,7 +945,7 @@ export function useGame() {
           if (combatPresentationVisibleRef.current && now - lastCombatRenderRef.current >= presentationInterval) {
             lastCombatRenderRef.current = now;
             setUnits(finalUnits);
-            if (pendingFloaters.length > 0) setFloaters((prev) => [...prev.slice(-MAX_LIVE_FLOATERS), ...pendingFloaters.map((floater) => ({ ...floater, born: now }))]);
+            if (pendingFloaters.length > 0) setFloaters((prev) => [...prev.slice(-MAX_LIVE_FLOATERS), ...scheduleFloaters(pendingFloaters, now, floaterQueueRef.current)]);
             if (pendingPotionFx) setPotionFx({ ...pendingPotionFx, born: now });
             pendingFloaters = [];
             pendingPotionFx = null;
@@ -1023,7 +1025,7 @@ export function useGame() {
         timer = 0;
         const now = performance.now();
         setFloaters((current) => {
-          const next = current.filter((floater) => now - floater.born < FLOATER_LIFETIME_MS);
+          const next = current.filter((floater) => now - floater.born < FLOATER_LIFETIME_MS + (floater.delayMs ?? 0));
           return next.length === current.length ? current : next;
         });
         schedule();
