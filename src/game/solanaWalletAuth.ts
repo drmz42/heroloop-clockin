@@ -59,16 +59,26 @@ export type SolanaWalletAuthOptions = {
 
 export class SolanaWalletAuthError extends Error {
   readonly code: string;
+  readonly detail: string;
 
-  constructor(code: string) {
+  constructor(code: string, detail = '') {
     super(code);
     this.name = 'SolanaWalletAuthError';
     this.code = code;
+    this.detail = detail;
   }
 }
 
-function fail(code: string): never {
-  throw new SolanaWalletAuthError(code);
+function fail(code: string, detail = ''): never {
+  throw new SolanaWalletAuthError(code, detail);
+}
+
+// Short, secret-free wallet failure description for support diagnostics.
+function describeWalletError(stage: string, error: unknown): string {
+  const candidate = error && typeof error === 'object' ? error as { name?: unknown; code?: unknown; message?: unknown } : {};
+  const part = (value: unknown) => (typeof value === 'string' || typeof value === 'number' ? String(value) : '');
+  return [stage, part(candidate.name), part(candidate.code), part(candidate.message)]
+    .filter(Boolean).join(' ').replace(/[^A-Za-z0-9 _:.,()/-]/g, '').slice(0, 120);
 }
 
 function isUserRejected(error: unknown): boolean {
@@ -264,7 +274,7 @@ async function signWithInjectedPhantom(
     const connected = await provider.connect();
     providerAddress = (connected.publicKey ?? provider.publicKey)?.toBase58() ?? '';
   } catch (error) {
-    return fail(isUserRejected(error) ? 'wallet_connect_rejected' : 'wallet_sign_message_unavailable');
+    return fail(isUserRejected(error) ? 'wallet_connect_rejected' : 'wallet_sign_message_unavailable', describeWalletError('injected-connect', error));
   }
   if (providerAddress !== account.address) fail('wallet_account_unavailable');
   try {
@@ -273,7 +283,7 @@ async function signWithInjectedPhantom(
     return { signature: new Uint8Array(output.signature), signedMessage: message };
   } catch (error) {
     if (error instanceof SolanaWalletAuthError) throw error;
-    return fail(isUserRejected(error) ? 'wallet_signature_rejected' : 'wallet_sign_message_unavailable');
+    return fail(isUserRejected(error) ? 'wallet_signature_rejected' : 'wallet_sign_message_unavailable', describeWalletError('injected-sign', error));
   }
 }
 
@@ -324,7 +334,7 @@ export async function createSolanaWalletProof(wallet: Wallet, options: SolanaWal
     } catch (error) {
       if (isUserRejected(error)) return fail('wallet_signature_rejected');
       if (!canSignMessage) {
-        return fail('wallet_sign_in_unavailable');
+        return fail('wallet_sign_in_unavailable', describeWalletError('standard-signin', error));
       }
       outputs = [];
     }
@@ -346,7 +356,7 @@ export async function createSolanaWalletProof(wallet: Wallet, options: SolanaWal
       message,
     });
   } catch (error) {
-    return fail(isUserRejected(error) ? 'wallet_signature_rejected' : 'wallet_sign_message_unavailable');
+    return fail(isUserRejected(error) ? 'wallet_signature_rejected' : 'wallet_sign_message_unavailable', describeWalletError('standard-sign', error));
   }
   if (outputs.length !== 1 || outputs[0].signatureType && outputs[0].signatureType !== 'ed25519') {
     fail('wallet_proof_invalid');
