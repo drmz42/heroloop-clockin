@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "status": "approved-design-step-3-not-live",
+  "title": "Enemy rank selection and abilities (Step 3, non-runtime)",
+  "catalog": {
+    "source": "config/balance/enemy-catalog.v1.json",
+    "enemyCount": 41
+  },
+  "authority": {
+    "clientAuthority": false,
+    "deterministicFromSeed": true,
+    "randomSource": "seededCombatRandom (mulberry32 variant), never Math.random",
+    "appliesToKinds": ["base"],
+    "fixedRankByKind": {
+      "epic": "epic",
+      "field-boss": "field-boss",
+      "dungeon-boss": "dungeon-boss"
+    }
+  },
+  "rollableRanks": ["normal", "veteran", "elite"],
+  "rankWeights": {
+    "normal": 72,
+    "veteran": 20,
+    "elite": 8
+  },
+  "abilityPool": {
+    "note": "Placeholder content reusing the existing live endgame-affix names (managed/functions/player-sync/normal-combat.mjs ELITE_AFFIXES) for continuity; a family-specific ability set is a later design step, not decided here.",
+    "ids": ["guard-aura", "mending", "barrier", "enrage", "curse", "lane-blast", "summoner"]
+  },
+  "releaseBoundary": {
+    "runtimeImportsThisFile": false,
+    "step3ChangesCombat": false,
+    "changesTimersDamageRewardsOrEconomy": false,
+    "changesExistingEliteAffixSystem": false,
+    "nextStep": "Step 4: runtime visuals (rank frames, scale, attack profiles, assets, responsive and Reduced Motion presentation).",
+    "production": "unchanged"
+  }
+}

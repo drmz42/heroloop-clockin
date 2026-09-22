@@ -69,6 +69,7 @@
     "check:endgame-locations-runtime": "node scripts/check-endgame-locations-runtime.mjs",
     "check:enemy-catalog": "node scripts/check-enemy-catalog.mjs",
     "check:enemy-attack-registry": "node scripts/check-enemy-attack-registry.mjs",
+    "check:enemy-rank-selection": "node scripts/check-enemy-rank-selection.mjs",
     "check:location-backgrounds": "node scripts/check-location-backgrounds.mjs",
     "check:crafting-settlement": "node scripts/check-crafting-settlement-proposal.mjs",
     "check:dev-news-resilience": "node scripts/check-dev-news-resilience.mjs",
