@@ -171,6 +171,7 @@
     "check:selfhosted-restored-baseline": "sudo -n bash scripts/check-selfhosted-restored-baseline.sh",
     "check:selfhosted-empty-schema": "bash scripts/check-selfhosted-empty-schema.sh",
     "check:admin-foundation": "bash scripts/check-admin-foundation.sh",
+    "check:founder-control-center": "node scripts/check-founder-control-center-contract.mjs",
     "check:selfhosted-production-backup": "node scripts/check-selfhosted-production-backup-schedule.mjs",
     "check:selfhosted-production-upgrade": "node scripts/check-selfhosted-production-upgrade-contract.mjs",
     "lint": "eslint .",
