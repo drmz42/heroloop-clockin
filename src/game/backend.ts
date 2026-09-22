@@ -1,4 +1,5 @@
 import { createClient, type Session } from '@supabase/supabase-js';
+import { authFetch, isTransientAuthError } from './authTransient';
 
 export const backendMode = import.meta.env.VITE_BACKEND_MODE === 'selfhosted' ? 'selfhosted' : 'supabase';
 export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
@@ -12,7 +13,7 @@ export const tokenomicsEnabled = import.meta.env.VITE_ENABLE_TOKENOMICS !== 'fal
 export const demoTokenomicsEnabled = import.meta.env.VITE_DEMO_TOKENOMICS === 'true';
 
 // GoTrue retains the supported Supabase Auth protocol after the database/API exit.
-export const authClient = createClient(backendUrl, supabaseAnonKey);
+export const authClient = createClient(backendUrl, supabaseAnonKey, { global: { fetch: authFetch } });
 
 let replacementSession: Promise<Session | null> | null = null;
 
@@ -34,7 +35,9 @@ async function replaceLocalSession(): Promise<Session | null> {
 export async function validatedGuestSession(): Promise<Session | null> {
   let session: Session | null = null;
   try {
-    ({ data: { session } } = await authClient.auth.getSession());
+    const { data, error } = await authClient.auth.getSession();
+    if (isTransientAuthError(error)) return null;
+    session = data.session;
   } catch {
     // Corrupt local auth state is replaced below.
   }
@@ -54,7 +57,9 @@ export async function validatedGuestSession(): Promise<Session | null> {
 export async function authHeaders(refresh = false): Promise<Record<string, string> | null> {
   let session: Session | null = null;
   try {
-    ({ data: { session } } = await authClient.auth.getSession());
+    const { data, error } = await authClient.auth.getSession();
+    if (isTransientAuthError(error)) return null;
+    session = data.session;
   } catch {
     // Corrupt or obsolete browser auth storage must not strand onboarding
     // before its first API request. replaceLocalSession clears only this
@@ -62,6 +67,7 @@ export async function authHeaders(refresh = false): Promise<Record<string, strin
   }
   if (refresh && session) {
     const { data, error } = await authClient.auth.refreshSession();
+    if (isTransientAuthError(error)) return null;
     session = error ? null : data.session;
   }
   if (!session) {

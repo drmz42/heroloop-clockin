@@ -1,5 +1,6 @@
 import type { Wallet } from '@wallet-standard/base';
-import { backendUrl, authClient, validatedGuestSession } from './backend';
+import { authClient, backendUrl, validatedGuestSession } from './backend';
+import { isTemporaryAuthStatus, isTransientAuthError } from './authTransient';
 import { createSolanaWalletProof, SolanaWalletAuthError } from './solanaWalletAuth';
 export {
   compatibleSolanaWallets,
@@ -39,6 +40,15 @@ export type SolanaSessionOptions = {
 
 function fail(code: string): never {
   throw new SolanaWalletAuthError(code);
+}
+
+// Restoring an account never signs the player out because of a temporary failure: it throws
+// instead, so the caller can offer Retry while the stored identity stays intact.
+async function currentAccountSession() {
+  const { data, error } = await authClient.auth.getSession()
+    .catch(() => ({ data: { session: null }, error: null }));
+  if (isTransientAuthError(error)) fail('wallet_session_temporarily_unavailable');
+  return data.session;
 }
 
 function sessionStore(): Storage | null {
@@ -249,7 +259,7 @@ export async function restoreSolanaWalletSession(options: SolanaSessionOptions =
     // signed in only while its non-anonymous session belongs to the bound
     // wallet and that wallet still exposes the same address; never prompts.
     const binding = readWalletBinding();
-    const { data: { session } } = await authClient.auth.getSession().catch(() => ({ data: { session: null } }));
+    const session = await currentAccountSession();
     if (binding && walletBindingRestorable(binding, session, wallets)) {
       return { ...binding, expiresAt: new Date(0).toISOString(), token: '' };
     }
@@ -259,13 +269,14 @@ export async function restoreSolanaWalletSession(options: SolanaSessionOptions =
   const wallet = wallets.find((candidate) => candidate.name === stored.walletName &&
     candidate.accounts.some((account) => account.address === stored.address));
   if (!wallet) { clearSolanaWalletSession(); return null; }
-  const { data: { session: accountSession } } = await authClient.auth.getSession().catch(() => ({ data: { session: null } }));
+  const accountSession = await currentAccountSession();
   if (!accountSession || accountSession.user.id !== stored.authSubjectId) { clearSolanaWalletSession(); return null; }
   const response = await (options.fetch ?? globalThis.fetch)(`${backendUrl}/api/v1/auth/solana/session`, {
     headers: { authorization: `Bearer ${stored.token}` },
     credentials: 'same-origin',
   }).catch(() => null);
-  if (!response?.ok) { clearSolanaWalletSession(); return null; }
+  if (!response || isTemporaryAuthStatus(response.status)) fail('wallet_session_temporarily_unavailable');
+  if (!response.ok) { clearSolanaWalletSession(); return null; }
   let envelope: Record<string, unknown>;
   try {
     envelope = await json(response);

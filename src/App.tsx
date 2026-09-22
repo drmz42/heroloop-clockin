@@ -23,6 +23,7 @@ import type { Tab } from '@/components/TopMenu';
 import { canMineTokens, teamPower as calculateAccountPower } from '@/game/engine';
 import { useTokenomics } from '@/game/useTokenomics';
 import { demoTokenomicsEnabled, playerSync, authClient, tokenomicsEnabled } from '@/game/backend';
+import { isTransientAuthError } from '@/game/authTransient';
 import { clearLegacyState } from '@/game/state';
 import {
   compatibleSolanaWallets,
@@ -112,9 +113,17 @@ function App() {
     let limitTimer: number | undefined;
     const loadAccount = async () => {
       if (solanaAuthEnabled) {
-        const current = await authClient.auth.getSession().catch(() => ({ data: { session: null } }));
+        const current = await authClient.auth.getSession().catch(() => ({ data: { session: null }, error: null }));
+        // A temporary Auth failure keeps the stored identity and offers Retry instead of signing out.
+        if (isTransientAuthError(current.error)) { if (!cancelled) setAccountGate('error'); return; }
         if (current.data.session?.user.is_anonymous !== true) {
-          const walletSession = await restoreSolanaWalletSession();
+          let walletSession: Awaited<ReturnType<typeof restoreSolanaWalletSession>>;
+          try {
+            walletSession = await restoreSolanaWalletSession();
+          } catch {
+            if (!cancelled) setAccountGate('error');
+            return;
+          }
           if (!walletSession) {
             await authClient.auth.signOut({ scope: 'local' }).catch(() => undefined);
             if (!cancelled) setAccountGate('landing');
@@ -194,7 +203,7 @@ function App() {
       void restoreSolanaWalletSession().then((session) => {
         if (session || cancelled) return;
         void authClient.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/'));
-      });
+      }).catch(() => undefined); // temporary failure: keep playing, the next focus re-checks
     };
     document.addEventListener('visibilitychange', onFocus);
     return () => { cancelled = true; stopWalletEvents(); window.clearInterval(limitTimer); document.removeEventListener('visibilitychange', onFocus); };
