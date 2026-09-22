@@ -1,6 +1,6 @@
 import type { Wallet } from '@wallet-standard/base';
 import { authClient, backendUrl, validatedGuestSession } from './backend';
-import { isTemporaryAuthStatus, isTransientAuthError } from './authTransient';
+import { isAuthTransient, isTemporaryAuthStatus, runAuthCall } from './authTransient';
 import { createSolanaWalletProof, SolanaWalletAuthError } from './solanaWalletAuth';
 export {
   compatibleSolanaWallets,
@@ -42,13 +42,13 @@ function fail(code: string): never {
   throw new SolanaWalletAuthError(code);
 }
 
-// Restoring an account never signs the player out because of a temporary failure: it throws
-// instead, so the caller can offer Retry while the stored identity stays intact.
+// Restoring an account never signs the player out because of a temporary failure - a rejected
+// getSession() call included - it throws instead, so the caller can offer Retry while the stored
+// identity stays intact.
 async function currentAccountSession() {
-  const { data, error } = await authClient.auth.getSession()
-    .catch(() => ({ data: { session: null }, error: null }));
-  if (isTransientAuthError(error)) fail('wallet_session_temporarily_unavailable');
-  return data.session;
+  const result = await runAuthCall(() => authClient.auth.getSession());
+  if (isAuthTransient(result)) fail('wallet_session_temporarily_unavailable');
+  return result.data.session;
 }
 
 function sessionStore(): Storage | null {
@@ -310,7 +310,7 @@ export async function unlinkSolanaIdentity(
 ): Promise<{ accountState: string; unlinked: true }> {
   const stored = parseStored(0);
   if (!stored) fail('wallet_session_unavailable');
-  const { data: { session } } = await authClient.auth.getSession().catch(() => ({ data: { session: null } }));
+  const session = await currentAccountSession();
   if (!session || session.user.id !== stored.authSubjectId) fail('account_session_unavailable');
   const response = await fetchImpl(`${backendUrl}/api/v1/auth/solana/unlink`, {
     method: 'POST',

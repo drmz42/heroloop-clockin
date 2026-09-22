@@ -1,5 +1,5 @@
 import { createClient, type Session } from '@supabase/supabase-js';
-import { authFetch, isTransientAuthError } from './authTransient';
+import { authFetch, isAuthTransient, runAuthCall } from './authTransient';
 
 export const backendMode = import.meta.env.VITE_BACKEND_MODE === 'selfhosted' ? 'selfhosted' : 'supabase';
 export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
@@ -33,14 +33,9 @@ async function replaceLocalSession(): Promise<Session | null> {
 }
 
 export async function validatedGuestSession(): Promise<Session | null> {
-  let session: Session | null = null;
-  try {
-    const { data, error } = await authClient.auth.getSession();
-    if (isTransientAuthError(error)) return null;
-    session = data.session;
-  } catch {
-    // Corrupt local auth state is replaced below.
-  }
+  const sessionResult = await runAuthCall(() => authClient.auth.getSession());
+  if (isAuthTransient(sessionResult)) return null;
+  const session = sessionResult.data.session;
   if (session?.user.is_anonymous === false) return session;
   if (session) {
     try {
@@ -55,20 +50,17 @@ export async function validatedGuestSession(): Promise<Session | null> {
 }
 
 export async function authHeaders(refresh = false): Promise<Record<string, string> | null> {
-  let session: Session | null = null;
-  try {
-    const { data, error } = await authClient.auth.getSession();
-    if (isTransientAuthError(error)) return null;
-    session = data.session;
-  } catch {
-    // Corrupt or obsolete browser auth storage must not strand onboarding
-    // before its first API request. replaceLocalSession clears only this
-    // browser identity and establishes a fresh anonymous session.
-  }
+  // A genuinely corrupt/malformed stored session still resolves cleanly to session: null (the SDK
+  // clears it itself) and falls through to replaceLocalSession below. runAuthCall only intercepts
+  // an actual rejection (e.g. a storage write throwing during an internal refresh) or a resolved
+  // transient status - both mean "try again shortly", not "this identity is gone".
+  const sessionResult = await runAuthCall(() => authClient.auth.getSession());
+  if (isAuthTransient(sessionResult)) return null;
+  let session = sessionResult.data.session;
   if (refresh && session) {
-    const { data, error } = await authClient.auth.refreshSession();
-    if (isTransientAuthError(error)) return null;
-    session = error ? null : data.session;
+    const refreshResult = await runAuthCall(() => authClient.auth.refreshSession());
+    if (isAuthTransient(refreshResult)) return null;
+    session = refreshResult.error ? null : refreshResult.data.session;
   }
   if (!session) {
     session = await replaceLocalSession();

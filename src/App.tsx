@@ -23,7 +23,7 @@ import type { Tab } from '@/components/TopMenu';
 import { canMineTokens, teamPower as calculateAccountPower } from '@/game/engine';
 import { useTokenomics } from '@/game/useTokenomics';
 import { demoTokenomicsEnabled, playerSync, authClient, tokenomicsEnabled } from '@/game/backend';
-import { isTransientAuthError } from '@/game/authTransient';
+import { isAuthTransient, runAuthCall } from '@/game/authTransient';
 import { clearLegacyState } from '@/game/state';
 import {
   compatibleSolanaWallets,
@@ -113,9 +113,10 @@ function App() {
     let limitTimer: number | undefined;
     const loadAccount = async () => {
       if (solanaAuthEnabled) {
-        const current = await authClient.auth.getSession().catch(() => ({ data: { session: null }, error: null }));
-        // A temporary Auth failure keeps the stored identity and offers Retry instead of signing out.
-        if (isTransientAuthError(current.error)) { if (!cancelled) setAccountGate('error'); return; }
+        // A temporary Auth failure - including a rejected getSession() call - keeps the stored
+        // identity and offers Retry instead of signing out.
+        const current = await runAuthCall(() => authClient.auth.getSession());
+        if (isAuthTransient(current)) { if (!cancelled) setAccountGate('error'); return; }
         if (current.data.session?.user.is_anonymous !== true) {
           let walletSession: Awaited<ReturnType<typeof restoreSolanaWalletSession>>;
           try {
@@ -213,7 +214,13 @@ function App() {
   const loggingOutRef = useRef(false);
   const logout = async () => {
     if (loggingOutRef.current) return;
-    const current = await authClient.auth.getSession().catch(() => ({ data: { session: null } }));
+    // A temporary Auth failure here must not silently skip the Guest data-loss confirmation below
+    // (a rejected/unresolved session check is neither confirmed-anonymous nor confirmed-linked).
+    const current = await runAuthCall(() => authClient.auth.getSession());
+    if (isAuthTransient(current)) {
+      window.alert('Account service unavailable, please try again.');
+      return;
+    }
     // An anonymous Guest has no recovery path: signing out would orphan its progress.
     if (current.data.session?.user.is_anonymous === true &&
       !window.confirm('Guest progress cannot be recovered after logout. Log out anyway?')) return;

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createClient } from '@supabase/supabase-js';
-import { authFetch, isTemporaryAuthStatus, isTransientAuthError } from '../src/game/authTransient.ts';
+import { authFetch, isAuthTransient, isTemporaryAuthStatus, isTransientAuthError, runAuthCall } from '../src/game/authTransient.ts';
 
 const KEY = 'sb-staging-auth-token';
 const storedSession = {
@@ -55,8 +55,26 @@ test('temporary statuses are network, rate limit and server errors only', () => 
   for (const status of [0, 429, 500, 502, 503, 504, 520]) assert.equal(isTemporaryAuthStatus(status), true, String(status));
   for (const status of [200, 400, 401, 403, 404, 409, 422]) assert.equal(isTemporaryAuthStatus(status), false, String(status));
   assert.equal(isTransientAuthError(null), false);
-  assert.equal(isTransientAuthError({}), true);
+  // A missing status (e.g. auth-js's AuthUnknownError) must NOT be treated as transient - only a
+  // status auth-js itself attached counts, so an unidentified error can't be retried forever.
+  assert.equal(isTransientAuthError({}), false);
+  assert.equal(isTransientAuthError({ status: 429 }), true);
   assert.equal(isTransientAuthError({ status: 400 }), false);
+});
+
+test('runAuthCall folds a rejected call into the same signal as a resolved transient error', async () => {
+  const rejected = await runAuthCall(() => Promise.reject(new Error('storage write failed')));
+  assert.equal(isAuthTransient(rejected), true);
+
+  const resolvedTransient = await runAuthCall(async () => ({ data: { session: null }, error: { status: 429 } }));
+  assert.equal(isAuthTransient(resolvedTransient), true);
+
+  const resolvedPermanent = await runAuthCall(async () => ({ data: { session: null }, error: { status: 400 } }));
+  assert.equal(isAuthTransient(resolvedPermanent), false);
+
+  const resolvedOk = await runAuthCall(async () => ({ data: { session: 'ok' }, error: null }));
+  assert.equal(isAuthTransient(resolvedOk), false);
+  if (!isAuthTransient(resolvedOk)) assert.equal(resolvedOk.data.session, 'ok');
 });
 
 for (const [label, reply] of [
