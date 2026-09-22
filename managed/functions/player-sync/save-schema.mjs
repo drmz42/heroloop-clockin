@@ -104,7 +104,11 @@ function item(value) {
 }
 
 function chest(value) {
-  return keysExact(value, new Set(["id", "stage", "boss", "tutorial"])) && text(value.id, 128) &&
+  // Chest ids were removed by the server-owned compact-save migration.  Keep
+  // accepting legacy ids during load, but do not permit malformed identifiers
+  // or any client-controlled fields beyond the immutable chest attributes.
+  return keysExact(value, new Set(["id", "stage", "boss", "tutorial"])) &&
+    (value.id === undefined || text(value.id, 128)) &&
     finite(value.stage, 1, 100) && (value.boss === undefined || typeof value.boss === "boolean") &&
     (value.tutorial === undefined || typeof value.tutorial === "boolean");
 }
