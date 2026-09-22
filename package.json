@@ -54,6 +54,7 @@
     "check:storage-retention-apply": "node scripts/check-storage-retention-apply.mjs",
     "check:vps1-health-monitor": "node scripts/check-vps1-health-monitor.mjs",
     "check:agent-tooling": "node scripts/check-agent-tooling.mjs",
+    "check:qa-report": "node scripts/check-qa-report-contract.mjs",
     "sync:claude-skills": "node scripts/sync-claude-skills.mjs",
     "check:combat-effects": "node scripts/check-combat-effect-registry.mjs",
     "check:combat-effects-v2": "node scripts/check-combat-effect-registry-v2.mjs",
