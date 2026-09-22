@@ -221,10 +221,18 @@ export async function connectSolanaWallet(
     await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
     fail('account_session_unavailable');
   }
-  const { data: sessionData, error: sessionError } = await authClient.auth.setSession({
+  // A transient setSession() failure (rejected or a resolved transient status) must not sign out
+  // the pre-existing browser identity that was valid moments ago, before this wallet-link attempt
+  // started - only an explicit, non-transient rejection means the new session is genuinely bad.
+  const setSessionResult = await runAuthCall(() => authClient.auth.setSession({
     access_token: auth.access_token,
     refresh_token: auth.refresh_token,
-  }).catch(() => ({ data: { session: null }, error: new Error('account_session_unavailable') }));
+  }));
+  if (isAuthTransient(setSessionResult)) {
+    await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
+    fail('wallet_session_temporarily_unavailable');
+  }
+  const { data: sessionData, error: sessionError } = setSessionResult;
   if (sessionError || !sessionData.session || sessionData.session.user.id !== loginResult.auth_subject_id) {
     await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
     await authClient.auth.signOut({ scope: 'local' }).catch(() => undefined);
