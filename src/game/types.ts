@@ -95,7 +95,7 @@ export interface PotionDef {
 // ── Chests ────────────────────────────────────────────────────────────────
 
 export interface Chest {
-  id: string;
+  id?: string;
   stage: number;
   boss?: boolean;
   tutorial?: boolean;

@@ -424,8 +424,7 @@ export function mergeSaveState(
   );
   requested.rotatingShop = current.rotatingShop;
   requested.rotatingShopRefreshAt = current.rotatingShopRefreshAt;
-  const requestedChestIds = new Set(recordArray(requested.chests).map((chest) => String(chest.id ?? "")));
-  requested.chests = recordArray(current.chests).filter((chest) => requestedChestIds.has(String(chest.id ?? "")));
+  requested.chests = recordArray(current.chests);
   const requestedBoost = isRecord(requested.boost) ? requested.boost : {};
   const serverBoost = isRecord(current.boost) ? current.boost : {};
   requested.boost = {
