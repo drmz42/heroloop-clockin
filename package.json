@@ -52,6 +52,7 @@
     "check:storage-passports": "node scripts/check-storage-passports.mjs",
     "check:storage-retention": "node scripts/check-storage-retention-report.mjs",
     "check:storage-retention-apply": "node scripts/check-storage-retention-apply.mjs",
+    "check:vps1-health-monitor": "node scripts/check-vps1-health-monitor.mjs",
     "check:agent-tooling": "node scripts/check-agent-tooling.mjs",
     "sync:claude-skills": "node scripts/sync-claude-skills.mjs",
     "check:combat-effects": "node scripts/check-combat-effect-registry.mjs",
