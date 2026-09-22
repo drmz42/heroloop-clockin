@@ -23,12 +23,12 @@ import type { Rarity } from '@/game/types';
 import { recommendedTeamPower, recordBattleTelemetry } from '@/game/balance';
 import { MAX_ENCHANT_LEVEL } from '@/game/enchant';
 import { goldRewardForLanes } from '@/game/goldRewards';
-import { advanceCombatFrame, combatResolution, seededCombatRandom } from '../../supabase/functions/player-sync/combat-step.mjs';
+import { advanceCombatFrame, combatResolution, seededCombatRandom } from '../../managed/functions/player-sync/combat-step.mjs';
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
 import { scheduleFloaters } from '@/game/floater-queue.mjs';
 import { combatRecoveryDelay, createCombatSession, stalledCombatGeneration } from '@/game/combat-session.mjs';
-import { COMBAT_TIMELINE_VERSION, parseCombatTimeline } from '../../supabase/functions/player-sync/combat-timeline.mjs';
-import type { CombatTimelineEvent } from '../../supabase/functions/player-sync/combat-timeline.mjs';
+import { COMBAT_TIMELINE_VERSION, parseCombatTimeline } from '../../managed/functions/player-sync/combat-timeline.mjs';
+import type { CombatTimelineEvent } from '../../managed/functions/player-sync/combat-timeline.mjs';
 
 const COMBAT_SPEED = 1;
 const COMBAT_LOOP_INTERVAL_MS = 50;

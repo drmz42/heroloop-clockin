@@ -20,7 +20,7 @@ import { ChestCollectIcon } from '@/components/ChestCollectIcon';
 import { BossKeyIcon } from '@/components/BossKeyIcon';
 import { FantasyBagIcon } from '@/components/FantasyBagIcon';
 import { recommendedTeamPower } from '@/game/balance';
-import { playerSync, supabase } from '@/game/backend';
+import { playerSync, authClient } from '@/game/backend';
 
 const SAVE_KEY = 'afk-heroes-save-v7';
 
@@ -1198,7 +1198,7 @@ function TestControls({ game }: { game: GameApi }) {
       setBusy(false);
       return;
     }
-    try { await supabase.auth.signOut(); } catch { /* ignore */ }
+    try { await authClient.auth.signOut(); } catch { /* ignore */ }
     try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
     setDone(true);
     window.setTimeout(() => { window.location.href = '/'; }, 1300);

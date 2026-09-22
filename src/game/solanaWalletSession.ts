@@ -1,5 +1,5 @@
 import type { Wallet } from '@wallet-standard/base';
-import { backendUrl, supabase, validatedGuestSession } from './backend';
+import { backendUrl, authClient, validatedGuestSession } from './backend';
 import { createSolanaWalletProof, SolanaWalletAuthError } from './solanaWalletAuth';
 export {
   compatibleSolanaWallets,
@@ -211,13 +211,13 @@ export async function connectSolanaWallet(
     await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
     fail('account_session_unavailable');
   }
-  const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+  const { data: sessionData, error: sessionError } = await authClient.auth.setSession({
     access_token: auth.access_token,
     refresh_token: auth.refresh_token,
   }).catch(() => ({ data: { session: null }, error: new Error('account_session_unavailable') }));
   if (sessionError || !sessionData.session || sessionData.session.user.id !== loginResult.auth_subject_id) {
     await revokeToken(backendUrl, token, 'expired_identity', fetchImpl);
-    await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    await authClient.auth.signOut({ scope: 'local' }).catch(() => undefined);
     fail('account_session_unavailable');
   }
   const accepted: StoredSession = {
@@ -249,7 +249,7 @@ export async function restoreSolanaWalletSession(options: SolanaSessionOptions =
     // signed in only while its non-anonymous session belongs to the bound
     // wallet and that wallet still exposes the same address; never prompts.
     const binding = readWalletBinding();
-    const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+    const { data: { session } } = await authClient.auth.getSession().catch(() => ({ data: { session: null } }));
     if (binding && walletBindingRestorable(binding, session, wallets)) {
       return { ...binding, expiresAt: new Date(0).toISOString(), token: '' };
     }
@@ -259,7 +259,7 @@ export async function restoreSolanaWalletSession(options: SolanaSessionOptions =
   const wallet = wallets.find((candidate) => candidate.name === stored.walletName &&
     candidate.accounts.some((account) => account.address === stored.address));
   if (!wallet) { clearSolanaWalletSession(); return null; }
-  const { data: { session: accountSession } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+  const { data: { session: accountSession } } = await authClient.auth.getSession().catch(() => ({ data: { session: null } }));
   if (!accountSession || accountSession.user.id !== stored.authSubjectId) { clearSolanaWalletSession(); return null; }
   const response = await (options.fetch ?? globalThis.fetch)(`${backendUrl}/api/v1/auth/solana/session`, {
     headers: { authorization: `Bearer ${stored.token}` },
@@ -299,7 +299,7 @@ export async function unlinkSolanaIdentity(
 ): Promise<{ accountState: string; unlinked: true }> {
   const stored = parseStored(0);
   if (!stored) fail('wallet_session_unavailable');
-  const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+  const { data: { session } } = await authClient.auth.getSession().catch(() => ({ data: { session: null } }));
   if (!session || session.user.id !== stored.authSubjectId) fail('account_session_unavailable');
   const response = await fetchImpl(`${backendUrl}/api/v1/auth/solana/unlink`, {
     method: 'POST',
@@ -323,6 +323,6 @@ export async function unlinkSolanaIdentity(
     fail('wallet_unlink_unavailable');
   }
   clearSolanaWalletSession();
-  await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+  await authClient.auth.signOut({ scope: 'local' }).catch(() => undefined);
   return { accountState: result.account_state, unlinked: true };
 }

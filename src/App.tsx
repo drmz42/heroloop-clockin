@@ -22,7 +22,7 @@ import { GuidesScreen } from '@/screens/GuidesScreen';
 import type { Tab } from '@/components/TopMenu';
 import { canMineTokens, teamPower as calculateAccountPower } from '@/game/engine';
 import { useTokenomics } from '@/game/useTokenomics';
-import { demoTokenomicsEnabled, playerSync, supabase, tokenomicsEnabled } from '@/game/backend';
+import { demoTokenomicsEnabled, playerSync, authClient, tokenomicsEnabled } from '@/game/backend';
 import { clearLegacyState } from '@/game/state';
 import {
   compatibleSolanaWallets,
@@ -112,11 +112,11 @@ function App() {
     let limitTimer: number | undefined;
     const loadAccount = async () => {
       if (solanaAuthEnabled) {
-        const current = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+        const current = await authClient.auth.getSession().catch(() => ({ data: { session: null } }));
         if (current.data.session?.user.is_anonymous !== true) {
           const walletSession = await restoreSolanaWalletSession();
           if (!walletSession) {
-            await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+            await authClient.auth.signOut({ scope: 'local' }).catch(() => undefined);
             if (!cancelled) setAccountGate('landing');
             return;
           }
@@ -124,7 +124,7 @@ function App() {
             candidate.name === walletSession.walletName && candidate.accounts.some((account) => account.address === walletSession.address));
           if (!wallet) {
             await revokeSolanaWalletSession('wallet_disconnect');
-            await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+            await authClient.auth.signOut({ scope: 'local' }).catch(() => undefined);
             if (!cancelled) setAccountGate('landing');
             return;
           }
@@ -134,11 +134,11 @@ function App() {
             const binding = readWalletBinding();
             if (!binding || !walletBindingExpired(binding)) return;
             void revokeSolanaWalletSession('logout').finally(() =>
-              supabase.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/')));
+              authClient.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/')));
           }, 60_000);
           stopWalletEvents = watchSolanaWalletSession(walletSession, wallet, (reason) => {
             void revokeSolanaWalletSession(reason).finally(() =>
-              supabase.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/')));
+              authClient.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/')));
           });
         }
       }
@@ -193,7 +193,7 @@ function App() {
       if (!solanaAuthEnabled || !walletBoundSession || document.visibilityState !== 'visible') return;
       void restoreSolanaWalletSession().then((session) => {
         if (session || cancelled) return;
-        void supabase.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/'));
+        void authClient.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/'));
       });
     };
     document.addEventListener('visibilitychange', onFocus);
@@ -204,7 +204,7 @@ function App() {
   const loggingOutRef = useRef(false);
   const logout = async () => {
     if (loggingOutRef.current) return;
-    const current = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+    const current = await authClient.auth.getSession().catch(() => ({ data: { session: null } }));
     // An anonymous Guest has no recovery path: signing out would orphan its progress.
     if (current.data.session?.user.is_anonymous === true &&
       !window.confirm('Guest progress cannot be recovered after logout. Log out anyway?')) return;
@@ -217,7 +217,7 @@ function App() {
       while (saveInFlightRef.current && Date.now() < deadline) await new Promise((resolve) => window.setTimeout(resolve, 100));
     }
     await revokeSolanaWalletSession('logout').catch(() => undefined);
-    await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    await authClient.auth.signOut({ scope: 'local' }).catch(() => undefined);
     window.location.replace('/');
   };
 

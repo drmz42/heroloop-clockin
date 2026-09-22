@@ -12,7 +12,7 @@ export const tokenomicsEnabled = import.meta.env.VITE_ENABLE_TOKENOMICS !== 'fal
 export const demoTokenomicsEnabled = import.meta.env.VITE_DEMO_TOKENOMICS === 'true';
 
 // GoTrue retains the supported Supabase Auth protocol after the database/API exit.
-export const supabase = createClient(backendUrl, supabaseAnonKey);
+export const authClient = createClient(backendUrl, supabaseAnonKey);
 
 let replacementSession: Promise<Session | null> | null = null;
 
@@ -21,8 +21,8 @@ async function replaceLocalSession(): Promise<Session | null> {
     replacementSession = (async () => {
       // A session from an older backend/project cannot be refreshed. Clear only
       // this browser's auth state, then establish a fresh anonymous identity.
-      await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
-      const { data, error } = await supabase.auth.signInAnonymously();
+      await authClient.auth.signOut({ scope: 'local' }).catch(() => undefined);
+      const { data, error } = await authClient.auth.signInAnonymously();
       return error ? null : data.session;
     })().finally(() => {
       replacementSession = null;
@@ -34,14 +34,14 @@ async function replaceLocalSession(): Promise<Session | null> {
 export async function validatedGuestSession(): Promise<Session | null> {
   let session: Session | null = null;
   try {
-    ({ data: { session } } = await supabase.auth.getSession());
+    ({ data: { session } } = await authClient.auth.getSession());
   } catch {
     // Corrupt local auth state is replaced below.
   }
   if (session?.user.is_anonymous === false) return session;
   if (session) {
     try {
-      const { data, error } = await supabase.auth.getUser(session.access_token);
+      const { data, error } = await authClient.auth.getUser(session.access_token);
       if (!error && data.user?.id === session.user.id && data.user.is_anonymous === true) return session;
       if (error && ![400, 401, 403].includes(error.status ?? 0)) return null;
     } catch {
@@ -54,14 +54,14 @@ export async function validatedGuestSession(): Promise<Session | null> {
 export async function authHeaders(refresh = false): Promise<Record<string, string> | null> {
   let session: Session | null = null;
   try {
-    ({ data: { session } } = await supabase.auth.getSession());
+    ({ data: { session } } = await authClient.auth.getSession());
   } catch {
     // Corrupt or obsolete browser auth storage must not strand onboarding
     // before its first API request. replaceLocalSession clears only this
     // browser identity and establishes a fresh anonymous session.
   }
   if (refresh && session) {
-    const { data, error } = await supabase.auth.refreshSession();
+    const { data, error } = await authClient.auth.refreshSession();
     session = error ? null : data.session;
   }
   if (!session) {

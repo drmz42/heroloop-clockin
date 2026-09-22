@@ -67,7 +67,7 @@ expected_versions=$(mktemp /tmp/heroloop-baseline-expected.XXXXXX)
 actual_versions=$(mktemp /tmp/heroloop-baseline-actual.XXXXXX)
 trap 'rm -f -- "$expected_versions" "$actual_versions"' EXIT
 
-for file in "$repo"/supabase/migrations/*.sql; do
+for file in "$repo"/managed/migrations/*.sql; do
   filename=${file##*/}
   version=${filename%%_*}
   name=${filename#*_}; name=${name%.sql}
