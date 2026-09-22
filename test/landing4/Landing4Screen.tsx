@@ -465,13 +465,16 @@ function RewardsSection({ onClaim }) {
 
         <div className="hl-rewards-panel" data-reveal style={{ transitionDelay: "140ms" }}>
           <div className="hl-panel-head">
-            <Kicker>AFK CAMPAIGN · CHAPTER XII</Kicker>
-            <h2 className="hl-h2 hl-h2--tight">CLAIM REWARDS <span className="hl-gold">WHILE AFK</span></h2>
-            <p className="hl-sub">Your heroes keep fighting, even when you are away.</p>
+            <div>
+              <Kicker>AFK CAMPAIGN · CHAPTER XII</Kicker>
+              <h2 className="hl-h2 hl-h2--tight">CLAIM REWARDS <span className="hl-gold">WHILE AFK</span></h2>
+              <p className="hl-sub">Your heroes keep fighting, even when you are away.</p>
+            </div>
+            <span className="hl-live"><span className="hl-live-dot" aria-hidden="true" /> Live</span>
           </div>
 
           <div className="hl-timer">
-            <span className="hl-timer-label">BATTLE TIME ACCUMULATED</span>
+            <span className="hl-timer-label"><span className="hl-live-dot" aria-hidden="true" /> BATTLE TIME ACCUMULATED</span>
             <div className="hl-timer-clock">
               <span>{hh}<i>h</i></span><span className="hl-colon">:</span>
               <span>{mm}<i>m</i></span><span className="hl-colon">:</span>
@@ -734,6 +737,7 @@ const CSS = `
   --gold:#7a5e2c; --gold-hi:#b08f52; --gold-deep:#4a3814;
   --violet-off:#6d4fc0; --violet-off-d:#4a3488;
   --violet:#3f3360; --cyan:#2c5260; --emerald:#2c5d49;
+  --emerald-hi:#5fe6a8; --emerald-deep:#173a2c;
   --crimson:#5f2630;
   --ivory:#c2bdb0; --muted:#5d6377;
   --line:rgba(122,94,44,.1);
@@ -1092,13 +1096,20 @@ button{font-family:inherit}
 
 .hl-rewards-panel{position:relative;padding:2.2rem;border-radius:12px;
   background:linear-gradient(180deg,rgba(11,11,16,.96),rgba(6,6,9,.98));
-  border:1px solid rgba(122,94,44,.16);
-  box-shadow:0 30px 70px -32px rgba(0,0,0,.94), inset 0 1px 0 rgba(255,255,255,.035)}
-.hl-panel-head{margin-bottom:1.4rem}
+  border:1px solid rgba(122,94,44,.34);
+  box-shadow:0 30px 70px -32px rgba(0,0,0,.94), inset 0 1px 0 rgba(255,255,255,.035), 0 0 0 1px rgba(122,94,44,.06)}
+.hl-panel-head{margin-bottom:1.4rem;display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap}
+.hl-live{display:inline-flex;align-items:center;gap:.4rem;padding:.28rem .6rem;border-radius:999px;
+  background:rgba(23,58,44,.4);border:1px solid rgba(95,230,168,.32);
+  font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--emerald-hi)}
+.hl-live-dot{width:6px;height:6px;border-radius:50%;background:var(--emerald-hi);
+  box-shadow:0 0 8px rgba(95,230,168,.85);animation:live-pulse 1.6s ease-in-out infinite}
+@keyframes live-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.72)}}
 .hl-timer{margin:1.2rem 0 1.4rem;padding:1.1rem 1.3rem;border-radius:8px;
   background:radial-gradient(120% 140% at 0% 0%, rgba(44,82,96,.06), transparent 60%),rgba(3,3,5,.74);
   border:1px solid rgba(44,82,96,.18)}
-.hl-timer-label{font-size:.64rem;letter-spacing:.3em;text-transform:uppercase;color:var(--cyan)}
+.hl-timer-label{font-size:.64rem;letter-spacing:.3em;text-transform:uppercase;color:var(--cyan);
+  display:inline-flex;align-items:center;gap:.5rem}
 .hl-timer-clock{display:flex;align-items:baseline;gap:.3rem;margin-top:.35rem;font-family:var(--display);font-weight:700;
   font-size:clamp(1.9rem,4.6vw,2.8rem);color:var(--gold-hi);text-shadow:0 0 12px rgba(122,94,44,.16)}
 .hl-timer-clock i{font-style:normal;font-size:.4em;color:var(--muted);margin-left:.1em;letter-spacing:.1em}
@@ -1107,15 +1118,15 @@ button{font-family:inherit}
 
 .hl-loot{list-style:none;margin:0 0 1rem;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem}
 .hl-loot-item{display:flex;flex-direction:column;align-items:center;gap:.35rem;padding:.85rem .35rem;border-radius:8px;
-  background:linear-gradient(180deg,#0c0c11,#070709);border:1px solid #16161d;
+  background:linear-gradient(180deg,#0f0d09,#070709);border:1px solid rgba(122,94,44,.22);
   box-shadow:inset 0 2px 8px rgba(0,0,0,.65), inset 0 -1px 0 rgba(255,255,255,.02);
   transition:transform .3s,border-color .3s,box-shadow .3s}
-.hl-loot-item:hover{transform:translateY(-4px);border-color:rgba(122,94,44,.34);
-  box-shadow:inset 0 2px 8px rgba(0,0,0,.65), 0 10px 22px -14px rgba(122,94,44,.22)}
+.hl-loot-item:hover{transform:translateY(-4px);border-color:rgba(122,94,44,.52);
+  box-shadow:inset 0 2px 8px rgba(0,0,0,.65), 0 10px 22px -14px rgba(122,94,44,.32)}
 .hl-loot-ico{display:grid;place-items:center;width:38px;height:38px;
   filter:drop-shadow(0 3px 6px rgba(0,0,0,.7))}
 .hl-loot-ico svg{width:30px;height:30px}
-.hl-loot-v{font-weight:800;color:var(--ivory);font-size:.92rem}
+.hl-loot-v{font-weight:800;color:var(--gold-hi);font-size:.92rem;text-shadow:0 0 10px rgba(122,94,44,.2)}
 .hl-loot-l{font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:center}
 
 .hl-reward-note{display:flex;align-items:flex-start;gap:.85rem;padding:.9rem 1rem;border-radius:8px;
