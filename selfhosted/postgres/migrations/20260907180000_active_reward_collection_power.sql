@@ -3,7 +3,7 @@
 -- Active reward collection-power function replacement.
 --
 -- The additive players.collection_power column, backfill and Training Camp
--- power transition arrive in managed/migrations/20260907180000_active_reward_collection_power.sql,
+-- power transition arrive in supabase/migrations/20260907180000_active_reward_collection_power.sql,
 -- which the baseline pipeline applies first. This migration only re-creates the
 -- bounded sync_commit and leaderboard functions so they validate, persist and
 -- return collection_power, preserving the exact grants, SECURITY DEFINER /
