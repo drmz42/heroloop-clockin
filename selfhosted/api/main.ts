@@ -247,6 +247,7 @@ function idempotencyKey(envelope: JsonRecord): string | null {
 
 function databaseErrorCode(error: unknown, allowed: readonly string[]): string | null {
   const message = error instanceof Error ? error.message : String(error ?? "");
+  if (message.includes("account_restricted")) return "account_restricted";
   return allowed.find((code) => message.includes(code)) ?? null;
 }
 
@@ -1732,11 +1733,19 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
           "SELECT heroloop_api.income_snapshot($1::uuid) AS result",
           [identity.playerId],
         );
+        const restriction = await databaseJson(
+          "SELECT heroloop_api.account_restriction($1::uuid) AS result",
+          [identity.playerId],
+        );
+        const result = prepareStatusResult(context, Date.now());
+        result.account_restriction = restriction.banner === "review" || restriction.banner === "hold"
+          ? restriction.banner
+          : null;
         return json(200, {
           ok: true,
           contract_version: 1,
           request_id: requestId,
-          result: prepareStatusResult(context, Date.now()),
+          result,
         });
       } catch {
         console.error("status database adapter failed", { requestId });

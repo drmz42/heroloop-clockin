@@ -436,6 +436,14 @@ function App() {
         onTokensClick={() => setShowBoost(true)}
       />
 
+      {tokenomics.status?.account_restriction && (
+        <div role="status" data-account-restriction={tokenomics.status.account_restriction} className="border-b border-[#9a6a22] bg-[#2a1f0e] px-4 py-2 text-center text-xs leading-snug text-[#f0d9a8]">
+          {tokenomics.status.account_restriction === 'hold'
+            ? 'Your account is under extended review. Your progress and rewards are safe. Market, purchases and withdrawals are paused; please contact support.'
+            : 'Account check in progress. It usually takes up to 1 hour, sometimes longer. No need to worry: your progress and rewards are safe and full play returns soon. We check accounts to catch cheaters, and this may be a false alarm. Market, purchases and withdrawals are paused meanwhile.'}
+        </div>
+      )}
+
       <div className="flex-1 min-h-0 overflow-hidden">
         <MainScreen game={game} tokenomics={tokenomics} onBoostClick={() => setShowBoost(true)} onGuidesClick={openWiki} />
       </div>

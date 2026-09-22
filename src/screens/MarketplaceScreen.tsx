@@ -91,6 +91,7 @@ function Balance({ icon, value, label }: { icon: ReactNode; value: string; label
 function marketError(code?: string): string {
   const messages: Record<string, string> = {
     insufficient_tokens: 'Not enough $HERO',
+    account_restricted: 'Market is paused during an account check',
     market_listing_unavailable: 'Listing is no longer available',
     market_seller_limit_reached: 'You reached the 20 active listings limit',
     market_test_item_required: 'Only Legendary+ equipment can be listed',
