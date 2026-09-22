@@ -150,6 +150,11 @@ export interface CombatUnit {
   dodge?: number;
   regenTimer?: number;
   role?: 'tank' | 'striker' | 'skirmisher' | 'support' | 'caster';
+  /** Presentation-only; server authority remains the combat snapshot. */
+  enemyPresentationId?: string;
+  enemyFamily?: string;
+  enemyRank?: EnemyRank;
+  enemyAttackProfile?: string;
   eliteAffix?: 'guard-aura' | 'mending' | 'barrier' | 'enrage' | 'curse' | 'lane-blast' | 'summoner' | null;
   shield?: number;
   curseRemainingMs?: number;
@@ -160,6 +165,8 @@ export interface CombatUnit {
   abilityTimer?: number;
   assistLowestHp?: boolean;
 }
+
+export type EnemyRank = 'normal' | 'veteran' | 'elite' | 'epic' | 'field-boss' | 'dungeon-boss';
 
 export interface FloatingNumber {
   id: number;

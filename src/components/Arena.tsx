@@ -2,7 +2,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import type { CombatUnit, FloatingNumber, GameState, OwnedHero, OwnedItem } from '@/game/types';
 import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
-import { enemyArtSrc } from '@/game/art';
+import { enemyArtSrc, enemyArtStyle } from '@/game/art';
 import { Crosshair, Shield, Skull, Star, Swords, DoorOpen, Flame, Timer, Users } from 'lucide-react';
 import { MAX_HERO_STARS } from '@/game/state';
 
@@ -125,7 +125,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   }, [incomingEvent, unit.alive, motionEnabled]);
 
   const portraitSrc = (() => {
-    if (side === 'enemy') return enemyArtSrc(unit.uid, unit.role);
+    if (side === 'enemy') return enemyArtSrc(unit.uid, unit.role, unit.enemyPresentationId);
     if (!heroData) return null;
     const base = HERO_MAP[heroData.heroId];
     if (!base) return null;
@@ -134,6 +134,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   const portraitCrop = heroData && HERO_MAP[heroData.heroId]
     ? heroPortraitStyle(heroData.heroId, HERO_MAP[heroData.heroId].heroClass)
     : undefined;
+  const portraitArtStyle = side === 'enemy' ? enemyArtStyle(unit.enemyPresentationId) : portraitCrop;
   const heroRarityColor = heroData ? RARITY_COLORS[HERO_MAP[heroData.heroId]?.rarity] : undefined;
   const portraitColor = heroRarityColor ?? unit.color;
   const dungeonBoss = unit.uid.endsWith('-dungeon-shared');
@@ -150,7 +151,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
         <div className="whitespace-nowrap text-center text-[9px] font-bold tabular-nums text-[#bdb6a9]" aria-label={`${Math.ceil(unit.hp)} of ${unit.maxHp} health`}>{formatHealth(unit.hp)} / {formatHealth(unit.maxHp)}</div>
       </div>
       {/* Portrait */}
-      <div className="relative">
+      <div className={`relative enemy-rank-frame ${side === 'enemy' && unit.enemyRank ? `enemy-rank-${unit.enemyRank}` : ''}`}>
       {/* Floating combat numbers sit over the portrait */}
       <div className="absolute -top-4 left-1/2 -translate-x-1/2 pointer-events-none z-20 w-24 h-16">
         {myFloaters.map((f) => {
@@ -178,13 +179,14 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
           }}
         >
           <div className={`arena-portrait-impact-layer absolute inset-0 ${hit ? 'anim-hit' : ''}`}>
-            {portraitSrc && !artFailed ? <img src={portraitSrc} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" style={{ ...portraitCrop, filter: unit.alive ? 'none' : 'grayscale(1)' }} onError={() => setArtFailed(true)} /> : <span className="grid h-full w-full place-items-center text-3xl sm:text-4xl select-none" style={{ filter: unit.alive ? 'none' : 'grayscale(1)' }}>{unit.icon}</span>}
+            {portraitSrc && !artFailed ? <img src={portraitSrc} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" style={{ ...portraitArtStyle, filter: unit.alive ? 'none' : 'grayscale(1)' }} onError={() => setArtFailed(true)} /> : <span className="grid h-full w-full place-items-center text-3xl sm:text-4xl select-none" style={{ filter: unit.alive ? 'none' : 'grayscale(1)' }}>{unit.icon}</span>}
             {!unit.alive && <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/65"><Skull size={30} className="text-[#d9d1c3] drop-shadow-[0_0_8px_rgba(0,0,0,.9)]" />{side === 'hero' && Boolean(respawnSeconds) && <strong className="mt-0.5 rounded bg-black/75 px-1.5 py-0.5 text-[10px] tabular-nums text-rose-300">{respawnSeconds}s</strong>}<span className="sr-only">Dead</span></span>}
             {unit.alive && slash && <div className="anim-slash absolute inset-0 flex items-center justify-center text-4xl pointer-events-none">⚡</div>}
             {unit.alive && heal && <div className="anim-heal absolute inset-0 flex items-center justify-center text-3xl pointer-events-none">💚</div>}
             {side === 'hero' && heroData && <span className="battle-hero-level" aria-label={`Hero level ${heroData.level}`}>Lv {heroData.level}</span>}
             {side === 'hero' && heroData && <BattleHeroStars stars={heroData.stars} />}
             {side === 'enemy' && unit.role && <span className="enemy-role-badge">{unit.role}</span>}
+            {side === 'enemy' && unit.enemyRank && <span className="enemy-rank-badge" aria-label={`${unit.enemyRank} enemy rank`}>{unit.enemyRank === 'field-boss' ? 'BOSS' : unit.enemyRank === 'dungeon-boss' ? 'DUNGEON BOSS' : unit.enemyRank.toUpperCase()}</span>}
             {side === 'enemy' && unit.eliteAffix && <span className="enemy-elite-badge">ELITE · {unit.eliteAffix.replace('-', ' ')}</span>}
             {side === 'enemy' && (Boolean(unit.shield) || Boolean(unit.curseRemainingMs) || unit.enraged || unit.summoned) && <span className="enemy-status-badges" aria-label="Enemy combat statuses">
               {Boolean(unit.shield) && <i title="Barrier">◆</i>}{Boolean(unit.curseRemainingMs) && <i title="Curse">☾</i>}{unit.enraged && <i title="Enraged">🔥</i>}{unit.summoned && <i title="Summoned">✦</i>}

@@ -38,10 +38,22 @@ const ENDGAME_ROLE_ART: Record<NonNullable<import('./types').CombatUnit['role']>
   support: ENEMY_ART.ghost, caster: ENEMY_ART['boss-lich'],
 };
 
-export function enemyArtSrc(unitUid: string, role?: import('./types').CombatUnit['role']): string | null {
+import { catalogEnemyArt } from './enemy-presentation';
+
+export function enemyArtSrc(unitUid: string, role?: import('./types').CombatUnit['role'], presentationId?: string): string | null {
+  const catalogArt = catalogEnemyArt(presentationId);
+  if (catalogArt) return catalogArt.src;
   const id = unitUid.replace(/^e\d+-/, '');
   const bossBase = id.match(/^(boss-(?:ogre|lich|dragon|titan))/)?.[1];
   return ENEMY_ART[id] ?? (bossBase ? ENEMY_ART[bossBase] : null) ?? (id.startsWith('endgame-') && role ? ENDGAME_ROLE_ART[role] : null) ?? null;
+}
+
+export function enemyArtStyle(presentationId?: string): Record<string, string> | null {
+  const catalogArt = catalogEnemyArt(presentationId);
+  if (!catalogArt) return null;
+  const offsets = { nw: ['0%', '0%'], ne: ['-100%', '0%'], sw: ['0%', '-100%'], se: ['-100%', '-100%'] } as const;
+  const [left, top] = offsets[catalogArt.cell];
+  return { position: 'absolute', width: '200%', height: '200%', maxWidth: 'none', left, top, objectFit: 'fill' };
 }
 
 export function itemArtSrc(itemId: string): string | null {

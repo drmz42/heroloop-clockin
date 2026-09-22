@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey } from '@/game/types';
+import { staging2EnemyPresentation } from '@/game/enemy-presentation';
 import {
   loadState, saveLegacyState, normalizeState, makeInitialState, makeRegisteredStarterState, starUpCost,
   MAX_TEAM, BASE_HERO_CAPACITY, MAX_HERO_CAPACITY, HERO_CAPACITY_STEP, MAX_HERO_STARS, MAX_INVENTORY, MAX_CHESTS, MAX_ACCOUNT_XP, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
@@ -542,7 +543,13 @@ export function useGame() {
           queueCombatRecovery(generation, 'invalid_units');
           return;
         }
-        nextUnits.push({ ...base, ...serverUnit } as CombatUnit);
+        const presentation = serverUnit.side === 'enemy'
+          ? staging2EnemyPresentation(serverLocation, serverUnit.lane, serverSeed, serverUnit.uid)
+          : null;
+        nextUnits.push({ ...base, ...serverUnit, ...(presentation ? {
+          name: presentation.name, color: presentation.color, enemyPresentationId: presentation.id,
+          enemyFamily: presentation.family, enemyRank: presentation.rank, enemyAttackProfile: presentation.attackProfile,
+        } : {}) } as CombatUnit);
       }
       normalCombatWaveRef.current = {
         startKey: started.start_key,
