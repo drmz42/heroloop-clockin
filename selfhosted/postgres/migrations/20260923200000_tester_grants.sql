@@ -7,13 +7,15 @@ DECLARE
   v_definition text;
   v_updated text;
 BEGIN
-  v_definition := pg_get_functiondef('public.credit_tester_gold(uuid,bigint)'::regprocedure);
+  v_definition := pg_get_functiondef('public.credit_tester_gold_before_observed_telemetry(uuid,bigint)'::regprocedure);
   v_updated := replace(v_definition, 'p_amount <> 10000', 'p_amount <> 50000');
+  v_updated := replace(v_updated, 'DEFAULT 10000', 'DEFAULT 50000');
   IF v_updated = v_definition THEN RAISE EXCEPTION 'tester_gold_amount_patch_failed'; END IF;
   EXECUTE v_updated;
 
   v_definition := pg_get_functiondef('public.credit_tester_progression(uuid,text,bigint)'::regprocedure);
   v_updated := replace(v_definition, 'p_amount <> 2000', 'p_amount <> 40000');
+  v_updated := replace(v_updated, 'DEFAULT 2000', 'DEFAULT 40000');
   IF v_updated = v_definition THEN RAISE EXCEPTION 'tester_progression_amount_patch_failed'; END IF;
   EXECUTE v_updated;
 
