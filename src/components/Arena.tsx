@@ -3,7 +3,7 @@ import type { CombatUnit, FloatingNumber, GameState, OwnedHero, OwnedItem } from
 import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { enemyArtSrc } from '@/game/art';
-import { ChevronsUp, Crown, Crosshair, Shield, Skull, Star, Swords, DoorOpen, Flame, Moon, Sparkles, Timer, Users, Zap } from 'lucide-react';
+import { Crown, Crosshair, Shield, Skull, Star, Sword, Swords, DoorOpen, Flame, Moon, Sparkles, Timer, Users, Zap } from 'lucide-react';
 import { MAX_HERO_STARS } from '@/game/state';
 
 const STAR_COLORS = ['#fbbf24', '#a855f7', '#ef4444', '#ec4899'];
@@ -39,10 +39,10 @@ type VisualEnemyRank = NonNullable<CombatUnit['enemyRank']>;
 function EnemyRankOrnament({ rank }: { rank: VisualEnemyRank }) {
   if (rank === 'normal') return null;
   const common = { size: 15, strokeWidth: 2.4, 'aria-hidden': true };
-  if (rank === 'veteran') return <span className="enemy-rank-ornament enemy-rank-ornament-veteran" role="img" aria-label="Veteran enemy"><ChevronsUp {...common} /></span>;
-  if (rank === 'elite') return <span className="enemy-rank-ornament enemy-rank-ornament-elite" role="img" aria-label="Elite enemy"><Swords {...common} /></span>;
-  if (rank === 'epic') return <span className="enemy-rank-ornament enemy-rank-ornament-epic" role="img" aria-label="Epic enemy"><Crown {...common} /></span>;
-  return <span className="enemy-rank-ornament enemy-rank-ornament-boss" role="img" aria-label={rank === 'dungeon-boss' ? 'Dungeon Boss' : 'Field Boss'}>{rank === 'dungeon-boss' ? <Skull {...common} /> : <Crown {...common} />}</span>;
+  if (rank === 'veteran') return <span className="enemy-rank-ornament enemy-rank-ornament-veteran" role="img" aria-label="Veteran enemy"><Sword {...common} className="enemy-rank-edge enemy-rank-blade-left" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-right" /></span>;
+  if (rank === 'elite') return <span className="enemy-rank-ornament enemy-rank-ornament-elite" role="img" aria-label="Elite enemy"><Swords {...common} className="enemy-rank-edge enemy-rank-edge-top" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-bottom" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-left" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-right" /></span>;
+  if (rank === 'epic') return <span className="enemy-rank-ornament enemy-rank-ornament-epic" role="img" aria-label="Epic enemy"><Crown {...common} className="enemy-rank-edge enemy-rank-edge-top" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-left" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-right" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-left" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-right" /></span>;
+  return <span className="enemy-rank-ornament enemy-rank-ornament-boss" role="img" aria-label={rank === 'dungeon-boss' ? 'Dungeon Boss' : 'Field Boss'}><Crown {...common} className="enemy-rank-edge enemy-rank-edge-top" /><Skull {...common} className="enemy-rank-edge enemy-rank-edge-bottom" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-left" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-right" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-left" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-right" /></span>;
 }
 
 function EnemyAffixMark({ affix }: { affix: NonNullable<CombatUnit['eliteAffix']> }) {
@@ -90,6 +90,7 @@ function HealthBar({ hp, maxHp, color }: { hp: number; maxHp: number; color: str
 // Damage always sits on the left of a fighter; everything else (heals, MISS, text effects such as
 // poison or Barrier) sits on the right. Numbers also play in a short time queue (floater-queue.mjs).
 function floaterOffset(f: FloatingNumber): { x: number; y: number } {
+  if (f.crit && !f.heal) return { x: -42, y: -12 };
   if (!f.effect && !f.label && !f.miss && !f.heal) return { x: -24, y: 0 };
   return { x: 24, y: f.id % 2 === 0 ? 0 : -14 };
 }

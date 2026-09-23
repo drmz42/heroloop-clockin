@@ -499,8 +499,9 @@ html { scroll-behavior: smooth; }
 @keyframes unit-hit    { 0%,100%{filter:brightness(1)}50%{filter:brightness(2.4) saturate(1.5)} }
 @keyframes unit-die    { 0%{opacity:1;transform:scale(1) rotate(0)}100%{opacity:0;transform:scale(.6) rotate(12deg) translateY(20px)} }
 @keyframes float-up    { 0%{opacity:0;transform:translateY(0) scale(.6)}15%{opacity:1;transform:translateY(-8px) scale(1.1)}100%{opacity:0;transform:translateY(-52px) scale(1)} }
-@keyframes crit-hit-pop { 0%{opacity:0;transform:scale(.55) rotate(-5deg)}18%{opacity:1;transform:scale(1.18) rotate(2deg)}42%{transform:scale(1) rotate(-1deg)}100%{opacity:0;transform:translateY(-44px) scale(.92)} }
-@keyframes crit-label-pop { 0%{opacity:0;transform:translate(-50%,10px) scale(.4)}25%{opacity:1;transform:translate(-50%,0) scale(1.05)}100%{opacity:0;transform:translate(-50%,-18px) scale(1)} }
+@keyframes crit-float-up { 0%{opacity:0;transform:translateY(4px) scale(.72)}12%{opacity:1;transform:translateY(-5px) scale(1.08)}78%{opacity:1;transform:translateY(-27px) scale(1)}100%{opacity:0;transform:translateY(-42px) scale(.94)} }
+@keyframes crit-hit-pop { 0%{opacity:0;transform:scale(.55) rotate(-5deg)}16%{opacity:1;transform:scale(1.2) rotate(2deg)}34%{transform:scale(1) rotate(-1deg)}80%{opacity:1;transform:translateY(-22px) scale(1)}100%{opacity:0;transform:translateY(-42px) scale(.94)} }
+@keyframes crit-label-pop { 0%{opacity:0;transform:translate(-50%,12px) scale(.45)}20%{opacity:1;transform:translate(-50%,0) scale(1.08)}80%{opacity:1;transform:translate(-50%,-16px) scale(1)}100%{opacity:0;transform:translate(-50%,-26px) scale(.96)} }
 @keyframes blood-splatter { 0%{opacity:0;transform:translate(0,0) scale(.2)}18%{opacity:1}100%{opacity:0;transform:translate(var(--blood-x),var(--blood-y)) scale(.8)} }
 @keyframes idle-bob    { 0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)} }
 @keyframes slash-fx    { 0%{opacity:0;transform:scale(.3) rotate(-30deg)}40%{opacity:1;transform:scale(1.2) rotate(10deg)}100%{opacity:0;transform:scale(1.5) rotate(20deg)} }
@@ -528,10 +529,10 @@ html { scroll-behavior: smooth; }
 .anim-hit          { animation:unit-hit    .2s ease-out; }
 .anim-die          { animation:unit-die    .5s ease-in forwards; }
 .anim-float        { animation:float-up   1.5s ease-out both; }
-.crit-floater      { z-index:30; }
-.crit-hit-number   { position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:78px;color:#fff4d2;line-height:1;filter:drop-shadow(0 0 5px rgba(255,69,47,.8));animation:crit-hit-pop 1.6s cubic-bezier(.18,.9,.25,1.1) forwards; }
-.crit-damage       { position:relative;z-index:2;font-size:1.6em;letter-spacing:.02em;-webkit-text-stroke:2px #5a1016;text-shadow:0 0 5px #ffb347,0 0 12px #d3262f,3px 3px 0 #29090d; }
-.crit-label        { position:absolute;left:50%;top:-.8em;z-index:3;color:#ffb34d;font-family:inherit;font-size:.62em;letter-spacing:.12em;-webkit-text-stroke:1px #4a0b11;text-shadow:0 0 7px #e21f2f;animation:crit-label-pop 1.5s ease-out forwards; }
+.crit-floater      { z-index:30;animation:crit-float-up 2.4s cubic-bezier(.18,.9,.25,1.1) both; }
+.crit-hit-number   { position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:96px;color:#fff4d2;line-height:1;filter:drop-shadow(0 0 5px rgba(255,69,47,.8));animation:crit-hit-pop 2.4s cubic-bezier(.18,.9,.25,1.1) forwards; }
+.crit-damage       { position:relative;z-index:2;font-size:1.72em;letter-spacing:.02em;-webkit-text-stroke:2px #5a1016;text-shadow:0 0 5px #ffb347,0 0 12px #d3262f,3px 3px 0 #29090d; }
+.crit-label        { position:absolute;left:50%;top:-1.28em;z-index:3;color:#ffcd68;font-family:inherit;font-size:.82em;letter-spacing:.14em;-webkit-text-stroke:1px #4a0b11;text-shadow:0 0 8px #e21f2f,0 2px 2px #1d0709;animation:crit-label-pop 2.4s ease-out forwards; }
 .crit-blood        { position:absolute;z-index:1;width:7px;height:10px;border-radius:65% 35% 60% 40%;background:linear-gradient(145deg,#ff5b4d,#7f0d18 70%);box-shadow:0 0 5px rgba(255,40,35,.7);animation:blood-splatter .7s ease-out forwards; }
 .crit-blood-a     { --blood-x:-34px;--blood-y:-18px;left:22%;top:45%; }
 .crit-blood-b     { --blood-x:36px;--blood-y:-24px;right:18%;top:42%;width:5px;height:8px;animation-delay:.04s; }
@@ -606,19 +607,27 @@ html { scroll-behavior: smooth; }
 .enemy-rank-dungeon-boss { --enemy-rank-scale:1.72; }
 .enemy-rank-frame::before,.enemy-rank-frame::after { content:'';position:absolute;z-index:15;pointer-events:none; }
 .enemy-rank-veteran .arena-portrait { border-color:#aeb9c6!important;box-shadow:inset 0 0 0 2px #657182,0 0 12px #aeb9c644!important; }
-.enemy-rank-veteran::before { inset:-3px;background:linear-gradient(#d5dfeb,#687586) left top/13px 2px no-repeat,linear-gradient(#d5dfeb,#687586) left top/2px 13px no-repeat,linear-gradient(#d5dfeb,#687586) right top/13px 2px no-repeat,linear-gradient(#d5dfeb,#687586) right top/2px 13px no-repeat,linear-gradient(#d5dfeb,#687586) left bottom/13px 2px no-repeat,linear-gradient(#d5dfeb,#687586) left bottom/2px 13px no-repeat,linear-gradient(#d5dfeb,#687586) right bottom/13px 2px no-repeat,linear-gradient(#d5dfeb,#687586) right bottom/2px 13px no-repeat;filter:drop-shadow(0 0 3px #aeb9c688); }
 .enemy-rank-elite .arena-portrait { border:2px solid #e2ae4e!important;box-shadow:inset 0 0 0 3px #765420,0 0 16px #f1c45c66!important; }
-.enemy-rank-elite::before { inset:-4px;border:2px solid #e7b34f;clip-path:polygon(8% 0,28% 4%,45% 0,62% 4%,92% 0,100% 15%,96% 34%,100% 52%,96% 70%,100% 92%,80% 100%,62% 96%,45% 100%,27% 96%,0 100%,4% 78%,0 60%,4% 42%,0 20%);filter:drop-shadow(0 0 5px #eab75b99); }
+.enemy-rank-elite::before { inset:-3px;border:2px solid #e7b34f;clip-path:polygon(7% 0,93% 0,100% 7%,100% 93%,93% 100%,7% 100%,0 93%,0 7%);filter:drop-shadow(0 0 5px #eab75b99); }
 .enemy-rank-epic .arena-portrait { border:2px solid #c765dc!important;box-shadow:inset 0 0 0 3px #6f245d,0 0 20px #c74ae788!important; }
-.enemy-rank-epic::before { inset:-5px;border:2px solid #bd4a72;border-radius:42% 58% 45% 55%;clip-path:polygon(3% 18%,14% 8%,21% 17%,32% 2%,41% 14%,50% 0,59% 14%,69% 2%,78% 17%,89% 8%,97% 20%,93% 35%,100% 50%,93% 65%,97% 80%,86% 92%,78% 83%,68% 98%,59% 86%,50% 100%,41% 86%,31% 98%,22% 83%,14% 92%,3% 80%,7% 65%,0 50%,7% 35%);filter:drop-shadow(0 0 7px #b73d6daa); }
+.enemy-rank-epic::before { inset:-4px;border:2px solid #bd4a72;clip-path:polygon(4% 12%,14% 4%,26% 10%,38% 0,50% 8%,62% 0,74% 10%,86% 4%,96% 12%,90% 26%,100% 38%,92% 50%,100% 62%,90% 74%,96% 88%,86% 96%,74% 90%,62% 100%,50% 92%,38% 100%,26% 90%,14% 96%,4% 88%,10% 74%,0 62%,8% 50%,0 38%,10% 26%);filter:drop-shadow(0 0 7px #b73d6daa); }
 .enemy-rank-field-boss .arena-portrait,.enemy-rank-dungeon-boss .arena-portrait { border-width:3px!important;border-color:#d9ad5b!important;box-shadow:inset 0 0 0 3px #532216,0 0 24px #d55b4c99!important; }
-.enemy-rank-field-boss::before,.enemy-rank-dungeon-boss::before { inset:-5px;border:2px solid #daac58;border-radius:35% 35% 48% 48%;box-shadow:0 0 9px #d05a4b99,inset 0 0 8px #5c1518; }
-.enemy-rank-ornament,.enemy-affix-mark { position:absolute;z-index:18;display:grid;place-items:center;pointer-events:none;filter:drop-shadow(0 2px 3px #000); }
-.enemy-rank-ornament-veteran { top:-10px;left:50%;transform:translateX(-50%);color:#d9e3ef; }
-.enemy-rank-ornament-elite { top:-10px;right:-10px;color:#ffd269; }
-.enemy-rank-ornament-epic { top:-12px;left:50%;transform:translateX(-50%);color:#f0a7e9; }
-.enemy-rank-ornament-boss { top:-13px;left:50%;transform:translateX(-50%);color:#ffe0a1; }
-.enemy-affix-mark { bottom:-6px;left:-6px;width:17px;height:17px;border:1px solid #d78347;border-radius:50%;background:#35170fe8;color:#ffd29b;box-shadow:0 0 7px #d7834766; }
+.enemy-rank-field-boss::before,.enemy-rank-dungeon-boss::before { inset:-4px;border:2px solid #daac58;clip-path:polygon(7% 0,30% 4%,50% 0,70% 4%,93% 0,100% 12%,96% 30%,100% 50%,96% 70%,100% 88%,93% 100%,70% 96%,50% 100%,30% 96%,7% 100%,0 88%,4% 70%,0 50%,4% 30%,0 12%);filter:drop-shadow(0 0 9px #d05a4b99); }
+.enemy-rank-ornament { position:absolute;z-index:18;inset:-9px;pointer-events:none;filter:drop-shadow(0 2px 3px #000); }
+.enemy-rank-edge { position:absolute;display:block; }
+.enemy-rank-edge-top { top:-5px;left:50%;transform:translateX(-50%); }
+.enemy-rank-edge-bottom { bottom:-6px;left:50%;transform:translateX(-50%); }
+.enemy-rank-blade-left { top:4px;left:-5px;transform:rotate(-35deg); }
+.enemy-rank-blade-right { top:4px;right:-5px;transform:scaleX(-1) rotate(-35deg); }
+.enemy-rank-blade-bottom { right:-4px;bottom:-5px;transform:rotate(135deg); }
+.enemy-rank-wreath-leaf { position:absolute;top:40%;display:block;width:7px;height:15px;border:1px solid currentColor;border-radius:80% 20% 80% 20%;background:linear-gradient(135deg,currentColor,transparent 72%);opacity:.92; }
+.enemy-rank-wreath-left { left:-5px;transform:rotate(-35deg); }
+.enemy-rank-wreath-right { right:-5px;transform:scaleX(-1) rotate(-35deg); }
+.enemy-rank-ornament-veteran { color:#d9e3ef; }
+.enemy-rank-ornament-elite { color:#ffd269; }
+.enemy-rank-ornament-epic { color:#f0a7e9; }
+.enemy-rank-ornament-boss { inset:-11px;color:#ffe0a1; }
+.enemy-affix-mark { position:absolute;z-index:18;bottom:-6px;left:-6px;display:grid;width:17px;height:17px;place-items:center;border:1px solid #d78347;border-radius:2px;background:#35170fe8;color:#ffd29b;clip-path:polygon(20% 0,80% 0,100% 20%,100% 80%,80% 100%,20% 100%,0 80%,0 20%);box-shadow:0 0 7px #d7834766; }
 .arena-mode-spectacular .enemy-rank-ornament-elite { animation:enemy-rank-steel-glint 1.8s ease-in-out infinite; }
 .arena-mode-spectacular .enemy-rank-ornament-epic { animation:enemy-rank-crest-breathe 2.4s ease-in-out infinite; }
 .arena-mode-off .enemy-rank-ornament,.arena-mode-off .enemy-affix-mark { animation:none!important; }
@@ -629,7 +638,7 @@ html { scroll-behavior: smooth; }
 /* A shared Dungeon Boss stays in its own central stage. Lane units never enter this layer. */
 .dungeon-shared-stage .enemy-rank-frame { width:auto;height:auto; }
 .enemy-status-badges { position:absolute;z-index:14;right:3px;bottom:3px;display:flex;gap:2px; }
-.enemy-status-badges i { display:grid;width:15px;height:15px;place-items:center;border:1px solid #a66b52;border-radius:50%;background:#160e0cdd;color:#ffd09a;font-size:8px;font-style:normal; }
+.enemy-status-badges i { display:grid;width:15px;height:15px;place-items:center;border:1px solid #a66b52;border-radius:3px;background:#160e0cdd;color:#ffd09a;font-size:8px;font-style:normal; }
 
 @media (min-width:2048px) and (min-height:1000px) {
   .arena-stage-inner { justify-content:center;padding:clamp(72px,7vh,118px) clamp(40px,4vw,104px) clamp(38px,4vh,72px); }

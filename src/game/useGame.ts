@@ -34,6 +34,7 @@ import type { CombatTimelineEvent } from '../../managed/functions/player-sync/co
 const COMBAT_SPEED = 1;
 const COMBAT_LOOP_INTERVAL_MS = 50;
 const FLOATER_LIFETIME_MS = 1_500;
+const CRIT_FLOATER_LIFETIME_MS = 2_400;
 const MAX_LIVE_FLOATERS = 36;
 const NORMAL_COMBAT_START_INTERVAL_MS = 3_100;
 const COMBAT_PRESENTATION_INTERVAL_MS: Record<GameState['battleAnimationMode'], number> = {
@@ -1032,7 +1033,8 @@ export function useGame() {
         timer = 0;
         const now = performance.now();
         setFloaters((current) => {
-          const next = current.filter((floater) => now - floater.born < FLOATER_LIFETIME_MS + (floater.delayMs ?? 0));
+          const lifetime = (floater: FloatingNumber) => floater.crit && !floater.heal ? CRIT_FLOATER_LIFETIME_MS : FLOATER_LIFETIME_MS;
+          const next = current.filter((floater) => now - floater.born < lifetime(floater) + (floater.delayMs ?? 0));
           return next.length === current.length ? current : next;
         });
         schedule();
