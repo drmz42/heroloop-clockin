@@ -601,7 +601,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
               <BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}
             </button>
           </div>}
-          {!activeDungeon && import.meta.env.MODE === 'staging' && <TestControls game={game} />}
+          {!activeDungeon && ['staging', 'staging2'].includes(import.meta.env.MODE) && <TestControls game={game} />}
           {!activeDungeon && <div className="absolute bottom-3 right-3 z-30 flex items-end gap-1.5">
             {showDropRates && dropRatesPos && createPortal(<div role="dialog" aria-label="Chest drop rate" className="fixed z-[100] w-56 overflow-y-auto rounded-lg border border-[#80683f] bg-[#11130f]/98 p-2.5 shadow-2xl backdrop-blur-sm" style={{ right: dropRatesPos.right, bottom: dropRatesPos.bottom, maxHeight: dropRatesPos.maxHeight }}>
               <div className="flex items-center justify-between gap-2"><strong className="text-[10px] uppercase tracking-wider text-[#efd18a]">Chest drop rate</strong><button type="button" onClick={() => setShowDropRates(false)} aria-label="Close drop rates"><X size={13} /></button></div>
