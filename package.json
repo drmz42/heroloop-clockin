@@ -43,7 +43,6 @@
     "check:bag-expansion": "node scripts/check-bag-expansion-proposal.mjs",
     "check:codex-watchdog": "node scripts/check-codex-watchdog.mjs",
     "check:claude2-profile": "node scripts/check-claude2-profile.mjs",
-    "check:claude-mylo-profile": "node scripts/check-claude-mylo-profile.mjs",
     "check:codex-weekly-limits": "node scripts/check-codex-weekly-limits.mjs",
     "check:claude-usage": "node scripts/check-claude-usage.mjs",
     "check:vps2-recovery-codex": "node scripts/check-vps2-recovery-codex.mjs",
