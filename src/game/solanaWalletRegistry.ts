@@ -26,6 +26,31 @@ export function observeCompatibleSolanaWallets(listener: (wallets: readonly Wall
   return () => { offRegister(); offUnregister(); };
 }
 
+const WALLET_REGISTRATION_GRACE_MS = 1500;
+
+// On a plain reload the app's first synchronous read can run before the wallet
+// extension's content script has finished its Wallet Standard register handshake,
+// so a same-instant miss is not proof the wallet is gone - only observeCompatibleSolanaWallets'
+// register event is. Waits only for the real registry; an explicit wallet list (tests,
+// or a caller that already resolved one) is read synchronously and never waited on.
+export function awaitCompatibleSolanaWallets(
+  matches: (wallets: readonly Wallet[]) => boolean,
+  explicitWallets?: readonly Wallet[],
+): Promise<readonly Wallet[]> {
+  const immediate = compatibleSolanaWallets(explicitWallets);
+  if (explicitWallets || matches(immediate)) return Promise.resolve(immediate);
+  return new Promise((resolve) => {
+    let stop: () => void = () => undefined;
+    const timer = setTimeout(() => { stop(); resolve(compatibleSolanaWallets()); }, WALLET_REGISTRATION_GRACE_MS);
+    stop = observeCompatibleSolanaWallets((wallets) => {
+      if (!matches(wallets)) return;
+      clearTimeout(timer);
+      stop();
+      resolve(wallets);
+    });
+  });
+}
+
 export function watchSolanaWalletSession(
   session: { address: string },
   wallet: Wallet,

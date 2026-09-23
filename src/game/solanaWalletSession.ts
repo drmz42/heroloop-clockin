@@ -7,7 +7,7 @@ export {
   observeCompatibleSolanaWallets,
   watchSolanaWalletSession,
 } from './solanaWalletRegistry';
-import { compatibleSolanaWallets } from './solanaWalletRegistry';
+import { awaitCompatibleSolanaWallets, compatibleSolanaWallets } from './solanaWalletRegistry';
 import { clearWalletBinding, readWalletBinding, walletBindingExpired, walletBindingRestorable, writeWalletBinding } from './solanaWalletBinding';
 export { readWalletBinding, setWalletBindingBoost, walletBindingExpired } from './solanaWalletBinding';
 
@@ -264,7 +264,6 @@ export async function connectSolanaWallet(
 export async function restoreSolanaWalletSession(options: SolanaSessionOptions = {}): Promise<SolanaWalletSession | null> {
   const now = (options.now ?? Date.now)();
   const stored = parseStored(now);
-  const wallets = compatibleSolanaWallets(options.wallets);
   const limitBinding = readWalletBinding();
   if (limitBinding && walletBindingExpired(limitBinding, now)) { clearSolanaWalletSession(); return null; }
   if (!stored) {
@@ -273,12 +272,21 @@ export async function restoreSolanaWalletSession(options: SolanaSessionOptions =
     // wallet and that wallet still exposes the same address; never prompts.
     const binding = readWalletBinding();
     const session = await currentAccountSession();
+    const wallets = binding
+      ? await awaitCompatibleSolanaWallets((list) => list.some((wallet) => wallet.name === binding.walletName &&
+          wallet.accounts.some((account) => account.address === binding.address)), options.wallets)
+      : compatibleSolanaWallets(options.wallets);
     if (binding && walletBindingRestorable(binding, session, wallets)) {
       return { ...binding, expiresAt: new Date(0).toISOString(), token: '' };
     }
     clearSolanaWalletSession();
     return null;
   }
+  // A reload can reach this check before the wallet extension finishes registering
+  // itself with Wallet Standard; wait briefly for the register event rather than
+  // reading an instant snapshot, or a valid session gets signed out from under it.
+  const wallets = await awaitCompatibleSolanaWallets((list) => list.some((candidate) => candidate.name === stored.walletName &&
+    candidate.accounts.some((account) => account.address === stored.address)), options.wallets);
   const wallet = wallets.find((candidate) => candidate.name === stored.walletName &&
     candidate.accounts.some((account) => account.address === stored.address));
   if (!wallet) { clearSolanaWalletSession(); return null; }
