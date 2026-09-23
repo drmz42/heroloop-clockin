@@ -543,6 +543,7 @@ html { scroll-behavior: smooth; }
 .anim-slash        { animation:slash-fx   .4s ease-out forwards; }
 .anim-heal         { animation:heal-fx    .6s ease-out forwards; }
 .anim-shake        { animation:screen-shake .3s ease-out; }
+.arena-portrait-impact-layer > img { display:block;max-width:none; }
 .arena-spectacular-atmosphere { background:radial-gradient(circle at 28% 58%,rgba(83,155,255,.13),transparent 28%),radial-gradient(circle at 72% 56%,rgba(255,70,70,.13),transparent 28%),radial-gradient(ellipse at 50% 82%,rgba(246,191,79,.15),transparent 45%);animation:arena-spectacular-breathe 2.4s ease-in-out infinite;mix-blend-mode:screen; }
 .arena-mode-spectacular .arena-portrait { filter:drop-shadow(0 0 10px rgba(245,194,91,.3)); }
 .arena-mode-spectacular .anim-attack-hero,.arena-mode-spectacular .anim-attack-enemy,.arena-mode-spectacular .anim-attack-hero-b,.arena-mode-spectacular .anim-attack-enemy-b { filter:brightness(1.25) saturate(1.2) drop-shadow(0 0 10px rgba(255,205,104,.5)); }
