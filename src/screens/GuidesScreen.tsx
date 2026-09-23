@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { BookOpen, ChevronRight, LibraryBig, Search, ShieldCheck, Sparkles } from 'lucide-react';
+import { STAR_UP_BASE_USD_CENTS } from '@/game/state';
 
 type GuideStatus = 'Live' | 'Testing' | 'Coming soon';
 
@@ -10,6 +11,14 @@ interface GuideEntry {
   details?: string[];
   status: GuideStatus;
 }
+
+const STAR_PRICE_DETAILS = (['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'] as const)
+  .map((rarity) => {
+    const baseCents = STAR_UP_BASE_USD_CENTS[rarity];
+    if (baseCents === undefined) throw new Error(`Missing star price for ${rarity}`);
+    const label = rarity[0].toUpperCase() + rarity.slice(1);
+    return `${label}: $${(baseCents / 100).toFixed(2)} base — $${(baseCents * 210 / 100).toFixed(2)} total${rarity === 'common' ? ' through 20★' : ''}`;
+  });
 
 const GUIDES: GuideEntry[] = [
   { category: 'Getting Started', question: 'Replay tutorial', answer: 'The new-account Tutorial Quests form one ten-step path. This guide is display-only and never repeats rewards or changes your saved tutorial progress.', details: ['1 — Defeat 10 enemies', '2 — Open 10 Tutorial Chests', '3 — Equip one item on an active hero', '4 — Summon two heroes', '5 — Fill the three-hero Active Formation', '6 — Summon one reserve hero', '7 — Assign a reserve hero to Training Camp', '8 — Enable Auto-pot', '9 — Reach Location 2', '10 — Use the granted key and defeat one summoned Boss'], status: 'Testing' },
@@ -26,7 +35,7 @@ const GUIDES: GuideEntry[] = [
   { category: 'Drop Rates', question: 'Will new accounts summon Divine or Celestial heroes after beta?', answer: 'No below Account Level 20. The planned server launch guard removes Divine and Celestial from eligible rolls for early accounts and moves their chance to Common. Their Pity progress freezes until Level 20. Beta keeps all tiers observable for testing.', status: 'Coming soon' },
   { category: 'Heroes', question: 'How does Ascension Focus work?', answer: 'After obtaining a hero, you may focus that owned identity for its rarity. The server rolls rarity first and changes only the identity inside that exact rarity.', details: ['One owned target per rarity', 'Target locks before an x1/x10/x100 batch', 'Focus never changes rarity chance, Pity, batch size or global availability', 'Turning Focus off restores five equal identities'], status: 'Live' },
   { category: 'Heroes', question: 'How many duplicate heroes does 20★ require?', answer: 'Every next star consumes exact zero-star copies of the upgraded identity. The four values below apply to stars 1–5 / 6–10 / 11–15 / 16–20; the retained main hero is not included. Existing stars are preserved and owe no retroactive copies.', details: ['Common 12 / 24 / 36 / 48 — 600 total', 'Uncommon 11 / 23 / 35 / 47 — 580 total', 'Rare 5 / 10 / 14 / 17 — 230 total', 'Epic 5 / 9 / 13 / 17 — 220 total', 'Legendary 4 / 8 / 11 / 13 — 180 total', 'Mythic 3 / 5 / 8 / 12 — 140 total', 'Cosmic 2 / 3 / 4 / 5 — 70 total', 'Divine 2 / 2 / 2 / 2 — 40 total', 'Celestial 1 / 1 / 1 / 1 — 20 total'], status: 'Live' },
-  { category: 'Heroes', question: 'How much $HERO does a star upgrade cost?', answer: 'Each star consumes both exact hero copies and a separate $HERO payment. Its USD catalogue value is the next star number multiplied by the hero rarity base, then converted to $HERO at the server-locked quote. This is not a payment commission.', details: ['Common: $0.01 base — $2.10 total through 20★', 'Uncommon: $0.02 base — $4.20 total', 'Rare: $0.04 base — $8.40 total', 'Epic: $0.08 base — $16.80 total', 'Legendary: $0.12 base — $25.20 total', 'Mythic: $0.16 base — $33.60 total', 'Cosmic: $0.20 base — $42 total', 'Divine: $0.30 base — $63 total', 'Celestial: $0.45 base — $94.50 total', 'Hero cards show required copies, USD value and current $HERO amount before confirmation'], status: 'Live' },
+  { category: 'Heroes', question: 'How much $HERO does a star upgrade cost?', answer: 'Each star consumes both exact hero copies and a separate $HERO payment. Its USD catalogue value is the next star number multiplied by the hero rarity base, then converted to $HERO at the server-locked quote. This is not a payment commission.', details: [...STAR_PRICE_DETAILS, 'Hero cards show required copies, USD value and current $HERO amount before confirmation'], status: 'Live' },
   { category: 'Heroes', question: 'How will post-20★ Ascension Essence work?', answer: 'You explicitly convert surplus 20★ Common–Epic heroes into account-bound Essence, then enhance a selected 20★ Rare–Celestial hero through 200 levels.', details: ['Keep one strongest 20★ hero of every exact identity', 'Common / Uncommon / Rare / Epic source: 100 / 160 / 690 / 820 Essence', '200 levels cost 250,000 Essence total', 'Each level adds 0.5% base HP, ATK and DEF; maximum +100%', 'At most 20 levels activate per rolling 30 days; excess Essence stays banked'], status: 'Coming soon' },
   { category: 'Drop Rates', question: 'Can Summon partially fill my hero roster?', answer: 'No. The roster holds at most 500 hero instances. Summon x1, x10 or x100 requires 1, 10 or 100 free slots before charging or rolling; a batch never partially fills the remaining space.', status: 'Live' },
   { category: 'Items', question: 'What equipment can a hero wear?', answer: 'Each active hero has eight slots: Class Weapon, Off-hand, Helmet, Chest, Gloves, Boots, Ring and Amulet. Class Weapon and Off-hand must match the hero class.', status: 'Live' },
