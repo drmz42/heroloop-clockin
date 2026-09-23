@@ -1,7 +1,5 @@
 import type { EnemyRank } from './types';
 
-type SpriteCell = 'nw' | 'ne' | 'sw' | 'se';
-
 export interface EnemyPresentation {
   id: string;
   name: string;
@@ -9,27 +7,26 @@ export interface EnemyPresentation {
   rank: EnemyRank;
   attackProfile: string;
   color: string;
-  sprite: { sheet: string; cell: SpriteCell };
+  art: string;
 }
 
 const families = [
-  ['raiders', 'Raiders', 'raiders-v1.webp', '#a86b45', ['dock-goblin', 'Dock Goblin', 'hook-swing'], ['scrap-slinger', 'Scrap Slinger', 'ranged-volley'], ['mire-hexer', 'Mire Hexer', 'pulse-burst'], ['grizzlehook-dock-tyrant', 'Grizzlehook, Dock Tyrant', 'guard-bash']],
-  ['undead', 'Undead', 'undead-v1.webp', '#91a9c9', ['bone-guard', 'Bone Guard', 'guard-bash'], ['wraith', 'Wraith', 'rift-blink'], ['gravecaller', 'Gravecaller', 'pulse-burst'], ['morvane-bell-of-graves', 'Morvane, Bell of Graves', 'soul-toll']],
-  ['beasts', 'Beasts', 'beasts-v1.webp', '#8496a2', ['cave-bat', 'Cave Bat', 'pounce'], ['dire-wolf', 'Dire Wolf', 'pounce'], ['giant-spider', 'Giant Spider', 'web-spit'], ['fenrakk-moonfang-alpha', 'Fenrakk, Moonfang Alpha', 'moon-pounce']],
-  ['oozes', 'Oozes', 'oozes-v1.webp', '#80b56d', ['toxic-slime', 'Toxic Slime', 'pulse-burst'], ['ember-ooze', 'Ember Ooze', 'ember-spit'], ['astral-ooze', 'Astral Ooze', 'star-pulse'], ['ochre-maw-endless', 'Ochre Maw, the Endless', 'maw-surge']],
-  ['warclans', 'Warclans', 'warclans-v1.webp', '#b76b51', ['orc-brute', 'Orc Brute', 'guard-bash'], ['ash-berserker', 'Ash Berserker', 'cleave'], ['frost-troll', 'Frost Troll', 'frost-smash'], ['kharzug-ash-crowned', 'Kharzug, the Ash-Crowned', 'crown-cleave']],
-  ['constructs', 'Constructs', 'constructs-v1.webp', '#a98c59', ['rune-golem', 'Rune Golem', 'rune-pulse'], ['bastion-sentinel', 'Bastion Sentinel', 'guard-bash'], ['crucible-colossus', 'Crucible Colossus', 'forge-slam'], ['axiom-9-last-sentinel', 'Axiom-9, Last Sentinel', 'axiom-beam']],
-  ['voidborn', 'Voidborn', 'voidborn-v1.webp', '#8c72bd', ['rift-crawler', 'Rift Crawler', 'rift-blink'], ['nullborn', 'Nullborn', 'null-pulse'], ['void-reaper', 'Void Reaper', 'void-cleave'], ['nhal-eater-between-stars', 'Nhal, Eater Between Stars', 'star-rift']],
-  ['fallen', 'The Fallen', 'fallen-v1.webp', '#c29476', ['starbound-knight', 'Starbound Knight', 'star-cleave'], ['fallen-seraph', 'Fallen Seraph', 'wing-burst'], ['godshard-horror', 'Godshard Horror', 'shard-pulse'], ['seraphel-fallen-dawn', 'Seraphel, the Fallen Dawn', 'dawn-lance']],
+  ['raiders', 'Raiders', '#a86b45', ['dock-goblin', 'Dock Goblin', 'hook-swing'], ['scrap-slinger', 'Scrap Slinger', 'ranged-volley'], ['mire-hexer', 'Mire Hexer', 'pulse-burst'], ['grizzlehook-dock-tyrant', 'Grizzlehook, Dock Tyrant', 'guard-bash']],
+  ['undead', 'Undead', '#91a9c9', ['bone-guard', 'Bone Guard', 'guard-bash'], ['wraith', 'Wraith', 'rift-blink'], ['gravecaller', 'Gravecaller', 'pulse-burst'], ['morvane-bell-of-graves', 'Morvane, Bell of Graves', 'soul-toll']],
+  ['beasts', 'Beasts', '#8496a2', ['cave-bat', 'Cave Bat', 'pounce'], ['dire-wolf', 'Dire Wolf', 'pounce'], ['giant-spider', 'Giant Spider', 'web-spit'], ['fenrakk-moonfang-alpha', 'Fenrakk, Moonfang Alpha', 'moon-pounce']],
+  ['oozes', 'Oozes', '#80b56d', ['toxic-slime', 'Toxic Slime', 'pulse-burst'], ['ember-ooze', 'Ember Ooze', 'ember-spit'], ['astral-ooze', 'Astral Ooze', 'star-pulse'], ['ochre-maw-endless', 'Ochre Maw, the Endless', 'maw-surge']],
+  ['warclans', 'Warclans', '#b76b51', ['orc-brute', 'Orc Brute', 'guard-bash'], ['ash-berserker', 'Ash Berserker', 'cleave'], ['frost-troll', 'Frost Troll', 'frost-smash'], ['kharzug-ash-crowned', 'Kharzug, the Ash-Crowned', 'crown-cleave']],
+  ['constructs', 'Constructs', '#a98c59', ['rune-golem', 'Rune Golem', 'rune-pulse'], ['bastion-sentinel', 'Bastion Sentinel', 'guard-bash'], ['crucible-colossus', 'Crucible Colossus', 'forge-slam'], ['axiom-9-last-sentinel', 'Axiom-9, Last Sentinel', 'axiom-beam']],
+  ['voidborn', 'Voidborn', '#8c72bd', ['rift-crawler', 'Rift Crawler', 'rift-blink'], ['nullborn', 'Nullborn', 'null-pulse'], ['void-reaper', 'Void Reaper', 'void-cleave'], ['nhal-eater-between-stars', 'Nhal, Eater Between Stars', 'star-rift']],
+  ['fallen', 'The Fallen', '#c29476', ['starbound-knight', 'Starbound Knight', 'star-cleave'], ['fallen-seraph', 'Fallen Seraph', 'wing-burst'], ['godshard-horror', 'Godshard Horror', 'shard-pulse'], ['seraphel-fallen-dawn', 'Seraphel, the Fallen Dawn', 'dawn-lance']],
 ] as const;
 
-const cells: SpriteCell[] = ['nw', 'ne', 'sw', 'se'];
 const presentations = new Map<string, EnemyPresentation>();
-for (const [, family, sheet, color, ...enemies] of families) {
+for (const [, family, color, ...enemies] of families) {
   enemies.forEach(([id, name, attackProfile], index) => presentations.set(id, {
     id, name, family, attackProfile, color,
     rank: index === 3 ? 'epic' : 'normal',
-    sprite: { sheet: `/assets/enemies/catalog/${sheet}`, cell: cells[index] },
+    art: `/assets/enemies/catalog/cells/${id}-v1.webp`,
   }));
 }
 
@@ -71,7 +68,7 @@ export function staging2EnemyPresentation(locationId: number, lane: number, seed
   return presentation ? { ...presentation, rank: presentation.rank === 'epic' ? 'epic' : previewRank(seed, lane) } : null;
 }
 
-export function catalogEnemyArt(id?: string): { src: string; cell: SpriteCell } | null {
+export function catalogEnemyArt(id?: string): { src: string } | null {
   const presentation = id ? presentations.get(id) : undefined;
-  return presentation ? { src: presentation.sprite.sheet, cell: presentation.sprite.cell } : null;
+  return presentation ? { src: presentation.art } : null;
 }

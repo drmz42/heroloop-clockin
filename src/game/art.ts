@@ -48,18 +48,6 @@ export function enemyArtSrc(unitUid: string, role?: import('./types').CombatUnit
   return ENEMY_ART[id] ?? (bossBase ? ENEMY_ART[bossBase] : null) ?? (id.startsWith('endgame-') && role ? ENDGAME_ROLE_ART[role] : null) ?? null;
 }
 
-export function enemyArtStyle(presentationId?: string): Record<string, string> | null {
-  const catalogArt = catalogEnemyArt(presentationId);
-  if (!catalogArt) return null;
-  const positions = { nw: '0% 0%', ne: '100% 0%', sw: '0% 100%', se: '100% 100%' } as const;
-  return {
-    backgroundImage: `url(${catalogArt.src})`,
-    backgroundPosition: positions[catalogArt.cell],
-    backgroundRepeat: 'no-repeat',
-    backgroundSize: '200% 200%',
-  };
-}
-
 export function itemArtSrc(itemId: string): string | null {
   const productPath = productItemPath(itemId);
   if (productPath) return productPath;

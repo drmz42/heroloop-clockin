@@ -2,7 +2,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import type { CombatUnit, FloatingNumber, GameState, OwnedHero, OwnedItem } from '@/game/types';
 import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
-import { enemyArtSrc, enemyArtStyle } from '@/game/art';
+import { enemyArtSrc } from '@/game/art';
 import { Crosshair, Shield, Skull, Star, Swords, DoorOpen, Flame, Timer, Users } from 'lucide-react';
 import { MAX_HERO_STARS } from '@/game/state';
 
@@ -134,8 +134,6 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   const portraitCrop = heroData && HERO_MAP[heroData.heroId]
     ? heroPortraitStyle(heroData.heroId, HERO_MAP[heroData.heroId].heroClass)
     : undefined;
-  const portraitArtStyle = side === 'enemy' ? enemyArtStyle(unit.enemyPresentationId) : portraitCrop;
-  const usesCatalogEnemyArt = side === 'enemy' && Boolean(portraitArtStyle);
   const heroRarityColor = heroData ? RARITY_COLORS[HERO_MAP[heroData.heroId]?.rarity] : undefined;
   const portraitColor = heroRarityColor ?? unit.color;
   const dungeonBoss = unit.uid.endsWith('-dungeon-shared');
@@ -180,7 +178,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
           }}
         >
           <div className={`arena-portrait-impact-layer absolute inset-0 ${hit ? 'anim-hit' : ''} overflow-hidden`}>
-            {usesCatalogEnemyArt ? <span aria-hidden="true" className="block h-full w-full" style={{ ...portraitArtStyle, filter: unit.alive ? 'none' : 'grayscale(1)' }} /> : portraitSrc && !artFailed ? <img src={portraitSrc} alt="" loading="eager" decoding="sync" className="h-full w-full object-cover" style={{ ...portraitArtStyle, filter: unit.alive ? 'none' : 'grayscale(1)' }} onError={() => setArtFailed(true)} /> : <span className="grid h-full w-full place-items-center text-3xl sm:text-4xl select-none" style={{ filter: unit.alive ? 'none' : 'grayscale(1)' }}>{unit.icon}</span>}
+            {portraitSrc && !artFailed ? <img src={portraitSrc} alt="" loading="eager" decoding="sync" className="h-full w-full object-cover" style={{ ...portraitCrop, filter: unit.alive ? 'none' : 'grayscale(1)' }} onError={() => setArtFailed(true)} /> : <span className="grid h-full w-full place-items-center text-3xl sm:text-4xl select-none" style={{ filter: unit.alive ? 'none' : 'grayscale(1)' }}>{unit.icon}</span>}
             {!unit.alive && <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/65"><Skull size={30} className="text-[#d9d1c3] drop-shadow-[0_0_8px_rgba(0,0,0,.9)]" />{side === 'hero' && Boolean(respawnSeconds) && <strong className="mt-0.5 rounded bg-black/75 px-1.5 py-0.5 text-[10px] tabular-nums text-rose-300">{respawnSeconds}s</strong>}<span className="sr-only">Dead</span></span>}
             {unit.alive && slash && <div className="anim-slash absolute inset-0 flex items-center justify-center text-4xl pointer-events-none">⚡</div>}
             {unit.alive && heal && <div className="anim-heal absolute inset-0 flex items-center justify-center text-3xl pointer-events-none">💚</div>}
