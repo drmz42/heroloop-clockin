@@ -594,10 +594,8 @@ html { scroll-behavior: smooth; }
 .battle-hero-stars { position:absolute;z-index:12;left:50%;bottom:3px;display:flex;transform:translateX(-50%);gap:1px;border:1px solid rgba(201,163,91,.38);border-radius:999px;background:rgba(5,7,7,.84);padding:2px 3px;box-shadow:0 2px 8px rgba(0,0,0,.6); }
 .battle-hero-stars svg { width:9px;height:9px;filter:drop-shadow(0 1px 2px #000); }
 .battle-hero-level { position:absolute;z-index:12;left:4px;top:4px;border:1px solid rgba(220,181,104,.55);border-radius:5px;background:rgba(5,7,7,.88);padding:2px 5px;color:#f5d58f;font-size:9px;font-weight:900;line-height:1.2;box-shadow:0 2px 8px rgba(0,0,0,.65);text-shadow:0 1px 2px #000; }
-.enemy-role-badge,.enemy-elite-badge,.enemy-rank-badge { position:absolute;z-index:13;left:50%;transform:translateX(-50%);border:1px solid rgba(203,169,105,.55);border-radius:999px;background:rgba(6,7,8,.9);padding:2px 5px;color:#e8d7b5;font-size:8px;font-style:normal;font-weight:900;line-height:1.1;text-transform:uppercase;white-space:nowrap;box-shadow:0 2px 8px #000; }
+.enemy-role-badge { position:absolute;z-index:13;left:50%;transform:translateX(-50%);border:1px solid rgba(203,169,105,.55);border-radius:999px;background:rgba(6,7,8,.9);padding:2px 5px;color:#e8d7b5;font-size:8px;font-style:normal;font-weight:900;line-height:1.1;text-transform:uppercase;white-space:nowrap;box-shadow:0 2px 8px #000; }
 .enemy-role-badge { bottom:3px; }
-.enemy-elite-badge { top:3px;border-color:#d78347;color:#ffd29b;background:rgba(55,20,10,.92); }
-.enemy-rank-badge { top:3px; }
 .enemy-rank-frame { width:min(calc(64px * var(--enemy-rank-scale, 1)),72px);height:min(calc(64px * var(--enemy-rank-scale, 1)),72px);flex:0 0 auto; }
 .enemy-rank-frame .arena-portrait { width:100%!important;height:100%!important; }
 .enemy-rank-normal { --enemy-rank-scale:.88; }
@@ -606,12 +604,26 @@ html { scroll-behavior: smooth; }
 .enemy-rank-epic { --enemy-rank-scale:1.38; }
 .enemy-rank-field-boss { --enemy-rank-scale:1.58; }
 .enemy-rank-dungeon-boss { --enemy-rank-scale:1.72; }
+.enemy-rank-frame::before,.enemy-rank-frame::after { content:'';position:absolute;z-index:15;pointer-events:none; }
 .enemy-rank-veteran .arena-portrait { border-color:#aeb9c6!important;box-shadow:inset 0 0 0 2px #657182,0 0 12px #aeb9c644!important; }
-.enemy-rank-elite .arena-portrait { border-color:#e2ae4e!important;box-shadow:inset 0 0 0 3px #765420,0 0 16px #f1c45c66!important; }
-.enemy-rank-epic .arena-portrait { border-color:#b45ae0!important;box-shadow:inset 0 0 0 3px #6f245d,0 0 20px #c74ae788!important; }
-.enemy-rank-epic .enemy-rank-badge { border-color:#cc85f3;color:#f2caff;background:#35113dcc; }
+.enemy-rank-veteran::before { inset:-3px;background:linear-gradient(#d5dfeb,#687586) left top/13px 2px no-repeat,linear-gradient(#d5dfeb,#687586) left top/2px 13px no-repeat,linear-gradient(#d5dfeb,#687586) right top/13px 2px no-repeat,linear-gradient(#d5dfeb,#687586) right top/2px 13px no-repeat,linear-gradient(#d5dfeb,#687586) left bottom/13px 2px no-repeat,linear-gradient(#d5dfeb,#687586) left bottom/2px 13px no-repeat,linear-gradient(#d5dfeb,#687586) right bottom/13px 2px no-repeat,linear-gradient(#d5dfeb,#687586) right bottom/2px 13px no-repeat;filter:drop-shadow(0 0 3px #aeb9c688); }
+.enemy-rank-elite .arena-portrait { border:2px solid #e2ae4e!important;box-shadow:inset 0 0 0 3px #765420,0 0 16px #f1c45c66!important; }
+.enemy-rank-elite::before { inset:-4px;border:2px solid #e7b34f;clip-path:polygon(8% 0,28% 4%,45% 0,62% 4%,92% 0,100% 15%,96% 34%,100% 52%,96% 70%,100% 92%,80% 100%,62% 96%,45% 100%,27% 96%,0 100%,4% 78%,0 60%,4% 42%,0 20%);filter:drop-shadow(0 0 5px #eab75b99); }
+.enemy-rank-epic .arena-portrait { border:2px solid #c765dc!important;box-shadow:inset 0 0 0 3px #6f245d,0 0 20px #c74ae788!important; }
+.enemy-rank-epic::before { inset:-5px;border:2px solid #bd4a72;border-radius:42% 58% 45% 55%;clip-path:polygon(3% 18%,14% 8%,21% 17%,32% 2%,41% 14%,50% 0,59% 14%,69% 2%,78% 17%,89% 8%,97% 20%,93% 35%,100% 50%,93% 65%,97% 80%,86% 92%,78% 83%,68% 98%,59% 86%,50% 100%,41% 86%,31% 98%,22% 83%,14% 92%,3% 80%,7% 65%,0 50%,7% 35%);filter:drop-shadow(0 0 7px #b73d6daa); }
 .enemy-rank-field-boss .arena-portrait,.enemy-rank-dungeon-boss .arena-portrait { border-width:3px!important;border-color:#d9ad5b!important;box-shadow:inset 0 0 0 3px #532216,0 0 24px #d55b4c99!important; }
-.enemy-rank-field-boss .enemy-rank-badge,.enemy-rank-dungeon-boss .enemy-rank-badge { border-color:#e9b95b;color:#ffe0a1;background:#4d1615e8; }
+.enemy-rank-field-boss::before,.enemy-rank-dungeon-boss::before { inset:-5px;border:2px solid #daac58;border-radius:35% 35% 48% 48%;box-shadow:0 0 9px #d05a4b99,inset 0 0 8px #5c1518; }
+.enemy-rank-ornament,.enemy-affix-mark { position:absolute;z-index:18;display:grid;place-items:center;pointer-events:none;filter:drop-shadow(0 2px 3px #000); }
+.enemy-rank-ornament-veteran { top:-10px;left:50%;transform:translateX(-50%);color:#d9e3ef; }
+.enemy-rank-ornament-elite { top:-10px;right:-10px;color:#ffd269; }
+.enemy-rank-ornament-epic { top:-12px;left:50%;transform:translateX(-50%);color:#f0a7e9; }
+.enemy-rank-ornament-boss { top:-13px;left:50%;transform:translateX(-50%);color:#ffe0a1; }
+.enemy-affix-mark { bottom:-6px;left:-6px;width:17px;height:17px;border:1px solid #d78347;border-radius:50%;background:#35170fe8;color:#ffd29b;box-shadow:0 0 7px #d7834766; }
+.arena-mode-spectacular .enemy-rank-ornament-elite { animation:enemy-rank-steel-glint 1.8s ease-in-out infinite; }
+.arena-mode-spectacular .enemy-rank-ornament-epic { animation:enemy-rank-crest-breathe 2.4s ease-in-out infinite; }
+.arena-mode-off .enemy-rank-ornament,.arena-mode-off .enemy-affix-mark { animation:none!important; }
+@keyframes enemy-rank-steel-glint { 0%,100%{filter:drop-shadow(0 2px 3px #000)}50%{filter:drop-shadow(0 0 7px #ffd269)} }
+@keyframes enemy-rank-crest-breathe { 0%,100%{filter:drop-shadow(0 2px 3px #4d102f)}50%{filter:drop-shadow(0 0 10px #dc63c9)} }
 @media (min-width:640px){.enemy-rank-frame { width:min(calc(80px * var(--enemy-rank-scale, 1)),112px);height:min(calc(80px * var(--enemy-rank-scale, 1)),112px); }}
 @media (min-width:1280px){.enemy-rank-frame { width:calc(88px * var(--enemy-rank-scale, 1));height:calc(88px * var(--enemy-rank-scale, 1)); }}
 /* A shared Dungeon Boss stays in its own central stage. Lane units never enter this layer. */

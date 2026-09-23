@@ -3,7 +3,7 @@ import type { CombatUnit, FloatingNumber, GameState, OwnedHero, OwnedItem } from
 import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { enemyArtSrc } from '@/game/art';
-import { Crosshair, Shield, Skull, Star, Swords, DoorOpen, Flame, Timer, Users } from 'lucide-react';
+import { ChevronsUp, Crown, Crosshair, Shield, Skull, Star, Swords, DoorOpen, Flame, Moon, Sparkles, Timer, Users, Zap } from 'lucide-react';
 import { MAX_HERO_STARS } from '@/game/state';
 
 const STAR_COLORS = ['#fbbf24', '#a855f7', '#ef4444', '#ec4899'];
@@ -32,6 +32,29 @@ function BattleHeroStars({ stars }: { stars: number }) {
       })}
     </span>
   );
+}
+
+type VisualEnemyRank = NonNullable<CombatUnit['enemyRank']>;
+
+function EnemyRankOrnament({ rank }: { rank: VisualEnemyRank }) {
+  if (rank === 'normal') return null;
+  const common = { size: 15, strokeWidth: 2.4, 'aria-hidden': true };
+  if (rank === 'veteran') return <span className="enemy-rank-ornament enemy-rank-ornament-veteran" role="img" aria-label="Veteran enemy"><ChevronsUp {...common} /></span>;
+  if (rank === 'elite') return <span className="enemy-rank-ornament enemy-rank-ornament-elite" role="img" aria-label="Elite enemy"><Swords {...common} /></span>;
+  if (rank === 'epic') return <span className="enemy-rank-ornament enemy-rank-ornament-epic" role="img" aria-label="Epic enemy"><Crown {...common} /></span>;
+  return <span className="enemy-rank-ornament enemy-rank-ornament-boss" role="img" aria-label={rank === 'dungeon-boss' ? 'Dungeon Boss' : 'Field Boss'}>{rank === 'dungeon-boss' ? <Skull {...common} /> : <Crown {...common} />}</span>;
+}
+
+function EnemyAffixMark({ affix }: { affix: NonNullable<CombatUnit['eliteAffix']> }) {
+  const common = { size: 11, strokeWidth: 2.5, 'aria-hidden': true };
+  const icon = affix === 'guard-aura' || affix === 'barrier' ? <Shield {...common} />
+    : affix === 'mending' ? <Sparkles {...common} />
+    : affix === 'enrage' ? <Flame {...common} />
+    : affix === 'curse' ? <Moon {...common} />
+    : affix === 'lane-blast' ? <Zap {...common} />
+    : affix === 'summoner' ? <Users {...common} />
+    : <Swords {...common} />;
+  return <span className="enemy-affix-mark" role="img" aria-label={`${affix.replace('-', ' ')} enemy affix`}>{icon}</span>;
 }
 
 interface ArenaProps {
@@ -185,8 +208,8 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
             {side === 'hero' && heroData && <span className="battle-hero-level" aria-label={`Hero level ${heroData.level}`}>Lv {heroData.level}</span>}
             {side === 'hero' && heroData && <BattleHeroStars stars={heroData.stars} />}
             {side === 'enemy' && unit.role && <span className="enemy-role-badge">{unit.role}</span>}
-            {side === 'enemy' && unit.enemyRank && <span className="enemy-rank-badge" aria-label={`${unit.enemyRank} enemy rank`}>{unit.enemyRank === 'field-boss' ? 'BOSS' : unit.enemyRank === 'dungeon-boss' ? 'DUNGEON BOSS' : unit.enemyRank.toUpperCase()}</span>}
-            {side === 'enemy' && unit.eliteAffix && <span className="enemy-elite-badge">ELITE · {unit.eliteAffix.replace('-', ' ')}</span>}
+            {side === 'enemy' && unit.enemyRank && <EnemyRankOrnament rank={unit.enemyRank} />}
+            {side === 'enemy' && unit.eliteAffix && <EnemyAffixMark affix={unit.eliteAffix} />}
             {side === 'enemy' && (Boolean(unit.shield) || Boolean(unit.curseRemainingMs) || unit.enraged || unit.summoned) && <span className="enemy-status-badges" aria-label="Enemy combat statuses">
               {Boolean(unit.shield) && <i title="Barrier">◆</i>}{Boolean(unit.curseRemainingMs) && <i title="Curse">☾</i>}{unit.enraged && <i title="Enraged">🔥</i>}{unit.summoned && <i title="Summoned">✦</i>}
             </span>}
