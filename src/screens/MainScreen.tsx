@@ -1155,36 +1155,45 @@ function TestControls({ game }: { game: GameApi }) {
   const [creditingGold, setCreditingGold] = useState(false);
   const [creditingAccountXp, setCreditingAccountXp] = useState(false);
   const [creditingFormationXp, setCreditingFormationXp] = useState(false);
+  const [creditError, setCreditError] = useState('');
   const [done, setDone] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const armed = confirm.toUpperCase() === 'DELETE';
+  const reportCreditError = (message: string) => setCreditError(message === 'rate_limited'
+    ? 'Tester limit reached. Try again in up to 60 seconds.'
+    : `Tester credit failed: ${message}`);
 
   const creditTokens = async () => {
     if (crediting) return;
+    setCreditError('');
     setCrediting(true);
-    const result = await playerSync<{ claimed: number; token_balance: number }>('tester_credit_tokens');
+    const result = await playerSync<{ claimed: number; token_balance: number }>('tester_credit_tokens', {}, reportCreditError);
     if (result) game.applyServerTokenClaim(result.claimed, result.token_balance);
+    else setCreditError((message) => message || 'Tester credit failed. Try again.');
     setCrediting(false);
   };
 
   const creditGold = async () => {
     if (creditingGold) return;
+    setCreditError('');
     setCreditingGold(true);
-    await game.creditTestGold();
+    if (!await game.creditTestGold(reportCreditError)) setCreditError((message) => message || 'Tester credit failed. Try again.');
     setCreditingGold(false);
   };
 
   const creditAccountXp = async () => {
     if (creditingAccountXp) return;
+    setCreditError('');
     setCreditingAccountXp(true);
-    await game.creditTestAccountXp();
+    if (!await game.creditTestAccountXp(reportCreditError)) setCreditError((message) => message || 'Tester credit failed. Try again.');
     setCreditingAccountXp(false);
   };
 
   const creditFormationXp = async () => {
     if (creditingFormationXp) return;
+    setCreditError('');
     setCreditingFormationXp(true);
-    await game.creditTestFormationXp();
+    if (!await game.creditTestFormationXp(reportCreditError)) setCreditError((message) => message || 'Tester credit failed. Try again.');
     setCreditingFormationXp(false);
   };
 
@@ -1208,10 +1217,11 @@ function TestControls({ game }: { game: GameApi }) {
     <>
       <div className="absolute right-3 top-14 z-40 flex flex-col items-stretch gap-1">
         <span className="test-marker">TESTER</span>
-        <button type="button" className="test-btn test-btn-gold" disabled={creditingGold} onClick={() => void creditGold()}>{creditingGold ? 'Crediting…' : '+10k Gold'}</button>
-        <button type="button" className="test-btn test-btn-gold" disabled={creditingAccountXp} onClick={() => void creditAccountXp()}>{creditingAccountXp ? 'Crediting…' : '+2k Account XP'}</button>
-        <button type="button" className="test-btn test-btn-gold" disabled={creditingFormationXp} onClick={() => void creditFormationXp()}>{creditingFormationXp ? 'Crediting…' : '+2k Formation XP'}</button>
-        <button type="button" className="test-btn test-btn-green" disabled={crediting} onClick={() => void creditTokens()}>{crediting ? 'Crediting…' : '+10k $HERO'}</button>
+        <button type="button" className="test-btn test-btn-gold" disabled={creditingGold} onClick={() => void creditGold()}>{creditingGold ? 'Crediting…' : '+50k Gold'}</button>
+        <button type="button" className="test-btn test-btn-gold" disabled={creditingAccountXp} onClick={() => void creditAccountXp()}>{creditingAccountXp ? 'Crediting…' : '+40k Account XP'}</button>
+        <button type="button" className="test-btn test-btn-gold" disabled={creditingFormationXp} onClick={() => void creditFormationXp()}>{creditingFormationXp ? 'Crediting…' : '+40k Formation XP'}</button>
+        <button type="button" className="test-btn test-btn-green" disabled={crediting} onClick={() => void creditTokens()}>{crediting ? 'Crediting…' : '+50k $HERO'}</button>
+        {creditError && <div role="alert" className="max-w-40 rounded border border-red-500/45 bg-red-950/80 px-2 py-1 text-xs text-red-200">{creditError}</div>}
         <button type="button" className="test-btn test-btn-reset" onClick={() => setOpen(true)}>Delete account</button>
       </div>
 

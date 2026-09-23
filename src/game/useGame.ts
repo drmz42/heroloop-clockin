@@ -1297,8 +1297,8 @@ export function useGame() {
 
   // ── Actions ──────────────────────────────────────────────────────────────
 
-  const creditTestGold = useCallback(async (): Promise<boolean> => {
-    const result = await playerSync<{ gold: number; total_gold_earned: number; revision: number }>('tester_credit_gold');
+  const creditTestGold = useCallback(async (onError?: (message: string) => void): Promise<boolean> => {
+    const result = await playerSync<{ gold: number; total_gold_earned: number; revision: number }>('tester_credit_gold', {}, onError);
     if (!result || !Number.isFinite(result.gold) || !Number.isFinite(result.total_gold_earned)) return false;
     if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
     const nextState = {
@@ -1311,16 +1311,16 @@ export function useGame() {
     return true;
   }, []);
 
-  const creditTestAccountXp = useCallback(async (): Promise<boolean> => {
-    const result = await playerSync<{ state: GameState; revision: number }>('tester_credit_account_xp');
+  const creditTestAccountXp = useCallback(async (onError?: (message: string) => void): Promise<boolean> => {
+    const result = await playerSync<{ state: GameState; revision: number }>('tester_credit_account_xp', {}, onError);
     if (!result?.state || !Number.isSafeInteger(result.revision)) return false;
     setServerRevisionHint(result.revision);
     hydrateServerState(result.state);
     return true;
   }, [hydrateServerState]);
 
-  const creditTestFormationXp = useCallback(async (): Promise<boolean> => {
-    const result = await playerSync<{ state: GameState; revision: number }>('tester_credit_formation_xp');
+  const creditTestFormationXp = useCallback(async (onError?: (message: string) => void): Promise<boolean> => {
+    const result = await playerSync<{ state: GameState; revision: number }>('tester_credit_formation_xp', {}, onError);
     if (!result?.state || !Number.isSafeInteger(result.revision)) return false;
     setServerRevisionHint(result.revision);
     hydrateServerState(result.state);
