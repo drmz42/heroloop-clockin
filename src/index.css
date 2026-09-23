@@ -611,8 +611,6 @@ html { scroll-behavior: smooth; }
 .enemy-rank-elite::before { inset:-3px;border:2px solid #e7b34f;clip-path:polygon(7% 0,93% 0,100% 7%,100% 93%,93% 100%,7% 100%,0 93%,0 7%);filter:drop-shadow(0 0 5px #eab75b99); }
 .enemy-rank-epic .arena-portrait { border:2px solid #c765dc!important;box-shadow:inset 0 0 0 3px #6f245d,0 0 20px #c74ae788!important; }
 .enemy-rank-epic::before { inset:-4px;border:2px solid #bd4a72;clip-path:polygon(4% 12%,14% 4%,26% 10%,38% 0,50% 8%,62% 0,74% 10%,86% 4%,96% 12%,90% 26%,100% 38%,92% 50%,100% 62%,90% 74%,96% 88%,86% 96%,74% 90%,62% 100%,50% 92%,38% 100%,26% 90%,14% 96%,4% 88%,10% 74%,0 62%,8% 50%,0 38%,10% 26%);filter:drop-shadow(0 0 7px #b73d6daa); }
-.enemy-rank-field-boss .arena-portrait,.enemy-rank-dungeon-boss .arena-portrait { border-width:3px!important;border-color:#d9ad5b!important;box-shadow:inset 0 0 0 3px #532216,0 0 24px #d55b4c99!important; }
-.enemy-rank-field-boss::before,.enemy-rank-dungeon-boss::before { inset:-4px;border:2px solid #daac58;clip-path:polygon(7% 0,30% 4%,50% 0,70% 4%,93% 0,100% 12%,96% 30%,100% 50%,96% 70%,100% 88%,93% 100%,70% 96%,50% 100%,30% 96%,7% 100%,0 88%,4% 70%,0 50%,4% 30%,0 12%);filter:drop-shadow(0 0 9px #d05a4b99); }
 .enemy-rank-ornament { position:absolute;z-index:18;inset:-9px;pointer-events:none;filter:drop-shadow(0 2px 3px #000); }
 .enemy-rank-edge { position:absolute;display:block; }
 .enemy-rank-edge-top { top:-5px;left:50%;transform:translateX(-50%); }
@@ -626,7 +624,7 @@ html { scroll-behavior: smooth; }
 .enemy-rank-ornament-veteran { color:#d9e3ef; }
 .enemy-rank-ornament-elite { color:#ffd269; }
 .enemy-rank-ornament-epic { color:#f0a7e9; }
-.enemy-rank-ornament-boss { inset:-11px;color:#ffe0a1; }
+.enemy-boss-frame-overlay { position:absolute;z-index:18;inset:-13%;width:126%;height:126%;max-width:none;pointer-events:none;object-fit:fill;filter:drop-shadow(0 5px 6px rgba(0,0,0,.74)); }
 .enemy-affix-mark { position:absolute;z-index:18;bottom:-6px;left:-6px;display:grid;width:17px;height:17px;place-items:center;border:1px solid #d78347;border-radius:2px;background:#35170fe8;color:#ffd29b;clip-path:polygon(20% 0,80% 0,100% 20%,100% 80%,80% 100%,20% 100%,0 80%,0 20%);box-shadow:0 0 7px #d7834766; }
 .arena-mode-spectacular .enemy-rank-ornament-elite { animation:enemy-rank-steel-glint 1.8s ease-in-out infinite; }
 .arena-mode-spectacular .enemy-rank-ornament-epic { animation:enemy-rank-crest-breathe 2.4s ease-in-out infinite; }

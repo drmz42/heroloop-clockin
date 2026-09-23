@@ -37,12 +37,12 @@ function BattleHeroStars({ stars }: { stars: number }) {
 type VisualEnemyRank = NonNullable<CombatUnit['enemyRank']>;
 
 function EnemyRankOrnament({ rank }: { rank: VisualEnemyRank }) {
-  if (rank === 'normal') return null;
+  if (rank === 'normal' || rank === 'field-boss' || rank === 'dungeon-boss') return null;
   const common = { size: 15, strokeWidth: 2.4, 'aria-hidden': true };
   if (rank === 'veteran') return <span className="enemy-rank-ornament enemy-rank-ornament-veteran" role="img" aria-label="Veteran enemy"><Sword {...common} className="enemy-rank-edge enemy-rank-blade-left" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-right" /></span>;
   if (rank === 'elite') return <span className="enemy-rank-ornament enemy-rank-ornament-elite" role="img" aria-label="Elite enemy"><Swords {...common} className="enemy-rank-edge enemy-rank-edge-top" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-bottom" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-left" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-right" /></span>;
   if (rank === 'epic') return <span className="enemy-rank-ornament enemy-rank-ornament-epic" role="img" aria-label="Epic enemy"><Crown {...common} className="enemy-rank-edge enemy-rank-edge-top" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-left" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-right" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-left" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-right" /></span>;
-  return <span className="enemy-rank-ornament enemy-rank-ornament-boss" role="img" aria-label={rank === 'dungeon-boss' ? 'Dungeon Boss' : 'Field Boss'}><Crown {...common} className="enemy-rank-edge enemy-rank-edge-top" /><Skull {...common} className="enemy-rank-edge enemy-rank-edge-bottom" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-left" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-right" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-left" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-right" /></span>;
+  return null;
 }
 
 function EnemyAffixMark({ affix }: { affix: NonNullable<CombatUnit['eliteAffix']> }) {
@@ -162,6 +162,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   const portraitColor = heroRarityColor ?? unit.color;
   const dungeonBoss = unit.uid.endsWith('-dungeon-shared');
   const protectedBoss = unit.uid.endsWith('-dungeon-protected');
+  const bossRank = side === 'enemy' && (unit.enemyRank === 'field-boss' || unit.enemyRank === 'dungeon-boss');
 
   return (
     <div className={`arena-unit relative flex items-center gap-2 transition-opacity duration-300 ${side === 'enemy' ? 'flex-row-reverse' : ''} ${dungeonBoss ? 'dungeon-shared-boss' : ''} ${protectedBoss ? 'dungeon-protected-boss' : ''} ${targeted ? 'dungeon-heavy-target' : ''} ${unit.alive ? 'opacity-100' : 'opacity-40 grayscale'}`}>
@@ -216,6 +217,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
             </span>}
           </div>
         </div>
+        {bossRank && <img src="/assets/enemies/frames/boss-thornframe-v1.webp" alt="" aria-hidden="true" className="enemy-boss-frame-overlay" loading="eager" decoding="sync" />}
       </div>
       </div>
     </div>
