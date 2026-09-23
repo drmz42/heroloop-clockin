@@ -695,9 +695,10 @@ html { scroll-behavior: smooth; }
 @media(max-width:639px){.dungeon-gate-header{align-items:center}.dungeon-gate-header>div:first-child{display:none}.dungeon-gate-header>div:nth-child(2) p{display:none}.dungeon-gate-quick{min-width:122px}.dungeon-gate-quick b{font-size:14px}.dungeon-depth-picker{grid-template-columns:1fr}.dungeon-depth-picker button{min-height:38px}.dungeon-route-preview ol>li{min-height:46px}.dungeon-gate-actions>div{width:100%}}
 .dungeon-room { isolation:isolate;background-position:center;background-size:cover;transition:background-color .5s ease,filter .5s ease; }
 .dungeon-room::before { content:'';position:absolute;z-index:-3;inset:0;background-size:cover;background-position:center;pointer-events:none; }
-.dungeon-room-1::before { background-image:linear-gradient(180deg,rgba(8,13,18,.18),rgba(5,8,10,.68)),url('/assets/screens/dungeon-throne-abyss-v1.webp');filter:saturate(.55) hue-rotate(165deg) brightness(.72); }
-.dungeon-room-2::before { background-image:linear-gradient(180deg,rgba(7,14,22,.22),rgba(5,7,12,.65)),url('/assets/screens/dungeon-throne-abyss-v1.webp');filter:saturate(.68) hue-rotate(120deg) brightness(.66); }
-.dungeon-room-3::before { background-image:linear-gradient(90deg,rgba(27,51,28,.38),transparent 48%,rgba(63,27,74,.35)),url('/assets/screens/dungeon-throne-abyss-v1.webp');filter:saturate(.72) brightness(.72); }
+.dungeon-room-1::before { background-image:linear-gradient(180deg,rgba(5,7,8,.08),rgba(4,5,6,.42)),url('/assets/screens/dungeon-room-1-outer-bastion-v2.webp'); }
+.dungeon-room-2::before { background-image:linear-gradient(180deg,rgba(5,7,9,.1),rgba(4,5,7,.4)),url('/assets/screens/dungeon-room-2-guard-hall-v2.webp'); }
+.dungeon-room-3::before { background-image:linear-gradient(180deg,rgba(7,8,6,.08),rgba(5,5,7,.42)),url('/assets/screens/dungeon-room-3-crossroads-v2.webp'); }
+.dungeon-room-4::before { background-image:linear-gradient(180deg,rgba(6,6,9,.1),rgba(5,4,7,.42)),url('/assets/screens/dungeon-room-4-abyss-throne-v2.webp'); }
 .dungeon-depth-3::after { content:'';position:absolute;z-index:-2;inset:0;background:radial-gradient(circle at 68% 35%,rgba(118,48,152,.22),transparent 30%),linear-gradient(180deg,transparent 55%,rgba(92,18,40,.25));pointer-events:none; }
 .dungeon-route { position:absolute;z-index:41;top:10px;left:50%;display:grid;width:min(420px,calc(100% - 470px));transform:translateX(-50%);grid-template-columns:repeat(4,1fr);gap:0;padding:5px 10px;border:1px solid rgba(89,106,132,.46);border-radius:8px;background:rgba(7,10,14,.88);box-shadow:0 9px 24px #0008; }
 .dungeon-route>div { position:relative;display:grid;justify-items:center;color:#6e7480;font-size:7px;font-weight:900;letter-spacing:.09em; }
@@ -715,7 +716,7 @@ html { scroll-behavior: smooth; }
 }
 .dungeon-boss-phase-retinue .arena-lanes { z-index:20; }
 .dungeon-boss-phase-retinue,.dungeon-boss-phase-shared {
-  background-image:linear-gradient(180deg,rgba(4,5,9,.28),rgba(5,6,9,.12) 48%,rgba(4,4,6,.45)),url('/assets/screens/dungeon-throne-abyss-v1.webp');
+  background-image:linear-gradient(180deg,rgba(4,5,8,.26),rgba(5,5,8,.1) 48%,rgba(4,4,6,.45)),url('/assets/screens/dungeon-room-4-abyss-throne-v2.webp');
   background-position:center;background-size:cover;
 }
 .dungeon-throne-boss {
