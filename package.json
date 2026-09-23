@@ -175,6 +175,7 @@
     "check:admin-ui": "tsc -p admin/ui-src/tsconfig.json --noEmit && node scripts/check-admin-ui-boundary.mjs",
     "screens:admin-ui": "node scripts/admin-ui-screens.mjs",
     "check:sweep": "node scripts/check-sweep.mjs",
+    "check:sweep:when-idle": "node scripts/check-sweep.mjs --include-heavy --wait-for-idle",
     "check:founder-control-center": "node scripts/check-founder-control-center-contract.mjs",
     "check:selfhosted-production-backup": "node scripts/check-selfhosted-production-backup-schedule.mjs",
     "check:selfhosted-production-upgrade": "node scripts/check-selfhosted-production-upgrade-contract.mjs",
