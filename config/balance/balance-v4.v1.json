@@ -68,7 +68,7 @@
       "id": "telemetry-acceptance",
       "owner": "telemetry",
       "path": "config/telemetry/economy-v1.json",
-      "sha256": "88cc8b0c86c39a06710197e4f3162cebb9c74527459a87ce5ba2a2b953787362",
+      "sha256": "faeba26bce64f66583faf652685e921258d2b5e30e13ec60b25b919e55bf688f",
       "includes": ["server-stamped-version", "retention", "privacy", "minimum-cohorts"]
     }
   ],
@@ -81,7 +81,7 @@
   },
   "trackedExtensionsNotInCandidate": [
     { "id": "formation-sets", "path": "config/balance/formation-set.v1.json", "sha256": "8b6a3dce7f568b283c61393c087787eb473513b92ca57dfe820c65f3586ae7a4" },
-    { "id": "hero-abilities", "path": "config/balance/hero-ability-availability.v1.json", "sha256": "2a6ab345d646c449254c9a815dc94adcf3dcba582d170461c07f6c9e8963da25" },
+    { "id": "hero-abilities", "path": "config/balance/hero-ability-availability.v1.json", "sha256": "5f5eb658efc0238b1a1d6d91efcc510b64aa33ae2d334a012e8a4f71ae105121" },
     { "id": "pets", "path": "config/balance/pets.v1.json", "sha256": "1552b77e9141f148cfc6e19e19494bc9566223cb53da313f932494776dca108b" },
     { "id": "spells-auras", "path": "config/balance/spells-auras.v1.json", "sha256": "5cb41ec496a51d51d19bedfaa4d081bb4347fc0afd3693cfd1de4c57b07bf837" },
     { "id": "class-mastery", "path": "config/balance/class-mastery.v1.json", "sha256": "524856009b9b281e5304ed53b01b764ed12eea0a48927773f1e919d1b73664d5" },

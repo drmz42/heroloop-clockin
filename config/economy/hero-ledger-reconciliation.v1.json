@@ -8,6 +8,7 @@
   "sourceKinds": [
     { "id": "mining_pool", "flow": "player_issuance", "treatment": "player-issuance" },
     { "id": "promo_code", "flow": "player_issuance", "treatment": "player-issuance" },
+    { "id": "quest-reward", "flow": "player_issuance", "treatment": "player-issuance" },
     { "id": "hero-summon", "flow": "treasury_inflow", "treatment": "unallocated-project-receipt" },
     { "id": "hero-ascension", "flow": "treasury_inflow", "treatment": "unallocated-project-receipt" },
     { "id": "training-slot", "flow": "treasury_inflow", "treatment": "unallocated-project-receipt" },
@@ -22,6 +23,7 @@
   "coverage": [
     { "source": "distribution_log.amount_distributed", "ledgerKind": "mining_pool", "sourceKeyPrefix": "distribution:" },
     { "source": "promo_code_redemptions.result.rewards.hero", "ledgerKind": "promo_code", "sourceKeyPrefix": "promo:" },
+    { "source": "quest_claim_events.result.reward.hero", "ledgerKind": "quest-reward", "sourceKeyPrefix": "quest:" },
     { "source": "token_spend_events.amount", "ledgerKinds": ["hero-summon", "hero-ascension", "training-slot", "training-boost-2x-1h", "training-boost-2x-4h", "training-boost-4x-1h", "training-boost-4x-4h", "item-enchant", "item-reroll"], "sourceKeyPrefix": "token_spend:" },
     { "source": "market_item_events.result.fee", "ledgerKind": "market_fee", "sourceKeyPrefix": "market_fee:" }
   ],
