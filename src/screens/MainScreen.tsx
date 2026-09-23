@@ -1201,9 +1201,11 @@ function TestControls({ game }: { game: GameApi }) {
     if (!armed || busy) return;
     setBusy(true);
     setDeleteError('');
-    const deleted = await playerSync<{ deleted: boolean }>('account_delete');
+    let reason = '';
+    const deleted = await playerSync<{ deleted: boolean }>('account_delete', {}, (message) => { reason = message; });
     if (!deleted?.deleted) {
-      setDeleteError('Account was not deleted. Nothing was removed locally; retry in a moment.');
+      const detail = reason ? ` Server said: ${reason}.` : ' Sign in again and retry.';
+      setDeleteError(`Account was not deleted. Nothing was removed locally; retry in a moment.${detail}`);
       setBusy(false);
       return;
     }
