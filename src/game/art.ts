@@ -51,9 +51,13 @@ export function enemyArtSrc(unitUid: string, role?: import('./types').CombatUnit
 export function enemyArtStyle(presentationId?: string): Record<string, string> | null {
   const catalogArt = catalogEnemyArt(presentationId);
   if (!catalogArt) return null;
-  const offsets = { nw: ['0%', '0%'], ne: ['-100%', '0%'], sw: ['0%', '-100%'], se: ['-100%', '-100%'] } as const;
-  const [left, top] = offsets[catalogArt.cell];
-  return { position: 'absolute', width: '200%', height: '200%', maxWidth: 'none', left, top, objectFit: 'fill' };
+  const positions = { nw: '0% 0%', ne: '100% 0%', sw: '0% 100%', se: '100% 100%' } as const;
+  return {
+    backgroundImage: `url(${catalogArt.src})`,
+    backgroundPosition: positions[catalogArt.cell],
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: '200% 200%',
+  };
 }
 
 export function itemArtSrc(itemId: string): string | null {
