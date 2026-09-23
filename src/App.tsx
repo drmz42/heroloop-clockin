@@ -53,6 +53,7 @@ function App() {
   const saveStateRef = useRef(game.state);
   const saveStateVersionRef = useRef(0);
   const savedStateVersionRef = useRef(0);
+  const saveConflictStreakRef = useRef(0);
   const flushServerSaveRef = useRef<() => void>(() => undefined);
   const accountStatusRequestRef = useRef<Promise<{ exists: boolean; username: string | null; account_id: string } | null> | null>(null);
   const legacyStateRef = useRef(game.state);
@@ -253,22 +254,49 @@ function App() {
       highestLocation: state.highestLocation,
     });
     saveInFlightRef.current = true;
-    void playerSync<{ revision: number; state?: unknown; conflict?: boolean }>('game_state_save', { state, revision }).then((saved) => {
+    let conflictRetryScheduled = false;
+    const rememberRevision = (nextRevision: number) => {
+      const latestRevision = serverStateRevisionRef.current ?? 0;
+      if (nextRevision > latestRevision) {
+        serverStateRevisionRef.current = nextRevision;
+        setServerStateRevision(nextRevision);
+      }
+    };
+    const scheduleConflictRetry = () => {
+      saveConflictStreakRef.current += 1;
+      const retryDelay = Math.min(8_000, 800 * (2 ** Math.min(saveConflictStreakRef.current, 3)));
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = window.setTimeout(() => flushServerSaveRef.current(), retryDelay);
+      conflictRetryScheduled = true;
+    };
+    void (async () => {
+      let saved = await playerSync<{ revision: number; state?: unknown; conflict?: boolean }>('game_state_save', { state, revision });
+      // A 409 includes the current revision. Rebase the exact pending client
+      // intent once; the server still canonicalizes all protected progression,
+      // currency and inventory fields before it writes.
+      if (saved?.conflict && Number.isInteger(saved.revision) && saved.revision > 0) {
+        rememberRevision(saved.revision);
+        saved = await playerSync<{ revision: number; state?: unknown; conflict?: boolean }>('game_state_save', { state, revision: saved.revision });
+      }
       if (!saved?.revision) return;
+      if (saved.conflict) {
+        rememberRevision(saved.revision);
+        scheduleConflictRetry();
+        return;
+      }
+      saveConflictStreakRef.current = 0;
       savedStateVersionRef.current = Math.max(savedStateVersionRef.current, version);
       const latestRevision = serverStateRevisionRef.current ?? 0;
-      if (saved.state && saved.revision > latestRevision) hydrateServerState(saved.state);
-      if (saved.revision > latestRevision) {
-        serverStateRevisionRef.current = saved.revision;
-        setServerStateRevision(saved.revision);
-      }
+      // Never overwrite a newer local action with this older successful save.
+      if (saved.state && saved.revision > latestRevision && saveStateVersionRef.current === version) hydrateServerState(saved.state);
+      rememberRevision(saved.revision);
       if (incomeFingerprint !== confirmedIncomeFingerprintRef.current) {
         confirmedIncomeFingerprintRef.current = incomeFingerprint;
         void tokenomics.refreshIncome(saved.revision);
       }
-    }).finally(() => {
+    })().finally(() => {
       saveInFlightRef.current = false;
-      if (saveStateVersionRef.current > version) {
+      if (!conflictRetryScheduled && saveStateVersionRef.current > version) {
         if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
         saveTimerRef.current = window.setTimeout(() => flushServerSaveRef.current(), 800);
       }
