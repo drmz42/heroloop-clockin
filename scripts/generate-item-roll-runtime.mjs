@@ -4,7 +4,7 @@
 // Compiles one deterministic checksum-bound item-roll v5 contract from existing
 // approved source configs and emits:
 //   - src/game/item-roll-runtime.generated.ts            (future client routing)
-//   - selfhosted/postgres/migrations/20260908130000_item_roll_v5_primitives.sql (additive primitives)
+//   - selfhosted/postgres/migrations/20260908130000_item_roll_v5_primitives.sql (immutable applied migration)
 //
 // Sources (no new balance values):
 //   - config/balance/hero-power-model.v1.json  Option-A base rolls / curves / rarities / pools
@@ -12,7 +12,7 @@
 //   - config/economy/enchant-v4.v1.json        existing +1..+20 Enchant tiers
 //
 // CLI:
-//   node scripts/generate-item-roll-runtime.mjs            write both generated artifacts
+//   node scripts/generate-item-roll-runtime.mjs            write the current TS artifact
 //   node scripts/generate-item-roll-runtime.mjs --check    verify committed bytes, write nothing
 
 import { createHash } from 'node:crypto';
@@ -33,6 +33,8 @@ export const GENERATED_SQL_PATH = resolve(
   REPO_ROOT,
   'selfhosted/postgres/migrations/20260908130000_item_roll_v5_primitives.sql',
 );
+export const IMMUTABLE_SQL_SHA256 = '1ad2ddeafd0f8f644c519365f5e7fc39f9134c6740d9d5475760e45e4c014098';
+export const IMMUTABLE_SQL_RUNTIME_STAMP = 'item-roll-v5@sha256:67048e250cf561ae658c8103e08be49285d160e0eb190897088753f5ea4d150c';
 
 const RARITY_IDS = [
   'common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic',
@@ -559,17 +561,17 @@ export function generateItemRollRuntime({ write = true } = {}) {
   const contract = buildItemRollV5Contract();
   const ts = renderGeneratedTs(contract);
   const sql = renderMigrationSql(contract);
+  const committedSql = existsSync(GENERATED_SQL_PATH) ? readFileSync(GENERATED_SQL_PATH) : null;
+  const sqlMatch = committedSql !== null && sha256(committedSql) === IMMUTABLE_SQL_SHA256;
 
   if (!write) {
     const tsMatch = existsSync(GENERATED_TS_PATH)
       && Buffer.compare(readFileSync(GENERATED_TS_PATH), Buffer.from(ts, 'utf8')) === 0;
-    const sqlMatch = existsSync(GENERATED_SQL_PATH)
-      && Buffer.compare(readFileSync(GENERATED_SQL_PATH), Buffer.from(sql, 'utf8')) === 0;
     return { contract, ts, sql, tsMatch, sqlMatch };
   }
 
+  invariant(sqlMatch, 'applied item-roll migration bytes changed');
   writeFileSync(GENERATED_TS_PATH, ts);
-  writeFileSync(GENERATED_SQL_PATH, sql);
   return { contract, ts, sql, tsMatch: true, sqlMatch: true, wrote: true };
 }
 
@@ -591,13 +593,13 @@ function main() {
     console.log(`Item-roll v5 runtime generator (--check)`);
     console.log(`runtime stamp: ${contract.runtimeStamp}`);
     console.log(`src/game/item-roll-runtime.generated.ts: ${tsMatch ? 'MATCH' : 'MISMATCH'}`);
-    console.log(`selfhosted/postgres/migrations/20260908130000_item_roll_v5_primitives.sql: ${sqlMatch ? 'MATCH' : 'MISMATCH'}`);
+    console.log(`selfhosted/postgres/migrations/20260908130000_item_roll_v5_primitives.sql: ${sqlMatch ? 'IMMUTABLE' : 'MISMATCH'}`);
     if (!tsMatch || !sqlMatch) process.exitCode = 1;
     return;
   }
 
   console.log(`Wrote ${GENERATED_TS_PATH}`);
-  console.log(`Wrote ${GENERATED_SQL_PATH}`);
+  console.log(`Preserved immutable ${GENERATED_SQL_PATH}`);
   console.log(`runtime stamp: ${contract.runtimeStamp}`);
 }
 
