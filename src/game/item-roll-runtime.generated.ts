@@ -1,10 +1,10 @@
 /**
  * Item-roll v5 runtime contract — GENERATED FILE. Do not edit by hand.
  * Regenerate: node scripts/generate-item-roll-runtime.mjs
- * Runtime stamp: item-roll-v5@sha256:67048e250cf561ae658c8103e08be49285d160e0eb190897088753f5ea4d150c
+ * Runtime stamp: item-roll-v5@sha256:c885bb3ce3920dc9e47bfd9e315ef7b7eb47b6bc44196e0f8047a09e5ec4e363
  * Sources:
  *   config/balance/hero-power-model.v1.json sha256:4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc
- *   config/balance/balance-v4.v1.json sha256:1582812293bdea86b040e700b30175dca52d0d3258ca8bafdf01ede082e81b53
+ *   config/balance/balance-v4.v1.json sha256:f2e59620f1501eacb5813107d0f1152c873888cc3bf826f77974b064792ba07d
  *   config/economy/enchant-v4.v1.json sha256:4c18f4186df22256327f9377c373335cf63a83517fc38a3d20e393ff9abfc359
  *
  * Option-A base rolls (founder-approved normalized equipment), six approved
@@ -14,14 +14,14 @@
  * the server remains authoritative for every item roll.
  */
 export const ITEM_ROLL_V5_RUNTIME_STAMP =
-  'item-roll-v5@sha256:67048e250cf561ae658c8103e08be49285d160e0eb190897088753f5ea4d150c' as const;
+  'item-roll-v5@sha256:c885bb3ce3920dc9e47bfd9e315ef7b7eb47b6bc44196e0f8047a09e5ec4e363' as const;
 
 export const ITEM_ROLL_V5_CONTRACT_JSON = `
 {
   "version": "item-roll-v5",
   "sources": {
     "heroPowerModel": "4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc",
-    "balanceV4": "1582812293bdea86b040e700b30175dca52d0d3258ca8bafdf01ede082e81b53",
+    "balanceV4": "f2e59620f1501eacb5813107d0f1152c873888cc3bf826f77974b064792ba07d",
     "enchantV4": "4c18f4186df22256327f9377c373335cf63a83517fc38a3d20e393ff9abfc359"
   },
   "modelVersion": "hero-power-proposal-2026.08.12-v3",
@@ -316,8 +316,8 @@ export const ITEM_ROLL_V5_CONTRACT_JSON = `
       }
     ]
   },
-  "runtimeStamp": "item-roll-v5@sha256:67048e250cf561ae658c8103e08be49285d160e0eb190897088753f5ea4d150c",
-  "contractSha": "67048e250cf561ae658c8103e08be49285d160e0eb190897088753f5ea4d150c"
+  "runtimeStamp": "item-roll-v5@sha256:c885bb3ce3920dc9e47bfd9e315ef7b7eb47b6bc44196e0f8047a09e5ec4e363",
+  "contractSha": "c885bb3ce3920dc9e47bfd9e315ef7b7eb47b6bc44196e0f8047a09e5ec4e363"
 }
 ` as const;
 
