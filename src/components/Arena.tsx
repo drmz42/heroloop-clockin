@@ -141,7 +141,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   const dungeonBoss = unit.uid.endsWith('-dungeon-shared');
   const protectedBoss = unit.uid.endsWith('-dungeon-protected');
   const bossRank = unit.enemyRank === 'field-boss' || unit.enemyRank === 'dungeon-boss' || dungeonBoss || protectedBoss;
-  const framedEnemy = side === 'enemy' && (bossRank || (unit.enemyRank !== undefined && unit.enemyRank !== 'normal'));
+  const framedEnemy = side === 'enemy' && Boolean(unit.enemyPresentationId || bossRank);
   const enemyFrameSrc = framedEnemy
     ? bossRank ? '/assets/enemies/frames/boss-v1.webp' : catalogEnemyFrameSrc(unit.enemyPresentationId)
     : null;
@@ -157,7 +157,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
         <div className="whitespace-nowrap text-center text-[9px] font-bold tabular-nums text-[#bdb6a9]" aria-label={`${Math.ceil(unit.hp)} of ${unit.maxHp} health`}>{formatHealth(unit.hp)} / {formatHealth(unit.maxHp)}</div>
       </div>
       {/* Portrait */}
-      <div className={side === 'enemy' ? `relative enemy-rank-frame ${unit.enemyRank ? `enemy-rank-${unit.enemyRank}` : ''}` : 'relative'}>
+      <div className={side === 'enemy' ? `relative enemy-rank-frame enemy-rank-${unit.enemyRank ?? 'normal'}` : 'relative'}>
       {/* Floating combat numbers sit over the portrait */}
       <div className="absolute -top-4 left-1/2 -translate-x-1/2 pointer-events-none z-20 w-24 h-16">
         {myFloaters.map((f) => {
@@ -198,7 +198,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
             </span>}
           </div>
         </div>
-        {enemyFrameSrc && <img src={enemyFrameSrc} alt="" aria-hidden="true" className={`enemy-art-frame-overlay enemy-art-frame-${bossRank ? 'boss' : unit.enemyRank}`} loading="eager" decoding="sync" />}
+        {enemyFrameSrc && <img src={enemyFrameSrc} alt="" aria-hidden="true" className={`enemy-art-frame-overlay enemy-art-frame-${bossRank ? 'boss' : unit.enemyRank ?? 'normal'}`} loading="eager" decoding="sync" />}
       </div>
       </div>
       {side === 'enemy' && (unit.enemyRank || unit.eliteAffix) && <span className="sr-only">{unit.enemyRank?.replace('-', ' ')}{unit.eliteAffix ? `, ${unit.eliteAffix.replace('-', ' ')} affix` : ''}</span>}
