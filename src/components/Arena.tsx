@@ -210,8 +210,6 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
             {side === 'hero' && heroData && <span className="battle-hero-level" aria-label={`Hero level ${heroData.level}`}>Lv {heroData.level}</span>}
             {side === 'hero' && heroData && <BattleHeroStars stars={heroData.stars} />}
             {side === 'enemy' && unit.role && <span className="enemy-role-badge">{unit.role}</span>}
-            {side === 'enemy' && unit.enemyRank && <EnemyRankOrnament rank={unit.enemyRank} />}
-            {side === 'enemy' && unit.eliteAffix && <EnemyAffixMark affix={unit.eliteAffix} />}
             {side === 'enemy' && (Boolean(unit.shield) || Boolean(unit.curseRemainingMs) || unit.enraged || unit.summoned) && <span className="enemy-status-badges" aria-label="Enemy combat statuses">
               {Boolean(unit.shield) && <i title="Barrier">◆</i>}{Boolean(unit.curseRemainingMs) && <i title="Curse">☾</i>}{unit.enraged && <i title="Enraged">🔥</i>}{unit.summoned && <i title="Summoned">✦</i>}
             </span>}
@@ -219,6 +217,8 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
         </div>
         {bossRank && <img src="/assets/enemies/frames/boss-thornframe-v1.webp" alt="" aria-hidden="true" className="enemy-boss-frame-overlay" loading="eager" decoding="sync" />}
       </div>
+      {side === 'enemy' && unit.enemyRank && <EnemyRankOrnament rank={unit.enemyRank} />}
+      {side === 'enemy' && unit.eliteAffix && <EnemyAffixMark affix={unit.eliteAffix} />}
       </div>
     </div>
   );
