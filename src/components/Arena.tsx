@@ -141,7 +141,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   const dungeonBoss = unit.uid.endsWith('-dungeon-shared');
   const protectedBoss = unit.uid.endsWith('-dungeon-protected');
   const bossRank = unit.enemyRank === 'field-boss' || unit.enemyRank === 'dungeon-boss' || dungeonBoss || protectedBoss;
-  const framedEnemy = side === 'enemy' && Boolean(unit.enemyPresentationId || bossRank);
+  const framedEnemy = side === 'enemy' && (bossRank || (unit.enemyRank !== undefined && unit.enemyRank !== 'normal'));
   const enemyFrameSrc = framedEnemy
     ? bossRank ? '/assets/enemies/frames/boss-v1.webp' : catalogEnemyFrameSrc(unit.enemyPresentationId)
     : null;

@@ -598,19 +598,18 @@ html { scroll-behavior: smooth; }
 .enemy-role-badge { position:absolute;z-index:13;left:50%;transform:translateX(-50%);border:1px solid rgba(203,169,105,.55);border-radius:999px;background:rgba(6,7,8,.9);padding:2px 5px;color:#e8d7b5;font-size:8px;font-style:normal;font-weight:900;line-height:1.1;text-transform:uppercase;white-space:nowrap;box-shadow:0 2px 8px #000; }
 .enemy-role-badge { bottom:3px; }
 .enemy-rank-frame { --enemy-rank-scale:1;width:calc(72px * var(--enemy-rank-scale));height:calc(72px * var(--enemy-rank-scale));flex:0 0 auto;isolation:isolate; }
-.enemy-rank-normal { --enemy-rank-scale:1;--enemy-art-inset:4%; }
-.enemy-rank-veteran { --enemy-rank-scale:1;--enemy-art-inset:8%; }
-.enemy-rank-elite { --enemy-rank-scale:1.04;--enemy-art-inset:10%; }
-.enemy-rank-epic { --enemy-rank-scale:1.08;--enemy-art-inset:12%; }
-.enemy-rank-field-boss { --enemy-rank-scale:1.08;--enemy-art-inset:14%; }
-.enemy-rank-dungeon-boss { --enemy-rank-scale:1.08;--enemy-art-inset:14%; }
-.enemy-rank-frame .arena-portrait { width:100%!important;height:100%!important;border:0!important;border-radius:3px!important;background:transparent!important;box-shadow:none!important; }
+.enemy-rank-normal { --enemy-rank-scale:1;--enemy-art-inset:2%; }
+.enemy-rank-veteran { --enemy-rank-scale:1;--enemy-art-inset:6%; }
+.enemy-rank-elite { --enemy-rank-scale:1.04;--enemy-art-inset:8%; }
+.enemy-rank-epic { --enemy-rank-scale:1.08;--enemy-art-inset:10%; }
+.enemy-rank-field-boss { --enemy-rank-scale:1.08;--enemy-art-inset:12%; }
+.enemy-rank-dungeon-boss { --enemy-rank-scale:1.08;--enemy-art-inset:12%; }
+.enemy-rank-frame .arena-portrait { width:100%!important;height:100%!important;border:1px solid var(--combat-color,#7e7055)!important;border-radius:14px!important;background:radial-gradient(circle at 50% 28%,color-mix(in srgb,var(--combat-color,#7e7055) 18%,transparent),transparent 58%),linear-gradient(155deg,#252620,#0d1010)!important;box-shadow:inset 0 1px rgba(255,255,255,.08),inset 0 0 0 3px rgba(0,0,0,.22),0 18px 35px rgba(0,0,0,.36)!important; }
 .enemy-rank-frame .arena-portrait-impact-layer > img { width:calc(100% - 2 * var(--enemy-art-inset));height:calc(100% - 2 * var(--enemy-art-inset));margin:var(--enemy-art-inset);object-fit:contain; }
-.enemy-art-frame-overlay { position:absolute;z-index:18;top:50%;left:50%;width:98%;height:98%;max-width:none;transform:translate(-50%,-50%);pointer-events:none;object-fit:fill;filter:drop-shadow(0 2px 3px rgba(0,0,0,.65)); }
-.enemy-art-frame-normal { top:42%;left:42%;mask-image:radial-gradient(ellipse 30% 30% at 95% 95%,#000 30%,transparent 100%); }
-.enemy-art-frame-veteran { mask-image:radial-gradient(ellipse 43% 56% at 95% 5%,#000 40%,transparent 100%),radial-gradient(ellipse 25% 27% at 5% 95%,#000 35%,transparent 100%); }
-.enemy-art-frame-elite { mask-image:radial-gradient(ellipse 47% 58% at 95% 5%,#000 43%,transparent 100%),radial-gradient(ellipse 43% 46% at 5% 95%,#000 42%,transparent 100%),radial-gradient(ellipse 25% 27% at 5% 5%,#000 35%,transparent 100%); }
-.enemy-art-frame-epic { mask-image:radial-gradient(ellipse 47% 57% at 95% 5%,#000 45%,transparent 100%),radial-gradient(ellipse 46% 52% at 5% 95%,#000 45%,transparent 100%),radial-gradient(ellipse 32% 37% at 5% 5%,#000 38%,transparent 100%),radial-gradient(ellipse 32% 37% at 95% 95%,#000 38%,transparent 100%);filter:drop-shadow(0 2px 4px rgba(0,0,0,.75)); }
+.enemy-art-frame-overlay { position:absolute;z-index:18;top:50%;left:50%;width:100%;height:100%;max-width:none;transform:translate(-50%,-50%);pointer-events:none;object-fit:fill; }
+.enemy-art-frame-veteran { mask-image:radial-gradient(ellipse 45% 50% at 100% 0,#000 45%,transparent 100%); }
+.enemy-art-frame-elite { mask-image:radial-gradient(ellipse 48% 54% at 100% 0,#000 48%,transparent 100%),radial-gradient(ellipse 42% 46% at 0 100%,#000 44%,transparent 100%); }
+.enemy-art-frame-epic { mask-image:radial-gradient(ellipse 51% 55% at 100% 0,#000 50%,transparent 100%),radial-gradient(ellipse 48% 52% at 0 100%,#000 48%,transparent 100%),radial-gradient(ellipse 36% 40% at 0 0,#000 40%,transparent 100%),radial-gradient(ellipse 36% 40% at 100% 100%,#000 40%,transparent 100%); }
 .enemy-art-frame-boss { filter:drop-shadow(0 4px 6px rgba(0,0,0,.85)) drop-shadow(0 0 7px rgba(200,75,52,.45)); }
 @media (min-width:640px){.enemy-rank-frame { width:calc(88px * var(--enemy-rank-scale));height:calc(88px * var(--enemy-rank-scale)); }}
 @media (min-width:1280px){.enemy-rank-frame { width:calc(100px * var(--enemy-rank-scale));height:calc(100px * var(--enemy-rank-scale)); }}
