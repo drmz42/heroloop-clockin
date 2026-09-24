@@ -339,7 +339,13 @@ export function Onboarding({ game, legacyWalletMode = null, onClose }: { game: G
         allowExistingAccountLogin: legacyWalletMode === null,
       });
       const account = await accountRequest(playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status'));
-      if (!account || account.account_id !== session.accountId) {
+      if (!account) {
+        // The wallet and Auth session are already established. Let the game
+        // verify the account and offer Retry instead of trapping it on Landing.
+        window.location.replace('/#game');
+        return;
+      }
+      if (account.account_id !== session.accountId) {
         setError('Account service is unavailable. Please try again.');
         return;
       }
