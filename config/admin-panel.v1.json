@@ -19,6 +19,7 @@
     "idleSessionMinutes": 15,
     "absoluteSessionHours": 4,
     "stepUpMaximumAgeMinutes": 5,
+    "sensitiveActionStepUpRequired": false,
     "sessionRevocationRequired": true,
     "breakGlassDisabledUntilSeparateApproval": true
   },
