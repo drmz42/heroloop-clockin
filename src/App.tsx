@@ -54,6 +54,7 @@ function App() {
   const saveStateVersionRef = useRef(0);
   const savedStateVersionRef = useRef(0);
   const saveConflictStreakRef = useRef(0);
+  const lastScheduledTeamRef = useRef(game.state.team.join('|'));
   const flushServerSaveRef = useRef<() => void>(() => undefined);
   const accountStatusRequestRef = useRef<Promise<{ exists: boolean; username: string | null; account_id: string } | null> | null>(null);
   const legacyStateRef = useRef(game.state);
@@ -254,7 +255,8 @@ function App() {
       highestLocation: state.highestLocation,
     });
     saveInFlightRef.current = true;
-    let conflictRetryScheduled = false;
+    let retryScheduled = false;
+    let saveError = '';
     const rememberRevision = (nextRevision: number) => {
       const latestRevision = serverStateRevisionRef.current ?? 0;
       if (nextRevision > latestRevision) {
@@ -262,30 +264,34 @@ function App() {
         setServerStateRevision(nextRevision);
       }
     };
-    const scheduleConflictRetry = () => {
+    const scheduleSaveRetry = (minimumDelay = 0) => {
       saveConflictStreakRef.current += 1;
-      const retryDelay = Math.min(8_000, 800 * (2 ** Math.min(saveConflictStreakRef.current, 3)));
+      const retryDelay = Math.max(minimumDelay, Math.min(8_000, 800 * (2 ** Math.min(saveConflictStreakRef.current, 3))));
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
       saveTimerRef.current = window.setTimeout(() => flushServerSaveRef.current(), retryDelay);
-      conflictRetryScheduled = true;
+      retryScheduled = true;
     };
     void (async () => {
-      let saved = await playerSync<{ revision: number; state?: unknown; conflict?: boolean }>('game_state_save', { state, revision });
+      let saved = await playerSync<{ revision: number; state?: unknown; conflict?: boolean }>('game_state_save', { state, revision }, (error) => { saveError = error; });
       // A 409 includes the current revision. Rebase the exact pending client
       // intent once; the server still canonicalizes all protected progression,
       // currency and inventory fields before it writes.
       if (saved?.conflict && Number.isInteger(saved.revision) && saved.revision > 0) {
         rememberRevision(saved.revision);
-        saved = await playerSync<{ revision: number; state?: unknown; conflict?: boolean }>('game_state_save', { state, revision: saved.revision });
+        saved = await playerSync<{ revision: number; state?: unknown; conflict?: boolean }>('game_state_save', { state, revision: saved.revision }, (error) => { saveError = error; });
       }
-      if (!saved?.revision) return;
+      if (!saved?.revision) {
+        scheduleSaveRetry(saveError === 'rate_limited' ? 65_000 : 0);
+        return;
+      }
       if (saved.conflict) {
         rememberRevision(saved.revision);
-        scheduleConflictRetry();
+        scheduleSaveRetry();
         return;
       }
       saveConflictStreakRef.current = 0;
       savedStateVersionRef.current = Math.max(savedStateVersionRef.current, version);
+      game.confirmPersistedFormation(state.team);
       const latestRevision = serverStateRevisionRef.current ?? 0;
       // Never overwrite a newer local action with this older successful save.
       if (saved.state && saved.revision > latestRevision && saveStateVersionRef.current === version) hydrateServerState(saved.state);
@@ -296,7 +302,7 @@ function App() {
       }
     })().finally(() => {
       saveInFlightRef.current = false;
-      if (!conflictRetryScheduled && saveStateVersionRef.current > version) {
+      if (!retryScheduled && saveStateVersionRef.current > version) {
         if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
         saveTimerRef.current = window.setTimeout(() => flushServerSaveRef.current(), 800);
       }
@@ -307,8 +313,11 @@ function App() {
     saveStateRef.current = game.state;
     saveStateVersionRef.current += 1;
     if (!serverStateReady) return;
+    const teamKey = game.state.team.join('|');
+    const formationChanged = teamKey !== lastScheduledTeamRef.current;
+    lastScheduledTeamRef.current = teamKey;
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = window.setTimeout(() => flushServerSaveRef.current(), 800);
+    saveTimerRef.current = window.setTimeout(() => flushServerSaveRef.current(), formationChanged ? 0 : 800);
     return () => { if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current); };
   }, [game.state, serverStateReady]);
 

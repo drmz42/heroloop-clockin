@@ -346,6 +346,7 @@ export function useGame() {
   const combatAccumulatorRef = useRef(0);
   const combatRandomRef = useRef<() => number>(Math.random);
   const normalCombatWaveRef = useRef<NormalCombatWave | null>(null);
+  const pendingFormationRef = useRef<string | null>(null);
   const combatSessionRef = useRef(createCombatSession());
   const combatRecoveryAttemptRef = useRef(0);
   const lastNormalCombatStartAtRef = useRef(0);
@@ -355,7 +356,19 @@ export function useGame() {
   const trainingAssignmentBusyRef = useRef(false);
 
   const hydrateServerState = useCallback((remoteState: unknown) => {
-    setState(normalizeState(remoteState as Partial<GameState>));
+    const normalized = normalizeState(remoteState as Partial<GameState>);
+    const pending = pendingFormationRef.current;
+    const localTeam = stateRef.current.team;
+    if (pending !== null && localTeam.join('|') === pending
+      && localTeam.every((uid) => normalized.ownedHeroes.some((hero) => hero.uid === uid)
+        && !normalized.trainingCamp.heroUids.includes(uid))) {
+      // Another server action may hydrate an older formation while its save
+      // is still pending. Keep the local selection until that save resolves.
+      normalized.team = [...localTeam];
+    } else {
+      pendingFormationRef.current = null;
+    }
+    setState(normalized);
     setHydrationVersion((version) => version + 1);
   }, []);
 
@@ -474,6 +487,9 @@ export function useGame() {
     const st = stateRef.current;
     const now = Date.now();
     const serverNormalCombat = tokenomicsEnabled && !forceBoss && !st.bossBattleActive;
+    // The server snapshots its saved formation at wave start. Wait for the
+    // formation save so a newly selected hero cannot start as an old lane.
+    if (serverNormalCombat && pendingFormationRef.current !== null) return;
     const generation = combatSessionRef.current.begin({ locationId, teamUids: [...teamUids], forceBoss: Boolean(forceBoss) });
     if (generation === null) return;
     const fullTeam = teamUids
@@ -598,6 +614,12 @@ export function useGame() {
     resolvingRef.current = false;
     combatWakeRef.current();
   }, [queueCombatRecovery, setFloaters, setUnits]);
+
+  const confirmPersistedFormation = useCallback((teamUids: string[]) => {
+    if (pendingFormationRef.current !== teamUids.join('|')) return;
+    pendingFormationRef.current = null;
+    void spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
+  }, [spawnBattle]);
 
   const activeTeamKey = state.team.join('|');
   const respawnTeamKey = state.team.map((uid) => state.ownedHeroes.find((hero) => hero.uid === uid)?.respawnAt ?? 0).join('|');
@@ -1884,6 +1906,7 @@ export function useGame() {
       const before = JSON.stringify(serverEquipmentAssignments(st));
       const after = JSON.stringify(serverEquipmentAssignments(nextState));
       if (before !== after && !(await settleServerEquipment(nextState))) return 'blocked';
+      pendingFormationRef.current = newTeam.join('|');
       stateRef.current = nextState;
       setState(nextState);
       spawnBattle(st.currentLocation, newTeam);
@@ -1891,6 +1914,7 @@ export function useGame() {
     }
     if (st.team.length >= MAX_TEAM) return 'blocked';
     newTeam = [...st.team, uid];
+    pendingFormationRef.current = newTeam.join('|');
     stateRef.current = { ...st, team: newTeam };
     setState((prev) => ({ ...prev, team: newTeam }));
     spawnBattle(st.currentLocation, newTeam);
@@ -2648,7 +2672,7 @@ export function useGame() {
     offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
     starUpHero, promoteAllHeroes, releaseHero, quoteHeroCapacity, upgradeHeroCapacity, toggleHeroLock, markHeroSeen,
-    quoteHeroSummon, summonHeroes, summonBoss, syncBossKeys, toggleTeamMember, setLocation,
+    quoteHeroSummon, summonHeroes, summonBoss, syncBossKeys, toggleTeamMember, confirmPersistedFormation, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,
     equipItem, unequipItem, unequipAll, equipmentError: () => equipmentErrorRef.current, sellItem, toggleItemLock, sellAllUnlocked,
     enchantItem, rerollItem, dismissEnchantResult,
