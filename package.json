@@ -132,6 +132,7 @@
     "check:todo-transaction": "bash scripts/check-todo-transaction.sh",
     "check:todo-backup": "bash scripts/check-todo-backup-snapshot.sh",
     "check:todo-manager": "npm run check:todo-transaction",
+    "check:service-registry": "node scripts/check-service-registry.mjs",
     "check:technical-tooling": "bash scripts/check-technical-tooling.sh",
     "audit:dependencies": "npm audit --omit=dev --audit-level=high",
     "todo:query": "node scripts/todo-query.mjs",
