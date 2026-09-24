@@ -173,6 +173,8 @@
     "check:selfhosted-empty-schema": "bash scripts/check-selfhosted-empty-schema.sh",
     "check:admin-foundation": "bash scripts/check-admin-foundation.sh",
     "build:admin-ui": "vite build --config vite.admin.config.ts",
+    "build:admin-compliance-registry": "node scripts/build-admin-compliance-registry.mjs",
+    "check:admin-compliance-registry": "node scripts/build-admin-compliance-registry.mjs --check",
     "check:admin-registry": "node scripts/check-admin-registry.mjs",
     "check:admin-ui": "tsc -p admin/ui-src/tsconfig.json --noEmit && node scripts/check-admin-ui-boundary.mjs",
     "screens:admin-ui": "node scripts/admin-ui-screens.mjs",
