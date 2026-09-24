@@ -8,6 +8,7 @@ export interface EnemyPresentation {
   attackProfile: string;
   color: string;
   art: string;
+  frame: string;
 }
 
 const families = [
@@ -22,11 +23,12 @@ const families = [
 ] as const;
 
 const presentations = new Map<string, EnemyPresentation>();
-for (const [, family, color, ...enemies] of families) {
+for (const [familyId, family, color, ...enemies] of families) {
   enemies.forEach(([id, name, attackProfile], index) => presentations.set(id, {
     id, name, family, attackProfile, color,
     rank: index === 3 ? 'epic' : 'normal',
     art: `/assets/enemies/catalog/cells/${id}-v1.webp`,
+    frame: `/assets/enemies/frames/${familyId}-v1.webp`,
   }));
 }
 
@@ -71,4 +73,8 @@ export function staging2EnemyPresentation(locationId: number, lane: number, seed
 export function catalogEnemyArt(id?: string): { src: string } | null {
   const presentation = id ? presentations.get(id) : undefined;
   return presentation ? { src: presentation.art } : null;
+}
+
+export function catalogEnemyFrameSrc(id?: string): string {
+  return (id && presentations.get(id)?.frame) || '/assets/enemies/frames/raiders-v1.webp';
 }

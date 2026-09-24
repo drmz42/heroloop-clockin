@@ -3,7 +3,8 @@ import type { CombatUnit, FloatingNumber, GameState, OwnedHero, OwnedItem } from
 import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { enemyArtSrc } from '@/game/art';
-import { Crown, Crosshair, Shield, Skull, Star, Sword, Swords, DoorOpen, Flame, Moon, Sparkles, Timer, Users, Zap } from 'lucide-react';
+import { catalogEnemyFrameSrc } from '@/game/enemy-presentation';
+import { Crosshair, Shield, Skull, Star, Swords, DoorOpen, Flame, Timer, Users } from 'lucide-react';
 import { MAX_HERO_STARS } from '@/game/state';
 
 const STAR_COLORS = ['#fbbf24', '#a855f7', '#ef4444', '#ec4899'];
@@ -32,29 +33,6 @@ function BattleHeroStars({ stars }: { stars: number }) {
       })}
     </span>
   );
-}
-
-type VisualEnemyRank = NonNullable<CombatUnit['enemyRank']>;
-
-function EnemyRankOrnament({ rank }: { rank: VisualEnemyRank }) {
-  if (rank === 'normal' || rank === 'field-boss' || rank === 'dungeon-boss') return null;
-  const common = { size: 15, strokeWidth: 2.4, 'aria-hidden': true };
-  if (rank === 'veteran') return <span className="enemy-rank-ornament enemy-rank-ornament-veteran" role="img" aria-label="Veteran enemy"><Sword {...common} className="enemy-rank-edge enemy-rank-blade-left" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-right" /></span>;
-  if (rank === 'elite') return <span className="enemy-rank-ornament enemy-rank-ornament-elite" role="img" aria-label="Elite enemy"><Swords {...common} className="enemy-rank-edge enemy-rank-edge-top" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-bottom" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-left" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-right" /></span>;
-  if (rank === 'epic') return <span className="enemy-rank-ornament enemy-rank-ornament-epic" role="img" aria-label="Epic enemy"><Crown {...common} className="enemy-rank-edge enemy-rank-edge-top" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-left" /><Sword {...common} className="enemy-rank-edge enemy-rank-blade-right" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-left" /><i className="enemy-rank-wreath-leaf enemy-rank-wreath-right" /></span>;
-  return null;
-}
-
-function EnemyAffixMark({ affix }: { affix: NonNullable<CombatUnit['eliteAffix']> }) {
-  const common = { size: 11, strokeWidth: 2.5, 'aria-hidden': true };
-  const icon = affix === 'guard-aura' || affix === 'barrier' ? <Shield {...common} />
-    : affix === 'mending' ? <Sparkles {...common} />
-    : affix === 'enrage' ? <Flame {...common} />
-    : affix === 'curse' ? <Moon {...common} />
-    : affix === 'lane-blast' ? <Zap {...common} />
-    : affix === 'summoner' ? <Users {...common} />
-    : <Swords {...common} />;
-  return <span className="enemy-affix-mark" role="img" aria-label={`${affix.replace('-', ' ')} enemy affix`}>{icon}</span>;
 }
 
 interface ArenaProps {
@@ -162,7 +140,10 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   const portraitColor = heroRarityColor ?? unit.color;
   const dungeonBoss = unit.uid.endsWith('-dungeon-shared');
   const protectedBoss = unit.uid.endsWith('-dungeon-protected');
-  const bossRank = side === 'enemy' && (unit.enemyRank === 'field-boss' || unit.enemyRank === 'dungeon-boss');
+  const bossRank = unit.enemyRank === 'field-boss' || unit.enemyRank === 'dungeon-boss' || dungeonBoss || protectedBoss;
+  const enemyFrameSrc = side === 'enemy'
+    ? bossRank ? '/assets/enemies/frames/boss-v1.webp' : catalogEnemyFrameSrc(unit.enemyPresentationId)
+    : null;
 
   return (
     <div className={`arena-unit relative flex items-center gap-2 transition-opacity duration-300 ${side === 'enemy' ? 'flex-row-reverse' : ''} ${dungeonBoss ? 'dungeon-shared-boss' : ''} ${protectedBoss ? 'dungeon-protected-boss' : ''} ${targeted ? 'dungeon-heavy-target' : ''} ${unit.alive ? 'opacity-100' : 'opacity-40 grayscale'}`}>
@@ -197,10 +178,10 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
       <div className={`relative ${side === 'enemy' ? 'h-full w-full' : ''} ${unit.alive && motionEnabled ? 'anim-bob' : ''}`}>
         <div
           className={`arena-portrait combatant-card relative h-16 w-16 overflow-hidden sm:h-[80px] sm:w-[80px] xl:h-[88px] xl:w-[88px] 2xl:h-[96px] 2xl:w-[96px] ${side === 'enemy' ? 'ring-1 ring-rose-950/70' : ''} ${side === 'hero' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-hero' : 'anim-attack-hero-b') : ''} ${side === 'enemy' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-enemy' : 'anim-attack-enemy-b') : ''}`}
-          style={{
+          style={side === 'hero' ? {
             borderColor: portraitColor,
             boxShadow: unit.alive ? `inset 0 1px rgba(255,255,255,.08), inset 0 0 0 3px rgba(0,0,0,.22), 0 18px 38px rgba(0,0,0,.42), 0 0 20px ${portraitColor}22` : 'none',
-          }}
+          } : undefined}
         >
           <div className={`arena-portrait-impact-layer absolute inset-0 ${hit ? 'anim-hit' : ''} overflow-hidden`}>
             {portraitSrc && !artFailed ? <img src={portraitSrc} alt="" loading="eager" decoding="sync" className="h-full w-full object-cover" style={{ ...portraitCrop, filter: unit.alive ? 'none' : 'grayscale(1)' }} onError={() => setArtFailed(true)} /> : <span className="grid h-full w-full place-items-center text-3xl sm:text-4xl select-none" style={{ filter: unit.alive ? 'none' : 'grayscale(1)' }}>{unit.icon}</span>}
@@ -215,10 +196,9 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
             </span>}
           </div>
         </div>
-        {bossRank && <img src="/assets/enemies/frames/boss-thornframe-v1.webp" alt="" aria-hidden="true" className="enemy-boss-frame-overlay" loading="eager" decoding="sync" />}
       </div>
-      {side === 'enemy' && unit.enemyRank && <EnemyRankOrnament rank={unit.enemyRank} />}
-      {side === 'enemy' && unit.eliteAffix && <EnemyAffixMark affix={unit.eliteAffix} />}
+      {enemyFrameSrc && <img src={enemyFrameSrc} alt="" aria-hidden="true" className="enemy-art-frame-overlay" loading="eager" decoding="sync" />}
+      {side === 'enemy' && (unit.enemyRank || unit.eliteAffix) && <span className="sr-only">{unit.enemyRank?.replace('-', ' ')}{unit.eliteAffix ? `, ${unit.eliteAffix.replace('-', ' ')} affix` : ''}</span>}
       </div>
     </div>
   );
