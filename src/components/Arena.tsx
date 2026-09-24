@@ -141,7 +141,8 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   const dungeonBoss = unit.uid.endsWith('-dungeon-shared');
   const protectedBoss = unit.uid.endsWith('-dungeon-protected');
   const bossRank = unit.enemyRank === 'field-boss' || unit.enemyRank === 'dungeon-boss' || dungeonBoss || protectedBoss;
-  const enemyFrameSrc = side === 'enemy'
+  const framedEnemy = side === 'enemy' && (bossRank || (unit.enemyRank !== undefined && unit.enemyRank !== 'normal'));
+  const enemyFrameSrc = framedEnemy
     ? bossRank ? '/assets/enemies/frames/boss-v1.webp' : catalogEnemyFrameSrc(unit.enemyPresentationId)
     : null;
 
@@ -176,8 +177,9 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
         })}
       </div>
       <div className={`relative ${side === 'enemy' ? 'h-full w-full' : ''} ${unit.alive && motionEnabled ? 'anim-bob' : ''}`}>
+      <div className={`relative h-full w-full ${side === 'enemy' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-enemy' : 'anim-attack-enemy-b') : ''}`}>
         <div
-          className={`arena-portrait combatant-card relative h-16 w-16 overflow-hidden sm:h-[80px] sm:w-[80px] xl:h-[88px] xl:w-[88px] 2xl:h-[96px] 2xl:w-[96px] ${side === 'enemy' ? 'ring-1 ring-rose-950/70' : ''} ${side === 'hero' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-hero' : 'anim-attack-hero-b') : ''} ${side === 'enemy' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-enemy' : 'anim-attack-enemy-b') : ''}`}
+          className={`arena-portrait combatant-card relative h-16 w-16 overflow-hidden sm:h-[80px] sm:w-[80px] xl:h-[88px] xl:w-[88px] 2xl:h-[96px] 2xl:w-[96px] ${side === 'hero' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-hero' : 'anim-attack-hero-b') : ''}`}
           style={side === 'hero' ? {
             borderColor: portraitColor,
             boxShadow: unit.alive ? `inset 0 1px rgba(255,255,255,.08), inset 0 0 0 3px rgba(0,0,0,.22), 0 18px 38px rgba(0,0,0,.42), 0 0 20px ${portraitColor}22` : 'none',
@@ -196,8 +198,9 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
             </span>}
           </div>
         </div>
+        {enemyFrameSrc && <img src={enemyFrameSrc} alt="" aria-hidden="true" className={`enemy-art-frame-overlay enemy-art-frame-${bossRank ? 'boss' : unit.enemyRank}`} loading="eager" decoding="sync" />}
       </div>
-      {enemyFrameSrc && <img src={enemyFrameSrc} alt="" aria-hidden="true" className="enemy-art-frame-overlay" loading="eager" decoding="sync" />}
+      </div>
       {side === 'enemy' && (unit.enemyRank || unit.eliteAffix) && <span className="sr-only">{unit.enemyRank?.replace('-', ' ')}{unit.eliteAffix ? `, ${unit.eliteAffix.replace('-', ' ')} affix` : ''}</span>}
       </div>
     </div>

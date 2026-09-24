@@ -597,19 +597,23 @@ html { scroll-behavior: smooth; }
 .battle-hero-level { position:absolute;z-index:12;left:4px;top:4px;border:1px solid rgba(220,181,104,.55);border-radius:5px;background:rgba(5,7,7,.88);padding:2px 5px;color:#f5d58f;font-size:9px;font-weight:900;line-height:1.2;box-shadow:0 2px 8px rgba(0,0,0,.65);text-shadow:0 1px 2px #000; }
 .enemy-role-badge { position:absolute;z-index:13;left:50%;transform:translateX(-50%);border:1px solid rgba(203,169,105,.55);border-radius:999px;background:rgba(6,7,8,.9);padding:2px 5px;color:#e8d7b5;font-size:8px;font-style:normal;font-weight:900;line-height:1.1;text-transform:uppercase;white-space:nowrap;box-shadow:0 2px 8px #000; }
 .enemy-role-badge { bottom:3px; }
-.enemy-rank-frame { --enemy-rank-scale:1;width:calc(76px * var(--enemy-rank-scale));height:calc(76px * var(--enemy-rank-scale));flex:0 0 auto;isolation:isolate; }
+.enemy-rank-frame { --enemy-rank-scale:1;width:calc(72px * var(--enemy-rank-scale));height:calc(72px * var(--enemy-rank-scale));flex:0 0 auto;isolation:isolate; }
 .enemy-rank-normal { --enemy-rank-scale:1; }
-.enemy-rank-veteran { --enemy-rank-scale:1.03; }
-.enemy-rank-elite { --enemy-rank-scale:1.08; }
-.enemy-rank-epic { --enemy-rank-scale:1.14; }
-.enemy-rank-field-boss { --enemy-rank-scale:1.22; }
-.enemy-rank-dungeon-boss { --enemy-rank-scale:1.22; }
-.enemy-rank-frame .arena-portrait { width:100%!important;height:100%!important;border:0!important;border-radius:3px!important;background:#10110f!important;box-shadow:none!important; }
-.enemy-art-frame-overlay { position:absolute;z-index:18;top:50%;left:50%;width:120%;height:120%;max-width:none;transform:translate(-50%,-50%);pointer-events:none;object-fit:fill;filter:drop-shadow(0 5px 5px rgba(0,0,0,.8)); }
-@media (min-width:640px){.enemy-rank-frame { width:calc(92px * var(--enemy-rank-scale));height:calc(92px * var(--enemy-rank-scale)); }}
-@media (min-width:1280px){.enemy-rank-frame { width:calc(104px * var(--enemy-rank-scale));height:calc(104px * var(--enemy-rank-scale)); }}
-@media (min-width:2048px) and (min-height:1000px){.enemy-rank-frame { width:calc(136px * var(--enemy-rank-scale));height:calc(136px * var(--enemy-rank-scale)); }}
-@media (min-width:3200px) and (min-height:1600px){.enemy-rank-frame { width:calc(250px * var(--enemy-rank-scale));height:calc(250px * var(--enemy-rank-scale)); }}
+.enemy-rank-veteran { --enemy-rank-scale:1; }
+.enemy-rank-elite { --enemy-rank-scale:1.04; }
+.enemy-rank-epic { --enemy-rank-scale:1.08; }
+.enemy-rank-field-boss { --enemy-rank-scale:1.12; }
+.enemy-rank-dungeon-boss { --enemy-rank-scale:1.12; }
+.enemy-rank-frame .arena-portrait { width:100%!important;height:100%!important;border:0!important;border-radius:3px!important;background:transparent!important;box-shadow:none!important; }
+.enemy-art-frame-overlay { position:absolute;z-index:18;top:50%;left:50%;width:106%;height:106%;max-width:none;transform:translate(-50%,-50%);pointer-events:none;object-fit:fill;filter:drop-shadow(0 3px 4px rgba(0,0,0,.7)); }
+.enemy-art-frame-veteran { mask-image:radial-gradient(ellipse 52% 58% at 16% 16%,#000 45%,transparent 80%),radial-gradient(ellipse 52% 58% at 84% 84%,#000 45%,transparent 80%); }
+.enemy-art-frame-elite { mask-image:radial-gradient(ellipse 68% 70% at 18% 20%,#000 55%,transparent 86%),radial-gradient(ellipse 68% 70% at 82% 80%,#000 55%,transparent 86%); }
+.enemy-art-frame-epic { filter:drop-shadow(0 3px 5px rgba(0,0,0,.8)) drop-shadow(0 0 5px rgba(202,159,94,.4)); }
+.enemy-art-frame-boss { filter:drop-shadow(0 4px 6px rgba(0,0,0,.85)) drop-shadow(0 0 7px rgba(200,75,52,.45)); }
+@media (min-width:640px){.enemy-rank-frame { width:calc(88px * var(--enemy-rank-scale));height:calc(88px * var(--enemy-rank-scale)); }}
+@media (min-width:1280px){.enemy-rank-frame { width:calc(100px * var(--enemy-rank-scale));height:calc(100px * var(--enemy-rank-scale)); }}
+@media (min-width:2048px) and (min-height:1000px){.enemy-rank-frame { width:calc(130px * var(--enemy-rank-scale));height:calc(130px * var(--enemy-rank-scale)); }}
+@media (min-width:3200px) and (min-height:1600px){.enemy-rank-frame { width:calc(235px * var(--enemy-rank-scale));height:calc(235px * var(--enemy-rank-scale)); }}
 /* A shared Dungeon Boss stays in its own central stage. Lane units never enter this layer. */
 .dungeon-shared-stage .enemy-rank-frame { width:auto;height:auto; }
 .enemy-status-badges { position:absolute;z-index:14;right:3px;bottom:3px;display:flex;gap:2px; }
