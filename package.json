@@ -73,6 +73,7 @@
     "check:location-backgrounds": "node scripts/check-location-backgrounds.mjs",
     "check:crafting-settlement": "node scripts/check-crafting-settlement-proposal.mjs",
     "check:dev-news-resilience": "node scripts/check-dev-news-resilience.mjs",
+    "check:gemini-model-fallback": "node scripts/check-gemini-model-fallback.mjs",
     "check:daily-hero-accrual": "node scripts/check-daily-hero-accrual-contract.mjs",
     "check:dungeon-server-core": "node scripts/check-dungeon-server-core.mjs",
     "check:dungeon-room-start": "node scripts/check-dungeon-room-start.mjs",
