@@ -83,9 +83,6 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
   const [showFocus, setShowFocus] = useState(false);
   const [showPityInfo, setShowPityInfo] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'paid' | 'scroll'>('paid');
-  const [summonQuote, setSummonQuote] = useState<{
-    quoteId: string; count: 1 | 10 | 100; tokenCost: number; expiresAt: string;
-  } | null>(null);
   const heroPriceLabel = (count: 1 | 10 | 100) => `${formatNum(count * 20)} $HERO`;
   const singleHasSpace = state.ownedHeroes.length < state.heroCapacity;
   const tenHasSpace = state.ownedHeroes.length + 10 <= state.heroCapacity;
@@ -95,14 +92,6 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
   const canTen = tenHasSpace && canPay(10);
   const canHundred = hundredHasSpace && canPay(100);
   useEffect(() => {
-    if (!summonQuote) return undefined;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && summoning === null) setSummonQuote(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [summonQuote, summoning]);
-  useEffect(() => {
     if (!game.summonError) return;
     const safeCode = game.summonError.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
     const message = game.summonError.includes('insufficient_tokens')
@@ -110,7 +99,7 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
       : game.summonError.includes('resource_insufficient_balance')
         ? 'Not enough Summon Scrolls'
         : game.summonError.includes('quote_expired') || game.summonError.includes('quote_mismatch') || game.summonError.includes('state_conflict')
-          ? 'The quote expired or your account changed · Request a new quote'
+          ? 'The quote expired or your account changed · Please try again'
           : game.summonError.includes('dex_quote_unavailable')
             ? 'Paid Summon is temporarily unavailable · No $HERO was spent'
       : game.summonError.includes('hero_capacity_exceeded')
@@ -125,25 +114,25 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
       ? `Need ${count} free Hero ${count === 1 ? 'slot' : 'slots'}`
       : `Not enough Summon Scrolls · Need ${count - state.summonScrolls} more`,
   );
-  const settleSummon = async (count: 1 | 10 | 100, method: 'paid' | 'scroll', quoteId: string | null) => {
-    setSummoning(count); setSummonNotice('');
-    try {
-      const result = await game.summonHeroes(count, method, quoteId);
-      if (result.length > 0) { setSummonQuote(null); setResults(result); }
-      else setSummonNotice('Summon is temporarily unavailable · Nothing was spent');
-    } finally { setSummoning(null); }
-  };
   const beginSummon = async (count: 1 | 10 | 100) => {
     if (summoning !== null) return;
     if (state.ownedHeroes.length + count > state.heroCapacity || !canPay(count)) { unavailableMessage(count); return; }
-    if (paymentMethod === 'scroll') { await settleSummon(count, 'scroll', null); return; }
     setSummoning(count); setSummonNotice('');
     try {
-      const result = await game.quoteHeroSummon(count);
-      if (result.ok) setSummonQuote(result.quote);
-      else setSummonNotice(result.error === 'dex_quote_unavailable'
-        ? 'Paid Summon is temporarily unavailable · No $HERO was spent'
-        : 'Paid Summon quote unavailable · No $HERO was spent');
+      let quoteId: string | null = null;
+      if (paymentMethod === 'paid') {
+        const quote = await game.quoteHeroSummon(count);
+        if (!quote.ok) {
+          setSummonNotice(quote.error === 'dex_quote_unavailable'
+            ? 'Paid Summon is temporarily unavailable · No $HERO was spent'
+            : 'Paid Summon quote unavailable · No $HERO was spent');
+          return;
+        }
+        quoteId = quote.quote.quoteId;
+      }
+      const result = await game.summonHeroes(count, paymentMethod, quoteId);
+      if (result.length > 0) setResults(result);
+      else setSummonNotice('Summon is temporarily unavailable · Nothing was spent');
     } finally { setSummoning(null); }
   };
   const promoteAll = async () => {
@@ -257,23 +246,6 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
       </aside>
       </div>
       {results && <SummonResult heroes={results} onClose={() => setResults(null)} />}
-      {summonQuote && (
-        <div className="fixed inset-0 z-[90] grid place-items-center bg-black/80 p-3 backdrop-blur-sm">
-          <section role="dialog" aria-modal="true" aria-labelledby="summon-quote-title" tabIndex={-1} autoFocus className="material-panel game-scrollbar max-h-[calc(100vh-24px)] w-full max-w-md overflow-y-auto p-4 shadow-2xl">
-            <div className="flex items-start justify-between gap-3">
-              <div><div className="section-kicker">Obsidian Covenant</div><h3 id="summon-quote-title" className="mt-1 text-lg font-black text-[#eee4d3]">Confirm {summonQuote.count} Summon{summonQuote.count === 1 ? '' : 's'}</h3></div>
-              <button type="button" onClick={() => setSummonQuote(null)} disabled={summoning !== null} aria-label="Close Summon quote" className="game-control grid min-h-11 min-w-11 place-items-center"><X size={16} /></button>
-            </div>
-            <div className="mt-4 stat-tile p-3"><div className="text-[9px] font-black uppercase text-[#8f897e]">Test price</div><div className="mt-1 flex items-center gap-1 text-lg font-black text-cyan-200"><HeroTokenIcon size={16} />{formatNum(summonQuote.tokenCost)} $HERO</div></div>
-            <p className="mt-3 text-sm leading-relaxed text-[#aaa397]">Pre-token test economy: the server locks the fixed price for 60 seconds. Real HERO/SOL market pricing will be enabled after the $HERO token launch.</p>
-            {summonQuote.tokenCost > state.hero && <p role="alert" className="mt-2 rounded border border-red-500/45 bg-red-950/35 p-2 text-xs text-red-200">Not enough $HERO · need {formatNum(summonQuote.tokenCost - state.hero)} more</p>}
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setSummonQuote(null)} disabled={summoning !== null} className="game-control min-h-11 text-sm font-black">Cancel</button>
-              <button type="button" onClick={() => void settleSummon(summonQuote.count, 'paid', summonQuote.quoteId)} disabled={summoning !== null || summonQuote.tokenCost > state.hero} aria-busy={summoning !== null} className="game-control game-primary min-h-11 px-3 text-sm font-black disabled:opacity-45">{summoning !== null ? 'Summoning…' : `Pay ${formatNum(summonQuote.tokenCost)} $HERO`}</button>
-            </div>
-          </section>
-        </div>
-      )}
     </div>
   );
 }
