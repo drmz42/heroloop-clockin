@@ -48,8 +48,8 @@
     "changedReplayFailsClosed": true
   },
   "sessions": {
-    "idleMinutes": 15,
-    "absoluteHours": 4,
+    "idleMinutes": 480,
+    "absoluteHours": 24,
     "sensitiveStepUpMaximumAgeMinutes": 5,
     "environmentBound": true,
     "deviceBoundWhereProxySupportsIt": true,
