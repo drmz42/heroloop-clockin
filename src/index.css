@@ -606,8 +606,8 @@ html { scroll-behavior: smooth; }
 .enemy-rank-dungeon-boss { --enemy-rank-scale:1.12; }
 .enemy-rank-frame .arena-portrait { width:100%!important;height:100%!important;border:0!important;border-radius:3px!important;background:transparent!important;box-shadow:none!important; }
 .enemy-art-frame-overlay { position:absolute;z-index:18;top:50%;left:50%;width:106%;height:106%;max-width:none;transform:translate(-50%,-50%);pointer-events:none;object-fit:fill;filter:drop-shadow(0 3px 4px rgba(0,0,0,.7)); }
-.enemy-art-frame-veteran { mask-image:radial-gradient(ellipse 52% 58% at 16% 16%,#000 45%,transparent 80%),radial-gradient(ellipse 52% 58% at 84% 84%,#000 45%,transparent 80%); }
-.enemy-art-frame-elite { mask-image:radial-gradient(ellipse 68% 70% at 18% 20%,#000 55%,transparent 86%),radial-gradient(ellipse 68% 70% at 82% 80%,#000 55%,transparent 86%); }
+.enemy-art-frame-veteran { mask-image:radial-gradient(ellipse 28% 65% at 0 50%,#000 60%,transparent 100%),radial-gradient(ellipse 28% 65% at 100% 50%,#000 60%,transparent 100%); }
+.enemy-art-frame-elite { mask-image:radial-gradient(ellipse 42% 88% at 0 50%,#000 65%,transparent 100%),radial-gradient(ellipse 42% 88% at 100% 50%,#000 65%,transparent 100%),linear-gradient(to bottom,transparent 74%,#000 100%); }
 .enemy-art-frame-epic { filter:drop-shadow(0 3px 5px rgba(0,0,0,.8)) drop-shadow(0 0 5px rgba(202,159,94,.4)); }
 .enemy-art-frame-boss { filter:drop-shadow(0 4px 6px rgba(0,0,0,.85)) drop-shadow(0 0 7px rgba(200,75,52,.45)); }
 @media (min-width:640px){.enemy-rank-frame { width:calc(88px * var(--enemy-rank-scale));height:calc(88px * var(--enemy-rank-scale)); }}
