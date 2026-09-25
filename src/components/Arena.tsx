@@ -71,7 +71,7 @@ function floaterOffset(f: FloatingNumber): { x: number; y: number } {
   return { x: 24, y: f.id % 2 === 0 ? 0 : -14 };
 }
 
-function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAlive, animationMode, targeted = false }: { unit: CombatUnit; floaters: FloatingNumber[]; side: 'hero' | 'enemy'; heroData?: OwnedHero; respawnSeconds?: number; opponentAlive: boolean; animationMode: GameState['battleAnimationMode']; targeted?: boolean }) {
+function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAlive, animationMode, locationId, targeted = false }: { unit: CombatUnit; floaters: FloatingNumber[]; side: 'hero' | 'enemy'; heroData?: OwnedHero; respawnSeconds?: number; opponentAlive: boolean; animationMode: GameState['battleAnimationMode']; locationId?: number; targeted?: boolean }) {
   const lastOutgoing = useRef(0);
   const lastIncoming = useRef(0);
   const [attackPhase, setAttackPhase] = useState<0 | 1 | 2>(0);
@@ -138,6 +138,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   const portraitColor = heroRarityColor ?? unit.color;
   const dungeonBoss = unit.uid.endsWith('-dungeon-shared');
   const protectedBoss = unit.uid.endsWith('-dungeon-protected');
+  const wolfFrame = side === 'enemy' && locationId === 2 && unit.uid === 'e2-wolf';
 
   return (
     <div className={`arena-unit relative flex items-center gap-2 transition-opacity duration-300 ${side === 'enemy' ? 'flex-row-reverse' : ''} ${dungeonBoss ? 'dungeon-shared-boss' : ''} ${protectedBoss ? 'dungeon-protected-boss' : ''} ${targeted ? 'dungeon-heavy-target' : ''} ${unit.alive ? 'opacity-100' : 'opacity-40 grayscale'}`}>
@@ -191,6 +192,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
             </span>}
           </div>
         </div>
+        {wolfFrame && <span className="enemy-wolf-frame" aria-hidden="true" />}
       </div>
       </div>
     </div>
@@ -271,7 +273,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
           {heroes.length === 0 && <div className="intentional-empty p-4 text-sm">Assemble a team to fight</div>}
         </div>
         <div className="arena-roster flex min-w-0 flex-col items-start justify-center gap-2">
-          {laneEnemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive)} animationMode={animationMode} />)}
+          {laneEnemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive)} animationMode={animationMode} locationId={locationId} />)}
           {laneEnemies.length === 0 && !sharedBoss && <div className="intentional-empty p-4 text-sm">Enemies defeated</div>}
         </div>
       </div>

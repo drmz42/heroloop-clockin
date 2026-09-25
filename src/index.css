@@ -252,6 +252,10 @@ html { scroll-behavior: smooth; }
     background-position:center;background-size:cover;background-repeat:no-repeat;
   }
   .combatant-card { border:1px solid var(--combat-color,#7e7055);border-radius:14px;background:radial-gradient(circle at 50% 28%,color-mix(in srgb,var(--combat-color,#7e7055) 18%,transparent),transparent 58%),linear-gradient(155deg,#252620,#0d1010);box-shadow:inset 0 1px rgba(255,255,255,.08),inset 0 0 0 3px rgba(0,0,0,.22),0 18px 35px rgba(0,0,0,.36); }
+  .enemy-wolf-frame { position:absolute;inset:0;z-index:5;pointer-events:none;border:1px solid rgba(139,126,101,.65);border-radius:14px;box-shadow:inset 0 0 0 2px rgba(13,14,12,.7); }
+  .enemy-wolf-frame::before,.enemy-wolf-frame::after { content:'';position:absolute;width:14px;height:14px;pointer-events:none;filter:drop-shadow(0 1px 1px #000); }
+  .enemy-wolf-frame::before { top:-1px;right:-1px;border-top:3px solid #aa9b7b;border-right:3px solid #aa9b7b;border-top-right-radius:13px; }
+  .enemy-wolf-frame::after { bottom:-1px;left:-1px;border-bottom:2px solid #80745c;border-left:2px solid #80745c;border-bottom-left-radius:13px; }
   .arena-unit-name { overflow-wrap:anywhere;font-size:9px!important;line-height:11px!important; }
   .health-track { border:1px solid #4d4536;border-radius:4px;background:#080a09;box-shadow:inset 0 2px 5px rgba(0,0,0,.8); }
 }
