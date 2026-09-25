@@ -180,6 +180,7 @@
     "check:admin-compliance-registry": "node scripts/build-admin-compliance-registry.mjs --check",
     "check:admin-domain-gates": "node scripts/check-admin-domain-gates.mjs",
     "check:admin-registry": "node scripts/check-admin-registry.mjs",
+    "check:admin-env-diff": "node scripts/check-admin-env-diff.mjs",
     "check:admin-ui": "tsc -p admin/ui-src/tsconfig.json --noEmit && node scripts/check-admin-ui-boundary.mjs",
     "screens:admin-ui": "node scripts/admin-ui-screens.mjs",
     "check:sweep": "node scripts/check-sweep.mjs",
