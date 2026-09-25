@@ -139,7 +139,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   const portraitColor = heroRarityColor ?? unit.color;
   const dungeonBoss = unit.uid.endsWith('-dungeon-shared');
   const protectedBoss = unit.uid.endsWith('-dungeon-protected');
-  const wolfFrame = side === 'enemy' && locationId === 2 && unit.uid === 'e2-wolf';
+  const wolfFrame = side === 'enemy' && locationId === 2 && /^e\d+-wolf$/.test(unit.uid);
   const wolfAttack = wolfFrame && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-enemy' : 'anim-attack-enemy-b') : '';
 
   return (
