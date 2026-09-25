@@ -24,6 +24,7 @@ import {
   prepareStatusResult,
   recoverMissingFormationHeroes,
 } from "./state.ts";
+import { createFeatureFlagGate } from "./feature_flags.ts";
 
 const jsonHeaders = {
   "cache-control": "no-store",
@@ -443,6 +444,10 @@ async function consumeRateLimit(playerId: string, action: string): Promise<{ all
   };
 }
 
+const pausedFlagFor = createFeatureFlagGate(() =>
+  databaseJson("SELECT heroloop_api.feature_flags_paused() AS result", [])
+);
+
 async function authenticate(
   request: Request,
   requestId: string,
@@ -813,6 +818,10 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       console.error("rate-limit database adapter failed", { requestId });
       return errorResponse(503, "database_unavailable", requestId);
     }
+    // A Staging kill switch refuses the command before it touches state. 409,
+    // not 503: the client must not retry it as if the server were down.
+    const pausedFlag = await pausedFlagFor(String(parsed.value.action));
+    if (pausedFlag) return errorResponse(409, "feature_paused", requestId);
     if (parsed.value.action === "account_status") {
       const payloadError = validateAccountStatusPayload(payload);
       if (payloadError) return errorResponse(400, payloadError, requestId);

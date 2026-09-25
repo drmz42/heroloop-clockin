@@ -108,7 +108,9 @@ export async function playerSync<T>(
           revision?: number;
           result?: Record<string, unknown>;
         };
-        const message = detail.code ?? detail.error ?? `HTTP ${response.status}`;
+        const code = detail.code ?? detail.error ?? `HTTP ${response.status}`;
+        // A Staging kill switch paused this command before it touched state.
+        const message = code === 'feature_paused' ? 'This feature is paused for maintenance. Please try again later.' : code;
         onError?.(message);
         if (backendMode === 'selfhosted' && action === 'game_state_save'
           && response.status === 409 && detail.code === 'state_conflict' && detail.result) {

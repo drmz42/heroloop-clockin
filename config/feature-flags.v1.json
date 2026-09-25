@@ -1,0 +1,50 @@
+{
+  "schema": "feature-flags.v1",
+  "status": "staging-runtime",
+  "semantics": "Kill switch. Every flag is on unless a founder turns it off; while off, the game API refuses the listed player commands with 409 feature_paused before they touch state. A flag can only pause what the deploy already allows: it never enables a feature, never grants or refunds anything, and never alters a command that is already running. Reads, cancellations and in-progress runs stay available so nobody is stranded.",
+  "rules": {
+    "defaultEnabled": true,
+    "pauseOnly": true,
+    "changeRequires": ["founder role", "fresh passkey step-up", "written reason", "expected revision", "idempotency key"],
+    "productionChange": "not available from the panel; needs its own Founder approval and a Production data path",
+    "stateTable": "public.feature_flags",
+    "changeLog": "admin.feature_flag_changes"
+  },
+  "flags": [
+    {
+      "key": "market_listing",
+      "title": "Market: new listings",
+      "actions": ["market_list_item"],
+      "note": "Snapshot and cancelling a listing stay available, so a seller can always take an item back."
+    },
+    {
+      "key": "store_purchase",
+      "title": "Store: purchases",
+      "actions": ["store_buy_item"],
+      "note": "The store can still be browsed."
+    },
+    {
+      "key": "promo_redeem",
+      "title": "Promo codes",
+      "actions": ["promo_redeem"]
+    },
+    {
+      "key": "hero_summon",
+      "title": "Hero summoning",
+      "actions": ["hero_summon"],
+      "note": "The summon quote stays available."
+    },
+    {
+      "key": "dungeon_entry",
+      "title": "Dungeon: new runs",
+      "actions": ["dungeon_start"],
+      "note": "A run already in progress can be continued and finished."
+    },
+    {
+      "key": "item_upgrade",
+      "title": "Item upgrades",
+      "actions": ["item_upgrade"],
+      "note": "Locking and selling items stay available."
+    }
+  ]
+}
