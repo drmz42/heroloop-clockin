@@ -781,32 +781,3 @@ html { scroll-behavior: smooth; }
 .test-btn-green:hover { border-color: #7ee787; }
 .test-btn-reset { border-color: rgba(169,86,80,.55); color: #e8b3ae; }
 .test-btn-reset:hover { border-color: #c96f68; }
-
-/* Location 2 wolf: a complete portrait card with attached bone and iron fittings. */
-.arena-portrait.enemy-wolf-portrait {
-  height: auto !important;
-  aspect-ratio: 82 / 110;
-  border: 4px solid #2d2926 !important;
-  border-radius: 9px !important;
-  background: #0b0d0e;
-  box-shadow: inset 0 0 0 2px #5e5041, 0 0 0 1px #8a674f, 0 8px 13px #000c !important;
-}
-.arena-portrait.enemy-wolf-portrait::after {
-  content: '';
-  position: absolute;
-  inset: 2px;
-  z-index: 4;
-  border: 1px solid #a6885d8a;
-  border-radius: 4px;
-  pointer-events: none;
-}
-.enemy-wolf-frame {
-  position: absolute;
-  inset: -6px;
-  z-index: 5;
-  width: calc(100% + 12px);
-  height: calc(100% + 12px);
-  overflow: visible;
-  pointer-events: none;
-  filter: drop-shadow(0 2px 1px #000e);
-}
