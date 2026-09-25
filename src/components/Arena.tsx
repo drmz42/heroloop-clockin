@@ -71,7 +71,7 @@ function floaterOffset(f: FloatingNumber): { x: number; y: number } {
   return { x: 24, y: f.id % 2 === 0 ? 0 : -14 };
 }
 
-function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAlive, animationMode, locationId, targeted = false }: { unit: CombatUnit; floaters: FloatingNumber[]; side: 'hero' | 'enemy'; heroData?: OwnedHero; respawnSeconds?: number; opponentAlive: boolean; animationMode: GameState['battleAnimationMode']; locationId?: number; targeted?: boolean }) {
+function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAlive, animationMode, targeted = false }: { unit: CombatUnit; floaters: FloatingNumber[]; side: 'hero' | 'enemy'; heroData?: OwnedHero; respawnSeconds?: number; opponentAlive: boolean; animationMode: GameState['battleAnimationMode']; targeted?: boolean }) {
   const lastOutgoing = useRef(0);
   const lastIncoming = useRef(0);
   const [attackPhase, setAttackPhase] = useState<0 | 1 | 2>(0);
@@ -138,7 +138,6 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   const portraitColor = heroRarityColor ?? unit.color;
   const dungeonBoss = unit.uid.endsWith('-dungeon-shared');
   const protectedBoss = unit.uid.endsWith('-dungeon-protected');
-  const wolfFrame = side === 'enemy' && locationId === 2 && unit.uid === 'e2-wolf';
 
   return (
     <div className={`arena-unit relative flex items-center gap-2 transition-opacity duration-300 ${side === 'enemy' ? 'flex-row-reverse' : ''} ${dungeonBoss ? 'dungeon-shared-boss' : ''} ${protectedBoss ? 'dungeon-protected-boss' : ''} ${targeted ? 'dungeon-heavy-target' : ''} ${unit.alive ? 'opacity-100' : 'opacity-40 grayscale'}`}>
@@ -172,14 +171,14 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
       </div>
       <div className={`relative ${unit.alive && motionEnabled ? 'anim-bob' : ''}`}>
         <div
-          className={`arena-portrait combatant-card relative h-16 w-16 overflow-hidden sm:h-[80px] sm:w-[80px] xl:h-[88px] xl:w-[88px] 2xl:h-[96px] 2xl:w-[96px] ${side === 'enemy' ? 'ring-1 ring-rose-950/70' : ''} ${wolfFrame ? 'enemy-wolf-portrait' : ''} ${side === 'hero' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-hero' : 'anim-attack-hero-b') : ''} ${side === 'enemy' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-enemy' : 'anim-attack-enemy-b') : ''}`}
+          className={`arena-portrait combatant-card relative h-16 w-16 overflow-hidden sm:h-[80px] sm:w-[80px] xl:h-[88px] xl:w-[88px] 2xl:h-[96px] 2xl:w-[96px] ${side === 'enemy' ? 'ring-1 ring-rose-950/70' : ''} ${side === 'hero' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-hero' : 'anim-attack-hero-b') : ''} ${side === 'enemy' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-enemy' : 'anim-attack-enemy-b') : ''}`}
           style={{
             borderColor: portraitColor,
             boxShadow: unit.alive ? `inset 0 1px rgba(255,255,255,.08), inset 0 0 0 3px rgba(0,0,0,.22), 0 18px 38px rgba(0,0,0,.42), 0 0 20px ${portraitColor}22` : 'none',
           }}
         >
           <div className={`arena-portrait-impact-layer absolute inset-0 ${hit ? 'anim-hit' : ''}`}>
-            {portraitSrc && !artFailed ? <img src={portraitSrc} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" style={{ ...portraitCrop, filter: !unit.alive ? 'grayscale(1)' : wolfFrame ? 'brightness(1.22) contrast(1.08)' : 'none' }} onError={() => setArtFailed(true)} /> : <span className="grid h-full w-full place-items-center text-3xl sm:text-4xl select-none" style={{ filter: unit.alive ? 'none' : 'grayscale(1)' }}>{unit.icon}</span>}
+            {portraitSrc && !artFailed ? <img src={portraitSrc} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" style={{ ...portraitCrop, filter: unit.alive ? 'none' : 'grayscale(1)' }} onError={() => setArtFailed(true)} /> : <span className="grid h-full w-full place-items-center text-3xl sm:text-4xl select-none" style={{ filter: unit.alive ? 'none' : 'grayscale(1)' }}>{unit.icon}</span>}
             {!unit.alive && <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/65"><Skull size={30} className="text-[#d9d1c3] drop-shadow-[0_0_8px_rgba(0,0,0,.9)]" />{side === 'hero' && Boolean(respawnSeconds) && <strong className="mt-0.5 rounded bg-black/75 px-1.5 py-0.5 text-[10px] tabular-nums text-rose-300">{respawnSeconds}s</strong>}<span className="sr-only">Dead</span></span>}
             {unit.alive && slash && <div className="anim-slash absolute inset-0 flex items-center justify-center text-4xl pointer-events-none">⚡</div>}
             {unit.alive && heal && <div className="anim-heal absolute inset-0 flex items-center justify-center text-3xl pointer-events-none">💚</div>}
@@ -192,14 +191,6 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
             </span>}
           </div>
         </div>
-        {wolfFrame && <svg className={`enemy-wolf-frame ${attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-enemy' : 'anim-attack-enemy-b') : ''}`} viewBox="0 0 82 110" preserveAspectRatio="none" aria-hidden="true">
-          <path className="enemy-wolf-frame-metal" d="M1 26 V5 Q1 1 5 1 H29 L25 7 H16 L11 15 L7 25 Z" />
-          <path className="enemy-wolf-frame-metal" d="M81 26 V5 Q81 1 77 1 H53 L57 7 H66 L71 15 L75 25 Z" />
-          <path className="enemy-wolf-frame-metal" d="M30 109 L35 101 H47 L52 109 Z" />
-          <path className="enemy-wolf-frame-engrave" d="M5 20 V6 H25 M77 20 V6 H57 M36 106 H46" />
-          <path className="enemy-wolf-frame-highlight" d="M6 3 H26 M56 3 H76" />
-          <circle cx="8" cy="8" r="1.4" fill="#e4c990" /><circle cx="74" cy="8" r="1.4" fill="#e4c990" />
-        </svg>}
       </div>
       </div>
     </div>
@@ -280,7 +271,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
           {heroes.length === 0 && <div className="intentional-empty p-4 text-sm">Assemble a team to fight</div>}
         </div>
         <div className="arena-roster flex min-w-0 flex-col items-start justify-center gap-2">
-          {laneEnemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive)} animationMode={animationMode} locationId={locationId} />)}
+          {laneEnemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive)} animationMode={animationMode} />)}
           {laneEnemies.length === 0 && !sharedBoss && <div className="intentional-empty p-4 text-sm">Enemies defeated</div>}
         </div>
       </div>
