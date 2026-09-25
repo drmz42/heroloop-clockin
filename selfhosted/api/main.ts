@@ -402,11 +402,20 @@ async function retryLockTimeoutOnce<T>(operation: () => Promise<T>): Promise<T> 
   }
 }
 
+// A deadlock victim's transaction is rolled back whole, and every caller here
+// is guarded by an idempotency key or an expected revision, so one retry is
+// safe. The worker's pending-wave recovery can race a browser completion.
+function isDeadlock(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  const code = isRecord(error) && typeof error.code === "string" ? error.code : "";
+  return code === "40P01" || message.includes("deadlock detected");
+}
+
 async function retryDatabaseTimeoutOnce<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation();
   } catch (error) {
-    if (!isLockTimeout(error) && !isStatementTimeout(error)) throw error;
+    if (!isLockTimeout(error) && !isStatementTimeout(error) && !isDeadlock(error)) throw error;
     await new Promise((resolve) => setTimeout(resolve, 100));
     return await operation();
   }
