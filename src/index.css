@@ -782,7 +782,7 @@ html { scroll-behavior: smooth; }
 .test-btn-reset { border-color: rgba(169,86,80,.55); color: #e8b3ae; }
 .test-btn-reset:hover { border-color: #c96f68; }
 
-/* Reference 6.png: transparent bone, iron and red-cloth art stays with the wolf portrait. */
+/* Degree-2 wolf: asymmetric skull/right-edge and lower-left fang art follows the portrait. */
 @media (max-width: 639px) {
   .arena-portrait.enemy-wolf-portrait { width: 80px !important; height: 80px !important; }
 }
@@ -795,8 +795,21 @@ html { scroll-behavior: smooth; }
   display: block;
   width: 124%;
   height: 124%;
-  object-fit: fill;
+  object-fit: contain;
   pointer-events: none;
   user-select: none;
   filter: drop-shadow(0 2px 2px #000c);
+}
+
+/* Preserve the tall Wraith hood and hands inside the square card. */
+.enemy-ghost-portrait .arena-portrait-impact-layer::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  background: url('/assets/enemies/v4/ghost.png') center / cover;
+  filter: blur(5px) brightness(.45);
+}
+.enemy-ghost-portrait .arena-portrait-impact-layer > img {
+  position: relative;
+  object-fit: contain;
 }
