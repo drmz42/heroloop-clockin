@@ -787,26 +787,55 @@ html { scroll-behavior: smooth; }
   .arena-portrait.enemy-wolf-portrait { width: 80px !important; height: 80px !important; }
 }
 .arena-portrait.enemy-wolf-portrait { border-color: #49352b !important; background: #090b0c; }
+.enemy-wolf-edge {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  box-shadow: 0 1px 2px #000b;
+}
+.enemy-wolf-edge-right {
+  top: 2%;
+  right: -1px;
+  width: 3px;
+  height: 63%;
+  border: 1px solid #2c211d;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #4b3b30, #b49b7e, #382721);
+}
+.enemy-wolf-edge-left {
+  bottom: -1px;
+  left: -1px;
+  width: 22%;
+  height: 24%;
+  border-left: 2px solid #a1896a;
+  border-bottom: 2px solid #a1896a;
+  border-bottom-left-radius: 8px;
+}
 .enemy-wolf-frame {
   position: absolute;
-  left: -8%;
-  top: -8%;
   z-index: 5;
   display: block;
-  width: 116%;
-  height: 116%;
-  object-fit: contain;
+  background-image: url('/assets/enemies/frames/wolf-prestige-degree2-v3.webp');
+  background-repeat: no-repeat;
   pointer-events: none;
   user-select: none;
   filter: drop-shadow(0 2px 2px #000c);
 }
 .enemy-wolf-frame-right {
-  clip-path: inset(0 0 29% 63%);
-  transform: translateX(4%);
+  top: -5%;
+  right: -6%;
+  width: 17%;
+  height: 68%;
+  background-size: 588.24% 147.06%;
+  background-position: right top;
 }
 .enemy-wolf-frame-left {
-  clip-path: inset(65% 67% 0 0);
-  transform: translateX(-2%);
+  bottom: -6%;
+  left: -11%;
+  width: 21%;
+  height: 30%;
+  background-size: 476.19% 333.33%;
+  background-position: left bottom;
 }
 
 /* Preserve the tall Wraith hood and hands inside the square card. */
