@@ -35,7 +35,7 @@
     { "source": "market_item_events.result.fee", "ledgerKind": "market_fee", "sourceKeyPrefix": "market_fee:" }
   ],
   "currentCoverageBlockers": [
-    { "operation": "tester_credit_tokens", "environment": "staging", "requiredLedgerKind": "tester_credit", "flow": "player_issuance", "reason": "credit_token_distribution changes pending_tokens without distribution_log" },
+    { "operation": "tester_credit_tokens", "environment": "staging", "requiredLedgerKind": "tester_credit", "flow": "player_issuance", "reason": "credit_token_distribution changes pending_tokens without distribution_log", "implementedBy": "selfhosted/postgres/migrations/20260926194000_ledger_tester_credit.sql (Staging 2026-09-26)" },
     { "operation": "account_delete", "environment": "all", "requiredLedgerKind": "account_balance_extinguishment", "flow": "balance_extinguishment", "reason": "deleting players removes token_balance and pending_tokens without a surviving balance event", "implementedBy": "selfhosted/postgres/migrations/20260926193000_ledger_balance_extinguishment.sql (Staging 2026-09-26; Production needs approval)" }
   ],
   "equations": {
