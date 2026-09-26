@@ -195,7 +195,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
             </span>}
           </div>
         </div>
-        {wolfFrame && <img className="enemy-wolf-frame" src="/assets/enemies/frames/wolf-prestige-degree2-v2.webp" alt="" aria-hidden="true" draggable={false} />}
+        {wolfFrame && <img className="enemy-wolf-frame" src="/assets/enemies/frames/wolf-prestige-degree2-v3.webp" alt="" aria-hidden="true" draggable={false} />}
         </div>
       </div>
       </div>

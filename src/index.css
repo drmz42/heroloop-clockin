@@ -789,12 +789,12 @@ html { scroll-behavior: smooth; }
 .arena-portrait.enemy-wolf-portrait { border-color: #49352b !important; background: #090b0c; }
 .enemy-wolf-frame {
   position: absolute;
-  left: -12%;
-  top: -12%;
+  left: -8%;
+  top: -8%;
   z-index: 5;
   display: block;
-  width: 124%;
-  height: 124%;
+  width: 116%;
+  height: 116%;
   object-fit: contain;
   pointer-events: none;
   user-select: none;
