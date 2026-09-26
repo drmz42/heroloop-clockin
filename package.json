@@ -51,6 +51,7 @@
     "check:combat-runtime": "node scripts/check-combat-runtime.mjs",
     "check:battle-animation-ui": "node scripts/check-battle-animation-ui.mjs",
     "check:storage-passports": "node scripts/check-storage-passports.mjs",
+    "check:account-risk-detector": "bash scripts/check-account-risk-detector.sh",
     "check:storage-retention": "node scripts/check-storage-retention-report.mjs",
     "check:storage-retention-apply": "node scripts/check-storage-retention-apply.mjs",
     "check:vps1-health-monitor": "node scripts/check-vps1-health-monitor.mjs",
