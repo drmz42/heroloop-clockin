@@ -35,6 +35,16 @@ async function runTick() {
     console.error("worker distribution tick failed", {
       error: error instanceof Error ? error.message : "unknown_error",
     });
+  }
+  try {
+    await client.queryObject(
+      "SELECT heroloop_worker.grant_due_season_frames($1::timestamptz) AS result",
+      [new Date().toISOString()],
+    );
+  } catch (error) {
+    console.error("worker season frame grant failed", {
+      error: error instanceof Error ? error.message : "unknown_error",
+    });
   } finally {
     client.release();
   }
