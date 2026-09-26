@@ -201,6 +201,7 @@
     "balance:boss-hunt-proposal": "node scripts/run-boss-hunt-simulation.mjs",
     "balance:endgame-proposal": "node scripts/run-endgame-simulation.mjs",
     "balance:dungeon-proposal": "node scripts/run-dungeon-simulation.mjs",
+    "balance:recommended-power": "tsx scripts/calibrate-recommended-power.ts",
     "simulate:hero-ascension": "node scripts/simulate-hero-ascension.mjs",
     "simulate:post20-ascension": "node scripts/simulate-post20-ascension.mjs",
     "simulate:enchant-set": "node scripts/simulate-enchant-set-progression.mjs",
