@@ -800,6 +800,14 @@ html { scroll-behavior: smooth; }
   user-select: none;
   filter: drop-shadow(0 2px 2px #000c);
 }
+.enemy-wolf-frame-right {
+  clip-path: inset(0 0 29% 63%);
+  transform: translateX(4%);
+}
+.enemy-wolf-frame-left {
+  clip-path: inset(65% 67% 0 0);
+  transform: translateX(-2%);
+}
 
 /* Preserve the tall Wraith hood and hands inside the square card. */
 .enemy-ghost-portrait .arena-portrait-impact-layer::before {
