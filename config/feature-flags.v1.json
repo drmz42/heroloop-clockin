@@ -41,6 +41,12 @@
       "note": "A run already in progress can be continued and finished."
     },
     {
+      "key": "reward_boost_purchase",
+      "title": "Gold/XP Boost: purchase",
+      "actions": ["reward_boost_buy"],
+      "note": "An active boost keeps running and its timer stays visible."
+    },
+    {
       "key": "item_upgrade",
       "title": "Item upgrades",
       "actions": ["item_upgrade"],

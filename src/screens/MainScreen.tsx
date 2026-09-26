@@ -16,6 +16,7 @@ import type { GameApi } from '@/game/useGame';
 import type { CombatUnit, FloatingNumber, HeroClass, ItemSlot, OwnedItem, PotionTier } from '@/game/types';
 import { ItemArtwork } from '@/components/ItemArtwork';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
+import { RewardBoostTile } from '@/components/RewardBoost';
 import { ChestCollectIcon } from '@/components/ChestCollectIcon';
 import { BossKeyIcon } from '@/components/BossKeyIcon';
 import { FantasyBagIcon } from '@/components/FantasyBagIcon';
@@ -127,7 +128,7 @@ function emptySlotArtworkId(slot: ItemSlot, heroClass: HeroClass): string {
   return `${slot}-common`;
 }
 
-export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void }) {
+export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRewardBoostClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void; onRewardBoostClick: () => void }) {
   const { state, battleResult, respawnCountdowns, paused, setPaused } = game;
   const tok = tokenomics;
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
@@ -427,6 +428,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick }: { 
               <div className="mt-0.5 text-sm font-black tabular-nums text-[#f0c563]">⚡ {formatNum(selectedHeroPower)}</div>
             </div>
           </div>
+          <RewardBoostTile bonus={game.accountBonus} onOpenShop={onRewardBoostClick} />
           {selectedHero && (
             <div className="stat-tile mb-2 px-2 py-1.5">
               <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-[.1em] text-[#8e887b]"><span>Hero XP</span><span>Level {selectedHero.level}</span></div>

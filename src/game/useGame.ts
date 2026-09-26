@@ -287,6 +287,16 @@ function updateQuestProgress(quests: DailyQuest[], type: string, amount: number)
   });
 }
 
+export type RewardBoostPlan = '24h' | '7d' | '30d';
+export const REWARD_BOOST_PLANS: readonly RewardBoostPlan[] = ['24h', '7d', '30d'];
+export interface AccountBonusSnapshot {
+  gold: number;
+  xp: number;
+  /** Local-clock end of the paid Gold/XP boost, or null when none is active. */
+  boostEndsAt: number | null;
+  plans: { plan: RewardBoostPlan; usdCents: number; days: number; tokenCost: number | null }[];
+}
+
 export function useGame() {
   const [state, setState] = useState<GameState>(() => loadState());
   const combatPresentationRef = useRef<{
@@ -1679,6 +1689,67 @@ export function useGame() {
     return { ok: true, spent: result.spent };
   }, [serverRevisionHint]);
 
+  const [accountBonus, setAccountBonus] = useState<AccountBonusSnapshot | null>(null);
+  const serverReady = serverRevisionHint !== null;
+
+  const refreshAccountBonus = useCallback(async (): Promise<void> => {
+    if (!tokenomicsEnabled) return;
+    const result = await playerSync<{
+      bonus?: { gold?: number; xp?: number };
+      boost?: { expires_at?: string | null };
+      plans?: { plan?: string; catalogue_usd_cents?: number; days?: number; token_cost?: number | null; available?: boolean }[];
+      server_time?: string;
+    }>('account_bonus_snapshot', {});
+    const serverTime = Date.parse(String(result?.server_time ?? ''));
+    if (!result || !Array.isArray(result.plans) || !Number.isFinite(serverTime)) return;
+    const expiresAt = result.boost?.expires_at ? Date.parse(result.boost.expires_at) : NaN;
+    const offsetMs = serverTime - Date.now();
+    setAccountBonus({
+      gold: Math.max(0, Number(result.bonus?.gold) || 0),
+      xp: Math.max(0, Number(result.bonus?.xp) || 0),
+      boostEndsAt: Number.isFinite(expiresAt) ? expiresAt - offsetMs : null,
+      plans: result.plans.flatMap((plan) => REWARD_BOOST_PLANS.includes(plan.plan as RewardBoostPlan)
+        && Number.isSafeInteger(plan.catalogue_usd_cents) && Number.isSafeInteger(plan.days)
+        ? [{
+          plan: plan.plan as RewardBoostPlan,
+          usdCents: plan.catalogue_usd_cents as number,
+          days: plan.days as number,
+          tokenCost: plan.available === true && Number.isSafeInteger(plan.token_cost) ? plan.token_cost as number : null,
+        }]
+        : []),
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!serverReady) return;
+    void refreshAccountBonus();
+    const timer = window.setInterval(() => void refreshAccountBonus(), 60_000);
+    return () => window.clearInterval(timer);
+  }, [serverReady, refreshAccountBonus]);
+
+  const buyRewardBoost = useCallback(async (plan: RewardBoostPlan, maxTokenCost: number): Promise<{ ok: true } | { ok: false; error: string }> => {
+    if (!tokenomicsEnabled || !serverReady) return { ok: false, error: 'state_unavailable' };
+    let failure = 'reward_boost_buy_failed';
+    const result = await playerSync<{ spent: number; token_balance: number }>('reward_boost_buy', {
+      plan,
+      max_token_cost: maxTokenCost,
+      idempotency_key: createIdempotencyKey(),
+    }, (code) => { failure = code; });
+    if (!result || !Number.isFinite(result.spent) || result.spent <= 0
+      || !Number.isFinite(result.token_balance) || result.token_balance < 0) {
+      return { ok: false, error: failure };
+    }
+    const nextState = {
+      ...stateRef.current,
+      hero: result.token_balance,
+      milestoneQuests: updateQuestProgress(stateRef.current.milestoneQuests, 'token-spent-', result.spent),
+    };
+    stateRef.current = nextState;
+    setState(nextState);
+    await refreshAccountBonus();
+    return { ok: true };
+  }, [serverReady, refreshAccountBonus]);
+
   const settleHeroSpend = useCallback(async (amount: number, actionKind: string): Promise<number | null> => {
     const safeAmount = Math.max(0, Math.floor(amount));
     if (safeAmount === 0) return stateRef.current.hero;
@@ -2672,6 +2743,7 @@ export function useGame() {
     offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
     starUpHero, promoteAllHeroes, releaseHero, quoteHeroCapacity, upgradeHeroCapacity, toggleHeroLock, markHeroSeen,
+    accountBonus, refreshAccountBonus, buyRewardBoost,
     quoteHeroSummon, summonHeroes, summonBoss, syncBossKeys, toggleTeamMember, confirmPersistedFormation, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,
     equipItem, unequipItem, unequipAll, equipmentError: () => equipmentErrorRef.current, sellItem, toggleItemLock, sellAllUnlocked,

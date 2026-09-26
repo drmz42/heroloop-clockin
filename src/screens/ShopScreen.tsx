@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
-import { Coins, Gift, Package, ShieldCheck, Sparkles, Store } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { Coins, Gift, Package, Rocket, ShieldCheck, Sparkles, Store } from 'lucide-react';
 import { formatNum } from '@/game/state';
-import type { GameApi } from '@/game/useGame';
+import type { GameApi, RewardBoostPlan } from '@/game/useGame';
+import { formatBoostRemaining, useBoostRemaining } from '@/components/RewardBoost';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
 const PACKS = [
@@ -23,6 +24,7 @@ export function ShopScreen({ game }: { game: GameApi }) {
       </header>
 
       <main className="mx-auto mt-2 max-w-6xl">
+        <RewardBoostSection game={game} />
         <section className="material-panel p-4">
           <div className="flex items-end justify-between gap-3"><div><div className="section-kicker">Test catalogue</div><h3 className="mt-0.5 text-lg font-black text-[#eadbc4]">Launch Resource Packs</h3></div><span className="rounded border border-amber-700/50 bg-amber-950/30 px-2 py-1 text-[8px] font-black uppercase tracking-wider text-amber-300">Preview · purchasing disabled</span></div>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -33,6 +35,70 @@ export function ShopScreen({ game }: { game: GameApi }) {
         <section className="material-panel mt-2 grid gap-2 p-3 sm:grid-cols-3"><Promo title="Weekly Citadel" text="Dungeon-oriented Scroll and Boss Key promotion slot." /><Promo title="Seasonal Sale" text="Time-bounded catalogue promotion without hidden odds." /><Promo title="Account Offers" text="Eligibility and purchase limits will be server-owned." /></section>
       </main>
     </div>
+  );
+}
+
+const BOOST_ERRORS: Record<string, string> = {
+  insufficient_tokens: 'Not enough $HERO.',
+  price_changed: 'The $HERO price changed. Check the new price and try again.',
+  dex_quote_unavailable: 'No $HERO price is available right now. Try again shortly.',
+  feature_paused: 'Boost purchases are paused for now.',
+  rate_limited: 'Too many attempts. Wait a moment and try again.',
+};
+
+function RewardBoostSection({ game }: { game: GameApi }) {
+  const bonus = game.accountBonus;
+  const remaining = useBoostRemaining(bonus?.boostEndsAt ?? null);
+  const [confirming, setConfirming] = useState<RewardBoostPlan | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+
+  async function buy(plan: RewardBoostPlan, tokenCost: number) {
+    if (confirming !== plan) { setConfirming(plan); setMessage(''); return; }
+    setBusy(true);
+    const result = await game.buyRewardBoost(plan, tokenCost);
+    setBusy(false);
+    setConfirming(null);
+    setMessage(result.ok ? 'Boost activated.' : BOOST_ERRORS[result.error] ?? 'Purchase failed. Try again.');
+    if (!result.ok && result.error === 'price_changed') void game.refreshAccountBonus();
+  }
+
+  return (
+    <section className="material-panel mb-2 p-4" aria-labelledby="reward-boost-title">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <div className="section-kicker">Staging test · paid with $HERO</div>
+          <h3 id="reward-boost-title" className="mt-0.5 text-lg font-black text-[#eadbc4]">Gold/XP Boost ×2</h3>
+          <p className="mt-1 text-[10px] text-[#a59b8c]">+100% Gold and +100% XP from every battle, offline progress and Boss Gold. Buying again adds time; the boost never stacks in strength.</p>
+        </div>
+        <span className={`rounded border px-2 py-1 text-[9px] font-black uppercase tracking-wider ${remaining > 0 ? 'border-amber-600/60 bg-amber-950/30 text-amber-300' : 'border-[#4f4536] bg-black/25 text-[#8f897d]'}`}>
+          {remaining > 0 ? `Active · ${formatBoostRemaining(remaining)} left` : 'Not active'}
+        </span>
+      </div>
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        {(bonus?.plans ?? []).map((plan) => {
+          const affordable = plan.tokenCost !== null && game.state.hero >= plan.tokenCost;
+          const isConfirming = confirming === plan.plan;
+          return (
+            <article key={plan.plan} className="stat-tile flex flex-col gap-1 p-3">
+              <div className="flex items-center gap-1.5 text-[#e5b85f]"><Rocket size={15} aria-hidden="true" /><b className="text-sm text-[#eee2ce]">{plan.days === 1 ? '24 hours' : `${plan.days} days`}</b></div>
+              <div className="text-xl font-black tabular-nums text-[#f0c563]">${(plan.usdCents / 100).toFixed(plan.usdCents % 100 === 0 ? 0 : 2)}</div>
+              <div className="flex items-center gap-1 text-[10px] font-semibold tabular-nums text-violet-300"><HeroTokenIcon size={12} />{plan.tokenCost === null ? 'Price unavailable' : `${formatNum(plan.tokenCost)} $HERO`}</div>
+              <button
+                type="button"
+                disabled={busy || plan.tokenCost === null || !affordable}
+                onClick={() => plan.tokenCost !== null && void buy(plan.plan, plan.tokenCost)}
+                className={`game-control mt-1 min-h-10 w-full px-2 text-[11px] font-bold ${isConfirming ? 'game-primary' : ''}`}
+              >
+                {busy && isConfirming ? 'Buying…' : isConfirming ? `Confirm ${formatNum(plan.tokenCost ?? 0)} $HERO` : !affordable && plan.tokenCost !== null ? 'Not enough $HERO' : remaining > 0 ? 'Add time' : 'Buy'}
+              </button>
+            </article>
+          );
+        })}
+        {!bonus && <p className="text-[10px] text-[#8f897d] sm:col-span-3">Loading boost prices…</p>}
+      </div>
+      {message && <p role="status" className="mt-2 text-[10px] font-semibold text-[#d5bd85]">{message}</p>}
+    </section>
   );
 }
 
