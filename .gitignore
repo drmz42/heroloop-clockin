@@ -40,3 +40,4 @@ upload/*
 *.pdf
 !docs/game/source/HeroLoop_Product_Bible_v1.pdf
 !docs/game/source/legacy/HeroLoop_Brandbook_v2.pdf
+__pycache__/
