@@ -24,7 +24,7 @@ import { MAX_ENCHANT_LEVEL } from '@/game/enchant';
 import { goldRewardForLanes } from '@/game/goldRewards';
 import { advanceCombatFrame, combatResolution, seededCombatRandom } from '../../managed/functions/player-sync/combat-step.mjs';
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
-import { scheduleFloaters } from '@/game/floater-queue.mjs';
+import { combatPresentationDue, scheduleFloaters } from '@/game/floater-queue.mjs';
 import { combatRecoveryDelay, createCombatSession, stalledCombatGeneration } from '@/game/combat-session.mjs';
 import { COMBAT_TIMELINE_VERSION, parseCombatTimeline } from '../../managed/functions/player-sync/combat-timeline.mjs';
 import type { CombatTimelineEvent } from '../../managed/functions/player-sync/combat-timeline.mjs';
@@ -34,11 +34,6 @@ const COMBAT_LOOP_INTERVAL_MS = 50;
 const FLOATER_LIFETIME_MS = 1_500;
 const MAX_LIVE_FLOATERS = 36;
 const NORMAL_COMBAT_START_INTERVAL_MS = 3_100;
-const COMBAT_PRESENTATION_INTERVAL_MS: Record<GameState['battleAnimationMode'], number> = {
-  off: 1_000,
-  light: 750,
-  spectacular: 500,
-};
 const ACTIVE_CHEST_SECONDS = 86.4;
 const MAX_TRAINING_OFFLINE_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -972,8 +967,9 @@ export function useGame() {
             pendingFloaters = [];
             pendingPotionFx = null;
           }
-          const presentationInterval = COMBAT_PRESENTATION_INTERVAL_MS[stateRef.current.battleAnimationMode];
-          if (combatPresentationVisibleRef.current && now - lastCombatRenderRef.current >= presentationInterval) {
+          if (combatPresentationVisibleRef.current && combatPresentationDue(
+            stateRef.current.battleAnimationMode, now - lastCombatRenderRef.current, pendingFloaters.length > 0,
+          )) {
             lastCombatRenderRef.current = now;
             setUnits(finalUnits);
             if (pendingFloaters.length > 0) setFloaters((prev) => [...prev.slice(-MAX_LIVE_FLOATERS), ...scheduleFloaters(pendingFloaters, now, floaterQueueRef.current)]);
