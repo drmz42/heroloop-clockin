@@ -9,6 +9,7 @@ import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { HERO_MAP } from '@/game/heroes';
 import { playerSync } from '@/game/backend';
 import { hasBlockedUsernameLanguage } from '@/game/username';
+import { clearSignupAttribution, readSignupAttribution } from '@/game/signupAttribution';
 import { clearLegacyState, makeRegisteredStarterState } from '@/game/state';
 import {
   connectSolanaWallet,
@@ -287,6 +288,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
   const [step, setStep] = useState(1);
   const [starter, setStarter] = useState<StarterId>('shepherd-common');
   const [username, setUsername] = useState('');
+  const [hasAttribution] = useState(() => readSignupAttribution() !== null);
   const [guestReady, setGuestReady] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [guestId, setGuestId] = useState('');
@@ -400,11 +402,13 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
     setConnecting(true); setError('');
     try {
       const registrationState = makeRegisteredStarterState(username.trim(), guestId, starter);
+      const attribution = readSignupAttribution();
       let registrationError = '';
       const register = () => accountRequest(playerSync<{ created: boolean; username: string; account_id: string; state: unknown; revision: number }>('account_register', {
         username: username.trim(),
         starter_hero_id: starter,
         state: registrationState,
+        ...(attribution ? { attribution } : {}),
       }, message => { registrationError = message; }));
       let account = await register();
       if (!account && (!registrationError || registrationError === 'network_error' || registrationError === 'registration_unavailable')) {
@@ -418,6 +422,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         setError(detail);
         return;
       }
+      clearSignupAttribution();
       game.hydrateServerState(account.state);
       onAccountReady();
     } catch {
@@ -510,6 +515,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
                 <span className={username.length > 0 && !validName ? 'text-rose-400' : 'text-slate-600'}>{blockedName ? 'Choose a respectful player name' : '3–16 letters, numbers or _'}</span>
                 <span className="text-slate-600">{username.length}/16</span>
               </div>
+              {hasAttribution && <p className="mt-5 text-xs leading-5 text-slate-500">You arrived through a campaign, invite or promo link. We save that link label with your account only to see which campaigns bring players.</p>}
               {error && <div className="mt-5 border border-rose-400/30 bg-rose-400/10 p-3 text-sm text-rose-300">{error}</div>}
             </div>
           )}

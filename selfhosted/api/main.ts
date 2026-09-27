@@ -242,6 +242,21 @@ function validatePayloadFields(payload: JsonRecord, allowed: readonly string[]):
   return Object.keys(payload).some((key) => !fields.has(key)) ? "invalid_payload" : null;
 }
 
+// Optional sign-up attribution sent with account_register. Anything malformed
+// is dropped, never an error: attribution must not block a registration.
+const attributionKeys = ["source", "medium", "campaign", "ref", "promo"] as const;
+const attributionValuePattern = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+
+function signupAttribution(value: unknown): JsonRecord | null {
+  if (!isRecord(value)) return null;
+  const cleaned: JsonRecord = {};
+  for (const key of attributionKeys) {
+    const item = value[key];
+    if (typeof item === "string" && attributionValuePattern.test(item)) cleaned[key] = item;
+  }
+  return Object.keys(cleaned).length > 0 ? cleaned : null;
+}
+
 function idempotencyKey(envelope: JsonRecord): string | null {
   return typeof envelope.idempotency_key === "string" && uuidPattern.test(envelope.idempotency_key)
     ? envelope.idempotency_key
@@ -840,7 +855,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       }
     }
     if (parsed.value.action === "account_register") {
-      const payloadError = validatePayloadFields(payload, ["username", "starter_hero_id", "state"]);
+      const payloadError = validatePayloadFields(payload, ["username", "starter_hero_id", "state", "attribution"]);
       if (payloadError) return errorResponse(400, payloadError, requestId);
       const prepared = prepareRegistration(payload, identity.playerId, Date.now());
       if ("code" in prepared) return errorResponse(prepared.status, prepared.code, requestId);
@@ -852,6 +867,17 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         const revision = Number(result.revision);
         if (!Number.isSafeInteger(revision) || revision < 1 || !isRecord(result.state)) {
           throw new Error("invalid registration database response");
+        }
+        const attribution = signupAttribution(payload.attribution);
+        if (attribution) {
+          try {
+            await databaseJson(
+              "SELECT heroloop_api.signup_attribution_record($1::uuid, $2::jsonb) AS result",
+              [identity.playerId, JSON.stringify(attribution)],
+            );
+          } catch {
+            console.error("signup_attribution_record database adapter failed", { requestId });
+          }
         }
         return json(200, { ok: true, contract_version: 1, request_id: requestId, revision, result });
       } catch {
