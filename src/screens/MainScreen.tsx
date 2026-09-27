@@ -479,58 +479,60 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           )}
         </div>
 
-        <div className="flex-1 p-3">
+        <div className="flex-1 p-2">
           {!state.tutorial.questCompleted && (() => {
             const ordinal = Math.max(1, Math.min(10, state.tutorial.questOrdinal));
             const quest = TUTORIAL_QUESTS[ordinal - 1];
             const activeEquipped = state.ownedHeroes.some((hero) => state.team.includes(hero.uid) && Object.keys(hero.equipped).length > 0);
             const progress = [state.totalKills, state.tutorial.openedCount, activeEquipped ? 1 : 0, state.summons, state.team.length, state.summons, state.trainingCamp.heroUids.some(Boolean) ? 1 : 0, state.autoPot.enabled ? 1 : 0, state.highestLocation, Math.max(0, state.totalBossKills - state.tutorial.bossKillsAtKeyGrant)][ordinal - 1];
             const done = progress >= quest[2];
-            return <section className="mb-3" aria-label="Tutorial Quests">
-              <div className="section-kicker mb-1.5">Tutorial Quests · {ordinal}/10</div>
-              <div className={`quest-card px-2 py-2 ${done ? 'border-[#b48a43]' : ''}`}>
-                <div className="flex items-center gap-1.5"><Circle size={12} className={done ? 'fill-amber-400/30 text-amber-400' : 'text-slate-600'} /><span className="ui-text-medium flex-1 leading-tight text-px-text">{quest[1]}</span></div>
-                <div className="health-track my-1.5 h-1.5 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, progress / quest[2] * 100)}%` }} /></div>
-                <div className="ui-text-small flex justify-between"><span className="text-px-dim">{progress}/{quest[2]}</span><span className="text-[#e7c579]">{quest[3]}</span></div>
-                {done && <button onClick={() => void game.claimTutorialQuest(quest[0])} className="game-control game-primary ui-text-medium mt-1.5 min-h-7 w-full px-2 py-1 font-bold">Claim & unlock next</button>}
+            return <section className="mb-2" aria-label="Tutorial Quests">
+              <div className="section-kicker mb-1">Tutorial Quests · {ordinal}/10</div>
+              <div className={`quest-card px-2 py-1 ${done ? 'border-[#b48a43]' : ''}`}>
+                <div className="flex items-center gap-1.5"><Circle size={11} className={done ? 'fill-amber-400/30 text-amber-400' : 'text-slate-600'} /><span className="ui-text-medium min-w-0 flex-1 leading-tight text-px-text">{quest[1]}</span></div>
+                <div className="mt-1 flex items-center gap-1.5"><div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, progress / quest[2] * 100)}%` }} /></div><span className="ui-text-small shrink-0 text-px-dim">{progress}/{quest[2]}</span><span className="ui-text-small shrink-0 text-[#e7c579]">{quest[3]}</span></div>
+                {done && <button onClick={() => void game.claimTutorialQuest(quest[0])} className="game-control game-primary ui-text-medium mt-1 min-h-7 w-full px-2 py-0.5 font-bold">Claim & unlock next</button>}
               </div>
-              {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1.5 px-2 py-2"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1.5 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => void game.openTutorialChests(1)} className="game-control min-h-7 text-[9px] font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => void game.openTutorialChests(10)} className="game-control min-h-7 text-[9px] font-bold">Open 10</button></div></div>}
+              {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1 px-2 py-1"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => void game.openTutorialChests(1)} className="game-control min-h-7 text-[9px] font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => void game.openTutorialChests(10)} className="game-control min-h-7 text-[9px] font-bold">Open 10</button></div></div>}
             </section>;
           })()}
-          <div className="section-kicker mb-1.5">Daily Quests</div>
+          <div className="section-kicker mb-1">Daily Quests</div>
           <div className="space-y-1">
             {state.dailyQuests.map(q => {
               const done = q.progress >= q.target;
               return (
-                <div key={q.id} className={`quest-card px-2 py-1.5 ${done && !q.claimed ? 'border-[#b48a43]' : ''}`}>
-                  <div className="mb-1 flex items-center gap-1.5">
-                    {q.claimed ? <CheckCircle2 size={12} className="text-emerald-400" /> : done ? <Circle size={12} className="fill-amber-400/30 text-amber-400" /> : <Circle size={12} className="text-slate-600" />}
-                    <span className="ui-text-medium min-w-0 flex-1 leading-tight text-px-text">{q.label}</span>
+                <div key={q.id} className={`quest-card px-2 py-1 ${done && !q.claimed ? 'border-[#b48a43]' : ''}`}>
+                  <div className="flex items-center gap-1.5">
+                    {q.claimed ? <CheckCircle2 size={11} className="shrink-0 text-emerald-400" /> : done ? <Circle size={11} className="shrink-0 fill-amber-400/30 text-amber-400" /> : <Circle size={11} className="shrink-0 text-slate-600" />}
+                    <span className="ui-text-medium min-w-0 flex-1 truncate leading-tight text-px-text" title={q.label}>{q.label}</span>
+                    <span className="ui-text-small flex shrink-0 items-center gap-1 text-px-text"><Coins size={10} />{q.reward.gold} <HeroTokenIcon size={10} />{q.reward.hero}</span>
                   </div>
-                  <div className="health-track mb-1 h-1.5 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
-                  <div className="ui-text-small flex items-center justify-between">
-                    <span className="text-px-dim">{q.progress}/{q.target}</span>
-                    <span className="flex items-center gap-1 text-px-text"><Coins size={10} />{q.reward.gold} <HeroTokenIcon size={10} />{q.reward.hero}</span>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
+                    <span className="ui-text-small shrink-0 text-px-dim">{q.progress}/{q.target}</span>
                   </div>
-                  {done && !q.claimed && <button onClick={() => game.claimQuest(q.id)} className="game-control game-primary ui-text-medium mt-1.5 min-h-7 w-full px-2 py-1 font-bold">Claim reward</button>}
+                  {done && !q.claimed && <button onClick={() => game.claimQuest(q.id)} className="game-control game-primary ui-text-medium mt-1 min-h-7 w-full px-2 py-0.5 font-bold">Claim reward</button>}
                 </div>
               );
             })}
           </div>
-          <div className="section-kicker mb-1.5 mt-3">Milestone Quests</div>
+          <div className="section-kicker mb-1 mt-2">Milestone Quests</div>
           <div className="space-y-1">
             {state.milestoneQuests.map(q => {
               const done = q.progress >= q.target;
               return (
-                <div key={q.id} className={`quest-card px-2 py-1.5 ${done ? 'border-[#b48a43]' : ''}`}>
-                  <div className="mb-1 flex items-center gap-1.5">
-                    {done ? <Circle size={12} className="fill-amber-400/30 text-amber-400" /> : <Circle size={12} className="text-slate-600" />}
-                    <span className="ui-text-medium min-w-0 flex-1 leading-tight text-px-text">{q.label}</span>
-                    <span className="ui-text-small shrink-0 font-bold uppercase text-[#8e887b]">Tier {(q.tier ?? 0) + 1}</span>
+                <div key={q.id} className={`quest-card px-2 py-1 ${done ? 'border-[#b48a43]' : ''}`}>
+                  <div className="flex items-center gap-1.5">
+                    {done ? <Circle size={11} className="shrink-0 fill-amber-400/30 text-amber-400" /> : <Circle size={11} className="shrink-0 text-slate-600" />}
+                    <span className="ui-text-medium min-w-0 flex-1 truncate leading-tight text-px-text" title={q.label}>{q.label}</span>
+                    <span className="ui-text-small flex shrink-0 items-center gap-1 text-px-text">{q.reward.summonScrolls ? <><ScrollText size={10} />{q.reward.summonScrolls}</> : <><Coins size={10} />{formatNum(q.reward.gold)} <HeroTokenIcon size={10} />{q.reward.hero}</>}</span>
                   </div>
-                  <div className="health-track mb-1 h-1.5 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#5a3d70,#bd78d5)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
-                  <div className="ui-text-small flex items-center justify-between"><span className="text-px-dim">{formatNum(q.progress)}/{formatNum(q.target)}</span><span className="flex items-center gap-1 text-px-text">{q.reward.summonScrolls ? <><ScrollText size={10} />{q.reward.summonScrolls}</> : <><Coins size={10} />{formatNum(q.reward.gold)} <HeroTokenIcon size={10} />{q.reward.hero}</>}</span></div>
-                  {done && <button onClick={() => game.claimQuest(q.id)} className="game-control game-primary ui-text-medium mt-1.5 min-h-7 w-full px-2 py-1 font-bold">Claim & unlock next</button>}
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#5a3d70,#bd78d5)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
+                    <span className="ui-text-small shrink-0 text-px-dim">{formatNum(q.progress)}/{formatNum(q.target)}</span>
+                    <span className="ui-text-small shrink-0 font-bold uppercase text-[#8e887b]">T{(q.tier ?? 0) + 1}</span>
+                  </div>
+                  {done && <button onClick={() => game.claimQuest(q.id)} className="game-control game-primary ui-text-medium mt-1 min-h-7 w-full px-2 py-0.5 font-bold">Claim & unlock next</button>}
                 </div>
               );
             })}
