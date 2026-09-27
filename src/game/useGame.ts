@@ -2,11 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey } from '@/game/types';
 import {
-  loadState, saveLegacyState, normalizeState, makeInitialState, makeRegisteredStarterState, starUpCost,
+  loadState, normalizeState, makeInitialState, starUpCost,
   MAX_TEAM, BASE_HERO_CAPACITY, MAX_HERO_CAPACITY, HERO_CAPACITY_STEP, MAX_HERO_STARS, MAX_INVENTORY, MAX_CHESTS, MAX_ACCOUNT_XP, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
   accountLevelFromXp, advanceHeroXp, moscowDayKey,
   heroXpForLevel, TRAINING_SLOT_COSTS, TRAINING_BOOST_COSTS,
-  ACTIVE_SESSION_MS,
   trainingTokenPenalty,
 } from '@/game/state';
 import { buildLocation, ownedToUnit, enemyToUnit, heroStats, getEquippedItems, teamPower, isOverpowered, canMineTokens, locationUnlockLevel, latestTokenLocation } from '@/game/engine';
@@ -2584,17 +2583,6 @@ export function useGame() {
     } finally { chestOpeningRef.current = false; setChestOpening(false); }
   }, []);
 
-  const setUserProfile = useCallback((username: string, walletAddress: string, starterHeroId?: string) => {
-    setState((prev) => {
-      if (!starterHeroId) return { ...prev, username, walletAddress, activeUntil: Date.now() + ACTIVE_SESSION_MS, lastSeen: Date.now() };
-      const registeredState = makeRegisteredStarterState(username, walletAddress, starterHeroId);
-      // The new page instance imports this exact profile into player_saves,
-      // then removes the temporary browser copy after server confirmation.
-      saveLegacyState(registeredState);
-      return registeredState;
-    });
-  }, []);
-
   const resetAccount = useCallback(() => {
     const initial = makeInitialState();
     combatSessionRef.current.reset();
@@ -2751,7 +2739,7 @@ export function useGame() {
     setAutoPot, setBattleAnimationMode, setCombatPresentationVisible,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
     openChests, openTutorialChests, closeChestResult, refreshStore, buyRotatingItem, claimQuest, claimTutorialQuest,
-    claimReferralReward, setUserProfile, resetAccount, hydrateServerState, mergeServerResourceState, applyServerRevision, completeWelcomeTutorial, setAvatarHero, loadMarket, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
+    claimReferralReward, resetAccount, hydrateServerState, mergeServerResourceState, applyServerRevision, completeWelcomeTutorial, setAvatarHero, loadMarket, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
     heroStatsFor: (uid: string) => {
       const owned = state.ownedHeroes.find((h) => h.uid === uid);
       if (!owned) return null;

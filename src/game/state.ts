@@ -466,10 +466,6 @@ export function loadState(): GameState {
   } catch { return makeInitialState(); }
 }
 
-export function saveLegacyState(state: GameState): void {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* server migration will report the failure */ }
-}
-
 export function clearLegacyState(): void {
   try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
 }
