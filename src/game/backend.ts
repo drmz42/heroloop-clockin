@@ -108,7 +108,9 @@ export async function playerSync<T>(
           revision?: number;
           result?: Record<string, unknown>;
         };
-        const message = detail.code ?? detail.error ?? `HTTP ${response.status}`;
+        const code = detail.code ?? detail.error ?? `HTTP ${response.status}`;
+        // A Staging kill switch paused this command before it touched state.
+        const message = code === 'feature_paused' ? 'This feature is paused for maintenance. Please try again later.' : code;
         onError?.(message);
         if (backendMode === 'selfhosted' && action === 'game_state_save'
           && response.status === 409 && detail.code === 'state_conflict' && detail.result) {
@@ -139,14 +141,15 @@ export async function playerSync<T>(
     const message = error instanceof Error ? error.message : 'network_error';
     const retrySafe = typeof payload.idempotency_key === 'string' && (
       action === 'hero_summon' || action === 'hero_ascend' || action === 'hero_release' || action === 'hero_capacity_upgrade' || action === 'ascension_focus_set' || action === 'promo_redeem' || action === 'spend_tokens' || action === 'chest_open'
-      || action === 'training_assignment_set'
+      || action === 'training_assignment_set' || action === 'reward_boost_buy'
       || action === 'tutorial_quest_claim' || action === 'quest_claim' || action === 'tutorial_chest_open'
       || action === 'item_mutate' || action === 'item_equip' || action === 'item_upgrade' || action === 'market_list_item'
       || action === 'market_cancel_listing' || action === 'market_buy_listing' || action === 'store_buy_item'
       || action === 'dungeon_start' || action === 'dungeon_room_start' || action === 'dungeon_room_action'
       || action === 'dungeon_room_complete' || action === 'dungeon_room_choose' || action === 'dungeon_abandon'
       || action === 'summon_boss' || action === 'boss_claim'
-      || action === 'normal_combat_start' || action === 'normal_combat_complete'
+      || action === 'normal_combat_start' || action === 'normal_combat_complete' || action === 'player_report'
+      || action === 'support_ticket_submit'
     );
     if (retrySafe && networkRetry < 1) return playerSync<T>(action, payload, onError, networkRetry + 1);
     onError?.(message);

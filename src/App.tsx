@@ -3,6 +3,7 @@ import { ArrowLeft, X } from 'lucide-react';
 import { useGame } from '@/game/useGame';
 import { GameNavBar } from '@/components/GameNavBar';
 import { FooterBar } from '@/components/FooterBar';
+import { SupportTicketModal } from '@/components/SupportTicketModal';
 import { OfflineModal } from '@/components/OfflineModal';
 import { ChestOpenModal } from '@/components/ChestOpenModal';
 import { BoostMaxModal } from '@/components/BoostMaxModal';
@@ -395,6 +396,7 @@ function App() {
   const [showBoost, setShowBoost] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
   const [showPromoCode, setShowPromoCode] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
   const setCombatPresentationVisible = game.setCombatPresentationVisible;
 
   useEffect(() => {
@@ -450,7 +452,7 @@ function App() {
   }
 
   if (accountGate !== 'verified') {
-    if (accountGate === 'landing') return <LandingScreen game={game} legacyWalletMode={legacyWalletMode} />;
+    if (accountGate === 'landing') return <LandingScreen game={game} legacyWalletMode={legacyWalletMode} onAccountReady={() => setAccountCheckAttempt((value) => value + 1)} />;
     return <div className="grid h-screen place-items-center bg-[#07090d] p-4 text-center text-[#d9d0c0]"><div className="material-panel max-w-sm p-5"><div className="section-kicker">Account verification</div><div className="mt-2 text-sm">{accountGate === 'error' ? 'Account service is unavailable.' : 'Checking your registered account…'}</div>{accountGate === 'error' && <button type="button" onClick={() => setAccountCheckAttempt((value) => value + 1)} className="game-control game-primary mt-4 px-4 text-xs font-black">Retry</button>}</div></div>;
   }
 
@@ -482,7 +484,7 @@ function App() {
       )}
 
       <div className="flex-1 min-h-0 overflow-hidden">
-        <MainScreen game={game} tokenomics={tokenomics} onBoostClick={() => setShowBoost(true)} onGuidesClick={openWiki} />
+        <MainScreen game={game} tokenomics={tokenomics} onBoostClick={() => setShowBoost(true)} onGuidesClick={openWiki} onRewardBoostClick={() => setTab('shop')} />
       </div>
 
       {tab !== 'main' && (
@@ -515,7 +517,7 @@ function App() {
         </div>
       )}
 
-      <FooterBar onLogout={() => void logout()} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} />
+      <FooterBar onLogout={() => void logout()} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} onSupportClick={() => setShowSupport(true)} />
 
       {game.offlineEarnings && (
         <OfflineModal
@@ -549,6 +551,7 @@ function App() {
         />
       )}
       {showPromoCode && <PromoCodeModal onClose={() => setShowPromoCode(false)} onRedeemed={applyPromoRedemption} />}
+      {showSupport && <SupportTicketModal onClose={() => setShowSupport(false)} />}
     </div>
   );
 }

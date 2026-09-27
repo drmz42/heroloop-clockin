@@ -2,7 +2,7 @@ import { MessageCircle, BookOpen, KeyRound, LogOut, Globe, Send, Twitter } from 
 import { useState } from 'react';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 
-export function FooterBar({ onLogout, onGuidesClick, onCodeClick }: { onLogout: () => void; onGuidesClick: () => void; onCodeClick: () => void }) {
+export function FooterBar({ onLogout, onGuidesClick, onCodeClick, onSupportClick }: { onLogout: () => void; onGuidesClick: () => void; onCodeClick: () => void; onSupportClick: () => void }) {
   const [copied, setCopied] = useState(false);
   const tokenCA = 'HERO...p7Xq9M'; // placeholder contract address
 
@@ -38,7 +38,7 @@ export function FooterBar({ onLogout, onGuidesClick, onCodeClick }: { onLogout: 
       <div className="flex-1" />
 
       {/* Support + logout; the account nickname is not shown here */}
-      <FooterLink icon={<MessageCircle size={13} />} label="Support" href="#" />
+      <button type="button" onClick={onSupportClick} className="game-control flex min-h-7 items-center gap-1 whitespace-nowrap px-2 py-1 font-vt text-xs"><MessageCircle size={13} /> Support</button>
       <button onClick={onLogout} className="game-control game-danger flex min-h-7 items-center gap-1 whitespace-nowrap px-2 py-1 font-vt text-xs">
         <LogOut size={13} /> Logout
       </button>

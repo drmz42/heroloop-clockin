@@ -1,6 +1,9 @@
 import { lazy, StrictMode, Suspense, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+import { captureSignupAttribution } from './game/signupAttribution';
+
+captureSignupAttribution();
 
 // eslint-disable-next-line react-refresh/only-export-components
 const Landing4Screen = lazy(() => import('../test/landing4/Landing4Screen.tsx'));

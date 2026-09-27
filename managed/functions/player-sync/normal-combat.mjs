@@ -132,6 +132,10 @@ function heroUnit(hero, lane, itemMap, carriedHp, startedAtMs, combatEffectsVers
   };
 }
 
+// Founder decision 2026-09-26: Locations 10-20 enemies get +20% HP and ATK ahead of the coming boosts;
+// rebalance only after test feedback.
+const LATE_ENEMY_STRENGTH = 1.2;
+const lateStrength = (location) => location >= 10 ? LATE_ENEMY_STRENGTH : 1;
 const ENDGAME_ENEMIES = [[6163,556,202,103],[6185,558,202,103],[7736,664,325,103],[7815,671,327,103],[8301,711,355,103],[9708,835,403,103],[11836,1017,494,103],[13400,1156,547,103],[15765,1360,646,103],[17315,1498,698,103]];
 const ENDGAME_ROLES = ['tank', 'striker', 'skirmisher', 'support', 'caster'];
 const ELITE_AFFIXES = ['guard-aura', 'mending', 'barrier', 'enrage', 'curse', 'lane-blast', 'summoner'];
@@ -143,8 +147,8 @@ function enemyUnits(location, teamSize, seed) {
       const role = ENDGAME_ROLES[Math.abs(seed + lane * 17) % ENDGAME_ROLES.length];
       const roleScale = role === 'tank' ? [1.3,.8,1.35,.9,.0] : role === 'striker' ? [.85,1.25,.85,1,.0]
         : role === 'skirmisher' ? [.8,.9,.8,1.25,.05] : role === 'support' ? [1,.75,1,.95,.0] : [.85,1.05,.8,1,.0];
-      const hp = Math.round(baseHp * roleScale[0]);
-      const atk = Math.round(baseAtk * roleScale[1]);
+      const hp = Math.round(baseHp * roleScale[0] * lateStrength(location));
+      const atk = Math.round(baseAtk * roleScale[1] * lateStrength(location));
       const def = Math.round(baseDef * roleScale[2] * (elite === 'guard-aura' ? 1.1 : 1));
       return { uid: `e${lane}-endgame-${location}`, side: 'enemy', lane, hp, maxHp: hp, alive: true, atk, def,
         attackTimer: 0, attackInterval: attackInterval(baseSpeed * roleScale[3]), critChance: .06, critDamage: 1.5,
@@ -155,8 +159,8 @@ function enemyUnits(location, teamSize, seed) {
   const difficulty = location === 1 ? 1 : 1.45 + (location - 2) * .18;
   return Array.from({ length: teamSize }, (_, lane) => {
     const id = ENEMY_IDS[(location + lane) % ENEMY_IDS.length];
-    const hp = Math.round(300 * scale * (.85 + lane * .08) * .33 * difficulty);
-    const atk = Math.round(32 * scale * (.8 + lane * .05) * .32 * difficulty);
+    const hp = Math.round(300 * scale * (.85 + lane * .08) * .33 * difficulty * lateStrength(location));
+    const atk = Math.round(32 * scale * (.8 + lane * .05) * .32 * difficulty * lateStrength(location));
     const def = Math.round(10 * scale * .25 * difficulty);
     const speed = 65 + lane * 3 + Math.min(location * 1.5, 50);
     const interval = attackInterval(speed);

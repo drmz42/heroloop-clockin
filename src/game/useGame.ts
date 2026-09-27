@@ -2,11 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey } from '@/game/types';
 import {
-  loadState, saveLegacyState, normalizeState, makeInitialState, makeRegisteredStarterState, starUpCost,
+  loadState, normalizeState, makeInitialState, starUpCost,
   MAX_TEAM, BASE_HERO_CAPACITY, MAX_HERO_CAPACITY, HERO_CAPACITY_STEP, MAX_HERO_STARS, MAX_INVENTORY, MAX_CHESTS, MAX_ACCOUNT_XP, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
   accountLevelFromXp, advanceHeroXp, moscowDayKey,
   heroXpForLevel, TRAINING_SLOT_COSTS, TRAINING_BOOST_COSTS,
-  ACTIVE_SESSION_MS,
   trainingTokenPenalty,
 } from '@/game/state';
 import { buildLocation, ownedToUnit, enemyToUnit, heroStats, getEquippedItems, teamPower, isOverpowered, canMineTokens, locationUnlockLevel, latestTokenLocation } from '@/game/engine';
@@ -25,7 +24,7 @@ import { MAX_ENCHANT_LEVEL } from '@/game/enchant';
 import { goldRewardForLanes } from '@/game/goldRewards';
 import { advanceCombatFrame, combatResolution, seededCombatRandom } from '../../managed/functions/player-sync/combat-step.mjs';
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
-import { scheduleFloaters } from '@/game/floater-queue.mjs';
+import { combatPresentationDue, scheduleFloaters } from '@/game/floater-queue.mjs';
 import { combatRecoveryDelay, createCombatSession, stalledCombatGeneration } from '@/game/combat-session.mjs';
 import { COMBAT_TIMELINE_VERSION, parseCombatTimeline } from '../../managed/functions/player-sync/combat-timeline.mjs';
 import type { CombatTimelineEvent } from '../../managed/functions/player-sync/combat-timeline.mjs';
@@ -35,11 +34,6 @@ const COMBAT_LOOP_INTERVAL_MS = 50;
 const FLOATER_LIFETIME_MS = 1_500;
 const MAX_LIVE_FLOATERS = 36;
 const NORMAL_COMBAT_START_INTERVAL_MS = 3_100;
-const COMBAT_PRESENTATION_INTERVAL_MS: Record<GameState['battleAnimationMode'], number> = {
-  off: 1_000,
-  light: 750,
-  spectacular: 500,
-};
 const ACTIVE_CHEST_SECONDS = 86.4;
 const MAX_TRAINING_OFFLINE_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -285,6 +279,16 @@ function updateQuestProgress(quests: DailyQuest[], type: string, amount: number)
     }
     return q;
   });
+}
+
+export type RewardBoostPlan = '24h' | '7d' | '30d';
+export const REWARD_BOOST_PLANS: readonly RewardBoostPlan[] = ['24h', '7d', '30d'];
+export interface AccountBonusSnapshot {
+  gold: number;
+  xp: number;
+  /** Local-clock end of the paid Gold/XP boost, or null when none is active. */
+  boostEndsAt: number | null;
+  plans: { plan: RewardBoostPlan; usdCents: number; days: number; tokenCost: number | null }[];
 }
 
 export function useGame() {
@@ -963,8 +967,9 @@ export function useGame() {
             pendingFloaters = [];
             pendingPotionFx = null;
           }
-          const presentationInterval = COMBAT_PRESENTATION_INTERVAL_MS[stateRef.current.battleAnimationMode];
-          if (combatPresentationVisibleRef.current && now - lastCombatRenderRef.current >= presentationInterval) {
+          if (combatPresentationVisibleRef.current && combatPresentationDue(
+            stateRef.current.battleAnimationMode, now - lastCombatRenderRef.current, pendingFloaters.length > 0,
+          )) {
             lastCombatRenderRef.current = now;
             setUnits(finalUnits);
             if (pendingFloaters.length > 0) setFloaters((prev) => [...prev.slice(-MAX_LIVE_FLOATERS), ...scheduleFloaters(pendingFloaters, now, floaterQueueRef.current)]);
@@ -1678,6 +1683,67 @@ export function useGame() {
     setServerRevisionHint(result.revision);
     return { ok: true, spent: result.spent };
   }, [serverRevisionHint]);
+
+  const [accountBonus, setAccountBonus] = useState<AccountBonusSnapshot | null>(null);
+  const serverReady = serverRevisionHint !== null;
+
+  const refreshAccountBonus = useCallback(async (): Promise<void> => {
+    if (!tokenomicsEnabled) return;
+    const result = await playerSync<{
+      bonus?: { gold?: number; xp?: number };
+      boost?: { expires_at?: string | null };
+      plans?: { plan?: string; catalogue_usd_cents?: number; days?: number; token_cost?: number | null; available?: boolean }[];
+      server_time?: string;
+    }>('account_bonus_snapshot', {});
+    const serverTime = Date.parse(String(result?.server_time ?? ''));
+    if (!result || !Array.isArray(result.plans) || !Number.isFinite(serverTime)) return;
+    const expiresAt = result.boost?.expires_at ? Date.parse(result.boost.expires_at) : NaN;
+    const offsetMs = serverTime - Date.now();
+    setAccountBonus({
+      gold: Math.max(0, Number(result.bonus?.gold) || 0),
+      xp: Math.max(0, Number(result.bonus?.xp) || 0),
+      boostEndsAt: Number.isFinite(expiresAt) ? expiresAt - offsetMs : null,
+      plans: result.plans.flatMap((plan) => REWARD_BOOST_PLANS.includes(plan.plan as RewardBoostPlan)
+        && Number.isSafeInteger(plan.catalogue_usd_cents) && Number.isSafeInteger(plan.days)
+        ? [{
+          plan: plan.plan as RewardBoostPlan,
+          usdCents: plan.catalogue_usd_cents as number,
+          days: plan.days as number,
+          tokenCost: plan.available === true && Number.isSafeInteger(plan.token_cost) ? plan.token_cost as number : null,
+        }]
+        : []),
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!serverReady) return;
+    void refreshAccountBonus();
+    const timer = window.setInterval(() => void refreshAccountBonus(), 60_000);
+    return () => window.clearInterval(timer);
+  }, [serverReady, refreshAccountBonus]);
+
+  const buyRewardBoost = useCallback(async (plan: RewardBoostPlan, maxTokenCost: number): Promise<{ ok: true } | { ok: false; error: string }> => {
+    if (!tokenomicsEnabled || !serverReady) return { ok: false, error: 'state_unavailable' };
+    let failure = 'reward_boost_buy_failed';
+    const result = await playerSync<{ spent: number; token_balance: number }>('reward_boost_buy', {
+      plan,
+      max_token_cost: maxTokenCost,
+      idempotency_key: createIdempotencyKey(),
+    }, (code) => { failure = code; });
+    if (!result || !Number.isFinite(result.spent) || result.spent <= 0
+      || !Number.isFinite(result.token_balance) || result.token_balance < 0) {
+      return { ok: false, error: failure };
+    }
+    const nextState = {
+      ...stateRef.current,
+      hero: result.token_balance,
+      milestoneQuests: updateQuestProgress(stateRef.current.milestoneQuests, 'token-spent-', result.spent),
+    };
+    stateRef.current = nextState;
+    setState(nextState);
+    await refreshAccountBonus();
+    return { ok: true };
+  }, [serverReady, refreshAccountBonus]);
 
   const settleHeroSpend = useCallback(async (amount: number, actionKind: string): Promise<number | null> => {
     const safeAmount = Math.max(0, Math.floor(amount));
@@ -2513,17 +2579,6 @@ export function useGame() {
     } finally { chestOpeningRef.current = false; setChestOpening(false); }
   }, []);
 
-  const setUserProfile = useCallback((username: string, walletAddress: string, starterHeroId?: string) => {
-    setState((prev) => {
-      if (!starterHeroId) return { ...prev, username, walletAddress, activeUntil: Date.now() + ACTIVE_SESSION_MS, lastSeen: Date.now() };
-      const registeredState = makeRegisteredStarterState(username, walletAddress, starterHeroId);
-      // The new page instance imports this exact profile into player_saves,
-      // then removes the temporary browser copy after server confirmation.
-      saveLegacyState(registeredState);
-      return registeredState;
-    });
-  }, []);
-
   const resetAccount = useCallback(() => {
     const initial = makeInitialState();
     combatSessionRef.current.reset();
@@ -2672,6 +2727,7 @@ export function useGame() {
     offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
     starUpHero, promoteAllHeroes, releaseHero, quoteHeroCapacity, upgradeHeroCapacity, toggleHeroLock, markHeroSeen,
+    accountBonus, refreshAccountBonus, buyRewardBoost,
     quoteHeroSummon, summonHeroes, summonBoss, syncBossKeys, toggleTeamMember, confirmPersistedFormation, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,
     equipItem, unequipItem, unequipAll, equipmentError: () => equipmentErrorRef.current, sellItem, toggleItemLock, sellAllUnlocked,
@@ -2679,7 +2735,7 @@ export function useGame() {
     setAutoPot, setBattleAnimationMode, setCombatPresentationVisible,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
     openChests, openTutorialChests, closeChestResult, refreshStore, buyRotatingItem, claimQuest, claimTutorialQuest,
-    claimReferralReward, setUserProfile, resetAccount, hydrateServerState, mergeServerResourceState, applyServerRevision, completeWelcomeTutorial, setAvatarHero, loadMarket, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
+    claimReferralReward, resetAccount, hydrateServerState, mergeServerResourceState, applyServerRevision, completeWelcomeTutorial, setAvatarHero, loadMarket, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
     heroStatsFor: (uid: string) => {
       const owned = state.ownedHeroes.find((h) => h.uid === uid);
       if (!owned) return null;

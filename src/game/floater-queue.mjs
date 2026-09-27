@@ -15,3 +15,11 @@ export function scheduleFloaters(batch, now, nextFree) {
       return { ...floater, born: now, delayMs: Math.round(start - now) };
     });
 }
+
+// Publish attack/effect events on the current combat tick. The slower refresh
+// budget is only for snapshots without new events; batching attacks hides
+// differences in the server-owned attack intervals. Minimum has no motion.
+export function combatPresentationDue(mode, elapsedMs, hasEvents) {
+  const idleInterval = { spectacular: 500, light: 750, off: 1000 }[mode] ?? 1000;
+  return (mode !== 'off' && hasEvents) || elapsedMs >= idleInterval;
+}

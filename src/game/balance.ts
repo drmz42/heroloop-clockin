@@ -1,7 +1,19 @@
 import type { BalanceTelemetry, BalanceTelemetrySummary } from './types';
 
-export const BALANCE_VERSION = 'hero-power-proposal-2026.08.12-v3@sha256:4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc:telemetry-ratio-v1';
+export const BALANCE_VERSION = 'hero-power-proposal-2026.08.12-v3@sha256:4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc:telemetry-ratio-v2';
+// Approved per-location base table (Account Level bands); the displayed value is RECOMMENDED_POWER_PER_LANE.
 export const BASE_POWER_PER_LANE = [49, 98, 138, 186, 242, 292, 353, 427, 520, 603, 3947, 3998, 5055, 5117, 5479, 6421, 8169, 9208, 11029, 12166] as const;
+// Displayed Recommended Power per lane for 1/2/3-hero formations, calibrated on 2026-09-26 against the
+// server combat engine (`scripts/calibrate-recommended-power.ts`, data/recommended-power-server-calibration.csv):
+// the per-lane Power at which a formation wins 72% of normal waves. Locations 1-10 are measured values.
+// Locations 11-20 are the pre-strengthening endgame values (measured 11-12, ratios 1.11/1.20/1.25 beyond)
+// times 1.25, the Power increase measured at Locations 11-14 after the +20% enemy HP/ATK change.
+export const RECOMMENDED_POWER_PER_LANE: readonly (readonly [number, number, number])[] = [
+  [44, 46, 77], [91, 133, 133], [145, 173, 196], [189, 242, 255], [244, 307, 368],
+  [320, 400, 428], [396, 504, 557], [466, 561, 695], [573, 686, 795], [823, 948, 1049],
+  [5334, 5801, 6880], [5419, 6002, 6880], [7014, 7582, 7899], [7100, 7675, 7995], [7602, 8219, 8561],
+  [8909, 9631, 10032], [11335, 12254, 12764], [12776, 13812, 14388], [15302, 16544, 17232], [16880, 18249, 19010],
+];
 export const WINNING_CLEAR_SECONDS_BUCKETS = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360] as const;
 const MAX_CLEAR_SECONDS = WINNING_CLEAR_SECONDS_BUCKETS[WINNING_CLEAR_SECONDS_BUCKETS.length - 1];
 const MIN_SAMPLE = 20;
@@ -118,8 +130,8 @@ export function summarizeBalanceTelemetry(telemetry: BalanceTelemetry): BalanceT
 
 export function recommendedTeamPower(locationId: number, teamSize: number, telemetry?: BalanceTelemetry): number {
   const lanes = Math.max(1, Math.min(teamSize, 3));
-  const basePerLane = BASE_POWER_PER_LANE[Math.min(locationId - 1, BASE_POWER_PER_LANE.length - 1)];
-  const baseline = basePerLane * lanes;
+  const row = RECOMMENDED_POWER_PER_LANE[Math.max(0, Math.min(locationId - 1, RECOMMENDED_POWER_PER_LANE.length - 1))];
+  const baseline = row[lanes - 1] * lanes;
   if (!telemetry || telemetry.version !== BALANCE_VERSION) return Math.round(baseline);
   const samples = Object.values(telemetry.cohorts).filter((row) =>
     row.locationId === locationId && row.teamSize === lanes && !row.boss,

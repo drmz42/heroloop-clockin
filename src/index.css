@@ -781,35 +781,3 @@ html { scroll-behavior: smooth; }
 .test-btn-green:hover { border-color: #7ee787; }
 .test-btn-reset { border-color: rgba(169,86,80,.55); color: #e8b3ae; }
 .test-btn-reset:hover { border-color: #c96f68; }
-
-/* Degree-2 wolf: one continuous forged rim with accents attached to its corners. */
-@media (max-width: 639px) {
-  .arena-portrait.enemy-wolf-portrait { width: 80px !important; height: 80px !important; }
-}
-.arena-portrait.enemy-wolf-portrait { border-color: #49352b !important; background: #090b0c; }
-.enemy-wolf-frame {
-  position: absolute;
-  left: -8%;
-  top: -8%;
-  z-index: 5;
-  display: block;
-  width: 116%;
-  height: 116%;
-  object-fit: contain;
-  pointer-events: none;
-  user-select: none;
-  filter: drop-shadow(0 1px 1px #000a);
-}
-
-/* Preserve the tall Wraith hood and hands inside the square card. */
-.enemy-ghost-portrait .arena-portrait-impact-layer::before {
-  content: '';
-  position: absolute;
-  inset: -6px;
-  background: url('/assets/enemies/v4/ghost.png') center / cover;
-  filter: blur(5px) brightness(.45);
-}
-.enemy-ghost-portrait .arena-portrait-impact-layer > img {
-  position: relative;
-  object-fit: contain;
-}

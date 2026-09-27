@@ -24,6 +24,7 @@ import {
   prepareStatusResult,
   recoverMissingFormationHeroes,
 } from "./state.ts";
+import { createFeatureFlagGate } from "./feature_flags.ts";
 
 const jsonHeaders = {
   "cache-control": "no-store",
@@ -89,6 +90,9 @@ const commandActions = new Set([
   "spend_tokens",
   "set_boost_max_active",
   "promo_redeem",
+  "player_report",
+  "support_ticket_submit",
+  "support_ticket_list",
   "tester_credit_tokens",
   "tester_credit_gold",
   "tester_credit_account_xp",
@@ -101,6 +105,8 @@ const commandActions = new Set([
   "training_assignment_set",
   "hero_capacity_quote",
   "hero_capacity_upgrade",
+  "account_bonus_snapshot",
+  "reward_boost_buy",
   "chest_open",
   "tutorial_quest_claim",
   "quest_claim",
@@ -237,6 +243,21 @@ function validateAccountStatusPayload(payload: JsonRecord): string | null {
 function validatePayloadFields(payload: JsonRecord, allowed: readonly string[]): string | null {
   const fields = new Set(["player_id", ...allowed]);
   return Object.keys(payload).some((key) => !fields.has(key)) ? "invalid_payload" : null;
+}
+
+// Optional sign-up attribution sent with account_register. Anything malformed
+// is dropped, never an error: attribution must not block a registration.
+const attributionKeys = ["source", "medium", "campaign", "ref", "promo"] as const;
+const attributionValuePattern = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+
+function signupAttribution(value: unknown): JsonRecord | null {
+  if (!isRecord(value)) return null;
+  const cleaned: JsonRecord = {};
+  for (const key of attributionKeys) {
+    const item = value[key];
+    if (typeof item === "string" && attributionValuePattern.test(item)) cleaned[key] = item;
+  }
+  return Object.keys(cleaned).length > 0 ? cleaned : null;
 }
 
 function idempotencyKey(envelope: JsonRecord): string | null {
@@ -442,6 +463,10 @@ async function consumeRateLimit(playerId: string, action: string): Promise<{ all
     retryAfter: Math.max(1, Math.floor(Number(result.retry_after) || 1)),
   };
 }
+
+const pausedFlagFor = createFeatureFlagGate(() =>
+  databaseJson("SELECT heroloop_api.feature_flags_paused() AS result", [])
+);
 
 async function authenticate(
   request: Request,
@@ -813,6 +838,10 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       console.error("rate-limit database adapter failed", { requestId });
       return errorResponse(503, "database_unavailable", requestId);
     }
+    // A Staging kill switch refuses the command before it touches state. 409,
+    // not 503: the client must not retry it as if the server were down.
+    const pausedFlag = await pausedFlagFor(String(parsed.value.action));
+    if (pausedFlag) return errorResponse(409, "feature_paused", requestId);
     if (parsed.value.action === "account_status") {
       const payloadError = validateAccountStatusPayload(payload);
       if (payloadError) return errorResponse(400, payloadError, requestId);
@@ -829,7 +858,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       }
     }
     if (parsed.value.action === "account_register") {
-      const payloadError = validatePayloadFields(payload, ["username", "starter_hero_id", "state"]);
+      const payloadError = validatePayloadFields(payload, ["username", "starter_hero_id", "state", "attribution"]);
       if (payloadError) return errorResponse(400, payloadError, requestId);
       const prepared = prepareRegistration(payload, identity.playerId, Date.now());
       if ("code" in prepared) return errorResponse(prepared.status, prepared.code, requestId);
@@ -841,6 +870,17 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         const revision = Number(result.revision);
         if (!Number.isSafeInteger(revision) || revision < 1 || !isRecord(result.state)) {
           throw new Error("invalid registration database response");
+        }
+        const attribution = signupAttribution(payload.attribution);
+        if (attribution) {
+          try {
+            await databaseJson(
+              "SELECT heroloop_api.signup_attribution_record($1::uuid, $2::jsonb) AS result",
+              [identity.playerId, JSON.stringify(attribution)],
+            );
+          } catch {
+            console.error("signup_attribution_record database adapter failed", { requestId });
+          }
         }
         return json(200, { ok: true, contract_version: 1, request_id: requestId, revision, result });
       } catch {
@@ -1010,6 +1050,78 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         if (code) return errorResponse(409, code, requestId);
         console.error("promo_redeem database adapter failed", { requestId });
         return errorResponse(503, "promo_redemption_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "player_report") {
+      const payloadError = validatePayloadFields(payload, ["target_player_id", "reason", "comment"]);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      const requestKey = idempotencyKey(parsed.value);
+      const targetId = typeof payload.target_player_id === "string" && uuidPattern.test(payload.target_player_id)
+        ? payload.target_player_id
+        : null;
+      const reason = typeof payload.reason === "string" ? payload.reason : "";
+      const comment = payload.comment === undefined || payload.comment === null ? null
+        : typeof payload.comment === "string" && payload.comment.length <= 300 ? payload.comment : undefined;
+      if (!requestKey || !targetId || comment === undefined ||
+        !["cheating", "bot", "offensive_name", "other"].includes(reason)) {
+        return errorResponse(400, "invalid_report", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.player_report_submit($1::uuid, $2::uuid, $3::uuid, $4::text, $5::text) AS result",
+          [identity.playerId, requestKey, targetId, reason, comment],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "invalid_report_reason", "invalid_report_comment", "invalid_report", "report_self",
+          "report_target_not_found", "report_daily_limit", "idempotency_conflict",
+        ]);
+        if (code === "invalid_report_reason" || code === "invalid_report_comment" || code === "invalid_report" || code === "report_self") {
+          return errorResponse(400, code, requestId);
+        }
+        if (code) return errorResponse(409, code, requestId);
+        console.error("player_report database adapter failed", { requestId });
+        return errorResponse(503, "player_report_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "support_ticket_submit") {
+      const payloadError = validatePayloadFields(payload, ["topic", "priority", "body", "idempotency_key"]);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      const key = idempotencyKey(parsed.value);
+      const topic = typeof payload.topic === "string" ? payload.topic : "";
+      const priority = payload.priority;
+      const body = typeof payload.body === "string" ? payload.body.trim() : "";
+      if (!key || !["login_save", "combat", "heroes", "items", "rewards", "quests", "interface", "other"].includes(topic)
+        || typeof priority !== "number" || !Number.isInteger(priority) || priority < 0 || priority > 5
+        || body.length < 10 || body.length > 2000) {
+        return errorResponse(400, "invalid_support_ticket", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.support_ticket_submit($1::uuid, $2::uuid, $3::text, $4::integer, $5::text) AS result",
+          [identity.playerId, key, topic, priority, body],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["invalid_support_ticket", "invalid_support_topic", "invalid_support_priority",
+          "invalid_ticket_text", "ticket_text_carries_identifier", "support_daily_limit", "idempotency_conflict"]);
+        if (code) return errorResponse(code === "support_daily_limit" ? 429 : code === "idempotency_conflict" ? 409 : 400, code, requestId);
+        console.error("support_ticket_submit database adapter failed", { requestId });
+        return errorResponse(503, "support_ticket_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "support_ticket_list") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.support_ticket_list_mine($1::uuid) AS result", [identity.playerId],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        console.error("support_ticket_list database adapter failed", { requestId });
+        return errorResponse(503, "support_ticket_failed", requestId);
       }
     }
     if (parsed.value.action === "ascension_focus_set") {
@@ -1218,6 +1330,42 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         if (code) return errorResponse(409, code, requestId);
         console.error("hero_capacity_upgrade database adapter failed", { requestId });
         return errorResponse(503, "hero_capacity_upgrade_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "account_bonus_snapshot") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.account_bonus_snapshot($1::uuid, $2::boolean) AS result",
+          [identity.playerId, testerControlsEnabled],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        return errorResponse(503, "account_bonus_snapshot_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "reward_boost_buy") {
+      const payloadError = validatePayloadFields(payload, ["plan", "max_token_cost"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const plan = typeof payload.plan === "string" && ["24h", "7d", "30d"].includes(payload.plan) ? payload.plan : "";
+      const maxTokenCost = Number(payload.max_token_cost);
+      if (payloadError || !requestKey || !plan || !Number.isSafeInteger(maxTokenCost) || maxTokenCost < 1) {
+        return errorResponse(400, payloadError ?? "invalid_reward_boost_purchase", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.reward_boost_buy($1::uuid, $2::uuid, $3::text, $4::numeric, $5::boolean) AS result",
+          [identity.playerId, requestKey, plan, maxTokenCost, testerControlsEnabled],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "insufficient_tokens", "price_changed", "idempotency_conflict", "dex_quote_unavailable",
+        ]);
+        if (code) return errorResponse(409, code, requestId);
+        console.error("reward_boost_buy database adapter failed", { requestId });
+        return errorResponse(503, "reward_boost_buy_failed", requestId);
       }
     }
     if (parsed.value.action === "chest_open") {

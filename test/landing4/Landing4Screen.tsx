@@ -721,7 +721,7 @@ export default function App() {
         <RanksSection />
         <FinalSection onPlay={() => setModal(true)} />
       </main>
-      {modal && <Onboarding game={game} onClose={() => setModal(false)} />}
+      {modal && <Onboarding game={game} onAccountReady={() => window.location.replace('/#game')} onClose={() => setModal(false)} />}
       <Toast msg={toast} />
     </div>
   );
