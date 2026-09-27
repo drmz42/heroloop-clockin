@@ -148,7 +148,7 @@ export async function playerSync<T>(
       || action === 'dungeon_start' || action === 'dungeon_room_start' || action === 'dungeon_room_action'
       || action === 'dungeon_room_complete' || action === 'dungeon_room_choose' || action === 'dungeon_abandon'
       || action === 'summon_boss' || action === 'boss_claim'
-      || action === 'normal_combat_start' || action === 'normal_combat_complete'
+      || action === 'normal_combat_start' || action === 'normal_combat_complete' || action === 'player_report'
     );
     if (retrySafe && networkRetry < 1) return playerSync<T>(action, payload, onError, networkRetry + 1);
     onError?.(message);

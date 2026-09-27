@@ -6,6 +6,7 @@
     "hero_summon": "hero_summon",
     "item_upgrade": "item_upgrade",
     "market_list_item": "market_listing",
+    "player_report": "player_report",
     "promo_redeem": "promo_redeem",
     "reward_boost_buy": "reward_boost_purchase",
     "store_buy_item": "store_purchase"

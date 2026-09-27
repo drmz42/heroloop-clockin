@@ -90,6 +90,7 @@ const commandActions = new Set([
   "spend_tokens",
   "set_boost_max_active",
   "promo_redeem",
+  "player_report",
   "tester_credit_tokens",
   "tester_credit_gold",
   "tester_credit_account_xp",
@@ -1047,6 +1048,39 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         if (code) return errorResponse(409, code, requestId);
         console.error("promo_redeem database adapter failed", { requestId });
         return errorResponse(503, "promo_redemption_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "player_report") {
+      const payloadError = validatePayloadFields(payload, ["target_player_id", "reason", "comment"]);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      const requestKey = idempotencyKey(parsed.value);
+      const targetId = typeof payload.target_player_id === "string" && uuidPattern.test(payload.target_player_id)
+        ? payload.target_player_id
+        : null;
+      const reason = typeof payload.reason === "string" ? payload.reason : "";
+      const comment = payload.comment === undefined || payload.comment === null ? null
+        : typeof payload.comment === "string" && payload.comment.length <= 300 ? payload.comment : undefined;
+      if (!requestKey || !targetId || comment === undefined ||
+        !["cheating", "bot", "offensive_name", "other"].includes(reason)) {
+        return errorResponse(400, "invalid_report", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.player_report_submit($1::uuid, $2::uuid, $3::uuid, $4::text, $5::text) AS result",
+          [identity.playerId, requestKey, targetId, reason, comment],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "invalid_report_reason", "invalid_report_comment", "invalid_report", "report_self",
+          "report_target_not_found", "report_daily_limit", "idempotency_conflict",
+        ]);
+        if (code === "invalid_report_reason" || code === "invalid_report_comment" || code === "invalid_report" || code === "report_self") {
+          return errorResponse(400, code, requestId);
+        }
+        if (code) return errorResponse(409, code, requestId);
+        console.error("player_report database adapter failed", { requestId });
+        return errorResponse(503, "player_report_failed", requestId);
       }
     }
     if (parsed.value.action === "ascension_focus_set") {

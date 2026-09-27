@@ -47,6 +47,12 @@
       "note": "An active boost keeps running and its timer stays visible."
     },
     {
+      "key": "player_report",
+      "title": "Player reports",
+      "actions": ["player_report"],
+      "note": "Reports already sent stay in the Control Center queue."
+    },
+    {
       "key": "item_upgrade",
       "title": "Item upgrades",
       "actions": ["item_upgrade"],
