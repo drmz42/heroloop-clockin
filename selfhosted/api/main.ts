@@ -91,6 +91,8 @@ const commandActions = new Set([
   "set_boost_max_active",
   "promo_redeem",
   "player_report",
+  "support_ticket_submit",
+  "support_ticket_list",
   "tester_credit_tokens",
   "tester_credit_gold",
   "tester_credit_account_xp",
@@ -1081,6 +1083,45 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         if (code) return errorResponse(409, code, requestId);
         console.error("player_report database adapter failed", { requestId });
         return errorResponse(503, "player_report_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "support_ticket_submit") {
+      const payloadError = validatePayloadFields(payload, ["topic", "priority", "body", "idempotency_key"]);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      const key = idempotencyKey(parsed.value);
+      const topic = typeof payload.topic === "string" ? payload.topic : "";
+      const priority = payload.priority;
+      const body = typeof payload.body === "string" ? payload.body.trim() : "";
+      if (!key || !["login_save", "combat", "heroes", "items", "rewards", "quests", "interface", "other"].includes(topic)
+        || typeof priority !== "number" || !Number.isInteger(priority) || priority < 0 || priority > 5
+        || body.length < 10 || body.length > 2000) {
+        return errorResponse(400, "invalid_support_ticket", requestId);
+      }
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.support_ticket_submit($1::uuid, $2::uuid, $3::text, $4::integer, $5::text) AS result",
+          [identity.playerId, key, topic, priority, body],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["invalid_support_ticket", "invalid_support_topic", "invalid_support_priority",
+          "invalid_ticket_text", "ticket_text_carries_identifier", "support_daily_limit", "idempotency_conflict"]);
+        if (code) return errorResponse(code === "support_daily_limit" ? 429 : code === "idempotency_conflict" ? 409 : 400, code, requestId);
+        console.error("support_ticket_submit database adapter failed", { requestId });
+        return errorResponse(503, "support_ticket_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "support_ticket_list") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.support_ticket_list_mine($1::uuid) AS result", [identity.playerId],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        console.error("support_ticket_list database adapter failed", { requestId });
+        return errorResponse(503, "support_ticket_failed", requestId);
       }
     }
     if (parsed.value.action === "ascension_focus_set") {

@@ -3,6 +3,7 @@ import { ArrowLeft, X } from 'lucide-react';
 import { useGame } from '@/game/useGame';
 import { GameNavBar } from '@/components/GameNavBar';
 import { FooterBar } from '@/components/FooterBar';
+import { SupportTicketModal } from '@/components/SupportTicketModal';
 import { OfflineModal } from '@/components/OfflineModal';
 import { ChestOpenModal } from '@/components/ChestOpenModal';
 import { BoostMaxModal } from '@/components/BoostMaxModal';
@@ -395,6 +396,7 @@ function App() {
   const [showBoost, setShowBoost] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
   const [showPromoCode, setShowPromoCode] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
   const setCombatPresentationVisible = game.setCombatPresentationVisible;
 
   useEffect(() => {
@@ -515,7 +517,7 @@ function App() {
         </div>
       )}
 
-      <FooterBar onLogout={() => void logout()} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} />
+      <FooterBar onLogout={() => void logout()} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} onSupportClick={() => setShowSupport(true)} />
 
       {game.offlineEarnings && (
         <OfflineModal
@@ -549,6 +551,7 @@ function App() {
         />
       )}
       {showPromoCode && <PromoCodeModal onClose={() => setShowPromoCode(false)} onRedeemed={applyPromoRedemption} />}
+      {showSupport && <SupportTicketModal onClose={() => setShowSupport(false)} />}
     </div>
   );
 }
