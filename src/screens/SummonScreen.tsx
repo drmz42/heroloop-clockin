@@ -216,15 +216,15 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
           </div>
           <button type="button" onClick={() => void beginSummon(1)} disabled={!canSingle || summoning !== null || promoting} className="flex h-[46px] items-center justify-between rounded-xl border border-purple-500/40 bg-gradient-to-r from-purple-600/30 to-blue-600/30 px-5 transition hover:from-purple-600/40 hover:to-blue-600/40 disabled:opacity-40">
             <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-purple-300" /> {!singleHasSpace ? 'Hero storage full' : !canPay(1) ? 'Need 1 Summon Scroll' : summoning === 1 ? 'Preparing…' : 'Summon x1'}</span>
-            <span className="text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(1) : '1 Scroll'}</span>
+            <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(1) : <><SummonScrollArtwork size={18} />1 Scroll</>}</span>
           </button>
           <button type="button" onClick={() => void beginSummon(10)} disabled={!canTen || summoning !== null || promoting} className="anim-glow flex h-[46px] items-center justify-between rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-600/30 to-purple-600/30 px-5 transition hover:from-amber-600/40 hover:to-purple-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(245,158,11,0.4)' } as React.CSSProperties}>
             <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-amber-300" /> {!tenHasSpace ? 'Need 10 free slots' : !canPay(10) ? `Need ${10 - state.summonScrolls} more Scrolls` : summoning === 10 ? 'Preparing…' : 'Summon x10'}</span>
-            <span className="text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(10) : '10 Scrolls'}</span>
+            <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(10) : <><SummonScrollArtwork size={18} />10 Scrolls</>}</span>
           </button>
           <button type="button" onClick={() => void beginSummon(100)} disabled={!canHundred || summoning !== null || promoting} className="anim-glow flex h-[46px] items-center justify-between rounded-xl border border-fuchsia-500/40 bg-gradient-to-r from-fuchsia-600/30 to-cyan-600/30 px-5 transition hover:from-fuchsia-600/40 hover:to-cyan-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(217,70,239,0.4)' } as React.CSSProperties}>
             <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-fuchsia-300" /> {!hundredHasSpace ? 'Need 100 free slots' : !canPay(100) ? `Need ${100 - state.summonScrolls} more Scrolls` : summoning === 100 ? 'Preparing…' : 'Summon x100'}</span>
-            <span className="text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(100) : '100 Scrolls'}</span>
+            <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(100) : <><SummonScrollArtwork size={18} />100 Scrolls</>}</span>
           </button>
           <div className="mt-2 h-px bg-gradient-to-r from-transparent via-[#8c6231]/65 to-transparent" />
           <button type="button" disabled={promoting || summoning !== null} onClick={() => void promoteAll()} className="game-control flex h-[46px] items-center justify-center gap-1.5 px-3 text-[9px] font-black uppercase disabled:opacity-55"><Sparkles size={13} className="text-amber-300" /> {promoting ? 'Promoting heroes…' : 'Promote all heroes · Free space for Summon'}</button>

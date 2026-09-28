@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from 'react';
-import { Coins, Gift, Package, Rocket, ShieldCheck, Sparkles, Store } from 'lucide-react';
+import { Coins, Package, Rocket, ShieldCheck, Store } from 'lucide-react';
 import { formatNum } from '@/game/state';
 import type { GameApi, RewardBoostPlan } from '@/game/useGame';
 import { formatBoostRemaining, useBoostRemaining } from '@/components/RewardBoost';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
+import { BossKeyIcon } from '@/components/BossKeyIcon';
+import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 
 const PACKS = [
   { price: 0.99, name: 'Initiate Pack', scrolls: 50, gold: 2_500, keys: 0, accent: '#8ab17d' },
@@ -28,7 +30,7 @@ export function ShopScreen({ game }: { game: GameApi }) {
         <section className="material-panel p-4">
           <div className="flex items-end justify-between gap-3"><div><div className="section-kicker">Test catalogue</div><h3 className="mt-0.5 text-lg font-black text-[#eadbc4]">Launch Resource Packs</h3></div><span className="rounded border border-amber-700/50 bg-amber-950/30 px-2 py-1 text-[8px] font-black uppercase tracking-wider text-amber-300">Preview · purchasing disabled</span></div>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {PACKS.map((pack, index) => <article key={pack.price} className={`shop-pack ${index === 4 ? 'is-featured' : ''}`} style={{ '--pack-accent': pack.accent } as React.CSSProperties}><div className="shop-pack-icon">{index >= 4 ? <Sparkles size={27} /> : <Gift size={25} />}</div><div className="section-kicker">{index === 0 ? 'Starter offer' : index === 4 ? 'Best launch value' : 'Resource bundle'}</div><h4>{pack.name}</h4><strong>${pack.price.toFixed(2)}</strong><ul><li><span>Summon Scrolls</span><b>{formatNum(pack.scrolls)}</b></li><li><span>Gold</span><b>{formatNum(pack.gold)}</b></li><li><span>Boss Keys</span><b>{pack.keys || '—'}</b></li></ul><button type="button" disabled className="game-control game-primary">TEST OFFER · COMING SOON</button></article>)}
+            {PACKS.map((pack, index) => <article key={pack.price} className={`shop-pack ${index === 4 ? 'is-featured' : ''}`} style={{ '--pack-accent': pack.accent } as React.CSSProperties}><div className="shop-pack-icon"><SummonScrollArtwork size={40} />{pack.keys > 0 && <BossKeyIcon size={38} />}</div><div className="section-kicker">{index === 0 ? 'Starter offer' : index === 4 ? 'Best launch value' : 'Resource bundle'}</div><h4>{pack.name}</h4><strong>${pack.price.toFixed(2)}</strong><ul><li><span className="flex items-center gap-1"><SummonScrollArtwork size={18} /> Summon Scrolls</span><b>{formatNum(pack.scrolls)}</b></li><li><span>Gold</span><b>{formatNum(pack.gold)}</b></li><li><span className="flex items-center gap-1"><BossKeyIcon size={18} /> Boss Keys</span><b>{pack.keys || '—'}</b></li></ul><button type="button" disabled className="game-control game-primary">TEST OFFER · COMING SOON</button></article>)}
           </div>
           <div className="mt-4 flex items-start gap-2 rounded-lg border border-[#4d402e] bg-black/30 p-3 text-[10px] leading-relaxed text-[#a49b8d]"><ShieldCheck size={15} className="mt-0.5 shrink-0 text-[#c8a45e]" /><span>This replaces rotating equipment and potion sales. Prices and contents are test catalogue values only; no payment or resource settlement is active until the final catalogue, rolling spend limits and server receipt verification are approved.</span></div>
         </section>

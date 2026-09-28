@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, Clock3, Coins, ExternalLink, FlaskConical, Hourglass, KeyRound, Package, ScrollText, Sparkles } from 'lucide-react';
+import { CheckCircle2, Clock3, Coins, ExternalLink, FlaskConical, Hourglass, Package, Sparkles } from 'lucide-react';
 import { playerSync } from '@/game/backend';
 import { formatNum } from '@/game/state';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
+import { BossKeyIcon } from '@/components/BossKeyIcon';
+import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 
 export type PartnerQuestKind = 'x_follow' | 'x_repost' | 'x_comment' | 'x_post' | 'tg_join' | 'custom';
 export type SocialProvider = 'x' | 'telegram';
@@ -58,8 +60,8 @@ const ERROR_TEXT: Record<string, string> = {
 };
 
 const REWARD_ICON: Record<string, JSX.Element> = {
-  gold: <Coins size={10} />, hero: <HeroTokenIcon size={10} />, summon_scroll: <ScrollText size={10} />,
-  boss_key: <KeyRound size={10} />, chests: <Package size={10} />,
+  gold: <Coins size={10} />, hero: <HeroTokenIcon size={10} />, summon_scroll: <SummonScrollArtwork size={16} />,
+  boss_key: <BossKeyIcon size={16} />, chests: <Package size={10} />,
 };
 const REWARD_LABEL: Record<string, string> = {
   gold: 'Gold', hero: '$HERO', summon_scroll: 'Scrolls', boss_key: 'Boss Keys', chests: 'Chests',
