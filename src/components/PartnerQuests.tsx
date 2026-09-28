@@ -140,7 +140,6 @@ export function PartnerQuests({ claim, onOpenBoostMax }: {
           return (
             <div key={quest.id} className="partner-quest-card px-2 py-1.5">
               <div className="flex items-center gap-1.5">
-                <span className="partner-quest-badge shrink-0">{quest.partner}</span>
                 <span className="ui-text-medium min-w-0 flex-1 truncate font-bold leading-tight text-[#f5e3b5]" title={quest.title}>{quest.title}</span>
                 <span className="ui-text-small flex shrink-0 items-center gap-0.5 text-[#c9a8f0]"><Clock3 size={10} />{timeLeft(quest.ends_at, now)}</span>
               </div>

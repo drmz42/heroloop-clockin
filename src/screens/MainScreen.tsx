@@ -147,7 +147,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const dropRatesButtonRef = useRef<HTMLButtonElement>(null);
   const [dropRatesPos, setDropRatesPos] = useState<{ right: number; bottom: number; maxHeight: number } | null>(null);
   const [showZoomTip, setShowZoomTip] = useState(true);
-  const [showHeroDetails, setShowHeroDetails] = useState(true);
+  const [showHeroDetails, setShowHeroDetails] = useState(false);
   const [showDungeonInfo, setShowDungeonInfo] = useState(false);
   const [activeDungeon, setActiveDungeon] = useState<DungeonCheckpoint | null>(null);
   const [dungeonFloaters, setDungeonFloaters] = useState<FloatingNumber[]>([]);
@@ -481,6 +481,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
         </div>
 
         <div className="flex-1 p-3">
+          <PartnerQuests claim={game.claimPartnerQuest} onOpenBoostMax={onBoostClick} />
           {!state.tutorial.questCompleted && (() => {
             const ordinal = Math.max(1, Math.min(10, state.tutorial.questOrdinal));
             const quest = TUTORIAL_QUESTS[ordinal - 1];
@@ -498,7 +499,6 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1.5 px-2 py-2"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1.5 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => void game.openTutorialChests(1)} className="game-control min-h-7 text-[9px] font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => void game.openTutorialChests(10)} className="game-control min-h-7 text-[9px] font-bold">Open 10</button></div></div>}
             </section>;
           })()}
-          <PartnerQuests claim={game.claimPartnerQuest} onOpenBoostMax={onBoostClick} />
           <div className="section-kicker mb-1.5">Daily Quests</div>
           <div className="space-y-1">
             {state.dailyQuests.map(q => {
