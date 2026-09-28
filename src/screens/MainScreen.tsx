@@ -701,7 +701,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               if (!h || !b) return null;
               return <HeroPortrait key={uid} heroId={b.id} heroClass={b.heroClass} rarity={b.rarity} color={b.color} size={selectedHeroUid === uid ? 56 : 46} active={selectedHeroUid === uid} badge={h.level} respawn={respawnCountdowns[uid] ?? 0} onClick={() => setSelectedHeroUid(uid)} />;
             })}
-            {Array.from({ length: 3 - state.team.length }).map((_, i) => <div key={i} className="intentional-empty grid h-[46px] w-[46px] place-items-center"><Star size={13} className="text-[#625c50]" /></div>)}
+            {Array.from({ length: 3 - state.team.length }).map((_, i) => <div key={i} className="intentional-empty pm-portrait-slot grid h-[46px] w-[46px] place-items-center"><Star size={13} className="text-[#625c50]" /></div>)}
           </div>
         </div>
 

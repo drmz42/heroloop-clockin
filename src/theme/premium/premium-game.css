@@ -388,3 +388,35 @@
   [data-hl-theme=premium] .item-act { min-height: 46px; padding: 4px 8px; }
   [data-hl-theme=premium] .game-command-bar::after { height: 4px; bottom: -2px; }
 }
+
+/* ── 11. Portraits, item slots and the Heroes toolbar ─────────────── */
+/* Portraits and item icons keep a slight bevel so art never looks cut; frames stay square */
+[data-hl-theme=premium] :is(.game-shell) :is(.item-slot, .hero-portrait-rarity, .premium-hero-card, .pm-portrait-slot, .arena-portrait, .market-detail-art) { border-radius: 5px !important; }
+[data-hl-theme=premium] :is(.game-shell) :is(.item-slot, .hero-portrait-rarity)::before { border-radius: 4px !important; }
+[data-hl-theme=premium] :is(.game-shell) :is(.item-slot, .hero-portrait-rarity, .premium-hero-card) img { border-radius: 4px; }
+[data-hl-theme=premium] :is(.game-shell) .pm-portrait-slot { border-image: none; border: 1px solid rgba(199, 158, 97, .35); background: radial-gradient(circle at 50% 40%, rgba(60, 45, 28, .7), rgba(8, 6, 5, .95) 75%); }
+/* Class tag on inventory items: small enough for any class name */
+[data-hl-theme=premium] .item-class-badge { max-width: 92%; padding: 0 2px; font-size: 7px !important; line-height: 9px; letter-spacing: 0; border-radius: 0 3px 0 3px !important; }
+
+/* Heroes toolbar: square forged sockets, labels left-aligned, filters included */
+[data-hl-theme=premium] .heroes-head :is(button, input, select):not(#pm-x):not(#pm-y) {
+  border-style: solid;
+  border-color: transparent;
+  border-image: var(--pm-frame) 200 / 8px / 1px stretch;
+  background: radial-gradient(ellipse at 30% 35%, rgba(60, 45, 28, .9), rgba(10, 8, 7, .97) 80%) !important;
+  color: #e6d3aa !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .55);
+  justify-content: flex-start;
+  text-align: left;
+  padding-left: 10px;
+  filter: none;
+}
+[data-hl-theme=premium] .heroes-head input:not(#pm-x):not(#pm-y) { padding-left: 26px; }
+[data-hl-theme=premium] .heroes-head :is(button.game-primary):not(#pm-x):not(#pm-y) {
+  background: radial-gradient(ellipse at 30% 40%, #b8341f, #6d120c 60%, #2a0504 100%) !important;
+  color: #fff0cf !important;
+  box-shadow: 0 0 10px rgba(214, 70, 44, .4);
+}
+[data-hl-theme=premium] .heroes-head :is(button, select):hover:not(:disabled) { filter: brightness(1.15); }
+[data-hl-theme=premium] .heroes-head svg { color: var(--pm-brass-hi) !important; }
+
