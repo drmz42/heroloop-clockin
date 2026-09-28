@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { CheckCircle2, Gift, KeyRound, X } from 'lucide-react';
 import { playerSync } from '@/game/backend';
+import { BossKeyIcon } from '@/components/BossKeyIcon';
+import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 
 export interface PromoRedemption {
   label: string;
@@ -41,11 +43,11 @@ export function PromoCodeModal({ onClose, onRedeemed }: { onClose: () => void; o
   };
 
   const rewards = result ? [
-    result.rewards.gold > 0 && `${result.rewards.gold.toLocaleString()} Gold`,
-    result.rewards.hero > 0 && `${result.rewards.hero.toLocaleString()} $HERO`,
-    result.rewards.summon_scrolls > 0 && `${result.rewards.summon_scrolls.toLocaleString()} Summon Scrolls`,
-    result.rewards.boss_keys > 0 && `${result.rewards.boss_keys.toLocaleString()} Boss Keys`,
-  ].filter(Boolean) : [];
+    result.rewards.gold > 0 && { label: `${result.rewards.gold.toLocaleString()} Gold` },
+    result.rewards.hero > 0 && { label: `${result.rewards.hero.toLocaleString()} $HERO` },
+    result.rewards.summon_scrolls > 0 && { label: `${result.rewards.summon_scrolls.toLocaleString()} Summon Scrolls`, icon: <SummonScrollArtwork size={20} /> },
+    result.rewards.boss_keys > 0 && { label: `${result.rewards.boss_keys.toLocaleString()} Boss Keys`, icon: <BossKeyIcon size={20} /> },
+  ].filter((reward): reward is { label: string; icon?: JSX.Element } => Boolean(reward)) : [];
 
   return (
     <div className="fixed inset-0 z-[9999] grid place-items-center bg-black/75 p-3 backdrop-blur-[4px]" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
@@ -58,7 +60,7 @@ export function PromoCodeModal({ onClose, onRedeemed }: { onClose: () => void; o
           <div className="mt-5 rounded-xl border border-emerald-500/45 bg-emerald-950/30 p-4 text-center">
             <CheckCircle2 size={28} className="mx-auto text-emerald-300" />
             <strong className="mt-2 block text-sm text-emerald-200">{result.label}</strong>
-            <p className="mt-2 text-xs leading-5 text-[#c9c2b6]">{rewards.join(' · ')}</p>
+            <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs leading-5 text-[#c9c2b6]">{rewards.map((reward) => <span key={reward.label} className="inline-flex items-center gap-1">{reward.icon}{reward.label}</span>)}</div>
             <button type="button" onClick={onClose} className="game-control game-primary mt-4 w-full px-4 py-2 text-xs font-black">Done</button>
           </div>
         ) : (

@@ -129,7 +129,7 @@ function shouldAutoLockItem(item: OwnedItem): boolean {
   return ['divine', 'celestial', 'cursed', 'immortal', 'god'].includes(itemBase.rarity);
 }
 
-function bagItemCount(state: GameState): number {
+export function bagItemCount(state: GameState): number {
   const equipped = new Set<string>();
   state.ownedHeroes.forEach((hero) => Object.values(hero.equipped).forEach((uid) => {
     if (uid) equipped.add(uid);
@@ -202,7 +202,9 @@ export interface ServerMarketSnapshot {
   pool_trade_count: number;
 }
 
-export interface MarketActionResult { ok: boolean; error?: string }
+export interface MarketActionResult { ok: boolean; error?: string; mailed?: boolean }
+export interface MailEntry { id: string; source: 'market_purchase' | 'market_return' | 'store_overflow'; created_at: string; item: OwnedItem }
+export interface MailClaimResult { ok: boolean; error?: string; claimed?: number; remaining?: number }
 
 interface NormalCombatWave {
   startKey: string;
@@ -329,6 +331,7 @@ export function useGame() {
   const [ascensionFocus, setAscensionFocus] = useState<Partial<Record<Rarity, string>>>({});
   const [summonError, setSummonError] = useState('');
   const [serverRevisionHint, setServerRevisionHint] = useState<number | null>(null);
+  const [mailCount, setMailCount] = useState(0);
   const [trainingIncomeRevision, setTrainingIncomeRevision] = useState<number | null>(null);
   const [storeBusy, setStoreBusy] = useState(false);
   const [itemUpgradeBusy, setItemUpgradeBusy] = useState(false);
@@ -1718,8 +1721,10 @@ export function useGame() {
   useEffect(() => {
     if (!serverReady) return;
     void refreshAccountBonus();
-    const timer = window.setInterval(() => void refreshAccountBonus(), 60_000);
-    return () => window.clearInterval(timer);
+    const refreshVisible = () => { if (document.visibilityState === 'visible') void refreshAccountBonus(); };
+    const timer = window.setInterval(refreshVisible, 60_000);
+    document.addEventListener('visibilitychange', refreshVisible);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', refreshVisible); };
   }, [serverReady, refreshAccountBonus]);
 
   const buyRewardBoost = useCallback(async (plan: RewardBoostPlan, maxTokenCost: number): Promise<{ ok: true } | { ok: false; error: string }> => {
@@ -1876,12 +1881,42 @@ export function useGame() {
     return playerSync<ServerMarketSnapshot>('market_snapshot');
   }, []);
 
-  const applyMarketState = useCallback((result: { inventory: OwnedItem[]; token_balance: number; revision: number }) => {
+  // Mailbox: Market purchases and full-bag overflow wait on the server until
+  // claimed; the claim result carries the canonical inventory and revision.
+  const loadMail = useCallback(async (): Promise<MailEntry[] | null> => {
+    if (!tokenomicsEnabled) return null;
+    const result = await playerSync<{ count: number; items: MailEntry[] }>('mail_list');
+    if (!result || !Array.isArray(result.items)) return null;
+    setMailCount(Math.max(0, Math.floor(Number(result.count) || 0)));
+    return result.items.filter((entry) => entry?.item?.serverOwned === true && Boolean(ITEM_MAP[entry.item.itemId]));
+  }, []);
+
+  const claimMail = useCallback(async (mailId: string | null): Promise<MailClaimResult> => {
+    if (!tokenomicsEnabled) return { ok: false, error: 'unavailable' };
+    let error = '';
+    const result = await playerSync<{ claimed: number; remaining: number; inventory: OwnedItem[]; revision: number }>('mail_claim', {
+      mail_id: mailId, idempotency_key: createIdempotencyKey(),
+    }, (message) => { error = message; });
+    if (!result || !Array.isArray(result.inventory)) return { ok: false, error: error || 'mail_failed' };
+    if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
+    setState((prev) => ({ ...prev, inventory: result.inventory }));
+    setMailCount(Math.max(0, Math.floor(Number(result.remaining) || 0)));
+    return { ok: true, claimed: result.claimed, remaining: result.remaining };
+  }, []);
+
+  // Load once the server save is known; later mail only comes from own actions.
+  const serverSaveKnown = serverRevisionHint !== null;
+  useEffect(() => {
+    if (tokenomicsEnabled && serverSaveKnown) void loadMail();
+  }, [serverSaveKnown, loadMail]);
+
+  const applyMarketState = useCallback((result: { inventory: OwnedItem[]; token_balance: number; revision: number; delivered_to?: string }) => {
     if (!Array.isArray(result.inventory) || !Number.isFinite(result.token_balance)) return false;
+    if (result.delivered_to === 'mail') void loadMail();
     if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
     setState((prev) => ({ ...prev, inventory: result.inventory, hero: Math.max(0, Math.floor(result.token_balance)) }));
     return true;
-  }, []);
+  }, [loadMail]);
 
   const createMarketListing = useCallback(async (uid: string, price: number): Promise<MarketActionResult> => {
     let error = '';
@@ -1895,20 +1930,20 @@ export function useGame() {
 
   const cancelMarketListing = useCallback(async (id: string): Promise<MarketActionResult> => {
     let error = '';
-    const result = await playerSync<{ inventory: OwnedItem[]; token_balance: number; revision: number }>('market_cancel_listing', {
+    const result = await playerSync<{ inventory: OwnedItem[]; token_balance: number; revision: number; delivered_to?: string }>('market_cancel_listing', {
       listing_id: id,
       idempotency_key: createIdempotencyKey(),
     }, (message) => { error = message; });
-    return result && applyMarketState(result) ? { ok: true } : { ok: false, error: error || 'market_settlement_failed' };
+    return result && applyMarketState(result) ? { ok: true, mailed: result.delivered_to === 'mail' } : { ok: false, error: error || 'market_settlement_failed' };
   }, [applyMarketState]);
 
   const buyMarketAsset = useCallback(async (id: string): Promise<MarketActionResult> => {
     let error = '';
-    const result = await playerSync<{ inventory: OwnedItem[]; token_balance: number; revision: number }>('market_buy_listing', {
+    const result = await playerSync<{ inventory: OwnedItem[]; token_balance: number; revision: number; delivered_to?: string }>('market_buy_listing', {
       listing_id: id,
       idempotency_key: createIdempotencyKey(),
     }, (message) => { error = message; });
-    return result && applyMarketState(result) ? { ok: true } : { ok: false, error: error || 'market_settlement_failed' };
+    return result && applyMarketState(result) ? { ok: true, mailed: true } : { ok: false, error: error || 'market_settlement_failed' };
   }, [applyMarketState]);
 
   const setAvatarHero = useCallback((heroId: string) => {
@@ -2466,7 +2501,8 @@ export function useGame() {
     if (storeBusyRef.current) return false;
     if (tokenomicsEnabled) {
       const slot = stateRef.current.rotatingShop[index];
-      if (!slot || slot.sold || stateRef.current.gold < slot.price || bagItemCount(stateRef.current) >= MAX_INVENTORY) return false;
+      // A full bag no longer blocks buying: the server mails the item.
+      if (!slot || slot.sold || stateRef.current.gold < slot.price) return false;
       storeBusyRef.current = true;
       setStoreBusy(true);
       try {
@@ -2476,6 +2512,7 @@ export function useGame() {
           store: GameState['rotatingShop'];
           refresh_at: number;
           revision: number;
+          delivered_to?: string;
         }>('store_buy_item', {
           slot_index: index,
           refresh_at: stateRef.current.rotatingShopRefreshAt,
@@ -2486,6 +2523,7 @@ export function useGame() {
           return false;
         }
         setState((prev) => ({ ...prev, inventory: result.inventory }));
+        if (result.delivered_to === 'mail') void loadMail();
         return true;
       } finally {
         storeBusyRef.current = false;
@@ -2499,7 +2537,7 @@ export function useGame() {
       return { ...prev, gold: prev.gold - slot.price, inventory: [...prev.inventory, proper], rotatingShop: prev.rotatingShop.map((s, i) => i === index ? { ...s, sold: true } : s) };
     });
     return true;
-  }, [applyStoreState, refreshStore]);
+  }, [applyStoreState, loadMail, refreshStore]);
 
   // ── Quests ───────────────────────────────────────────────────────────────
 
@@ -2530,6 +2568,37 @@ export function useGame() {
     setServerRevisionHint(result.revision);
     hydrateServerState(result.state);
     return result.claimed === true;
+  }, [hydrateServerState, serverRevisionHint]);
+
+  // Partner Quests: the reward was approved in the Founder panel; the claim is
+  // the only step that changes the save, with the same revision retry as quests.
+  const claimPartnerQuest = useCallback(async (questId: number): Promise<string | null> => {
+    if (!tokenomicsEnabled || !Number.isSafeInteger(serverRevisionHint)) return 'unavailable';
+    const idempotencyKey = createIdempotencyKey();
+    let expectedRevision = serverRevisionHint;
+    let claimError = '';
+    const attemptClaim = () => {
+      claimError = '';
+      return playerSync<{ claimed: boolean; state: GameState; revision: number }>('partner_quest_claim', {
+        quest_id: questId, expected_revision: expectedRevision, idempotency_key: idempotencyKey,
+      }, (error) => { claimError = error; });
+    };
+    let result = await attemptClaim();
+    if (!result && claimError === 'state_conflict') {
+      const refreshed = await playerSync<{ state: GameState; revision: number }>('game_state_load');
+      if (!refreshed?.state || !Number.isSafeInteger(refreshed.revision)) return 'unavailable';
+      expectedRevision = refreshed.revision;
+      result = await attemptClaim();
+      if (!result) {
+        setServerRevisionHint(refreshed.revision);
+        hydrateServerState(refreshed.state);
+        return claimError || 'unavailable';
+      }
+    }
+    if (!result?.state || !Number.isSafeInteger(result.revision)) return claimError || 'unavailable';
+    setServerRevisionHint(result.revision);
+    hydrateServerState(result.state);
+    return null;
   }, [hydrateServerState, serverRevisionHint]);
 
   const claimTutorialQuest = useCallback(async (questId: string): Promise<boolean> => {
@@ -2734,8 +2803,8 @@ export function useGame() {
     enchantItem, rerollItem, dismissEnchantResult,
     setAutoPot, setBattleAnimationMode, setCombatPresentationVisible,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
-    openChests, openTutorialChests, closeChestResult, refreshStore, buyRotatingItem, claimQuest, claimTutorialQuest,
-    claimReferralReward, resetAccount, hydrateServerState, mergeServerResourceState, applyServerRevision, completeWelcomeTutorial, setAvatarHero, loadMarket, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
+    openChests, openTutorialChests, closeChestResult, refreshStore, buyRotatingItem, claimQuest, claimTutorialQuest, claimPartnerQuest,
+    claimReferralReward, resetAccount, hydrateServerState, mergeServerResourceState, applyServerRevision, completeWelcomeTutorial, setAvatarHero, loadMarket, mailCount, loadMail, claimMail, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
     heroStatsFor: (uid: string) => {
       const owned = state.ownedHeroes.find((h) => h.uid === uid);
       if (!owned) return null;

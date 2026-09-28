@@ -55,7 +55,7 @@
     { "id": "boss_key_spend", "asset": "boss_key", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "summon_milestone_scroll", "asset": "summon_scroll", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "tutorial_summon_scroll", "asset": "summon_scroll", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
-    { "id": "boss_summon_scroll", "asset": "summon_scroll", "direction": "faucet", "status": "proposal", "authority": "server", "telemetryAggregate": "resource_flow" },
+    { "id": "boss_summon_scroll", "asset": "summon_scroll", "direction": "faucet", "status": "staging-only-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "promo_summon_scroll", "asset": "summon_scroll", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "free_summon_scroll", "asset": "summon_scroll", "direction": "sink", "status": "proposal", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "resource_opening_balance", "asset": "resource", "direction": "internal", "status": "proposal", "authority": "server", "telemetryAggregate": "resource_flow" },

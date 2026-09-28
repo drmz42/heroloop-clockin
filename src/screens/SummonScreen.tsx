@@ -6,6 +6,7 @@ import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import type { OwnedHero, Rarity } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
+import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 
 function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () => void }) {
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -211,19 +212,19 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
           {summonNotice && <div role="alert" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-red-700/65 bg-[linear-gradient(135deg,rgba(75,16,22,.92),rgba(20,8,12,.96))] px-3 py-2.5 text-left shadow-[inset_0_1px_rgba(255,255,255,.06),0_8px_22px_rgba(0,0,0,.35)]"><AlertTriangle size={17} className="shrink-0 text-red-300" /><span className="flex-1 text-[11px] font-bold text-red-100">{summonNotice}</span><button type="button" onClick={() => setSummonNotice('')} aria-label="Dismiss Summon message" className="rounded p-1 text-red-300 hover:bg-white/10"><X size={14} /></button></div>}
           <div className="grid grid-cols-2 gap-1 rounded-lg border border-violet-500/25 bg-black/40 p-1" aria-label="Summon payment method">
             <button type="button" onClick={() => setPaymentMethod('paid')} aria-pressed={paymentMethod === 'paid'} disabled={summoning !== null} className={`min-h-11 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'paid' ? 'bg-violet-800/65 text-violet-100' : 'text-slate-500'}`}>Test · $HERO</button>
-            <button type="button" onClick={() => setPaymentMethod('scroll')} aria-pressed={paymentMethod === 'scroll'} disabled={summoning !== null} className={`min-h-11 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'scroll' ? 'bg-amber-800/55 text-amber-100' : 'text-slate-500'}`}>Scrolls · {formatNum(state.summonScrolls)}</button>
+            <button type="button" onClick={() => setPaymentMethod('scroll')} aria-pressed={paymentMethod === 'scroll'} disabled={summoning !== null} className={`flex min-h-11 items-center justify-center gap-1 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'scroll' ? 'bg-amber-800/55 text-amber-100' : 'text-slate-500'}`}><SummonScrollArtwork size={25} /> Scrolls · {formatNum(state.summonScrolls)}</button>
           </div>
           <button type="button" onClick={() => void beginSummon(1)} disabled={!canSingle || summoning !== null || promoting} className="flex h-[46px] items-center justify-between rounded-xl border border-purple-500/40 bg-gradient-to-r from-purple-600/30 to-blue-600/30 px-5 transition hover:from-purple-600/40 hover:to-blue-600/40 disabled:opacity-40">
             <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-purple-300" /> {!singleHasSpace ? 'Hero storage full' : !canPay(1) ? 'Need 1 Summon Scroll' : summoning === 1 ? 'Preparing…' : 'Summon x1'}</span>
-            <span className="text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(1) : '1 Scroll'}</span>
+            <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(1) : <><SummonScrollArtwork size={18} />1 Scroll</>}</span>
           </button>
           <button type="button" onClick={() => void beginSummon(10)} disabled={!canTen || summoning !== null || promoting} className="anim-glow flex h-[46px] items-center justify-between rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-600/30 to-purple-600/30 px-5 transition hover:from-amber-600/40 hover:to-purple-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(245,158,11,0.4)' } as React.CSSProperties}>
             <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-amber-300" /> {!tenHasSpace ? 'Need 10 free slots' : !canPay(10) ? `Need ${10 - state.summonScrolls} more Scrolls` : summoning === 10 ? 'Preparing…' : 'Summon x10'}</span>
-            <span className="text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(10) : '10 Scrolls'}</span>
+            <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(10) : <><SummonScrollArtwork size={18} />10 Scrolls</>}</span>
           </button>
           <button type="button" onClick={() => void beginSummon(100)} disabled={!canHundred || summoning !== null || promoting} className="anim-glow flex h-[46px] items-center justify-between rounded-xl border border-fuchsia-500/40 bg-gradient-to-r from-fuchsia-600/30 to-cyan-600/30 px-5 transition hover:from-fuchsia-600/40 hover:to-cyan-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(217,70,239,0.4)' } as React.CSSProperties}>
             <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-fuchsia-300" /> {!hundredHasSpace ? 'Need 100 free slots' : !canPay(100) ? `Need ${100 - state.summonScrolls} more Scrolls` : summoning === 100 ? 'Preparing…' : 'Summon x100'}</span>
-            <span className="text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(100) : '100 Scrolls'}</span>
+            <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(100) : <><SummonScrollArtwork size={18} />100 Scrolls</>}</span>
           </button>
           <div className="mt-2 h-px bg-gradient-to-r from-transparent via-[#8c6231]/65 to-transparent" />
           <button type="button" disabled={promoting || summoning !== null} onClick={() => void promoteAll()} className="game-control flex h-[46px] items-center justify-center gap-1.5 px-3 text-[9px] font-black uppercase disabled:opacity-55"><Sparkles size={13} className="text-amber-300" /> {promoting ? 'Promoting heroes…' : 'Promote all heroes · Free space for Summon'}</button>

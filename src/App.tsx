@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
-import { useGame } from '@/game/useGame';
+import { bagItemCount, useGame } from '@/game/useGame';
 import { GameNavBar } from '@/components/GameNavBar';
 import { FooterBar } from '@/components/FooterBar';
 import { SupportTicketModal } from '@/components/SupportTicketModal';
+import { MailboxModal } from '@/components/MailboxModal';
 import { OfflineModal } from '@/components/OfflineModal';
 import { ChestOpenModal } from '@/components/ChestOpenModal';
 import { BoostMaxModal } from '@/components/BoostMaxModal';
@@ -25,7 +26,7 @@ import { canMineTokens, teamPower as calculateAccountPower } from '@/game/engine
 import { useTokenomics } from '@/game/useTokenomics';
 import { demoTokenomicsEnabled, playerSync, authClient, tokenomicsEnabled } from '@/game/backend';
 import { isAuthTransient, runAuthCall } from '@/game/authTransient';
-import { clearLegacyState } from '@/game/state';
+import { clearLegacyState, MAX_INVENTORY } from '@/game/state';
 import {
   compatibleSolanaWallets,
   restoreSolanaWalletSession,
@@ -397,6 +398,7 @@ function App() {
   const [showWallet, setShowWallet] = useState(false);
   const [showPromoCode, setShowPromoCode] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
+  const [showMail, setShowMail] = useState(false);
   const setCombatPresentationVisible = game.setCombatPresentationVisible;
 
   useEffect(() => {
@@ -469,7 +471,8 @@ function App() {
         }}
         gold={game.state.gold}
         hero={game.state.hero}
-        mailCount={0}
+        mailCount={game.mailCount}
+        onMailClick={() => setShowMail(true)}
         walletAddress={linkedWalletAddress}
         onWalletClick={() => setShowWallet(true)}
         onTokensClick={() => setShowBoost(true)}
@@ -552,6 +555,7 @@ function App() {
       )}
       {showPromoCode && <PromoCodeModal onClose={() => setShowPromoCode(false)} onRedeemed={applyPromoRedemption} />}
       {showSupport && <SupportTicketModal onClose={() => setShowSupport(false)} />}
+      {showMail && <MailboxModal onClose={() => setShowMail(false)} loadMail={game.loadMail} claimMail={game.claimMail} freeSlots={MAX_INVENTORY - bagItemCount(game.state)} />}
     </div>
   );
 }

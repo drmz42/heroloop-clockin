@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, MessageCircle, X } from 'lucide-react';
 import { playerSync } from '@/game/backend';
 
@@ -13,7 +13,7 @@ const TOPICS = [
   { value: 'other', label: 'Other game problem' },
 ] as const;
 const PRIORITIES = [
-  '0 · Not important', '1 · Low', '2 · Normal', '3 · Important', '4 · Urgent', '5 · Critical',
+  'Low', 'Normal', 'Important', 'Urgent', 'Critical',
 ];
 const STATUS: Record<string, string> = {
   new: 'New', in_progress: 'In progress', waiting_player: 'Waiting for you', resolved: 'Resolved', closed: 'Closed',
@@ -33,6 +33,8 @@ type Ticket = {
 export function SupportTicketModal({ onClose }: { onClose: () => void }) {
   const [topic, setTopic] = useState<(typeof TOPICS)[number]['value']>('login_save');
   const [priority, setPriority] = useState(2);
+  const [confirmCritical, setConfirmCritical] = useState(false);
+  const confirmButton = useRef<HTMLButtonElement>(null);
   const [body, setBody] = useState('');
   const [key, setKey] = useState(() => crypto.randomUUID());
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -50,14 +52,17 @@ export function SupportTicketModal({ onClose }: { onClose: () => void }) {
     setLoading(false);
   };
   useEffect(() => { void load(); }, []);
+  useEffect(() => { if (confirmCritical) confirmButton.current?.focus(); }, [confirmCritical]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape' && !busy) onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [busy, onClose]);
 
-  const submit = async () => {
+  const submit = async (confirmed = false) => {
     if (busy || body.trim().length < 10) return;
+    if (priority === 5 && !confirmed) { setConfirmCritical(true); return; }
+    setConfirmCritical(false);
     setBusy(true);
     setError('');
     let code = '';
@@ -89,14 +94,22 @@ export function SupportTicketModal({ onClose }: { onClose: () => void }) {
               {TOPICS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>
             <label className="text-xs font-bold text-[#f0dfbb]" htmlFor="support-priority">Priority</label>
-            <select id="support-priority" value={priority} onChange={(event) => setPriority(Number(event.target.value))} className="game-control min-h-11 w-full bg-[#15130f] px-3 text-sm text-[#f4e6c7]">
-              {PRIORITIES.map((label, value) => <option key={value} value={value}>{label}</option>)}
+            <select id="support-priority" value={priority} onChange={(event) => { const selected = Number(event.target.value); setPriority(selected); setConfirmCritical(selected === 5); }} className="game-control min-h-11 w-full bg-[#15130f] px-3 text-sm text-[#f4e6c7]">
+              {PRIORITIES.map((label, index) => <option key={label} value={index + 1}>{label}</option>)}
             </select>
             <label className="text-xs font-bold text-[#f0dfbb]" htmlFor="support-details">What happened?</label>
             <textarea id="support-details" value={body} onChange={(event) => setBody(event.target.value)} minLength={10} maxLength={2000} rows={4} required className="game-control w-full resize-y bg-[#15130f] px-3 py-2 text-sm text-[#f4e6c7]" placeholder="What were you doing, what did you expect, and what happened instead?" />
             <div className="text-right text-[10px] text-[#a79a82]">{body.length}/2000</div>
             {error && <p role="alert" className="rounded border border-red-700/50 bg-red-950/35 p-3 text-xs text-red-200">{error}</p>}
-            <button type="submit" disabled={busy || body.trim().length < 10} className="game-control game-primary min-h-11 w-full px-4 py-2 text-xs font-black disabled:opacity-45">{busy ? 'Sending…' : 'Create ticket'}</button>
+            {confirmCritical && <div role="alertdialog" aria-label="Confirm critical priority" className="rounded-lg border border-red-600/60 bg-red-950/40 p-3 text-xs text-red-100">
+              <p className="font-bold">Are you sure this is critical?</p>
+              <p className="mt-2">Critical priority is only for serious problems that need immediate attention. Please do not mark ordinary problems as critical or send false reports. These tickets are reviewed first.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" className="game-control min-h-11 px-3" onClick={() => { setPriority(2); setConfirmCritical(false); }}>Choose another priority</button>
+                <button ref={confirmButton} type="button" disabled={busy || body.trim().length < 10} className="game-control game-primary min-h-11 px-3 disabled:opacity-45" onClick={() => void submit(true)}>Yes, create critical ticket</button>
+              </div>
+            </div>}
+            {!confirmCritical && <button type="submit" disabled={busy || body.trim().length < 10} className="game-control game-primary min-h-11 w-full px-4 py-2 text-xs font-black disabled:opacity-45">{busy ? 'Sending…' : 'Create ticket'}</button>}
           </form>
           <div className="mt-6 border-t border-[#51422e] pt-4">
             <h3 className="font-vt text-lg font-bold text-[#f0dfbb]">Your tickets</h3>
@@ -104,7 +117,7 @@ export function SupportTicketModal({ onClose }: { onClose: () => void }) {
               <div className="mt-2 grid gap-2">
                 {tickets.map((ticket) => <article key={ticket.id} className="rounded-lg border border-[#51422e] bg-black/20 p-3 text-xs text-[#c9c2b6]">
                   <div className="flex flex-wrap items-center justify-between gap-1"><strong className="text-[#f0dfbb]">#{ticket.id} · {TOPICS.find((item) => item.value === ticket.topic)?.label ?? 'Game problem'}</strong><span>{STATUS[ticket.status] ?? ticket.status}</span></div>
-                  <p className="mt-1 text-[10px]">Priority {ticket.priority} · {new Date(ticket.created_at).toLocaleString()}</p>
+                  <p className="mt-1 text-[10px]">{PRIORITIES[ticket.priority - 1] ?? 'Priority'} · {new Date(ticket.created_at).toLocaleString()}</p>
                   <p className="mt-2 whitespace-pre-wrap break-words">{ticket.body}</p>
                   {ticket.replies.map((reply, index) => <div key={`${ticket.id}-${index}`} className="mt-2 rounded border border-emerald-500/30 bg-emerald-950/20 p-2"><strong className="text-emerald-200">Support reply</strong><p className="mt-1 whitespace-pre-wrap break-words">{reply.body}</p></div>)}
                 </article>)}
