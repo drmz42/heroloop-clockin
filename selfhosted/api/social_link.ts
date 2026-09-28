@@ -97,6 +97,7 @@ function backToGame(config: SocialLinkConfig, provider: SocialProvider, result: 
   const target = new URL(config.siteOrigin || "https://heroloop.xyz");
   target.pathname = "/";
   target.search = new URLSearchParams({ social_link: provider, result }).toString();
+  target.hash = "game";
   return new Response(null, { status: 303, headers: { location: target.toString(), "cache-control": "no-store" } });
 }
 
