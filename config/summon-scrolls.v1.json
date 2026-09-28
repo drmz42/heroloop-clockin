@@ -26,6 +26,7 @@
       { "summons": 10000, "scrolls": 50 }
     ],
     "bossVictory": 2,
+    "bossScope": "dungeon_final_shared_boss",
     "premiumPackQuantities": null
   }
 }
