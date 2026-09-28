@@ -28,7 +28,8 @@ import { playerSync, authClient } from '@/game/backend';
 const SAVE_KEY = 'afk-heroes-save-v7';
 
 const SLOTS: ItemSlot[] = ['class_weapon', 'offhand', 'helmet', 'chest', 'gloves', 'boots', 'ring', 'amulet'];
-const EQUIPPED_SLOT_LABEL: Partial<Record<ItemSlot, string>> = { class_weapon: 'Weapon', offhand: 'Offhand', chest: 'Chest' };
+// Short slot names so all eight fit under the gear row at the small text tier.
+const EQUIPPED_SLOT_LABEL: Partial<Record<ItemSlot, string>> = { class_weapon: 'Weapon', offhand: 'Offhand', helmet: 'Helm', chest: 'Chest', gloves: 'Gloves', boots: 'Boots', ring: 'Ring', amulet: 'Amulet' };
 const GRID_SIZE = 64;
 
 function CombatPresentationLayer({ game, activeDungeon, dungeonUnits, dungeonFloaters, dungeonBossScene, dungeonRoom }: {
@@ -754,7 +755,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     {ib?.heroClass && <div className="item-class-badge absolute right-0 top-0" title={`${CLASS_LABEL[ib.heroClass]} only`}>{CLASS_SHORT_LABEL[ib.heroClass]}</div>}
                     {ib && <div className="absolute bottom-0 right-0 ui-text-medium font-bold font-vt px-1 leading-tight" style={{ background: ic, color: '#000' }}>{item!.level}</div>}
                   </button>
-                  <div className="mt-1 min-w-0 truncate text-center ui-text-small font-bold uppercase tracking-[-.02em] text-[#77756e]" title={SLOT_LABEL[slot]}>{slotLabel}</div>
+                  <div className="mt-1 min-w-0 truncate text-center ui-text-small font-semibold tracking-[-.03em] text-[#8a867c]" title={SLOT_LABEL[slot]}>{slotLabel}</div>
                 </div>;
               })}
             </div>
@@ -1291,19 +1292,19 @@ function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: 
   };
   const Row = ({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) => (
     <>
-      <span className="ui-text-medium font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span>
-      <span className={`ui-text-large font-black tabular-nums ${valueClass ?? 'text-[#e8dfc8]'}`}>{value}</span>
+      <span className="ui-text-small font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span>
+      <span className={`ui-text-small font-black tabular-nums ${valueClass ?? 'text-[#e8dfc8]'}`}>{value}</span>
     </>
   );
   return (
     <div className="absolute bottom-3 left-3 z-30 flex w-max origin-bottom-left scale-[.69] flex-col items-stretch gap-2 font-vt">
       <div className="grid w-full grid-cols-[repeat(3,1fr)] gap-2 rounded-2xl border-2 border-[#80683f] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_24px_rgba(128,104,63,.28)]">
-        {[['Heroes', heroes], ['Defeated', defeated], ['Bosses', bosses]].map(([label, value]) => <div key={label} className="text-center"><span className="block ui-text-medium font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span><strong className="mt-1 block ui-text-large tabular-nums text-[#e8dfc8]">{formatNum(Number(value))}</strong></div>)}
+        {[['Heroes', heroes], ['Defeated', defeated], ['Bosses', bosses]].map(([label, value]) => <div key={label} className="text-center"><span className="block ui-text-small font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span><strong className="mt-1 block ui-text-small tabular-nums text-[#e8dfc8]">{formatNum(Number(value))}</strong></div>)}
       </div>
       <div className="token-earnings-panel flex w-full flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_34px_rgba(229,177,70,.4)]">
       <div className="flex items-center gap-2">
         <HeroTokenIcon size={22} />
-        <span className="ui-text-large font-black uppercase tracking-[.14em] text-[#ffd36e]">$HERO Income</span>
+        <span className="ui-text-small font-black uppercase tracking-[.14em] text-[#ffd36e]">$HERO Income</span>
         {stale && <span className="ml-auto ui-text-small font-bold uppercase tracking-wide text-amber-300" title="Keeping the last confirmed server values while income refresh retries">Updating…</span>}
       </div>
       {status ? (
@@ -1315,7 +1316,7 @@ function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: 
           <Row label="Daily pool" value={`${formatNum(pool)} $HERO`} valueClass="text-[#c8b3f0]" />
         </div>
       ) : (
-        <span className="ui-text-medium font-semibold text-[#9a937f]">Syncing token pool…</span>
+        <span className="ui-text-small font-semibold text-[#9a937f]">Syncing token pool…</span>
       )}
       </div>
     </div>
