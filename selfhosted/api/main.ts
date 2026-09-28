@@ -1093,7 +1093,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       const priority = payload.priority;
       const body = typeof payload.body === "string" ? payload.body.trim() : "";
       if (!key || !["login_save", "combat", "heroes", "items", "rewards", "quests", "interface", "other"].includes(topic)
-        || typeof priority !== "number" || !Number.isInteger(priority) || priority < 0 || priority > 5
+        || typeof priority !== "number" || !Number.isInteger(priority) || priority < 1 || priority > 5
         || body.length < 10 || body.length > 2000) {
         return errorResponse(400, "invalid_support_ticket", requestId);
       }
