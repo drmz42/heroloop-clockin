@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, Clock3, Coins, ExternalLink, FlaskConical, Hourglass, Package, Sparkles } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { CheckCircle2, Clock3, Coins, Download, ExternalLink, FlaskConical, Hourglass, Package, Sparkles, X } from 'lucide-react';
 import { playerSync } from '@/game/backend';
 import { formatNum } from '@/game/state';
+import type { GameState } from '@/game/types';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { BossKeyIcon } from '@/components/BossKeyIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
+import { renderPartnerQuestShareCard } from '@/components/PartnerQuestShareCard';
 
 export type PartnerQuestKind = 'x_follow' | 'x_repost' | 'x_comment' | 'x_post' | 'tg_join' | 'custom';
 export type SocialProvider = 'x' | 'telegram';
@@ -77,15 +80,18 @@ function timeLeft(endsAt: string, now: number): string {
   return `${Math.max(1, Math.floor(ms / 60_000))}m left`;
 }
 
-export function PartnerQuests({ claim, onOpenBoostMax }: {
+export function PartnerQuests({ claim, onOpenBoostMax, shareState, teamPower }: {
   claim: (questId: number) => Promise<string | null>;
   onOpenBoostMax: () => void;
+  shareState: GameState;
+  teamPower: number;
 }) {
   const [data, setData] = useState<PartnerQuestList | null>(null);
   const [busy, setBusy] = useState<number | null>(null);
   const [proofs, setProofs] = useState<Record<number, string>>({});
   const [errors, setErrors] = useState<Record<number, string>>({});
   const [now, setNow] = useState(() => Date.now());
+  const [shareCard, setShareCard] = useState<{ imageUrl: string; image: Blob; targetUrl: string; questId: number } | null>(null);
 
   const load = useCallback(async () => {
     const result = await playerSync<PartnerQuestList>('partner_quest_list', {});
@@ -102,6 +108,14 @@ export function PartnerQuests({ claim, onOpenBoostMax }: {
     return () => { window.clearInterval(refresh); window.removeEventListener(SOCIAL_LINKS_CHANGED, onLinksChanged); document.removeEventListener('visibilitychange', tick); };
   }, [load]);
 
+  useEffect(() => () => { if (shareCard) URL.revokeObjectURL(shareCard.imageUrl); }, [shareCard]);
+  useEffect(() => {
+    if (!shareCard) return;
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setShareCard(null); };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [shareCard]);
+
   if (!data || data.quests.length === 0) return null;
 
   const fail = (id: number, code: string) => setErrors((current) => ({ ...current, [id]: ERROR_TEXT[code] ?? 'Temporarily unavailable. Try again later.' }));
@@ -116,13 +130,40 @@ export function PartnerQuests({ claim, onOpenBoostMax }: {
 
   const go = (quest: PartnerQuest) => {
     if (quest.requires && !data.links[quest.requires]) { fail(quest.id, 'social_link_required'); return; }
-    // Open synchronously so the browser does not block the new tab.
-    window.open(quest.target_url, '_blank', 'noopener,noreferrer');
+    // Other tasks open synchronously so the browser does not block the tab.
+    // An X post first gets a local image preview; its button opens X later.
+    if (quest.kind !== 'x_post') window.open(quest.target_url, '_blank', 'noopener,noreferrer');
     void run(quest.id, async () => {
       let code = '';
       const started = await playerSync('partner_quest_start', { quest_id: quest.id }, (error) => { code = error; });
-      return started ? null : code || 'unavailable';
+      if (!started) return code || 'unavailable';
+      if (quest.kind === 'x_post') {
+        try {
+          const image = await renderPartnerQuestShareCard(shareState, teamPower);
+          setShareCard({ imageUrl: URL.createObjectURL(image), image, targetUrl: quest.target_url, questId: quest.id });
+        } catch {
+          return 'share_image_unavailable';
+        }
+      }
+      return null;
     });
+  };
+
+  const downloadShareCard = () => {
+    if (!shareCard) return;
+    const link = document.createElement('a');
+    link.href = shareCard.imageUrl;
+    link.download = `heroloop-squad-${shareCard.questId}.png`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.open(shareCard.targetUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const shareImage = async () => {
+    if (!shareCard || !navigator.share) return;
+    const file = new File([shareCard.image], `heroloop-squad-${shareCard.questId}.png`, { type: 'image/png' });
+    try { await navigator.share({ files: [file], title: 'My HeroLoop squad' }); } catch { /* The player may cancel the share sheet. */ }
   };
 
   const submit = (quest: PartnerQuest) => void run(quest.id, async () => {
@@ -193,6 +234,21 @@ export function PartnerQuests({ claim, onOpenBoostMax }: {
           );
         })}
       </div>
+      {shareCard && createPortal((
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-label="Share your HeroLoop squad">
+          <div className="game-control w-full max-w-xl space-y-3 p-4">
+            <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-bold text-[#f1d188]">Share your HeroLoop squad</h3>
+              <button type="button" autoFocus onClick={() => setShareCard(null)} aria-label="Close share image" className="game-control grid h-9 w-9 place-items-center"><X size={16} /></button>
+            </div>
+            <img src={shareCard.imageUrl} alt="Your HeroLoop squad share image" className="w-full rounded border border-[#a98446]" />
+            <p className="text-xs text-[#bdb3a3]">Download the image, attach it to your X post, then paste that post's link here for review.</p>
+            <button type="button" onClick={downloadShareCard} className="game-control game-primary flex min-h-11 w-full items-center justify-center gap-2 text-sm font-bold"><Download size={16} /> Download image &amp; open X</button>
+            {typeof navigator.canShare === 'function' && navigator.canShare({ files: [new File([shareCard.image], 'heroloop-squad.png', { type: 'image/png' })] }) && (
+              <button type="button" onClick={() => void shareImage()} className="game-control flex min-h-11 w-full items-center justify-center text-sm font-bold">Share image</button>
+            )}
+          </div>
+        </div>
+      ), document.body)}
     </section>
   );
 }
