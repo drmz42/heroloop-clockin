@@ -124,6 +124,8 @@
     "check:agent-tools": "npm run check:agent-prompt && npm run check:technical-tooling",
     "check:task-efficiency": "bash scripts/check-task-efficiency.sh",
     "check:todo-continuity": "bash scripts/check-todo-continuity.sh",
+    "roadmap:status": "node scripts/roadmap-status.mjs",
+    "check:roadmap": "node scripts/roadmap-status.mjs --working --check",
     "check:todo-audit": "node scripts/check-todo-audit.mjs",
     "check:todo-panel": "node scripts/check-todo-panel.mjs",
     "marketing:build": "node marketing/build-intelligence.mjs",
