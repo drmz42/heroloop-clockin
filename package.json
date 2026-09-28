@@ -133,8 +133,6 @@
     "check:marketing": "node scripts/check-marketing-intelligence.mjs",
     "check:todo-format": "node scripts/todo-format.mjs check",
     "check:todo-integrity": "node scripts/check-todo-integrity.mjs",
-    "check:todo-effort": "node scripts/todo-effort.mjs check",
-    "check:todo-effort-contract": "node scripts/check-todo-effort.mjs",
     "check:todo-transaction": "bash scripts/check-todo-transaction.sh",
     "check:todo-backup": "bash scripts/check-todo-backup-snapshot.sh",
     "check:todo-manager": "npm run check:todo-transaction",
