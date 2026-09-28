@@ -237,14 +237,14 @@ export function PartnerQuests({ claim, onOpenBoostMax, shareState, teamPower }: 
       {shareCard && createPortal((
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-label="Share your HeroLoop squad">
           <div className="game-control w-full max-w-xl space-y-3 p-4">
-            <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-bold text-[#f1d188]">Share your HeroLoop squad</h3>
+            <div className="flex items-center justify-between gap-3"><h3 className="ui-text-medium font-bold text-[#f1d188]">Share your HeroLoop squad</h3>
               <button type="button" autoFocus onClick={() => setShareCard(null)} aria-label="Close share image" className="game-control grid h-9 w-9 place-items-center"><X size={16} /></button>
             </div>
             <img src={shareCard.imageUrl} alt="Your HeroLoop squad share image" className="w-full rounded border border-[#a98446]" />
-            <p className="text-xs text-[#bdb3a3]">Download the image, attach it to your X post, then paste that post's link here for review.</p>
-            <button type="button" onClick={downloadShareCard} className="game-control game-primary flex min-h-11 w-full items-center justify-center gap-2 text-sm font-bold"><Download size={16} /> Download image &amp; open X</button>
+            <p className="ui-text-medium text-[#bdb3a3]">Download the image, attach it to your X post, then paste that post's link here for review.</p>
+            <button type="button" onClick={downloadShareCard} className="game-control game-primary flex min-h-11 w-full items-center justify-center gap-2 ui-text-medium font-bold"><Download size={16} /> Download image &amp; open X</button>
             {typeof navigator.canShare === 'function' && navigator.canShare({ files: [new File([shareCard.image], 'heroloop-squad.png', { type: 'image/png' })] }) && (
-              <button type="button" onClick={() => void shareImage()} className="game-control flex min-h-11 w-full items-center justify-center text-sm font-bold">Share image</button>
+              <button type="button" onClick={() => void shareImage()} className="game-control flex min-h-11 w-full items-center justify-center ui-text-medium font-bold">Share image</button>
             )}
           </div>
         </div>
