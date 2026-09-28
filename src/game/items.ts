@@ -110,8 +110,8 @@ const LEGACY_ITEMS: ItemBase[] = [
   { id: 'am-divine',   name: 'Heart of God',        slot: 'amulet',  rarity: 'divine',    icon: '❤️‍🔥', flavor: 'A piece of divinity.' },
 ];
 
-export const RANDOM_DROP_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
-export const ALL_PRODUCT_RARITIES: Rarity[] = [...RANDOM_DROP_RARITIES, 'cursed', 'immortal', 'god'];
+const CHEST_ROLL_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
+export const ALL_PRODUCT_RARITIES: Rarity[] = [...CHEST_ROLL_RARITIES, 'cursed', 'immortal', 'god'];
 export const MARKET_MIN_EQUIPMENT_RARITY: Rarity = 'legendary';
 
 export function isMarketEligibleEquipment(item: Pick<ItemBase, 'rarity'>): boolean {
@@ -246,18 +246,32 @@ function rollStats(slot: ItemSlot, rarity: Rarity, level: number, itemId: string
   return itemRollV5RollItem(canonicalSlot, rarity, level, itemId, () => Math.random()) as ItemStatRoll[];
 }
 
-export function itemPower(stats: ItemStatRoll[], enchantLevel = 0, version: 2 | 3 | 4 = 4): number {
+const STORED_POWER_WEIGHTS: Record<ItemStatKey, number> = {
+  atk: 4, critChance: 200, critDamage: 100, atkSpeed: 0.5,
+  hp: 0.15, def: 2, goldBonus: 150, xpBonus: 100, dodge: 150,
+};
+const GEAR_POWER_WEIGHTS: Record<ItemStatKey, number> = {
+  ...STORED_POWER_WEIGHTS, atkSpeed: 300, goldBonus: 0, xpBonus: 0,
+};
+
+function weightedItemPower(stats: ItemStatRoll[], enchantLevel: number, version: 2 | 3 | 4, weights: Record<ItemStatKey, number>): number {
   return Math.round(stats.reduce((acc, s) => {
-    const w: Record<ItemStatKey, number> = {
-      atk: 4, critChance: 200, critDamage: 100, atkSpeed: 0.5,
-      hp: 0.15, def: 2, goldBonus: 150, xpBonus: 100, dodge: 150,
-    };
     const multiplier = version === 4 ? enchantMultiplier(enchantLevel) : 1 + enchantLevel * (
       version === 2 ? .1 : s.key === 'hp' || s.key === 'atk' || s.key === 'def' ? .1
         : s.key === 'goldBonus' || s.key === 'xpBonus' ? .025 : .05
     );
-    return acc + (s.isPercent ? s.value * (w[s.key] ?? 100) : s.value * (w[s.key] ?? 1)) * multiplier;
+    return acc + s.value * (weights[s.key] ?? (s.isPercent ? 100 : 1)) * multiplier;
   }, 0));
+}
+
+// Historical stored Power remains stable for save normalization and server-ledger compatibility.
+export function itemPower(stats: ItemStatRoll[], enchantLevel = 0, version: 2 | 3 | 4 = 4): number {
+  return weightedItemPower(stats, enchantLevel, version, STORED_POWER_WEIGHTS);
+}
+
+// Player-facing gear score excludes economy lines and values Attack Speed in combat units.
+export function displayItemPower(item: OwnedItem): number {
+  return weightedItemPower(item.stats, item.enchantLevel, item.enchantStatsVersion ?? 2, GEAR_POWER_WEIGHTS);
 }
 
 let itemUid = 0;
@@ -288,17 +302,14 @@ export function rerollItemStats(item: OwnedItem): OwnedItem {
   };
 }
 
-// ── Drop rates ────────────────────────────────────────────────────────────
+// ── Chest rarity weights ──────────────────────────────────────────────────
 
 // Daily timed-reward cap: max 1000 chests per Moscow day per player.
 export const MAX_CHESTS_PER_DAY = 1000;
 
-// Drop chance: 12% per battle win (reduced from 35%)
-const BASE_DROP_CHANCE = 0.12;
-
 type LimitedAvailability = Partial<Record<'divine' | 'celestial', boolean>>;
 
-const STANDARD_LOOT_TABLE: { min: number; max: number; weights: Partial<Record<Rarity, number>> }[] = [
+const CHEST_BASE_WEIGHTS: { min: number; max: number; weights: Partial<Record<Rarity, number>> }[] = [
   { min: 1, max: 9, weights: { common: 75, uncommon: 20, rare: 5 } },
   { min: 10, max: 19, weights: { common: 53, uncommon: 29, rare: 14, epic: 4 } },
   { min: 20, max: 29, weights: { common: 39, uncommon: 29, rare: 20, epic: 9, legendary: 3 } },
@@ -327,8 +338,8 @@ function dampenChestPrestige(weights: Record<Rarity, number>, floor: Rarity): Re
   return weights;
 }
 
-export function standardLootWeights(playerLevel: number, availability: LimitedAvailability = {}): Record<Rarity, number> {
-  const row = STANDARD_LOOT_TABLE.find((entry) => playerLevel >= entry.min && playerLevel <= entry.max) ?? STANDARD_LOOT_TABLE[0];
+function chestBaseWeights(playerLevel: number, availability: LimitedAvailability = {}): Record<Rarity, number> {
+  const row = CHEST_BASE_WEIGHTS.find((entry) => playerLevel >= entry.min && playerLevel <= entry.max) ?? CHEST_BASE_WEIGHTS[0];
   const weights = Object.fromEntries(Object.keys(RARITY_INDEX).map((rarity) => [rarity, row.weights[rarity as Rarity] ?? 0])) as Record<Rarity, number>;
   weights.relic = 0;
   weights.cursed = 0;
@@ -340,12 +351,12 @@ export function standardLootWeights(playerLevel: number, availability: LimitedAv
 }
 
 export function standardChestWeights(playerLevel: number, availability: LimitedAvailability = {}): Record<Rarity, number> {
-  const weights = standardLootWeights(playerLevel, availability);
+  const weights = chestBaseWeights(playerLevel, availability);
   const transferable = 10;
-  const higherTotal = RANDOM_DROP_RARITIES.slice(1).reduce((sum, rarity) => sum + weights[rarity], 0);
+  const higherTotal = CHEST_ROLL_RARITIES.slice(1).reduce((sum, rarity) => sum + weights[rarity], 0);
   weights.common = Math.max(0, weights.common - transferable);
   if (higherTotal > 0) {
-    for (const rarity of RANDOM_DROP_RARITIES.slice(1)) weights[rarity] += transferable * (weights[rarity] / higherTotal);
+    for (const rarity of CHEST_ROLL_RARITIES.slice(1)) weights[rarity] += transferable * (weights[rarity] / higherTotal);
   }
   return dampenChestPrestige(weights, 'common');
 }
@@ -356,14 +367,9 @@ function rollItemLevel(playerLevel: number): number {
 
 function rollFromWeights(weights: Record<Rarity, number>, playerLevel: number): OwnedItem | null {
   const chosen = weightedRarity(weights);
-  const pool = ITEMS.filter((item) => item.rarity === chosen && RANDOM_DROP_RARITIES.includes(item.rarity));
+  const pool = ITEMS.filter((item) => item.rarity === chosen && CHEST_ROLL_RARITIES.includes(item.rarity));
   if (!pool.length) return null;
   return rollItem(pool[Math.floor(Math.random() * pool.length)].id, rollItemLevel(playerLevel));
-}
-
-export function rollStandardMonsterDrop(playerLevel: number, availability: LimitedAvailability = {}): OwnedItem | null {
-  if (Math.random() > BASE_DROP_CHANCE) return null;
-  return rollFromWeights(standardLootWeights(playerLevel, availability), playerLevel);
 }
 
 export function weightedRarity(weights: Record<Rarity, number>): Rarity {
@@ -385,9 +391,9 @@ export function openStandardChest(playerLevel: number, availability: LimitedAvai
 }
 
 export function openBossChest(playerLevel: number, availability: LimitedAvailability = {}): OwnedItem {
-  const weights = standardLootWeights(playerLevel, availability);
+  const weights = chestBaseWeights(playerLevel, availability);
   const floorIndex = playerLevel >= 10 ? RARITY_INDEX.epic : RARITY_INDEX.rare;
-  for (const rarity of RANDOM_DROP_RARITIES) if (RARITY_INDEX[rarity] < floorIndex) weights[rarity] = 0;
+  for (const rarity of CHEST_ROLL_RARITIES) if (RARITY_INDEX[rarity] < floorIndex) weights[rarity] = 0;
   return rollFromWeights(dampenChestPrestige(weights, playerLevel >= 10 ? 'epic' : 'rare'), playerLevel) ?? rollItem('helmet-rare', rollItemLevel(playerLevel));
 }
 
@@ -422,10 +428,6 @@ export function sellValue(item: OwnedItem): number {
   if (!base) return 5;
   const mult = RARITY_MULT[base.rarity];
   return Math.max(5, Math.round(mult * 5 * (1 + (item.level - 1) * 0.05) * (1 + item.enchantLevel * 0.2)));
-}
-
-export function itemTotalPower(items: OwnedItem[]): number {
-  return items.reduce((acc, i) => acc + i.power, 0);
 }
 
 void RARITY_INDEX;

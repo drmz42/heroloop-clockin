@@ -150,6 +150,7 @@ const commandActions = new Set([
   "hero_capacity_upgrade",
   "account_bonus_snapshot",
   "reward_boost_buy",
+  "shop_bundle_buy",
   "chest_open",
   "tutorial_quest_claim",
   "quest_claim",
@@ -1524,6 +1525,32 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         if (code) return errorResponse(409, code, requestId);
         console.error("reward_boost_buy database adapter failed", { requestId });
         return errorResponse(503, "reward_boost_buy_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "shop_bundle_buy") {
+      const payloadError = validatePayloadFields(payload, ["bundle", "max_token_cost", "expected_revision"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const bundle = typeof payload.bundle === "string" && /^[a-z0-9_]{1,32}$/.test(payload.bundle) ? payload.bundle : "";
+      const maxTokenCost = Number(payload.max_token_cost);
+      const revision = Number(payload.expected_revision);
+      if (payloadError || !requestKey || !bundle || !Number.isSafeInteger(maxTokenCost) || maxTokenCost < 1
+        || !Number.isSafeInteger(revision) || revision < 1) {
+        return errorResponse(400, payloadError ?? "invalid_shop_bundle_purchase", requestId);
+      }
+      try {
+        const result = await retryDatabaseTimeoutOnce(() => databaseJson(
+          "SELECT heroloop_api.shop_bundle_buy($1::uuid, $2::uuid, $3::text, $4::numeric, $5::bigint, $6::boolean) AS result",
+          [identity.playerId, requestKey, bundle, maxTokenCost, revision, testerControlsEnabled],
+        ));
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, [
+          "insufficient_tokens", "price_changed", "idempotency_conflict", "dex_quote_unavailable",
+          "state_conflict", "invalid_shop_bundle_purchase", "resource_balance_cap",
+        ]);
+        if (code) return errorResponse(409, code, requestId);
+        console.error("shop_bundle_buy database adapter failed", { requestId });
+        return errorResponse(503, "shop_bundle_buy_failed", requestId);
       }
     }
     if (parsed.value.action === "chest_open") {

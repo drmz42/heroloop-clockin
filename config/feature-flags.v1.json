@@ -47,6 +47,12 @@
       "note": "An active boost keeps running and its timer stays visible."
     },
     {
+      "key": "shop_bundle_purchase",
+      "title": "Store: $HERO bundles",
+      "actions": ["shop_bundle_buy"],
+      "note": "Resources already bought stay with the player."
+    },
+    {
       "key": "player_report",
       "title": "Player reports",
       "actions": ["player_report"],

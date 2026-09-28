@@ -27,6 +27,8 @@
     { "id": "ascension_hero", "asset": "hero", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_sink", "ledgerSourceKinds": ["hero-ascension"] },
     { "id": "training_hero", "asset": "hero", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_sink", "ledgerSourceKinds": ["training-slot", "training-boost-2x-1h", "training-boost-2x-4h", "training-boost-4x-1h", "training-boost-4x-4h"], "legacyLedgerSourceKinds": ["trainingboost2x1h"] },
     { "id": "reward_boost_hero", "asset": "hero", "direction": "sink", "status": "staging-only-server", "authority": "server", "telemetryAggregate": "currency_sink", "ledgerSourceKinds": ["reward-boost-24h", "reward-boost-7d", "reward-boost-30d"] },
+    { "id": "shop_bundle_hero", "asset": "hero", "direction": "sink", "status": "staging-only-server", "authority": "server", "telemetryAggregate": "currency_sink", "ledgerSourceKinds": ["shop-bundle"] },
+    { "id": "shop_bundle", "asset": "resource", "direction": "faucet", "status": "staging-only-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "enchant_hero", "asset": "hero", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_sink", "ledgerSourceKinds": ["item-enchant", "enchant-charm"] },
     { "id": "reroll_hero", "asset": "hero", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_sink", "ledgerSourceKinds": ["item-reroll"] },
     { "id": "market_hero_trade", "asset": "hero", "direction": "transfer", "status": "implemented-server", "authority": "server", "telemetryAggregate": "currency_transfer" },

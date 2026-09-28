@@ -9,6 +9,7 @@
     "player_report": "player_report",
     "promo_redeem": "promo_redeem",
     "reward_boost_buy": "reward_boost_purchase",
+    "shop_bundle_buy": "shop_bundle_purchase",
     "store_buy_item": "store_purchase"
   }
 }

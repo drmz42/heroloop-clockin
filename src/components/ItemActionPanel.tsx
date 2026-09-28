@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { ArrowUp, Dice5, ShieldCheck, Trash2, Lock, Unlock, X, Coins } from 'lucide-react';
-import { HERO_USD_QUOTE, ITEM_MAP, SLOT_LABEL, enchantedStats, formatStatValue, STAT_LABEL, sellValue, enchantSuccessChance, enchantCost, enchantCharmCost, rerollCost } from '@/game/items';
+import { HERO_USD_QUOTE, ITEM_MAP, SLOT_LABEL, displayItemPower, enchantedStats, formatStatValue, STAT_LABEL, sellValue, enchantSuccessChance, enchantCost, enchantCharmCost, rerollCost } from '@/game/items';
 import { CLASS_LABEL, RARITY_COLORS, RARITY_LABEL } from '@/game/heroes';
 import { formatNum } from '@/game/state';
 import { ItemArtwork } from '@/components/ItemArtwork';
@@ -43,7 +43,9 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
   const candidateStats = new Map(enchantedStats(item.stats, item.enchantLevel).map((stat) => [stat.key, stat]));
   const equippedStats = new Map((comparisonItem ? enchantedStats(comparisonItem.stats, comparisonItem.enchantLevel) : []).map((stat) => [stat.key, stat]));
   const comparisonKeys = [...new Set([...candidateStats.keys(), ...equippedStats.keys()])] as ItemStatKey[];
-  const powerDelta = comparisonItem ? item.power - comparisonItem.power : 0;
+  const combatPower = displayItemPower(item);
+  const comparisonPower = comparisonItem ? displayItemPower(comparisonItem) : 0;
+  const powerDelta = comparisonItem ? combatPower - comparisonPower : 0;
 
   return (
     <div className="item-action-panel rounded-xl border p-2" style={{ '--item-rarity': rc } as CSSProperties}>
@@ -56,7 +58,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
           <div className="font-bold ui-text-medium" style={{ color: rc }}>{base.name} {item.enchantLevel > 0 && <span className="text-amber-400">+{item.enchantLevel}</span>}</div>
           <div className="ui-text-small text-slate-500 uppercase">{SLOT_LABEL[base.slot]} · {RARITY_LABEL[base.rarity]} · Lv {item.level}</div>
           {base.heroClass && <div className="mt-0.5 ui-text-small font-black uppercase tracking-wide text-amber-200">{CLASS_LABEL[base.heroClass]} only</div>}
-          <div className="ui-text-small text-slate-400">⚡{item.power} {item.rerollCount > 0 && `· ${item.rerollCount} rerolls`}</div>
+          <div className="ui-text-small text-slate-400">⚡{combatPower} Gear Power {item.rerollCount > 0 && `· ${item.rerollCount} rerolls`}</div>
         </div>
         <button onClick={onClose} className="game-control grid h-7 w-7 shrink-0 place-items-center"><X size={13} /></button>
       </div>
@@ -64,8 +66,8 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
       {/* Stats: one row per stat — this item's value, then the change versus the item the selected hero wears */}
       <div className={`item-act-stats mb-1.5 grid grid-cols-1 gap-y-0.5 rounded-md bg-black/20 px-2 py-1 ${powerDelta > 0 ? 'item-act-stats--better' : powerDelta < 0 ? 'item-act-stats--worse' : ''}`}>
         <div className="item-act-power flex items-center justify-between ui-text-medium">
-          <span className="flex items-center gap-1.5 text-slate-400">Power{comparisonItem && powerDelta !== 0 && <span className={`rounded px-1.5 ui-text-small font-black uppercase tracking-wide ${powerDelta > 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}>{powerDelta > 0 ? '▲ Better' : '▼ Worse'}</span>}</span>
-          <span className="font-bold text-[#f2cc80] tabular-nums">{formatNum(item.power)}{comparisonItem && <CompareDelta delta={powerDelta} text={formatNum(Math.abs(powerDelta))} />}</span>
+          <span className="flex items-center gap-1.5 text-slate-400">Gear Power{comparisonItem && powerDelta !== 0 && <span className={`rounded px-1.5 ui-text-small font-black uppercase tracking-wide ${powerDelta > 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}>{powerDelta > 0 ? '▲ Better' : '▼ Worse'}</span>}</span>
+          <span className="font-bold text-[#f2cc80] tabular-nums">{formatNum(combatPower)}{comparisonItem && <CompareDelta delta={powerDelta} text={formatNum(Math.abs(powerDelta))} />}</span>
         </div>
         {comparisonKeys.map((key) => {
           const candidate = candidateStats.get(key);
