@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Mail, X } from 'lucide-react';
 import { ItemArtwork } from '@/components/ItemArtwork';
 import { RARITY_COLORS } from '@/game/heroes';
-import { ITEM_MAP } from '@/game/items';
+import { ITEM_MAP, displayItemPower } from '@/game/items';
 import { formatNum } from '@/game/state';
 import type { MailClaimResult, MailEntry } from '@/game/useGame';
 
@@ -72,7 +72,7 @@ export function MailboxModal({ onClose, loadMail, claimMail, freeSlots }: {
                     <span className="block h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-black/25"><ItemArtwork itemId={base.id} name={base.name} fallback={base.icon} /></span>
                     <span className="min-w-0 flex-1">
                       <b className="block truncate text-xs" style={{ color: RARITY_COLORS[base.rarity] }}>{base.name}{entry.item.enchantLevel ? ` +${entry.item.enchantLevel}` : ''}</b>
-                      <span className="block text-[10px] text-[#8d8374]">Lv {entry.item.level} · {formatNum(entry.item.power)} PWR · {SOURCE[entry.source] ?? 'Delivery'}</span>
+                      <span className="block text-[10px] text-[#8d8374]">Lv {entry.item.level} · {formatNum(displayItemPower(entry.item))} PWR · {SOURCE[entry.source] ?? 'Delivery'}</span>
                     </span>
                     <button type="button" disabled={busy || freeSlots <= 0} onClick={() => void claim(entry.id)} className="game-control min-h-10 shrink-0 px-3 text-[11px] font-bold disabled:opacity-45">Claim</button>
                   </article>;

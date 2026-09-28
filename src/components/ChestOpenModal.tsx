@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
 import { Package, X } from 'lucide-react';
-import { ITEM_MAP, SLOT_LABEL } from '@/game/items';
+import { ITEM_MAP, SLOT_LABEL, displayItemPower } from '@/game/items';
 import { RARITY_COLORS, RARITY_LABEL, RARITY_INDEX } from '@/game/heroes';
 import type { OwnedItem, OwnedHero } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
@@ -46,7 +46,7 @@ export function ChestOpenModal({
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-vt text-sm font-bold leading-tight" style={{ color: rc }}>{base.name}</div>
                   <div className="mt-0.5 truncate text-[10px] text-px-dim">
-                    {RARITY_LABEL[base.rarity]} · {SLOT_LABEL[base.slot]} · iLvl {item.level} · ⚡ {item.power}
+                    {RARITY_LABEL[base.rarity]} · {SLOT_LABEL[base.slot]} · iLvl {item.level} · ⚡ {displayItemPower(item)}
                   </div>
                 </div>
               </div>

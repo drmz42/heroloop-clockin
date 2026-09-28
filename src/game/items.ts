@@ -246,18 +246,32 @@ function rollStats(slot: ItemSlot, rarity: Rarity, level: number, itemId: string
   return itemRollV5RollItem(canonicalSlot, rarity, level, itemId, () => Math.random()) as ItemStatRoll[];
 }
 
-export function itemPower(stats: ItemStatRoll[], enchantLevel = 0, version: 2 | 3 | 4 = 4): number {
+const STORED_POWER_WEIGHTS: Record<ItemStatKey, number> = {
+  atk: 4, critChance: 200, critDamage: 100, atkSpeed: 0.5,
+  hp: 0.15, def: 2, goldBonus: 150, xpBonus: 100, dodge: 150,
+};
+const GEAR_POWER_WEIGHTS: Record<ItemStatKey, number> = {
+  ...STORED_POWER_WEIGHTS, atkSpeed: 300, goldBonus: 0, xpBonus: 0,
+};
+
+function weightedItemPower(stats: ItemStatRoll[], enchantLevel: number, version: 2 | 3 | 4, weights: Record<ItemStatKey, number>): number {
   return Math.round(stats.reduce((acc, s) => {
-    const w: Record<ItemStatKey, number> = {
-      atk: 4, critChance: 200, critDamage: 100, atkSpeed: 0.5,
-      hp: 0.15, def: 2, goldBonus: 150, xpBonus: 100, dodge: 150,
-    };
     const multiplier = version === 4 ? enchantMultiplier(enchantLevel) : 1 + enchantLevel * (
       version === 2 ? .1 : s.key === 'hp' || s.key === 'atk' || s.key === 'def' ? .1
         : s.key === 'goldBonus' || s.key === 'xpBonus' ? .025 : .05
     );
-    return acc + (s.isPercent ? s.value * (w[s.key] ?? 100) : s.value * (w[s.key] ?? 1)) * multiplier;
+    return acc + s.value * weights[s.key] * multiplier;
   }, 0));
+}
+
+// Historical stored Power remains stable for save normalization and server-ledger compatibility.
+export function itemPower(stats: ItemStatRoll[], enchantLevel = 0, version: 2 | 3 | 4 = 4): number {
+  return weightedItemPower(stats, enchantLevel, version, STORED_POWER_WEIGHTS);
+}
+
+// Player-facing gear score excludes economy lines and values Attack Speed in combat units.
+export function displayItemPower(item: OwnedItem): number {
+  return weightedItemPower(item.stats, item.enchantLevel, item.enchantStatsVersion ?? 2, GEAR_POWER_WEIGHTS);
 }
 
 let itemUid = 0;
@@ -288,13 +302,10 @@ export function rerollItemStats(item: OwnedItem): OwnedItem {
   };
 }
 
-// ── Drop rates ────────────────────────────────────────────────────────────
+// ── Chest rarity weights ──────────────────────────────────────────────────
 
 // Daily timed-reward cap: max 1000 chests per Moscow day per player.
 export const MAX_CHESTS_PER_DAY = 1000;
-
-// Drop chance: 12% per battle win (reduced from 35%)
-const BASE_DROP_CHANCE = 0.12;
 
 type LimitedAvailability = Partial<Record<'divine' | 'celestial', boolean>>;
 
@@ -361,11 +372,6 @@ function rollFromWeights(weights: Record<Rarity, number>, playerLevel: number): 
   return rollItem(pool[Math.floor(Math.random() * pool.length)].id, rollItemLevel(playerLevel));
 }
 
-export function rollStandardMonsterDrop(playerLevel: number, availability: LimitedAvailability = {}): OwnedItem | null {
-  if (Math.random() > BASE_DROP_CHANCE) return null;
-  return rollFromWeights(standardLootWeights(playerLevel, availability), playerLevel);
-}
-
 export function weightedRarity(weights: Record<Rarity, number>): Rarity {
   const total = Object.values(weights).reduce((a, b) => a + b, 0);
   if (total <= 0) return 'common';
@@ -422,10 +428,6 @@ export function sellValue(item: OwnedItem): number {
   if (!base) return 5;
   const mult = RARITY_MULT[base.rarity];
   return Math.max(5, Math.round(mult * 5 * (1 + (item.level - 1) * 0.05) * (1 + item.enchantLevel * 0.2)));
-}
-
-export function itemTotalPower(items: OwnedItem[]): number {
-  return items.reduce((acc, i) => acc + i.power, 0);
 }
 
 void RARITY_INDEX;

@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { ArrowUp, Dice5, ShieldCheck, Trash2, Lock, Unlock, X, Coins } from 'lucide-react';
-import { HERO_USD_QUOTE, ITEM_MAP, SLOT_LABEL, enchantedStats, formatStatValue, STAT_LABEL, sellValue, enchantSuccessChance, enchantCost, enchantCharmCost, rerollCost } from '@/game/items';
+import { HERO_USD_QUOTE, ITEM_MAP, SLOT_LABEL, displayItemPower, enchantedStats, formatStatValue, STAT_LABEL, sellValue, enchantSuccessChance, enchantCost, enchantCharmCost, rerollCost } from '@/game/items';
 import { CLASS_LABEL, RARITY_COLORS, RARITY_LABEL } from '@/game/heroes';
 import { formatNum } from '@/game/state';
 import { ItemArtwork } from '@/components/ItemArtwork';
@@ -43,6 +43,8 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
   const candidateStats = new Map(enchantedStats(item.stats, item.enchantLevel).map((stat) => [stat.key, stat]));
   const equippedStats = new Map((comparisonItem ? enchantedStats(comparisonItem.stats, comparisonItem.enchantLevel) : []).map((stat) => [stat.key, stat]));
   const comparisonKeys = [...new Set([...candidateStats.keys(), ...equippedStats.keys()])] as ItemStatKey[];
+  const combatPower = displayItemPower(item);
+  const comparisonPower = comparisonItem ? displayItemPower(comparisonItem) : 0;
 
   return (
     <div className="item-action-panel rounded-xl border p-2" style={{ '--item-rarity': rc } as CSSProperties}>
@@ -55,7 +57,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
           <div className="font-bold ui-text-medium" style={{ color: rc }}>{base.name} {item.enchantLevel > 0 && <span className="text-amber-400">+{item.enchantLevel}</span>}</div>
           <div className="ui-text-small text-slate-500 uppercase">{SLOT_LABEL[base.slot]} · {RARITY_LABEL[base.rarity]} · Lv {item.level}</div>
           {base.heroClass && <div className="mt-0.5 ui-text-small font-black uppercase tracking-wide text-amber-200">{CLASS_LABEL[base.heroClass]} only</div>}
-          <div className="ui-text-small text-slate-400">⚡{item.power} {item.rerollCount > 0 && `· ${item.rerollCount} rerolls`}</div>
+          <div className="ui-text-small text-slate-400">⚡{combatPower} Gear Power {item.rerollCount > 0 && `· ${item.rerollCount} rerolls`}</div>
         </div>
         <button onClick={onClose} className="game-control grid h-7 w-7 shrink-0 place-items-center"><X size={13} /></button>
       </div>
@@ -72,7 +74,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
 
       {comparisonItem && (
         <div className="mb-1.5 rounded-md border border-[#665233] bg-black/30 px-2 py-1.5">
-          <div className="mb-1 flex items-center justify-between gap-2 ui-text-small font-black uppercase tracking-wide text-[#d8c59f]"><span>Compared with equipped</span><span>{item.power - comparisonItem.power >= 0 ? '+' : ''}{item.power - comparisonItem.power} Power</span></div>
+          <div className="mb-1 flex items-center justify-between gap-2 ui-text-small font-black uppercase tracking-wide text-[#d8c59f]"><span>Compared with equipped</span><span>{combatPower - comparisonPower >= 0 ? '+' : ''}{combatPower - comparisonPower} Gear Power</span></div>
           <div className="mb-1 truncate ui-text-small text-[#8f887b]">{ITEM_MAP[comparisonItem.itemId]?.name ?? 'Equipped item'}</div>
           <div className="grid gap-0.5">
             {comparisonKeys.map((key) => {

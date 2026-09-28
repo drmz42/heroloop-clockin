@@ -13,7 +13,7 @@ import { HERO_MAP, RARITY_INDEX, canonicalHeroId } from '@/game/heroes';
 import {
   openStandardChest, openBossChest, generateRotatingShop,
   ITEM_MAP, POTION_MAP, sellValue, rollItem, rerollItemStats,
-  enchantSuccessChance, enchantCost, enchantCharmCost, itemPower,
+  enchantSuccessChance, enchantCost, enchantCharmCost, itemPower, displayItemPower,
   MAX_CHESTS_PER_DAY, rerollCost,
   canClassEquipItem,
   meetsItemLevelRequirement,
@@ -2520,7 +2520,7 @@ export function useGame() {
         chests: prev.chests.slice(openCount),
         inventory: [...prev.inventory, ...results.map((item) => shouldAutoLockItem(item) ? { ...item, locked: true } : item)].sort((a, b) => {
           const rarityDelta = RARITY_INDEX[ITEM_MAP[b.itemId]?.rarity ?? 'common'] - RARITY_INDEX[ITEM_MAP[a.itemId]?.rarity ?? 'common'];
-          return rarityDelta || b.power - a.power;
+          return rarityDelta || displayItemPower(b) - displayItemPower(a);
         }),
         session: { ...prev.session, chestsOpened: prev.session.chestsOpened + openCount },
         dailyQuests: updateQuestProgress(prev.dailyQuests, 'chest-', openCount),
@@ -2700,7 +2700,7 @@ export function useGame() {
       setState((prev) => ({
         ...prev, tutorial: result.tutorial,
         inventory: [...prev.inventory, ...items.map((item) => shouldAutoLockItem(item) ? { ...item, locked: true } : item)]
-          .sort((a, b) => RARITY_INDEX[ITEM_MAP[b.itemId]?.rarity ?? 'common'] - RARITY_INDEX[ITEM_MAP[a.itemId]?.rarity ?? 'common'] || b.power - a.power),
+          .sort((a, b) => RARITY_INDEX[ITEM_MAP[b.itemId]?.rarity ?? 'common'] - RARITY_INDEX[ITEM_MAP[a.itemId]?.rarity ?? 'common'] || displayItemPower(b) - displayItemPower(a)),
         session: { ...prev.session, chestsOpened: prev.session.chestsOpened + count },
         dailyQuests: updateQuestProgress(prev.dailyQuests, 'chest-', count),
         milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'chest-', count),
@@ -2763,7 +2763,7 @@ export function useGame() {
         const ra = RARITY_INDEX[ITEM_MAP[a.itemId]?.rarity ?? 'common'];
         const rb = RARITY_INDEX[ITEM_MAP[b.itemId]?.rarity ?? 'common'];
         if (rb !== ra) return rb - ra;
-        return b.power - a.power;
+        return displayItemPower(b) - displayItemPower(a);
       });
       return { ...prev, inventory: sorted };
     });
@@ -2801,7 +2801,7 @@ export function useGame() {
               && canClassEquipItem(heroBase.heroClass, itemBase)
               && meetsItemLevelRequirement(item, current.accountLevel);
           })
-          .sort((a, b) => b.power - a.power || b.level - a.level)[0];
+          .sort((a, b) => displayItemPower(b) - displayItemPower(a) || b.level - a.level)[0];
         if (best) {
           equipped[slot] = best.uid;
           available.delete(best.uid);

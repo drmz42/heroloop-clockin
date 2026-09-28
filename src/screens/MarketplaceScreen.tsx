@@ -4,7 +4,7 @@ import { HeroPortrait } from '@/components/HeroPortrait';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { ItemArtwork } from '@/components/ItemArtwork';
 import { HERO_MAP, RARITY_COLORS, RARITY_LABEL } from '@/game/heroes';
-import { ITEM_MAP, formatStatValue, isMarketEligibleEquipment, sellValue } from '@/game/items';
+import { ITEM_MAP, displayItemPower, formatStatValue, isMarketEligibleEquipment, sellValue } from '@/game/items';
 import { formatNum } from '@/game/state';
 import type { OwnedHero, OwnedItem, Rarity } from '@/game/types';
 import type { GameApi, ServerMarketListing, ServerMarketSnapshot } from '@/game/useGame';
@@ -25,14 +25,14 @@ function ownedRows(game: GameApi): Listing[] {
   return game.state.inventory.flatMap((item) => {
     const base = ITEM_MAP[item.itemId];
     if (!base || !item.serverOwned || !isMarketEligibleEquipment(base)) return [];
-    return [{ id: item.uid, kind: 'item' as const, sourceId: item.itemId, name: base.name, rarity: base.rarity, level: item.level, enchantLevel: item.enchantLevel, power: item.power, price: Math.max(1, sellValue(item) * 2), seller: item.locked ? 'Locked' : equipped.has(item.uid) ? 'Equipped' : 'Ready', createdAt: 0, stats: item.stats.map(formatStatValue), owned: item }];
+    return [{ id: item.uid, kind: 'item' as const, sourceId: item.itemId, name: base.name, rarity: base.rarity, level: item.level, enchantLevel: item.enchantLevel, power: displayItemPower(item), price: Math.max(1, sellValue(item) * 2), seller: item.locked ? 'Locked' : equipped.has(item.uid) ? 'Equipped' : 'Ready', createdAt: 0, stats: item.stats.map(formatStatValue), owned: item }];
   });
 }
 
 function listingFromServer(entry: ServerMarketListing): Listing | null {
   const base = ITEM_MAP[entry.item.itemId];
   if (!base) return null;
-  return { id: entry.id, kind: 'item', sourceId: entry.item.itemId, name: base.name, rarity: base.rarity, level: entry.item.level, enchantLevel: entry.item.enchantLevel, power: entry.item.power, price: entry.price, seller: entry.is_own ? 'You' : entry.seller, createdAt: Date.parse(entry.created_at), stats: entry.item.stats.map(formatStatValue), owned: entry.item };
+  return { id: entry.id, kind: 'item', sourceId: entry.item.itemId, name: base.name, rarity: base.rarity, level: entry.item.level, enchantLevel: entry.item.enchantLevel, power: displayItemPower(entry.item), price: entry.price, seller: entry.is_own ? 'You' : entry.seller, createdAt: Date.parse(entry.created_at), stats: entry.item.stats.map(formatStatValue), owned: entry.item };
 }
 
 export function MarketplaceScreen({ game, tokenomics }: { game: GameApi; tokenomics: TokenomicsApi }) {
