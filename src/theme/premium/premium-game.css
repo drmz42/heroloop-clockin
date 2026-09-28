@@ -1,287 +1,369 @@
 /*
- * Premium in-game skin (Figma HL-LANDING-2 language: obsidian stone, forged brass, crimson seals).
- * Every rule is scoped to html[data-hl-theme=premium]; classic stays byte-for-byte unchanged.
- * Geometry rule: colours, surfaces, borders' colour, radii, shadows and type faces only —
- * no width, height, padding, margin, gap or position changes, so no block moves.
+ * HeroLoop "Forged" premium skin — one design system for every game page.
+ * Source art: Figma HL-LANDING-2 ("Frames" forged frame 340:168, stone panel 340:167,
+ * PLAY / PLAY FREE button art, landing background bands). See design/source/landing/figma-maket5.
+ *
+ * Rules
+ *  - Scoped to html[data-hl-theme=premium]; classic is untouched and remains the rollback.
+ *  - One corner language: square forged corners everywhere (no mixed rounded radii);
+ *    circles stay only where something is genuinely round (avatars, orbs, progress pills).
+ *  - Three materials: Forged frame (windows, panels, cards), Crimson seal (primary action),
+ *    Bronze plate (every other control). Coloured Tailwind buttons are unified into these.
+ *  - Frames are painted with border-image (+outset), so they never change box geometry.
  */
+
 [data-hl-theme=premium] {
   --pm-ink: #0b0908;
-  --pm-obsidian: #070606;
   --pm-brass: #c79e61;
   --pm-brass-hi: #f2cc80;
   --pm-brass-lo: #734d1f;
-  --pm-edge: rgba(110, 84, 51, .88);
-  --pm-edge-soft: rgba(110, 84, 51, .5);
   --pm-ivory: #ebdfca;
   --pm-muted: #a39987;
-  --pm-blood: #8f1f12;
-  --pm-blood-deep: #380706;
   --pm-display: 'Cinzel', Georgia, serif;
-  --pm-frame: linear-gradient(180deg, #050505, #12100d 50%, #060506);
-  --pm-button: linear-gradient(180deg, #0c0a09, #1b1712 50%, #0a0908);
-  --pm-seal: radial-gradient(ellipse 80% 120% at 50% 0%, #b3301c 0%, #7a150e 38%, #3d0806 78%, #210403 100%);
-  --pm-hairline: linear-gradient(90deg, transparent, rgba(199, 158, 97, .7), transparent);
+  --pm-frame: url('./assets/frame-9.webp');
+  --pm-stone: url('./assets/panel-stone.webp');
+  --pm-crimson: url('./assets/btn-crimson-9.webp');
+  --pm-bronze: url('./assets/btn-bronze-9.webp');
+  --pm-surface: linear-gradient(180deg, rgba(10, 8, 7, .5), rgba(6, 5, 4, .72)), var(--pm-stone) center / cover;
+  --pm-surface-deep: linear-gradient(180deg, rgba(8, 6, 5, .72), rgba(4, 3, 3, .86)), var(--pm-stone) center / cover;
 }
 [data-hl-theme=premium] body { background: var(--pm-ink); }
 
-/* ── Shell ─────────────────────────────────────────────────────────── */
+/* ── 1. One corner language ─────────────────────────────────────────── */
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.rounded, .rounded-sm, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, [class*="rounded-t"], [class*="rounded-b"], [class*="rounded-l-"], [class*="rounded-r-"], [class*="rounded-["]),
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.material-panel, .px-panel, .px-panel-raised, .px-btn, .game-control, .game-nav-control, .stat-tile, .quest-card, .location-card, .intentional-empty, .item-slot, .bg-arena, .health-track, .training-slot, .training-section, .training-yard, .training-guide, .training-status-row, .training-status-metric, .training-post, .offline-vault, .offline-reward-tile, .combatant-card, .partner-quest-card, .set-bonus-badge, .item-action-panel, .shop-pack, .welcome-tutorial-icon, .rank-avatar, .auto-pot-guide-tip, .auto-pot-settings, .battle-hero-level, .boost-progress-segment, .chest-tutorial-badge, .dungeon-boss-hud, .dungeon-cast-bar, .dungeon-complete-crest, .dungeon-fork-door, .dungeon-gate-quick, .dungeon-momentum, .dungeon-route-preview, .dungeon-status-row, .dungeon-target-label, .dungeon-throne-state, .enemy-role-badge, .leader-row, .market-chip, .market-detail-art, .market-input, .market-row, .market-shell, .merchant-surface, .partner-quest-badge, .premium-hero-card, .reward-scene, .shop-card, .shop-pack-icon, .training-boost-button, .training-icon-button, .training-in-formation-badge, .training-penalty-step, .training-roster-card, .training-sort-button),
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.material-panel, .item-slot)::before,
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) .material-panel::after {
+  border-radius: 0 !important;
+}
+
+/* ── 2. World backdrop ──────────────────────────────────────────────── */
 [data-hl-theme=premium] .game-shell {
-  background:
-    radial-gradient(ellipse 70% 40% at 50% -6%, rgba(143, 31, 18, .16), transparent 60%),
-    linear-gradient(180deg, rgba(11, 9, 8, .55), rgba(11, 9, 8, .92)),
-    url('./assets/stone-tile.webp') center top / cover fixed,
-    var(--pm-ink);
   color: var(--pm-ivory);
+  background:
+    radial-gradient(ellipse 60% 45% at 50% 0%, rgba(143, 31, 18, .22), transparent 70%),
+    linear-gradient(180deg, rgba(8, 6, 5, .35), rgba(8, 6, 5, .85) 70%),
+    url('./assets/stone-vista.webp') center bottom / cover fixed,
+    var(--pm-ink);
 }
-[data-hl-theme=premium] .game-main { background: linear-gradient(90deg, rgba(0, 0, 0, .45), transparent 18%, transparent 82%, rgba(0, 0, 0, .45)); }
-[data-hl-theme=premium] .game-scrollbar { scrollbar-color: #5a4426 transparent; }
+[data-hl-theme=premium] .game-main { background: linear-gradient(90deg, rgba(0, 0, 0, .55), transparent 16%, transparent 84%, rgba(0, 0, 0, .55)); }
+[data-hl-theme=premium] .game-scrollbar { scrollbar-color: #6b5230 transparent; }
 
-/* Top command bar: dark glass with a brass hairline (Figma nav) */
-[data-hl-theme=premium] .game-command-bar {
-  border-color: transparent;
-  background: linear-gradient(180deg, rgba(11, 9, 8, .97), rgba(16, 12, 9, .94));
-  box-shadow: 0 14px 34px rgba(0, 0, 0, .6);
-  position: relative;
+/* ── 3. Forged frame ────────────────────────────────────────────────── */
+/* Windows and modals: heavy frame with centre crest */
+[data-hl-theme=premium] :is(.game-window, .px-panel-raised) {
+  border-style: solid;
+  border-image: var(--pm-frame) 200 / 34px / 10px stretch;
+  background: var(--pm-surface-deep) !important;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .85), 0 0 80px rgba(143, 31, 18, .14) !important;
 }
-[data-hl-theme=premium] .game-command-bar::after { content: ''; position: absolute; inset: auto 0 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(199, 158, 97, .75) 20%, rgba(199, 158, 97, .75) 80%, transparent); pointer-events: none; }
-[data-hl-theme=premium] .game-nav-control { color: #9d927f; font-family: var(--pm-display); letter-spacing: .01em; }
-[data-hl-theme=premium] .game-nav-control:hover { color: var(--pm-ivory); background: rgba(199, 158, 97, .06); border-color: rgba(199, 158, 97, .25); }
-[data-hl-theme=premium] .game-nav-control-active {
-  color: var(--pm-brass-hi);
-  border-color: rgba(199, 158, 97, .8);
-  border-radius: 3px;
-  background: linear-gradient(180deg, rgba(143, 31, 18, .42), rgba(56, 7, 6, .5));
-  box-shadow: inset 0 1px rgba(255, 199, 107, .22), inset 0 -1px rgba(0, 0, 0, .6), 0 0 16px rgba(143, 31, 18, .35);
-  text-shadow: 0 0 10px rgba(242, 204, 128, .35);
-}
-
-[data-hl-theme=premium] .game-footer {
-  border-color: rgba(199, 158, 97, .35) !important;
-  background: linear-gradient(180deg, #120e0b, #0b0908) !important;
-}
-
-/* ── Surfaces ──────────────────────────────────────────────────────── */
-[data-hl-theme=premium] :is(.material-panel, .px-panel, .px-panel-raised):not([class*="border-"]) { border-color: var(--pm-edge); }
-[data-hl-theme=premium] :is(.material-panel, .px-panel, .px-panel-raised):not([class*="bg-"]) {
-  border-radius: 4px;
-  background: var(--pm-frame);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, .65), inset 0 1px 3px rgba(217, 171, 97, .12), inset 0 0 0 1px rgba(0, 0, 0, .7);
-}
-[data-hl-theme=premium] .material-panel::after {
-  inset: 3px;
-  border-color: rgba(199, 158, 97, .13);
-  border-radius: 2px;
-}
-[data-hl-theme=premium] .material-panel::before {
-  content: '';
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  top: 0;
-  height: 1px;
-  background: var(--pm-hairline);
-  pointer-events: none;
-  z-index: 0;
-}
-[data-hl-theme=premium] :is(.stat-tile, .quest-card, .intentional-empty, .offline-reward-tile, .training-slot, .training-section, .training-guide, .training-status-row) { border-radius: 3px; }
-[data-hl-theme=premium] :is(.stat-tile, .quest-card, .intentional-empty, .offline-reward-tile, .training-slot, .training-section, .training-guide):not([class*="border-"], .training-slot-open) { border-color: var(--pm-edge-soft); }
-[data-hl-theme=premium] :is(.stat-tile, .quest-card, .intentional-empty, .offline-reward-tile, .training-slot, .training-section, .training-guide):not([class*="bg-"]) {
-  background: linear-gradient(160deg, rgba(24, 20, 15, .92), rgba(8, 7, 6, .96));
-  box-shadow: inset 0 1px rgba(255, 214, 150, .06), 0 6px 14px rgba(0, 0, 0, .35);
-}
-[data-hl-theme=premium] .quest-card:not([class*="border-"]):hover { border-color: rgba(199, 158, 97, .7); }
-[data-hl-theme=premium] .location-card {
-  border-color: var(--pm-edge-soft);
-  border-radius: 3px;
-  background: radial-gradient(circle at 50% 0%, rgba(143, 31, 18, .1), transparent 50%), linear-gradient(160deg, #1a1611, #080706 70%);
-}
-[data-hl-theme=premium] .location-card:hover:not(:disabled) { border-color: rgba(199, 158, 97, .75); }
-[data-hl-theme=premium] .location-card-current { border-color: var(--pm-brass); box-shadow: inset 0 0 22px rgba(143, 31, 18, .22), 0 0 16px rgba(199, 158, 97, .18); }
-[data-hl-theme=premium] .bg-arena { border-color: var(--pm-edge); border-radius: 4px; }
-[data-hl-theme=premium] .health-track { border-color: rgba(199, 158, 97, .35); border-radius: 3px; background: #140f0d; }
-[data-hl-theme=premium] .item-slot { border-radius: 3px; }
-[data-hl-theme=premium] .premium-screen:not(.themed-screen, .training-camp-screen, .summon-sanctum) { background: radial-gradient(ellipse 70% 30% at 50% -8%, rgba(143, 31, 18, .14), transparent 60%), linear-gradient(180deg, #0e0b09, #070606); }
-
-/* ── Type ──────────────────────────────────────────────────────────── */
-[data-hl-theme=premium] .section-kicker { color: var(--pm-brass); font-family: var(--pm-display); font-weight: 700; letter-spacing: .14em; }
-[data-hl-theme=premium] .section-kicker::before { content: ''; display: inline-block; width: .42em; height: .42em; margin-right: .6em; vertical-align: .14em; transform: rotate(45deg); background: var(--pm-brass); }
-[data-hl-theme=premium] .game-shell :is(h1, h2, h3) { font-family: var(--pm-display); letter-spacing: .04em; }
-[data-hl-theme=premium] .font-pixel { font-family: var(--pm-display); font-weight: 700; letter-spacing: .06em; }
-[data-hl-theme=premium] .text-px-gold, [data-hl-theme=premium] .text-px-bright { color: var(--pm-brass-hi); }
-
-/* ── Controls ──────────────────────────────────────────────────────── */
-/* State-coloured controls (Boost, toggles, rarity pickers) keep their own colour utilities:
-   the skin only re-surfaces controls that do not set background/border/text colour themselves. */
-[data-hl-theme=premium] .game-control { border-radius: 3px; }
-[data-hl-theme=premium] .game-control:not(.game-primary, .game-danger, .reward-cta, .boost-max-active, .boost-max-ready, [class*="bg-"]) {
-  background: var(--pm-button);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, .7), inset 0 1px 2px rgba(255, 199, 107, .12);
-}
-[data-hl-theme=premium] .game-control:not(.game-primary, .game-danger, .reward-cta, .boost-max-active, .boost-max-ready, [class*="border-"]) { border-color: rgba(199, 158, 97, .55); }
-[data-hl-theme=premium] .game-control:not(.game-primary, .game-danger, .reward-cta, .boost-max-active, .boost-max-ready, [class*="border-"]):hover { border-color: var(--pm-brass-hi); }
-[data-hl-theme=premium] .game-control:focus-visible { outline-color: var(--pm-brass-hi); }
-[data-hl-theme=premium] :is(.game-primary, .reward-cta) {
-  border-color: var(--pm-brass);
-  color: #f8e8c4;
-  background: var(--pm-seal);
-  box-shadow: inset 0 1px rgba(255, 200, 150, .35), inset 0 -2px rgba(0, 0, 0, .45), 0 0 0 1px #000, 0 0 0 2px rgba(115, 77, 31, .9), 0 6px 18px rgba(143, 31, 18, .35);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, .9);
-  letter-spacing: .04em;
-}
-[data-hl-theme=premium] :is(.game-primary, .reward-cta):hover { border-color: var(--pm-brass-hi); color: #fff4dc; filter: brightness(1.12); }
-[data-hl-theme=premium] :is(.game-primary, .reward-cta):disabled { background: linear-gradient(180deg, #2a1512, #150b09); color: #9b8570; box-shadow: inset 0 1px rgba(255, 255, 255, .06); }
-[data-hl-theme=premium] .game-danger { border-color: rgba(143, 31, 18, .8); color: #e3a79a; background: linear-gradient(180deg, #1e0d0b, #0d0706); }
-[data-hl-theme=premium] .game-danger:hover { border-color: #c2412c; color: #ffc9bd; background: linear-gradient(180deg, #2c0f0c, #120807); }
-[data-hl-theme=premium] .px-btn { border-radius: 3px; border-color: rgba(199, 158, 97, .55); background: var(--pm-button); }
-
-/* ── Tab windows (Heroes, Summon, Shop, Market, Ranks, Referrals, Training) ── */
-[data-hl-theme=premium] .game-window {
-  border-color: rgba(199, 158, 97, .75) !important;
-  border-radius: 4px !important;
-  background: var(--pm-frame) !important;
-  box-shadow: 0 0 0 1px #000, 0 0 0 3px rgba(115, 77, 31, .55), 0 28px 90px rgba(0, 0, 0, .85), 0 0 60px rgba(143, 31, 18, .12) !important;
-}
+[data-hl-theme=premium] .game-window { overflow: visible !important; }
+[data-hl-theme=premium] .game-window > .min-h-0 { overflow: auto; }
 [data-hl-theme=premium] .game-window::before,
 [data-hl-theme=premium] .game-window::after {
   content: '';
   position: absolute;
-  z-index: 30;
-  width: 10px;
-  height: 10px;
-  transform: rotate(45deg);
-  background: linear-gradient(135deg, var(--pm-brass-hi), var(--pm-brass-lo));
-  box-shadow: 0 0 0 1px #000;
+  left: calc(50% - 45px);
+  z-index: 40;
+  width: 90px;
+  height: 55px;
+  background: url('./assets/frame-ornament.webp') center / contain no-repeat;
   pointer-events: none;
 }
-[data-hl-theme=premium] .game-window::before { left: calc(50% - 5px); top: -5px; }
-[data-hl-theme=premium] .game-window::after { left: calc(50% - 5px); bottom: -5px; }
-[data-hl-theme=premium] .game-window-close { border-radius: 50%; }
+[data-hl-theme=premium] .game-window::before { top: -26px; }
+[data-hl-theme=premium] .game-window::after { bottom: -26px; transform: scaleY(-1); }
 
-/* ── Summon sanctum ────────────────────────────────────────────────── */
-[data-hl-theme=premium] .summon-sanctum { background-image: linear-gradient(rgba(6, 3, 3, .35), rgba(6, 3, 3, .82)), url('/assets/summon/ritual-sanctum-v1.webp') !important; }
-[data-hl-theme=premium] .summon-sanctum > .pointer-events-none:first-child {
-  background: radial-gradient(circle at 50% 30%, rgba(179, 48, 28, .2), transparent 40%), linear-gradient(90deg, rgba(0, 0, 0, .7), transparent 28%, transparent 72%, rgba(0, 0, 0, .7));
+/* Page panels */
+[data-hl-theme=premium] :is(.material-panel, .px-panel, .item-action-panel, .training-yard, .training-section, .training-guide, .offline-vault, .summon-altar, .summon-side-panel) {
+  border-style: solid;
+  border-image: var(--pm-frame) 200 / 22px / 6px stretch;
+  background: var(--pm-surface);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .6);
 }
-[data-hl-theme=premium] .summon-portal { background: radial-gradient(circle, rgba(242, 204, 128, .22), rgba(143, 31, 18, .3) 48%, transparent 70%); box-shadow: 0 0 44px rgba(179, 48, 28, .45), 0 0 90px rgba(143, 31, 18, .25); }
+[data-hl-theme=premium] .material-panel::after { inset: 8px; border: 1px solid rgba(199, 158, 97, .08); }
+
+/* Cards and tiles */
+[data-hl-theme=premium] :is(.quest-card, .stat-tile, .location-card, .intentional-empty, .offline-reward-tile, .training-slot, .training-post, .training-status-row, .summon-pity-card, .summon-balance, .summon-focus, .item-act-compare, .item-act-sheet, .shop-pack, .combatant-card) {
+  border-style: solid;
+  border-image: var(--pm-frame) 200 / 12px / 3px stretch;
+  background: linear-gradient(180deg, rgba(20, 16, 12, .9), rgba(7, 6, 5, .94));
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .45), inset 0 0 18px rgba(0, 0, 0, .55);
+}
+/* Named component surfaces from the base stylesheet */
+[data-hl-theme=premium] :is(.market-shell, .merchant-surface, .reward-scene, .dungeon-gate-modal, .auto-pot-settings) {
+  border-style: solid;
+  border-image: var(--pm-frame) 200 / 22px / 6px stretch;
+  background: var(--pm-surface) !important;
+}
+[data-hl-theme=premium] :is(.shop-card, .leader-row, .market-row, .dungeon-boss-hud, .training-roster-card, .partner-quest-card) {
+  border-style: solid;
+  border-image: var(--pm-frame) 200 / 12px / 3px stretch;
+}
+[data-hl-theme=premium] .market-input { border-color: rgba(199, 158, 97, .4); background: rgba(5, 4, 3, .9); box-shadow: inset 0 2px 5px rgba(0, 0, 0, .9); }
+[data-hl-theme=premium] :is(.market-chip, .training-sort-button, .training-icon-button, .training-boost-button, .dungeon-gate-quick) {
+  border-style: solid;
+  border-color: transparent;
+  border-image: var(--pm-bronze) 85 150 fill / 8px 14px stretch;
+  background: none;
+  color: #d9c7a3;
+}
+[data-hl-theme=premium] :is(.market-chip-active, .training-sort-button[aria-pressed=true]) {
+  border-image: var(--pm-crimson) 90 170 fill / 8px 14px stretch;
+  background: none;
+  color: #fbeccb;
+  box-shadow: none;
+}
+
+/* Generic bordered boxes built from utilities (info blocks, team panels, notices) share the card frame */
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(div, section, aside, article).border:is([class*="bg-black"], [class*="bg-[#"], [class*="bg-[rgba"], [class*="bg-gradient"], [class*="bg-slate"], [class*="bg-violet"], [class*="bg-cyan"], [class*="bg-amber"], [class*="bg-emerald"], [class*="bg-rose"], [class*="bg-red"], [class*="bg-sky"]):not(.item-slot, .premium-hero-card, .hero-portrait-rarity, .border-dashed, .h-1, .h-1\.5, .h-2, [class*="aspect-"], [role="alert"], .summon-pay, .summon-rate) {
+  border-style: solid;
+  border-image: var(--pm-frame) 200 / 12px / 3px stretch;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .45), inset 0 0 18px rgba(0, 0, 0, .5);
+}
+[data-hl-theme=premium] .location-card { background: linear-gradient(180deg, rgba(26, 20, 14, .92), rgba(7, 6, 5, .95)); }
+[data-hl-theme=premium] :is(.location-card-current, .quest-card[class*="border-"], .training-slot-open, .training-post-selected) {
+  box-shadow: 0 0 0 1px rgba(242, 204, 128, .55), 0 0 18px rgba(199, 158, 97, .3), inset 0 0 22px rgba(143, 31, 18, .25);
+}
+[data-hl-theme=premium] .bg-arena { border-style: solid; border-image: var(--pm-frame) 200 / 22px / 6px stretch; }
+[data-hl-theme=premium] .health-track { border-color: rgba(199, 158, 97, .45); background: #120d0b; }
+[data-hl-theme=premium] .summon-rate { background: linear-gradient(90deg, rgba(0, 0, 0, .65), rgba(0, 0, 0, .25)) !important; }
+
+/* ── 4. Section headings: gem + forged rule ────────────────────────── */
+[data-hl-theme=premium] .section-kicker {
+  display: flex;
+  align-items: center;
+  gap: .55em;
+  color: var(--pm-brass);
+  font-family: var(--pm-display);
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-shadow: 0 1px 2px #000;
+}
+[data-hl-theme=premium] .section-kicker::before {
+  content: '';
+  flex: none;
+  width: .5em;
+  height: .5em;
+  margin: 0;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--pm-brass-hi), var(--pm-brass-lo));
+  box-shadow: 0 0 0 1px #000, 0 0 6px rgba(242, 204, 128, .45);
+}
+[data-hl-theme=premium] .section-kicker::after {
+  content: '';
+  flex: 1 1 auto;
+  min-width: 12px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(199, 158, 97, .7), transparent);
+}
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(h1, h2, h3, .font-pixel) { font-family: var(--pm-display); font-weight: 700; letter-spacing: .05em; text-shadow: 0 2px 3px rgba(0, 0, 0, .85); }
+[data-hl-theme=premium] :is(.text-px-gold, .text-px-bright) { color: var(--pm-brass-hi); }
+
+/* ── 5. Controls: Bronze plate / Crimson seal ──────────────────────── */
+/* Everything that looks like a button uses one of two plates. The list deliberately includes
+   Tailwind-coloured buttons so screens stop mixing sky/emerald/cyan/violet/rose buttons.
+   Item slots, hero and location cards keep their own art. */
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(
+  .game-control, .px-btn, .item-act, .item-act-confirm,
+  button[class*="bg-emerald"], button[class*="bg-amber"], button[class*="bg-cyan"], button[class*="bg-rose"],
+  button[class*="bg-violet"], button[class*="bg-sky"], button[class*="bg-slate"], button[class*="bg-purple"],
+  button[class*="bg-blue"], button[class*="bg-red"], button[class*="bg-green"], button[class*="bg-fuchsia"],
+  button[class*="bg-lime"], button[class*="bg-teal"], button[class*="bg-indigo"], button[class*="bg-orange"],
+  button[class*="bg-yellow"], button[class*="bg-gradient"], button[class*="bg-white"]
+):not(.item-slot, .location-card, .game-nav-control, .premium-hero-card, .hero-portrait-rarity, .summon-pay-option, .boost-max-active, .boost-max-ready) {
+  border-style: solid;
+  border-color: transparent;
+  border-image: var(--pm-bronze) 85 150 fill / 9px 16px stretch;
+  background: none !important;
+  box-shadow: none;
+  color: #f1dfb8 !important;
+  text-shadow: 0 1px 2px #000;
+  transition: filter .15s ease;
+}
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-control, .px-btn, .item-act, .item-act-confirm, button[class*="bg-"]):not(.item-slot, .location-card, .game-nav-control, .premium-hero-card, .hero-portrait-rarity):hover:not(:disabled) {
+  filter: brightness(1.18) drop-shadow(0 0 6px rgba(242, 204, 128, .35));
+}
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-control, .item-act, .item-act-confirm) svg { color: var(--pm-brass-hi); }
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-control, .px-btn, .item-act, .item-act-confirm, button[class*="bg-"]):disabled { filter: grayscale(.75) brightness(.6); opacity: 1; }
+
+/* Icon-only square controls: forged socket instead of a stretched plate */
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-control, button[class*="bg-"]).place-items-center:not(.game-primary, .reward-cta):not(#pm-x):not(#pm-y) {
+  border-image: var(--pm-frame) 200 / 10px / 1px stretch;
+  background: radial-gradient(circle at 50% 40%, rgba(60, 44, 26, .9), rgba(10, 8, 7, .95) 75%) !important;
+}
+
+/* Crimson seal: primary actions */
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-primary, .reward-cta, .item-act--primary, .summon-cta--10, .summon-break-seal):not(#pm-x):not(#pm-y) {
+  border-style: solid;
+  border-color: transparent;
+  border-image: var(--pm-crimson) 90 170 fill / 10px 18px stretch;
+  background: none !important;
+  color: #fbeccb !important;
+  box-shadow: 0 0 16px rgba(179, 48, 28, .25);
+  text-shadow: 0 1px 2px #000, 0 0 8px rgba(255, 120, 90, .25);
+}
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-primary, .reward-cta, .item-act--primary):not(#pm-x):not(#pm-y) svg { color: #ffd9a8 !important; }
+/* Danger: bronze plate, blood-red lettering */
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-danger, .item-act--danger):not(#pm-x):not(#pm-y) { color: #f0a590 !important; }
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-danger, .item-act--danger):not(#pm-x):not(#pm-y) svg { color: #e0664f !important; }
+/* Boost keeps its signature green glow, on the bronze plate */
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.boost-max-active, .boost-max-ready) {
+  border-style: solid;
+  border-color: transparent;
+  border-image: var(--pm-bronze) 85 150 fill / 9px 16px stretch;
+  background: radial-gradient(ellipse at center, rgba(90, 200, 70, .35), rgba(20, 60, 15, .1) 70%) !important;
+  color: #d9ffc4 !important;
+  text-shadow: 0 0 8px rgba(120, 255, 90, .6), 0 1px 2px #000;
+}
+
+/* Pill chips (filters, tabs) become plates too: one corner language */
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) button.rounded-full:not(.place-items-center, [class*="aspect-"], .h-2, .h-3, .w-2, .w-3) {
+  border-radius: 0 !important;
+  border-style: solid;
+  border-color: transparent;
+  border-image: var(--pm-bronze) 85 150 fill / 8px 14px stretch;
+  background: none !important;
+  color: #d9c7a3 !important;
+}
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) button.rounded-full:is([aria-pressed=true], [aria-selected=true], [class*="bg-amber"], [class*="bg-[#"]):not(.place-items-center):not(#pm-x) {
+  border-image: var(--pm-crimson) 90 170 fill / 8px 14px stretch;
+  color: #fbeccb !important;
+}
+
+/* Registration / onboarding card on the public site uses the same window frame */
+[data-hl-theme=premium] .hl-onboarding .landing-card {
+  overflow: visible;
+  border-style: solid;
+  border-image: var(--pm-frame) 200 / 34px / 10px stretch;
+  background: var(--pm-surface-deep);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .85);
+}
+[data-hl-theme=premium] .hl-onboarding .landing-cta {
+  border-style: solid;
+  border-color: transparent;
+  border-image: var(--pm-crimson) 90 170 fill / 10px 18px stretch;
+  background: none;
+  color: #fbeccb;
+  box-shadow: none;
+  font-family: var(--pm-display);
+  text-shadow: 0 1px 2px #000;
+}
+[data-hl-theme=premium] .hl-onboarding :is(h1, h2, h3) { font-family: var(--pm-display); color: var(--pm-ivory); letter-spacing: .04em; }
+[data-hl-theme=premium] .hl-onboarding .text-violet-300 { color: var(--pm-brass) !important; font-family: var(--pm-display); }
+
+/* ── 6. Top bar, nav and footer ────────────────────────────────────── */
+[data-hl-theme=premium] .game-command-bar {
+  position: relative;
+  border-color: transparent;
+  background: linear-gradient(180deg, rgba(10, 8, 7, .96), rgba(20, 15, 11, .94)), var(--pm-stone) center / cover;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .7);
+}
+[data-hl-theme=premium] .game-command-bar::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 -3px;
+  height: 6px;
+  background: linear-gradient(180deg, #2a1e12, #7a5a2e 30%, #e1b877 50%, #7a5a2e 70%, #1a120b);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .8);
+  pointer-events: none;
+}
+[data-hl-theme=premium] .game-nav-control { color: #a69a86; font-family: var(--pm-display); font-weight: 700; letter-spacing: .02em; }
+[data-hl-theme=premium] .game-nav-control:hover { color: var(--pm-ivory); background: transparent; border-color: transparent; text-shadow: 0 0 8px rgba(242, 204, 128, .35); }
+[data-hl-theme=premium] .game-nav-control-active {
+  border-style: solid;
+  border-color: transparent;
+  border-image: var(--pm-crimson) 90 170 fill / 8px 14px stretch;
+  background: none;
+  color: #fbeccb;
+  box-shadow: none;
+  text-shadow: 0 1px 2px #000;
+}
+[data-hl-theme=premium] .game-footer {
+  border-color: transparent !important;
+  background: linear-gradient(180deg, rgba(20, 15, 11, .96), rgba(8, 6, 5, .98)), var(--pm-stone) center / cover !important;
+  box-shadow: 0 -2px 0 #6b5230, 0 -3px 0 #000, 0 -12px 28px rgba(0, 0, 0, .5) !important;
+}
+
+/* ── 7. Item upgrade panel: one plate style, readable layout ───────── */
+[data-hl-theme=premium] .item-act-head { padding-bottom: 6px; border-bottom: 1px solid rgba(199, 158, 97, .22); }
+[data-hl-theme=premium] .item-act-stats { background: rgba(0, 0, 0, .35) !important; border-left: 2px solid rgba(199, 158, 97, .45); }
+[data-hl-theme=premium] .item-act-stats--better { border-left-color: #3fbf6a; box-shadow: inset 3px 0 12px -6px rgba(63, 191, 106, .6); }
+[data-hl-theme=premium] .item-act-stats--worse { border-left-color: #d0453a; box-shadow: inset 3px 0 12px -6px rgba(208, 69, 58, .6); }
+[data-hl-theme=premium] .item-act-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 6px; }
+[data-hl-theme=premium] .item-act-grid > * { min-width: 0; }
+[data-hl-theme=premium] .item-act { min-height: 50px; padding: 5px 12px; line-height: 1.2; font-family: var(--pm-display); letter-spacing: .03em; }
+[data-hl-theme=premium] .item-act > span + span { font-family: 'Inter', system-ui, sans-serif; letter-spacing: 0; color: #cbb893 !important; }
+[data-hl-theme=premium] .item-act-sheet { margin-top: 6px; }
+[data-hl-theme=premium] .item-act-confirm { min-height: 38px; font-family: var(--pm-display); letter-spacing: .04em; }
+[data-hl-theme=premium] .item-sell-confirm { border-style: solid; border-image: var(--pm-frame) 200 / 12px / 3px stretch; background: var(--pm-surface-deep); }
+
+/* ── 8. Summon sanctum ─────────────────────────────────────────────── */
+[data-hl-theme=premium] .summon-sanctum { background-image: linear-gradient(rgba(6, 3, 3, .3), rgba(6, 3, 3, .82)), url('/assets/summon/ritual-sanctum-v1.webp') !important; }
+[data-hl-theme=premium] .summon-sanctum > .pointer-events-none:first-child { background: radial-gradient(circle at 50% 30%, rgba(179, 48, 28, .24), transparent 40%), linear-gradient(90deg, rgba(0, 0, 0, .7), transparent 28%, transparent 72%, rgba(0, 0, 0, .7)); }
+[data-hl-theme=premium] .summon-portal { background: radial-gradient(circle, rgba(242, 204, 128, .24), rgba(143, 31, 18, .32) 48%, transparent 70%); box-shadow: 0 0 44px rgba(179, 48, 28, .5), 0 0 110px rgba(143, 31, 18, .28); }
 [data-hl-theme=premium] .summon-rune-ring { border-color: rgba(242, 204, 128, .85); box-shadow: 0 0 14px rgba(199, 158, 97, .45); }
 [data-hl-theme=premium] .summon-rune-ring-inner { border-color: rgba(214, 70, 44, .85); }
 [data-hl-theme=premium] .summon-portal-mote { background: #f7d78c; box-shadow: 0 0 8px #d8452a; }
 [data-hl-theme=premium] .summon-portal svg { color: var(--pm-brass-hi); filter: drop-shadow(0 0 12px rgba(214, 70, 44, .9)); }
-
-[data-hl-theme=premium] .summon-altar {
-  position: relative;
-  border-color: rgba(199, 158, 97, .7);
-  border-radius: 4px;
-  background: linear-gradient(180deg, rgba(5, 5, 5, .82), rgba(18, 13, 10, .7) 50%, rgba(6, 5, 6, .86));
-  box-shadow: 0 0 0 1px #000, 0 0 0 3px rgba(115, 77, 31, .45), 0 20px 60px rgba(0, 0, 0, .75), inset 0 1px 3px rgba(217, 171, 97, .16);
-}
+[data-hl-theme=premium] .summon-altar { position: relative; }
 [data-hl-theme=premium] .summon-altar::before {
   content: '';
   position: absolute;
-  left: 18px;
-  right: 18px;
-  top: 10px;
-  height: 1px;
-  background: var(--pm-hairline);
+  left: calc(50% - 45px);
+  top: -30px;
+  width: 90px;
+  height: 55px;
+  background: url('./assets/frame-ornament.webp') center / contain no-repeat;
   pointer-events: none;
 }
-[data-hl-theme=premium] .summon-altar::after {
-  content: '';
-  position: absolute;
-  left: calc(50% - 6px);
-  top: -6px;
-  width: 12px;
-  height: 12px;
-  transform: rotate(45deg);
-  background: linear-gradient(135deg, var(--pm-brass-hi), var(--pm-brass-lo));
-  box-shadow: 0 0 0 1px #000, 0 0 12px rgba(199, 158, 97, .45);
-  pointer-events: none;
-}
-[data-hl-theme=premium] .summon-title { color: var(--pm-ivory); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; text-shadow: 0 2px 3px rgba(0, 0, 0, .9); }
-[data-hl-theme=premium] .summon-title span { color: var(--pm-brass-hi) !important; text-shadow: 0 0 14px rgba(199, 158, 97, .35); }
-[data-hl-theme=premium] .summon-lede { color: rgba(235, 223, 202, .72); font-family: 'EB Garamond', Georgia, serif; }
-
-[data-hl-theme=premium] .summon-focus { border-color: var(--pm-edge-soft); border-radius: 3px; background: rgba(5, 4, 4, .72); }
-[data-hl-theme=premium] .summon-focus > button span:nth-of-type(1) { color: var(--pm-brass); font-family: var(--pm-display); }
-[data-hl-theme=premium] .summon-focus > button svg:first-child { color: var(--pm-brass); }
-[data-hl-theme=premium] .summon-focus :is(.border-violet-500\/20) { border-color: rgba(199, 158, 97, .2); }
-[data-hl-theme=premium] .summon-pity-head > span { color: var(--pm-brass); font-family: var(--pm-display); }
-[data-hl-theme=premium] .summon-pity-card { border-radius: 2px; background: linear-gradient(180deg, rgba(10, 8, 7, .9), rgba(4, 3, 3, .92)); box-shadow: inset 0 1px rgba(255, 214, 150, .05); }
-[data-hl-theme=premium] .summon-pity-card .rounded-full { border-radius: 1px; }
-[data-hl-theme=premium] .summon-pity-card > div.overflow-hidden:nth-child(2) { background: #140f0d; box-shadow: inset 0 0 0 1px rgba(199, 158, 97, .28); }
-
-[data-hl-theme=premium] .summon-pay { border-color: var(--pm-edge); border-radius: 3px; background: rgba(4, 3, 3, .8); }
-[data-hl-theme=premium] .summon-pay-option { border-radius: 2px; border: 1px solid transparent; color: #7f7565 !important; font-family: var(--pm-display); letter-spacing: .06em; transition: color .15s, background .15s, border-color .15s; }
-[data-hl-theme=premium] .summon-pay-option:hover:not(:disabled) { color: var(--pm-ivory) !important; }
-[data-hl-theme=premium] .summon-pay-option[aria-pressed=true] {
-  border-color: rgba(199, 158, 97, .75);
-  color: #f8e8c4 !important;
-  background: var(--pm-seal) !important;
-  box-shadow: inset 0 1px rgba(255, 200, 150, .3), 0 0 14px rgba(143, 31, 18, .35);
-}
-[data-hl-theme=premium] .summon-pay-option:last-child[aria-pressed=true] {
-  background: radial-gradient(ellipse 80% 120% at 50% 0%, #6d5226 0%, #43301a 45%, #1b130a 100%) !important;
-  box-shadow: inset 0 1px rgba(255, 228, 160, .3), 0 0 14px rgba(199, 158, 97, .3);
-}
-
-[data-hl-theme=premium] .summon-cta {
-  position: relative;
-  border-radius: 3px;
-  border-color: rgba(199, 158, 97, .7);
-  background: var(--pm-button);
-  box-shadow: 0 0 0 1px #000, 0 0 0 2px rgba(115, 77, 31, .55), 0 6px 16px rgba(0, 0, 0, .6), inset 0 1px 2px rgba(255, 199, 107, .14);
-  transition: filter .15s, border-color .15s, transform .15s;
-}
-[data-hl-theme=premium] .summon-cta:hover:not(:disabled) { border-color: var(--pm-brass-hi); filter: brightness(1.14); background: var(--pm-button); }
-[data-hl-theme=premium] .summon-cta::before,
-[data-hl-theme=premium] .summon-cta::after {
-  content: '';
-  position: absolute;
-  top: calc(50% - 4px);
-  width: 8px;
-  height: 8px;
-  transform: rotate(45deg);
-  background: linear-gradient(135deg, var(--pm-brass-hi), var(--pm-brass-lo));
-  box-shadow: 0 0 0 1px #000;
-  pointer-events: none;
-}
-[data-hl-theme=premium] .summon-cta::before { left: -5px; }
-[data-hl-theme=premium] .summon-cta::after { right: -5px; }
-[data-hl-theme=premium] .summon-cta > span:first-child { color: var(--pm-ivory); font-family: var(--pm-display); letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 1px 2px #000; }
-[data-hl-theme=premium] .summon-cta > span:first-child svg { color: var(--pm-brass-hi) !important; }
-[data-hl-theme=premium] .summon-cta > span:last-child { color: var(--pm-brass-hi) !important; text-shadow: 0 1px 2px #000; }
-[data-hl-theme=premium] .summon-cta--10,
-[data-hl-theme=premium] .summon-cta--10:hover:not(:disabled) { background: var(--pm-seal); --glow: rgba(179, 48, 28, .45) !important; }
-[data-hl-theme=premium] .summon-cta--100,
-[data-hl-theme=premium] .summon-cta--100:hover:not(:disabled) { background: radial-gradient(ellipse 80% 130% at 50% 0%, #5a1d52 0%, #2c0d2b 45%, #110610 100%); --glow: rgba(199, 158, 97, .35) !important; }
-[data-hl-theme=premium] .summon-cta:disabled { filter: saturate(.35) brightness(.7); }
-[data-hl-theme=premium] .summon-promote { font-family: var(--pm-display); letter-spacing: .06em; }
-[data-hl-theme=premium] .summon-altar > p:last-child { color: var(--pm-muted); }
-
-[data-hl-theme=premium] .summon-side-panel {
-  border-color: rgba(199, 158, 97, .6);
-  border-radius: 4px;
-  background: linear-gradient(180deg, rgba(5, 5, 5, .94), rgba(18, 16, 13, .92) 50%, rgba(6, 5, 6, .95));
-  box-shadow: 0 0 0 1px #000, 0 18px 45px rgba(0, 0, 0, .7), inset 0 1px 3px rgba(217, 171, 97, .14);
-}
+[data-hl-theme=premium] .summon-title { color: var(--pm-ivory); text-transform: uppercase; letter-spacing: .1em; }
+[data-hl-theme=premium] .summon-title span { color: var(--pm-brass-hi) !important; }
+[data-hl-theme=premium] .summon-lede { color: rgba(235, 223, 202, .78); font-family: 'EB Garamond', Georgia, serif; }
+[data-hl-theme=premium] .summon-focus > button span:nth-of-type(1),
+[data-hl-theme=premium] .summon-pity-head > span,
 [data-hl-theme=premium] .summon-side-panel > div:not(.section-kicker, .summon-balance, .summon-rate-panel) { color: var(--pm-brass); font-family: var(--pm-display); }
-[data-hl-theme=premium] .summon-balance { border-color: var(--pm-edge); border-radius: 3px; background: rgba(4, 3, 3, .85); box-shadow: inset 0 2px 5px rgba(0, 0, 0, .9); }
+[data-hl-theme=premium] .summon-focus > button svg:first-child { color: var(--pm-brass); }
+[data-hl-theme=premium] .summon-pity-card > div.overflow-hidden:nth-child(2) { background: #140f0d; box-shadow: inset 0 0 0 1px rgba(199, 158, 97, .28); }
 [data-hl-theme=premium] .summon-balance > span:first-child { color: var(--pm-brass-hi); }
-[data-hl-theme=premium] .summon-rate { border-radius: 2px; background: linear-gradient(90deg, rgba(0, 0, 0, .55), rgba(0, 0, 0, .25)) !important; }
+
+/* Payment: two bronze plates, the chosen one becomes a seal */
+[data-hl-theme=premium] .summon-pay { border-color: transparent; background: transparent; gap: 8px; }
+[data-hl-theme=premium] .summon-pay-option {
+  border-style: solid;
+  border-color: transparent;
+  border-image: var(--pm-bronze) 85 150 fill / 9px 16px stretch;
+  background: none !important;
+  color: #a79a82 !important;
+  font-family: var(--pm-display);
+  letter-spacing: .06em;
+  filter: brightness(.75);
+}
+[data-hl-theme=premium] .summon-pay-option[aria-pressed=true] { filter: none; color: #fbeccb !important; border-image: var(--pm-crimson) 90 170 fill / 10px 18px stretch; }
+[data-hl-theme=premium] .summon-pay-option:last-child[aria-pressed=true] { border-image: var(--pm-bronze) 85 150 fill / 9px 16px stretch; color: #ffe7b0 !important; filter: brightness(1.15) drop-shadow(0 0 8px rgba(242, 204, 128, .35)); }
+
+/* Summon buttons: x1 bronze, x10 crimson seal, x100 bronze with arcane glow */
+[data-hl-theme=premium] .summon-cta { font-family: var(--pm-display); }
+[data-hl-theme=premium] .summon-cta > span:first-child { color: var(--pm-ivory); letter-spacing: .08em; text-transform: uppercase; }
+[data-hl-theme=premium] .summon-cta > span:first-child svg { color: var(--pm-brass-hi) !important; }
+[data-hl-theme=premium] .summon-cta > span:last-child { color: var(--pm-brass-hi) !important; }
+[data-hl-theme=premium] .summon-cta--10 { --glow: rgba(179, 48, 28, .5) !important; }
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) .summon-cta--100:not(#pm-x):not(#pm-y) { background: radial-gradient(ellipse at center, rgba(160, 70, 200, .3), transparent 70%) !important; --glow: rgba(160, 70, 200, .4) !important; }
+[data-hl-theme=premium] .summon-promote { font-family: var(--pm-display); letter-spacing: .05em; }
 
 /* Summon results */
-[data-hl-theme=premium] .summon-result { background: radial-gradient(ellipse at 50% 40%, rgba(40, 10, 7, .7), rgba(0, 0, 0, .94) 70%); }
-[data-hl-theme=premium] .summon-result-card { border-radius: 3px; border-width: 1px; }
-[data-hl-theme=premium] .summon-result-card.summon-card-sealed { border-color: rgba(199, 158, 97, .45) !important; background: radial-gradient(circle at 50% 40%, rgba(143, 31, 18, .28), transparent 60%), linear-gradient(160deg, #15100c, #060505 70%) !important; box-shadow: inset 0 0 26px rgba(143, 31, 18, .25), 0 0 0 1px #000 !important; }
-[data-hl-theme=premium] .summon-card-sealed::before { border-color: rgba(242, 204, 128, .6); color: var(--pm-brass-hi); box-shadow: 0 0 18px rgba(179, 48, 28, .5), inset 0 0 13px rgba(255, 255, 255, .1); border-radius: 2px; transform: rotate(45deg); }
+[data-hl-theme=premium] .summon-result { background: radial-gradient(ellipse at 50% 40%, rgba(40, 10, 7, .7), rgba(0, 0, 0, .95) 70%); }
+[data-hl-theme=premium] .summon-result-card { border-radius: 0 !important; }
+[data-hl-theme=premium] .summon-result-card.summon-card-sealed { border-style: solid; border-color: transparent !important; border-image: var(--pm-frame) 200 / 14px / 3px stretch; background: radial-gradient(circle at 50% 40%, rgba(143, 31, 18, .3), transparent 60%), var(--pm-surface-deep) !important; box-shadow: inset 0 0 26px rgba(143, 31, 18, .25) !important; }
+[data-hl-theme=premium] .summon-card-sealed::before { border-color: rgba(242, 204, 128, .6); color: var(--pm-brass-hi); box-shadow: 0 0 18px rgba(179, 48, 28, .5); border-radius: 0; transform: rotate(45deg); }
 [data-hl-theme=premium] .summon-seal-glyph { color: var(--pm-brass-hi); filter: drop-shadow(0 0 9px rgba(214, 70, 44, .8)); }
-[data-hl-theme=premium] .summon-break-seal { border-radius: 3px; border-color: var(--pm-brass); background: var(--pm-seal); color: #f8e8c4; font-family: var(--pm-display); letter-spacing: .1em; box-shadow: 0 0 0 1px #000, 0 0 0 2px rgba(115, 77, 31, .9), 0 0 24px rgba(179, 48, 28, .45); }
-[data-hl-theme=premium] .summon-continue,
-[data-hl-theme=premium] .summon-close { border-radius: 3px; border-color: rgba(199, 158, 97, .7) !important; background: var(--pm-button) !important; color: var(--pm-ivory) !important; font-family: var(--pm-display); letter-spacing: .08em; }
-[data-hl-theme=premium] .summon-close { border-radius: 50%; }
+[data-hl-theme=premium] :is(.summon-continue, .summon-close):not(#pm-x):not(#pm-y) { border-style: solid; border-color: transparent !important; border-image: var(--pm-bronze) 85 150 fill / 9px 16px stretch; background: none !important; color: var(--pm-ivory) !important; font-family: var(--pm-display); letter-spacing: .08em; border-radius: 0 !important; }
 [data-hl-theme=premium] .summon-ritual-charge .text-\[\#d9b9ff\] { color: var(--pm-brass-hi); }
 [data-hl-theme=premium] .summon-best-banner strong { font-family: var(--pm-display); }
 
+/* ── 9. Close buttons and badges ───────────────────────────────────── */
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) .game-window-close:not(#pm-x):not(#pm-y) { border-image: var(--pm-crimson) 90 170 fill / 9px 12px stretch !important; }
+[data-hl-theme=premium] :is(.item-class-badge, .hero-level-badge) { border-radius: 0 !important; border-color: rgba(242, 204, 128, .7); }
+
 @media (prefers-reduced-motion: reduce) {
-  [data-hl-theme=premium] .summon-cta { transition: none; }
+  [data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-control, .item-act, .item-act-confirm, button[class*="bg-"]) { transition: none; }
 }
