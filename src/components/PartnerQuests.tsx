@@ -134,8 +134,8 @@ export function PartnerQuests({ claim, onOpenBoostMax }: {
   });
 
   return (
-    <section className="partner-quests mb-2" aria-label="Partner Quests">
-      <div className="section-kicker mb-1 flex items-center gap-1 text-[#e9c97a]"><Sparkles size={11} /> Partner Quests</div>
+    <section className="partner-quests mb-2" aria-label="Special Quests">
+      <div className="section-kicker mb-1 flex items-center gap-1 text-[#e9c97a]"><Sparkles size={11} /> Special Quests</div>
       <div className="space-y-1">
         {data.quests.map((quest) => {
           const missingLink = quest.requires && !data.links[quest.requires];

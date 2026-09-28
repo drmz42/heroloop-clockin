@@ -98,6 +98,8 @@ const commandActions = new Set([
   "partner_quest_start",
   "partner_quest_submit",
   "partner_quest_claim",
+  "mail_list",
+  "mail_claim",
   "tester_credit_tokens",
   "tester_credit_gold",
   "tester_credit_account_xp",
@@ -1202,6 +1204,39 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         if (code) return errorResponse(409, code, requestId);
         console.error("partner_quest_claim database adapter failed", { requestId });
         return errorResponse(503, "partner_quest_failed", requestId);
+      }
+    }
+    // Mailbox: Market purchases and full-bag overflow wait here until claimed
+    // one by one or as many as fit. Ownership and capacity live in PostgreSQL.
+    if (parsed.value.action === "mail_list") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const result = await databaseJson("SELECT heroloop_api.mail_list($1::uuid) AS result", [identity.playerId]);
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        console.error("mail_list database adapter failed", { requestId });
+        return errorResponse(503, "mail_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "mail_claim") {
+      const payloadError = validatePayloadFields(payload, ["mail_id"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const mailId = payload.mail_id ?? null;
+      if (payloadError || !requestKey || (mailId !== null && (typeof mailId !== "string" || !uuidPattern.test(mailId)))) {
+        return errorResponse(400, payloadError ?? "invalid_mail_claim", requestId);
+      }
+      try {
+        const result = await retryDatabaseTimeoutOnce(() => databaseJson(
+          "SELECT heroloop_api.mail_claim($1::uuid,$2::uuid,$3::uuid) AS result",
+          [identity.playerId, requestKey, mailId],
+        ));
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["mail_not_found", "item_capacity_exceeded", "idempotency_conflict", "save_not_found"]);
+        if (code) return errorResponse(409, code, requestId);
+        console.error("mail_claim database adapter failed", { requestId });
+        return errorResponse(503, "mail_failed", requestId);
       }
     }
     if (parsed.value.action === "ascension_focus_set") {

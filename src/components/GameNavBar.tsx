@@ -18,10 +18,10 @@ const TABS = [
 const formatResource = (value: number) => Math.floor(value).toLocaleString('en-US').replace(/,/g, ' ');
 
 export function GameNavBar({
-  tab, onChange, gold, hero, mailCount, walletAddress, onWalletClick, onTokensClick,
+  tab, onChange, gold, hero, mailCount, onMailClick, walletAddress, onWalletClick, onTokensClick,
 }: {
   tab: Tab; onChange: (t: Tab) => void;
-  gold: number; hero: number; mailCount: number;
+  gold: number; hero: number; mailCount: number; onMailClick: () => void;
   walletAddress: string | null;
   onWalletClick: () => void;
   onTokensClick: () => void;
@@ -71,7 +71,7 @@ export function GameNavBar({
             : <><UserRound size={16} /> <span className="hidden xl:inline">Account</span></>}
         </button>
         {/* Mail */}
-        <button type="button" className="game-control relative grid h-9 w-9 place-items-center" title="Mailbox">
+        <button type="button" onClick={onMailClick} className="game-control relative grid h-9 w-9 place-items-center" title="Mailbox" aria-label={mailCount > 0 ? `Mailbox, ${mailCount} waiting` : 'Mailbox'}>
           <Mail size={16} className="text-px-text" />
           {mailCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-px-red text-white text-[9px] font-vt font-bold px-0.5 leading-tight">{mailCount}</span>}
         </button>

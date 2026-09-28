@@ -44,7 +44,7 @@ export function LinkedAccounts() {
   return (
     <section className="stat-tile p-4" aria-label="Linked accounts">
       <h3 className="flex items-center gap-2 text-sm font-black text-[#f1d188]"><Link2 size={16} /> Linked accounts</h3>
-      <p className="mt-1 text-[11px] leading-5 text-[#8f887b]">Required for Partner Quests. Proof links must come from the account you link here.</p>
+      <p className="mt-1 text-[11px] leading-5 text-[#8f887b]">Required for Special Quests. Proof links must come from the account you link here.</p>
       <div className="mt-2 space-y-2">
         {(['x', 'telegram'] as const).map((provider) => {
           const linked = links[provider];
