@@ -2532,6 +2532,37 @@ export function useGame() {
     return result.claimed === true;
   }, [hydrateServerState, serverRevisionHint]);
 
+  // Partner Quests: the reward was approved in the Founder panel; the claim is
+  // the only step that changes the save, with the same revision retry as quests.
+  const claimPartnerQuest = useCallback(async (questId: number): Promise<string | null> => {
+    if (!tokenomicsEnabled || !Number.isSafeInteger(serverRevisionHint)) return 'unavailable';
+    const idempotencyKey = createIdempotencyKey();
+    let expectedRevision = serverRevisionHint;
+    let claimError = '';
+    const attemptClaim = () => {
+      claimError = '';
+      return playerSync<{ claimed: boolean; state: GameState; revision: number }>('partner_quest_claim', {
+        quest_id: questId, expected_revision: expectedRevision, idempotency_key: idempotencyKey,
+      }, (error) => { claimError = error; });
+    };
+    let result = await attemptClaim();
+    if (!result && claimError === 'state_conflict') {
+      const refreshed = await playerSync<{ state: GameState; revision: number }>('game_state_load');
+      if (!refreshed?.state || !Number.isSafeInteger(refreshed.revision)) return 'unavailable';
+      expectedRevision = refreshed.revision;
+      result = await attemptClaim();
+      if (!result) {
+        setServerRevisionHint(refreshed.revision);
+        hydrateServerState(refreshed.state);
+        return claimError || 'unavailable';
+      }
+    }
+    if (!result?.state || !Number.isSafeInteger(result.revision)) return claimError || 'unavailable';
+    setServerRevisionHint(result.revision);
+    hydrateServerState(result.state);
+    return null;
+  }, [hydrateServerState, serverRevisionHint]);
+
   const claimTutorialQuest = useCallback(async (questId: string): Promise<boolean> => {
     if (!tokenomicsEnabled || !Number.isSafeInteger(serverRevisionHint)) return false;
     const result = await playerSync<{
@@ -2734,7 +2765,7 @@ export function useGame() {
     enchantItem, rerollItem, dismissEnchantResult,
     setAutoPot, setBattleAnimationMode, setCombatPresentationVisible,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
-    openChests, openTutorialChests, closeChestResult, refreshStore, buyRotatingItem, claimQuest, claimTutorialQuest,
+    openChests, openTutorialChests, closeChestResult, refreshStore, buyRotatingItem, claimQuest, claimTutorialQuest, claimPartnerQuest,
     claimReferralReward, resetAccount, hydrateServerState, mergeServerResourceState, applyServerRevision, completeWelcomeTutorial, setAvatarHero, loadMarket, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
     heroStatsFor: (uid: string) => {
       const owned = state.ownedHeroes.find((h) => h.uid === uid);

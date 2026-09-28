@@ -93,6 +93,11 @@ const commandActions = new Set([
   "player_report",
   "support_ticket_submit",
   "support_ticket_list",
+  "social_link_set",
+  "partner_quest_list",
+  "partner_quest_start",
+  "partner_quest_submit",
+  "partner_quest_claim",
   "tester_credit_tokens",
   "tester_credit_gold",
   "tester_credit_account_xp",
@@ -1122,6 +1127,81 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       } catch {
         console.error("support_ticket_list database adapter failed", { requestId });
         return errorResponse(503, "support_ticket_failed", requestId);
+      }
+    }
+    // Partner Quests: link a social handle, list, Go, submit proof, claim an
+    // approved reward. Validation and every anti-abuse rule live in PostgreSQL.
+    if (parsed.value.action === "social_link_set") {
+      const payloadError = validatePayloadFields(payload, ["provider", "handle"]);
+      const provider = payload.provider;
+      const handle = payload.handle;
+      if (payloadError || (provider !== "x" && provider !== "telegram") || typeof handle !== "string" || handle.length < 1 || handle.length > 80) {
+        return errorResponse(400, payloadError ?? "invalid_social_handle", requestId);
+      }
+      try {
+        const result = await databaseJson("SELECT heroloop_api.social_link_set($1::uuid,$2::text,$3::text) AS result", [identity.playerId, provider, handle]);
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["invalid_social_handle", "social_handle_taken", "social_link_cooldown"]);
+        if (code) return errorResponse(code === "invalid_social_handle" ? 400 : 409, code, requestId);
+        console.error("social_link_set database adapter failed", { requestId });
+        return errorResponse(503, "social_link_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "partner_quest_list") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const result = await databaseJson("SELECT heroloop_api.partner_quest_list($1::uuid) AS result", [identity.playerId]);
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        console.error("partner_quest_list database adapter failed", { requestId });
+        return errorResponse(503, "partner_quest_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "partner_quest_start" || parsed.value.action === "partner_quest_submit") {
+      const submitting = parsed.value.action === "partner_quest_submit";
+      const payloadError = validatePayloadFields(payload, submitting ? ["quest_id", "proof"] : ["quest_id"]);
+      const questId = Number(payload.quest_id);
+      const proof = payload.proof ?? null;
+      if (payloadError || !Number.isSafeInteger(questId) || questId < 1
+        || (submitting && proof !== null && (typeof proof !== "string" || proof.length > 300))) {
+        return errorResponse(400, payloadError ?? "invalid_partner_quest", requestId);
+      }
+      try {
+        const result = submitting
+          ? await databaseJson("SELECT heroloop_api.partner_quest_submit($1::uuid,$2::bigint,$3::text) AS result", [identity.playerId, questId, proof])
+          : await databaseJson("SELECT heroloop_api.partner_quest_start($1::uuid,$2::bigint) AS result", [identity.playerId, questId]);
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["partner_quest_unavailable", "partner_quest_level_required", "social_link_required",
+          "partner_quest_not_started", "partner_quest_final", "partner_quest_already_submitted", "partner_quest_too_fast",
+          "partner_proof_invalid", "partner_proof_not_yours", "partner_proof_reused"]);
+        if (code) return errorResponse(409, code, requestId);
+        console.error(`${parsed.value.action} database adapter failed`, { requestId });
+        return errorResponse(503, "partner_quest_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "partner_quest_claim") {
+      const payloadError = validatePayloadFields(payload, ["quest_id", "expected_revision"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const questId = Number(payload.quest_id);
+      const revision = Number(payload.expected_revision);
+      if (payloadError || !requestKey || !Number.isSafeInteger(questId) || questId < 1 || !Number.isSafeInteger(revision) || revision < 1) {
+        return errorResponse(400, payloadError ?? "invalid_partner_claim", requestId);
+      }
+      try {
+        const result = await retryDatabaseTimeoutOnce(() => databaseJson(
+          "SELECT heroloop_api.partner_quest_claim($1::uuid,$2::uuid,$3::bigint,$4::bigint) AS result",
+          [identity.playerId, requestKey, questId, revision],
+        ));
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["state_conflict", "idempotency_conflict", "partner_quest_not_approved",
+          "chest_capacity_exceeded", "resource_balance_cap"]);
+        if (code) return errorResponse(409, code, requestId);
+        console.error("partner_quest_claim database adapter failed", { requestId });
+        return errorResponse(503, "partner_quest_failed", requestId);
       }
     }
     if (parsed.value.action === "ascension_focus_set") {

@@ -19,6 +19,7 @@ import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { RewardBoostTile } from '@/components/RewardBoost';
 import { ChestCollectIcon } from '@/components/ChestCollectIcon';
 import { BossKeyIcon } from '@/components/BossKeyIcon';
+import { PartnerQuests } from '@/components/PartnerQuests';
 import { FantasyBagIcon } from '@/components/FantasyBagIcon';
 import { recommendedTeamPower } from '@/game/balance';
 import { playerSync, authClient } from '@/game/backend';
@@ -497,6 +498,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1.5 px-2 py-2"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1.5 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => void game.openTutorialChests(1)} className="game-control min-h-7 text-[9px] font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => void game.openTutorialChests(10)} className="game-control min-h-7 text-[9px] font-bold">Open 10</button></div></div>}
             </section>;
           })()}
+          <PartnerQuests claim={game.claimPartnerQuest} onOpenBoostMax={onBoostClick} />
           <div className="section-kicker mb-1.5">Daily Quests</div>
           <div className="space-y-1">
             {state.dailyQuests.map(q => {

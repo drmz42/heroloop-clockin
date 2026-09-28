@@ -5,6 +5,7 @@ import type { GameApi } from '@/game/useGame';
 import type { TokenomicsApi } from '@/game/useTokenomics';
 import { formatNum } from '@/game/state';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
+import { LinkedAccounts } from '@/components/LinkedAccounts';
 
 const money = (value: number | undefined | null) => (typeof value === 'number' && Number.isFinite(value) ? formatNum(value) : '—');
 const decimals = (value: number | undefined | null, digits = 2) => (typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '—');
@@ -100,6 +101,8 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
               <button type="button" disabled={updating || !ready || active} onClick={() => void setActive(true)} className={`game-control flex flex-1 items-center justify-center gap-2 px-4 font-black disabled:cursor-not-allowed disabled:opacity-45 ${active ? 'boost-max-active' : ready ? 'boost-max-ready' : ''}`}><Crown size={17} /> {updating ? 'Updating…' : active ? 'Boost Max Active' : ready ? 'Activate Boost Max' : `${progress}% Complete`}</button>
             </div>
           </section>
+
+          <LinkedAccounts />
 
           <section className="stat-tile p-4" aria-label="Your standing">
             <h3 className="flex items-center gap-2 text-sm font-black text-[#f1d188]"><Trophy size={16} /> Your standing</h3>
