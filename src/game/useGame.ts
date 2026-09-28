@@ -1718,8 +1718,10 @@ export function useGame() {
   useEffect(() => {
     if (!serverReady) return;
     void refreshAccountBonus();
-    const timer = window.setInterval(() => void refreshAccountBonus(), 60_000);
-    return () => window.clearInterval(timer);
+    const refreshVisible = () => { if (document.visibilityState === 'visible') void refreshAccountBonus(); };
+    const timer = window.setInterval(refreshVisible, 60_000);
+    document.addEventListener('visibilitychange', refreshVisible);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', refreshVisible); };
   }, [serverReady, refreshAccountBonus]);
 
   const buyRewardBoost = useCallback(async (plan: RewardBoostPlan, maxTokenCost: number): Promise<{ ok: true } | { ok: false; error: string }> => {

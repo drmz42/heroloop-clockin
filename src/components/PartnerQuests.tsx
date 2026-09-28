@@ -92,10 +92,12 @@ export function PartnerQuests({ claim, onOpenBoostMax }: {
 
   useEffect(() => {
     void load();
-    const refresh = window.setInterval(() => { void load(); setNow(Date.now()); }, 60_000);
+    const tick = () => { if (document.visibilityState !== 'visible') return; void load(); setNow(Date.now()); };
+    const refresh = window.setInterval(tick, 60_000);
     const onLinksChanged = () => { void load(); };
     window.addEventListener(SOCIAL_LINKS_CHANGED, onLinksChanged);
-    return () => { window.clearInterval(refresh); window.removeEventListener(SOCIAL_LINKS_CHANGED, onLinksChanged); };
+    document.addEventListener('visibilitychange', tick);
+    return () => { window.clearInterval(refresh); window.removeEventListener(SOCIAL_LINKS_CHANGED, onLinksChanged); document.removeEventListener('visibilitychange', tick); };
   }, [load]);
 
   if (!data || data.quests.length === 0) return null;

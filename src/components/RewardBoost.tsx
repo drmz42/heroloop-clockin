@@ -7,8 +7,10 @@ export function useBoostRemaining(endsAt: number | null): number {
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     if (endsAt === null) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
-    return () => window.clearInterval(timer);
+    const tick = () => { if (document.visibilityState === 'visible') setNow(Date.now()); };
+    const timer = window.setInterval(tick, 30_000);
+    document.addEventListener('visibilitychange', tick);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', tick); };
   }, [endsAt]);
   return endsAt === null ? 0 : Math.max(0, endsAt - now);
 }
