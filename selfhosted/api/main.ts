@@ -25,6 +25,13 @@ import {
   recoverMissingFormationHeroes,
 } from "./state.ts";
 import { createFeatureFlagGate } from "./feature_flags.ts";
+import {
+  handleTelegramWebhook,
+  handleXCallback,
+  socialLinkConfig,
+  startSocialLink,
+  type SocialLinkStore,
+} from "./social_link.ts";
 
 const jsonHeaders = {
   "cache-control": "no-store",
@@ -64,6 +71,35 @@ const databasePool = new Pool({
   },
   tls: { enabled: false, enforce: false },
 }, Number(Deno.env.get("PGPOOL_SIZE") ?? "4"), true);
+const socialLinks = socialLinkConfig((name) => Deno.env.get(name));
+const socialLinkStore: SocialLinkStore = {
+  async createChallenge(playerId, provider, stateHash, codeVerifier) {
+    await databaseJson("SELECT heroloop_api.social_link_challenge_create($1::uuid,$2::text,$3::text,$4::text) AS result",
+      [playerId, provider, stateHash, codeVerifier]);
+  },
+  async consumeChallenge(provider, stateHash) {
+    try {
+      const result = await databaseJson("SELECT heroloop_api.social_link_challenge_consume($1::text,$2::text) AS result", [provider, stateHash]);
+      return typeof result.player_id === "string"
+        ? { playerId: result.player_id, codeVerifier: typeof result.code_verifier === "string" ? result.code_verifier : null }
+        : null;
+    } catch (error) {
+      if (!databaseErrorCode(error, ["social_link_expired"])) console.error("social link challenge database adapter failed");
+      return null;
+    }
+  },
+  async linkAccount(playerId, provider, providerUserId, handle) {
+    try {
+      await databaseJson("SELECT heroloop_api.social_link_verified_set($1::uuid,$2::text,$3::text,$4::text) AS result",
+        [playerId, provider, providerUserId, handle]);
+      return null;
+    } catch (error) {
+      const code = databaseErrorCode(error, ["social_account_taken", "social_link_cooldown", "invalid_social_account"]);
+      if (!code) console.error("social link database adapter failed");
+      return code ?? "social_link_failed";
+    }
+  },
+};
 const maxBodyBytes = 256 * 1024;
 const maxStorageBodyBytes = 5 * 1024 * 1024;
 const storageRoot = "/var/lib/heroloop-storage";
@@ -93,7 +129,7 @@ const commandActions = new Set([
   "player_report",
   "support_ticket_submit",
   "support_ticket_list",
-  "social_link_set",
+  "social_link_start",
   "partner_quest_list",
   "partner_quest_start",
   "partner_quest_submit",
@@ -734,6 +770,15 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
     );
   }
 
+  if (url.pathname === "/api/v1/social/x/callback") {
+    if (request.method !== "GET") return errorResponse(405, "method_not_allowed", requestId, { allow: "GET" });
+    return await handleXCallback(url, socialLinks, socialLinkStore);
+  }
+
+  if (url.pathname === "/api/v1/social/telegram/webhook") {
+    return await handleTelegramWebhook(request, socialLinks, socialLinkStore);
+  }
+
   if (url.pathname === "/storage/v1/health") {
     if (request.method !== "GET") return errorResponse(405, "method_not_allowed", requestId, { allow: "GET" });
     return await storageHealthy()
@@ -1131,22 +1176,20 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         return errorResponse(503, "support_ticket_failed", requestId);
       }
     }
-    // Partner Quests: link a social handle, list, Go, submit proof, claim an
+    // Partner Quests: start a verified social link, list, Go, submit proof, claim an
     // approved reward. Validation and every anti-abuse rule live in PostgreSQL.
-    if (parsed.value.action === "social_link_set") {
-      const payloadError = validatePayloadFields(payload, ["provider", "handle"]);
+    if (parsed.value.action === "social_link_start") {
+      const payloadError = validatePayloadFields(payload, ["provider"]);
       const provider = payload.provider;
-      const handle = payload.handle;
-      if (payloadError || (provider !== "x" && provider !== "telegram") || typeof handle !== "string" || handle.length < 1 || handle.length > 80) {
-        return errorResponse(400, payloadError ?? "invalid_social_handle", requestId);
+      if (payloadError || (provider !== "x" && provider !== "telegram")) {
+        return errorResponse(400, payloadError ?? "invalid_social_provider", requestId);
       }
       try {
-        const result = await databaseJson("SELECT heroloop_api.social_link_set($1::uuid,$2::text,$3::text) AS result", [identity.playerId, provider, handle]);
+        const result = await startSocialLink(identity.playerId, provider, socialLinks, socialLinkStore);
+        if ("code" in result) return errorResponse(503, result.code, requestId);
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
-      } catch (error) {
-        const code = databaseErrorCode(error, ["invalid_social_handle", "social_handle_taken", "social_link_cooldown"]);
-        if (code) return errorResponse(code === "invalid_social_handle" ? 400 : 409, code, requestId);
-        console.error("social_link_set database adapter failed", { requestId });
+      } catch {
+        console.error("social_link_start database adapter failed", { requestId });
         return errorResponse(503, "social_link_failed", requestId);
       }
     }

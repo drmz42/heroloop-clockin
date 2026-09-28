@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckCircle2, Clock3, Coins, Download, ExternalLink, FlaskConical, Hourglass, Package, Sparkles, X } from 'lucide-react';
 import { playerSync } from '@/game/backend';
@@ -107,6 +107,14 @@ export function PartnerQuests({ claim, onOpenBoostMax, shareState, teamPower }: 
     document.addEventListener('visibilitychange', tick);
     return () => { window.clearInterval(refresh); window.removeEventListener(SOCIAL_LINKS_CHANGED, onLinksChanged); document.removeEventListener('visibilitychange', tick); };
   }, [load]);
+
+  // Back from the X sign-in page: BOOST MAX hosts Linked accounts, which shows the result.
+  const openedForLinkResult = useRef(false);
+  useEffect(() => {
+    if (openedForLinkResult.current || !new URLSearchParams(window.location.search).has('social_link')) return;
+    openedForLinkResult.current = true;
+    onOpenBoostMax();
+  }, [onOpenBoostMax]);
 
   useEffect(() => () => { if (shareCard) URL.revokeObjectURL(shareCard.imageUrl); }, [shareCard]);
   useEffect(() => {
