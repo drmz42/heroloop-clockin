@@ -147,7 +147,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
       <div className="arena-unit-info grid h-[64px] w-[88px] shrink-0 grid-rows-[24px_10px_14px] content-center gap-1 rounded-lg border border-[#4b4234] bg-black/45 px-2 shadow-[0_6px_14px_rgba(0,0,0,.25)] sm:w-[104px]" aria-label={`${unit.name}, ${side}`}>
         <div className={`arena-unit-name flex items-center justify-center text-center font-bold ${side === 'enemy' ? 'text-rose-200' : 'text-[#eee5d5]'}`}>{unit.name}</div>
         <HealthBar hp={unit.hp} maxHp={unit.maxHp} color={unit.color} />
-        <div className="whitespace-nowrap text-center text-[9px] font-bold tabular-nums text-[#bdb6a9]" aria-label={`${Math.ceil(unit.hp)} of ${unit.maxHp} health`}>{formatHealth(unit.hp)} / {formatHealth(unit.maxHp)}</div>
+        <div className="whitespace-nowrap text-center ui-text-small font-bold tabular-nums text-[#bdb6a9]" aria-label={`${Math.ceil(unit.hp)} of ${unit.maxHp} health`}>{formatHealth(unit.hp)} / {formatHealth(unit.maxHp)}</div>
       </div>
       {/* Portrait */}
       <div className="relative">
@@ -157,7 +157,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
           const { x, y } = floaterOffset(f);
           return (
           <div key={f.id} className="absolute pointer-events-none" style={{ left: `calc(50% + ${x}px)`, top: y, transform: 'translateX(-50%)', zIndex: f.crit && !f.heal ? 30 : undefined }}>
-            <div className={`anim-float font-bold whitespace-nowrap font-vt ${f.crit && !f.heal ? 'crit-floater' : f.effect ? 'text-cyan-200 text-sm' : f.heal ? 'text-px-green text-2xl' : f.miss ? 'text-px-dim text-lg' : 'text-white text-2xl'}`} style={{ textShadow: f.crit ? '0 0 8px #f5c518, 2px 2px 0 #3d2008' : '2px 2px 0 #000', animationDelay: `${f.delayMs ?? 0}ms`, ['--float-delay' as string]: `${f.delayMs ?? 0}ms` }}>
+            <div className={`anim-float font-bold whitespace-nowrap font-vt ${f.crit && !f.heal ? 'crit-floater' : f.effect ? 'text-cyan-200 ui-text-medium' : f.heal ? 'text-px-green text-2xl' : f.miss ? 'text-px-dim ui-text-large' : 'text-white text-2xl'}`} style={{ textShadow: f.crit ? '0 0 8px #f5c518, 2px 2px 0 #3d2008' : '2px 2px 0 #000', animationDelay: `${f.delayMs ?? 0}ms`, ['--float-delay' as string]: `${f.delayMs ?? 0}ms` }}>
               {f.crit && !f.heal && f.value > 0 ? (
                 <span className="crit-hit-number" aria-label={`Critical hit, ${f.value} damage`}>
                   <span className="crit-blood crit-blood-a" /><span className="crit-blood crit-blood-b" /><span className="crit-blood crit-blood-c" />
@@ -179,7 +179,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
         >
           <div className={`arena-portrait-impact-layer absolute inset-0 ${hit ? 'anim-hit' : ''}`}>
             {portraitSrc && !artFailed ? <img src={portraitSrc} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" style={{ ...portraitCrop, filter: unit.alive ? 'none' : 'grayscale(1)' }} onError={() => setArtFailed(true)} /> : <span className="grid h-full w-full place-items-center text-3xl sm:text-4xl select-none" style={{ filter: unit.alive ? 'none' : 'grayscale(1)' }}>{unit.icon}</span>}
-            {!unit.alive && <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/65"><Skull size={30} className="text-[#d9d1c3] drop-shadow-[0_0_8px_rgba(0,0,0,.9)]" />{side === 'hero' && Boolean(respawnSeconds) && <strong className="mt-0.5 rounded bg-black/75 px-1.5 py-0.5 text-[10px] tabular-nums text-rose-300">{respawnSeconds}s</strong>}<span className="sr-only">Dead</span></span>}
+            {!unit.alive && <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/65"><Skull size={30} className="text-[#d9d1c3] drop-shadow-[0_0_8px_rgba(0,0,0,.9)]" />{side === 'hero' && Boolean(respawnSeconds) && <strong className="mt-0.5 rounded bg-black/75 px-1.5 py-0.5 ui-text-small tabular-nums text-rose-300">{respawnSeconds}s</strong>}<span className="sr-only">Dead</span></span>}
             {unit.alive && slash && <div className="anim-slash absolute inset-0 flex items-center justify-center text-4xl pointer-events-none">⚡</div>}
             {unit.alive && heal && <div className="anim-heal absolute inset-0 flex items-center justify-center text-3xl pointer-events-none">💚</div>}
             {side === 'hero' && heroData && <span className="battle-hero-level" aria-label={`Hero level ${heroData.level}`}>Lv {heroData.level}</span>}
@@ -268,11 +268,11 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
             const heroData = ownedHeroes?.find((h) => h.uid === u.uid);
             return <UnitView key={u.uid} unit={u} floaters={floaters} side="hero" heroData={heroData} respawnSeconds={respawnCountdowns?.[u.uid]} opponentAlive={sharedBossActive || Boolean(laneEnemies[lane]?.alive)} animationMode={animationMode} targeted={dungeonBossScene?.targetUid === u.uid} />;
           })}
-          {heroes.length === 0 && <div className="intentional-empty p-4 text-sm">Assemble a team to fight</div>}
+          {heroes.length === 0 && <div className="intentional-empty p-4 ui-text-medium">Assemble a team to fight</div>}
         </div>
         <div className="arena-roster flex min-w-0 flex-col items-start justify-center gap-2">
           {laneEnemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive)} animationMode={animationMode} />)}
-          {laneEnemies.length === 0 && !sharedBoss && <div className="intentional-empty p-4 text-sm">Enemies defeated</div>}
+          {laneEnemies.length === 0 && !sharedBoss && <div className="intentional-empty p-4 ui-text-medium">Enemies defeated</div>}
         </div>
       </div>
       <div className="relative z-20 mt-3 h-px bg-gradient-to-r from-transparent via-[#a78045]/35 to-transparent" />

@@ -29,7 +29,7 @@ export function RewardBoostTile({ bonus, onOpenShop }: { bonus: AccountBonusSnap
   const active = remaining > 0;
   return (
     <div className={`stat-tile mb-2 px-2 py-1.5 ${active ? 'border-[#b48a43] shadow-[0_0_12px_rgba(225,177,77,.22)]' : ''}`}>
-      <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-[.1em] text-[#8e887b]">
+      <div className="flex items-center justify-between ui-text-small font-bold uppercase tracking-[.1em] text-[#8e887b]">
         <span>Account bonuses</span>
         <span className="tabular-nums text-[#d5bd85]">+{Math.round((bonus?.gold ?? 0) * 100)}% G · +{Math.round((bonus?.xp ?? 0) * 100)}% XP</span>
       </div>
@@ -40,8 +40,8 @@ export function RewardBoostTile({ bonus, onOpenShop }: { bonus: AccountBonusSnap
         aria-label={active ? `Gold and XP boost active, ${formatBoostRemaining(remaining)} left` : 'Get a Gold and XP boost in the Shop'}
       >
         <Rocket size={13} aria-hidden="true" className={active ? 'text-[#efc760]' : 'text-[#777269]'} />
-        <span className="flex-1 truncate text-[10px] font-bold text-[#e8e1d3]">{active ? 'Gold/XP Boost ×2' : 'Gold/XP Boost'}</span>
-        <span className={`shrink-0 text-[10px] font-bold tabular-nums ${active ? 'text-[#efc760]' : 'text-[#9b8862]'}`}>
+        <span className="flex-1 truncate ui-text-small font-bold text-[#e8e1d3]">{active ? 'Gold/XP Boost ×2' : 'Gold/XP Boost'}</span>
+        <span className={`shrink-0 ui-text-small font-bold tabular-nums ${active ? 'text-[#efc760]' : 'text-[#9b8862]'}`}>
           {active ? `${formatBoostRemaining(remaining)} left` : 'Get'}
         </span>
       </button>
