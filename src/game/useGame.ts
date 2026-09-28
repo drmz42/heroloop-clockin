@@ -291,7 +291,12 @@ export interface AccountBonusSnapshot {
   /** Local-clock end of the paid Gold/XP boost, or null when none is active. */
   boostEndsAt: number | null;
   plans: { plan: RewardBoostPlan; usdCents: number; days: number; tokenCost: number | null }[];
+  /** Shop resource bundles: USD catalogue price and the $HERO cost at the current server quote. */
+  bundles: ShopBundleOffer[];
 }
+export type ShopBundleResource = 'summon_scroll' | 'boss_key' | 'potion_md';
+export interface ShopBundleOffer { bundle: string; resourceId: ShopBundleResource; quantity: number; usdCents: number; tokenCost: number | null }
+const SHOP_BUNDLE_RESOURCES: readonly string[] = ['summon_scroll', 'boss_key', 'potion_md'];
 
 export function useGame() {
   const [state, setState] = useState<GameState>(() => loadState());
@@ -1696,6 +1701,7 @@ export function useGame() {
       bonus?: { gold?: number; xp?: number };
       boost?: { expires_at?: string | null };
       plans?: { plan?: string; catalogue_usd_cents?: number; days?: number; token_cost?: number | null; available?: boolean }[];
+      bundles?: { bundle?: string; resource_id?: string; quantity?: number; catalogue_usd_cents?: number; token_cost?: number | null; available?: boolean }[];
       server_time?: string;
     }>('account_bonus_snapshot', {});
     const serverTime = Date.parse(String(result?.server_time ?? ''));
@@ -1713,6 +1719,17 @@ export function useGame() {
           usdCents: plan.catalogue_usd_cents as number,
           days: plan.days as number,
           tokenCost: plan.available === true && Number.isSafeInteger(plan.token_cost) ? plan.token_cost as number : null,
+        }]
+        : []),
+      bundles: (Array.isArray(result.bundles) ? result.bundles : []).flatMap((offer) => typeof offer.bundle === 'string'
+        && SHOP_BUNDLE_RESOURCES.includes(offer.resource_id ?? '')
+        && Number.isSafeInteger(offer.quantity) && Number.isSafeInteger(offer.catalogue_usd_cents)
+        ? [{
+          bundle: offer.bundle,
+          resourceId: offer.resource_id as ShopBundleResource,
+          quantity: offer.quantity as number,
+          usdCents: offer.catalogue_usd_cents as number,
+          tokenCost: offer.available === true && Number.isSafeInteger(offer.token_cost) ? offer.token_cost as number : null,
         }]
         : []),
     });
@@ -1749,6 +1766,50 @@ export function useGame() {
     await refreshAccountBonus();
     return { ok: true };
   }, [serverReady, refreshAccountBonus]);
+
+  // Shop bundle: the server debits $HERO at its quote and credits the resource
+  // in one transaction with the save revision; only those balances are merged
+  // so unsaved local progress is kept.
+  const buyShopBundle = useCallback(async (bundle: string, maxTokenCost: number): Promise<{ ok: true } | { ok: false; error: string }> => {
+    if (!tokenomicsEnabled || !Number.isSafeInteger(serverRevisionHint)) return { ok: false, error: 'state_unavailable' };
+    const idempotencyKey = createIdempotencyKey();
+    let expectedRevision = serverRevisionHint as number;
+    let failure = 'shop_bundle_buy_failed';
+    type BundleResult = { spent: number; token_balance: number; revision: number; state: Partial<GameState> };
+    const attempt = () => {
+      failure = 'shop_bundle_buy_failed';
+      return playerSync<BundleResult>('shop_bundle_buy', {
+        bundle, max_token_cost: maxTokenCost, expected_revision: expectedRevision, idempotency_key: idempotencyKey,
+      }, (code) => { failure = code; });
+    };
+    let result = await attempt();
+    if (!result && failure === 'state_conflict') {
+      const refreshed = await playerSync<{ revision: number }>('game_state_load');
+      if (!refreshed || !Number.isSafeInteger(refreshed.revision)) return { ok: false, error: failure };
+      expectedRevision = refreshed.revision;
+      result = await attempt();
+    }
+    if (!result || !Number.isSafeInteger(result.revision) || !result.state
+      || !Number.isFinite(result.spent) || result.spent <= 0
+      || !Number.isFinite(result.token_balance) || result.token_balance < 0) {
+      return { ok: false, error: failure };
+    }
+    const remote = result.state;
+    const count = (value: unknown, fallback: number) => Number.isSafeInteger(value) && (value as number) >= 0 ? value as number : fallback;
+    const current = stateRef.current;
+    const nextState = {
+      ...current,
+      hero: result.token_balance,
+      summonScrolls: count(remote.summonScrolls, current.summonScrolls),
+      bossKeys: count(remote.bossKeys, current.bossKeys),
+      potions: { ...current.potions, md: count(remote.potions?.md, current.potions.md) },
+      milestoneQuests: updateQuestProgress(current.milestoneQuests, 'token-spent-', result.spent),
+    };
+    stateRef.current = nextState;
+    setServerRevisionHint(result.revision);
+    setState(nextState);
+    return { ok: true };
+  }, [serverRevisionHint]);
 
   const settleHeroSpend = useCallback(async (amount: number, actionKind: string): Promise<number | null> => {
     const safeAmount = Math.max(0, Math.floor(amount));
@@ -2796,7 +2857,7 @@ export function useGame() {
     offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
     starUpHero, promoteAllHeroes, releaseHero, quoteHeroCapacity, upgradeHeroCapacity, toggleHeroLock, markHeroSeen,
-    accountBonus, refreshAccountBonus, buyRewardBoost,
+    accountBonus, refreshAccountBonus, buyRewardBoost, buyShopBundle,
     quoteHeroSummon, summonHeroes, summonBoss, syncBossKeys, toggleTeamMember, confirmPersistedFormation, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,
     equipItem, unequipItem, unequipAll, equipmentError: () => equipmentErrorRef.current, sellItem, toggleItemLock, sellAllUnlocked,
