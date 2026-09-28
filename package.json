@@ -74,6 +74,7 @@
     "check:enemy-rank-selection": "node scripts/check-enemy-rank-selection.mjs",
     "check:location-backgrounds": "node scripts/check-location-backgrounds.mjs",
     "check:crafting-settlement": "node scripts/check-crafting-settlement-proposal.mjs",
+    "check:dev-news-card": "node scripts/check-dev-news-card.mjs",
     "check:dev-news-resilience": "node scripts/check-dev-news-resilience.mjs",
     "check:gemini-model-fallback": "node scripts/check-gemini-model-fallback.mjs",
     "check:daily-hero-accrual": "node scripts/check-daily-hero-accrual-contract.mjs",
