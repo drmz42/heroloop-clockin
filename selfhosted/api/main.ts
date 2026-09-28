@@ -32,6 +32,7 @@ import {
   startSocialLink,
   type SocialLinkStore,
 } from "./social_link.ts";
+import { parseAdditionalSiwsUris, siwsSiteForRequest } from "./siws_site.ts";
 
 const jsonHeaders = {
   "cache-control": "no-store",
@@ -49,6 +50,7 @@ const siwsEndpointConfig = {
   hashPepper: Deno.env.get("SIWS_HASH_PEPPER") ?? "",
   uri: Deno.env.get("SIWS_URI") ?? "",
 };
+const siwsAdditionalUris = parseAdditionalSiwsUris(Deno.env.get("SIWS_ADDITIONAL_URIS"));
 const combatEffectsVersion = Deno.env.get("COMBAT_EFFECTS_VERSION") ?? "combat-effects-v1";
 if (!["combat-effects-v1", COMBAT_EFFECTS_V2_VERSION].includes(combatEffectsVersion)) {
   throw new Error("invalid COMBAT_EFFECTS_VERSION");
@@ -638,7 +640,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       request,
       requestId,
       clientAddress,
-      siwsEndpointConfig,
+      siwsSiteForRequest(siwsEndpointConfig, siwsAdditionalUris, request),
       async (challenge) => await databaseJson(
         "SELECT heroloop_api.issue_siws_challenge($1::uuid,$2::text,$3::text,$4::text,$5::text,$6::timestamptz,$7::timestamptz) AS result",
         [
@@ -659,7 +661,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
     return await handleSiwsVerification(
       request,
       requestId,
-      siwsEndpointConfig,
+      siwsSiteForRequest(siwsEndpointConfig, siwsAdditionalUris, request),
       async (attempt) => await databaseJson(
         "SELECT heroloop_api.consume_siws_challenge($1::uuid,$2::text,$3::text,$4::text,$5::boolean) AS result",
         [
@@ -691,7 +693,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
     return await handleSiwsSession(
       request,
       requestId,
-      siwsEndpointConfig,
+      siwsSiteForRequest(siwsEndpointConfig, siwsAdditionalUris, request),
       async (tokenHash) => await databaseJson(
         "SELECT heroloop_api.validate_siws_wallet_session($1::text) AS result",
         [tokenHash],
@@ -706,7 +708,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
     return await handleSiwsAccountLogin(
       request,
       requestId,
-      siwsEndpointConfig,
+      siwsSiteForRequest(siwsEndpointConfig, siwsAdditionalUris, request),
       async (tokenHash, key) => await databaseJson(
         "SELECT heroloop_api.claim_siws_account_login($1::text,$2::uuid) AS result",
         [tokenHash, key],
@@ -733,7 +735,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
     return await handleSiwsIdentityLink(
       request,
       requestId,
-      siwsEndpointConfig,
+      siwsSiteForRequest(siwsEndpointConfig, siwsAdditionalUris, request),
       authentication.playerId,
       async (accountId, tokenHash, key) => await databaseJson(
         "SELECT heroloop_api.link_siws_wallet_session($1::uuid,$2::text,$3::uuid) AS result",
@@ -749,7 +751,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
     return await handleSiwsIdentityUnlink(
       request,
       requestId,
-      siwsEndpointConfig,
+      siwsSiteForRequest(siwsEndpointConfig, siwsAdditionalUris, request),
       authentication.playerId,
       async (accountId, tokenHash, key, providerRevoke) => await databaseJson(
         "SELECT heroloop_api.unlink_siws_identity($1::uuid,$2::text,$3::uuid,$4::boolean) AS result",
@@ -763,7 +765,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
     return await handleSiwsSessionRevoke(
       request,
       requestId,
-      siwsEndpointConfig,
+      siwsSiteForRequest(siwsEndpointConfig, siwsAdditionalUris, request),
       async (tokenHash, key, reason) => await databaseJson(
         "SELECT heroloop_api.revoke_siws_wallet_session($1::text,$2::uuid,$3::text) AS result",
         [tokenHash, key, reason],
