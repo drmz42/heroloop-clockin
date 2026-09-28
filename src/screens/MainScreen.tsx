@@ -591,8 +591,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               </div>
             </div>
           )}
-          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={setActiveDungeon} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls: Number(activeDungeon.room_state?.reward_preview?.summon_scrolls) || 0 })} />}
-          {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Final reward preview:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Granted together exactly once by the server</small></> : <><span><ScrollText size={14} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST</span><small>Testing build · rewards are displayed but not minted</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
+          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={setActiveDungeon} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls })} />}
+          {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Server reward result:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Granted together exactly once by the server</small></> : <><span><ScrollText size={14} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST PREVIEW</span><small>{dungeonCompletion.scrolls === 2 ? 'Scrolls granted exactly once by the server; Dungeon Chest is not yet granted' : 'No Scrolls granted for this run; Dungeon Chest is not yet granted'}</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
           {!activeDungeon && <div className="absolute right-3 top-3 z-30 flex items-center gap-1.5">
             <button type="button" onClick={() => setShowDungeonInfo(true)} className="game-control flex h-7 items-center gap-1 px-2 py-0.5 text-[9px] font-bold text-[#d7c6ea]" aria-label="Open Dungeons information">
               <DoorOpen size={14} aria-hidden="true" /> DUNGEONS <Info size={11} aria-hidden="true" />
@@ -850,7 +850,7 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
   onAttempts: (attempts: { remaining: number; max: number } | null) => void;
   onCombatPulse: (floaters: FloatingNumber[]) => void;
   onHydrate: (state: unknown) => void;
-  onComplete: (won: boolean, gold?: number) => void;
+  onComplete: (won: boolean, gold?: number, scrolls?: number) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -887,7 +887,7 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
       if (result.state) onHydrate(result.state);
       if (action === 'dungeon_abandon' || (result.status && result.status !== 'active')) {
         if (attempts) onAttempts({ remaining: Number(result.attempts_remaining ?? attempts.remaining), max: attempts.max });
-        if (action !== 'dungeon_abandon') onComplete(result.status === 'completed', Number(result.gold) || 0);
+        if (action !== 'dungeon_abandon') onComplete(result.status === 'completed', Number(result.gold) || 0, Number(result.scrolls_awarded) || 0);
         onChange(null);
       } else {
         onChange(checkpointFromResult(checkpoint, result));
@@ -992,7 +992,7 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
       action: () => runAction('dungeon_room_complete', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }),
     };
     if (roomState?.status === 'reward_locked') return {
-      label: checkpoint.type === 'boss_hunt' ? 'Claim Boss Rewards' : 'Finish test run',
+      label: checkpoint.type === 'boss_hunt' ? 'Claim Boss Rewards' : rewardPreview?.reward_table_version === 'dungeon-reward-v3' && rewardCount(rewardPreview?.summon_scrolls) === 2 ? 'Claim 2 Scrolls' : 'Finish test run',
       action: () => runAction(checkpoint.type === 'boss_hunt' ? 'boss_claim' : 'dungeon_room_complete', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }),
     };
     if (roomState?.status === 'resolving') return null;
@@ -1028,7 +1028,7 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
             <div><dt className="text-[#8f8795]">Boss time</dt><dd className="font-black text-[#eee5d5]">{bossDurationSeconds}s</dd></div>
           </dl>
         </div>
-        {checkpoint.type === 'boss_hunt' ? <div className="dungeon-reward-preview"><span><Coins size={14} /> SERVER GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Claim is atomic, idempotent and server-owned</small></div> : <div className="dungeon-reward-preview"><span><ScrollText size={14} /> {rewardCount(rewardPreview?.summon_scrolls)} SUMMON SCROLL</span><span><Package size={14} /> {rewardCount(rewardPreview?.dungeon_chests)} DUNGEON CHEST</span><small>Server table {rewardPreview?.reward_table_version ?? 'unavailable'} · settlement disabled in testing</small></div>}
+        {checkpoint.type === 'boss_hunt' ? <div className="dungeon-reward-preview"><span><Coins size={14} /> SERVER GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Claim is atomic, idempotent and server-owned</small></div> : <div className="dungeon-reward-preview"><span><ScrollText size={14} /> {rewardCount(rewardPreview?.summon_scrolls)} SUMMON SCROLLS</span><span><Package size={14} /> {rewardCount(rewardPreview?.dungeon_chests)} DUNGEON CHEST</span><small>Server table {rewardPreview?.reward_table_version ?? 'unavailable'} · {rewardPreview?.reward_table_version === 'dungeon-reward-v3' && rewardCount(rewardPreview?.summon_scrolls) === 2 ? 'claim credits Scrolls once; Dungeon Chest is preview-only' : 'Scroll claim unavailable for this run'}</small></div>}
       </div>}
       {roomState?.status === 'cleared' && checkpoint.room < 4 && <div className="rounded border border-amber-700/35 bg-amber-950/20 px-2 py-1.5 text-center text-[9px] font-bold text-amber-200">Room reward preview · Gold + XP · settlement disabled in testing</div>}
       {primary && <button type="button" disabled={busy} onClick={primary.action} className="game-control game-primary min-h-11 px-3 text-[13px] font-black"><Skull size={17} className="mr-2 inline" />{primary.label}</button>}
@@ -1120,7 +1120,7 @@ function DungeonPreviewModal({ accountLevel, onStatus, onClose, onGuidesClick }:
       <section role="dialog" aria-modal="true" aria-labelledby="dungeon-preview-title" className="dungeon-gate-modal game-scrollbar max-h-[96vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-[#76569b] p-3 shadow-[0_28px_100px_rgba(0,0,0,.85),0_0_38px_rgba(118,86,155,.18)]">
         <header className="dungeon-gate-header flex items-start gap-3">
           <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[#8965ad] bg-[#281d33] text-[#d8b4fe] shadow-[inset_0_1px_rgba(255,255,255,.08),0_0_18px_rgba(168,85,247,.15)]"><DoorOpen size={23} /></div>
-          <div className="min-w-0 flex-1"><div className="section-kicker">Live testing</div><div className="mt-1 flex flex-wrap items-center gap-2"><h2 id="dungeon-preview-title" className="font-vt text-xl font-black text-[#f0e5ce]">Dungeons</h2><span className="rounded-full border border-emerald-700/60 bg-emerald-950/35 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-300">Server active</span></div><p className="mt-1 text-xs leading-5 text-[#aca1b2]">Level 30+ testing · persistent HP · 100 Attempts each week.</p></div>
+          <div className="min-w-0 flex-1"><div className="section-kicker">Live testing</div><div className="mt-1 flex flex-wrap items-center gap-2"><h2 id="dungeon-preview-title" className="font-vt text-xl font-black text-[#f0e5ce]">Dungeons</h2><span className="rounded-full border border-emerald-700/60 bg-emerald-950/35 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-300">Server active</span></div><p className="mt-1 text-xs leading-5 text-[#aca1b2]">Level 30+ testing · persistent HP · 100 Attempts each week · only the first 3 entries can earn Boss Scrolls.</p></div>
           <aside className="dungeon-gate-quick"><span>Weekly attempts</span><b>{status ? `${status.attempts_remaining} / ${status.attempts_max}` : 'Loading…'}</b>{active && <small>Depth {active.depth} · Room {active.room} of 4</small>}</aside>
           <button type="button" autoFocus onClick={onClose} className="game-control grid h-9 w-9 shrink-0 place-items-center" aria-label="Close Dungeons information"><X size={15} /></button>
         </header>
@@ -1136,7 +1136,7 @@ function DungeonPreviewModal({ accountLevel, onStatus, onClose, onGuidesClick }:
           </ol>
         </div>
 
-        <div className="mt-2 border-t border-[#4d3c57]/70 pt-2 text-[8px] leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Rules:</b> Level 30+ · all Depths open · persistent HP/deaths · formation locked · potions disabled · testing rewards are preview-only.</p><span className="sr-only">All four rooms, Retinue and shared Boss combat are server-authoritative. Testing runs do not mint rewards.</span>{error && <p role="alert" className="mt-1 font-bold text-rose-300">{error.split('_').join(' ')}</p>}</div>
+        <div className="mt-2 border-t border-[#4d3c57]/70 pt-2 text-[8px] leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Rules:</b> Level 30+ · all Depths open · persistent HP/deaths · formation locked · potions disabled · first 3 weekly entries can earn 2 final-Boss Scrolls; other Dungeon rewards are preview-only.</p><span className="sr-only">All four rooms, Retinue and shared Boss combat are server-authoritative. Only eligible final Boss claims mint two Summon Scrolls; other Dungeon rewards remain previews.</span>{error && <p role="alert" className="mt-1 font-bold text-rose-300">{error.split('_').join(' ')}</p>}</div>
 
         <footer className="dungeon-gate-actions mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <button type="button" onClick={onGuidesClick} className="game-control flex min-h-9 items-center justify-center gap-2 px-3 py-1.5 text-[10px] font-black"><BookOpen size={14} /> Dungeon guide</button>
