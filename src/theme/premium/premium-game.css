@@ -1,0 +1,287 @@
+/*
+ * Premium in-game skin (Figma HL-LANDING-2 language: obsidian stone, forged brass, crimson seals).
+ * Every rule is scoped to html[data-hl-theme=premium]; classic stays byte-for-byte unchanged.
+ * Geometry rule: colours, surfaces, borders' colour, radii, shadows and type faces only —
+ * no width, height, padding, margin, gap or position changes, so no block moves.
+ */
+[data-hl-theme=premium] {
+  --pm-ink: #0b0908;
+  --pm-obsidian: #070606;
+  --pm-brass: #c79e61;
+  --pm-brass-hi: #f2cc80;
+  --pm-brass-lo: #734d1f;
+  --pm-edge: rgba(110, 84, 51, .88);
+  --pm-edge-soft: rgba(110, 84, 51, .5);
+  --pm-ivory: #ebdfca;
+  --pm-muted: #a39987;
+  --pm-blood: #8f1f12;
+  --pm-blood-deep: #380706;
+  --pm-display: 'Cinzel', Georgia, serif;
+  --pm-frame: linear-gradient(180deg, #050505, #12100d 50%, #060506);
+  --pm-button: linear-gradient(180deg, #0c0a09, #1b1712 50%, #0a0908);
+  --pm-seal: radial-gradient(ellipse 80% 120% at 50% 0%, #b3301c 0%, #7a150e 38%, #3d0806 78%, #210403 100%);
+  --pm-hairline: linear-gradient(90deg, transparent, rgba(199, 158, 97, .7), transparent);
+}
+[data-hl-theme=premium] body { background: var(--pm-ink); }
+
+/* ── Shell ─────────────────────────────────────────────────────────── */
+[data-hl-theme=premium] .game-shell {
+  background:
+    radial-gradient(ellipse 70% 40% at 50% -6%, rgba(143, 31, 18, .16), transparent 60%),
+    linear-gradient(180deg, rgba(11, 9, 8, .55), rgba(11, 9, 8, .92)),
+    url('./assets/stone-tile.webp') center top / cover fixed,
+    var(--pm-ink);
+  color: var(--pm-ivory);
+}
+[data-hl-theme=premium] .game-main { background: linear-gradient(90deg, rgba(0, 0, 0, .45), transparent 18%, transparent 82%, rgba(0, 0, 0, .45)); }
+[data-hl-theme=premium] .game-scrollbar { scrollbar-color: #5a4426 transparent; }
+
+/* Top command bar: dark glass with a brass hairline (Figma nav) */
+[data-hl-theme=premium] .game-command-bar {
+  border-color: transparent;
+  background: linear-gradient(180deg, rgba(11, 9, 8, .97), rgba(16, 12, 9, .94));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .6);
+  position: relative;
+}
+[data-hl-theme=premium] .game-command-bar::after { content: ''; position: absolute; inset: auto 0 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(199, 158, 97, .75) 20%, rgba(199, 158, 97, .75) 80%, transparent); pointer-events: none; }
+[data-hl-theme=premium] .game-nav-control { color: #9d927f; font-family: var(--pm-display); letter-spacing: .01em; }
+[data-hl-theme=premium] .game-nav-control:hover { color: var(--pm-ivory); background: rgba(199, 158, 97, .06); border-color: rgba(199, 158, 97, .25); }
+[data-hl-theme=premium] .game-nav-control-active {
+  color: var(--pm-brass-hi);
+  border-color: rgba(199, 158, 97, .8);
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(143, 31, 18, .42), rgba(56, 7, 6, .5));
+  box-shadow: inset 0 1px rgba(255, 199, 107, .22), inset 0 -1px rgba(0, 0, 0, .6), 0 0 16px rgba(143, 31, 18, .35);
+  text-shadow: 0 0 10px rgba(242, 204, 128, .35);
+}
+
+[data-hl-theme=premium] .game-footer {
+  border-color: rgba(199, 158, 97, .35) !important;
+  background: linear-gradient(180deg, #120e0b, #0b0908) !important;
+}
+
+/* ── Surfaces ──────────────────────────────────────────────────────── */
+[data-hl-theme=premium] :is(.material-panel, .px-panel, .px-panel-raised):not([class*="border-"]) { border-color: var(--pm-edge); }
+[data-hl-theme=premium] :is(.material-panel, .px-panel, .px-panel-raised):not([class*="bg-"]) {
+  border-radius: 4px;
+  background: var(--pm-frame);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .65), inset 0 1px 3px rgba(217, 171, 97, .12), inset 0 0 0 1px rgba(0, 0, 0, .7);
+}
+[data-hl-theme=premium] .material-panel::after {
+  inset: 3px;
+  border-color: rgba(199, 158, 97, .13);
+  border-radius: 2px;
+}
+[data-hl-theme=premium] .material-panel::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 0;
+  height: 1px;
+  background: var(--pm-hairline);
+  pointer-events: none;
+  z-index: 0;
+}
+[data-hl-theme=premium] :is(.stat-tile, .quest-card, .intentional-empty, .offline-reward-tile, .training-slot, .training-section, .training-guide, .training-status-row) { border-radius: 3px; }
+[data-hl-theme=premium] :is(.stat-tile, .quest-card, .intentional-empty, .offline-reward-tile, .training-slot, .training-section, .training-guide):not([class*="border-"], .training-slot-open) { border-color: var(--pm-edge-soft); }
+[data-hl-theme=premium] :is(.stat-tile, .quest-card, .intentional-empty, .offline-reward-tile, .training-slot, .training-section, .training-guide):not([class*="bg-"]) {
+  background: linear-gradient(160deg, rgba(24, 20, 15, .92), rgba(8, 7, 6, .96));
+  box-shadow: inset 0 1px rgba(255, 214, 150, .06), 0 6px 14px rgba(0, 0, 0, .35);
+}
+[data-hl-theme=premium] .quest-card:not([class*="border-"]):hover { border-color: rgba(199, 158, 97, .7); }
+[data-hl-theme=premium] .location-card {
+  border-color: var(--pm-edge-soft);
+  border-radius: 3px;
+  background: radial-gradient(circle at 50% 0%, rgba(143, 31, 18, .1), transparent 50%), linear-gradient(160deg, #1a1611, #080706 70%);
+}
+[data-hl-theme=premium] .location-card:hover:not(:disabled) { border-color: rgba(199, 158, 97, .75); }
+[data-hl-theme=premium] .location-card-current { border-color: var(--pm-brass); box-shadow: inset 0 0 22px rgba(143, 31, 18, .22), 0 0 16px rgba(199, 158, 97, .18); }
+[data-hl-theme=premium] .bg-arena { border-color: var(--pm-edge); border-radius: 4px; }
+[data-hl-theme=premium] .health-track { border-color: rgba(199, 158, 97, .35); border-radius: 3px; background: #140f0d; }
+[data-hl-theme=premium] .item-slot { border-radius: 3px; }
+[data-hl-theme=premium] .premium-screen:not(.themed-screen, .training-camp-screen, .summon-sanctum) { background: radial-gradient(ellipse 70% 30% at 50% -8%, rgba(143, 31, 18, .14), transparent 60%), linear-gradient(180deg, #0e0b09, #070606); }
+
+/* ── Type ──────────────────────────────────────────────────────────── */
+[data-hl-theme=premium] .section-kicker { color: var(--pm-brass); font-family: var(--pm-display); font-weight: 700; letter-spacing: .14em; }
+[data-hl-theme=premium] .section-kicker::before { content: ''; display: inline-block; width: .42em; height: .42em; margin-right: .6em; vertical-align: .14em; transform: rotate(45deg); background: var(--pm-brass); }
+[data-hl-theme=premium] .game-shell :is(h1, h2, h3) { font-family: var(--pm-display); letter-spacing: .04em; }
+[data-hl-theme=premium] .font-pixel { font-family: var(--pm-display); font-weight: 700; letter-spacing: .06em; }
+[data-hl-theme=premium] .text-px-gold, [data-hl-theme=premium] .text-px-bright { color: var(--pm-brass-hi); }
+
+/* ── Controls ──────────────────────────────────────────────────────── */
+/* State-coloured controls (Boost, toggles, rarity pickers) keep their own colour utilities:
+   the skin only re-surfaces controls that do not set background/border/text colour themselves. */
+[data-hl-theme=premium] .game-control { border-radius: 3px; }
+[data-hl-theme=premium] .game-control:not(.game-primary, .game-danger, .reward-cta, .boost-max-active, .boost-max-ready, [class*="bg-"]) {
+  background: var(--pm-button);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, .7), inset 0 1px 2px rgba(255, 199, 107, .12);
+}
+[data-hl-theme=premium] .game-control:not(.game-primary, .game-danger, .reward-cta, .boost-max-active, .boost-max-ready, [class*="border-"]) { border-color: rgba(199, 158, 97, .55); }
+[data-hl-theme=premium] .game-control:not(.game-primary, .game-danger, .reward-cta, .boost-max-active, .boost-max-ready, [class*="border-"]):hover { border-color: var(--pm-brass-hi); }
+[data-hl-theme=premium] .game-control:focus-visible { outline-color: var(--pm-brass-hi); }
+[data-hl-theme=premium] :is(.game-primary, .reward-cta) {
+  border-color: var(--pm-brass);
+  color: #f8e8c4;
+  background: var(--pm-seal);
+  box-shadow: inset 0 1px rgba(255, 200, 150, .35), inset 0 -2px rgba(0, 0, 0, .45), 0 0 0 1px #000, 0 0 0 2px rgba(115, 77, 31, .9), 0 6px 18px rgba(143, 31, 18, .35);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .9);
+  letter-spacing: .04em;
+}
+[data-hl-theme=premium] :is(.game-primary, .reward-cta):hover { border-color: var(--pm-brass-hi); color: #fff4dc; filter: brightness(1.12); }
+[data-hl-theme=premium] :is(.game-primary, .reward-cta):disabled { background: linear-gradient(180deg, #2a1512, #150b09); color: #9b8570; box-shadow: inset 0 1px rgba(255, 255, 255, .06); }
+[data-hl-theme=premium] .game-danger { border-color: rgba(143, 31, 18, .8); color: #e3a79a; background: linear-gradient(180deg, #1e0d0b, #0d0706); }
+[data-hl-theme=premium] .game-danger:hover { border-color: #c2412c; color: #ffc9bd; background: linear-gradient(180deg, #2c0f0c, #120807); }
+[data-hl-theme=premium] .px-btn { border-radius: 3px; border-color: rgba(199, 158, 97, .55); background: var(--pm-button); }
+
+/* ── Tab windows (Heroes, Summon, Shop, Market, Ranks, Referrals, Training) ── */
+[data-hl-theme=premium] .game-window {
+  border-color: rgba(199, 158, 97, .75) !important;
+  border-radius: 4px !important;
+  background: var(--pm-frame) !important;
+  box-shadow: 0 0 0 1px #000, 0 0 0 3px rgba(115, 77, 31, .55), 0 28px 90px rgba(0, 0, 0, .85), 0 0 60px rgba(143, 31, 18, .12) !important;
+}
+[data-hl-theme=premium] .game-window::before,
+[data-hl-theme=premium] .game-window::after {
+  content: '';
+  position: absolute;
+  z-index: 30;
+  width: 10px;
+  height: 10px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--pm-brass-hi), var(--pm-brass-lo));
+  box-shadow: 0 0 0 1px #000;
+  pointer-events: none;
+}
+[data-hl-theme=premium] .game-window::before { left: calc(50% - 5px); top: -5px; }
+[data-hl-theme=premium] .game-window::after { left: calc(50% - 5px); bottom: -5px; }
+[data-hl-theme=premium] .game-window-close { border-radius: 50%; }
+
+/* ── Summon sanctum ────────────────────────────────────────────────── */
+[data-hl-theme=premium] .summon-sanctum { background-image: linear-gradient(rgba(6, 3, 3, .35), rgba(6, 3, 3, .82)), url('/assets/summon/ritual-sanctum-v1.webp') !important; }
+[data-hl-theme=premium] .summon-sanctum > .pointer-events-none:first-child {
+  background: radial-gradient(circle at 50% 30%, rgba(179, 48, 28, .2), transparent 40%), linear-gradient(90deg, rgba(0, 0, 0, .7), transparent 28%, transparent 72%, rgba(0, 0, 0, .7));
+}
+[data-hl-theme=premium] .summon-portal { background: radial-gradient(circle, rgba(242, 204, 128, .22), rgba(143, 31, 18, .3) 48%, transparent 70%); box-shadow: 0 0 44px rgba(179, 48, 28, .45), 0 0 90px rgba(143, 31, 18, .25); }
+[data-hl-theme=premium] .summon-rune-ring { border-color: rgba(242, 204, 128, .85); box-shadow: 0 0 14px rgba(199, 158, 97, .45); }
+[data-hl-theme=premium] .summon-rune-ring-inner { border-color: rgba(214, 70, 44, .85); }
+[data-hl-theme=premium] .summon-portal-mote { background: #f7d78c; box-shadow: 0 0 8px #d8452a; }
+[data-hl-theme=premium] .summon-portal svg { color: var(--pm-brass-hi); filter: drop-shadow(0 0 12px rgba(214, 70, 44, .9)); }
+
+[data-hl-theme=premium] .summon-altar {
+  position: relative;
+  border-color: rgba(199, 158, 97, .7);
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(5, 5, 5, .82), rgba(18, 13, 10, .7) 50%, rgba(6, 5, 6, .86));
+  box-shadow: 0 0 0 1px #000, 0 0 0 3px rgba(115, 77, 31, .45), 0 20px 60px rgba(0, 0, 0, .75), inset 0 1px 3px rgba(217, 171, 97, .16);
+}
+[data-hl-theme=premium] .summon-altar::before {
+  content: '';
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 10px;
+  height: 1px;
+  background: var(--pm-hairline);
+  pointer-events: none;
+}
+[data-hl-theme=premium] .summon-altar::after {
+  content: '';
+  position: absolute;
+  left: calc(50% - 6px);
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--pm-brass-hi), var(--pm-brass-lo));
+  box-shadow: 0 0 0 1px #000, 0 0 12px rgba(199, 158, 97, .45);
+  pointer-events: none;
+}
+[data-hl-theme=premium] .summon-title { color: var(--pm-ivory); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; text-shadow: 0 2px 3px rgba(0, 0, 0, .9); }
+[data-hl-theme=premium] .summon-title span { color: var(--pm-brass-hi) !important; text-shadow: 0 0 14px rgba(199, 158, 97, .35); }
+[data-hl-theme=premium] .summon-lede { color: rgba(235, 223, 202, .72); font-family: 'EB Garamond', Georgia, serif; }
+
+[data-hl-theme=premium] .summon-focus { border-color: var(--pm-edge-soft); border-radius: 3px; background: rgba(5, 4, 4, .72); }
+[data-hl-theme=premium] .summon-focus > button span:nth-of-type(1) { color: var(--pm-brass); font-family: var(--pm-display); }
+[data-hl-theme=premium] .summon-focus > button svg:first-child { color: var(--pm-brass); }
+[data-hl-theme=premium] .summon-focus :is(.border-violet-500\/20) { border-color: rgba(199, 158, 97, .2); }
+[data-hl-theme=premium] .summon-pity-head > span { color: var(--pm-brass); font-family: var(--pm-display); }
+[data-hl-theme=premium] .summon-pity-card { border-radius: 2px; background: linear-gradient(180deg, rgba(10, 8, 7, .9), rgba(4, 3, 3, .92)); box-shadow: inset 0 1px rgba(255, 214, 150, .05); }
+[data-hl-theme=premium] .summon-pity-card .rounded-full { border-radius: 1px; }
+[data-hl-theme=premium] .summon-pity-card > div.overflow-hidden:nth-child(2) { background: #140f0d; box-shadow: inset 0 0 0 1px rgba(199, 158, 97, .28); }
+
+[data-hl-theme=premium] .summon-pay { border-color: var(--pm-edge); border-radius: 3px; background: rgba(4, 3, 3, .8); }
+[data-hl-theme=premium] .summon-pay-option { border-radius: 2px; border: 1px solid transparent; color: #7f7565 !important; font-family: var(--pm-display); letter-spacing: .06em; transition: color .15s, background .15s, border-color .15s; }
+[data-hl-theme=premium] .summon-pay-option:hover:not(:disabled) { color: var(--pm-ivory) !important; }
+[data-hl-theme=premium] .summon-pay-option[aria-pressed=true] {
+  border-color: rgba(199, 158, 97, .75);
+  color: #f8e8c4 !important;
+  background: var(--pm-seal) !important;
+  box-shadow: inset 0 1px rgba(255, 200, 150, .3), 0 0 14px rgba(143, 31, 18, .35);
+}
+[data-hl-theme=premium] .summon-pay-option:last-child[aria-pressed=true] {
+  background: radial-gradient(ellipse 80% 120% at 50% 0%, #6d5226 0%, #43301a 45%, #1b130a 100%) !important;
+  box-shadow: inset 0 1px rgba(255, 228, 160, .3), 0 0 14px rgba(199, 158, 97, .3);
+}
+
+[data-hl-theme=premium] .summon-cta {
+  position: relative;
+  border-radius: 3px;
+  border-color: rgba(199, 158, 97, .7);
+  background: var(--pm-button);
+  box-shadow: 0 0 0 1px #000, 0 0 0 2px rgba(115, 77, 31, .55), 0 6px 16px rgba(0, 0, 0, .6), inset 0 1px 2px rgba(255, 199, 107, .14);
+  transition: filter .15s, border-color .15s, transform .15s;
+}
+[data-hl-theme=premium] .summon-cta:hover:not(:disabled) { border-color: var(--pm-brass-hi); filter: brightness(1.14); background: var(--pm-button); }
+[data-hl-theme=premium] .summon-cta::before,
+[data-hl-theme=premium] .summon-cta::after {
+  content: '';
+  position: absolute;
+  top: calc(50% - 4px);
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--pm-brass-hi), var(--pm-brass-lo));
+  box-shadow: 0 0 0 1px #000;
+  pointer-events: none;
+}
+[data-hl-theme=premium] .summon-cta::before { left: -5px; }
+[data-hl-theme=premium] .summon-cta::after { right: -5px; }
+[data-hl-theme=premium] .summon-cta > span:first-child { color: var(--pm-ivory); font-family: var(--pm-display); letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 1px 2px #000; }
+[data-hl-theme=premium] .summon-cta > span:first-child svg { color: var(--pm-brass-hi) !important; }
+[data-hl-theme=premium] .summon-cta > span:last-child { color: var(--pm-brass-hi) !important; text-shadow: 0 1px 2px #000; }
+[data-hl-theme=premium] .summon-cta--10,
+[data-hl-theme=premium] .summon-cta--10:hover:not(:disabled) { background: var(--pm-seal); --glow: rgba(179, 48, 28, .45) !important; }
+[data-hl-theme=premium] .summon-cta--100,
+[data-hl-theme=premium] .summon-cta--100:hover:not(:disabled) { background: radial-gradient(ellipse 80% 130% at 50% 0%, #5a1d52 0%, #2c0d2b 45%, #110610 100%); --glow: rgba(199, 158, 97, .35) !important; }
+[data-hl-theme=premium] .summon-cta:disabled { filter: saturate(.35) brightness(.7); }
+[data-hl-theme=premium] .summon-promote { font-family: var(--pm-display); letter-spacing: .06em; }
+[data-hl-theme=premium] .summon-altar > p:last-child { color: var(--pm-muted); }
+
+[data-hl-theme=premium] .summon-side-panel {
+  border-color: rgba(199, 158, 97, .6);
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(5, 5, 5, .94), rgba(18, 16, 13, .92) 50%, rgba(6, 5, 6, .95));
+  box-shadow: 0 0 0 1px #000, 0 18px 45px rgba(0, 0, 0, .7), inset 0 1px 3px rgba(217, 171, 97, .14);
+}
+[data-hl-theme=premium] .summon-side-panel > div:not(.section-kicker, .summon-balance, .summon-rate-panel) { color: var(--pm-brass); font-family: var(--pm-display); }
+[data-hl-theme=premium] .summon-balance { border-color: var(--pm-edge); border-radius: 3px; background: rgba(4, 3, 3, .85); box-shadow: inset 0 2px 5px rgba(0, 0, 0, .9); }
+[data-hl-theme=premium] .summon-balance > span:first-child { color: var(--pm-brass-hi); }
+[data-hl-theme=premium] .summon-rate { border-radius: 2px; background: linear-gradient(90deg, rgba(0, 0, 0, .55), rgba(0, 0, 0, .25)) !important; }
+
+/* Summon results */
+[data-hl-theme=premium] .summon-result { background: radial-gradient(ellipse at 50% 40%, rgba(40, 10, 7, .7), rgba(0, 0, 0, .94) 70%); }
+[data-hl-theme=premium] .summon-result-card { border-radius: 3px; border-width: 1px; }
+[data-hl-theme=premium] .summon-result-card.summon-card-sealed { border-color: rgba(199, 158, 97, .45) !important; background: radial-gradient(circle at 50% 40%, rgba(143, 31, 18, .28), transparent 60%), linear-gradient(160deg, #15100c, #060505 70%) !important; box-shadow: inset 0 0 26px rgba(143, 31, 18, .25), 0 0 0 1px #000 !important; }
+[data-hl-theme=premium] .summon-card-sealed::before { border-color: rgba(242, 204, 128, .6); color: var(--pm-brass-hi); box-shadow: 0 0 18px rgba(179, 48, 28, .5), inset 0 0 13px rgba(255, 255, 255, .1); border-radius: 2px; transform: rotate(45deg); }
+[data-hl-theme=premium] .summon-seal-glyph { color: var(--pm-brass-hi); filter: drop-shadow(0 0 9px rgba(214, 70, 44, .8)); }
+[data-hl-theme=premium] .summon-break-seal { border-radius: 3px; border-color: var(--pm-brass); background: var(--pm-seal); color: #f8e8c4; font-family: var(--pm-display); letter-spacing: .1em; box-shadow: 0 0 0 1px #000, 0 0 0 2px rgba(115, 77, 31, .9), 0 0 24px rgba(179, 48, 28, .45); }
+[data-hl-theme=premium] .summon-continue,
+[data-hl-theme=premium] .summon-close { border-radius: 3px; border-color: rgba(199, 158, 97, .7) !important; background: var(--pm-button) !important; color: var(--pm-ivory) !important; font-family: var(--pm-display); letter-spacing: .08em; }
+[data-hl-theme=premium] .summon-close { border-radius: 50%; }
+[data-hl-theme=premium] .summon-ritual-charge .text-\[\#d9b9ff\] { color: var(--pm-brass-hi); }
+[data-hl-theme=premium] .summon-best-banner strong { font-family: var(--pm-display); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-hl-theme=premium] .summon-cta { transition: none; }
+}

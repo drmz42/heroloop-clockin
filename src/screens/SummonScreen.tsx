@@ -30,7 +30,7 @@ function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () =>
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur p-4 anim-fade${revealed && screenWow ? ' summon-rarity-burst' : ''}${phase === 'revealing' ? ' summon-rupture' : ''}`} style={{ '--summon-best': RARITY_COLORS[best] } as React.CSSProperties}>
+    <div className={`summon-result fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur p-4 anim-fade${revealed && screenWow ? ' summon-rarity-burst' : ''}${phase === 'revealing' ? ' summon-rupture' : ''}`} style={{ '--summon-best': RARITY_COLORS[best] } as React.CSSProperties}>
       {revealed && screenWow && <div className="summon-screen-rays" aria-hidden="true" />}
       {phase === 'revealing' && <i className="summon-flash" aria-hidden="true" />}
       <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(circle at 50% 50%, ${RARITY_COLORS[best]}26, transparent 62%)` }} />
@@ -49,7 +49,7 @@ function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () =>
             const rc = RARITY_COLORS[base.rarity]; const svg = heroPortraitSrc(base.id, base.heroClass, base.rarity, base.color);
             const isWow = RARITY_INDEX[base.rarity] >= RARITY_INDEX.rare;
             return (
-              <div key={h.uid} className={`relative aspect-[3/4] rounded-xl flex flex-col items-center justify-center overflow-hidden border-2 transition ${revealed ? 'summon-card-unseal' : 'summon-card-sealed'} ${revealed && isWow ? 'summon-wow summon-rarity-card' : ''}`} style={{ borderColor: revealed ? rc : '#5b4770', background: revealed ? `radial-gradient(circle at 50% 30%, ${base.color}33, ${rc}18)` : 'linear-gradient(145deg,#23172f,#09070d 68%)', boxShadow: revealed ? `0 0 24px ${RARITY_GLOW[base.rarity]}` : 'inset 0 0 28px rgba(176,91,255,.18),0 0 12px rgba(115,65,150,.25)', '--summon-color': rc, '--reveal-delay': `${Math.min(index, 12) * 55}ms` } as React.CSSProperties}>
+              <div key={h.uid} className={`summon-result-card relative aspect-[3/4] rounded-xl flex flex-col items-center justify-center overflow-hidden border-2 transition ${revealed ? 'summon-card-unseal' : 'summon-card-sealed'} ${revealed && isWow ? 'summon-wow summon-rarity-card' : ''}`} style={{ borderColor: revealed ? rc : '#5b4770', background: revealed ? `radial-gradient(circle at 50% 30%, ${base.color}33, ${rc}18)` : 'linear-gradient(145deg,#23172f,#09070d 68%)', boxShadow: revealed ? `0 0 24px ${RARITY_GLOW[base.rarity]}` : 'inset 0 0 28px rgba(176,91,255,.18),0 0 12px rgba(115,65,150,.25)', '--summon-color': rc, '--reveal-delay': `${Math.min(index, 12) * 55}ms` } as React.CSSProperties}>
                 {revealed && isWow && <div className="summon-card-rays" aria-hidden="true" />}
                 {revealed && isWow && <i className="summon-card-shine" aria-hidden="true" />}
                 {revealed && isWow && Array.from({ length: 7 }, (_, spark) => <i key={spark} className="summon-spark" style={{ '--spark-index': spark } as React.CSSProperties} />)}
@@ -60,11 +60,11 @@ function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () =>
         </div>
         </div>
         <div className="mt-5 flex flex-col items-center gap-3">
-          {phase === 'ready' ? <button type="button" onClick={reveal} className="summon-break-seal px-7 py-2.5 rounded-full border text-sm font-black uppercase tracking-wider">Break the seal · Reveal {heroes.length}</button> : phase === 'revealing' ? <div className="text-[10px] font-black uppercase tracking-[.3em] text-white">Fate Unbound</div> : <button type="button" onClick={onClose} className="px-6 py-2.5 rounded-full bg-slate-800 border border-white/20 text-slate-200 font-bold text-sm hover:bg-slate-700 transition">Continue</button>}
+          {phase === 'ready' ? <button type="button" onClick={reveal} className="summon-break-seal px-7 py-2.5 rounded-full border text-sm font-black uppercase tracking-wider">Break the seal · Reveal {heroes.length}</button> : phase === 'revealing' ? <div className="text-[10px] font-black uppercase tracking-[.3em] text-white">Fate Unbound</div> : <button type="button" onClick={onClose} className="summon-continue px-6 py-2.5 rounded-full bg-slate-800 border border-white/20 text-slate-200 font-bold text-sm hover:bg-slate-700 transition">Continue</button>}
         </div>
       </div>
       }
-      <button type="button" onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full bg-slate-800/80 border border-white/10"><X size={18} className="text-slate-400" /></button>
+      <button type="button" onClick={onClose} aria-label="Close summon results" className="summon-close absolute top-4 right-4 p-2 rounded-full bg-slate-800/80 border border-white/10"><X size={18} className="text-slate-400" /></button>
     </div>
   );
 }
@@ -168,11 +168,11 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
       <div className="summon-layout relative mx-auto grid min-h-full w-full max-w-[1040px] flex-1 items-center gap-4 px-4 py-5">
       <main className="flex min-w-0 flex-col items-center justify-center text-center">
         <div className="summon-portal relative mb-3 grid h-24 w-24 shrink-0 place-items-center rounded-full"><i className="summon-rune-ring" /><i className="summon-rune-ring summon-rune-ring-inner" /><Sparkles size={34} className="relative z-10 text-[#f2c96e] drop-shadow-[0_0_14px_rgba(212,126,255,.9)]" />{Array.from({ length: 8 }, (_, index) => <i key={index} className="summon-portal-mote" style={{ '--mote-index': index } as React.CSSProperties} />)}</div>
-        <div className="flex w-full max-w-2xl flex-col items-center rounded-xl border border-[#8c6231]/60 bg-[#08070a]/72 px-6 py-4 shadow-[0_16px_50px_rgba(0,0,0,.65),inset_0_1px_rgba(255,224,165,.08)] backdrop-blur-[2px]">
+        <div className="summon-altar flex w-full max-w-2xl flex-col items-center rounded-xl border border-[#8c6231]/60 bg-[#08070a]/72 px-6 py-4 shadow-[0_16px_50px_rgba(0,0,0,.65),inset_0_1px_rgba(255,224,165,.08)] backdrop-blur-[2px]">
         <div className="section-kicker">The Obsidian Covenant</div>
-        <h2 className="mb-1 mt-1 text-2xl font-black text-white"><span className="text-[#d7a9ff]">Hero</span> Summon</h2>
-        <p className="text-slate-400 text-sm max-w-sm mb-1">Summon heroes using $HERO tokens. All heroes are unique and tradeable.</p>
-        <section className="mb-2 w-full max-w-xl rounded-lg border border-violet-500/30 bg-black/45 text-left">
+        <h2 className="summon-title mb-1 mt-1 text-2xl font-black text-white"><span className="text-[#d7a9ff]">Hero</span> Summon</h2>
+        <p className="summon-lede text-slate-400 text-sm max-w-sm mb-1">Summon heroes using $HERO tokens. All heroes are unique and tradeable.</p>
+        <section className="summon-focus mb-2 w-full max-w-xl rounded-lg border border-violet-500/30 bg-black/45 text-left">
           <button type="button" onClick={() => setShowFocus((value) => !value)} aria-expanded={showFocus} className="flex min-h-10 w-full items-center gap-2 px-3 py-2"><Target size={13} className="text-violet-300" /><span className="text-[10px] font-black uppercase tracking-wide text-violet-200">Ascension Focus</span><span className="min-w-0 flex-1 truncate text-right text-[9px] text-[#9b8ea2]">{selectedFocus ? HERO_MAP[selectedFocus]?.name ?? 'Selected' : 'Off'}</span><ChevronDown size={13} className={`text-[#87788e] transition-transform ${showFocus ? 'rotate-180' : ''}`} /></button>
           {showFocus && <div className="border-t border-violet-500/20 px-2.5 pb-2.5">
           <div className="mt-2 text-right text-[8px] font-bold uppercase text-emerald-300">Rarity chance unchanged</div>
@@ -190,7 +190,7 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
           </div>}
         </section>
 
-        <div className="mb-1 flex w-full max-w-xl items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[.14em] text-[#9d8ca6]">Pity progress</span><button type="button" onClick={() => setShowPityInfo((value) => !value)} aria-expanded={showPityInfo} className="game-control flex h-7 items-center gap-1 px-2 text-[8px] font-black"><Info size={11} /> Pity info</button></div>
+        <div className="summon-pity-head mb-1 flex w-full max-w-xl items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[.14em] text-[#9d8ca6]">Pity progress</span><button type="button" onClick={() => setShowPityInfo((value) => !value)} aria-expanded={showPityInfo} className="game-control flex h-7 items-center gap-1 px-2 text-[8px] font-black"><Info size={11} /> Pity info</button></div>
         <div className="mb-2 grid w-full max-w-xl grid-cols-3 gap-1 sm:grid-cols-5">
           {([
             ['Legendary', game.summonPity.legendary, 150, 'legendary'],
@@ -199,7 +199,7 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
             ['Divine', game.summonPity.divine, 5000, 'divine'],
             ['Celestial', game.summonPity.celestial, 20000, 'celestial'],
           ] as const).map(([label, current, target, rarity]) => (
-            <div key={rarity} className="rounded-md border bg-black/35 px-1.5 py-1 text-left" style={{ borderColor: RARITY_COLORS[rarity] + '55' }}>
+            <div key={rarity} className="summon-pity-card rounded-md border bg-black/35 px-1.5 py-1 text-left" style={{ borderColor: RARITY_COLORS[rarity] + '55' }}>
               <div className="grid min-w-0 gap-0.5 font-black uppercase" style={{ color: RARITY_COLORS[rarity] }}><span className="min-h-[16px] whitespace-normal text-[7px] leading-2">{label} Pity</span><span className="whitespace-nowrap text-right text-[7px] tabular-nums tracking-[-.04em]">{current}/{target}</span></div>
               <div className="mt-1 h-1 overflow-hidden rounded-full bg-black/60"><div className="h-full rounded-full transition-[width]" style={{ width: `${Math.min(100, current / target * 100)}%`, backgroundColor: RARITY_COLORS[rarity] }} /></div>
               {rarity === 'mythic' && current >= 250 && <div className="mt-1 text-[7px] font-bold uppercase text-red-300">Soft pity +0.0015 pp / miss</div>}
@@ -210,24 +210,24 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
 
         <div className="flex w-full max-w-sm flex-col gap-2.5">
           {summonNotice && <div role="alert" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-red-700/65 bg-[linear-gradient(135deg,rgba(75,16,22,.92),rgba(20,8,12,.96))] px-3 py-2.5 text-left shadow-[inset_0_1px_rgba(255,255,255,.06),0_8px_22px_rgba(0,0,0,.35)]"><AlertTriangle size={17} className="shrink-0 text-red-300" /><span className="flex-1 text-[11px] font-bold text-red-100">{summonNotice}</span><button type="button" onClick={() => setSummonNotice('')} aria-label="Dismiss Summon message" className="rounded p-1 text-red-300 hover:bg-white/10"><X size={14} /></button></div>}
-          <div className="grid grid-cols-2 gap-1 rounded-lg border border-violet-500/25 bg-black/40 p-1" aria-label="Summon payment method">
-            <button type="button" onClick={() => setPaymentMethod('paid')} aria-pressed={paymentMethod === 'paid'} disabled={summoning !== null} className={`min-h-11 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'paid' ? 'bg-violet-800/65 text-violet-100' : 'text-slate-500'}`}>Test · $HERO</button>
-            <button type="button" onClick={() => setPaymentMethod('scroll')} aria-pressed={paymentMethod === 'scroll'} disabled={summoning !== null} className={`flex min-h-11 items-center justify-center gap-1 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'scroll' ? 'bg-amber-800/55 text-amber-100' : 'text-slate-500'}`}><SummonScrollArtwork size={25} /> Scrolls · {formatNum(state.summonScrolls)}</button>
+          <div className="summon-pay grid grid-cols-2 gap-1 rounded-lg border border-violet-500/25 bg-black/40 p-1" aria-label="Summon payment method">
+            <button type="button" onClick={() => setPaymentMethod('paid')} aria-pressed={paymentMethod === 'paid'} disabled={summoning !== null} className={`summon-pay-option min-h-11 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'paid' ? 'bg-violet-800/65 text-violet-100' : 'text-slate-500'}`}>Test · $HERO</button>
+            <button type="button" onClick={() => setPaymentMethod('scroll')} aria-pressed={paymentMethod === 'scroll'} disabled={summoning !== null} className={`summon-pay-option flex min-h-11 items-center justify-center gap-1 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'scroll' ? 'bg-amber-800/55 text-amber-100' : 'text-slate-500'}`}><SummonScrollArtwork size={25} /> Scrolls · {formatNum(state.summonScrolls)}</button>
           </div>
-          <button type="button" onClick={() => void beginSummon(1)} disabled={!canSingle || summoning !== null || promoting} className="flex h-[46px] items-center justify-between rounded-xl border border-purple-500/40 bg-gradient-to-r from-purple-600/30 to-blue-600/30 px-5 transition hover:from-purple-600/40 hover:to-blue-600/40 disabled:opacity-40">
+          <button type="button" onClick={() => void beginSummon(1)} disabled={!canSingle || summoning !== null || promoting} className="summon-cta summon-cta--1 flex h-[46px] items-center justify-between rounded-xl border border-purple-500/40 bg-gradient-to-r from-purple-600/30 to-blue-600/30 px-5 transition hover:from-purple-600/40 hover:to-blue-600/40 disabled:opacity-40">
             <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-purple-300" /> {!singleHasSpace ? 'Hero storage full' : !canPay(1) ? 'Need 1 Summon Scroll' : summoning === 1 ? 'Preparing…' : 'Summon x1'}</span>
             <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(1) : <><SummonScrollArtwork size={18} />1 Scroll</>}</span>
           </button>
-          <button type="button" onClick={() => void beginSummon(10)} disabled={!canTen || summoning !== null || promoting} className="anim-glow flex h-[46px] items-center justify-between rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-600/30 to-purple-600/30 px-5 transition hover:from-amber-600/40 hover:to-purple-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(245,158,11,0.4)' } as React.CSSProperties}>
+          <button type="button" onClick={() => void beginSummon(10)} disabled={!canTen || summoning !== null || promoting} className="summon-cta summon-cta--10 anim-glow flex h-[46px] items-center justify-between rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-600/30 to-purple-600/30 px-5 transition hover:from-amber-600/40 hover:to-purple-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(245,158,11,0.4)' } as React.CSSProperties}>
             <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-amber-300" /> {!tenHasSpace ? 'Need 10 free slots' : !canPay(10) ? `Need ${10 - state.summonScrolls} more Scrolls` : summoning === 10 ? 'Preparing…' : 'Summon x10'}</span>
             <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(10) : <><SummonScrollArtwork size={18} />10 Scrolls</>}</span>
           </button>
-          <button type="button" onClick={() => void beginSummon(100)} disabled={!canHundred || summoning !== null || promoting} className="anim-glow flex h-[46px] items-center justify-between rounded-xl border border-fuchsia-500/40 bg-gradient-to-r from-fuchsia-600/30 to-cyan-600/30 px-5 transition hover:from-fuchsia-600/40 hover:to-cyan-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(217,70,239,0.4)' } as React.CSSProperties}>
+          <button type="button" onClick={() => void beginSummon(100)} disabled={!canHundred || summoning !== null || promoting} className="summon-cta summon-cta--100 anim-glow flex h-[46px] items-center justify-between rounded-xl border border-fuchsia-500/40 bg-gradient-to-r from-fuchsia-600/30 to-cyan-600/30 px-5 transition hover:from-fuchsia-600/40 hover:to-cyan-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(217,70,239,0.4)' } as React.CSSProperties}>
             <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-fuchsia-300" /> {!hundredHasSpace ? 'Need 100 free slots' : !canPay(100) ? `Need ${100 - state.summonScrolls} more Scrolls` : summoning === 100 ? 'Preparing…' : 'Summon x100'}</span>
             <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(100) : <><SummonScrollArtwork size={18} />100 Scrolls</>}</span>
           </button>
           <div className="mt-2 h-px bg-gradient-to-r from-transparent via-[#8c6231]/65 to-transparent" />
-          <button type="button" disabled={promoting || summoning !== null} onClick={() => void promoteAll()} className="game-control flex h-[46px] items-center justify-center gap-1.5 px-3 text-[9px] font-black uppercase disabled:opacity-55"><Sparkles size={13} className="text-amber-300" /> {promoting ? 'Promoting heroes…' : 'Promote all heroes · Free space for Summon'}</button>
+          <button type="button" disabled={promoting || summoning !== null} onClick={() => void promoteAll()} className="summon-promote game-control flex h-[46px] items-center justify-center gap-1.5 px-3 text-[9px] font-black uppercase disabled:opacity-55"><Sparkles size={13} className="text-amber-300" /> {promoting ? 'Promoting heroes…' : 'Promote all heroes · Free space for Summon'}</button>
         </div>
         {promotionNotice && <div role="status" className="mt-2 flex max-w-sm items-start gap-2 rounded border border-violet-500/50 bg-violet-950/55 px-3 py-2 text-[10px] font-bold text-violet-100"><span className="flex-1">{promotionNotice}</span><button type="button" onClick={() => setPromotionNotice('')} aria-label="Dismiss promotion result"><X size={13} /></button></div>}
         <p className="mt-4 text-[10px] text-[#7f7887]">Earn $HERO by winning battles in locations.</p>
@@ -235,13 +235,13 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
       </main>
       <aside className="summon-side-panel self-center rounded-xl border border-[#6b536f] bg-[#08070a]/88 p-3 text-left shadow-[0_18px_45px_rgba(0,0,0,.65),inset_0_1px_rgba(255,224,165,.06)] backdrop-blur-[2px]" aria-label="Summon account and rates">
         <div className="section-kicker mb-2">Summon account</div>
-        <div className="rounded-lg border border-cyan-500/25 bg-cyan-950/15 px-3 py-2.5">
+        <div className="summon-balance rounded-lg border border-cyan-500/25 bg-cyan-950/15 px-3 py-2.5">
           <span className="flex items-center gap-1.5 text-sm font-black text-cyan-200"><HeroTokenIcon size={16} /> {formatNum(state.hero)} $HERO</span>
           <span className="mt-1 block text-[9px] font-medium text-slate-500">{state.summons} summons · {state.ownedHeroes.length}/{state.heroCapacity} heroes</span>
         </div>
         <div className="mb-1 mt-3 text-[9px] font-black uppercase tracking-[.14em] text-[#ad9ab5]">Base summon rates</div>
         <div className="summon-rate-panel grid gap-1">
-          {rarities.map(r => { const unavailable = (r === 'divine' || r === 'celestial') && rarityCapacity[r] === false; return <span key={r} className={`flex items-center justify-between rounded-md border px-2 py-1 text-[9px] font-semibold uppercase tracking-wide ${unavailable ? 'opacity-50' : ''}`} style={{ color: RARITY_COLORS[r], borderColor: RARITY_COLORS[r] + '55', background: RARITY_COLORS[r] + '11' }}><span>{RARITY_LABEL[r]}{unavailable ? ' · Full' : ''}</span><b className="tabular-nums">{RARITY_WEIGHT[r]}%</b></span>; })}
+          {rarities.map(r => { const unavailable = (r === 'divine' || r === 'celestial') && rarityCapacity[r] === false; return <span key={r} className={`summon-rate flex items-center justify-between rounded-md border px-2 py-1 text-[9px] font-semibold uppercase tracking-wide ${unavailable ? 'opacity-50' : ''}`} style={{ color: RARITY_COLORS[r], borderColor: RARITY_COLORS[r] + '55', background: RARITY_COLORS[r] + '11' }}><span>{RARITY_LABEL[r]}{unavailable ? ' · Full' : ''}</span><b className="tabular-nums">{RARITY_WEIGHT[r]}%</b></span>; })}
         </div>
         <p className="mt-2 text-[8px] leading-3 text-[#786f7e]">Pity adjustments are shown in the main panel.</p>
       </aside>
