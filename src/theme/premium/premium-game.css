@@ -103,12 +103,12 @@
 [data-hl-theme=premium] :is(.market-chip, .training-sort-button, .training-icon-button, .training-boost-button, .dungeon-gate-quick) {
   border-style: solid;
   border-color: transparent;
-  border-image: var(--pm-bronze) 85 150 fill / 8px 14px stretch;
+  border-image: var(--pm-bronze) 85 150 fill / 7px 11px / 0 3px stretch;
   background: none;
   color: #d9c7a3;
 }
 [data-hl-theme=premium] :is(.market-chip-active, .training-sort-button[aria-pressed=true]) {
-  border-image: var(--pm-crimson) 90 170 fill / 8px 14px stretch;
+  border-image: var(--pm-crimson) 90 170 fill / 7px 11px / 0 3px stretch;
   background: none;
   color: #fbeccb;
   box-shadow: none;
@@ -170,10 +170,10 @@
   button[class*="bg-blue"], button[class*="bg-red"], button[class*="bg-green"], button[class*="bg-fuchsia"],
   button[class*="bg-lime"], button[class*="bg-teal"], button[class*="bg-indigo"], button[class*="bg-orange"],
   button[class*="bg-yellow"], button[class*="bg-gradient"], button[class*="bg-white"]
-):not(.item-slot, .location-card, .game-nav-control, .premium-hero-card, .hero-portrait-rarity, .summon-pay-option, .boost-max-active, .boost-max-ready) {
+):not(.item-slot, .location-card, .game-nav-control, .premium-hero-card, .hero-portrait-rarity, .summon-pay-option, .pm-socket, .pm-boost) {
   border-style: solid;
   border-color: transparent;
-  border-image: var(--pm-bronze) 85 150 fill / 9px 16px stretch;
+  border-image: var(--pm-bronze) 85 150 fill / 8px 12px / 0 3px stretch;
   background: none !important;
   box-shadow: none;
   color: #f1dfb8 !important;
@@ -196,7 +196,7 @@
 [data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-primary, .reward-cta, .item-act--primary, .summon-cta--10, .summon-break-seal):not(#pm-x):not(#pm-y) {
   border-style: solid;
   border-color: transparent;
-  border-image: var(--pm-crimson) 90 170 fill / 10px 18px stretch;
+  border-image: var(--pm-crimson) 90 170 fill / 9px 13px / 0 3px stretch;
   background: none !important;
   color: #fbeccb !important;
   box-shadow: 0 0 16px rgba(179, 48, 28, .25);
@@ -206,50 +206,51 @@
 /* Danger: bronze plate, blood-red lettering */
 [data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-danger, .item-act--danger):not(#pm-x):not(#pm-y) { color: #f0a590 !important; }
 [data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-danger, .item-act--danger):not(#pm-x):not(#pm-y) svg { color: #e0664f !important; }
-/* Boost keeps its signature green glow, on the bronze plate */
-[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.boost-max-active, .boost-max-ready) {
+/* Forged sockets: bag tabs, resources, Dungeons and Boss — square frame, dark well, crimson when active */
+[data-hl-theme=premium] :is(.game-shell) .pm-socket:not(#pm-x):not(#pm-y) {
   border-style: solid;
   border-color: transparent;
-  border-image: var(--pm-bronze) 85 150 fill / 9px 16px stretch;
-  background: radial-gradient(ellipse at center, rgba(90, 200, 70, .35), rgba(20, 60, 15, .1) 70%) !important;
-  color: #d9ffc4 !important;
-  text-shadow: 0 0 8px rgba(120, 255, 90, .6), 0 1px 2px #000;
+  border-image: var(--pm-frame) 200 / 8px / 1px stretch;
+  background: radial-gradient(circle at 50% 35%, rgba(74, 55, 32, .95), rgba(10, 8, 7, .97) 78%) !important;
+  color: #ead7ae !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .6);
+  filter: none;
 }
+[data-hl-theme=premium] :is(.game-shell) .pm-socket:is(.game-primary, [aria-selected=true]):not(#pm-x):not(#pm-y) {
+  background: radial-gradient(circle at 50% 40%, #c2402a, #6d120c 55%, #2a0504 90%) !important;
+  color: #fff1d2 !important;
+  box-shadow: 0 0 10px rgba(214, 70, 44, .55);
+}
+[data-hl-theme=premium] :is(.game-shell) .pm-socket svg { color: var(--pm-brass-hi) !important; }
 
-/* Pill chips (filters, tabs) become plates too: one corner language */
-[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) button.rounded-full:not(.place-items-center, [class*="aspect-"], .h-2, .h-3, .w-2, .w-3) {
-  border-radius: 0 !important;
-  border-style: solid;
-  border-color: transparent;
-  border-image: var(--pm-bronze) 85 150 fill / 8px 14px stretch;
-  background: none !important;
-  color: #d9c7a3 !important;
-}
-[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) button.rounded-full:is([aria-pressed=true], [aria-selected=true], [class*="bg-amber"], [class*="bg-[#"]):not(.place-items-center):not(#pm-x) {
-  border-image: var(--pm-crimson) 90 170 fill / 8px 14px stretch;
-  color: #fbeccb !important;
-}
-
-/* Registration / onboarding card on the public site uses the same window frame */
-[data-hl-theme=premium] .hl-onboarding .landing-card {
+/* Boost and Chest: forged frame around one continuous glowing field (no plate seams) */
+[data-hl-theme=premium] :is(.game-shell) :is(.pm-boost, .pm-chest):not(#pm-x):not(#pm-y) {
   overflow: visible;
   border-style: solid;
-  border-image: var(--pm-frame) 200 / 34px / 10px stretch;
-  background: var(--pm-surface-deep);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, .85);
-}
-[data-hl-theme=premium] .hl-onboarding .landing-cta {
-  border-style: solid;
   border-color: transparent;
-  border-image: var(--pm-crimson) 90 170 fill / 10px 18px stretch;
-  background: none;
-  color: #fbeccb;
-  box-shadow: none;
-  font-family: var(--pm-display);
-  text-shadow: 0 1px 2px #000;
+  border-image: var(--pm-frame) 200 / 10px / 2px stretch;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  filter: none;
 }
-[data-hl-theme=premium] .hl-onboarding :is(h1, h2, h3) { font-family: var(--pm-display); color: var(--pm-ivory); letter-spacing: .04em; }
-[data-hl-theme=premium] .hl-onboarding .text-violet-300 { color: var(--pm-brass) !important; font-family: var(--pm-display); }
+[data-hl-theme=premium] :is(.game-shell) .pm-boost:not(#pm-x):not(#pm-y) {
+  background: linear-gradient(110deg, #0c2e13 0%, #23802f 28%, #7fdc5c 50%, #23802f 72%, #0c2e13 100%) 0 50% / 240% 100% !important;
+  color: #f2ffe9 !important;
+  text-shadow: 0 1px 2px #062010, 0 0 8px rgba(160, 255, 120, .7);
+  box-shadow: 0 0 16px rgba(110, 240, 80, .45), inset 0 0 10px rgba(0, 40, 10, .6);
+  animation: pm-boost-sheen 5s ease-in-out infinite;
+}
+[data-hl-theme=premium] :is(.game-shell) .pm-boost svg { color: #eaffdc !important; }
+[data-hl-theme=premium] :is(.game-shell) .pm-chest:not(#pm-x):not(#pm-y) {
+  background: radial-gradient(ellipse at 50% 40%, #b8341f 0%, #6d120c 55%, #2a0504 100%) !important;
+  color: #fff0cf !important;
+  text-shadow: 0 1px 2px #000;
+  box-shadow: 0 0 14px rgba(214, 70, 44, .4), inset 0 0 10px rgba(0, 0, 0, .55);
+}
+[data-hl-theme=premium] :is(.game-shell) .pm-chest:disabled:not(#pm-x):not(#pm-y) { background: radial-gradient(ellipse at 50% 40%, #4a2a22, #1a0d0a 80%) !important; color: #b9a58a !important; box-shadow: none; }
+[data-hl-theme=premium] :is(.game-shell) .pm-chest > :first-child { max-height: 26px; width: auto; flex: none; }
+@keyframes pm-boost-sheen { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+[data-hl-theme=premium] .game-motion-off .pm-boost { animation: none !important; }
 
 /* ── 6. Top bar, nav and footer ────────────────────────────────────── */
 [data-hl-theme=premium] .game-command-bar {
@@ -272,7 +273,7 @@
 [data-hl-theme=premium] .game-nav-control-active {
   border-style: solid;
   border-color: transparent;
-  border-image: var(--pm-crimson) 90 170 fill / 8px 14px stretch;
+  border-image: var(--pm-crimson) 90 170 fill / 7px 11px / 0 3px stretch;
   background: none;
   color: #fbeccb;
   box-shadow: none;
@@ -291,10 +292,10 @@
 [data-hl-theme=premium] .item-act-stats--worse { border-left-color: #d0453a; box-shadow: inset 3px 0 12px -6px rgba(208, 69, 58, .6); }
 [data-hl-theme=premium] .item-act-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 6px; }
 [data-hl-theme=premium] .item-act-grid > * { min-width: 0; }
-[data-hl-theme=premium] .item-act { min-height: 50px; padding: 5px 12px; line-height: 1.2; font-family: var(--pm-display); letter-spacing: .03em; }
+[data-hl-theme=premium] .item-act { min-height: 50px; padding: 5px 12px; line-height: 1.2; text-transform: uppercase; letter-spacing: .02em; }
 [data-hl-theme=premium] .item-act > span + span { font-family: 'Inter', system-ui, sans-serif; letter-spacing: 0; color: #cbb893 !important; }
 [data-hl-theme=premium] .item-act-sheet { margin-top: 6px; }
-[data-hl-theme=premium] .item-act-confirm { min-height: 38px; font-family: var(--pm-display); letter-spacing: .04em; }
+[data-hl-theme=premium] .item-act-confirm { min-height: 38px; text-transform: uppercase; letter-spacing: .02em; }
 [data-hl-theme=premium] .item-sell-confirm { border-style: solid; border-image: var(--pm-frame) 200 / 12px / 3px stretch; background: var(--pm-surface-deep); }
 
 /* ── 8. Summon sanctum ─────────────────────────────────────────────── */
@@ -331,15 +332,15 @@
 [data-hl-theme=premium] .summon-pay-option {
   border-style: solid;
   border-color: transparent;
-  border-image: var(--pm-bronze) 85 150 fill / 9px 16px stretch;
+  border-image: var(--pm-bronze) 85 150 fill / 8px 12px / 0 3px stretch;
   background: none !important;
   color: #a79a82 !important;
   font-family: var(--pm-display);
   letter-spacing: .06em;
   filter: brightness(.75);
 }
-[data-hl-theme=premium] .summon-pay-option[aria-pressed=true] { filter: none; color: #fbeccb !important; border-image: var(--pm-crimson) 90 170 fill / 10px 18px stretch; }
-[data-hl-theme=premium] .summon-pay-option:last-child[aria-pressed=true] { border-image: var(--pm-bronze) 85 150 fill / 9px 16px stretch; color: #ffe7b0 !important; filter: brightness(1.15) drop-shadow(0 0 8px rgba(242, 204, 128, .35)); }
+[data-hl-theme=premium] .summon-pay-option[aria-pressed=true] { filter: none; color: #fbeccb !important; border-image: var(--pm-crimson) 90 170 fill / 9px 13px / 0 3px stretch; }
+[data-hl-theme=premium] .summon-pay-option:last-child[aria-pressed=true] { border-image: var(--pm-bronze) 85 150 fill / 8px 12px / 0 3px stretch; color: #ffe7b0 !important; filter: brightness(1.15) drop-shadow(0 0 8px rgba(242, 204, 128, .35)); }
 
 /* Summon buttons: x1 bronze, x10 crimson seal, x100 bronze with arcane glow */
 [data-hl-theme=premium] .summon-cta { font-family: var(--pm-display); }
@@ -356,7 +357,7 @@
 [data-hl-theme=premium] .summon-result-card.summon-card-sealed { border-style: solid; border-color: transparent !important; border-image: var(--pm-frame) 200 / 14px / 3px stretch; background: radial-gradient(circle at 50% 40%, rgba(143, 31, 18, .3), transparent 60%), var(--pm-surface-deep) !important; box-shadow: inset 0 0 26px rgba(143, 31, 18, .25) !important; }
 [data-hl-theme=premium] .summon-card-sealed::before { border-color: rgba(242, 204, 128, .6); color: var(--pm-brass-hi); box-shadow: 0 0 18px rgba(179, 48, 28, .5); border-radius: 0; transform: rotate(45deg); }
 [data-hl-theme=premium] .summon-seal-glyph { color: var(--pm-brass-hi); filter: drop-shadow(0 0 9px rgba(214, 70, 44, .8)); }
-[data-hl-theme=premium] :is(.summon-continue, .summon-close):not(#pm-x):not(#pm-y) { border-style: solid; border-color: transparent !important; border-image: var(--pm-bronze) 85 150 fill / 9px 16px stretch; background: none !important; color: var(--pm-ivory) !important; font-family: var(--pm-display); letter-spacing: .08em; border-radius: 0 !important; }
+[data-hl-theme=premium] :is(.summon-continue, .summon-close):not(#pm-x):not(#pm-y) { border-style: solid; border-color: transparent !important; border-image: var(--pm-bronze) 85 150 fill / 8px 12px / 0 3px stretch; background: none !important; color: var(--pm-ivory) !important; font-family: var(--pm-display); letter-spacing: .08em; border-radius: 0 !important; }
 [data-hl-theme=premium] .summon-ritual-charge .text-\[\#d9b9ff\] { color: var(--pm-brass-hi); }
 [data-hl-theme=premium] .summon-best-banner strong { font-family: var(--pm-display); }
 
@@ -365,5 +366,25 @@
 [data-hl-theme=premium] :is(.item-class-badge, .hero-level-badge) { border-radius: 0 !important; border-color: rgba(242, 204, 128, .7); }
 
 @media (prefers-reduced-motion: reduce) {
+  [data-hl-theme=premium] .pm-boost { animation: none !important; }
   [data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-control, .item-act, .item-act-confirm, button[class*="bg-"]) { transition: none; }
+}
+
+/* ── 10. Mobile (≤640px): same design, lighter metal ───────────────── */
+@media (max-width: 640px) {
+  /* iOS repaints fixed backgrounds on every scroll frame */
+  [data-hl-theme=premium] .game-shell { background-attachment: scroll; }
+  [data-hl-theme=premium] :is(.game-window, .px-panel-raised),
+  [data-hl-theme=premium] .hl-onboarding .landing-card { border-image-width: 20px; border-image-outset: 5px; box-shadow: 0 16px 40px rgba(0, 0, 0, .8) !important; }
+  [data-hl-theme=premium] :is(.material-panel, .px-panel, .item-action-panel, .training-yard, .training-section, .training-guide, .offline-vault, .summon-altar, .summon-side-panel, .market-shell, .merchant-surface, .reward-scene, .dungeon-gate-modal, .auto-pot-settings, .bg-arena) { border-image-width: 14px; border-image-outset: 3px; box-shadow: 0 8px 18px rgba(0, 0, 0, .55); }
+  [data-hl-theme=premium] :is(.quest-card, .stat-tile, .location-card, .intentional-empty, .offline-reward-tile, .training-slot, .training-post, .training-status-row, .summon-pity-card, .summon-balance, .summon-focus, .item-act-compare, .item-act-sheet, .shop-pack, .combatant-card, .shop-card, .leader-row, .market-row) { border-image-width: 9px; border-image-outset: 2px; box-shadow: inset 0 0 12px rgba(0, 0, 0, .5); }
+  [data-hl-theme=premium] :is(.game-window, .summon-altar)::before,
+  [data-hl-theme=premium] .game-window::after { left: calc(50% - 30px); width: 60px; height: 36px; }
+  [data-hl-theme=premium] .game-window::before { top: -16px; }
+  [data-hl-theme=premium] .game-window::after { bottom: -16px; }
+  [data-hl-theme=premium] .summon-altar::before { top: -20px; }
+  /* Plates: slimmer caps so short labels keep their room on narrow buttons */
+  [data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-control, .px-btn, .item-act, .item-act-confirm, button[class*="bg-"]):not(.pm-socket, .pm-boost, .pm-chest, .place-items-center) { border-image-width: 7px 10px; }
+  [data-hl-theme=premium] .item-act { min-height: 46px; padding: 4px 8px; }
+  [data-hl-theme=premium] .game-command-bar::after { height: 4px; bottom: -2px; }
 }

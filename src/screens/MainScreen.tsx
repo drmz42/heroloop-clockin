@@ -598,13 +598,13 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={setActiveDungeon} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls })} />}
           {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Server reward result:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Granted together exactly once by the server</small></> : <><span><SummonScrollArtwork size={18} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST PREVIEW</span><small>{dungeonCompletion.scrolls === 2 ? 'Scrolls granted exactly once by the server; Dungeon Chest is not yet granted' : 'No Scrolls granted for this run; Dungeon Chest is not yet granted'}</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
           {!activeDungeon && <div className="absolute right-3 top-3 z-30 flex items-center gap-1.5">
-            <button type="button" onClick={() => setShowDungeonInfo(true)} className="game-control flex h-7 items-center gap-1 px-2 py-0.5 ui-text-small font-bold text-[#d7c6ea]" aria-label="Open Dungeons information">
+            <button type="button" onClick={() => setShowDungeonInfo(true)} className="pm-socket game-control flex h-7 items-center gap-1 px-2 py-0.5 ui-text-small font-bold text-[#d7c6ea]" aria-label="Open Dungeons information">
               <DoorOpen size={14} aria-hidden="true" /> DUNGEONS <Info size={11} aria-hidden="true" />
             </button>
             <button
               onClick={handleSummonBoss}
               disabled={state.bossKeys < 1 || state.bossBattleActive}
-              className="game-control flex h-7 items-center gap-1 px-2 py-0.5 ui-text-small font-bold"
+              className="pm-socket game-control flex h-7 items-center gap-1 px-2 py-0.5 ui-text-small font-bold"
             >
               <BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}
             </button>
@@ -619,11 +619,11 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             </div>, document.body)}
             <button ref={dropRatesButtonRef} type="button" onClick={() => setShowDropRates((value) => !value)} className="game-control grid h-8 w-8 place-items-center" aria-label="Show chest drop rates" aria-expanded={showDropRates}><Info size={15} /></button>
             <div className="flex flex-col gap-1.5">
-              <button type="button" onClick={onBoostClick} className={`game-control flex h-8 w-36 items-center justify-center gap-1 px-2 py-0.5 ui-text-small font-black ${state.boost.active ? 'boost-max-active' : 'boost-max-ready'}`} title="Boost your offline earnings to 24/7"><Rocket size={15} /><span>{state.boost.active ? 'BOOST ON' : 'BOOST MAX'}</span></button>
+              <button type="button" onClick={onBoostClick} className={`pm-boost game-control flex h-8 w-36 items-center justify-center gap-1 px-2 py-0.5 ui-text-small font-black ${state.boost.active ? 'boost-max-active' : 'boost-max-ready'}`} title="Boost your offline earnings to 24/7"><Rocket size={15} /><span>{state.boost.active ? 'BOOST ON' : 'BOOST MAX'}</span></button>
               <button
                 onClick={() => void game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem)}
                 disabled={state.chests.length === 0 || game.chestOpening}
-                className="reward-cta game-control flex h-8 w-36 items-center justify-center gap-1 px-2 py-0.5 ui-text-small font-black disabled:opacity-55"
+                className="pm-chest reward-cta game-control flex h-8 w-36 items-center justify-center gap-1 px-2 py-0.5 ui-text-small font-black disabled:opacity-55"
                 title="Open chests"
               >
                 <ChestCollectIcon size={34} />
@@ -768,8 +768,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               <span className="section-kicker shrink-0">Inventory</span>
               <span className="shrink-0 rounded border border-[#493e2d] bg-black/25 px-1.5 py-0.5 ui-text-small font-bold text-[#8d887d]">{inventoryTab === 'resources' ? resourceSlotCount : inventoryTab === 1 ? bagItems.length : 0}/{GRID_SIZE}</span>
               <div className="ml-auto flex min-w-0 items-center gap-0.5" role="tablist" aria-label="Inventory sections">
-                {([1, 2, 3, 4] as const).map((bag) => <button key={bag} type="button" role="tab" aria-label={`Bag ${bag}${bag > 1 ? ', locked' : ''}`} aria-selected={inventoryTab === bag} onClick={() => { setInventoryTab(bag); setSelectedResource(null); setSelectedItem(null); if (bag > 1) showToast(`Bag ${bag} is locked · Shop price pending`); }} className={`game-control ui-text-small relative flex h-6 w-[30px] shrink-0 items-center justify-center gap-px px-0 font-medium ${inventoryTab === bag ? 'game-primary' : ''} ${bag > 1 ? 'opacity-55' : ''}`}><FantasyBagIcon size={14} /><span>{bag}</span>{bag > 1 && <LockIcon size={7} className="absolute right-px top-px" aria-hidden="true" />}</button>)}
-                <button type="button" role="tab" aria-label="Resources" title="Resources" aria-selected={inventoryTab === 'resources'} onClick={() => { setInventoryTab('resources'); setSelectedItem(null); }} className={`game-control ui-text-small flex h-6 w-[34px] shrink-0 items-center justify-center gap-px px-0 font-medium ${inventoryTab === 'resources' ? 'game-primary' : ''}`}><Package size={13} strokeWidth={1.7} aria-hidden="true" /><span>R</span></button>
+                {([1, 2, 3, 4] as const).map((bag) => <button key={bag} type="button" role="tab" aria-label={`Bag ${bag}${bag > 1 ? ', locked' : ''}`} aria-selected={inventoryTab === bag} onClick={() => { setInventoryTab(bag); setSelectedResource(null); setSelectedItem(null); if (bag > 1) showToast(`Bag ${bag} is locked · Shop price pending`); }} className={`pm-socket game-control ui-text-small relative flex h-6 w-[30px] shrink-0 items-center justify-center gap-px px-0 font-medium ${inventoryTab === bag ? 'game-primary' : ''} ${bag > 1 ? 'opacity-55' : ''}`}><FantasyBagIcon size={14} /><span>{bag}</span>{bag > 1 && <LockIcon size={7} className="absolute right-px top-px" aria-hidden="true" />}</button>)}
+                <button type="button" role="tab" aria-label="Resources" title="Resources" aria-selected={inventoryTab === 'resources'} onClick={() => { setInventoryTab('resources'); setSelectedItem(null); }} className={`pm-socket game-control ui-text-small flex h-6 w-[34px] shrink-0 items-center justify-center gap-px px-0 font-medium ${inventoryTab === 'resources' ? 'game-primary' : ''}`}><Package size={13} strokeWidth={1.7} aria-hidden="true" /><span>R</span></button>
               </div>
             </div>
             {inventoryTab === 1 && <div className="mt-2 grid min-w-0 grid-cols-[1fr_1fr_32px_1fr] gap-1">
