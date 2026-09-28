@@ -61,7 +61,7 @@
       "id": "economy-attribution",
       "owner": "economy",
       "path": "config/economy/source-sink-registry.v1.json",
-      "sha256": "5663e10d63862c6ffae80a74794061eb0c5611221fc132abbb310a353c86993e",
+      "sha256": "a78c896d0327e2d0e4280812833fda12d141ef2522e7f74cc0ab283f2b2205d8",
       "includes": ["gold", "hero", "xp", "items", "chests", "resources", "faucets", "sinks"]
     },
     {
