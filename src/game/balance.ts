@@ -1,6 +1,6 @@
 import type { BalanceTelemetry, BalanceTelemetrySummary } from './types';
 
-export const BALANCE_VERSION = 'hero-power-proposal-2026.08.12-v3@sha256:4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc:telemetry-ratio-v2';
+export const BALANCE_VERSION = 'balance-v5-progression-2026.09.28-v1:telemetry-ratio-v2';
 // Approved per-location base table (Account Level bands); the displayed value is RECOMMENDED_POWER_PER_LANE.
 export const BASE_POWER_PER_LANE = [49, 98, 138, 186, 242, 292, 353, 427, 520, 603, 3947, 3998, 5055, 5117, 5479, 6421, 8169, 9208, 11029, 12166] as const;
 // Displayed Recommended Power per lane for 1/2/3-hero formations, calibrated on 2026-09-26 against the
