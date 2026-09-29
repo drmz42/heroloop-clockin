@@ -70,9 +70,10 @@ export const V6_LOCATION_RANGES = [
 export const V6_LOCATION_UNLOCK_LEVELS = V6_LOCATION_RANGES.map(([low]) => low);
 
 // Lane-0 enemy base [HP, Attack, Defense] per Location, calibrated for a 72% reference win rate.
-// Location 1 keeps the v5 onboarding enemy so a new player's bare starter hero still wins it.
+// Location 1 keeps the v5 onboarding enemy so a new player's bare starter hero still wins it;
+// Location 2 keeps the v5 Attack (20) so a hero with 0-2 items can clear it.
 export const V6_ENEMY_BASE = [
-  [99, 10.24, 2.5], [126, 53.1, 3.94], [168, 76.5, 5.24], [240, 95.4, 7.48], [314, 144, 9.78],
+  [99, 10.24, 2.5], [126, 20, 3.94], [168, 76.5, 5.24], [240, 95.4, 7.48], [314, 144, 9.78],
   [439, 184, 13.6], [613, 242, 18.8], [869, 294, 26.5], [1130, 426, 34.1], [1600, 524, 47.6],
   [1970, 717, 58.5], [2650, 945, 77.9], [3810, 1140, 111], [4770, 1440, 134], [5870, 1900, 161],
   [7520, 2370, 199], [9530, 2990, 245], [11300, 4200, 291], [15200, 4790, 386], [19900, 5810, 486],

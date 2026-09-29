@@ -112,11 +112,12 @@
         },
         "enemy": {
           "hp": 126,
-          "atk": 53.1,
+          "atk": 20,
           "def": 3.94
         },
         "calibratedAttackPerReferenceHp": 0.1701,
-        "calibrationSamples": 850
+        "calibrationSamples": 850,
+        "onboardingOverride": "Location 2 keeps the v5 enemy Attack (20; calibrated 53.1): a Level 5 hero with two Common items won 10% of waves, a bare Level 9 hero 0%. With 20: 100% and 48%."
       },
       {
         "location": 3,
