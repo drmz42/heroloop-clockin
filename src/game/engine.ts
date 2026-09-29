@@ -11,6 +11,8 @@ export interface HeroFullStats {
 }
 
 const BASE_STAT_SCALE = 0.2;
+// Balance v5: a steady combat-stat gain at every Hero Level, including equipped main stats.
+export const heroLevelMastery = (level: number): number => 1 + .75 * (Math.max(1, Math.min(99, level)) - 1) / 79;
 
 const CLASS_GROWTH: Record<string, { hp: number; atk: number; def: number }> = {
   knight: { hp: .012, atk: .0055, def: .009 }, shepherd: { hp: .007, atk: .0115, def: .0035 },
@@ -43,13 +45,13 @@ export function equippedEnchantResonance(equippedItems: OwnedItem[]): { level: n
 }
 
 export function heroStarMultiplier(stars: number): number {
-  return 1 + Math.max(0, Math.min(20, stars)) * .015;
+  return 1 + Math.max(0, Math.min(20, stars)) * .05;
 }
 
 export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
   const base = HERO_MAP[owned.heroId];
   if (!base) return null;
-  const lvl = owned.level;
+  const lvl = Math.max(1, Math.min(99, Math.floor(owned.level)));
   const tier = Math.min(8, RARITY_INDEX[base.rarity]);
   const growth = CLASS_GROWTH[base.heroClass];
   const starMul = heroStarMultiplier(owned.stars);
@@ -99,6 +101,10 @@ export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
   dodge += passive.dodge ?? 0;
   hp *= passive.hpMult ?? 1;
   atkSpeed += passive.attackSpeed ?? 0;
+  const mastery = heroLevelMastery(lvl);
+  hp *= mastery;
+  atk *= mastery;
+  def *= mastery;
   const caps = CLASS_CAPS[base.heroClass];
 
   return {

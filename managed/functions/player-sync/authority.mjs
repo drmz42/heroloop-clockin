@@ -259,7 +259,11 @@ export function applyTrainingPurchases(sourceState, events, nowMs) {
 }
 
 function starMultiplier(stars) {
-  return 1 + integer(stars, 0, 20) * .015;
+  return 1 + integer(stars, 0, 20) * .05;
+}
+
+function heroLevelMastery(level) {
+  return 1 + .75 * (integer(level, 1, MAX_LEVEL) - 1) / 79;
 }
 
 const ITEM_STAT_KEYS = new Set(['hp', 'atk', 'def', 'atkSpeed', 'critChance', 'critDamage', 'dodge']);
@@ -324,9 +328,10 @@ function canonicalStats(hero, equippedItems = []) {
   const starScale = starMultiplier(stars);
   const itemStats = canonicalItemStats(equippedItems);
   const rarityGrowth = 1 + tier * .02;
-  const hp = Math.round((archetype.hp * rarityScale * .2 * (1 + archetype.growth[0] * rarityGrowth * (level - 1)) * starScale + itemStats.hp) * (archetype.hpMult ?? 1));
-  const atk = Math.round(archetype.atk * rarityScale * .2 * (1 + archetype.growth[1] * rarityGrowth * (level - 1)) * starScale + itemStats.atk);
-  const def = Math.round(archetype.def * rarityScale * .2 * (1 + archetype.growth[2] * rarityGrowth * (level - 1)) * starScale + itemStats.def);
+  const mastery = heroLevelMastery(level);
+  const hp = Math.round((archetype.hp * rarityScale * .2 * (1 + archetype.growth[0] * rarityGrowth * (level - 1)) * starScale + itemStats.hp) * (archetype.hpMult ?? 1) * mastery);
+  const atk = Math.round((archetype.atk * rarityScale * .2 * (1 + archetype.growth[1] * rarityGrowth * (level - 1)) * starScale + itemStats.atk) * mastery);
+  const def = Math.round((archetype.def * rarityScale * .2 * (1 + archetype.growth[2] * rarityGrowth * (level - 1)) * starScale + itemStats.def) * mastery);
   const speed = archetype.speed * (1 + tier * .01) + stars * .1;
   const attackSpeed = Math.min((archetype.attackSpeed ?? 0) + itemStats.atkSpeed, archetype.caps[4]);
   const interval = Math.max(600, (1540 - Math.min(speed * 2.2, 700)) / (1 + attackSpeed));

@@ -3,8 +3,8 @@ import { COMBAT_TIMELINE_VERSION, serializeCombatTimeline } from './combat-timel
 import { COMBAT_EFFECTS_V2_VERSION, serverEffectForClass } from './combat-effects-v2.mjs';
 
 const RARITIES = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
-export const BALANCE_VERSION = 'balance-v4-2026.09.01-v6-combat-effects-v1';
-export const COMBAT_EFFECTS_V2_BALANCE_VERSION = 'balance-v4-2026.09.06-v7-combat-effects-v2-candidate';
+export const BALANCE_VERSION = 'balance-v5-progression-2026.09.28-v1-combat-effects-v1';
+export const COMBAT_EFFECTS_V2_BALANCE_VERSION = 'balance-v5-progression-2026.09.28-v1-combat-effects-v2';
 const RARITY_SCALE = [1, 1.441163, 2.147372, 3.084756, 4.435796, 6.370091, 9.143236, 13.119459, 18.814853];
 const SET_BONUS = { common: 5, uncommon: 10, rare: 15, epic: 20, legendary: 30, mythic: 40, relic: 40, cosmic: 50, divine: 60, celestial: 70, cursed: 80, immortal: 90, god: 100 };
 const RESONANCE = [0, 1, 2, 4, 7, 11, 16, 22, 30, 39, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150];
@@ -29,7 +29,11 @@ const finite = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 function starMultiplier(stars) {
-  return 1 + clamp(Math.floor(stars), 0, 20) * .015;
+  return 1 + clamp(Math.floor(stars), 0, 20) * .05;
+}
+
+function heroLevelMastery(level) {
+  return 1 + .75 * (clamp(Math.floor(level), 1, 99) - 1) / 79;
 }
 
 function enchantV4Multiplier(level) {
@@ -98,9 +102,10 @@ function heroUnit(hero, lane, itemMap, carriedHp, startedAtMs, combatEffectsVers
   const v2 = combatEffectsVersion === COMBAT_EFFECTS_V2_VERSION;
   const coreTrait = v2 ? serverEffectForClass(heroClass, 'coreTrait') : null;
   const hpMultiplier = v2 ? coreTrait.magnitude.maxHpMultiplier ?? 1 : archetype.legacyHpMultiplier ?? 1;
-  const hp = Math.round((archetype.hp * rarityScale * .2 * (1 + archetype.growth[0] * rarityGrowth * (level - 1)) * starsScale + additions.hp) * hpMultiplier);
-  const atk = Math.round(archetype.atk * rarityScale * .2 * (1 + archetype.growth[1] * rarityGrowth * (level - 1)) * starsScale + additions.atk);
-  const def = Math.round(archetype.def * rarityScale * .2 * (1 + archetype.growth[2] * rarityGrowth * (level - 1)) * starsScale + additions.def);
+  const mastery = heroLevelMastery(level);
+  const hp = Math.round((archetype.hp * rarityScale * .2 * (1 + archetype.growth[0] * rarityGrowth * (level - 1)) * starsScale + additions.hp) * hpMultiplier * mastery);
+  const atk = Math.round((archetype.atk * rarityScale * .2 * (1 + archetype.growth[1] * rarityGrowth * (level - 1)) * starsScale + additions.atk) * mastery);
+  const def = Math.round((archetype.def * rarityScale * .2 * (1 + archetype.growth[2] * rarityGrowth * (level - 1)) * starsScale + additions.def) * mastery);
   const speed = archetype.speed * (1 + tier * .01) + stars * .1;
   const classAttackSpeed = v2 ? coreTrait.magnitude.attackSpeedPoints ?? 0 : archetype.legacyAttackSpeedPoints ?? 0;
   const classCritChance = v2 ? coreTrait.magnitude.criticalChancePoints ?? 0 : archetype.legacyCritChancePoints ?? 0;

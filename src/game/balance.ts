@@ -1,18 +1,19 @@
 import type { BalanceTelemetry, BalanceTelemetrySummary } from './types';
 
-export const BALANCE_VERSION = 'hero-power-proposal-2026.08.12-v3@sha256:4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc:telemetry-ratio-v2';
+export const BALANCE_VERSION = 'balance-v5-progression-2026.09.28-v1:telemetry-ratio-v2';
 // Approved per-location base table (Account Level bands); the displayed value is RECOMMENDED_POWER_PER_LANE.
 export const BASE_POWER_PER_LANE = [49, 98, 138, 186, 242, 292, 353, 427, 520, 603, 3947, 3998, 5055, 5117, 5479, 6421, 8169, 9208, 11029, 12166] as const;
-// Displayed Recommended Power per lane for 1/2/3-hero formations, calibrated on 2026-09-26 against the
-// server combat engine (`scripts/calibrate-recommended-power.ts`, data/recommended-power-server-calibration.csv):
-// the per-lane Power at which a formation wins 72% of normal waves. Locations 1-10 are measured values.
-// Locations 11-20 are the pre-strengthening endgame values (measured 11-12, ratios 1.11/1.20/1.25 beyond)
-// times 1.25, the Power increase measured at Locations 11-14 after the +20% enemy HP/ATK change.
+// Displayed Recommended Power per lane for 1/2/3-hero formations, calibrated against the server combat
+// engine (`scripts/calibrate-recommended-power.ts`, data/recommended-power-server-calibration.csv): the
+// per-lane Power at which a formation wins 72% of normal waves. Locations 1-10 are the 2026-09-26 measured
+// values (the v5 re-run stays within sampling noise). Locations 11-19 take the 2026-09-29 v5 measurement
+// where at least 50 samples fall within 0.85-1.15x of the previous value, raised to stay non-decreasing
+// by location; 18/3-hero, 19/2-3-hero and Location 20 keep the previous values: too few v5 samples reach them.
 export const RECOMMENDED_POWER_PER_LANE: readonly (readonly [number, number, number])[] = [
   [44, 46, 77], [91, 133, 133], [145, 173, 196], [189, 242, 255], [244, 307, 368],
   [320, 400, 428], [396, 504, 557], [466, 561, 695], [573, 686, 795], [823, 948, 1049],
-  [5334, 5801, 6880], [5419, 6002, 6880], [7014, 7582, 7899], [7100, 7675, 7995], [7602, 8219, 8561],
-  [8909, 9631, 10032], [11335, 12254, 12764], [12776, 13812, 14388], [15302, 16544, 17232], [16880, 18249, 19010],
+  [4646, 5518, 6095], [4856, 5703, 6154], [5719, 7041, 7764], [5796, 7041, 7764], [6231, 7589, 8151],
+  [7232, 8829, 9786], [9550, 11293, 11719], [10767, 14405, 14388], [13833, 16544, 17232], [16880, 18249, 19010],
 ];
 export const WINNING_CLEAR_SECONDS_BUCKETS = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360] as const;
 const MAX_CLEAR_SECONDS = WINNING_CLEAR_SECONDS_BUCKETS[WINNING_CLEAR_SECONDS_BUCKETS.length - 1];

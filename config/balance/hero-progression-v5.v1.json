@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "balanceVersion": "balance-v5-progression-2026.09.28-v1",
+  "status": "staging-candidate",
+  "maxHeroLevel": 99,
+  "maxStars": 20,
+  "starBonusPerStar": 0.05,
+  "levelMasteryPer79Levels": 0.75,
+  "masteryDenominator": 79,
+  "masteryAffectedStats": ["hp", "atk", "def"],
+  "starAffectedStats": ["baseHp", "baseAtk", "baseDef"],
+  "unchangedStatCaps": ["atkSpeed", "critChance", "critDamage", "dodge"],
+  "standardChestOddsChanged": false,
+  "existingItemRollsChanged": false,
+  "essenceLive": false
+}
