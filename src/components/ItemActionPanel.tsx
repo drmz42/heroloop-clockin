@@ -138,7 +138,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
           <div className="item-act-sheet rounded-lg bg-black/30 p-2 space-y-1.5">
             <div className="ui-text-small text-slate-400">Ordinary success: <span className={enchChance >= 1 ? 'text-emerald-300' : 'text-amber-300'}>{Math.round(enchChance * 100)}%</span> {enchChance < 1 && <span className="font-bold text-rose-300">· Failure destroys the item ({Math.round((1 - enchChance) * 100)}%)</span>}</div>
             <button
-              onClick={() => { void game.enchantItem(item.uid, false); setShowEnchant(false); onClose(); }}
+              onClick={() => { void game.enchantItem(item.uid, false); setShowEnchant(false); }}
               disabled={game.itemUpgradeBusy || !enchantAffordable}
               className="item-act-confirm item-act--primary w-full py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 ui-text-medium font-bold hover:bg-amber-500/25 disabled:opacity-40 transition"
             >
@@ -147,7 +147,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
             {charmCost > 0 && (
               <button
                 type="button"
-                onClick={() => { void game.enchantItem(item.uid, true); setShowEnchant(false); onClose(); }}
+                onClick={() => { void game.enchantItem(item.uid, true); setShowEnchant(false); }}
                 disabled={game.itemUpgradeBusy || !guaranteedAffordable}
                 title="100% success · the item cannot be destroyed"
                 className="item-act-confirm w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-300 ui-text-medium font-bold hover:bg-violet-500/25 disabled:opacity-40 transition"
