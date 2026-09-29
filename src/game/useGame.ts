@@ -336,6 +336,7 @@ export function useGame() {
   const [ascensionFocus, setAscensionFocus] = useState<Partial<Record<Rarity, string>>>({});
   const [summonError, setSummonError] = useState('');
   const [serverRevisionHint, setServerRevisionHint] = useState<number | null>(null);
+  const serverRevisionHintRef = useRef(serverRevisionHint); serverRevisionHintRef.current = serverRevisionHint;
   const [mailCount, setMailCount] = useState(0);
   const [trainingIncomeRevision, setTrainingIncomeRevision] = useState<number | null>(null);
   const [storeBusy, setStoreBusy] = useState(false);
@@ -1771,9 +1772,9 @@ export function useGame() {
     bag: number; kind: 'buy' | 'upgrade'; slots: number; catalogue_usd_cents: number;
     token_cost: number; available: boolean; complete?: boolean;
   } | null> => {
-    if (!tokenomicsEnabled || !Number.isSafeInteger(serverRevisionHint)) return null;
+    if (!tokenomicsEnabled || !Number.isSafeInteger(serverRevisionHintRef.current)) return null;
     return playerSync('inventory_bag_quote');
-  }, [serverRevisionHint]);
+  }, []);
 
   const buyInventoryBag = useCallback(async (bag: number, kind: 'buy' | 'upgrade', maxTokenCost: number): Promise<{ ok: true } | { ok: false; error: string }> => {
     if (!tokenomicsEnabled || !Number.isSafeInteger(serverRevisionHint)) return { ok: false, error: 'state_unavailable' };

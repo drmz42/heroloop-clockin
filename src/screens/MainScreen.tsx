@@ -147,6 +147,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const [bagQuote, setBagQuote] = useState<Awaited<ReturnType<GameApi['quoteInventoryBag']>>>(null);
   const [bagPurchaseConfirm, setBagPurchaseConfirm] = useState(false);
   const [bagPurchaseBusy, setBagPurchaseBusy] = useState(false);
+  const bagSlotsKey = state.bagSlots.join(',');
+  const bagQuoteReady = Number.isSafeInteger(game.serverRevisionHint);
   const [selectedResource, setSelectedResource] = useState<'summon-scroll' | 'boss-key' | null>(null);
   const [showDropRates, setShowDropRates] = useState(false);
   const dropRatesButtonRef = useRef<HTMLButtonElement>(null);
@@ -166,10 +168,11 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const locationRailRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!bagQuoteReady) return undefined;
     let active = true;
     void game.quoteInventoryBag().then((quote) => { if (active) setBagQuote(quote); });
     return () => { active = false; };
-  }, [game.quoteInventoryBag, game.serverRevisionHint]);
+  }, [game.quoteInventoryBag, bagQuoteReady, bagSlotsKey]);
 
   useEffect(() => {
     // The banner keeps its own snapshot: the next wave clears battleResult
@@ -788,6 +791,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               {bagPurchaseConfirm && <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label="Confirm bag purchase"><span>Spend up to {formatNum(bagQuote.token_cost)} $HERO?</span><button type="button" className="game-control min-h-9 px-2" onClick={() => setBagPurchaseConfirm(false)}>Cancel</button><button type="button" className="game-control game-primary min-h-9 px-2 font-bold" disabled={bagPurchaseBusy} onClick={async () => { setBagPurchaseBusy(true); const result = await game.buyInventoryBag(bagQuote.bag, bagQuote.kind, bagQuote.token_cost); setBagPurchaseBusy(false); setBagPurchaseConfirm(false); if (result.ok) setBagQuote(null); showToast(result.ok ? 'Bag capacity unlocked' : `Bag purchase failed: ${result.error}`); }}>{bagPurchaseBusy ? 'Processing…' : 'Confirm'}</button></div>}
             </div>}
             {inventoryTab !== 'resources' && bagOpenSlots === 0 && bagQuote && !bagQuote.complete && bagQuote.bag !== inventoryTab && <p className="mt-2 ui-text-small text-[#a9a092]">Unlock and upgrade earlier bags first.</p>}
+            {inventoryTab !== 'resources' && bagQuoteReady && !bagQuote && <button type="button" className="game-control mt-2 min-h-9 w-full ui-text-small" onClick={() => void game.quoteInventoryBag().then(setBagQuote)}>Refresh bag price</button>}
             {inventoryTab !== 'resources' && <div className="mt-2 grid min-w-0 grid-cols-[1fr_1fr_32px_1fr] gap-1">
               <button onClick={() => { game.sortInventory(); showToast('Sorted by rarity'); }} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 ui-text-medium font-bold" title="Sort by rarity"><ArrowUpDown size={12} /> Sort</button>
               <button onClick={async () => { if (state.team.length === 0) return; showToast(await game.autoEquipBest() ? 'Best gear equipped on active team' : equipmentFailure('Auto Equip')); }} disabled={state.team.length === 0} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 ui-text-medium font-bold" title="Equip the strongest valid gear on each active hero in formation order"><Wand2 size={12} /> Auto</button>
