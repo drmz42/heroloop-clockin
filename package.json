@@ -9,7 +9,7 @@
     "build": "npm run check:game-functions:integration && npm run check:game-functions:registry && node scripts/check-todo-task-routing.mjs && node scripts/check-todo-table-contract.mjs && node scripts/check-storage-passports.mjs && node scripts/check-storage-retention-report.mjs && node scripts/check-storage-retention-apply.mjs && node scripts/check-agent-tooling.mjs && vite build",
     "check:ascension-focus": "node scripts/check-ascension-focus-contract.mjs",
     "check:balance-version": "node scripts/check-balance-version-contract.mjs",
-    "check:hero-progression-v5": "node scripts/check-hero-progression-v5.mjs",
+    "check:balance-v6-runtime": "node scripts/check-balance-v6-runtime.mjs",
     "check:balance-telemetry": "node scripts/check-balance-telemetry-contract.mjs",
     "check:balance-v4": "node scripts/check-balance-v4-contract.mjs",
     "check:enchant-v4-runtime": "node scripts/check-enchant-v4-runtime.mjs",

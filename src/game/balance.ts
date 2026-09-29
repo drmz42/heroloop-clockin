@@ -1,19 +1,17 @@
 import type { BalanceTelemetry, BalanceTelemetrySummary } from './types';
 
-export const BALANCE_VERSION = 'balance-v5-progression-2026.09.28-v1:telemetry-ratio-v2';
-// Approved per-location base table (Account Level bands); the displayed value is RECOMMENDED_POWER_PER_LANE.
-export const BASE_POWER_PER_LANE = [49, 98, 138, 186, 242, 292, 353, 427, 520, 603, 3947, 3998, 5055, 5117, 5479, 6421, 8169, 9208, 11029, 12166] as const;
-// Displayed Recommended Power per lane for 1/2/3-hero formations, calibrated against the server combat
-// engine (`scripts/calibrate-recommended-power.ts`, data/recommended-power-server-calibration.csv): the
-// per-lane Power at which a formation wins 72% of normal waves. Locations 1-10 are the 2026-09-26 measured
-// values (the v5 re-run stays within sampling noise). Locations 11-19 take the 2026-09-29 v5 measurement
-// where at least 50 samples fall within 0.85-1.15x of the previous value, raised to stay non-decreasing
-// by location; 18/3-hero, 19/2-3-hero and Location 20 keep the previous values: too few v5 samples reach them.
+export const BALANCE_VERSION = 'balance-v6-2026.09.29-v1:telemetry-ratio-v2';
+// Balance v6 smooth per-lane target Power by Location (docs/game/data/balance-v6/recommended-power.csv).
+export const BASE_POWER_PER_LANE = [49, 99, 136, 188, 259, 358, 494, 682, 941, 1298, 1792, 2473, 3412, 4333, 5503, 6989, 8876, 11273, 14317, 18182] as const;
+// Displayed Recommended Power per lane for 1/2/3-hero formations: the v6 target curve times one formation
+// factor per team size (x0.98 / x1.36 / x1.57), measured as the 72% win-rate Power on the server combat
+// engine by `npx tsx scripts/model-balance-v6.ts` (recommended-power.csv), rounded to whole Power.
+// Location 1 keeps its v5 onboarding enemy and therefore its v5 values.
 export const RECOMMENDED_POWER_PER_LANE: readonly (readonly [number, number, number])[] = [
-  [44, 46, 77], [91, 133, 133], [145, 173, 196], [189, 242, 255], [244, 307, 368],
-  [320, 400, 428], [396, 504, 557], [466, 561, 695], [573, 686, 795], [823, 948, 1049],
-  [4646, 5518, 6095], [4856, 5703, 6154], [5719, 7041, 7764], [5796, 7041, 7764], [6231, 7589, 8151],
-  [7232, 8829, 9786], [9550, 11293, 11719], [10767, 14405, 14388], [13833, 16544, 17232], [16880, 18249, 19010],
+  [44, 46, 77], [98, 135, 156], [134, 185, 214], [185, 256, 296], [255, 353, 408],
+  [352, 488, 563], [486, 673, 778], [671, 929, 1070], [926, 1280, 1480], [1280, 1770, 2040],
+  [1760, 2440, 2820], [2430, 3370, 3890], [3360, 4650, 5370], [4270, 5900, 6820], [5420, 7490, 8660],
+  [6880, 9520, 11000], [8740, 12100, 14000], [11100, 15400, 17700], [14100, 19500, 22500], [17900, 24800, 28600],
 ];
 export const WINNING_CLEAR_SECONDS_BUCKETS = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360] as const;
 const MAX_CLEAR_SECONDS = WINNING_CLEAR_SECONDS_BUCKETS[WINNING_CLEAR_SECONDS_BUCKETS.length - 1];

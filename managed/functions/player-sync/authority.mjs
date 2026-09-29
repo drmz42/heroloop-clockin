@@ -1,6 +1,8 @@
+import { V6_LOCATION_UNLOCK_LEVELS, v6EnchantMultiplier, v6ItemImplicit, v6LevelMastery, v6StarMultiplier } from './balance-v6.mjs';
+
 const RARITIES = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
 const RARITY_SCALE = [1, 1.441163, 2.147372, 3.084756, 4.435796, 6.370091, 9.143236, 13.119459, 18.814853];
-const LOCATION_UNLOCK_LEVELS = [1, 5, 10, 16, 23, 31, 40, 50, 60, 70, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98];
+const LOCATION_UNLOCK_LEVELS = V6_LOCATION_UNLOCK_LEVELS;
 const MAX_LEVEL = 99;
 const ITEM_SELL_MULTIPLIER = {
   common: 0.3, uncommon: 0.7, rare: 1.4, epic: 2.8, legendary: 4.6,
@@ -258,13 +260,6 @@ export function applyTrainingPurchases(sourceState, events, nowMs) {
   return { ...settled, trainingCamp: camp };
 }
 
-function starMultiplier(stars) {
-  return 1 + integer(stars, 0, 20) * .05;
-}
-
-function heroLevelMastery(level) {
-  return 1 + .75 * (integer(level, 1, MAX_LEVEL) - 1) / 79;
-}
 
 const ITEM_STAT_KEYS = new Set(['hp', 'atk', 'def', 'atkSpeed', 'critChance', 'critDamage', 'dodge']);
 const SET_BONUS_PERCENT = {
@@ -273,16 +268,10 @@ const SET_BONUS_PERCENT = {
 };
 const ENCHANT_RESONANCE_PERCENT = [0, 1, 2, 4, 7, 11, 16, 22, 30, 39, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150];
 
-function enchantV4Multiplier(level) {
-  const safe = integer(level, 0, 20);
-  return 1 + Math.min(safe, 5) * .10
-    + Math.max(0, Math.min(safe, 10) - 5) * .15
-    + Math.max(0, Math.min(safe, 15) - 10) * .20
-    + Math.max(0, safe - 15) * .25;
-}
-
-function canonicalItemStats(items) {
-  const equipped = Array.isArray(items) ? items : [];
+// `slotted` pairs each ledger item with the slot it is equipped in (Balance v6 item base stat).
+function canonicalItemStats(slotted) {
+  const pairs = Array.isArray(slotted) ? slotted : [];
+  const equipped = pairs.map(({ item }) => item);
   const rarity = equipped.length === 8 && equipped.every((item) => item?.rarity === equipped[0]?.rarity)
     ? equipped[0].rarity
     : null;
@@ -291,23 +280,30 @@ function canonicalItemStats(items) {
     ? Math.min(...equipped.map((item) => integer(item?.enchant_level, 0, 20)))
     : 0;
   const resonance = (ENCHANT_RESONANCE_PERCENT[minimumEnchant] ?? 0) / 100;
-  return equipped.reduce((totals, item) => {
+  return pairs.reduce((totals, { item, slot }) => {
     const version = Number(item?.enchant_stats_version);
     const v3 = version === 3;
+    const level = integer(item?.enchant_level, 0, 20);
+    const multiplierFor = (key) => {
+      const rate = v3 ? ['hp','atk','def'].includes(key) ? .1
+        : ['goldBonus','xpBonus'].includes(key) ? .025 : .05 : .1;
+      return (version === 4 ? v6EnchantMultiplier(level) : 1 + level * rate)
+        + setBonus + (v3 ? 0 : resonance);
+    };
     for (const stat of Array.isArray(item?.stats) ? item.stats : []) {
       if (!ITEM_STAT_KEYS.has(stat?.key)) continue;
       const value = Number(stat?.value);
       if (!Number.isFinite(value)) continue;
-      const rate = v3 ? ['hp','atk','def'].includes(stat.key) ? .1
-        : ['goldBonus','xpBonus'].includes(stat.key) ? .025 : .05 : .1;
-      const level = integer(item?.enchant_level, 0, 20);
-      const multiplier = (version === 4 ? enchantV4Multiplier(level) : 1 + level * rate)
-        + setBonus + (v3 ? 0 : resonance);
+      const multiplier = multiplierFor(stat.key);
       const bounded = Math.max(-1_000_000_000, Math.min(1_000_000_000, value));
       const effective = stat?.isPercent === true
         ? Math.round(bounded * multiplier * 1000) / 1000
         : Math.round(bounded * multiplier);
       totals[stat.key] += effective;
+    }
+    const implicit = v6ItemImplicit(slot, item?.rarity, item?.item_level);
+    for (const key of ['hp', 'atk', 'def']) {
+      if (implicit[key] > 0) totals[key] += Math.round(implicit[key] * multiplierFor(key));
     }
     return totals;
   }, { hp: 0, atk: 0, def: 0, atkSpeed: 0, critChance: 0, critDamage: 0, dodge: 0 });
@@ -325,13 +321,13 @@ function canonicalStats(hero, equippedItems = []) {
   const rarityScale = RARITY_SCALE[tier];
   const level = integer(hero?.level, 1, MAX_LEVEL);
   const stars = integer(hero?.stars, 0, 20);
-  const starScale = starMultiplier(stars);
+  const starScale = v6StarMultiplier(stars);
   const itemStats = canonicalItemStats(equippedItems);
   const rarityGrowth = 1 + tier * .02;
-  const mastery = heroLevelMastery(level);
-  const hp = Math.round((archetype.hp * rarityScale * .2 * (1 + archetype.growth[0] * rarityGrowth * (level - 1)) * starScale + itemStats.hp) * (archetype.hpMult ?? 1) * mastery);
-  const atk = Math.round((archetype.atk * rarityScale * .2 * (1 + archetype.growth[1] * rarityGrowth * (level - 1)) * starScale + itemStats.atk) * mastery);
-  const def = Math.round((archetype.def * rarityScale * .2 * (1 + archetype.growth[2] * rarityGrowth * (level - 1)) * starScale + itemStats.def) * mastery);
+  const mastery = v6LevelMastery(level);
+  const hp = Math.round((archetype.hp * rarityScale * .2 * (1 + archetype.growth[0] * rarityGrowth * (level - 1)) * starScale * mastery + itemStats.hp) * (archetype.hpMult ?? 1));
+  const atk = Math.round(archetype.atk * rarityScale * .2 * (1 + archetype.growth[1] * rarityGrowth * (level - 1)) * starScale * mastery + itemStats.atk);
+  const def = Math.round(archetype.def * rarityScale * .2 * (1 + archetype.growth[2] * rarityGrowth * (level - 1)) * starScale * mastery + itemStats.def);
   const speed = archetype.speed * (1 + tier * .01) + stars * .1;
   const attackSpeed = Math.min((archetype.attackSpeed ?? 0) + itemStats.atkSpeed, archetype.caps[4]);
   const interval = Math.max(600, (1540 - Math.min(speed * 2.2, 700)) / (1 + attackSpeed));
@@ -354,13 +350,13 @@ export function deriveServerSummary(state, ledgerItems = []) {
   const statsForRoster = (heroes) => {
     const claimedItems = new Set();
     return heroes.map((hero) => {
-      const equippedUids = hero?.equipped && typeof hero.equipped === 'object'
-        ? [...new Set(Object.values(hero.equipped).filter((uid) => typeof uid === 'string'))]
+      const equippedEntries = hero?.equipped && typeof hero.equipped === 'object'
+        ? Object.entries(hero.equipped).filter(([, uid]) => typeof uid === 'string')
         : [];
-      const equipped = equippedUids.flatMap((uid) => {
+      const equipped = equippedEntries.flatMap(([slot, uid]) => {
         if (claimedItems.has(uid) || !ledgerByUid.has(uid)) return [];
         claimedItems.add(uid);
-        return [ledgerByUid.get(uid)];
+        return [{ item: ledgerByUid.get(uid), slot }];
       });
       return canonicalStats(hero, equipped);
     }).filter(Boolean);

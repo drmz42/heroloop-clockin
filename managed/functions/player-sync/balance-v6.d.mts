@@ -1,0 +1,16 @@
+export const BALANCE_V6_ID: string;
+export const V6_STAR_PER_STAR: number;
+export const V6_MASTERY_PER_LEVEL: number;
+export const V6_ENCHANT_PER_LEVEL: number;
+export const V6_ITEM_LEVEL_LINEAR: number;
+export const V6_IMPLICIT_RARITY_SCALE: Readonly<Record<string, number>>;
+export const V6_LOCATION_RANGES: readonly (readonly [number, number])[];
+export const V6_LOCATION_UNLOCK_LEVELS: readonly number[];
+export const V6_ENEMY_BASE: readonly (readonly [number, number, number])[];
+export function v6StarMultiplier(stars: unknown): number;
+export function v6LevelMastery(level: unknown): number;
+export function v6EnchantMultiplier(level: unknown): number;
+export function v6CanonicalSlot(slot: unknown): string;
+export function v6ItemLevelMultiplier(itemLevel: unknown): number;
+export function v6ItemImplicit(slot: unknown, rarity: unknown, itemLevel: unknown): { hp: number; atk: number; def: number };
+export function v6EnemyBase(location: unknown): { hp: number; atk: number; def: number };

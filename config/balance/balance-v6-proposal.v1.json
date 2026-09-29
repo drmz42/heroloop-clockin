@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "balanceVersion": "balance-v6-proposal-2026.09.29-v1",
-  "status": "proposal-not-runtime",
+  "status": "staging-runtime",
   "hero": {
     "masteryPerLevel": 0.014,
     "starPerStar": 0.06
@@ -88,12 +88,13 @@
           "enchant": 0
         },
         "enemy": {
-          "hp": 104,
-          "atk": 23.6,
-          "def": 3.28
+          "hp": 99,
+          "atk": 10.24,
+          "def": 2.5
         },
         "calibratedAttackPerReferenceHp": 0.1666,
-        "calibrationSamples": 850
+        "calibrationSamples": 850,
+        "onboardingOverride": "Location 1 keeps the v5 enemy (HP 99, Attack 10.24, Defense 2.5): the calibrated 104/23.6/3.28 assumed two items, but a new player starts with one bare Common hero and lost almost every wave."
       },
       {
         "location": 2,

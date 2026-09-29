@@ -873,7 +873,7 @@ Deno.serve(async (req: Request) => {
       ] = await Promise.all([
         supabase.from("players").select("player_id").eq("player_id", player_id).maybeSingle(),
         supabase.from("player_saves").select("state").eq("player_id", player_id).maybeSingle(),
-        supabase.from("player_items").select("id, rarity, stats, enchant_level, enchant_stats_version")
+        supabase.from("player_items").select("id, rarity, item_level, stats, enchant_level, enchant_stats_version")
           .eq("player_id", player_id).is("removed_at", null),
       ]);
       if (registeredError || saveError || ledgerError) {

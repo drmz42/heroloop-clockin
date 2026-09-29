@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { ArrowUp, Dice5, ShieldCheck, Trash2, Lock, Unlock, X, Coins } from 'lucide-react';
-import { HERO_USD_QUOTE, ITEM_MAP, SLOT_LABEL, displayItemPower, enchantedStats, formatStatValue, STAT_LABEL, sellValue, enchantSuccessChance, enchantCost, enchantCharmCost, rerollCost } from '@/game/items';
+import { HERO_USD_QUOTE, ITEM_MAP, SLOT_LABEL, displayItemPower, enchantedStats, itemBaseStats, formatStatValue, STAT_LABEL, sellValue, enchantSuccessChance, enchantCost, enchantCharmCost, rerollCost } from '@/game/items';
 import { CLASS_LABEL, RARITY_COLORS, RARITY_LABEL } from '@/game/heroes';
 import { formatNum } from '@/game/state';
 import { ItemArtwork } from '@/components/ItemArtwork';
@@ -40,8 +40,18 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
   const enchantCostText = enchCost.gold > 0 ? `${formatNum(enchCost.gold)} Gold` : `${formatNum(enchCost.hero)} $HERO`;
   const usd = (hero: number) => `$${(hero * HERO_USD_QUOTE).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 })}`;
   const ringSlot = !equippedSlot && onEquip && (base.slot === 'ring1' || base.slot === 'ring2');
-  const candidateStats = new Map(enchantedStats(item.stats, item.enchantLevel).map((stat) => [stat.key, stat]));
-  const equippedStats = new Map((comparisonItem ? enchantedStats(comparisonItem.stats, comparisonItem.enchantLevel) : []).map((stat) => [stat.key, stat]));
+  const baseStats = itemBaseStats(item);
+  // Base stat and random lines of the same key are summed for the comparison.
+  const statTotals = (source: OwnedItem) => {
+    const totals = new Map<ItemStatKey, { key: ItemStatKey; value: number; isPercent: boolean }>();
+    for (const stat of enchantedStats([...itemBaseStats(source), ...source.stats], source.enchantLevel)) {
+      const current = totals.get(stat.key);
+      totals.set(stat.key, { key: stat.key, isPercent: stat.isPercent, value: (current?.value ?? 0) + stat.value });
+    }
+    return totals;
+  };
+  const candidateStats = statTotals(item);
+  const equippedStats = comparisonItem ? statTotals(comparisonItem) : new Map<ItemStatKey, { key: ItemStatKey; value: number; isPercent: boolean }>();
   const comparisonKeys = [...new Set([...candidateStats.keys(), ...equippedStats.keys()])] as ItemStatKey[];
   const combatPower = displayItemPower(item);
   const comparisonPower = comparisonItem ? displayItemPower(comparisonItem) : 0;
@@ -64,6 +74,12 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
 
       {/* Stats */}
       <div className="mb-1.5 grid grid-cols-1 gap-y-0.5 rounded-md bg-black/20 px-2 py-1">
+        {baseStats.map((s) => (
+          <div key={`base-${s.key}`} className="flex items-center justify-between ui-text-medium">
+            <span className="text-slate-300">{STAT_LABEL[s.key]} <span className="ui-text-small text-slate-500">base</span></span>
+            <span className="font-bold text-slate-100">{formatStatValue(s)}{item.enchantLevel > 0 && <span className="text-amber-400/70 ui-text-small ml-0.5">(+{enchantBonusPercent(item.enchantLevel)}%)</span>}</span>
+          </div>
+        ))}
         {item.stats.map((s, i) => (
           <div key={i} className="flex items-center justify-between ui-text-medium">
             <span className="text-slate-400">{STAT_LABEL[s.key]}</span>

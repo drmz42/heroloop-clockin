@@ -4,6 +4,7 @@ import {
   enchantGoldCost, enchantGuaranteedHeroCost, enchantMultiplier,
 } from './enchant';
 import { itemRollV5Power, itemRollV5RollItem } from './item-roll-runtime.generated';
+import { v6ItemImplicit } from '../../managed/functions/player-sync/balance-v6.mjs';
 
 export { HERO_USD_QUOTE, enchantSuccessChance } from './enchant';
 
@@ -269,9 +270,19 @@ export function itemPower(stats: ItemStatRoll[], enchantLevel = 0, version: 2 | 
   return weightedItemPower(stats, enchantLevel, version, STORED_POWER_WEIGHTS);
 }
 
+// Balance v6 base stat every item carries from its slot, rarity and Item Level (before Enchant).
+export function itemBaseStats(item: Pick<OwnedItem, 'itemId' | 'level'>): ItemStatRoll[] {
+  const base = ITEM_MAP[item.itemId];
+  if (!base) return [];
+  const implicit = v6ItemImplicit(base.slot, base.rarity, item.level);
+  return (['hp', 'atk', 'def'] as const).filter((key) => implicit[key] > 0)
+    .map((key) => ({ key, value: Math.round(implicit[key]), isPercent: false }));
+}
+
 // Player-facing gear score excludes economy lines and values Attack Speed in combat units.
+// It includes the Balance v6 base stat so higher-rarity and higher-level items rank higher.
 export function displayItemPower(item: OwnedItem): number {
-  return weightedItemPower(item.stats, item.enchantLevel, item.enchantStatsVersion ?? 2, GEAR_POWER_WEIGHTS);
+  return weightedItemPower([...itemBaseStats(item), ...item.stats], item.enchantLevel, item.enchantStatsVersion ?? 2, GEAR_POWER_WEIGHTS);
 }
 
 let itemUid = 0;

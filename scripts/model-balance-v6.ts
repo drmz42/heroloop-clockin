@@ -1,7 +1,8 @@
 // Balance v6 proposal model (not runtime). Builds the hero, Star, item/Enchant, enemy and location
 // tables for config/balance/balance-v6-proposal.v1.json and verifies them on the live server combat
-// engine. Every v6 formula differs from the current v5 runtime only by the parameters in that config;
-// `--check` first proves the v5 re-implementation matches the server hero units exactly.
+// engine. Every v6 formula differs from the v5 runtime only by the parameters in that config; since the
+// v6 runtime (managed/functions/player-sync/balance-v6.mjs) `--check` proves the v6 model matches the
+// server hero units, displayed client Power and normal-combat waves exactly.
 //
 // Run:   npx tsx scripts/model-balance-v6.ts            (writes docs/game/data/balance-v6/*)
 //        npx tsx scripts/model-balance-v6.ts --check    (asserts parity, targets and determinism)
@@ -153,7 +154,7 @@ export function gearSet(heroClass: HeroClass, rarity: string, level: number, enc
   return SLOTS.slice(0, slots).map((slot) => ({ slot, rarity, level, enchant, lines: rollItemLines(heroClass, slot, rarity, random) }));
 }
 
-// ── v5 parity with the server heroUnit ─────────────────────────────────────
+// ── v6 parity with the server heroUnit and client Power ───────────────────
 function parityCheck(samples: number): number {
   const random = rng(0xa11ce);
   let mismatches = 0;
@@ -166,20 +167,20 @@ function parityCheck(samples: number): number {
     const itemRarity = RARITIES[Math.floor(random() * 9)];
     const hero: Hero = { heroClass, tier, level, stars, items: gearSet(heroClass, itemRarity, clamp(level - 3, 1, 99), Math.floor(random() * 21), random, slots) };
     const ledger = hero.items.map((item, index) => ({
-      id: `i${index}`, rarity: item.rarity, enchant_level: item.enchant, enchant_stats_version: 4,
+      id: `i${index}`, rarity: item.rarity, item_level: item.level, enchant_level: item.enchant, enchant_stats_version: 4,
       stats: item.lines.map((line) => ({ key: line.key, value: lineValue('v5', line, item.rarity, item.level), isPercent: !MAIN.has(line.key) })),
     }));
     const owned = { uid: 'h0', heroId: `${heroClass}-${RARITIES[tier]}`, level, stars, equipped: Object.fromEntries(ledger.map((item, index) => [SLOTS[index], item.id])), xp: 0 };
     const combat = buildNormalCombat({ team: ['h0'], ownedHeroes: [owned], gold: 0 }, ledger, 1, 1, null, 0, COMBAT_EFFECTS_V2_VERSION);
     const unit = combat.initial_units[0];
-    const mine = heroStats('v5', hero);
+    const mine = heroStats('v6', hero);
     const clientItems = hero.items.map((item, index) => ({
       uid: `i${index}`, level: item.level, enchantLevel: item.enchant, enchantStatsVersion: 4 as const, itemRollVersion: 5, rerollCount: 0, power: 0,
       itemId: ITEMS.find((base) => base.slot === SLOTS[index] && base.rarity === item.rarity && (!base.heroClass || base.heroClass === heroClass))!.id,
       stats: ledger[index].stats,
     }));
     const clientPower = teamPower([owned as never], clientItems as never);
-    const myPower = heroPower('v5', hero);
+    const myPower = heroPower('v6', hero);
     if (Math.abs(clientPower - myPower) > Math.max(4, clientPower * .035)) {
       mismatches += 1;
       if (mismatches <= 3) console.error('power mismatch', { heroClass, tier, level, stars, slots, clientPower, myPower });
@@ -423,7 +424,7 @@ function fight(model: Model, heroes: Hero[], location: number, seed: number, bas
   const resolved = resolveCombat(units as never, seed, 20, 120000);
   return { win: resolved.resolution.allCleared, ms: resolved.elapsedMs };
 }
-// Combat parity: our v5 units + v5 enemy bases must reproduce the server wave exactly.
+// Combat parity: our v6 units + the v6 enemy table must reproduce the server wave exactly.
 function combatParity(samples: number): number {
   const random = rng(0xc0b7a7);
   let mismatches = 0;
@@ -435,13 +436,13 @@ function combatParity(samples: number): number {
       const level = 1 + Math.floor(random() * 99);
       return { heroClass, tier: Math.floor(random() * 9), level, stars: Math.floor(random() * 21), items: gearSet(heroClass, RARITIES[Math.floor(random() * 9)], level, Math.floor(random() * 21), random, Math.floor(random() * 9)) };
     });
-    const ledger = heroes.flatMap((hero, h) => hero.items.map((item, index) => ({ id: `h${h}i${index}`, rarity: item.rarity, enchant_level: item.enchant, enchant_stats_version: 4,
+    const ledger = heroes.flatMap((hero, h) => hero.items.map((item, index) => ({ id: `h${h}i${index}`, rarity: item.rarity, item_level: item.level, enchant_level: item.enchant, enchant_stats_version: 4,
       stats: item.lines.map((line) => ({ key: line.key, value: lineValue('v5', line, item.rarity, item.level), isPercent: !MAIN.has(line.key) })) })));
     const owned = heroes.map((hero, h) => ({ uid: `h${h}`, heroId: `${hero.heroClass}-${RARITIES[hero.tier]}`, level: hero.level, stars: hero.stars, xp: 0,
       equipped: Object.fromEntries(hero.items.map((_, index) => [SLOTS[index], `h${h}i${index}`])) }));
     const seed = 1000 + sample * 7919;
     const server = buildNormalCombat({ team: owned.map((hero) => hero.uid), ownedHeroes: owned, gold: 0 }, ledger, location, seed, null, 0, COMBAT_EFFECTS_V2_VERSION);
-    const mine = fight('v5', heroes, location, seed, v5EnemyBase(location));
+    const mine = fight('v6', heroes, location, seed, v6Enemy(location));
     if (server.outcome.all_cleared !== mine.win || server.outcome.elapsed_ms !== mine.ms) {
       mismatches += 1;
       if (mismatches <= 3) console.error('combat mismatch', { location, size, server: [server.outcome.all_cleared, server.outcome.elapsed_ms], mine });
@@ -736,9 +737,9 @@ function printTable(title: string, rows: (string | number)[][]) {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const mismatches = parityCheck(CHECK ? 3000 : 600);
-  console.log(`v5 parity with server heroUnit: ${mismatches} mismatches`);
+  console.log(`v6 parity with server heroUnit and client Power: ${mismatches} mismatches`);
   const combatMismatches = combatParity(CHECK ? 600 : 150);
-  console.log(`v5 parity with server normal combat: ${combatMismatches} mismatches`);
+  console.log(`v6 parity with server normal combat: ${combatMismatches} mismatches`);
   if (mismatches || combatMismatches) process.exit(1);
   if (process.argv.includes('--v5-baseline')) {
     const base = v5Baseline(Number(process.argv[process.argv.indexOf('--v5-baseline') + 1]) || 400);

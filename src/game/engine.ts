@@ -3,6 +3,7 @@ import { HERO_MAP, RARITY_INDEX } from './heroes';
 import { ITEM_MAP, maxChestRarityForLocation } from './items';
 import { recommendedTeamPower } from './balance';
 import { enchantMultiplier, enchantResonancePercent, MAX_ENCHANT_LEVEL } from './enchant';
+import { V6_LOCATION_RANGES, v6EnemyBase, v6ItemImplicit, v6LevelMastery, v6StarMultiplier } from '../../managed/functions/player-sync/balance-v6.mjs';
 
 export interface HeroFullStats {
   hp: number; atk: number; def: number; speed: number;
@@ -11,8 +12,8 @@ export interface HeroFullStats {
 }
 
 const BASE_STAT_SCALE = 0.2;
-// Balance v5: a steady combat-stat gain at every Hero Level, including equipped main stats.
-export const heroLevelMastery = (level: number): number => 1 + .75 * (Math.max(1, Math.min(99, level)) - 1) / 79;
+// Balance v6: +1.4% base stats per Hero Level; equipment carries its own Item Level curve.
+export const heroLevelMastery = (level: number): number => v6LevelMastery(level);
 
 const CLASS_GROWTH: Record<string, { hp: number; atk: number; def: number }> = {
   knight: { hp: .012, atk: .0055, def: .009 }, shepherd: { hp: .007, atk: .0115, def: .0035 },
@@ -45,7 +46,7 @@ export function equippedEnchantResonance(equippedItems: OwnedItem[]): { level: n
 }
 
 export function heroStarMultiplier(stars: number): number {
-  return 1 + Math.max(0, Math.min(20, stars)) * .05;
+  return v6StarMultiplier(stars);
 }
 
 export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
@@ -56,10 +57,11 @@ export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
   const growth = CLASS_GROWTH[base.heroClass];
   const starMul = heroStarMultiplier(owned.stars);
   const rarityGrowth = 1 + tier * .02;
+  const mastery = heroLevelMastery(lvl);
 
-  let hp = base.baseHp * BASE_STAT_SCALE * (1 + growth.hp * rarityGrowth * (lvl - 1)) * starMul;
-  let atk = base.baseAtk * BASE_STAT_SCALE * (1 + growth.atk * rarityGrowth * (lvl - 1)) * starMul;
-  let def = base.baseDef * BASE_STAT_SCALE * (1 + growth.def * rarityGrowth * (lvl - 1)) * starMul;
+  let hp = base.baseHp * BASE_STAT_SCALE * (1 + growth.hp * rarityGrowth * (lvl - 1)) * starMul * mastery;
+  let atk = base.baseAtk * BASE_STAT_SCALE * (1 + growth.atk * rarityGrowth * (lvl - 1)) * starMul * mastery;
+  let def = base.baseDef * BASE_STAT_SCALE * (1 + growth.def * rarityGrowth * (lvl - 1)) * starMul * mastery;
   const speed = base.baseSpeed + owned.stars * .1;
   let critChance = base.critChance;
   let critDamage = base.critDamage;
@@ -73,12 +75,21 @@ export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
     const resonance = (equippedEnchantResonance(equippedItems)?.percent ?? 0) / 100;
     for (const item of equippedItems) {
       const level = Math.max(0, Math.min(MAX_ENCHANT_LEVEL, item.enchantLevel));
-      for (const s of item.stats) {
+      const multiplierFor = (key: string) => {
         const enchantRate = item.enchantStatsVersion === 3
-          ? (s.key === 'hp' || s.key === 'atk' || s.key === 'def' ? .1 : s.key === 'goldBonus' || s.key === 'xpBonus' ? .025 : .05)
+          ? (key === 'hp' || key === 'atk' || key === 'def' ? .1 : key === 'goldBonus' || key === 'xpBonus' ? .025 : .05)
           : .1;
         const baseMultiplier = item.enchantStatsVersion === 4 ? enchantMultiplier(level) : 1 + level * enchantRate;
-        const multiplier = baseMultiplier + setBonus + (item.enchantStatsVersion === 3 ? 0 : resonance);
+        return baseMultiplier + setBonus + (item.enchantStatsVersion === 3 ? 0 : resonance);
+      };
+      // Balance v6 item base stat, from the slot the item is equipped in.
+      const slot = Object.keys(owned.equipped).find((key) => owned.equipped[key as keyof typeof owned.equipped] === item.uid);
+      const implicit = v6ItemImplicit(slot, ITEM_MAP[item.itemId]?.rarity, item.level);
+      if (implicit.hp > 0) hp += Math.round(implicit.hp * multiplierFor('hp'));
+      if (implicit.atk > 0) atk += Math.round(implicit.atk * multiplierFor('atk'));
+      if (implicit.def > 0) def += Math.round(implicit.def * multiplierFor('def'));
+      for (const s of item.stats) {
+        const multiplier = multiplierFor(s.key);
         const value = s.isPercent
           ? Math.round(s.value * multiplier * 1000) / 1000
           : Math.round(s.value * multiplier);
@@ -101,10 +112,6 @@ export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
   dodge += passive.dodge ?? 0;
   hp *= passive.hpMult ?? 1;
   atkSpeed += passive.attackSpeed ?? 0;
-  const mastery = heroLevelMastery(lvl);
-  hp *= mastery;
-  atk *= mastery;
-  def *= mastery;
   const caps = CLASS_CAPS[base.heroClass];
 
   return {
@@ -183,11 +190,8 @@ const LOCATION_NAMES = [
   'Immortal Bastion', 'Cursed Meridian', 'Divine Crucible', 'Celestial Terminus', 'Godfall Nexus',
 ];
 
-// Unlock levels matching screenshot: 1-4, 5-9, 10-15, 16-22, 23-30, 31-39, 40-49, 50-59, 60-69, 70-79
-export const LOCATION_RANGES: [number, number][] = [
-  [1,4],[5,9],[10,15],[16,22],[23,30],[31,39],[40,49],[50,59],[60,69],[70,79],
-  [80,81],[82,83],[84,85],[86,87],[88,89],[90,91],[92,93],[94,95],[96,97],[98,99],
-];
+// Balance v6 Account Level bands: Locations 1-4 onboarding, then five levels each (four for 18-20).
+export const LOCATION_RANGES: [number, number][] = V6_LOCATION_RANGES.map(([low, high]) => [low, high] as [number, number]);
 
 export function locationUnlockLevel(locationId: number): number {
   const idx = Math.min(locationId - 1, LOCATION_RANGES.length - 1);
@@ -248,11 +252,12 @@ export function buildLocation(id: number, teamSize: number = 1, forceBoss = fals
   } else {
     enemies = Array.from({ length: enemyCount }).map((_, i) => {
       const e = ENEMY_POOL[(id + i) % ENEMY_POOL.length];
+      const base = v6EnemyBase(id);
       return {
         ...e,
-        hp: Math.round(300 * scale * (0.85 + i * 0.08) * 0.33 * difficultyRamp),
-        atk: Math.round(32 * scale * (0.8 + i * 0.05) * 0.32 * difficultyRamp),
-        def: Math.round(10 * scale * 0.25 * difficultyRamp),
+        hp: Math.round(base.hp * (0.85 + i * 0.08)),
+        atk: Math.round(base.atk * (0.8 + i * 0.05)),
+        def: Math.round(base.def),
         speed: 65 + i * 3 + Math.min(id * 1.5, 50),
       };
     });
