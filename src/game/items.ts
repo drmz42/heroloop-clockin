@@ -427,7 +427,7 @@ export function generateRotatingShop(): { itemId: string; price: number }[] {
 
 export function formatStatValue(stat: ItemStatRoll): string {
   if (stat.isPercent) return `+${(stat.value * 100).toFixed(1)}%`;
-  return `+${stat.value}`;
+  return `+${stat.value.toFixed(1).replace(/\.0$/, '')}`;
 }
 
 export function rarityColor(r: Rarity): string {

@@ -75,13 +75,13 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
       {/* Stats */}
       <div className="mb-1.5 grid grid-cols-1 gap-y-0.5 rounded-md bg-black/20 px-2 py-1">
         {baseStats.map((s) => (
-          <div key={`base-${s.key}`} className="flex items-center justify-between ui-text-medium">
+          <div key={`base-${s.key}`} className="item-stat-row flex items-center justify-between gap-2 ui-text-medium tabular-nums">
             <span className="text-slate-300">{STAT_LABEL[s.key]} <span className="ui-text-small text-slate-500">base</span></span>
             <span className="font-bold text-slate-100">{formatStatValue(s)}{item.enchantLevel > 0 && <span className="text-amber-400/70 ui-text-small ml-0.5">(+{enchantBonusPercent(item.enchantLevel)}%)</span>}</span>
           </div>
         ))}
         {item.stats.map((s, i) => (
-          <div key={i} className="flex items-center justify-between ui-text-medium">
+          <div key={i} className="item-stat-row flex items-center justify-between gap-2 ui-text-medium tabular-nums">
             <span className="text-slate-400">{STAT_LABEL[s.key]}</span>
             <span className="font-bold text-emerald-300">{formatStatValue(s)}{item.enchantLevel > 0 && <span className="text-amber-400/70 ui-text-small ml-0.5">(+{enchantBonusPercent(item.enchantLevel)}%)</span>}</span>
           </div>
@@ -98,7 +98,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
               const equipped = equippedStats.get(key);
               const delta = (candidate?.value ?? 0) - (equipped?.value ?? 0);
               const isPercent = candidate?.isPercent ?? equipped?.isPercent ?? false;
-              return <div key={key} className="flex items-center justify-between ui-text-small"><span className="text-[#9f9789]">{STAT_LABEL[key]}</span><span className={delta > 0 ? 'text-emerald-300' : delta < 0 ? 'text-rose-300' : 'text-slate-300'}>{delta > 0 ? '▲ +' : delta < 0 ? '▼ −' : '= '}{formatStatValue({ key, value: Math.abs(delta), isPercent })}</span></div>;
+              return <div key={key} className="flex items-center justify-between ui-text-small"><span className="text-[#9f9789]">{STAT_LABEL[key]}</span><span className={delta > 0 ? 'text-emerald-300' : delta < 0 ? 'text-rose-300' : 'text-slate-300'}>{delta > 0 ? '▲ +' : delta < 0 ? '▼ −' : '= '}{formatStatValue({ key, value: Math.abs(delta), isPercent }).replace(/^\+/, '')}</span></div>;
             })}
           </div>
         </div>
