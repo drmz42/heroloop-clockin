@@ -69,6 +69,21 @@ const PLATFORMS = [
   { name: 'Telegram Mini App', glyph: '➤' },
 ];
 
+// Valid referrals shown on the landing: the player's invite list, or `?refs=N` to preview the fill on this design lab.
+function referralCount(invited: number) {
+  const preview = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('refs') : null;
+  const value = preview !== null && /^\d{1,3}$/.test(preview) ? Number(preview) : invited;
+  return Math.max(0, Math.min(PACKS[PACKS.length - 1].referrals, value));
+}
+
+// Share of the rail from this pack's milestone to the next one that the count has covered.
+function railFill(count: number, index: number) {
+  const next = PACKS[index + 1];
+  if (!next) return 0;
+  const from = PACKS[index].referrals;
+  return Math.max(0, Math.min(1, (count - from) / (next.referrals - from)));
+}
+
 const prefersReducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 function scrollToSection(id: string) {
@@ -93,7 +108,7 @@ function ArtButton({ art, label, onClick, className = '' }: { art: string; label
   );
 }
 
-function PackCarousel({ onChoose }: { onChoose: () => void }) {
+function PackCarousel({ onChoose, referrals }: { onChoose: () => void; referrals: number }) {
   const track = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
 
@@ -116,7 +131,7 @@ function PackCarousel({ onChoose }: { onChoose: () => void }) {
   return (
     <>
       <div className="l5-pack-track" ref={track} onScroll={onScroll} role="list" aria-label="Founder packs">
-        {PACKS.map((pack) => (
+        {PACKS.map((pack, index) => (
           <div key={pack.id} className="l5-pack-col" role="listitem">
           <article className={`l5-pack l5-pack--${pack.id}`} aria-label={`${pack.name} pack, ${pack.price}`}>
             <img className="l5-pack-art" src={pack.art} alt="" loading="lazy" />
@@ -131,7 +146,7 @@ function PackCarousel({ onChoose }: { onChoose: () => void }) {
             </ul>
             <ArtButton art={pack.buy} label={pack.buyLabel} onClick={onChoose} className="l5-pack-buy" />
           </article>
-          <p className="l5-milestone" aria-label={`${pack.referrals} referrals unlock the ${pack.name} pack`}><i aria-hidden="true" />{pack.referrals}</p>
+          <p className={`l5-milestone${referrals >= pack.referrals ? ' is-reached' : ''}`} style={{ '--l5-fill': railFill(referrals, index) } as React.CSSProperties} aria-label={`${pack.referrals} referrals unlock the ${pack.name} pack${referrals >= pack.referrals ? ', reached' : ''}`}><i aria-hidden="true" />{pack.referrals}</p>
           </div>
         ))}
       </div>
@@ -147,6 +162,8 @@ function PackCarousel({ onChoose }: { onChoose: () => void }) {
 
 export default function PremiumLandingScreen() {
   const game = useGame();
+  const referrals = referralCount(game.state.referral?.invitedUsers?.length ?? 0);
+  const goal = PACKS.find((pack) => pack.referrals > referrals) ?? PACKS[PACKS.length - 1];
   const [onboarding, setOnboarding] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -231,7 +248,7 @@ export default function PremiumLandingScreen() {
 
         <section className="l5-band l5-band--vista">
           <SectionHeading id="packs" title="Founder Packs" subtitle="Jump-start your journey. Unlock more." />
-          <PackCarousel onChoose={play} />
+          <PackCarousel onChoose={play} referrals={referrals} />
         </section>
 
         <section className="l5-strip l5-referral" id="referral" aria-labelledby="l5-referral-title">
@@ -246,8 +263,8 @@ export default function PremiumLandingScreen() {
               <button type="button" className="l5-btn l5-ref-copy-btn" onClick={play}>Copy</button>
               <button type="button" className="l5-btn l5-ref-share" onClick={play}>Share</button>
             </div>
-            <p className="l5-ref-status">Your Referrals: 0 / 10 (Veteran Pack)</p>
-            <div className="l5-track" role="progressbar" aria-valuemin={0} aria-valuemax={10} aria-valuenow={0} aria-label="Referral progress"><span style={{ width: '0%' }} /></div>
+            <p className="l5-ref-status">Your Referrals: {referrals} / {goal.referrals} ({goal.name.charAt(0)}{goal.name.slice(1).toLowerCase()} Pack)</p>
+            <div className="l5-track" role="progressbar" aria-valuemin={0} aria-valuemax={goal.referrals} aria-valuenow={referrals} aria-label="Referral progress"><span style={{ width: `${Math.min(100, (referrals / goal.referrals) * 100)}%` }} /></div>
           </div>
           <ul className="l5-notes">
             <li>Earn 5% of valid referred players’ reward earnings</li>
