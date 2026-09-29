@@ -19,26 +19,21 @@ export function ReferralsScreen({ game }: { game: GameApi }) {
 
   return (
     <div className="themed-screen themed-screen-referrals flex h-full flex-col overflow-y-auto no-scrollbar">
-      <div className="shrink-0 border-b border-[#4f412e] px-4 py-3">
+      <div className="shrink-0 border-b border-[#4f412e] py-3 pl-4 pr-14">
         <h2 className="flex items-center gap-2 font-pixel text-sm text-gold-glow"><Users size={16} /> Referrals</h2>
         <p className="mt-1 font-vt text-xs text-px-dim">Invite heroes · earn 3 tiers deep on eligible $HERO earnings.</p>
       </div>
 
       <div className="mx-auto w-full max-w-2xl space-y-3 p-4">
-        <div className="rounded-xl border border-[#9a6a22] bg-[#17130d] p-3">
-          <div className="grid grid-cols-[72px_1fr_auto] items-center gap-2 text-sm">
-            <span className="text-[10px] font-bold uppercase text-px-dim">Your code</span>
-            <strong className="font-pixel text-base tracking-widest text-[#ffd268]">{ref.code}</strong>
-            <button onClick={() => copy('code')} className="game-control min-h-9 px-3 font-bold">{copied === 'code' ? <Check size={14} /> : <Copy size={14} />} Copy</button>
-            <span className="text-[10px] font-bold uppercase text-px-dim">Your link</span>
-            <span className="truncate font-vt text-xs text-px-text">{refLink}</span>
-            <button onClick={() => copy('link')} className="game-control min-h-9 px-3 font-bold">{copied === 'link' ? <Check size={14} /> : <Copy size={14} />} Copy</button>
-          </div>
+        <div className="stat-tile referral-invite space-y-3 p-3">
+          <div className="font-pixel text-[10px] text-px-bright">INVITE FRIENDS</div>
+          <ReferralField label="Your code" value={ref.code} copied={copied === 'code'} onCopy={() => copy('code')} code />
+          <ReferralField label="Your link" value={refLink} copied={copied === 'link'} onCopy={() => copy('link')} />
         </div>
 
         <div className="stat-tile flex items-center justify-between gap-3 p-3">
           <div><div className="text-[10px] font-bold uppercase text-px-dim">Claimable now</div><div className="flex items-center gap-2 font-vt text-2xl font-bold text-[#ffd268]"><HeroTokenIcon size={18} />{formatNum(ref.pendingReward)} <span className="text-xs">$HERO</span></div></div>
-          <button onClick={game.claimReferralReward} disabled={ref.pendingReward <= 0} className="game-primary min-h-11 rounded-lg px-6 font-bold"><Gift size={16} className="inline" /> Claim</button>
+          <button onClick={game.claimReferralReward} disabled={ref.pendingReward <= 0} className="game-primary inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-6 font-bold"><Gift size={16} className="inline-block shrink-0" /> Claim</button>
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -71,6 +66,23 @@ export function ReferralsScreen({ game }: { game: GameApi }) {
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ReferralField({ label, value, copied, onCopy, code = false }: { label: string; value: string; copied: boolean; onCopy: () => void; code?: boolean }) {
+  return (
+    <div>
+      <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-px-dim">{label}</div>
+      <div className="flex items-stretch gap-2">
+        <div className={`referral-field flex h-11 min-w-0 flex-1 items-center rounded-md border border-[#5b4a30] bg-black/45 px-3 shadow-[inset_0_2px_6px_rgba(0,0,0,.7)] ${code ? 'font-pixel text-base tracking-[.18em] text-[#ffd268]' : 'font-vt text-sm text-px-text'}`}>
+          <span className="truncate">{value}</span>
+        </div>
+        <button type="button" onClick={onCopy} aria-label={`Copy ${label.toLowerCase()}`} className="game-control inline-flex h-11 w-[104px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap px-3 text-sm font-bold">
+          {copied ? <Check size={15} className="inline-block shrink-0" /> : <Copy size={15} className="inline-block shrink-0" />}
+          <span>{copied ? 'Copied' : 'Copy'}</span>
+        </button>
       </div>
     </div>
   );

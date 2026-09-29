@@ -436,7 +436,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[#030308]/90 p-4 backdrop-blur-md">
+    <div className="hl-onboarding fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[#030308]/90 p-4 backdrop-blur-md">
       <div className="landing-card relative my-auto w-full max-w-4xl overflow-hidden">
         <button onClick={onClose} className="absolute right-4 top-4 z-10 p-2 text-slate-500 transition hover:text-white" aria-label="Close">
           <X size={20} />

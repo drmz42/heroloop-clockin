@@ -283,7 +283,7 @@ export function HeroesScreen({ game }: { game: GameApi }) {
     <div className="premium-screen themed-screen themed-screen-heroes flex h-full flex-col overflow-hidden">
       <header className="material-panel m-2 mb-0 shrink-0 p-3">
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="min-w-0">
+          <div className="heroes-head min-w-0">
             <div className="section-kicker">Hall of Champions</div>
             <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2"><h2 className="text-xl font-black text-[#eee4d3]">My Heroes <span className="text-sm text-[#8f897e]">{state.ownedHeroes.length}/{state.heroCapacity}</span></h2><button type="button" onClick={() => void openCapacityUpgrade()} disabled={!capacityUpgrade || capacityBusy} aria-busy={capacityBusy} className="game-control game-primary flex min-h-11 items-center gap-1 px-3 text-[9px] font-black uppercase disabled:cursor-not-allowed disabled:opacity-45" aria-label={capacityUpgrade ? `Get DEX quote to expand Hero capacity to ${capacityUpgrade.nextCapacity}; USD catalogue price $${(capacityUpgrade.usdCents / 100).toFixed(2)}` : `Maximum Hero capacity ${MAX_HERO_CAPACITY}`} title={capacityUpgrade ? `USD catalogue $${(capacityUpgrade.usdCents / 100).toFixed(2)} · $HERO amount comes from a fresh DEX quote` : `Maximum capacity ${MAX_HERO_CAPACITY}`}><UserPlus size={12} />{capacityBusy ? 'Getting quote…' : capacityUpgrade ? `+100 · $${(capacityUpgrade.usdCents / 100).toFixed(2)}` : `MAX ${MAX_HERO_CAPACITY}`}</button></div>
             {capacityNotice && <div role={capacityNoticeError ? 'alert' : 'status'} className={`mt-1 text-[10px] font-bold ${capacityNoticeError ? 'text-red-300' : 'text-amber-200'}`}>{capacityNotice}</div>}
