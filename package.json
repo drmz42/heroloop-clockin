@@ -229,7 +229,8 @@
     "audit:power-target-bands": "node scripts/audit-power-target-bands.mjs",
     "simulate:summon-family-pity": "node scripts/simulate-summon-family-pity.mjs",
     "simulate:chest-pacing": "node scripts/simulate-chest-pacing.mjs",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "model:balance-v6": "tsx scripts/model-balance-v6.ts"
   },
   "dependencies": {
     "@mui/icons-material": "9.4.0",

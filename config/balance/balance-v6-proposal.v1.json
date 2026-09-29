@@ -1,0 +1,522 @@
+{
+  "schemaVersion": 1,
+  "balanceVersion": "balance-v6-proposal-2026.09.29-v1",
+  "status": "proposal-not-runtime",
+  "hero": {
+    "masteryPerLevel": 0.014,
+    "starPerStar": 0.06
+  },
+  "items": {
+    "levelLinear": 0.008,
+    "targetGainPerItem": {
+      "common": 0.1,
+      "uncommon": 0.10625,
+      "rare": 0.1125,
+      "epic": 0.11875,
+      "legendary": 0.125,
+      "mythic": 0.13125,
+      "cosmic": 0.1375,
+      "divine": 0.14375,
+      "celestial": 0.15
+    },
+    "implicitBySlot": {
+      "class_weapon": {
+        "atk": 1
+      },
+      "gloves": {
+        "atk": 1
+      },
+      "ring": {
+        "atk": 1
+      },
+      "amulet": {
+        "atk": 1
+      },
+      "helmet": {
+        "hp": 1
+      },
+      "boots": {
+        "hp": 1
+      },
+      "offhand": {
+        "hp": 1
+      },
+      "chest": {
+        "hp": 0.5,
+        "def": 0.5
+      }
+    },
+    "implicitStatBase": {
+      "atk": 1.661,
+      "hp": 53.9,
+      "def": 9.5
+    },
+    "implicitRarityScale": {
+      "common": 1.0,
+      "uncommon": 1.61,
+      "rare": 2.35,
+      "epic": 3.54,
+      "legendary": 5.15,
+      "mythic": 7.68,
+      "cosmic": 11.4,
+      "divine": 17.1,
+      "celestial": 25.8
+    }
+  },
+  "enchant": {
+    "perLevel": 0.11
+  },
+  "locations": {
+    "targetWinRate": 0.72,
+    "enemyShape": {
+      "hpSecondsOfReferenceDps": 7,
+      "defPerReferenceAttack": 0.2
+    },
+    "rows": [
+      {
+        "location": 1,
+        "levels": [
+          1,
+          4
+        ],
+        "reference": {
+          "heroTier": 0,
+          "stars": 0,
+          "gearTier": 0,
+          "gearSlots": 2,
+          "upgradedSlots": 0,
+          "enchant": 0
+        },
+        "enemy": {
+          "hp": 104,
+          "atk": 23.6,
+          "def": 3.28
+        },
+        "calibratedAttackPerReferenceHp": 0.1666,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 2,
+        "levels": [
+          5,
+          9
+        ],
+        "reference": {
+          "heroTier": 0,
+          "stars": 1,
+          "gearTier": 0,
+          "gearSlots": 4,
+          "upgradedSlots": 2,
+          "enchant": 1
+        },
+        "enemy": {
+          "hp": 126,
+          "atk": 53.1,
+          "def": 3.94
+        },
+        "calibratedAttackPerReferenceHp": 0.1701,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 3,
+        "levels": [
+          10,
+          15
+        ],
+        "reference": {
+          "heroTier": 0,
+          "stars": 2,
+          "gearTier": 0,
+          "gearSlots": 6,
+          "upgradedSlots": 2,
+          "enchant": 2
+        },
+        "enemy": {
+          "hp": 168,
+          "atk": 76.5,
+          "def": 5.24
+        },
+        "calibratedAttackPerReferenceHp": 0.1654,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 4,
+        "levels": [
+          16,
+          22
+        ],
+        "reference": {
+          "heroTier": 0,
+          "stars": 2,
+          "gearTier": 0,
+          "gearSlots": 8,
+          "upgradedSlots": 2,
+          "enchant": 3
+        },
+        "enemy": {
+          "hp": 240,
+          "atk": 95.4,
+          "def": 7.48
+        },
+        "calibratedAttackPerReferenceHp": 0.1655,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 5,
+        "levels": [
+          23,
+          27
+        ],
+        "reference": {
+          "heroTier": 0,
+          "stars": 3,
+          "gearTier": 0,
+          "gearSlots": 8,
+          "upgradedSlots": 6,
+          "enchant": 3
+        },
+        "enemy": {
+          "hp": 314,
+          "atk": 144,
+          "def": 9.78
+        },
+        "calibratedAttackPerReferenceHp": 0.1655,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 6,
+        "levels": [
+          28,
+          32
+        ],
+        "reference": {
+          "heroTier": 1,
+          "stars": 3,
+          "gearTier": 0,
+          "gearSlots": 8,
+          "upgradedSlots": 6,
+          "enchant": 4
+        },
+        "enemy": {
+          "hp": 439,
+          "atk": 184,
+          "def": 13.6
+        },
+        "calibratedAttackPerReferenceHp": 0.1633,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 7,
+        "levels": [
+          33,
+          37
+        ],
+        "reference": {
+          "heroTier": 1,
+          "stars": 4,
+          "gearTier": 1,
+          "gearSlots": 8,
+          "upgradedSlots": 2,
+          "enchant": 5
+        },
+        "enemy": {
+          "hp": 613,
+          "atk": 242,
+          "def": 18.8
+        },
+        "calibratedAttackPerReferenceHp": 0.1648,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 8,
+        "levels": [
+          38,
+          42
+        ],
+        "reference": {
+          "heroTier": 2,
+          "stars": 4,
+          "gearTier": 1,
+          "gearSlots": 8,
+          "upgradedSlots": 2,
+          "enchant": 5
+        },
+        "enemy": {
+          "hp": 869,
+          "atk": 294,
+          "def": 26.5
+        },
+        "calibratedAttackPerReferenceHp": 0.1625,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 9,
+        "levels": [
+          43,
+          47
+        ],
+        "reference": {
+          "heroTier": 2,
+          "stars": 4,
+          "gearTier": 2,
+          "gearSlots": 8,
+          "upgradedSlots": 0,
+          "enchant": 5
+        },
+        "enemy": {
+          "hp": 1130,
+          "atk": 426,
+          "def": 34.1
+        },
+        "calibratedAttackPerReferenceHp": 0.1628,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 10,
+        "levels": [
+          48,
+          52
+        ],
+        "reference": {
+          "heroTier": 3,
+          "stars": 4,
+          "gearTier": 2,
+          "gearSlots": 8,
+          "upgradedSlots": 0,
+          "enchant": 5
+        },
+        "enemy": {
+          "hp": 1600,
+          "atk": 524,
+          "def": 47.6
+        },
+        "calibratedAttackPerReferenceHp": 0.1632,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 11,
+        "levels": [
+          53,
+          57
+        ],
+        "reference": {
+          "heroTier": 3,
+          "stars": 5,
+          "gearTier": 2,
+          "gearSlots": 8,
+          "upgradedSlots": 6,
+          "enchant": 6
+        },
+        "enemy": {
+          "hp": 1970,
+          "atk": 717,
+          "def": 58.5
+        },
+        "calibratedAttackPerReferenceHp": 0.148,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 12,
+        "levels": [
+          58,
+          62
+        ],
+        "reference": {
+          "heroTier": 3,
+          "stars": 6,
+          "gearTier": 3,
+          "gearSlots": 8,
+          "upgradedSlots": 0,
+          "enchant": 7
+        },
+        "enemy": {
+          "hp": 2650,
+          "atk": 945,
+          "def": 77.9
+        },
+        "calibratedAttackPerReferenceHp": 0.1491,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 13,
+        "levels": [
+          63,
+          67
+        ],
+        "reference": {
+          "heroTier": 4,
+          "stars": 7,
+          "gearTier": 3,
+          "gearSlots": 8,
+          "upgradedSlots": 0,
+          "enchant": 7
+        },
+        "enemy": {
+          "hp": 3810,
+          "atk": 1140,
+          "def": 111
+        },
+        "calibratedAttackPerReferenceHp": 0.1488,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 14,
+        "levels": [
+          68,
+          72
+        ],
+        "reference": {
+          "heroTier": 4,
+          "stars": 8,
+          "gearTier": 3,
+          "gearSlots": 8,
+          "upgradedSlots": 2,
+          "enchant": 9
+        },
+        "enemy": {
+          "hp": 4770,
+          "atk": 1440,
+          "def": 134
+        },
+        "calibratedAttackPerReferenceHp": 0.1461,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 15,
+        "levels": [
+          73,
+          77
+        ],
+        "reference": {
+          "heroTier": 4,
+          "stars": 9,
+          "gearTier": 3,
+          "gearSlots": 8,
+          "upgradedSlots": 7,
+          "enchant": 9
+        },
+        "enemy": {
+          "hp": 5870,
+          "atk": 1900,
+          "def": 161
+        },
+        "calibratedAttackPerReferenceHp": 0.1449,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 16,
+        "levels": [
+          78,
+          82
+        ],
+        "reference": {
+          "heroTier": 4,
+          "stars": 9,
+          "gearTier": 4,
+          "gearSlots": 8,
+          "upgradedSlots": 0,
+          "enchant": 9
+        },
+        "enemy": {
+          "hp": 7520,
+          "atk": 2370,
+          "def": 199
+        },
+        "calibratedAttackPerReferenceHp": 0.1462,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 17,
+        "levels": [
+          83,
+          87
+        ],
+        "reference": {
+          "heroTier": 4,
+          "stars": 10,
+          "gearTier": 4,
+          "gearSlots": 8,
+          "upgradedSlots": 0,
+          "enchant": 11
+        },
+        "enemy": {
+          "hp": 9530,
+          "atk": 2990,
+          "def": 245
+        },
+        "calibratedAttackPerReferenceHp": 0.1456,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 18,
+        "levels": [
+          88,
+          91
+        ],
+        "reference": {
+          "heroTier": 4,
+          "stars": 11,
+          "gearTier": 4,
+          "gearSlots": 8,
+          "upgradedSlots": 6,
+          "enchant": 11
+        },
+        "enemy": {
+          "hp": 11300,
+          "atk": 4200,
+          "def": 291
+        },
+        "calibratedAttackPerReferenceHp": 0.145,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 19,
+        "levels": [
+          92,
+          95
+        ],
+        "reference": {
+          "heroTier": 5,
+          "stars": 11,
+          "gearTier": 4,
+          "gearSlots": 8,
+          "upgradedSlots": 6,
+          "enchant": 11
+        },
+        "enemy": {
+          "hp": 15200,
+          "atk": 4790,
+          "def": 386
+        },
+        "calibratedAttackPerReferenceHp": 0.143,
+        "calibrationSamples": 850
+      },
+      {
+        "location": 20,
+        "levels": [
+          96,
+          99
+        ],
+        "reference": {
+          "heroTier": 5,
+          "stars": 12,
+          "gearTier": 5,
+          "gearSlots": 8,
+          "upgradedSlots": 0,
+          "enchant": 11
+        },
+        "enemy": {
+          "hp": 19900,
+          "atk": 5810,
+          "def": 486
+        },
+        "calibratedAttackPerReferenceHp": 0.1442,
+        "calibrationSamples": 850
+      }
+    ],
+    "targetCurve": {
+      "ratioThroughLocation13": 1.38,
+      "ratioAfterLocation13": 1.27
+    }
+  }
+}
