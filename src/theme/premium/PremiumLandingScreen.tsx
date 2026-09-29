@@ -1,4 +1,4 @@
-// Premium public landing built from Figma "HL-LANDING-2 / MAKET 5 — Mobile" (node 2086:3).
+// Premium public landing built from Figma "HL-LANDING-2 / MAKET 5": Mobile (node 2086:3) and, from 1200 px, Desktop (node 2081:2).
 // Artwork is the Founder-approved Figma raster set; frames, text and layout stay code-native.
 // Classic fallback: test/landing4/Landing4Screen.tsx (selected by src/theme/uiTheme.ts).
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -175,7 +175,7 @@ export default function PremiumLandingScreen() {
           <button type="button" onClick={go('world')}>World</button>
           <button type="button" onClick={go('packs')}>Founder Packs</button>
           <button type="button" onClick={go('referral')}>Referrals</button>
-          <button type="button" className="l5-nav-play" onClick={play}>Play</button>
+          <button type="button" className="l5-nav-play" onClick={play}>Play for free</button>
         </div>
         <button type="button" className="l5-burger" aria-expanded={menuOpen} aria-controls="l5-menu" aria-label={menuOpen ? 'Close menu' : 'Open menu'} onClick={() => setMenuOpen((open) => !open)}>
           <span /><span /><span />
@@ -200,11 +200,14 @@ export default function PremiumLandingScreen() {
             <p className="l5-eyebrow">Collect heroes. Conquer the endless loop.</p>
             <h1 id="l5-hero-title"><img src={logo} alt="HeroLoop" width={1100} height={367} /></h1>
             <p className="l5-tagline">A dark-fantasy AFK RPG</p>
-            <p className="l5-body">Build your squad. Battle automatically.<br />Claim loot. Grow stronger.</p>
-            <ArtButton art={playArt} label="Play" onClick={play} className="l5-play" />
-            <button type="button" className="l5-ghost" onClick={go('packs')}>Founder Packs</button>
+            <p className="l5-body">Build your squad. Battle automatically.<br />Claim loot. Grow stronger.<span className="l5-desk"> Enter deeper regions.</span></p>
+            <div className="l5-hero-cta">
+              <ArtButton art={playArt} label="Play" onClick={play} className="l5-play" />
+              <button type="button" className="l5-ghost" onClick={go('packs')}>Founder Packs</button>
+            </div>
             <p className="l5-micro">Free to play · Unlock Earn Mode with a Founder Pack</p>
           </div>
+          <p className="l5-hero-aside" aria-hidden="true">Five heroes<br />Endless<br />Possibilities</p>
         </section>
 
         <section className="l5-band l5-band--stone">
@@ -235,16 +238,23 @@ export default function PremiumLandingScreen() {
           <div className="l5-duo">
             <section className="l5-panel l5-referral" id="referral" aria-labelledby="l5-referral-title">
               <i className="l5-hairline" aria-hidden="true" />
-              <h3 id="l5-referral-title">Invite friends.<br />Unlock free packs.</h3>
-              <p className="l5-panel-body">Connect your wallet, invite friends, and unlock Founder Packs for free.</p>
-              <ArtButton art={connectWalletArt} label="Connect wallet" onClick={play} className="l5-connect" />
-              <div className="l5-ref-url" aria-label="Your referral link">heroloop.xyz/ref/<em>sign in for your code</em></div>
-              <div className="l5-ref-actions">
-                <button type="button" className="l5-btn" onClick={play}>Copy</button>
-                <button type="button" className="l5-btn" onClick={play}>Share</button>
+              <div className="l5-ref-copy">
+                <h3 id="l5-referral-title">Invite friends.<br />Unlock free packs.</h3>
+                <p className="l5-panel-body">Connect your wallet, invite friends, and unlock Founder Packs for free.</p>
               </div>
-              <p className="l5-ref-status">Your Referrals: 0 / 10 (Veteran Pack)</p>
-              <div className="l5-track" role="progressbar" aria-valuemin={0} aria-valuemax={10} aria-valuenow={0} aria-label="Referral progress"><span style={{ width: '0%' }} /></div>
+              <div className="l5-ref-center">
+                <div className="l5-ref-row">
+                  <ArtButton art={connectWalletArt} label="Connect wallet" onClick={play} className="l5-connect" />
+                  <button type="button" className="l5-btn l5-connect-desk" onClick={play}>Connect wallet</button>
+                  <div className="l5-ref-url" aria-label="Your referral link">heroloop.xyz/ref/<em>sign in for your code</em></div>
+                  <div className="l5-ref-actions">
+                    <button type="button" className="l5-btn" onClick={play}>Copy</button>
+                    <button type="button" className="l5-btn" onClick={play}>Share</button>
+                  </div>
+                </div>
+                <p className="l5-ref-status">Your Referrals: 0 / 10 (Veteran Pack)</p>
+                <div className="l5-track" role="progressbar" aria-valuemin={0} aria-valuemax={10} aria-valuenow={0} aria-label="Referral progress"><span style={{ width: '0%' }} /></div>
+              </div>
               <ul className="l5-notes">
                 <li>Earn 5% of valid referred players’ reward earnings</li>
                 <li>Rewards accumulate in Pending</li>
@@ -253,8 +263,10 @@ export default function PremiumLandingScreen() {
             </section>
 
             <section className="l5-panel l5-platforms" aria-labelledby="l5-platforms-title">
-              <h3 id="l5-platforms-title">Play anywhere soon</h3>
-              <p className="l5-panel-kicker">Same adventure. More places.</p>
+              <div className="l5-plat-copy">
+                <h3 id="l5-platforms-title">Play anywhere soon</h3>
+                <p className="l5-panel-kicker">Same adventure. More places.</p>
+              </div>
               <ul>
                 {PLATFORMS.map((platform) => (
                   <li key={platform.name}>
@@ -273,7 +285,7 @@ export default function PremiumLandingScreen() {
           <img className="l5-banner l5-banner--right" src={banner} alt="" aria-hidden="true" />
           <i className="l5-hairline" aria-hidden="true" />
           <p className="l5-final-eyebrow">Beta live</p>
-          <h2 id="l5-final-title">The endless loop<br />awaits</h2>
+          <h2 id="l5-final-title">The endless loop{' '}<br />awaits</h2>
           <p className="l5-final-sub">Build your squad. Claim your place.</p>
           <ArtButton art={playArt} label="Play" onClick={play} className="l5-play" />
           <p className="l5-final-free">Free to play</p>
@@ -282,8 +294,10 @@ export default function PremiumLandingScreen() {
       </main>
 
       <footer className="l5-footer">
-        <strong>HEROLOOP</strong>
-        <span className="l5-footer-sub">AFK dark-fantasy loot RPG</span>
+        <div className="l5-footer-brand">
+          <strong>HEROLOOP</strong>
+          <span className="l5-footer-sub">AFK dark-fantasy loot RPG</span>
+        </div>
         <nav aria-label="Footer">
           <button type="button" onClick={play}>Play</button>
           <button type="button" onClick={go('classes')}>Heroes</button>
@@ -294,7 +308,7 @@ export default function PremiumLandingScreen() {
         </nav>
         <p className="l5-socials">X · Discord · Telegram</p>
         <i className="l5-divider" aria-hidden="true" />
-        <p className="l5-legal">© 2026 HeroLoop. All rights reserved.<br />Beta — features &amp; economy may change.</p>
+        <p className="l5-legal"><span>© 2026 HeroLoop. All rights reserved.</span><br /><span>Beta — features &amp; economy may change.</span></p>
         <button type="button" className="l5-theme-switch" onClick={() => setUiTheme('classic')}>Switch to classic design</button>
       </footer>
 
