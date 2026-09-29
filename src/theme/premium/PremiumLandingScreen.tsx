@@ -31,23 +31,18 @@ import buyScout from './assets/btn-pack-scout.webp';
 import buyVeteran from './assets/btn-pack-veteran.webp';
 import buyElite from './assets/btn-pack-elite.webp';
 import buyFounder from './assets/btn-pack-founder.webp';
-import connectWalletArt from './assets/btn-connect-wallet.webp';
 import banner from './assets/banner.webp';
-import iconAppStore from './assets/icon-appstore.svg';
-import iconGooglePlay from './assets/icon-googleplay.svg';
-import iconSteam from './assets/icon-steam.svg';
-import iconTelegram from './assets/icon-telegram.svg';
 
-type Pack = { id: string; name: string; price: string; art: string; buy: string; buyLabel: string; features: Array<string | { note: string }> };
+type Pack = { id: string; name: string; price: string; art: string; buy: string; buyLabel: string; referrals: number; features: Array<string | { note: string }> };
 
-// Pack copy mirrors the Figma design; it is presentation only and grants nothing.
+// Pack copy and referral milestones mirror the Figma design; they are presentation only and grant nothing.
 const PACKS: Pack[] = [
-  { id: 'free', name: 'FREE', price: '$0', art: packFree, buy: buyFree, buyLabel: 'Play free', features: ['1 Selectable Starter Hero', 'Starting Gold', '10 Health Potions', 'Free Mode', 'Start Playing Instantly'] },
-  { id: 'starter', name: 'STARTER', price: '$2', art: packStarter, buy: buyStarter, buyLabel: 'Get Starter', features: ['Earn Mode Unlocked', '20 Uncommon Founder Gear Chests', '2 Heroes', 'Starting Gold', 'Health Potions', 'Starter Resources'] },
-  { id: 'scout', name: 'SCOUT', price: '$5', art: packScout, buy: buyScout, buyLabel: 'Get Scout', features: ['Earn Mode Unlocked', '20 Rare Founder Gear Chests', '2 Heroes', 'More Starting Gold', 'Health Potions', 'Enhanced Starter Resources'] },
-  { id: 'veteran', name: 'VETERAN', price: '$10', art: packVeteran, buy: buyVeteran, buyLabel: 'Get Veteran', features: ['Earn Mode Unlocked', 'Marketplace Access', '3 Heroes', '30 Epic Founder Gear Chests', 'Starting Gold', 'Health Potions', '1× Boost Pack', { note: '3 × 24h activations' }, '+50% XP & Gold while active'] },
-  { id: 'elite', name: 'ELITE', price: '$49', art: packElite, buy: buyElite, buyLabel: 'Get Elite', features: ['Earn Mode Unlocked', 'Marketplace Access', '30 Legendary Founder Gear Chests', '750 Summon Scrolls', 'Starting Gold', 'Health Potions', '2× Boost Packs', '25 Active Market Listings', 'Private Community Access', 'Elite Founder Frame', '+2% Ordinary Earn Weight'] },
-  { id: 'founder', name: 'FOUNDER', price: '$99', art: packFounder, buy: buyFounder, buyLabel: 'Get Founder', features: ['Earn Mode Unlocked', 'Marketplace Access', '30 Mythic Founder Gear Chests', '3,000 Summon Scrolls', 'Starting Gold', 'Health Potions', '3× Boost Packs', '50 Active Market Listings', 'Private Community Access', 'Founder Frame', 'Founder Sigil', '+5% Ordinary Earn Weight'] },
+  { id: 'free', name: 'FREE', price: '$0', art: packFree, buy: buyFree, buyLabel: 'Play free', referrals: 0, features: ['1 Selectable Starter Hero', 'Starting Gold', '10 Health Potions', 'Free Mode', 'Start Playing Instantly'] },
+  { id: 'starter', name: 'STARTER', price: '$2', art: packStarter, buy: buyStarter, buyLabel: 'Get Starter', referrals: 3, features: ['Earn Mode Unlocked', '20 Uncommon Founder Gear Chests', '2 Heroes', 'Starting Gold', 'Health Potions', 'Starter Resources'] },
+  { id: 'scout', name: 'SCOUT', price: '$5', art: packScout, buy: buyScout, buyLabel: 'Get Scout', referrals: 5, features: ['Earn Mode Unlocked', '20 Rare Founder Gear Chests', '2 Heroes', 'More Starting Gold', 'Health Potions', 'Enhanced Starter Resources'] },
+  { id: 'veteran', name: 'VETERAN', price: '$10', art: packVeteran, buy: buyVeteran, buyLabel: 'Get Veteran', referrals: 10, features: ['Earn Mode Unlocked', 'Marketplace Access', '3 Heroes', '30 Epic Founder Gear Chests', 'Starting Gold', 'Health Potions', '1× Boost Pack', { note: '3 × 24h activations' }, '+50% XP & Gold while active'] },
+  { id: 'elite', name: 'ELITE', price: '$49', art: packElite, buy: buyElite, buyLabel: 'Get Elite', referrals: 25, features: ['Earn Mode Unlocked', 'Marketplace Access', '30 Legendary Founder Gear Chests', '750 Summon Scrolls', 'Starting Gold', 'Health Potions', '2× Boost Packs', '25 Active Market Listings', 'Private Community Access', 'Elite Founder Frame', '+2% Ordinary Earn Weight'] },
+  { id: 'founder', name: 'FOUNDER', price: '$99', art: packFounder, buy: buyFounder, buyLabel: 'Get Founder', referrals: 50, features: ['Earn Mode Unlocked', 'Marketplace Access', '30 Mythic Founder Gear Chests', '3,000 Summon Scrolls', 'Starting Gold', 'Health Potions', '3× Boost Packs', '50 Active Market Listings', 'Private Community Access', 'Founder Frame', 'Founder Sigil', '+5% Ordinary Earn Weight'] },
 ];
 
 const CLASSES = [
@@ -68,10 +63,10 @@ const WORLD = [
 const CORE_LOOP = ['Collect heroes', 'Build your squad', 'Battle automatically', 'Earn loot & XP', 'Grow stronger', 'Ascend to new regions'];
 
 const PLATFORMS = [
-  { name: 'App Store', icon: iconAppStore },
-  { name: 'Google Play', icon: iconGooglePlay },
-  { name: 'Steam', icon: iconSteam },
-  { name: 'Telegram Mini App', icon: iconTelegram },
+  { name: 'App Store', glyph: '◆' },
+  { name: 'Google Play', glyph: '▣' },
+  { name: 'Steam', glyph: '●' },
+  { name: 'Telegram Mini App', glyph: '➤' },
 ];
 
 const prefersReducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -105,7 +100,7 @@ function PackCarousel({ onChoose }: { onChoose: () => void }) {
   const onScroll = useCallback(() => {
     const el = track.current;
     if (!el) return;
-    const card = el.querySelector<HTMLElement>('.l5-pack');
+    const card = el.querySelector<HTMLElement>('.l5-pack-col');
     if (!card) return;
     const step = card.offsetWidth + 12;
     setActive(Math.max(0, Math.min(PACKS.length - 1, Math.round(el.scrollLeft / step))));
@@ -113,7 +108,7 @@ function PackCarousel({ onChoose }: { onChoose: () => void }) {
 
   const goTo = (index: number) => {
     const el = track.current;
-    const card = el?.querySelectorAll<HTMLElement>('.l5-pack')[index];
+    const card = el?.querySelectorAll<HTMLElement>('.l5-pack-col')[index];
     if (!el || !card) return;
     el.scrollTo({ left: card.offsetLeft - el.offsetLeft - 16, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
   };
@@ -122,7 +117,8 @@ function PackCarousel({ onChoose }: { onChoose: () => void }) {
     <>
       <div className="l5-pack-track" ref={track} onScroll={onScroll} role="list" aria-label="Founder packs">
         {PACKS.map((pack) => (
-          <article key={pack.id} className={`l5-pack l5-pack--${pack.id}`} role="listitem" aria-label={`${pack.name} pack, ${pack.price}`}>
+          <div key={pack.id} className="l5-pack-col" role="listitem">
+          <article className={`l5-pack l5-pack--${pack.id}`} aria-label={`${pack.name} pack, ${pack.price}`}>
             <img className="l5-pack-art" src={pack.art} alt="" loading="lazy" />
             <div className="l5-pack-price">
               <span>{pack.name}</span>
@@ -135,6 +131,8 @@ function PackCarousel({ onChoose }: { onChoose: () => void }) {
             </ul>
             <ArtButton art={pack.buy} label={pack.buyLabel} onClick={onChoose} className="l5-pack-buy" />
           </article>
+          <p className="l5-milestone" aria-label={`${pack.referrals} referrals unlock the ${pack.name} pack`}><i aria-hidden="true" />{pack.referrals}</p>
+          </div>
         ))}
       </div>
       <div className="l5-dots" role="tablist" aria-label="Choose a pack">
@@ -234,49 +232,43 @@ export default function PremiumLandingScreen() {
         <section className="l5-band l5-band--vista">
           <SectionHeading id="packs" title="Founder Packs" subtitle="Jump-start your journey. Unlock more." />
           <PackCarousel onChoose={play} />
+        </section>
 
-          <div className="l5-duo">
-            <section className="l5-panel l5-referral" id="referral" aria-labelledby="l5-referral-title">
-              <i className="l5-hairline" aria-hidden="true" />
-              <div className="l5-ref-copy">
-                <h3 id="l5-referral-title">Invite friends.<br />Unlock free packs.</h3>
-                <p className="l5-panel-body">Connect your wallet, invite friends, and unlock Founder Packs for free.</p>
-              </div>
-              <div className="l5-ref-center">
-                <div className="l5-ref-row">
-                  <ArtButton art={connectWalletArt} label="Connect wallet" onClick={play} className="l5-connect" />
-                  <button type="button" className="l5-btn l5-connect-desk" onClick={play}>Connect wallet</button>
-                  <div className="l5-ref-url" aria-label="Your referral link">heroloop.xyz/ref/<em>sign in for your code</em></div>
-                  <div className="l5-ref-actions">
-                    <button type="button" className="l5-btn" onClick={play}>Copy</button>
-                    <button type="button" className="l5-btn" onClick={play}>Share</button>
-                  </div>
-                </div>
-                <p className="l5-ref-status">Your Referrals: 0 / 10 (Veteran Pack)</p>
-                <div className="l5-track" role="progressbar" aria-valuemin={0} aria-valuemax={10} aria-valuenow={0} aria-label="Referral progress"><span style={{ width: '0%' }} /></div>
-              </div>
-              <ul className="l5-notes">
-                <li>Earn 5% of valid referred players’ reward earnings</li>
-                <li>Rewards accumulate in Pending</li>
-                <li>Claim unlocks after your first real purchase of $2+</li>
-              </ul>
-            </section>
-
-            <section className="l5-panel l5-platforms" aria-labelledby="l5-platforms-title">
-              <div className="l5-plat-copy">
-                <h3 id="l5-platforms-title">Play anywhere soon</h3>
-                <p className="l5-panel-kicker">Same adventure. More places.</p>
-              </div>
-              <ul>
-                {PLATFORMS.map((platform) => (
-                  <li key={platform.name}>
-                    <img src={platform.icon} alt="" width={19} height={19} />
-                    <span><b>{platform.name}</b><small>Soon</small></span>
-                  </li>
-                ))}
-              </ul>
-            </section>
+        <section className="l5-strip l5-referral" id="referral" aria-labelledby="l5-referral-title">
+          <div className="l5-ref-copy">
+            <h3 id="l5-referral-title">Invite friends. Unlock free packs.</h3>
+            <p>Connect your wallet, invite friends, and unlock Founder Packs for free.</p>
           </div>
+          <div className="l5-ref-center">
+            <div className="l5-ref-row">
+              <button type="button" className="l5-btn l5-ref-connect" onClick={play}>Connect wallet</button>
+              <div className="l5-ref-url" aria-label="Your referral link">https://heroloop.xyz/ref/YOURCODE</div>
+              <button type="button" className="l5-btn l5-ref-copy-btn" onClick={play}>Copy</button>
+              <button type="button" className="l5-btn l5-ref-share" onClick={play}>Share</button>
+            </div>
+            <p className="l5-ref-status">Your Referrals: 0 / 10 (Veteran Pack)</p>
+            <div className="l5-track" role="progressbar" aria-valuemin={0} aria-valuemax={10} aria-valuenow={0} aria-label="Referral progress"><span style={{ width: '0%' }} /></div>
+          </div>
+          <ul className="l5-notes">
+            <li>Earn 5% of valid referred players’ reward earnings</li>
+            <li>Rewards accumulate in Pending</li>
+            <li>Claim unlocks after your first real purchase of $2+</li>
+          </ul>
+        </section>
+
+        <section className="l5-strip l5-platforms" aria-labelledby="l5-platforms-title">
+          <div className="l5-plat-copy">
+            <h3 id="l5-platforms-title">Play anywhere soon</h3>
+            <p>Same adventure. More places.</p>
+          </div>
+          <ul>
+            {PLATFORMS.map((platform) => (
+              <li key={platform.name}>
+                <i aria-hidden="true">{platform.glyph}</i>
+                <span><b>{platform.name}</b><small>Soon</small></span>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section className="l5-final" aria-labelledby="l5-final-title">
