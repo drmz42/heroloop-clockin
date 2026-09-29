@@ -75,7 +75,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
           const delta = (candidate?.value ?? 0) - (equipped?.value ?? 0);
           const isPercent = candidate?.isPercent ?? equipped?.isPercent ?? false;
           return (
-            <div key={key} className={`item-act-stat -mx-1 flex items-center justify-between gap-2 px-1 ui-text-medium ${comparisonItem && delta > 0 ? 'bg-emerald-500/10' : comparisonItem && delta < 0 ? 'bg-rose-500/10' : ''}`}>
+            <div key={key} className={`item-stat-row item-act-stat -mx-1 flex items-center justify-between gap-2 px-1 ui-text-medium ${comparisonItem && delta > 0 ? 'bg-emerald-500/10' : comparisonItem && delta < 0 ? 'bg-rose-500/10' : ''}`}>
               <span className="min-w-0 truncate text-slate-400">{STAT_LABEL[key]}</span>
               <span className="shrink-0 font-bold tabular-nums text-emerald-300">
                 {candidate ? formatStatValue(candidate) : <span className="text-slate-500">—</span>}
