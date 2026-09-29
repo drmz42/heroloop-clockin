@@ -338,7 +338,10 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
       // API timeout: the underlying SIWS flow would continue and could finish
       // after the UI incorrectly reported failure.
       const session = await connectSolanaWallet(wallet, {
-        allowExistingAccountLogin: legacyWalletMode === null,
+        // A wallet that already owns a HeroLoop account always signs in to that account (Founder
+        // decision 2026-09-29). Only a one-time browser-progress import refuses, because that
+        // progress has already been written into this Guest's server account.
+        allowExistingAccountLogin: legacyWalletMode !== 'import',
       });
       const account = await accountRequest(playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status'));
       if (!account) {
@@ -456,7 +459,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
               {solanaAuthEnabled && legacyWalletMode && (
                 <div className="mx-auto mt-5 max-w-md border border-amber-300/25 bg-amber-300/[.06] p-4 text-xs leading-5 text-amber-100/80">
                   {legacyWalletMode === 'link'
-                    ? 'Existing server progress was found. The verified wallet will be linked to this exact account; heroes, items and saves will not be copied.'
+                    ? 'Existing Guest progress was found. A new wallet is linked to this Guest account; a wallet that already has a HeroLoop account signs in to that account instead, and this Guest stays separate. Nothing is copied between accounts.'
                     : 'Browser-only progress was found for this signed-in Guest. Import happens once into that exact server account before the verified wallet is linked.'}
                   {legacyWalletMode === 'import' && (
                     <label className="mt-3 flex min-h-11 cursor-pointer items-start gap-3 text-left text-slate-200">
