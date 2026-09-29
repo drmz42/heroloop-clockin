@@ -1,6 +1,7 @@
 {
   "version": 1,
   "status": "proposal-only",
+  "supersededBy": "docs/game/equipment.md#inventory",
   "runtimeAdopted": false,
   "pricingApproved": false,
   "capacity": {

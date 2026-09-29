@@ -153,6 +153,8 @@ const commandActions = new Set([
   "account_bonus_snapshot",
   "reward_boost_buy",
   "shop_bundle_buy",
+  "inventory_bag_quote",
+  "inventory_bag_buy",
   "chest_open",
   "tutorial_quest_claim",
   "quest_claim",
@@ -1527,6 +1529,46 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         if (code) return errorResponse(409, code, requestId);
         console.error("reward_boost_buy database adapter failed", { requestId });
         return errorResponse(503, "reward_boost_buy_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "inventory_bag_quote") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const result = await databaseJson(
+          "SELECT heroloop_api.inventory_bag_quote($1::uuid,$2::boolean) AS result",
+          [identity.playerId, testerControlsEnabled],
+        );
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        console.error("inventory_bag_quote database adapter failed", { requestId });
+        return errorResponse(503, "inventory_bag_quote_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "inventory_bag_buy") {
+      const payloadError = validatePayloadFields(payload, ["bag", "kind", "max_token_cost", "expected_revision"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const bag = Number(payload.bag);
+      const kind = payload.kind;
+      const maxTokenCost = Number(payload.max_token_cost);
+      const revision = Number(payload.expected_revision);
+      if (payloadError || !requestKey || !Number.isSafeInteger(bag) || bag < 1 || bag > 4
+        || (kind !== "buy" && kind !== "upgrade") || !Number.isSafeInteger(maxTokenCost) || maxTokenCost < 1
+        || !Number.isSafeInteger(revision) || revision < 1) {
+        return errorResponse(400, payloadError ?? "invalid_inventory_bag_purchase", requestId);
+      }
+      try {
+        const result = await retryDatabaseTimeoutOnce(() => databaseJson(
+          "SELECT heroloop_api.inventory_bag_buy($1::uuid,$2::uuid,$3::integer,$4::text,$5::numeric,$6::bigint,$7::boolean) AS result",
+          [identity.playerId, requestKey, bag, kind, maxTokenCost, revision, testerControlsEnabled],
+        ));
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["insufficient_tokens", "price_changed", "idempotency_conflict",
+          "dex_quote_unavailable", "state_conflict", "bag_step_unavailable", "invalid_inventory_bag_purchase"]);
+        if (code) return errorResponse(409, code, requestId);
+        console.error("inventory_bag_buy database adapter failed", { requestId });
+        return errorResponse(503, "inventory_bag_buy_failed", requestId);
       }
     }
     if (parsed.value.action === "shop_bundle_buy") {

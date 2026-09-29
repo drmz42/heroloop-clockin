@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey } from '@/game/types';
 import {
   loadState, normalizeState, makeInitialState, starUpCost,
-  MAX_TEAM, BASE_HERO_CAPACITY, MAX_HERO_CAPACITY, HERO_CAPACITY_STEP, MAX_HERO_STARS, MAX_INVENTORY, MAX_CHESTS, MAX_ACCOUNT_XP, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
+  MAX_TEAM, BASE_HERO_CAPACITY, MAX_HERO_CAPACITY, HERO_CAPACITY_STEP, MAX_HERO_STARS, inventoryCapacity, MAX_CHESTS, MAX_ACCOUNT_XP, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
   accountLevelFromXp, advanceHeroXp, moscowDayKey,
   heroXpForLevel, TRAINING_SLOT_COSTS, TRAINING_BOOST_COSTS,
   trainingTokenPenalty,
@@ -1767,6 +1767,50 @@ export function useGame() {
     return { ok: true };
   }, [serverReady, refreshAccountBonus]);
 
+  const quoteInventoryBag = useCallback(async (): Promise<{
+    bag: number; kind: 'buy' | 'upgrade'; slots: number; catalogue_usd_cents: number;
+    token_cost: number; available: boolean; complete?: boolean;
+  } | null> => {
+    if (!tokenomicsEnabled || !Number.isSafeInteger(serverRevisionHint)) return null;
+    return playerSync('inventory_bag_quote');
+  }, [serverRevisionHint]);
+
+  const buyInventoryBag = useCallback(async (bag: number, kind: 'buy' | 'upgrade', maxTokenCost: number): Promise<{ ok: true } | { ok: false; error: string }> => {
+    if (!tokenomicsEnabled || !Number.isSafeInteger(serverRevisionHint)) return { ok: false, error: 'state_unavailable' };
+    const key = createIdempotencyKey();
+    let revision = serverRevisionHint as number;
+    let failure = 'inventory_bag_buy_failed';
+    type BagResult = { bag_slots: number[]; token_balance: number; spent: number; revision: number };
+    const attempt = () => playerSync<BagResult>('inventory_bag_buy', {
+      bag, kind, max_token_cost: maxTokenCost, expected_revision: revision, idempotency_key: key,
+    }, (code) => { failure = code; });
+    let result = await attempt();
+    if (!result && failure === 'state_conflict') {
+      const refreshed = await playerSync<{ revision: number; state?: Partial<GameState> }>('game_state_load');
+      if (!refreshed || !Number.isSafeInteger(refreshed.revision)) return { ok: false, error: failure };
+      revision = refreshed.revision;
+      if (Array.isArray(refreshed.state?.bagSlots) && refreshed.state.bagSlots.length === 4) {
+        const merged = { ...stateRef.current, bagSlots: refreshed.state.bagSlots,
+          hero: Number.isSafeInteger(refreshed.state.hero) ? refreshed.state.hero as number : stateRef.current.hero };
+        stateRef.current = merged;
+        setState(merged);
+      }
+      result = await attempt();
+    }
+    if (!result || !Number.isSafeInteger(result.revision) || result.revision <= revision
+      || !Array.isArray(result.bag_slots) || result.bag_slots.length !== 4
+      || !result.bag_slots.every((slots) => slots === 0 || slots === 48 || slots === 64)
+      || !Number.isSafeInteger(result.token_balance) || result.token_balance < 0
+      || !Number.isSafeInteger(result.spent) || result.spent < 1) return { ok: false, error: failure };
+    const current = stateRef.current;
+    const nextState = { ...current, bagSlots: result.bag_slots, hero: result.token_balance,
+      milestoneQuests: updateQuestProgress(current.milestoneQuests, 'token-spent-', result.spent) };
+    stateRef.current = nextState;
+    setState(nextState);
+    setServerRevisionHint(result.revision);
+    return { ok: true };
+  }, [serverRevisionHint]);
+
   // Shop bundle: the server debits $HERO at its quote and credits the resource
   // in one transaction with the save revision; only those balances are merged
   // so unsaved local progress is kept.
@@ -2062,7 +2106,7 @@ export function useGame() {
     if (st.team.includes(uid)) {
       if (st.team.length <= 1) return 'blocked';
       const equippedCount = Object.values(hero.equipped).filter(Boolean).length;
-      if (bagItemCount(st) + equippedCount > MAX_INVENTORY) return 'inventory-full';
+      if (bagItemCount(st) + equippedCount > inventoryCapacity(st)) return 'inventory-full';
       newTeam = st.team.filter((t) => t !== uid);
       const nextState = { ...st, team: newTeam, ownedHeroes: st.ownedHeroes.map((owned) => owned.uid === uid ? { ...owned, equipped: {} } : owned) };
       const before = JSON.stringify(serverEquipmentAssignments(st));
@@ -2147,7 +2191,7 @@ export function useGame() {
     current.ownedHeroes.forEach((candidate) => {
       if (candidate.uid !== heroUid) Object.values(candidate.equipped).forEach((uid) => { if (uid) equippedElsewhere.add(uid); });
     });
-    if (current.inventory.filter((item) => !equippedElsewhere.has(item.uid)).length > MAX_INVENTORY) return false;
+    if (current.inventory.filter((item) => !equippedElsewhere.has(item.uid)).length > inventoryCapacity(current)) return false;
     const nextState = { ...current, ownedHeroes: current.ownedHeroes.map((candidate) => candidate.uid === heroUid ? { ...candidate, equipped: {} } : candidate) };
     const before = JSON.stringify(serverEquipmentAssignments(current));
     const after = JSON.stringify(serverEquipmentAssignments(nextState));
@@ -2471,7 +2515,7 @@ export function useGame() {
   ) => {
     if (chestOpeningRef.current) return;
     const st = stateRef.current;
-    const freeSlots = MAX_INVENTORY - bagItemCount(st);
+    const freeSlots = inventoryCapacity(st) - bagItemCount(st);
     if (freeSlots <= 0 || st.chests.length === 0) return;
     chestOpeningRef.current = true;
     setChestOpening(true);
@@ -2593,7 +2637,7 @@ export function useGame() {
     }
     setState((prev) => {
       const slot = prev.rotatingShop[index];
-      if (!slot || slot.sold || prev.gold < slot.price || bagItemCount(prev) >= MAX_INVENTORY) return prev;
+      if (!slot || slot.sold || prev.gold < slot.price || bagItemCount(prev) >= inventoryCapacity(prev)) return prev;
       const proper = rollItem(slot.itemId, 1);
       return { ...prev, gold: prev.gold - slot.price, inventory: [...prev.inventory, proper], rotatingShop: prev.rotatingShop.map((s, i) => i === index ? { ...s, sold: true } : s) };
     });
@@ -2685,7 +2729,7 @@ export function useGame() {
   const openTutorialChests = useCallback(async (requestedCount: 1 | 10): Promise<boolean> => {
     if (!tokenomicsEnabled || chestOpeningRef.current) return false;
     const current = stateRef.current;
-    const count = Math.min(requestedCount, current.tutorial.chestBalance, MAX_INVENTORY - bagItemCount(current));
+    const count = Math.min(requestedCount, current.tutorial.chestBalance, inventoryCapacity(current) - bagItemCount(current));
     if (count !== 1 && count !== 10) return false;
     chestOpeningRef.current = true; setChestOpening(true);
     try {
@@ -2857,7 +2901,7 @@ export function useGame() {
     offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
     starUpHero, promoteAllHeroes, releaseHero, quoteHeroCapacity, upgradeHeroCapacity, toggleHeroLock, markHeroSeen,
-    accountBonus, refreshAccountBonus, buyRewardBoost, buyShopBundle,
+    accountBonus, refreshAccountBonus, buyRewardBoost, buyShopBundle, quoteInventoryBag, buyInventoryBag,
     quoteHeroSummon, summonHeroes, summonBoss, syncBossKeys, toggleTeamMember, confirmPersistedFormation, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,
     equipItem, unequipItem, unequipAll, equipmentError: () => equipmentErrorRef.current, sellItem, toggleItemLock, sellAllUnlocked,

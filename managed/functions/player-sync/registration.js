@@ -21,6 +21,7 @@ export function buildRegisteredState(source, username, playerId, starterHeroId, 
   state.ownedHeroes = [{ uid: heroUid, heroId: starterHeroId, level: 1, stars: 0, equipped: {}, xp: 0 }];
   state.team = [heroUid];
   state.inventory = [];
+  state.bagSlots = [48, 0, 0, 0];
   state.chests = [];
   state.bossKeys = 0;
   state.bossBattleActive = false;
@@ -72,6 +73,6 @@ export function buildRegisteredState(source, username, playerId, starterHeroId, 
   // Fresh accounts never held client-side Market escrow, so they start beyond
   // the legacy recovery boundary without spending an extra revision on load.
   state.compatibilityMigrations = { legacyMarketRecoveryV1: true };
-  state.save_schema_version = 3;
+  state.save_schema_version = 4;
   return state;
 }

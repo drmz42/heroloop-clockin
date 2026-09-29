@@ -13,6 +13,7 @@ export const MAX_HERO_CAPACITY = 1_000;
 export const HERO_CAPACITY_STEP = 100;
 export const HERO_CAPACITY_UPGRADE_USD_CENTS = [100, 200, 300, 400, 500] as const;
 export const MAX_INVENTORY = 64;
+export const inventoryCapacity = (state: Pick<GameState, 'bagSlots'>): number => state.bagSlots.reduce((sum, slots) => sum + slots, 0);
 export const MAX_CHESTS = 500;
 export const ROTATING_REFRESH_MS = 4 * 60 * 60 * 1000;
 export const STARTING_HERO_TOKENS = 0;
@@ -132,6 +133,7 @@ export function makeInitialState(): GameState {
     accountXp: 0,
     accountLevel: 1,
     heroCapacity: BASE_HERO_CAPACITY,
+    bagSlots: [48, 0, 0, 0],
     ownedHeroes: [hero],
     team: [hero.uid],
     inventory: [],
@@ -412,6 +414,9 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
         MAX_HERO_CAPACITY,
         BASE_HERO_CAPACITY + Math.floor((Math.max(BASE_HERO_CAPACITY, parsed.heroCapacity ?? BASE_HERO_CAPACITY) - BASE_HERO_CAPACITY) / HERO_CAPACITY_STEP) * HERO_CAPACITY_STEP,
       ),
+      bagSlots: Array.isArray(parsed.bagSlots) && parsed.bagSlots.length === 4
+        ? parsed.bagSlots.map((slots) => slots === 48 || slots === 64 ? slots : 0)
+        : [64, 0, 0, 0],
       totalKills: parsed.totalKills ?? 0,
       totalBossKills: parsed.totalBossKills ?? parsed.session?.bossKills ?? 0,
       summonScrolls: Math.max(0, Math.floor(parsed.summonScrolls ?? 0)),

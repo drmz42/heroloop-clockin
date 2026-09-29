@@ -403,6 +403,18 @@ export function mergeSaveState(
     ledgerIds,
   );
   if (recordArray(requested.ownedHeroes).length === 0) return { code: "invalid_owned_heroes", status: 400 };
+  const unequippedCount = (state: JsonRecord): number => {
+    const equipped = new Set(recordArray(state.ownedHeroes).flatMap((hero) =>
+      isRecord(hero.equipped) ? Object.values(hero.equipped).filter((uid): uid is string => typeof uid === "string") : []));
+    return recordArray(state.inventory).filter((item) => !equipped.has(String(item.uid ?? ""))).length;
+  };
+  const currentBagCount = unequippedCount(current);
+  const requestedBagCount = unequippedCount(requested);
+  const capacity = Array.isArray(requested.bagSlots)
+    ? requested.bagSlots.reduce<number>((sum, slots) => sum + Number(slots), 0) : 64;
+  if (requestedBagCount > capacity && requestedBagCount > currentBagCount) {
+    return { code: "item_capacity_exceeded", status: 409, result: { revision, state: current, conflict: true } };
+  }
   const savedHeroUids = new Set(recordArray(requested.ownedHeroes).map((hero) => String(hero.uid ?? "")));
   const requestedTeam = Array.isArray(requested.team)
     ? requested.team.filter((uid): uid is string => typeof uid === "string")

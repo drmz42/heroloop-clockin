@@ -26,7 +26,7 @@ import { canMineTokens, teamPower as calculateAccountPower } from '@/game/engine
 import { useTokenomics } from '@/game/useTokenomics';
 import { demoTokenomicsEnabled, playerSync, authClient, tokenomicsEnabled } from '@/game/backend';
 import { isAuthTransient, runAuthCall } from '@/game/authTransient';
-import { clearLegacyState, MAX_INVENTORY } from '@/game/state';
+import { clearLegacyState, inventoryCapacity } from '@/game/state';
 import {
   compatibleSolanaWallets,
   restoreSolanaWalletSession,
@@ -555,7 +555,7 @@ function App() {
       )}
       {showPromoCode && <PromoCodeModal onClose={() => setShowPromoCode(false)} onRedeemed={applyPromoRedemption} />}
       {showSupport && <SupportTicketModal onClose={() => setShowSupport(false)} />}
-      {showMail && <MailboxModal onClose={() => setShowMail(false)} loadMail={game.loadMail} claimMail={game.claimMail} freeSlots={MAX_INVENTORY - bagItemCount(game.state)} />}
+      {showMail && <MailboxModal onClose={() => setShowMail(false)} loadMail={game.loadMail} claimMail={game.claimMail} freeSlots={inventoryCapacity(game.state) - bagItemCount(game.state)} />}
     </div>
   );
 }

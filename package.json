@@ -45,6 +45,8 @@
     "check:safe-metrics-adapter": "node scripts/check-safe-metrics-adapter-contract.mjs",
     "simulate:acceleration-calendar": "node scripts/simulate-acceleration-calendar.mjs",
     "check:bag-expansion": "node scripts/check-bag-expansion-proposal.mjs",
+    "check:inventory-bags": "node scripts/check-inventory-bags.mjs",
+    "check:inventory-bags-sql": "bash scripts/check-inventory-bags-sql.sh",
     "check:codex-watchdog": "node scripts/check-codex-watchdog.mjs",
     "check:claude2-profile": "node scripts/check-claude2-profile.mjs",
     "check:codex-weekly-limits": "node scripts/check-codex-weekly-limits.mjs",

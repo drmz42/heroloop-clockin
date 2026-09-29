@@ -7,7 +7,7 @@ import { HeroPortrait } from '@/components/HeroPortrait';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
 import { buildLocation, canMineTokens, equippedEnchantResonance, equippedSetBonus, getEquippedItems, heroStats, locationUnlockLevel, locationLevelRange, LOCATION_RANGES, SET_BONUS_PERCENT, teamPower as calculateHeroPower } from '@/game/engine';
 import { ENCHANT_RESONANCE_PERCENT } from '@/game/enchant';
-import { formatNum, accountXpForLevel, accountXpProgress, heroXpForLevel } from '@/game/state';
+import { formatNum, accountXpForLevel, accountXpProgress, heroXpForLevel, inventoryCapacity } from '@/game/state';
 import { ITEM_MAP, SLOT_LABEL, POTIONS, sellValue, meetsItemLevelRequirement, canClassEquipItem, standardChestWeights } from '@/game/items';
 import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, CLASS_LABEL, RARITY_INDEX } from '@/game/heroes';
 import type { TokenomicsApi } from '@/game/useTokenomics';
@@ -144,6 +144,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const [showBulkSellConfirm, setShowBulkSellConfirm] = useState(false);
   const [inventoryLockMode, setInventoryLockMode] = useState(false);
   const [inventoryTab, setInventoryTab] = useState<1 | 2 | 3 | 4 | 'resources'>(1);
+  const [bagQuote, setBagQuote] = useState<Awaited<ReturnType<GameApi['quoteInventoryBag']>>>(null);
+  const [bagPurchaseConfirm, setBagPurchaseConfirm] = useState(false);
+  const [bagPurchaseBusy, setBagPurchaseBusy] = useState(false);
   const [selectedResource, setSelectedResource] = useState<'summon-scroll' | 'boss-key' | null>(null);
   const [showDropRates, setShowDropRates] = useState(false);
   const dropRatesButtonRef = useRef<HTMLButtonElement>(null);
@@ -161,6 +164,12 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const [selectedItemSource, setSelectedItemSource] = useState<'bag' | 'hero' | null>(null);
   const [selectedItemSlot, setSelectedItemSlot] = useState<ItemSlot | null>(null);
   const locationRailRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    void game.quoteInventoryBag().then((quote) => { if (active) setBagQuote(quote); });
+    return () => { active = false; };
+  }, [game.quoteInventoryBag, game.serverRevisionHint]);
 
   useEffect(() => {
     // The banner keeps its own snapshot: the next wave clears battleResult
@@ -268,14 +277,18 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     : null;
   const visiblePotions = POTIONS.filter((p) => state.potions[p.tier] > 0);
   const resourceSlotCount = 2 + visiblePotions.length;
-  const cells: (OwnedItem | null)[] = Array.from({ length: GRID_SIZE }).map((_, i) => bagItems[i] ?? null);
+  const activeBag = inventoryTab === 'resources' ? 1 : inventoryTab;
+  const bagStart = state.bagSlots.slice(0, activeBag - 1).reduce((sum, slots) => sum + slots, 0);
+  const bagOpenSlots = state.bagSlots[activeBag - 1] ?? 0;
+  const cells: (OwnedItem | null)[] = Array.from({ length: GRID_SIZE }).map((_, i) => i < bagOpenSlots ? bagItems[bagStart + i] ?? null : null);
+  const bagUsedSlots = Math.min(bagOpenSlots, Math.max(0, bagItems.length - bagStart));
   const unlockedSellTotal = bagItems
     .filter(i => !i.locked)
     .reduce((acc, i) => acc + sellValue(i), 0);
   const selectedEquippedCount = selectedHero ? Object.values(selectedHero.equipped).filter(Boolean).length : 0;
-  const canUnequipAll = selectedEquippedCount > 0 && bagItems.length + selectedEquippedCount <= GRID_SIZE;
+  const canUnequipAll = selectedEquippedCount > 0 && bagItems.length + selectedEquippedCount <= inventoryCapacity(state);
   const selectedBagIndex = selectedItemSource === 'bag' && liveSelectedItem
-    ? bagItems.findIndex((item) => item.uid === liveSelectedItem.uid)
+    ? cells.findIndex((item) => item?.uid === liveSelectedItem.uid)
     : -1;
   const selectedBagRowEnd = selectedBagIndex >= 0 ? Math.floor(selectedBagIndex / 8) * 8 + 7 : -1;
   const chestWeights = standardChestWeights(state.accountLevel, tok.status?.rarity_capacity ?? {});
@@ -764,13 +777,18 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           <div className="mb-2 min-w-0">
             <div className="flex min-w-0 items-center gap-1">
               <span className="section-kicker shrink-0">Inventory</span>
-              <span className="shrink-0 rounded border border-[#493e2d] bg-black/25 px-1.5 py-0.5 ui-text-small font-bold text-[#8d887d]">{inventoryTab === 'resources' ? resourceSlotCount : inventoryTab === 1 ? bagItems.length : 0}/{GRID_SIZE}</span>
+              <span className="shrink-0 rounded border border-[#493e2d] bg-black/25 px-1.5 py-0.5 ui-text-small font-bold text-[#8d887d]">{inventoryTab === 'resources' ? resourceSlotCount : bagUsedSlots}/{inventoryTab === 'resources' ? GRID_SIZE : bagOpenSlots}</span>
               <div className="ml-auto flex min-w-0 items-center gap-0.5" role="tablist" aria-label="Inventory sections">
-                {([1, 2, 3, 4] as const).map((bag) => <button key={bag} type="button" role="tab" aria-label={`Bag ${bag}${bag > 1 ? ', locked' : ''}`} aria-selected={inventoryTab === bag} onClick={() => { setInventoryTab(bag); setSelectedResource(null); setSelectedItem(null); if (bag > 1) showToast(`Bag ${bag} is locked · Shop price pending`); }} className={`game-control ui-text-small relative flex h-6 w-[30px] shrink-0 items-center justify-center gap-px px-0 font-medium ${inventoryTab === bag ? 'game-primary' : ''} ${bag > 1 ? 'opacity-55' : ''}`}><FantasyBagIcon size={14} /><span>{bag}</span>{bag > 1 && <LockIcon size={7} className="absolute right-px top-px" aria-hidden="true" />}</button>)}
+                {([1, 2, 3, 4] as const).map((bag) => <button key={bag} type="button" role="tab" aria-label={`Bag ${bag}${state.bagSlots[bag - 1] === 0 ? ', locked' : ''}`} aria-selected={inventoryTab === bag} onClick={() => { setInventoryTab(bag); setSelectedResource(null); setSelectedItem(null); setBagPurchaseConfirm(false); }} className={`game-control ui-text-small relative flex h-6 w-[30px] shrink-0 items-center justify-center gap-px px-0 font-medium ${inventoryTab === bag ? 'game-primary' : ''} ${state.bagSlots[bag - 1] === 0 ? 'opacity-55' : ''}`}><FantasyBagIcon size={14} /><span>{bag}</span>{state.bagSlots[bag - 1] === 0 && <LockIcon size={7} className="absolute right-px top-px" aria-hidden="true" />}</button>)}
                 <button type="button" role="tab" aria-label="Resources" title="Resources" aria-selected={inventoryTab === 'resources'} onClick={() => { setInventoryTab('resources'); setSelectedItem(null); }} className={`game-control ui-text-small flex h-6 w-[34px] shrink-0 items-center justify-center gap-px px-0 font-medium ${inventoryTab === 'resources' ? 'game-primary' : ''}`}><Package size={13} strokeWidth={1.7} aria-hidden="true" /><span>R</span></button>
               </div>
             </div>
-            {inventoryTab === 1 && <div className="mt-2 grid min-w-0 grid-cols-[1fr_1fr_32px_1fr] gap-1">
+            {inventoryTab !== 'resources' && bagQuote && !bagQuote.complete && bagQuote.bag === inventoryTab && <div className="mt-2 rounded-md border border-[#6e5837] bg-black/25 p-2 ui-text-small text-[#e5d4b4]">
+              <div className="flex flex-wrap items-center justify-between gap-2"><span>{bagQuote.kind === 'buy' ? `Unlock Bag ${bagQuote.bag} · 48 cells` : `Upgrade Bag ${bagQuote.bag} · +16 cells`} · ${(bagQuote.catalogue_usd_cents / 100).toFixed(0)} in $HERO</span><button type="button" className="game-control game-primary min-h-9 px-2 font-bold disabled:opacity-50" disabled={!bagQuote.available || bagPurchaseBusy || !Number.isFinite(bagQuote.token_cost)} onClick={() => setBagPurchaseConfirm(true)}>{bagQuote.available ? `${formatNum(bagQuote.token_cost)} $HERO` : 'Quote unavailable'}</button></div>
+              {bagPurchaseConfirm && <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label="Confirm bag purchase"><span>Spend up to {formatNum(bagQuote.token_cost)} $HERO?</span><button type="button" className="game-control min-h-9 px-2" onClick={() => setBagPurchaseConfirm(false)}>Cancel</button><button type="button" className="game-control game-primary min-h-9 px-2 font-bold" disabled={bagPurchaseBusy} onClick={async () => { setBagPurchaseBusy(true); const result = await game.buyInventoryBag(bagQuote.bag, bagQuote.kind, bagQuote.token_cost); setBagPurchaseBusy(false); setBagPurchaseConfirm(false); if (result.ok) setBagQuote(null); showToast(result.ok ? 'Bag capacity unlocked' : `Bag purchase failed: ${result.error}`); }}>{bagPurchaseBusy ? 'Processing…' : 'Confirm'}</button></div>}
+            </div>}
+            {inventoryTab !== 'resources' && bagOpenSlots === 0 && bagQuote && !bagQuote.complete && bagQuote.bag !== inventoryTab && <p className="mt-2 ui-text-small text-[#a9a092]">Unlock and upgrade earlier bags first.</p>}
+            {inventoryTab !== 'resources' && <div className="mt-2 grid min-w-0 grid-cols-[1fr_1fr_32px_1fr] gap-1">
               <button onClick={() => { game.sortInventory(); showToast('Sorted by rarity'); }} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 ui-text-medium font-bold" title="Sort by rarity"><ArrowUpDown size={12} /> Sort</button>
               <button onClick={async () => { if (state.team.length === 0) return; showToast(await game.autoEquipBest() ? 'Best gear equipped on active team' : equipmentFailure('Auto Equip')); }} disabled={state.team.length === 0} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 ui-text-medium font-bold" title="Equip the strongest valid gear on each active hero in formation order"><Wand2 size={12} /> Auto</button>
               <button type="button" aria-label={inventoryLockMode ? 'Exit Inventory Lock mode' : 'Enter Inventory Lock mode'} aria-pressed={inventoryLockMode} onClick={() => { setInventoryLockMode((active) => !active); setSelectedItem(null); setSelectedItemSource(null); setSelectedItemSlot(null); setShowBulkSellConfirm(false); }} className={`game-control grid min-w-0 place-items-center px-0 py-1 ${inventoryLockMode ? 'border-red-500/70 bg-red-950/55 text-red-300' : 'text-[#a69c8c]'}`} title={inventoryLockMode ? 'Lock mode active — click to exit' : 'Lock mode — click items to lock or unlock'}><LockIcon size={13} /></button>
@@ -779,7 +797,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                 {showBulkSellConfirm && <div className="item-sell-confirm absolute right-0 top-full z-40 mt-1 w-48 rounded-md border border-[#80502d] p-2 text-left shadow-xl"><p className="ui-text-small font-bold text-[#ead9bf]">Sell all unlocked items for {formatNum(unlockedSellTotal)} Gold?</p><div className="mt-1.5 grid grid-cols-2 gap-1"><button type="button" onClick={() => setShowBulkSellConfirm(false)} className="game-control py-1 ui-text-small font-bold">Cancel</button><button type="button" onClick={async () => { const limited = bagItems.filter((item) => !item.locked && ['divine', 'celestial'].includes(ITEM_MAP[item.itemId]?.rarity ?? '')); await Promise.allSettled(limited.map((item) => tok.removeLimitedItem(item.uid))); game.sellAllUnlocked(); setShowBulkSellConfirm(false); }} className="rounded border border-rose-500/45 bg-rose-500/15 py-1 ui-text-small font-black text-rose-200">Sell all</button></div></div>}
               </div>
             </div>}
-            {inventoryTab === 1 && inventoryLockMode && <div className="mt-1.5 rounded-md border border-red-500/45 bg-red-950/35 px-2 py-1 text-center ui-text-small font-bold text-red-200" role="status">LOCK MODE · click an item to lock or unlock it</div>}
+            {inventoryTab !== 'resources' && inventoryLockMode && <div className="mt-1.5 rounded-md border border-red-500/45 bg-red-950/35 px-2 py-1 text-center ui-text-small font-bold text-red-200" role="status">LOCK MODE · click an item to lock or unlock it</div>}
           </div>
           {inventoryTab === 'resources' ? <div className="min-w-0">
             <div className="grid min-w-0 grid-cols-8 gap-1 overflow-hidden">
@@ -789,7 +807,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             {Array.from({ length: GRID_SIZE - resourceSlotCount }, (_, index) => <div key={`resource-empty-${index}`} className="item-slot aspect-square min-w-0 w-full border" style={{ borderColor: 'rgba(128,119,100,0.11)', background: 'linear-gradient(145deg,#151612,#0c0e0d)' }} />)}
             </div>
             {selectedResource && <div className={`mt-2 rounded-lg border p-2 ${selectedResource === 'summon-scroll' ? 'border-violet-400/45 bg-violet-950/20' : 'border-amber-400/45 bg-amber-950/20'}`}><div className="flex items-center gap-2">{selectedResource === 'summon-scroll' ? <SummonScrollArtwork size={40} /> : <BossKeyIcon size={40} />}<div className="min-w-0"><strong className="ui-text-large block text-[#efe4ce]">{selectedResource === 'summon-scroll' ? 'Summon Scroll' : 'Boss Key'}</strong><span className="ui-text-small text-[#9b9283]">Owned: {formatNum(selectedResource === 'summon-scroll' ? state.summonScrolls : state.bossKeys)}</span></div></div><p className="ui-text-medium mt-1.5 leading-snug text-[#c9c0b1]">{selectedResource === 'summon-scroll' ? 'Persistent consumable for one future Free Summon. Scroll spending is not available until server-authoritative Free Summon launches.' : 'Non-deletable resource used only to summon a Boss. One summon consumes one key; a Boss Chest is awarded only after victory.'}</p></div>}
-          </div> : inventoryTab === 1 ? <div className={`grid min-w-0 grid-cols-8 gap-1 overflow-hidden ${inventoryLockMode ? 'inventory-lock-cursor' : ''}`}>
+          </div> : <div className={`grid min-w-0 grid-cols-8 gap-1 overflow-hidden ${inventoryLockMode ? 'inventory-lock-cursor' : ''}`}>
             {cells.map((item, i) => {
               const itemBase = item ? ITEM_MAP[item.itemId] : null;
               const rarity = itemBase?.rarity ?? (item ? 'common' : null);
@@ -799,10 +817,14 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                 <Fragment key={item ? item.uid : `e${i}`}>
                 <button
                   data-inventory-item-uid={item?.uid}
+                  aria-label={i >= bagOpenSlots ? `Bag ${activeBag} slot ${i + 1} locked` : item ? undefined : `Bag ${activeBag} slot ${i + 1} empty`}
+                  disabled={i >= bagOpenSlots}
                   onClick={item ? () => { if (inventoryLockMode) { game.toggleItemLock(item.uid); showToast(item.locked ? 'Item unlocked' : 'Item locked'); return; } setSelectedItem(item); setSelectedItemSource('bag'); setSelectedItemSlot(null); } : undefined}
-                  className={`item-slot aspect-square min-w-0 w-full flex items-center justify-center overflow-hidden text-xl border transition hover:-translate-y-0.5 relative ${item && rarity ? `rarity-${rarity}` : ''} ${selectedItem?.uid === item?.uid ? 'ring-1 ring-[#d9ad5b]' : ''}`}
-                  style={item ? { borderColor: rc ? `${rc}99` : 'rgba(255,255,255,0.08)' } : { borderColor: 'rgba(128,119,100,0.11)', background: 'linear-gradient(145deg,#151612,#0c0e0d)' }}
+                  className={`item-slot aspect-square min-w-0 w-full flex items-center justify-center overflow-hidden text-xl border transition hover:-translate-y-0.5 relative ${item && rarity ? `rarity-${rarity}` : ''} ${selectedItem?.uid === item?.uid ? 'ring-1 ring-[#d9ad5b]' : ''} ${i >= bagOpenSlots ? 'opacity-70' : ''}`}
+                  style={item ? { borderColor: rc ? `${rc}99` : 'rgba(255,255,255,0.08)' } : { borderColor: i >= bagOpenSlots ? 'rgba(130,103,63,0.35)' : 'rgba(128,119,100,0.11)', background: i >= bagOpenSlots ? 'linear-gradient(145deg,#181612,#080909)' : 'linear-gradient(145deg,#151612,#0c0e0d)' }}
                 >
+                  {i >= bagOpenSlots && <LockIcon size={13} className="text-[#8f7652]" aria-hidden="true" />}
+                  {i === bagOpenSlots && bagQuote?.bag === activeBag && <span className="ui-text-small absolute bottom-0 right-0 rounded-tl bg-[#6e5837] px-0.5 font-bold leading-4 text-[#f1deb7]">${(bagQuote.catalogue_usd_cents / 100).toFixed(0)}</span>}
                   {item && <ItemArtwork itemId={item.itemId} name={ITEM_MAP[item.itemId]?.name ?? 'Item'} fallback={ITEM_MAP[item.itemId]?.icon ?? '◆'} className="leading-none" />}
                   {item?.locked && <LockIcon size={11} className="absolute bottom-0.5 left-0.5 z-10 text-amber-300" />}
                   {item && item.enchantLevel > 0 && <div className="absolute top-0 left-0 ui-text-medium font-bold text-amber-400 font-vt leading-none px-0.5">+{item.enchantLevel}</div>}
@@ -813,7 +835,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                 </Fragment>
               );
             })}
-          </div> : <div className="grid min-w-0 grid-cols-8 gap-1 overflow-hidden">{Array.from({ length: GRID_SIZE }, (_, index) => <div key={`locked-bag-${inventoryTab}-${index}`} className="item-slot aspect-square min-w-0 w-full border" style={{ borderColor: 'rgba(128,119,100,0.11)', background: 'linear-gradient(145deg,#151612,#0c0e0d)' }}>{index === 0 && <LockIcon size={13} className="mx-auto text-[#625b50]" />}</div>)}</div>}
+          </div>}
         </div>
 
         {liveSelectedItem && selectedItemSource === 'hero' && (

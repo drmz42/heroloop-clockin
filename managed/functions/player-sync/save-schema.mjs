@@ -1,8 +1,8 @@
-export const SAVE_SCHEMA_VERSION = 3;
+export const SAVE_SCHEMA_VERSION = 4;
 export const MAX_STATE_OBJECT_KEYS = 65_536;
 
 const DATA_FIELDS = new Set([
-  "gold", "hero", "accountXp", "accountLevel", "heroCapacity", "ownedHeroes", "team", "inventory", "chests",
+  "gold", "hero", "accountXp", "accountLevel", "heroCapacity", "bagSlots", "ownedHeroes", "team", "inventory", "chests",
   "bossKeys", "bossBattleActive", "battleAnimationMode", "chestsOpenedToday", "lastChestReset",
   "currentLocation", "highestLocation", "lastSeen", "combatXpAt", "activeUntil", "totalGoldEarned",
   "totalTokensEarned", "tokensEarnedToday", "tokenDayKey", "totalKills", "totalBossKills", "summons",
@@ -13,7 +13,7 @@ const DATA_FIELDS = new Set([
 ]);
 const TOP_LEVEL_FIELDS = new Set([...DATA_FIELDS, "save_schema_version"]);
 const AUTHORITATIVE_FIELDS = new Set([
-  "gold", "hero", "accountXp", "accountLevel", "heroCapacity", "bossKeys", "bossBattleActive", "chestsOpenedToday",
+  "gold", "hero", "accountXp", "accountLevel", "heroCapacity", "bagSlots", "bossKeys", "bossBattleActive", "chestsOpenedToday",
   "lastChestReset", "highestLocation", "lastSeen", "combatXpAt", "activeUntil", "totalGoldEarned",
   "totalTokensEarned", "tokensEarnedToday", "tokenDayKey", "totalKills", "totalBossKills", "summons",
   "summonScrolls", "potions", "tutorial", "trainingCamp", "rotatingShop", "rotatingShopRefreshAt",
@@ -127,10 +127,15 @@ function quest(value) {
 }
 
 function ownedCollectionsError(state, allowMissingTeamReferences = false) {
+  if (!Array.isArray(state.bagSlots) || state.bagSlots.length !== 4 ||
+      !state.bagSlots.every((slots) => slots === 0 || slots === 48 || slots === 64) ||
+      state.bagSlots[0] === 0 ||
+      state.bagSlots.some((slots, index) => index > 0 && slots > 0 && state.bagSlots[index - 1] !== 64) ||
+      state.bagSlots.some((slots, index) => index > 0 && slots === 0 && state.bagSlots.slice(index + 1).some(Boolean))) return "bag_slots";
   if (!finite(state.heroCapacity, 500, 1000) || state.heroCapacity % 100 !== 0) return "hero_capacity";
   if (!Array.isArray(state.ownedHeroes) || state.ownedHeroes.length < 1 || state.ownedHeroes.length > state.heroCapacity) return "heroes_bounds";
   if (!state.ownedHeroes.every(hero)) return "hero_shape";
-  if (!Array.isArray(state.inventory) || state.inventory.length > 200) return "inventory_bounds";
+  if (!Array.isArray(state.inventory) || state.inventory.length > 1_000) return "inventory_bounds";
   const invalidItem = state.inventory.find((entry) => itemError(entry) !== null);
   if (invalidItem !== undefined) return `item_shape:${itemError(invalidItem)}`;
   if (!Array.isArray(state.chests) || state.chests.length > 500) return "chests_bounds";
@@ -217,7 +222,7 @@ function migrateVersionZero(state) {
     : "shepherd-common";
   const timestamp = finite(state.lastSeen, 0, 8_640_000_000_000_000) ? state.lastSeen : 0;
   const defaults = {
-    gold: 0, hero: 0, accountXp: 0, accountLevel: 1, heroCapacity: 500, ownedHeroes: [], team: [], inventory: [], chests: [],
+    gold: 0, hero: 0, accountXp: 0, accountLevel: 1, heroCapacity: 500, bagSlots: [64, 0, 0, 0], ownedHeroes: [], team: [], inventory: [], chests: [],
     bossKeys: 0, bossBattleActive: false, battleAnimationMode: "light", chestsOpenedToday: 0,
     lastChestReset: timestamp, currentLocation: 1, highestLocation: 1, lastSeen: timestamp,
     combatXpAt: timestamp, activeUntil: timestamp, totalGoldEarned: 0, totalTokensEarned: 0,
@@ -250,6 +255,7 @@ export function validateAndMigrateGameState(value, options = {}) {
   let state = structuredClone(value);
   if (version === 0) state = migrateVersionZero(state);
   if (version <= 2) state.heroCapacity = 500;
+  if (version <= 3) state.bagSlots = [64, 0, 0, 0];
   // This marker did not exist before v2, so an older client cannot forge it.
   if (version <= 1) state.compatibilityMigrations = {};
   if (record(options.canonicalState)) {
@@ -273,7 +279,7 @@ export function validateAndMigrateGameState(value, options = {}) {
 export function validRegistrationShell(value) {
   if (!record(value) || !validateComplexity(value)) return false;
   return Array.isArray(value.ownedHeroes) && value.ownedHeroes.length > 0 && value.ownedHeroes.length <= 500 &&
-    Array.isArray(value.inventory) && value.inventory.length <= 200 && Array.isArray(value.chests) && value.chests.length <= 500 &&
+    Array.isArray(value.inventory) && value.inventory.length <= 1_000 && Array.isArray(value.chests) && value.chests.length <= 500 &&
     Array.isArray(value.team) && value.team.length <= 3;
 }
 
