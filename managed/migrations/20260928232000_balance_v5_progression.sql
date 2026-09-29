@@ -19,7 +19,7 @@ BEGIN
   -- started encounters use the new Hero Level mastery and Star curve.
   v_def := pg_get_functiondef('public.dungeon_roster_snapshot(uuid,jsonb)'::regprocedure);
   v_new := replace(v_def,
-    'v_power := round(v_atk + v_hp * 0.08 + v_def * 1.5 + v_item_attack_speed * 2, 3);',
+    'v_power := round(v_atk + v_hp * .08 + v_def * 1.5 + v_item_attack_speed * 2, 3);',
     'v_hp := round(v_hp * public.hero_level_mastery(v_level));
     v_atk := round(v_atk * public.hero_level_mastery(v_level));
     v_def := round(v_def * public.hero_level_mastery(v_level));
@@ -29,8 +29,8 @@ BEGIN
 
   v_def := pg_get_functiondef('public.dungeon_start(uuid,integer,uuid)'::regprocedure);
   v_new := replace(v_def,
-    'hero-power-proposal-2026.08.12-v3@sha256:4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc',
-    'balance-v5-progression-2026.09.28-v1');
+    '''balance-v4-2026.08.28-v5@sha256:1582812293bdea86b040e700b30175dca52d0d3258ca8bafdf01ede082e81b53''',
+    '''balance-v5-progression-2026.09.28-v1''');
   IF v_new = v_def THEN RAISE EXCEPTION 'balance_v5_dungeon_version_patch_failed'; END IF;
   EXECUTE v_new;
 END;
