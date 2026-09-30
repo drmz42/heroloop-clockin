@@ -234,6 +234,21 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   };
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2000); };
+  // A Boss Hunt that ends changes Boss Keys on the server (a win spends the key for good;
+  // a loss during the Tutorial returns it), so re-read the save instead of guessing.
+  const handleDungeonChange = async (next: DungeonCheckpoint | null) => {
+    const endedBossHunt = next === null && activeDungeon?.type === 'boss_hunt';
+    const keysBefore = state.bossKeys;
+    setActiveDungeon(next);
+    if (!endedBossHunt) return;
+    const refreshed = await playerSync<{ revision: number; state?: { bossKeys?: number } }>('game_state_load');
+    if (!refreshed) return;
+    game.applyServerRevision(refreshed.revision);
+    const keys = refreshed.state?.bossKeys;
+    if (typeof keys !== 'number') return;
+    game.syncBossKeys(keys);
+    if (keys > keysBefore && !state.tutorial.questCompleted) showToast('Boss Key returned · grow stronger and try again');
+  };
   const equipmentFailure = (action: string) => {
     const code = game.equipmentError();
     return `${action} failed · ${(EQUIPMENT_ERROR_LABELS[code] ?? code) || 'unknown error'}`;
@@ -611,7 +626,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               </div>
             </div>
           )}
-          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={setActiveDungeon} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls })} />}
+          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={(next) => void handleDungeonChange(next)} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls })} />}
           {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Server reward result:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Granted together exactly once by the server</small></> : <><span><SummonScrollArtwork size={18} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST PREVIEW</span><small>{dungeonCompletion.scrolls === 2 ? 'Scrolls granted exactly once by the server; Dungeon Chest is not yet granted' : 'No Scrolls granted for this run; Dungeon Chest is not yet granted'}</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
           {!activeDungeon && <div className="absolute right-3 top-3 z-30 flex items-center gap-1.5">
             <button type="button" onClick={() => setShowDungeonInfo(true)} className="pm-socket game-control flex h-7 items-center gap-1 px-2 py-0.5 ui-text-small font-bold text-[#d7c6ea]" aria-label="Open Dungeons information">
