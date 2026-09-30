@@ -5,7 +5,7 @@ import './theme/premium/premium-game.css';
 import './platform/android.css';
 import { captureSignupAttribution } from './game/signupAttribution';
 import { applyUiTheme, resolveUiTheme } from './theme/uiTheme';
-import { applyPlatform } from './platform/platform';
+import { applyPlatform, isAppShell } from './platform/platform';
 
 captureSignupAttribution();
 const uiTheme = resolveUiTheme();
@@ -33,7 +33,8 @@ function RootScreen() {
     };
   }, []);
 
-  const gameRoute = window.location.hash === '#game' || window.location.pathname === '/wiki';
+  // The Android app has no landing page: every entry goes to the game (sign-in first).
+  const gameRoute = isAppShell || window.location.hash === '#game' || window.location.pathname === '/wiki';
   const Screen = window.location.pathname === '/' && !gameRoute
     ? (uiTheme === 'premium' ? PremiumLandingScreen : Landing4Screen)
     : GameScreen;

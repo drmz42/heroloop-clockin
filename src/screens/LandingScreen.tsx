@@ -285,7 +285,7 @@ function Benefit({ title, text }: { title: string; text: string }) {
   );
 }
 
-export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onClose }: { game: GameApi; legacyWalletMode?: 'link' | 'import' | null; onAccountReady: () => void; onClose: () => void }) {
+export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onClose, persistent = false }: { game: GameApi; legacyWalletMode?: 'link' | 'import' | null; onAccountReady: () => void; onClose: () => void; persistent?: boolean }) {
   const [step, setStep] = useState(1);
   const [starter, setStarter] = useState<StarterId>('shepherd-common');
   const [username, setUsername] = useState('');
@@ -439,9 +439,9 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
   return (
     <div className="hl-onboarding fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[#030308]/90 p-4 backdrop-blur-md">
       <div className="landing-card relative my-auto w-full max-w-4xl overflow-hidden">
-        <button onClick={onClose} className="absolute right-4 top-4 z-10 p-2 text-slate-500 transition hover:text-white" aria-label="Close">
+        {!persistent && <button onClick={onClose} className="absolute right-4 top-4 z-10 p-2 text-slate-500 transition hover:text-white" aria-label="Close">
           <X size={20} />
-        </button>
+        </button>}
         <div className="border-b border-white/10 px-6 py-5 sm:px-8">
           <div className="text-[10px] uppercase tracking-[.25em] text-violet-300">{step === 1 ? (solanaAuthEnabled ? 'Verify wallet ownership' : 'Check guest account') : 'Create your account'}</div>
           <div className="mt-3 flex items-center gap-2">
@@ -527,9 +527,9 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         </div>
 
         <div className="flex items-center justify-between border-t border-white/10 bg-black/20 px-6 py-5 sm:px-8">
-          <button onClick={() => step === 1 ? onClose() : setStep(step - 1)} className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white">
+{persistent && step === 1 ? <span /> : <button onClick={() => step === 1 ? onClose() : setStep(step - 1)} className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white">
             {step === 1 ? 'Cancel' : 'Back'}
-          </button>
+          </button>}
           {step === 2 ? (
             <button onClick={() => setStep(3)} className="landing-cta flex items-center gap-2 px-6 py-3 disabled:cursor-not-allowed disabled:opacity-30">
               Continue <ArrowRight size={15} />

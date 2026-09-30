@@ -33,6 +33,27 @@ export function resolvePlatform(): Platform {
   return window.matchMedia('(max-width: 900px) and (pointer: coarse)').matches ? 'android' : 'web';
 }
 
+// App shell: the page runs inside the Android APK (Trusted Web Activity opened with
+// ?source=android) or as an installed standalone app. There is no landing page in the
+// app: the player goes straight to wallet sign-in/registration and then the game.
+// Chrome shares storage between the APK and the browser, so the flag is kept per tab
+// (sessionStorage), not per browser.
+function resolveAppShell(): boolean {
+  if (!androidLayoutAvailable) return false;
+  try {
+    if (new URLSearchParams(window.location.search).get('source') === 'android') {
+      window.sessionStorage.setItem('heroloop-app-shell', '1');
+      return true;
+    }
+    if (window.sessionStorage.getItem('heroloop-app-shell') === '1') return true;
+  } catch {
+    // Blocked storage: fall through to the display-mode check.
+  }
+  return window.matchMedia('(display-mode: standalone)').matches;
+}
+
+export const isAppShell = typeof window !== 'undefined' && resolveAppShell();
+
 export const platform: Platform = typeof window === 'undefined' ? 'web' : resolvePlatform();
 export const isAndroidLayout = platform === 'android';
 
