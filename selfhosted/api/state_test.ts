@@ -13,7 +13,6 @@ const registration = prepareRegistration({
 }, playerId, now);
 if ("code" in registration) throw new Error(`registration fixture failed: ${registration.code}`);
 const registered = registration;
-const heroUid = String((registered.state.ownedHeroes as JsonRecord[])[0].uid);
 
 // Forged items omit serverOwned: that flag alone was always refused.
 function item(uid: string, itemId: string, level: number, power: number, value: number): JsonRecord {
