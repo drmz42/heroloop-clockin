@@ -12,7 +12,8 @@ import { ChestOpenModal } from '@/components/ChestOpenModal';
 import { BoostMaxModal } from '@/components/BoostMaxModal';
 import { GameWalletModal } from '@/components/GameWalletModal';
 import { PromoCodeModal, type PromoRedemption } from '@/components/PromoCodeModal';
-import { LandingScreen, Onboarding } from '@/screens/LandingScreen';
+import { LandingScreen } from '@/screens/LandingScreen';
+import { AppEntryScreen } from '@/platform/AppEntryScreen';
 import { MainScreen } from '@/screens/MainScreen';
 import { HeroesScreen } from '@/screens/HeroesScreen';
 import { SummonScreen } from '@/screens/SummonScreen';
@@ -487,9 +488,9 @@ function App() {
   }
 
   if (accountGate !== 'verified') {
-    // Inside the Android app there is no landing page: wallet sign-in or registration
-    // is the first screen and cannot be dismissed into a marketing page.
-    if (accountGate === 'landing' && isAppShell) return <div className="hl-app-entry min-h-screen bg-[#070606]"><Onboarding game={game} legacyWalletMode={legacyWalletMode} onAccountReady={() => setAccountCheckAttempt((value) => value + 1)} onClose={() => undefined} persistent /></div>;
+    // The Android app opens on the landing hero with one Play button; Play leads to
+    // wallet sign-in or registration. The marketing sections of the landing stay on the web.
+    if (accountGate === 'landing' && isAppShell) return <AppEntryScreen game={game} legacyWalletMode={legacyWalletMode} onAccountReady={() => setAccountCheckAttempt((value) => value + 1)} />;
     if (accountGate === 'landing') return <LandingScreen game={game} legacyWalletMode={legacyWalletMode} onAccountReady={() => setAccountCheckAttempt((value) => value + 1)} />;
     return <div className="grid h-screen place-items-center bg-[#07090d] p-4 text-center text-[#d9d0c0]"><div className="material-panel max-w-sm p-5"><div className="section-kicker">Account verification</div><div className="mt-2 text-sm">{accountGate === 'error' ? 'Account service is unavailable.' : 'Checking your registered account…'}</div>{accountGate === 'error' && <button type="button" onClick={() => setAccountCheckAttempt((value) => value + 1)} className="game-control game-primary mt-4 px-4 text-xs font-black">Retry</button>}</div></div>;
   }

@@ -207,3 +207,8 @@ html[data-hl-platform='android'] .arena-stage-inner.dungeon-panel-open { padding
 html[data-hl-platform='android'] .dungeon-shared-stage { top: 56px; right: 8px; bottom: 190px; width: 46%; }
 html[data-hl-platform='android'] .dungeon-boss-phase-shared .arena-lanes { padding-right: 48%; transform: none; }
 html[data-hl-platform='android'] .dungeon-shared-stage .arena-portrait { width: 104px !important; height: 104px !important; }
+
+/* App start screen: the landing hero fills exactly one phone screen. */
+.hl-app-entry { min-height: 100dvh; }
+.hl-app-entry .l5-hero { min-height: 100dvh; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+.hl-app-entry .l5-play { min-height: 56px; }
