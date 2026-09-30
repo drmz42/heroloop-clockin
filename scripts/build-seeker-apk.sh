@@ -25,7 +25,10 @@ if [[ ! -x $sdk/cmdline-tools/latest/bin/sdkmanager ]]; then
   mkdir -p "$sdk/cmdline-tools" && unzip -qo "$tools/cmdtools.zip" -d "$sdk/cmdline-tools"
   rm -rf "$sdk/cmdline-tools/latest" && mv "$sdk/cmdline-tools/cmdline-tools" "$sdk/cmdline-tools/latest"
 fi
-yes | "$sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk" 'platforms;android-36' 'build-tools;36.0.0' >/dev/null
+if [[ ! -d $sdk/platforms/android-36 || ! -x $sdk/build-tools/36.0.0/apksigner ]]; then
+  # `yes |` would trip pipefail with SIGPIPE, so feed the licence answers by redirection.
+  "$sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk" 'platforms;android-36' 'build-tools;36.0.0' >/dev/null < <(yes)
+fi
 bt=$sdk/build-tools/36.0.0
 project=$repo/android/seeker-twa
 printf 'sdk.dir=%s\n' "$sdk" >"$project/local.properties"
