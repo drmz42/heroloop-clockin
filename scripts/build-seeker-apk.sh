@@ -32,7 +32,11 @@ fi
 bt=$sdk/build-tools/36.0.0
 project=$repo/android/seeker-twa
 printf 'sdk.dir=%s\n' "$sdk" >"$project/local.properties"
-(cd "$project" && ./gradlew -q clean assembleRelease -PtwaVersionCode="$code" -PtwaVersionName="$name" -PtwaHost="$host")
+# android/seeker-twa is a Bubblewrap-generated project (@bubblewrap/core 1.25.0); its host
+# and launch URL live in app/build.gradle, so a different host means regenerating it.
+grep -q "hostName: '$host'" "$project/app/build.gradle" || { echo "ERROR: project is generated for another host than $host" >&2; exit 2; }
+sed -i -E "s/^( *versionCode )[0-9]+/\1$code/; s/^( *versionName )\"[^\"]*\"/\1\"$name\"/" "$project/app/build.gradle"
+(cd "$project" && ./gradlew -q clean assembleRelease)
 work=$(mktemp -d "$tools/apk.XXXXXX")
 "$bt/zipalign" -f -p 4 "$project/app/build/outputs/apk/release/app-release-unsigned.apk" "$work/aligned.apk"
 out=/var/lib/heroloop-android-builds/$name-$code
