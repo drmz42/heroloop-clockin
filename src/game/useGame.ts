@@ -34,7 +34,7 @@ const COMBAT_LOOP_INTERVAL_MS = 50;
 const FLOATER_LIFETIME_MS = 1_500;
 const MAX_LIVE_FLOATERS = 36;
 const NORMAL_COMBAT_START_INTERVAL_MS = 3_100;
-const SELL_BATCH_SIZE = 64; // server item_mutate accepts 1-64 item ids per call
+const SELL_BATCH_SIZE = 256; // server item_mutate accepts 1-256 item ids per call: all four bags at once
 const ACTIVE_CHEST_SECONDS = 86.4;
 const MAX_TRAINING_OFFLINE_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -2386,7 +2386,7 @@ export function useGame() {
     let serverRefund = 0;
     const serverSoldUids: string[] = [];
 
-    // The server settles at most 64 items per sale, so a full bag sells in batches; a rejected batch stays in the bag.
+    // Sell all empties every bag; the batch loop only guards a future capacity above the server limit. A rejected batch stays in the bags.
     for (let start = 0; start < serverItemUids.length; start += SELL_BATCH_SIZE) {
       const batch = serverItemUids.slice(start, start + SELL_BATCH_SIZE);
       const result = await playerSync<{ item_ids: string[]; gold_refund: number; revision: number }>('item_mutate', {
