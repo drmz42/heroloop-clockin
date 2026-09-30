@@ -35,6 +35,7 @@ const FLOATER_LIFETIME_MS = 1_500;
 const MAX_LIVE_FLOATERS = 36;
 const NORMAL_COMBAT_START_INTERVAL_MS = 3_100;
 const SELL_BATCH_SIZE = 256; // server item_mutate accepts 1-256 item ids per call: all four bags at once
+const CHEST_OPEN_BATCH_SIZE = 64; // server chest_open accepts 1-64 chests per call
 const ACTIVE_CHEST_SECONDS = 86.4;
 const MAX_TRAINING_OFFLINE_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -2545,26 +2546,34 @@ export function useGame() {
     chestOpeningRef.current = true;
     setChestOpening(true);
     try {
-      const openCount = Math.min(freeSlots, st.chests.length);
+      let openCount = Math.min(freeSlots, st.chests.length);
       let results: OwnedItem[] = [];
       let revision: number | null = null;
       if (tokenomicsEnabled) {
-        const idempotencyKey = createIdempotencyKey();
-        let response: { items: OwnedItem[]; chest_count: number; revision: number } | null = null;
-        for (let attempt = 0; attempt < 3; attempt++) {
-          let error = '';
-          response = await playerSync<{ items: OwnedItem[]; chest_count: number; revision: number }>('chest_open', {
-            count: openCount,
-            idempotency_key: idempotencyKey,
-          }, (message) => { error = message; });
-          if (response || error !== 'chest_count_exceeded' || attempt === 2) break;
-          await new Promise((resolve) => window.setTimeout(resolve, 900));
+        // The server opens at most 64 chests per request; extra bags hold up to 256 items, so open in batches.
+        // A rejected batch stops the run and keeps every chest that was not settled.
+        while (results.length < openCount) {
+          const batchCount = Math.min(CHEST_OPEN_BATCH_SIZE, openCount - results.length);
+          const idempotencyKey = createIdempotencyKey();
+          let response: { items: OwnedItem[]; chest_count: number; revision: number } | null = null;
+          for (let attempt = 0; attempt < 3; attempt++) {
+            let error = '';
+            response = await playerSync<{ items: OwnedItem[]; chest_count: number; revision: number }>('chest_open', {
+              count: batchCount,
+              idempotency_key: idempotencyKey,
+            }, (message) => { error = message; });
+            if (response || error !== 'chest_count_exceeded' || attempt === 2) break;
+            await new Promise((resolve) => window.setTimeout(resolve, 900));
+          }
+          if (!response || response.chest_count !== batchCount || !Array.isArray(response.items) || response.items.length !== batchCount) break;
+          const batch = response.items.filter((item) => item && typeof item.uid === 'string' && item.serverOwned === true
+            && Boolean(ITEM_MAP[item.itemId]) && Array.isArray(item.stats));
+          if (batch.length !== batchCount) break;
+          results = [...results, ...batch];
+          if (Number.isSafeInteger(response.revision)) revision = response.revision;
         }
-        if (!response || response.chest_count !== openCount || !Array.isArray(response.items) || response.items.length !== openCount) return;
-        results = response.items.filter((item) => item && typeof item.uid === 'string' && item.serverOwned === true
-          && Boolean(ITEM_MAP[item.itemId]) && Array.isArray(item.stats));
-        if (results.length !== openCount) return;
-        revision = Number.isSafeInteger(response.revision) ? response.revision : null;
+        if (results.length === 0) return;
+        openCount = results.length;
       } else {
         for (let i = 0; i < openCount; i++) {
           const chest = st.chests[i];
