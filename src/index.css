@@ -796,3 +796,10 @@ html { scroll-behavior: smooth; }
 /* Reserve the normal battle footer for BOOST MAX, chests and earnings. */
 .battle-stage-normal { min-height:540px; }
 .battle-stage-normal .arena-stage-inner { padding-bottom:180px; }
+@media (min-width:1024px) and (max-width:1279px) {
+  .battle-stage-normal .arena-stage-inner { padding-inline:12px; }
+  .battle-stage-normal .arena-lanes { gap:8px; }
+  .battle-stage-normal .arena-unit { gap:6px; }
+  .battle-stage-normal .arena-unit-info { width:76px; }
+  .battle-stage-normal .arena-portrait { width:64px;height:64px; }
+}
