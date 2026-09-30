@@ -192,6 +192,7 @@
     "check:admin-compliance-registry": "node scripts/build-admin-compliance-registry.mjs --check",
     "build:feature-flag-registry": "node scripts/build-feature-flag-registry.mjs",
     "check:feature-flags": "bash scripts/check-feature-flags.sh",
+    "check:save-item-authority": "bash scripts/check-save-item-authority.sh",
     "build:admin-config-catalog": "node scripts/build-admin-config-catalog.mjs",
     "check:admin-config-catalog": "node scripts/build-admin-config-catalog.mjs --check",
     "check:admin-domain-gates": "node scripts/check-admin-domain-gates.mjs",
