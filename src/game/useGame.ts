@@ -34,6 +34,7 @@ const COMBAT_LOOP_INTERVAL_MS = 50;
 const FLOATER_LIFETIME_MS = 1_500;
 const MAX_LIVE_FLOATERS = 36;
 const NORMAL_COMBAT_START_INTERVAL_MS = 3_100;
+const SELL_BATCH_SIZE = 64; // server item_mutate accepts 1-64 item ids per call
 const ACTIVE_CHEST_SECONDS = 86.4;
 const MAX_TRAINING_OFFLINE_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -2383,20 +2384,24 @@ export function useGame() {
     const serverItemUids = tokenomicsEnabled ? sellable.filter((item) => item.serverOwned).map((item) => item.uid) : [];
     const clientItems = sellable.filter((item) => !serverItemUids.includes(item.uid));
     let serverRefund = 0;
+    const serverSoldUids: string[] = [];
 
-    if (serverItemUids.length > 0) {
+    // The server settles at most 64 items per sale, so a full bag sells in batches; a rejected batch stays in the bag.
+    for (let start = 0; start < serverItemUids.length; start += SELL_BATCH_SIZE) {
+      const batch = serverItemUids.slice(start, start + SELL_BATCH_SIZE);
       const result = await playerSync<{ item_ids: string[]; gold_refund: number; revision: number }>('item_mutate', {
-        operation: 'sell', item_uids: serverItemUids, idempotency_key: createIdempotencyKey(),
+        operation: 'sell', item_uids: batch, idempotency_key: createIdempotencyKey(),
       });
-      if (!result || !Array.isArray(result.item_ids) || result.item_ids.length !== serverItemUids.length
-        || !Number.isSafeInteger(result.gold_refund) || result.gold_refund < 0) return;
+      if (!result || !Array.isArray(result.item_ids) || result.item_ids.length !== batch.length
+        || !Number.isSafeInteger(result.gold_refund) || result.gold_refund < 0) continue;
       const settled = new Set(result.item_ids);
-      if (serverItemUids.some((uid) => !settled.has(uid))) return;
+      if (batch.some((uid) => !settled.has(uid))) continue;
       if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
-      serverRefund = result.gold_refund;
+      serverRefund += result.gold_refund;
+      serverSoldUids.push(...batch);
     }
 
-    const soldUids = new Set([...serverItemUids, ...clientItems.map((item) => item.uid)]);
+    const soldUids = new Set([...serverSoldUids, ...clientItems.map((item) => item.uid)]);
     if (soldUids.size === 0) return;
     const clientRefund = clientItems.reduce((total, item) => total + sellValue(item), 0);
     setState((prev) => {
