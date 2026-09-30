@@ -498,7 +498,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           )}
         </div>
 
-        <div className="flex-1 p-2">
+        <div className="hl-quest-list flex-1 p-2">
           <PartnerQuests claim={game.claimPartnerQuest} onOpenBoostMax={onBoostClick} shareState={state} teamPower={power} />
           {!state.tutorial.questCompleted && (() => {
             const ordinal = Math.max(1, Math.min(10, state.tutorial.questOrdinal));

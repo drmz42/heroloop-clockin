@@ -183,3 +183,8 @@ html[data-hl-platform='android'] .summon-cta { border-radius: 2px; min-height: 4
 
 /* Seeker edition preview: display-only $HERO surfaces are hidden (src/platform/platform.ts). */
 html[data-hl-edition='seeker'] .hl-hero-only { display: none !important; }
+
+/* Quests tab: the quest list comes before the Commander card, and the current
+   Tutorial quest leads the list so a new player sees the next step first. */
+html[data-hl-platform='android'] .hl-col-left > .hl-quest-list { order: -1; flex: 0 0 auto; display: flex; flex-direction: column; }
+html[data-hl-platform='android'] .hl-quest-list > section[aria-label='Tutorial Quests'] { order: -1; }
