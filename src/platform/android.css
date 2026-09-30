@@ -188,3 +188,21 @@ html[data-hl-edition='seeker'] .hl-hero-only { display: none !important; }
    Tutorial quest leads the list so a new player sees the next step first. */
 html[data-hl-platform='android'] .hl-col-left > .hl-quest-list { order: -1; flex: 0 0 auto; display: flex; flex-direction: column; }
 html[data-hl-platform='android'] .hl-quest-list > section[aria-label='Tutorial Quests'] { order: -1; }
+
+/* Every full-screen overlay (hero card, item, chest result, mailbox…) ends above the
+   tab bar, so its bottom action row is never hidden behind the navigation. */
+html[data-hl-platform='android']:has(.hl-tabbar) .fixed.inset-0 { bottom: var(--hl-tabbar-h); }
+
+/* Dungeon / Boss Hunt: the room title sits under the taller Android HUD buttons. */
+html[data-hl-platform='android'] .dungeon-room-title { top: 52px; left: 8px; max-width: 44%; }
+/* Long unit names stay on one line in the battle lanes. */
+html[data-hl-platform='android'] .arena-lanes { overflow-wrap: normal; word-break: keep-all; }
+
+/* Dungeon / Boss Hunt on a phone: the control panel docks along the bottom of the
+   stage, leaving the top for the room title and the boss HUD; the shared Boss stands
+   on the right half above the panel. */
+html[data-hl-platform='android'] .dungeon-battle-panel { top: auto; right: 8px; bottom: 8px; left: 8px; width: auto; max-width: none; }
+html[data-hl-platform='android'] .dungeon-battle-panel button { min-height: 44px; border-radius: 2px; }
+html[data-hl-platform='android'] .arena-stage-inner.dungeon-panel-open { padding: 96px 10px 190px; }
+html[data-hl-platform='android'] .dungeon-shared-stage { top: 56px; right: 8px; bottom: 190px; width: 46%; }
+html[data-hl-platform='android'] .dungeon-boss-phase-shared .arena-lanes { padding-right: 48%; transform: none; }
