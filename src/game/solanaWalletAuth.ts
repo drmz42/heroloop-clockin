@@ -55,6 +55,10 @@ export type SolanaWalletAuthOptions = {
   fetch?: typeof globalThis.fetch;
   now?: () => number;
   phantomProvider?: PhantomProvider | null;
+  // Mobile Wallet Adapter opens the wallet app through an Android intent, and Chrome only
+  // allows that from a fresh tap. Connect and sign are two wallet round trips, so the UI
+  // resolves this after a second tap before the signing request is sent.
+  confirmBeforeSign?: () => Promise<void>;
 };
 
 export class SolanaWalletAuthError extends Error {
@@ -317,6 +321,7 @@ export async function createSolanaWalletProof(wallet: Wallet, options: SolanaWal
     (options.now ?? Date.now)(),
   );
   if (!account.chains.some((chain) => chain === challenge.signInInput.chainId)) fail('wallet_chain_mismatch');
+  if (options.confirmBeforeSign) await options.confirmBeforeSign();
 
   const message = new TextEncoder().encode(challenge.message);
   const injectedOutput = await signWithInjectedPhantom(

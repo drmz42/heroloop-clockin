@@ -18,7 +18,8 @@ html[data-hl-platform='android'] .game-shell { height: 100dvh; padding-top: env(
 html[data-hl-platform='android'] .game-command-bar { min-height: var(--hl-header-h); gap: 6px; padding: 6px 8px; }
 html[data-hl-platform='android'] .hl-nav-tabs { display: none; }
 html[data-hl-platform='android'] .hl-nav-logo { border-right: 0; padding: 0; margin: 0; }
-html[data-hl-platform='android'] .hl-nav-logo img { height: 28px; max-width: 96px; }
+/* Emblem only (the logo's left square); the HEROLOOP wordmark is dropped so balances fit. */
+html[data-hl-platform='android'] .hl-nav-logo img { width: 38px !important; max-width: 38px !important; height: 38px !important; object-fit: cover; object-position: left center; }
 html[data-hl-platform='android'] .hl-nav-right { border-left: 0; padding-left: 0; gap: 6px; min-width: 0; }
 html[data-hl-platform='android'] .hl-nav-wallet-label,
 html[data-hl-platform='android'] .hl-nav-unit { display: none; }
@@ -28,7 +29,6 @@ html[data-hl-platform='android'] .hl-nav-right > button[title='Mailbox'] { width
 html[data-hl-platform='android'] .hl-nav-right > div,
 html[data-hl-platform='android'] .hl-nav-right > button[aria-label='Open Rewards and Tokenomics'] { height: 40px; padding: 0 8px; gap: 5px; }
 @media (max-width: 370px) {
-  html[data-hl-platform='android'] .hl-nav-logo img { max-width: 30px; object-fit: cover; object-position: left center; }
 }
 
 /* ── Play screen: one column at a time, chosen from the tab bar ── */

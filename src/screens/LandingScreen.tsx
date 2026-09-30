@@ -297,6 +297,8 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
   const [wallets, setWallets] = useState<readonly Wallet[]>([]);
   const [selectedWallet, setSelectedWallet] = useState('');
   const [legacyImportConfirmed, setLegacyImportConfirmed] = useState(false);
+  // Mobile Wallet Adapter needs a second tap before the signature request (see confirmBeforeSign).
+  const [signConfirm, setSignConfirm] = useState<(() => void) | null>(null);
   const blockedName = hasBlockedUsernameLanguage(username);
   const validName = /^[a-zA-Z0-9_]{3,16}$/.test(username) && !blockedName;
 
@@ -343,6 +345,9 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         // decision 2026-09-29). Only a one-time browser-progress import refuses, because that
         // progress has already been written into this Guest's server account.
         allowExistingAccountLogin: legacyWalletMode !== 'import',
+        confirmBeforeSign: wallet.name === 'Mobile Wallet Adapter'
+          ? () => new Promise<void>((resolve) => { setSignConfirm(() => resolve); })
+          : undefined,
       });
       const account = await accountRequest(playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status'));
       if (!account) {
@@ -379,6 +384,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         : `Wallet authentication failed. Please try again.${/^[a-z0-9_]{3,64}$/.test(code) ? ` (${code})` : ''}`);
     } finally {
       setConnecting(false);
+      setSignConfirm(null);
     }
   };
 
@@ -474,6 +480,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
               <button onClick={solanaAuthEnabled ? connectWallet : continueAsGuest} disabled={connecting || (solanaAuthEnabled && wallets.length === 0)} className="landing-cta mx-auto mt-4 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em] disabled:cursor-not-allowed disabled:opacity-60">
                 {solanaAuthEnabled ? <Shield size={19} /> : <UserRound size={19} />} {connecting ? 'Checking account…' : solanaAuthEnabled ? (isAndroidLayout ? 'Connect wallet' : 'Connect Phantom') : 'Continue as Guest'}
               </button>
+              {signConfirm && <button type="button" onClick={() => { const confirm = signConfirm; setSignConfirm(null); confirm(); }} className="landing-cta mx-auto mt-3 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em]"><Shield size={19} /> Wallet connected · Sign in</button>}
               {solanaAuthEnabled && canOpenInPhantom && <a href={phantomBrowseUrl()} className="landing-cta mx-auto mt-3 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em]">Open in Phantom app</a>}
               {solanaAuthEnabled && canOpenInPhantom && <p className="mx-auto mt-2 max-w-md text-center text-xs leading-5 text-slate-400">No wallet window? “Open in Phantom app” opens HeroLoop inside Phantom, where you sign in the same way. No Phantom yet? <a className="text-amber-300 underline underline-offset-4" href="https://play.google.com/store/apps/details?id=app.phantom" target="_blank" rel="noreferrer">Get it on Google Play</a>.</p>}
               {solanaAuthEnabled && !canOpenInPhantom && wallets.length === 0 && <div className="mx-auto mt-4 max-w-md text-center text-xs text-slate-400">Phantom was not detected. <a className="text-amber-300 underline underline-offset-4" href="https://phantom.com/" target="_blank" rel="noreferrer">Get Phantom</a></div>}
