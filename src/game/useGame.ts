@@ -1473,10 +1473,12 @@ export function useGame() {
     paymentMethod: 'paid' | 'scroll',
     quoteId: string | null,
   ) => {
-    const expectedRevision = serverRevisionHint;
+    let expectedRevision = serverRevisionHint;
     if (!tokenomicsEnabled || typeof expectedRevision !== 'number' || !Number.isSafeInteger(expectedRevision)) return null;
     setSummonError('');
-    const result = await playerSync<{
+    const idempotencyKey = createIdempotencyKey();
+    let summonError = '';
+    type SummonResult = {
       heroes: OwnedHero[];
       token_balance: number;
       spent: number;
@@ -1490,10 +1492,27 @@ export function useGame() {
       pity_divine: number;
       pity_celestial: number;
       ascension_focus: Partial<Record<Rarity, string>>;
-    }>('hero_summon', {
-      count, expected_revision: expectedRevision, payment_method: paymentMethod,
-      quote_id: quoteId, idempotency_key: createIdempotencyKey(),
-    }, setSummonError);
+    };
+    const attemptSummon = () => {
+      summonError = '';
+      return playerSync<SummonResult>('hero_summon', {
+        count, expected_revision: expectedRevision, payment_method: paymentMethod,
+        quote_id: quoteId, idempotency_key: idempotencyKey,
+      }, (error) => { summonError = error; });
+    };
+    let result = await attemptSummon();
+    // A battle settled between the last revision the client saw and this summon.
+    // A Scroll summon has no price quote to go stale, so re-read the revision and
+    // retry once with the same idempotency key (the pattern quest claims use).
+    if (!result && summonError === 'state_conflict' && paymentMethod === 'scroll') {
+      const refreshed = await playerSync<{ revision: number }>('game_state_load');
+      if (refreshed && Number.isSafeInteger(refreshed.revision)) {
+        expectedRevision = refreshed.revision;
+        setServerRevisionHint(refreshed.revision);
+        result = await attemptSummon();
+      }
+    }
+    if (!result && summonError) setSummonError(summonError);
     if (!result || !Array.isArray(result.heroes) || result.heroes.length !== count
       || result.payment_method !== paymentMethod || !Number.isSafeInteger(result.spent) || result.spent < 0
       || !Number.isSafeInteger(result.scrolls_spent) || result.scrolls_spent < 0

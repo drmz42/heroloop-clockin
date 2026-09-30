@@ -792,3 +792,7 @@ html { scroll-behavior: smooth; }
 .test-btn-green:hover { border-color: #7ee787; }
 .test-btn-reset { border-color: rgba(169,86,80,.55); color: #e8b3ae; }
 .test-btn-reset:hover { border-color: #c96f68; }
+
+/* Reserve the normal battle footer for BOOST MAX, chests and earnings. */
+.battle-stage-normal { min-height:540px; }
+.battle-stage-normal .arena-stage-inner { padding-bottom:180px; }

@@ -519,7 +519,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             const ordinal = Math.max(1, Math.min(10, state.tutorial.questOrdinal));
             const quest = TUTORIAL_QUESTS[ordinal - 1];
             const activeEquipped = state.ownedHeroes.some((hero) => state.team.includes(hero.uid) && Object.keys(hero.equipped).length > 0);
-            const progress = [state.totalKills, state.tutorial.openedCount, activeEquipped ? 1 : 0, state.summons, state.team.length, state.summons, state.trainingCamp.heroUids.some(Boolean) ? 1 : 0, state.autoPot.enabled ? 1 : 0, state.highestLocation, Math.max(0, state.totalBossKills - state.tutorial.bossKillsAtKeyGrant)][ordinal - 1];
+            const progress = [state.totalKills, state.tutorial.openedCount, activeEquipped ? 1 : 0, state.summons, state.team.length, state.summons, state.trainingCamp.heroUids.some(Boolean) ? 1 : 0, state.autoPot.enabled ? 1 : 0, state.accountLevel >= locationUnlockLevel(2) ? state.highestLocation : 0, Math.max(0, state.totalBossKills - state.tutorial.bossKillsAtKeyGrant)][ordinal - 1];
             const done = progress >= quest[2];
             return <section className="mb-2" aria-label="Tutorial Quests">
               <div className="section-kicker mb-1">Tutorial Quests · {ordinal}/10</div>
@@ -578,7 +578,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
       {/* ── CENTER COLUMN — responsive, max-width removed ── */}
       <div className="game-scrollbar order-1 flex min-h-[464px] w-full shrink-0 flex-col overflow-hidden lg:order-none lg:min-h-0 lg:w-auto lg:min-w-0 lg:flex-1 lg:overflow-y-auto">
         {/* Arena */}
-        <div className="battle-stage relative min-h-[320px] flex-1 overflow-hidden bg-arena">
+        <div className={`battle-stage ${!activeDungeon ? 'battle-stage-normal' : ''} relative min-h-[320px] flex-1 overflow-hidden bg-arena`}>
           {!activeDungeon && showZoomTip && <div className="absolute left-1/2 top-12 z-40 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-lg border border-[#80683f] bg-[#11130f]/95 px-3 py-1.5 font-vt ui-text-small font-bold text-[#d8c9ad] shadow-xl backdrop-blur-sm"><span>Adjust browser zoom with <kbd className="text-[#ffd36e]">Ctrl +</kbd> / <kbd className="text-[#ffd36e]">Ctrl -</kbd> to fit all interface elements.</span><button type="button" onClick={() => setShowZoomTip(false)} className="text-[#8f887b] hover:text-white" aria-label="Dismiss browser zoom tip"><X size={12} /></button></div>}
           <div className={`absolute left-3 top-3 flex items-start gap-1.5 ${showPotSettings || showBattleSettings ? 'z-[110]' : 'z-30'}`}>
             {!activeDungeon ? <div className="relative">

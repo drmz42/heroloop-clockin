@@ -62,6 +62,7 @@
     { "action": "summon-milestone-or-boss-reward", "resources": ["summon_scroll"], "direction": "credit", "atomicWith": "source-settlement", "runtime": "planned-with-reward-settlement" },
     { "action": "free-summon", "resources": ["summon_scroll"], "direction": "debit", "atomicWith": "hero-roll-pity-capacity-and-save-revision", "runtime": "planned-with-free-summon" },
     { "action": "boss-start", "resources": ["boss_key"], "direction": "debit", "atomicWith": "encounter-creation", "runtime": "integrated" },
+    { "action": "tutorial-boss-refund", "resources": ["boss_key"], "direction": "credit", "atomicWith": "failed-or-abandoned-encounter-and-save-revision", "runtime": "integrated" },
     { "action": "potion-use-or-auto-buy-use", "resources": ["potion_xs", "potion_sm", "potion_md", "potion_lg", "potion_xl", "potion_xxl"], "direction": "debit-or-credit-and-debit", "atomicWith": "gold-debit-and-canonical-combat-heal", "runtime": "planned-with-potion-settlement" },
     { "action": "item-salvage", "resources": ["iron_scrap", "arcane_dust", "astral_shard", "godforged_core"], "direction": "credit", "atomicWith": "item-soft-delete-and-limited-slot-release", "runtime": "planned-with-salvage" },
     { "action": "item-craft", "resources": ["astral_shard", "godforged_core"], "direction": "debit", "atomicWith": "input-consumption-target-slot-reservation-and-output-create", "runtime": "planned-with-crafting" },
