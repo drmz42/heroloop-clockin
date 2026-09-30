@@ -200,6 +200,7 @@
     "check:admin-config-catalog": "node scripts/build-admin-config-catalog.mjs --check",
     "check:admin-domain-gates": "node scripts/check-admin-domain-gates.mjs",
     "check:admin-registry": "node scripts/check-admin-registry.mjs",
+    "check:admin-hero-power": "node scripts/check-admin-hero-power-pin.mjs",
     "check:admin-env-diff": "node scripts/check-admin-env-diff.mjs",
     "check:admin-ui": "tsc -p admin/ui-src/tsconfig.json --noEmit && node scripts/check-admin-ui-boundary.mjs && bash scripts/check-admin-ui-bundle.sh",
     "screens:admin-ui": "node scripts/admin-ui-screens.mjs",
