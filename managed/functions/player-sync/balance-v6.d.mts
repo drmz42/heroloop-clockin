@@ -14,3 +14,4 @@ export function v6CanonicalSlot(slot: unknown): string;
 export function v6ItemLevelMultiplier(itemLevel: unknown): number;
 export function v6ItemImplicit(slot: unknown, rarity: unknown, itemLevel: unknown): { hp: number; atk: number; def: number };
 export function v6EnemyBase(location: unknown): { hp: number; atk: number; def: number };
+export function v6AttackSpeedPoints(value: unknown, isPercent: unknown): number;

@@ -4,7 +4,7 @@ import {
   enchantGoldCost, enchantGuaranteedHeroCost, enchantMultiplier,
 } from './enchant';
 import { itemRollV5Power, itemRollV5RollItem } from './item-roll-runtime.generated';
-import { v6ItemImplicit } from '../../managed/functions/player-sync/balance-v6.mjs';
+import { v6AttackSpeedPoints, v6ItemImplicit } from '../../managed/functions/player-sync/balance-v6.mjs';
 
 export { HERO_USD_QUOTE, enchantSuccessChance } from './enchant';
 
@@ -255,13 +255,14 @@ const GEAR_POWER_WEIGHTS: Record<ItemStatKey, number> = {
   ...STORED_POWER_WEIGHTS, atkSpeed: 300, goldBonus: 0, xpBonus: 0,
 };
 
-function weightedItemPower(stats: ItemStatRoll[], enchantLevel: number, version: 2 | 3 | 4, weights: Record<ItemStatKey, number>): number {
+function weightedItemPower(stats: ItemStatRoll[], enchantLevel: number, version: 2 | 3 | 4, weights: Record<ItemStatKey, number>, normalizeSpeed = false): number {
   return Math.round(stats.reduce((acc, s) => {
     const multiplier = version === 4 ? enchantMultiplier(enchantLevel) : 1 + enchantLevel * (
       version === 2 ? .1 : s.key === 'hp' || s.key === 'atk' || s.key === 'def' ? .1
         : s.key === 'goldBonus' || s.key === 'xpBonus' ? .025 : .05
     );
-    return acc + s.value * (weights[s.key] ?? (s.isPercent ? 100 : 1)) * multiplier;
+    const value = normalizeSpeed && s.key === 'atkSpeed' ? v6AttackSpeedPoints(s.value, s.isPercent) : s.value;
+    return acc + value * (weights[s.key] ?? (s.isPercent ? 100 : 1)) * multiplier;
   }, 0));
 }
 
@@ -282,7 +283,7 @@ export function itemBaseStats(item: Pick<OwnedItem, 'itemId' | 'level'>): ItemSt
 // Player-facing gear score excludes economy lines and values Attack Speed in combat units.
 // It includes the Balance v6 base stat so higher-rarity and higher-level items rank higher.
 export function displayItemPower(item: OwnedItem): number {
-  return weightedItemPower([...itemBaseStats(item), ...item.stats], item.enchantLevel, item.enchantStatsVersion ?? 2, GEAR_POWER_WEIGHTS);
+  return weightedItemPower([...itemBaseStats(item), ...item.stats], item.enchantLevel, item.enchantStatsVersion ?? 2, GEAR_POWER_WEIGHTS, true);
 }
 
 let itemUid = 0;

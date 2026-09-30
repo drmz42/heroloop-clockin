@@ -27,6 +27,12 @@ export function v6EnchantMultiplier(level) {
   return 1 + clamp(Math.floor(finite(level)), 0, 20) * V6_ENCHANT_PER_LEVEL;
 }
 
+// Legacy non-percent Attack Speed rolls are milliseconds, not fractional bonus points.
+// Convert against a one-second reference; modern percent rolls already use fractions.
+export function v6AttackSpeedPoints(value, isPercent) {
+  return finite(value) / (isPercent === true ? 1 : 1000);
+}
+
 // Fixed slot base stat ("implicit") every item carries in addition to its random lines.
 const IMPLICIT_BY_SLOT = {
   class_weapon: { atk: 1 }, gloves: { atk: 1 }, ring: { atk: 1 }, amulet: { atk: 1 },

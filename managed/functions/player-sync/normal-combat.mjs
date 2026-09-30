@@ -1,7 +1,7 @@
 import { resolveCombat } from './combat-step.mjs';
 import { COMBAT_TIMELINE_VERSION, serializeCombatTimeline } from './combat-timeline.mjs';
 import { COMBAT_EFFECTS_V2_VERSION, serverEffectForClass } from './combat-effects-v2.mjs';
-import { BALANCE_V6_ID, v6EnchantMultiplier, v6EnemyBase, v6ItemImplicit, v6LevelMastery, v6StarMultiplier } from './balance-v6.mjs';
+import { BALANCE_V6_ID, v6EnchantMultiplier, v6EnemyBase, v6AttackSpeedPoints, v6ItemImplicit, v6LevelMastery, v6StarMultiplier } from './balance-v6.mjs';
 
 const RARITIES = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
 export const BALANCE_VERSION = `${BALANCE_V6_ID}-combat-effects-v1`;
@@ -84,7 +84,7 @@ function heroUnit(hero, lane, itemMap, carriedHp, startedAtMs, combatEffectsVers
       const value = stat.isPercent === true
         ? Math.round(finite(stat.value) * multiplier * 1000) / 1000
         : Math.round(finite(stat.value) * multiplier);
-      additions[stat.key] += value;
+      additions[stat.key] += stat.key === 'atkSpeed' ? v6AttackSpeedPoints(value, stat.isPercent) : value;
     }
     const implicit = v6ItemImplicit(slot, item.rarity, item.item_level);
     for (const key of ['hp', 'atk', 'def']) {
