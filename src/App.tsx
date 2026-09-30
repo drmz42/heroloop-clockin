@@ -3,6 +3,8 @@ import { ArrowLeft, X } from 'lucide-react';
 import { bagItemCount, useGame } from '@/game/useGame';
 import { GameNavBar } from '@/components/GameNavBar';
 import { FooterBar } from '@/components/FooterBar';
+import { MobileTabBar } from '@/components/MobileTabBar';
+import { isAndroidLayout, type MobileSection } from '@/platform/platform';
 import { SupportTicketModal } from '@/components/SupportTicketModal';
 import { MailboxModal } from '@/components/MailboxModal';
 import { OfflineModal } from '@/components/OfflineModal';
@@ -393,6 +395,37 @@ function App() {
     return () => window.clearInterval(timer);
   }, [tokenomics.status?.my_hourly_share, game.state.walletAddress, game.state.boost.active, game.state.activeUntil, creditServerTokens]);
   const [tab, setTab] = useState<Tab>('main');
+  const [mobileSection, setMobileSection] = useState<MobileSection>('battle');
+  const [moreOpen, setMoreOpen] = useState(false);
+  // Android layout: a window or the More sheet takes one history entry, so the
+  // system Back button closes it instead of leaving the game.
+  const overlayOpen = isAndroidLayout && (tab !== 'main' || moreOpen);
+  const overlayHistory = useRef({ pushed: false, ignoreNextPop: false });
+  useEffect(() => {
+    if (!isAndroidLayout) return;
+    const entry = overlayHistory.current;
+    if (overlayOpen && !entry.pushed) {
+      window.history.pushState({ heroloopOverlay: true }, '');
+      entry.pushed = true;
+    } else if (!overlayOpen && entry.pushed) {
+      entry.pushed = false;
+      entry.ignoreNextPop = true;
+      window.history.back();
+    }
+  }, [overlayOpen]);
+  useEffect(() => {
+    if (!isAndroidLayout) return;
+    const entry = overlayHistory.current;
+    const onPop = () => {
+      if (entry.ignoreNextPop) { entry.ignoreNextPop = false; return; }
+      if (!entry.pushed) return;
+      entry.pushed = false;
+      setMoreOpen(false);
+      setTab('main');
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
   const [routePath, setRoutePath] = useState(() => window.location.pathname);
   const [showBoost, setShowBoost] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
@@ -492,7 +525,7 @@ function App() {
 
       {tab !== 'main' && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-[5px]"
+          className="game-window-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-[5px]"
           onMouseDown={(event) => {
             if (event.currentTarget === event.target) setTab('main');
           }}
@@ -520,7 +553,22 @@ function App() {
         </div>
       )}
 
-      <FooterBar onLogout={() => void logout()} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} onSupportClick={() => setShowSupport(true)} />
+      {isAndroidLayout ? (
+        <MobileTabBar
+          tab={tab}
+          section={mobileSection}
+          moreOpen={moreOpen}
+          onTab={setTab}
+          onSection={setMobileSection}
+          onMoreOpen={setMoreOpen}
+          onGuides={openWiki}
+          onCode={() => setShowPromoCode(true)}
+          onSupport={() => setShowSupport(true)}
+          onLogout={() => void logout()}
+        />
+      ) : (
+        <FooterBar onLogout={() => void logout()} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} onSupportClick={() => setShowSupport(true)} />
+      )}
 
       {game.offlineEarnings && (
         <OfflineModal
