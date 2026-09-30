@@ -190,6 +190,7 @@
     "check:admin-foundation": "bash scripts/check-admin-foundation.sh",
     "check:game-events-foundation": "bash scripts/check-game-events-foundation.sh",
     "check:partner-quests": "bash scripts/check-partner-quests.sh",
+    "check:admin-promo-codes": "bash scripts/check-admin-promo-codes.sh",
     "check:player-mailbox": "bash scripts/check-player-mailbox.sh",
     "build:admin-ui": "vite build --config vite.admin.config.ts",
     "build:admin-compliance-registry": "node scripts/build-admin-compliance-registry.mjs",
