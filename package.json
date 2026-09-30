@@ -134,6 +134,7 @@
     "check:roadmap": "node scripts/roadmap-status.mjs --working --check",
     "check:todo-audit": "node scripts/check-todo-audit.mjs",
     "check:todo-panel": "node scripts/check-todo-panel.mjs",
+    "staging2:pending": "node scripts/staging2-pending.mjs",
     "check:hackathon-panels": "node scripts/build-hackathon-panel-data.mjs --check",
     "marketing:build": "node marketing/build-intelligence.mjs",
     "check:marketing": "node scripts/check-marketing-intelligence.mjs",
