@@ -11,7 +11,7 @@ import { playerSync } from '@/game/backend';
 import { hasBlockedUsernameLanguage } from '@/game/username';
 import { clearSignupAttribution, readSignupAttribution } from '@/game/signupAttribution';
 import { clearLegacyState, makeRegisteredStarterState } from '@/game/state';
-import { isAndroidLayout } from '@/platform/platform';
+import { canOpenInPhantom, isAndroidLayout, phantomBrowseUrl } from '@/platform/platform';
 import {
   connectSolanaWallet,
   observeCompatibleSolanaWallets,
@@ -474,7 +474,9 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
               <button onClick={solanaAuthEnabled ? connectWallet : continueAsGuest} disabled={connecting || (solanaAuthEnabled && wallets.length === 0)} className="landing-cta mx-auto mt-4 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em] disabled:cursor-not-allowed disabled:opacity-60">
                 {solanaAuthEnabled ? <Shield size={19} /> : <UserRound size={19} />} {connecting ? 'Checking account…' : solanaAuthEnabled ? (isAndroidLayout ? 'Connect wallet' : 'Connect Phantom') : 'Continue as Guest'}
               </button>
-              {solanaAuthEnabled && wallets.length === 0 && <div className="mx-auto mt-4 max-w-md text-center text-xs text-slate-400">{isAndroidLayout ? 'No Solana wallet app was found on this phone. Install Phantom or use the Seed Vault wallet on Seeker.' : 'Phantom was not detected.'} <a className="text-amber-300 underline underline-offset-4" href="https://phantom.com/" target="_blank" rel="noreferrer">Get Phantom</a></div>}
+              {solanaAuthEnabled && canOpenInPhantom && <a href={phantomBrowseUrl()} className="landing-cta mx-auto mt-3 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em]">Open in Phantom app</a>}
+              {solanaAuthEnabled && canOpenInPhantom && <p className="mx-auto mt-2 max-w-md text-center text-xs leading-5 text-slate-400">No wallet window? “Open in Phantom app” opens HeroLoop inside Phantom, where you sign in the same way. No Phantom yet? <a className="text-amber-300 underline underline-offset-4" href="https://play.google.com/store/apps/details?id=app.phantom" target="_blank" rel="noreferrer">Get it on Google Play</a>.</p>}
+              {solanaAuthEnabled && !canOpenInPhantom && wallets.length === 0 && <div className="mx-auto mt-4 max-w-md text-center text-xs text-slate-400">Phantom was not detected. <a className="text-amber-300 underline underline-offset-4" href="https://phantom.com/" target="_blank" rel="noreferrer">Get Phantom</a></div>}
               {error && <div className="mt-5 border border-rose-400/30 bg-rose-400/10 p-3 text-center text-sm text-rose-300">{error}</div>}
               <div className="mx-auto mt-6 flex max-w-md items-start gap-3 border border-emerald-400/20 bg-emerald-400/[.05] p-4 text-xs leading-5 text-emerald-200/70"><Shield size={16} className="mt-0.5 shrink-0" /><span>{solanaAuthEnabled ? 'HeroLoop never asks for a transaction signature during login. A different wallet cannot inherit this account or its saves.' : 'Your Guest ID is not a wallet address and cannot receive funds. Verified wallet sign-in is a separate future feature.'}</span></div>
             </div>

@@ -16,23 +16,6 @@ const isPlatform = (value: unknown): value is Platform => value === 'android' ||
 
 export const androidLayoutAvailable = import.meta.env.MODE === 'staging2' || import.meta.env.VITE_PLATFORM === 'android';
 
-export function resolvePlatform(): Platform {
-  if (!androidLayoutAvailable) return 'web';
-  if (import.meta.env.VITE_PLATFORM === 'android') return 'android';
-  try {
-    const requested = new URLSearchParams(window.location.search).get('platform');
-    if (isPlatform(requested)) {
-      window.localStorage.setItem(STORAGE_KEY, requested);
-      return requested;
-    }
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (isPlatform(saved)) return saved;
-  } catch {
-    // Storage can be blocked; fall back to the screen check.
-  }
-  return window.matchMedia('(max-width: 900px) and (pointer: coarse)').matches ? 'android' : 'web';
-}
-
 // App shell: the page runs inside the Android APK (Trusted Web Activity opened with
 // ?source=android) or as an installed standalone app. There is no landing page in the
 // app: the player goes straight to wallet sign-in/registration and then the game.
@@ -53,6 +36,29 @@ function resolveAppShell(): boolean {
 }
 
 export const isAppShell = typeof window !== 'undefined' && resolveAppShell();
+
+const isAndroidDevice = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+
+export function resolvePlatform(): Platform {
+  if (!androidLayoutAvailable) return 'web';
+  if (import.meta.env.VITE_PLATFORM === 'android' || isAppShell) return 'android';
+  try {
+    const requested = new URLSearchParams(window.location.search).get('platform');
+    if (isPlatform(requested)) {
+      window.localStorage.setItem(STORAGE_KEY, requested);
+      return requested;
+    }
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    if (isPlatform(saved)) return saved;
+  } catch {
+    // Storage can be blocked; fall back to the screen check.
+  }
+  // Every Android phone (and the APK) gets the phone layout; emulators such as BlueStacks
+  // report a mouse, so the pointer type is not used for Android devices.
+  if (isAndroidDevice) return 'android';
+  return window.matchMedia('(max-width: 900px) and (pointer: coarse)').matches ? 'android' : 'web';
+}
+
 
 export const platform: Platform = typeof window === 'undefined' ? 'web' : resolvePlatform();
 export const isAndroidLayout = platform === 'android';
@@ -82,6 +88,7 @@ function resolveEdition(): Edition {
 export const edition: Edition = typeof window === 'undefined' ? 'standard' : resolveEdition();
 
 export function applyPlatform() {
+  if (androidLayoutAvailable) registerMobileWalletAdapter();
   document.documentElement.dataset.hlPlatform = platform;
   document.documentElement.dataset.hlEdition = edition;
   if (isAndroidLayout) {
@@ -90,7 +97,6 @@ export function applyPlatform() {
     manifest.rel = 'manifest';
     manifest.href = '/assets/manifest-android.webmanifest'; // Nginx serves only / and /assets/ as static files
     document.head.appendChild(manifest);
-    registerMobileWalletAdapter();
   }
 }
 
@@ -119,4 +125,17 @@ function registerMobileWalletAdapter() {
 
 export function setMobileSection(section: MobileSection) {
   document.documentElement.dataset.hlSection = section;
+}
+
+// Fallback when no wallet app answers through Mobile Wallet Adapter: open this page in
+// Phantom's own in-app browser, where Phantom injects itself and the usual sign-in works.
+// https://docs.phantom.com/phantom-deeplinks/other-methods/browse
+export const canOpenInPhantom = isAndroidDevice;
+
+export function phantomBrowseUrl(): string {
+  const target = new URL(window.location.href);
+  // Keep ?source=android so Phantom's browser also opens straight into sign-in, not the landing.
+  target.searchParams.set('source', 'android');
+  target.hash = 'game';
+  return `https://phantom.app/ul/browse/${encodeURIComponent(target.toString())}?ref=${encodeURIComponent(window.location.origin)}`;
 }
