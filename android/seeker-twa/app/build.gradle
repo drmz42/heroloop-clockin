@@ -1,0 +1,56 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Release signing comes only from environment variables so no key or password
+// ever enters the repository; without them the release build stays unsigned.
+def keystorePath = System.getenv('HEROLOOP_ANDROID_KEYSTORE')
+
+android {
+    namespace 'xyz.heroloop.seeker'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId project.property('twaApplicationId')
+        minSdk 24
+        targetSdk 35
+        versionCode Integer.parseInt(project.property('twaVersionCode'))
+        versionName project.property('twaVersionName')
+
+        def host = project.property('twaHost')
+        def launchUrl = "https://${host}${project.property('twaStartPath')}"
+        manifestPlaceholders = [
+            hostName: host,
+            defaultUrl: launchUrl,
+            launcherName: 'HeroLoop',
+            assetStatements: "[{ \\\"relation\\\": [\\\"delegate_permission/common.handle_all_urls\\\"], \\\"target\\\": { \\\"namespace\\\": \\\"web\\\", \\\"site\\\": \\\"https://${host}\\\" } }]",
+        ]
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePath) {
+                storeFile file(keystorePath)
+                storePassword System.getenv('HEROLOOP_ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('HEROLOOP_ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('HEROLOOP_ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (keystorePath) signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3'
+}

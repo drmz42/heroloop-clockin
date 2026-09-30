@@ -6,6 +6,8 @@
 // so staging.heroloop.xyz and Production are unchanged.
 // staging2: add ?platform=android or ?platform=web to any URL (remembered per browser);
 // without a choice, touch screens up to 900 px wide get the Android layout.
+import { allowMobileWalletAdapter } from '@/game/solanaWalletRegistry';
+
 export type Platform = 'android' | 'web';
 export type MobileSection = 'battle' | 'quests' | 'bag';
 
@@ -36,7 +38,37 @@ export const isAndroidLayout = platform === 'android';
 
 export function applyPlatform() {
   document.documentElement.dataset.hlPlatform = platform;
-  if (isAndroidLayout) document.documentElement.dataset.hlSection = 'battle';
+  if (isAndroidLayout) {
+    document.documentElement.dataset.hlSection = 'battle';
+    const manifest = document.createElement('link');
+    manifest.rel = 'manifest';
+    manifest.href = '/manifest-android.webmanifest';
+    document.head.appendChild(manifest);
+    registerMobileWalletAdapter();
+  }
+}
+
+// Mobile Wallet Adapter (https://docs.solanamobile.com/developers/mobile-wallet-adapter):
+// on an Android browser or the TWA APK it registers a Wallet Standard wallet named
+// "Mobile Wallet Adapter" that hands sign-in to the phone's wallet app (Seed Vault on
+// Seeker, Phantom, Solflare…). Loaded lazily and only on Android, so no other build or
+// device ships or runs it. Sign-in still goes through the same server SIWS challenge.
+export const MOBILE_WALLET_ADAPTER_NAME = 'Mobile Wallet Adapter';
+
+function registerMobileWalletAdapter() {
+  if (!/Android/i.test(navigator.userAgent)) return;
+  allowMobileWalletAdapter();
+  void import('@solana-mobile/wallet-standard-mobile').then(({ registerMwa, createDefaultAuthorizationCache, createDefaultChainSelector, createDefaultWalletNotFoundHandler }) => {
+    registerMwa({
+      appIdentity: { name: 'HeroLoop', uri: window.location.origin, icon: 'assets/brand/app-icon-192.png' },
+      authorizationCache: createDefaultAuthorizationCache(),
+      chains: ['solana:mainnet'],
+      chainSelector: createDefaultChainSelector(),
+      onWalletNotFound: createDefaultWalletNotFoundHandler(),
+    });
+  }).catch(() => {
+    // Without the adapter the landing page keeps its "no wallet detected" state.
+  });
 }
 
 export function setMobileSection(section: MobileSection) {
