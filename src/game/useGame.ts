@@ -2397,7 +2397,7 @@ export function useGame() {
   }, []);
 
   // FIXED: sellAllUnlocked only sells UNEQUIPPED, UNLOCKED items (not potions, not equipped)
-  const sellAllUnlocked = useCallback(async () => {
+  const sellAllUnlocked = useCallback(async (): Promise<number> => {
     const current = stateRef.current;
     const equipped = new Set(current.ownedHeroes.flatMap((hero) => Object.values(hero.equipped).filter((uid): uid is string => Boolean(uid))));
     const sellable = current.inventory.filter((item) => !item.locked && !equipped.has(item.uid));
@@ -2406,23 +2406,37 @@ export function useGame() {
     let serverRefund = 0;
     const serverSoldUids: string[] = [];
 
-    // Sell all empties every bag; the batch loop only guards a future capacity above the server limit. A rejected batch stays in the bags.
-    for (let start = 0; start < serverItemUids.length; start += SELL_BATCH_SIZE) {
-      const batch = serverItemUids.slice(start, start + SELL_BATCH_SIZE);
+    // Sell all empties every bag in one request. If the server rejects a batch because one item is missing from
+    // its ledger (for example an item an older client removed before selling), halve the batch so the rest still sells;
+    // the missing item stays in the bag.
+    const sellBatch = async (batch: string[]): Promise<void> => {
+      let error = '';
       const result = await playerSync<{ item_ids: string[]; gold_refund: number; revision: number }>('item_mutate', {
         operation: 'sell', item_uids: batch, idempotency_key: createIdempotencyKey(),
-      });
-      if (!result || !Array.isArray(result.item_ids) || result.item_ids.length !== batch.length
-        || !Number.isSafeInteger(result.gold_refund) || result.gold_refund < 0) continue;
+      }, (message) => { error = message; });
+      if (!result) {
+        if (batch.length > 1 && (error === 'item_not_found' || error === 'item_state_mismatch')) {
+          const half = Math.ceil(batch.length / 2);
+          await sellBatch(batch.slice(0, half));
+          await sellBatch(batch.slice(half));
+        }
+        return;
+      }
+      if (!Array.isArray(result.item_ids) || result.item_ids.length !== batch.length
+        || !Number.isSafeInteger(result.gold_refund) || result.gold_refund < 0) return;
       const settled = new Set(result.item_ids);
-      if (batch.some((uid) => !settled.has(uid))) continue;
+      if (batch.some((uid) => !settled.has(uid))) return;
       if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
       serverRefund += result.gold_refund;
       serverSoldUids.push(...batch);
+    };
+    for (let start = 0; start < serverItemUids.length; start += SELL_BATCH_SIZE) {
+      await sellBatch(serverItemUids.slice(start, start + SELL_BATCH_SIZE));
     }
 
     const soldUids = new Set([...serverSoldUids, ...clientItems.map((item) => item.uid)]);
-    if (soldUids.size === 0) return;
+    const unsold = serverItemUids.length - serverSoldUids.length;
+    if (soldUids.size === 0) return unsold;
     const clientRefund = clientItems.reduce((total, item) => total + sellValue(item), 0);
     setState((prev) => {
       const stillEquipped = new Set(prev.ownedHeroes.flatMap((hero) => Object.values(hero.equipped).filter((uid): uid is string => Boolean(uid))));
@@ -2434,6 +2448,7 @@ export function useGame() {
       };
     });
     spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
+    return unsold;
   }, [spawnBattle]);
 
   // ── Potions ──────────────────────────────────────────────────────────────
