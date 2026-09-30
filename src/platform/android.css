@@ -180,3 +180,6 @@ html[data-hl-platform='android'] .summon-side-panel { order: 1; }
 html[data-hl-platform='android'] .summon-layout { padding: 56px 10px 16px; gap: 12px; }
 html[data-hl-platform='android'] .summon-altar { padding: 12px; }
 html[data-hl-platform='android'] .summon-cta { border-radius: 2px; min-height: 48px; }
+
+/* Seeker edition preview: display-only $HERO surfaces are hidden (src/platform/platform.ts). */
+html[data-hl-edition='seeker'] .hl-hero-only { display: none !important; }

@@ -36,13 +36,38 @@ export function resolvePlatform(): Platform {
 export const platform: Platform = typeof window === 'undefined' ? 'web' : resolvePlatform();
 export const isAndroidLayout = platform === 'android';
 
+// Seeker edition preview (docs/game/seeker-hero-removal-map.md): hides the display-only
+// $HERO surfaces. A VITE_EDITION=seeker build always has it; staging2 can preview it with
+// ?edition=seeker (remembered; ?edition=standard returns). Hiding is not a control: the
+// Seeker backend must also refuse every $HERO action.
+export type Edition = 'seeker' | 'standard';
+const EDITION_KEY = 'heroloop-edition';
+
+function resolveEdition(): Edition {
+  if (import.meta.env.VITE_EDITION === 'seeker') return 'seeker';
+  if (!androidLayoutAvailable) return 'standard';
+  try {
+    const requested = new URLSearchParams(window.location.search).get('edition');
+    if (requested === 'seeker' || requested === 'standard') {
+      window.localStorage.setItem(EDITION_KEY, requested);
+      return requested;
+    }
+    return window.localStorage.getItem(EDITION_KEY) === 'seeker' ? 'seeker' : 'standard';
+  } catch {
+    return 'standard';
+  }
+}
+
+export const edition: Edition = typeof window === 'undefined' ? 'standard' : resolveEdition();
+
 export function applyPlatform() {
   document.documentElement.dataset.hlPlatform = platform;
+  document.documentElement.dataset.hlEdition = edition;
   if (isAndroidLayout) {
     document.documentElement.dataset.hlSection = 'battle';
     const manifest = document.createElement('link');
     manifest.rel = 'manifest';
-    manifest.href = '/manifest-android.webmanifest';
+    manifest.href = '/assets/manifest-android.webmanifest'; // Nginx serves only / and /assets/ as static files
     document.head.appendChild(manifest);
     registerMobileWalletAdapter();
   }

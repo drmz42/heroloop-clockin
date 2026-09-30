@@ -694,7 +694,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                   </div>
                   <div className="mt-0.5 flex items-center gap-1 ui-text-small font-vt">
                     <span className="flex items-center gap-1 text-[#c79b4e]"><Coins size={11} />{formatNum(l.goldReward)} Gold</span>
-                    {!locked && !notYetDiscovered && <span className={`ml-auto ui-text-small font-bold ${tokenEligible ? 'text-emerald-400' : 'text-[#776f63]'}`}>{tokenEligible ? '$HERO ACTIVE' : 'NO $HERO'}</span>}
+                    {!locked && !notYetDiscovered && <span className={`hl-hero-only ml-auto ui-text-small font-bold ${tokenEligible ? 'text-emerald-400' : 'text-[#776f63]'}`}>{tokenEligible ? '$HERO ACTIVE' : 'NO $HERO'}</span>}
                     {(locked || notYetDiscovered) && <LockIcon size={11} className="ml-auto text-[#777064]" />}
                   </div>
                 </button>
@@ -1327,7 +1327,7 @@ function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: 
       <div className="grid w-full grid-cols-[repeat(3,1fr)] gap-2 rounded-2xl border-2 border-[#80683f] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_24px_rgba(128,104,63,.28)]">
         {[['Heroes', heroes], ['Defeated', defeated], ['Bosses', bosses]].map(([label, value]) => <div key={label} className="text-center"><span className="block ui-text-small font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span><strong className="mt-1 block ui-text-small tabular-nums text-[#e8dfc8]">{formatNum(Number(value))}</strong></div>)}
       </div>
-      <div className="token-earnings-panel flex w-full flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_34px_rgba(229,177,70,.4)]">
+      <div className="hl-hero-only token-earnings-panel flex w-full flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_34px_rgba(229,177,70,.4)]">
       <div className="flex items-center gap-2">
         <HeroTokenIcon size={22} />
         <span className="ui-text-small font-black uppercase tracking-[.14em] text-[#ffd36e]">$HERO Income</span>

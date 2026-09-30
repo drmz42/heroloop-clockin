@@ -87,7 +87,7 @@ export function GameNavBar({
         <button
           type="button"
           onClick={onTokensClick}
-          className="flex h-8 items-center gap-2 rounded-full border border-lime-500/40 bg-[linear-gradient(180deg,#12150d_0%,#080a07_100%)] px-3 shadow-[inset_0_1px_0_rgba(255,255,255,.05),0_3px_10px_rgba(0,0,0,.3)] transition hover:border-lime-400/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-lime-300"
+          className="hl-hero-only flex h-8 items-center gap-2 rounded-full border border-lime-500/40 bg-[linear-gradient(180deg,#12150d_0%,#080a07_100%)] px-3 shadow-[inset_0_1px_0_rgba(255,255,255,.05),0_3px_10px_rgba(0,0,0,.3)] transition hover:border-lime-400/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-lime-300"
           aria-label="Open Rewards and Tokenomics"
           title="Rewards & Tokenomics"
         >
