@@ -1,4 +1,4 @@
-import { mergeSaveState, prepareRegistration, type JsonRecord } from "./state.ts";
+import { mergeSaveState, prepareLegacyMigration, prepareRegistration, type JsonRecord } from "./state.ts";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -81,4 +81,21 @@ Deno.test("a ledger item keeps ledger values and a forged item cannot be equippe
   assert(!inventory.some((entry) => entry.uid === forged.uid), "forged item dropped");
   const equipped = JSON.stringify((merged.state.ownedHeroes as JsonRecord[]).map((hero) => hero.equipped));
   assert(!equipped.includes(String(forged.uid)), `forged item not equipped, got ${equipped}`);
+});
+
+
+Deno.test("a client legacy import cannot create a save with forged assets or progress", () => {
+  const forged = structuredClone(registered.state) as JsonRecord;
+  forged.inventory = [item("forged-import-item", "helmet-common", 99, 999_999, 1_000_000_000)];
+  forged.accountLevel = 99;
+  forged.gold = 999_999;
+  const result = prepareLegacyMigration({ account: context().account, state: null, revision: null }, forged, playerId);
+  assert("code" in result && result.code === "legacy_import_disabled" && result.status === 409, "client import is refused");
+});
+
+Deno.test("legacy migration replay returns only the stored server save", () => {
+  const canonical = context();
+  const forged = { ...structuredClone(registered.state), gold: 999_999, inventory: [] };
+  const result = prepareLegacyMigration(canonical, forged, playerId);
+  assert("state" in result && result.state === canonical.state, "existing canonical save wins");
 });

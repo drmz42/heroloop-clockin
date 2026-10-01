@@ -92,16 +92,15 @@ export function prepareLegacyMigration(
   requestedValue: unknown,
   playerId: string,
 ): { state: JsonRecord } | { code: string; status: number } {
+  // Retain the adapter signature; identity is enforced by the DB context lookup.
+  void playerId;
   const account = isRecord(context.account) ? context.account : null;
   if (!account) return { code: "account_required", status: 403 };
   if (!isRecord(requestedValue)) return { code: "invalid_state", status: 400 };
   if (isRecord(context.state) && Number.isSafeInteger(Number(context.revision))) return { state: context.state };
-  const state = clonePersistentState(requestedValue, String(account.username ?? ""), playerId);
-  if (!state) return { code: "state_too_large", status: 413 };
-  state.hero = Number(account.token_balance);
-  state.summons = Number(account.summons);
-  const validated = validateAndMigrateGameState(state, { allowMissingTeamReferences: true });
-  return validated.ok ? { state: validated.state } : { code: validated.code ?? "invalid_state", status: validated.code === "state_too_large" ? 413 : 400 };
+  // A browser snapshot is not ownership or reward evidence. Missing server saves
+  // require an operator-reviewed recovery; an ordinary API caller cannot create one.
+  return { code: "legacy_import_disabled", status: 409 };
 }
 
 export function missingFormationUids(state: JsonRecord): string[] {
@@ -338,6 +337,8 @@ export function mergeSaveState(
   playerId: string,
   now: number,
 ): { state: JsonRecord; revision: number } | { code: string; status: number; result?: JsonRecord } {
+  // Retain the adapter signature; identity is enforced by the DB context lookup.
+  void playerId;
   const account = isRecord(context.account) ? context.account : null;
   if (!account) return { code: "account_required", status: 403 };
   if (!isRecord(requestedValue)) return { code: "invalid_state", status: 400 };
