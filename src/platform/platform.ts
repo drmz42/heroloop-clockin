@@ -116,12 +116,16 @@ export function applyPlatform() {
 // device ships or runs it. Sign-in still goes through the same server SIWS challenge.
 export const MOBILE_WALLET_ADAPTER_NAME = 'Mobile Wallet Adapter';
 
+export function mobileWalletAppIdentity() {
+  return { name: 'HeroLoop', uri: window.location.origin, icon: 'assets/brand/app-icon-192.png' };
+}
+
 function registerMobileWalletAdapter() {
   if (!/Android/i.test(navigator.userAgent)) return;
   allowMobileWalletAdapter();
   void import('@solana-mobile/wallet-standard-mobile').then(({ registerMwa, createDefaultAuthorizationCache, createDefaultChainSelector, createDefaultWalletNotFoundHandler }) => {
     registerMwa({
-      appIdentity: { name: 'HeroLoop', uri: window.location.origin, icon: 'assets/brand/app-icon-192.png' },
+      appIdentity: mobileWalletAppIdentity(),
       authorizationCache: createDefaultAuthorizationCache(),
       chains: ['solana:mainnet'],
       chainSelector: createDefaultChainSelector(),

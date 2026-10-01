@@ -142,15 +142,10 @@ public class MainActivity extends Activity {
         webView.saveState(outState);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        webView.onResume();
-    }
-
+    // The WebView is not paused: while the wallet app is in front, the page must keep its
+    // Mobile Wallet Adapter session alive (fetch the challenge, send the signing request).
     @Override
     protected void onPause() {
-        webView.onPause();
         CookieManager.getInstance().flush();
         super.onPause();
     }

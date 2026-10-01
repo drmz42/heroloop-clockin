@@ -11,7 +11,7 @@ import { playerSync } from '@/game/backend';
 import { hasBlockedUsernameLanguage } from '@/game/username';
 import { clearSignupAttribution, readSignupAttribution } from '@/game/signupAttribution';
 import { clearLegacyState, makeRegisteredStarterState } from '@/game/state';
-import { canOpenInPhantom, isAndroidLayout, isNativeApp, MOBILE_WALLET_ADAPTER_NAME, phantomBrowseUrl } from '@/platform/platform';
+import { canOpenInPhantom, isAndroidLayout, isNativeApp, MOBILE_WALLET_ADAPTER_NAME, mobileWalletAppIdentity, phantomBrowseUrl } from '@/platform/platform';
 import {
   connectSolanaWallet,
   observeCompatibleSolanaWallets,
@@ -345,7 +345,8 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         // decision 2026-09-29). Only a one-time browser-progress import refuses, because that
         // progress has already been written into this Guest's server account.
         allowExistingAccountLogin: legacyWalletMode !== 'import',
-        // The native app's WebView hands wallet links to Android directly, so no second tap.
+        // The native app connects and signs in one wallet session, so one tap opens the wallet once.
+        mwaSession: wallet.name === MOBILE_WALLET_ADAPTER_NAME && isNativeApp ? mobileWalletAppIdentity() : undefined,
         confirmBeforeSign: wallet.name === MOBILE_WALLET_ADAPTER_NAME && !isNativeApp
           ? () => new Promise<void>((resolve) => { setSignConfirm(() => resolve); })
           : undefined,

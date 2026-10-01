@@ -2,7 +2,7 @@ import { editionStorageKey } from './editionStorage';
 import type { Wallet } from '@wallet-standard/base';
 import { authClient, backendUrl, validatedGuestSession } from './backend';
 import { isAuthTransient, isTemporaryAuthStatus, runAuthCall } from './authTransient';
-import { createSolanaWalletProof, SolanaWalletAuthError } from './solanaWalletAuth';
+import { createMwaSessionProof, createSolanaWalletProof, SolanaWalletAuthError, type MwaSessionProofOptions } from './solanaWalletAuth';
 export {
   compatibleSolanaWallets,
   observeCompatibleSolanaWallets,
@@ -38,6 +38,8 @@ export type SolanaSessionOptions = {
   now?: () => number;
   wallets?: readonly Wallet[];
   confirmBeforeSign?: () => Promise<void>;
+  // Native app: sign in through one Mobile Wallet Adapter session instead of `wallet`'s features.
+  mwaSession?: MwaSessionProofOptions['appIdentity'];
 };
 
 function fail(code: string): never {
@@ -152,12 +154,15 @@ export async function connectSolanaWallet(
   const fetchImpl = options.fetch ?? globalThis.fetch;
   const existing = await validatedGuestSession();
   if (!existing) fail('account_session_unavailable');
-  const proof = await createSolanaWalletProof(wallet, {
-    challengeEndpoint: `${backendUrl}/api/v1/auth/solana/challenge`,
-    fetch: fetchImpl,
-    now: options.now,
-    confirmBeforeSign: options.confirmBeforeSign,
-  });
+  const challengeEndpoint = `${backendUrl}/api/v1/auth/solana/challenge`;
+  const proof = options.mwaSession
+    ? await createMwaSessionProof({ challengeEndpoint, fetch: fetchImpl, now: options.now, appIdentity: options.mwaSession })
+    : await createSolanaWalletProof(wallet, {
+      challengeEndpoint,
+      fetch: fetchImpl,
+      now: options.now,
+      confirmBeforeSign: options.confirmBeforeSign,
+    });
   const verification = await fetchImpl(`${backendUrl}/api/v1/auth/solana/verify`, {
     method: 'POST',
     credentials: 'same-origin',

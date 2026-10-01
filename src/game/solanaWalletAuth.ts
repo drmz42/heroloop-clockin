@@ -61,6 +61,10 @@ export type SolanaWalletAuthOptions = {
   confirmBeforeSign?: () => Promise<void>;
 };
 
+export type MwaSessionProofOptions = Pick<SolanaWalletAuthOptions, 'challengeEndpoint' | 'fetch' | 'now'> & {
+  appIdentity: { name: string; uri: string; icon: string };
+};
+
 export class SolanaWalletAuthError extends Error {
   readonly code: string;
   readonly detail: string;
@@ -369,4 +373,65 @@ export async function createSolanaWalletProof(wallet: Wallet, options: SolanaWal
     fail('wallet_proof_invalid');
   }
   return proofPayload(account, challenge, SolanaSignMessage, outputs[0]);
+}
+
+// Mobile Wallet Adapter in one wallet session (native app): authorize, fetch the address-bound
+// challenge and sign it while the wallet stays open. The Wallet Standard path opens the wallet
+// twice (connect, then sign), and a second, tap-less launch from the app could not reach it.
+// The proof is the same signMessage proof the server already verifies.
+export async function createMwaSessionProof(options: MwaSessionProofOptions): Promise<SolanaWalletProof> {
+  let endpoint: URL;
+  try {
+    endpoint = new URL(options.challengeEndpoint);
+  } catch {
+    return fail('challenge_unavailable');
+  }
+  if (endpoint.protocol !== 'https:' || endpoint.username || endpoint.password || endpoint.search || endpoint.hash) {
+    fail('challenge_unavailable');
+  }
+  const [{ transact }, { base58FromUint8Array, base64FromUint8Array, base64ToUint8Array }] = await Promise.all([
+    import('@solana-mobile/mobile-wallet-adapter-protocol'),
+    import('@solana-mobile/mobile-wallet-adapter-protocol/encoding'),
+  ]);
+  const progress: { stage: 'connect' | 'challenge' | 'sign' } = { stage: 'connect' };
+  try {
+    return await transact(async (wallet) => {
+      const authorization = await wallet.authorize({ chain: 'solana:mainnet', identity: options.appIdentity });
+      const authorized = authorization.accounts[0];
+      if (!authorized) fail('wallet_account_unavailable');
+      const publicKey = base64ToUint8Array(authorized.address);
+      if (publicKey.length !== 32) fail('wallet_account_unavailable');
+      const account = { address: base58FromUint8Array(publicKey), publicKey } as unknown as WalletAccount;
+
+      progress.stage = 'challenge';
+      const challenge = await requestChallenge(
+        endpoint.toString(),
+        account.address,
+        options.fetch ?? globalThis.fetch,
+        (options.now ?? Date.now)(),
+      );
+      if (challenge.signInInput.chainId !== 'solana:mainnet') fail('wallet_chain_mismatch');
+
+      progress.stage = 'sign';
+      const message = new TextEncoder().encode(challenge.message);
+      const { signed_payloads: signedPayloads } = await wallet.signMessages({
+        addresses: [authorized.address],
+        payloads: [base64FromUint8Array(message)],
+      });
+      if (signedPayloads.length !== 1) fail('wallet_proof_invalid');
+      // MWA returns the message with the 64-byte signature appended; some wallets return only the signature.
+      const signed = base64ToUint8Array(signedPayloads[0]);
+      const signature = signed.slice(-64);
+      const signedMessage = signed.length === 64 ? message : signed.slice(0, -64);
+      return proofPayload(account, challenge, SolanaSignMessage, { signature, signedMessage });
+    });
+  } catch (error) {
+    if (error instanceof SolanaWalletAuthError) throw error;
+    const { stage } = progress;
+    const detail = describeWalletError(`mwa-${stage}`, error);
+    // MWA protocol: -1 authorization declined, -3 signature declined.
+    const code = error && typeof error === 'object' ? (error as { code?: unknown }).code : undefined;
+    if (isUserRejected(error) || code === -1 || code === -3) return fail(stage === 'sign' ? 'wallet_signature_rejected' : 'wallet_connect_rejected', detail);
+    return fail(stage === 'sign' ? 'wallet_sign_message_unavailable' : 'wallet_connect_rejected', detail);
+  }
 }
