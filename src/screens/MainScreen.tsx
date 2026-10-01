@@ -1,5 +1,6 @@
 import { editionStorageKey, isolatedHackathon } from '../game/editionStorage';
 import { goldHealingEnabled } from '../../managed/functions/player-sync/automatic-healing.mjs';
+import { tutorialProgress, currentTutorialObjective } from '@/game/tutorialProgress';
 import { Fragment, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, DoorOpen, HeartPulse, Gem, Skull, BookOpen } from 'lucide-react';
@@ -136,7 +137,7 @@ function emptySlotArtworkId(slot: ItemSlot, heroClass: HeroClass): string {
   return `${slot}-common`;
 }
 
-export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRewardBoostClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void; onRewardBoostClick: () => void }) {
+export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRewardBoostClick, onQuestsClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void; onRewardBoostClick: () => void; onQuestsClick?: () => void }) {
   const { state, battleResult, respawnCountdowns, paused, setPaused } = game;
   const tok = tokenomics;
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
@@ -265,6 +266,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const dropBase = drop ? ITEM_MAP[drop.itemId] : null;
   const hasBattleRewards = Boolean(banner && (banner.gold > 0 || banner.xp > 0 || dropBase || banner.chest));
   const power = game.teamPower();
+  const currentObjective = currentTutorialObjective(state);
   const selectedHero = selectedHeroUid ? state.ownedHeroes.find(h => h.uid === selectedHeroUid) : null;
   const selectedHeroBase = selectedHero ? HERO_MAP[selectedHero.heroId] : null;
   const selectedHeroStats = useMemo(
@@ -520,13 +522,12 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           )}
         </div>
 
-        <div className="hl-quest-list flex-1 p-2">
+        <div id="game-quest-list" className="hl-quest-list flex-1 p-2">
           <PartnerQuests claim={game.claimPartnerQuest} onOpenBoostMax={onBoostClick} shareState={state} teamPower={power} />
           {!state.tutorial.questCompleted && (() => {
             const ordinal = Math.max(1, Math.min(10, state.tutorial.questOrdinal));
             const quest = TUTORIAL_QUESTS[ordinal - 1];
-            const activeEquipped = state.ownedHeroes.some((hero) => state.team.includes(hero.uid) && Object.keys(hero.equipped).length > 0);
-            const progress = [state.totalKills, state.tutorial.openedCount, activeEquipped ? 1 : 0, state.summons, state.team.length, state.summons, state.trainingCamp.heroUids.some(Boolean) ? 1 : 0, state.autoPot.enabled ? 1 : 0, state.accountLevel >= locationUnlockLevel(2) ? state.highestLocation : Math.min(1, state.highestLocation), Math.max(0, state.totalBossKills - state.tutorial.bossKillsAtKeyGrant)][ordinal - 1];
+            const progress = tutorialProgress(state, ordinal);
             const done = progress >= quest[2];
             return <section className="mb-2" aria-label="Tutorial Quests">
               <div className="section-kicker mb-1">Tutorial Quests · {ordinal}/10</div>
@@ -540,7 +541,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     if (error) setTutorialClaimError(error === 'state_conflict' ? 'Your game changed. Please try claiming again.' : error === 'tutorial_quest_incomplete' ? 'The server has not confirmed this task yet. Please try again.' : error === 'tutorial_quest_locked' || error === 'tutorial_completed' ? 'This tutorial step is no longer available. Reload the game.' : 'Could not claim the reward. Please try again.');
                     else showToast('Tutorial reward claimed');
                   } finally { setTutorialClaimBusy(false); }
-                }} className="game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold disabled:opacity-50">{tutorialClaimBusy ? 'Claiming…' : 'Claim & unlock next'}</button>}
+                }} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold disabled:opacity-50">{tutorialClaimBusy ? 'Claiming…' : 'Claim & unlock next'}</button>}
                 {tutorialClaimError && <p role="alert" className="mt-1 ui-text-small text-red-300">{tutorialClaimError}</p>}
               </div>
               {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1 px-2 py-1"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => void game.openTutorialChests(1)} className="game-control min-h-7 ui-text-small font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => void game.openTutorialChests(10)} className="game-control min-h-7 ui-text-small font-bold">Open 10</button></div></div>}
@@ -561,7 +562,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     <div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
                     <span className="ui-text-small shrink-0 text-px-dim">{q.progress}/{q.target}</span>
                   </div>
-                  {done && !q.claimed && <button onClick={() => game.claimQuest(q.id)} className="game-control game-primary ui-text-medium mt-1 min-h-7 w-full px-2 py-0.5 font-bold">Claim reward</button>}
+                  {done && !q.claimed && <button onClick={() => game.claimQuest(q.id)} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold">Claim reward</button>}
                 </div>
               );
             })}
@@ -582,7 +583,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     <span className="ui-text-small shrink-0 text-px-dim">{formatNum(q.progress)}/{formatNum(q.target)}</span>
                     <span className="ui-text-small shrink-0 font-bold uppercase text-[#8e887b]">T{(q.tier ?? 0) + 1}</span>
                   </div>
-                  {done && <button onClick={() => game.claimQuest(q.id)} className="game-control game-primary ui-text-medium mt-1 min-h-7 w-full px-2 py-0.5 font-bold">Claim & unlock next</button>}
+                  {done && <button onClick={() => game.claimQuest(q.id)} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold">Claim & unlock next</button>}
                 </div>
               );
             })}
@@ -592,6 +593,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
 
       {/* ── CENTER COLUMN — responsive, max-width removed ── */}
       <div className="hl-col-center game-scrollbar order-1 flex min-h-[464px] w-full shrink-0 flex-col overflow-hidden lg:order-none lg:min-h-0 lg:w-auto lg:min-w-0 lg:flex-1 lg:overflow-y-auto">
+        {isolatedHackathon && currentObjective && onQuestsClick && <div className="mobile-current-objective">
+          <div><span>{currentObjective.ready ? 'Quest complete' : 'Next goal'}</span><strong>{currentObjective.label}</strong></div>
+          <button type="button" onClick={onQuestsClick} className={`game-control ${currentObjective.ready ? 'quest-reward-ready' : ''}`}>{currentObjective.ready ? 'Claim reward' : `${currentObjective.progress}/${currentObjective.target}`}</button>
+        </div>}
         {/* Arena */}
         <div className={`battle-stage ${!activeDungeon ? 'battle-stage-normal' : ''} relative min-h-[320px] flex-1 overflow-hidden bg-arena`}>
           {!activeDungeon && showZoomTip && <div className="hl-zoom-tip absolute left-1/2 top-12 z-40 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-lg border border-[#80683f] bg-[#11130f]/95 px-3 py-1.5 font-vt ui-text-small font-bold text-[#d8c9ad] shadow-xl backdrop-blur-sm"><span>Adjust browser zoom with <kbd className="text-[#ffd36e]">Ctrl +</kbd> / <kbd className="text-[#ffd36e]">Ctrl -</kbd> to fit all interface elements.</span><button type="button" onClick={() => setShowZoomTip(false)} className="text-[#8f887b] hover:text-white" aria-label="Dismiss browser zoom tip"><X size={12} /></button></div>}
