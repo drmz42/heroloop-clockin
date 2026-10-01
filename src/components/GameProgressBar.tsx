@@ -13,11 +13,13 @@ export function GameProgressBar({ power, readyQuests, identity, onQuestsClick }:
     const timer = window.setTimeout(() => setDelta(0), 4000);
     return () => window.clearTimeout(timer);
   }, [power, identity]);
-  const format = (value: number) => Math.round(value).toLocaleString('en-US');
+  const format = (value: number) => value >= 1_000_000
+    ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+    : Math.round(value).toLocaleString('en-US');
   return <aside className="game-progress-bar" aria-label="Team progress">
     <div className="game-progress-power">
       <Zap size={21} aria-hidden="true" />
-      <div><span className="game-progress-label">Team Power</span><strong data-team-power={Math.round(power)}>{format(power)}</strong></div>
+      <div><span className="game-progress-label">Team Power</span><strong title={Math.round(power).toLocaleString('en-US')} data-team-power={Math.round(power)}>{format(power)}</strong></div>
       <span role="status" className={`game-power-change ${delta > 0 ? 'is-gain' : 'is-loss'}`}>{delta !== 0 && `${delta > 0 ? '+' : '−'}${format(Math.abs(delta))}`}</span>
     </div>
     <button type="button" onClick={onQuestsClick} className={`game-progress-quests ${readyQuests > 0 ? 'quest-reward-ready' : ''}`} aria-label={readyQuests > 0 ? `Quests, ${readyQuests} rewards ready` : 'Open quests'}>
