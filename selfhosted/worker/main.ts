@@ -1,5 +1,6 @@
 import { Pool } from "@db/postgres";
 
+const heroDistributionEnabled = Deno.env.get("HERO_DISTRIBUTION_ENABLED") !== "false";
 const readyPath = "/tmp/heroloop-worker-ready";
 const pool = new Pool({
   applicationName: "heroloop-worker",
@@ -26,6 +27,10 @@ await heartbeat();
 async function runTick() {
   const client = await pool.connect();
   try {
+    await client.queryObject(
+      "SELECT set_config('heroloop.hero_distribution_enabled', $1::text, false)",
+      [String(heroDistributionEnabled)],
+    );
     await client.queryObject(
       "SELECT heroloop_worker.run_distribution_tick($1::timestamptz) AS result",
       [new Date().toISOString()],

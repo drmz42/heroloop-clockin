@@ -191,6 +191,7 @@
     "check:admin-foundation": "bash scripts/check-admin-foundation.sh",
     "check:game-events-foundation": "bash scripts/check-game-events-foundation.sh",
     "check:partner-quests": "bash scripts/check-partner-quests.sh",
+    "check:partner-quest-precheck": "node scripts/check-partner-quest-precheck.mjs",
     "check:admin-promo-codes": "bash scripts/check-admin-promo-codes.sh",
     "check:player-mailbox": "bash scripts/check-player-mailbox.sh",
     "build:seeker": "VITE_PLATFORM=android VITE_EDITION=seeker VITE_UI_THEME=premium vite build --mode seeker --outDir dist-seeker",
@@ -242,7 +243,8 @@
     "simulate:summon-family-pity": "node scripts/simulate-summon-family-pity.mjs",
     "simulate:chest-pacing": "node scripts/simulate-chest-pacing.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "model:balance-v6": "tsx scripts/model-balance-v6.ts"
+    "model:balance-v6": "tsx scripts/model-balance-v6.ts",
+    "check:hackathon-isolation": "node scripts/check-hackathon-isolation.mjs"
   },
   "dependencies": {
     "@mui/icons-material": "9.4.0",
@@ -276,5 +278,9 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.3.0",
     "vite": "^7.3.6"
+  },
+  "overrides": {
+    "query-string": "9.5.1",
+    "dompurify": "3.4.16"
   }
 }

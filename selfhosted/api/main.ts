@@ -33,6 +33,7 @@ import {
   startSocialLink,
   type SocialLinkStore,
 } from "./social_link.ts";
+import { parseEdition, seekerRefusal } from "./seeker_edition.ts";
 import { parseAdditionalSiwsUris, siwsSiteForRequest } from "./siws_site.ts";
 
 const jsonHeaders = {
@@ -41,6 +42,7 @@ const jsonHeaders = {
 };
 const authInternalUrl = Deno.env.get("AUTH_INTERNAL_URL") ?? "http://auth:9999";
 const authWalletInternalUrl = Deno.env.get("AUTH_WALLET_INTERNAL_URL") ?? "http://auth-wallet:9999";
+const edition = parseEdition(Deno.env.get("HEROLOOP_EDITION"));
 const testerControlsEnabled = Deno.env.get("TESTER_CONTROLS_ENABLED") === "true";
 const edition = parseEdition(Deno.env.get("HEROLOOP_EDITION"));
 const siwsChallengeEnabled = Deno.env.get("SIWS_CHALLENGE_ENABLED") === "true";
@@ -899,6 +901,8 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
     }
     // A Staging kill switch refuses the command before it touches state. 409,
     // not 503: the client must not retry it as if the server were down.
+    const editionRefusal = seekerRefusal(edition, String(parsed.value.action), payload);
+    if (editionRefusal) return errorResponse(409, editionRefusal, requestId);
     const pausedFlag = await pausedFlagFor(String(parsed.value.action));
     if (pausedFlag) return errorResponse(409, "feature_paused", requestId);
     const editionRefusal = seekerRefusal(edition, String(parsed.value.action), payload);

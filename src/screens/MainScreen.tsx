@@ -1,3 +1,4 @@
+import { editionStorageKey } from '../game/editionStorage';
 import { Fragment, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, DoorOpen, HeartPulse, Gem, Skull, BookOpen } from 'lucide-react';
@@ -25,7 +26,7 @@ import { FantasyBagIcon } from '@/components/FantasyBagIcon';
 import { recommendedTeamPower } from '@/game/balance';
 import { playerSync, authClient } from '@/game/backend';
 
-const SAVE_KEY = 'afk-heroes-save-v7';
+const SAVE_KEY = editionStorageKey('afk-heroes-save-v7');
 
 const SLOTS: ItemSlot[] = ['class_weapon', 'offhand', 'helmet', 'chest', 'gloves', 'boots', 'ring', 'amulet'];
 // Short slot names so all eight fit under the gear row at the small text tier.
@@ -616,7 +617,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             resetKey={`${activeDungeon?.encounter_id ?? 'normal'}:${game.state.currentLocation}:${game.state.team.join('|')}`}
             onRetry={activeDungeon ? undefined : game.retry}
           >
-            <div className={activeDungeon ? 'h-full' : 'normal-battle-content relative'}>
+            <div className="h-full">
               <CombatPresentationLayer game={game} activeDungeon={activeDungeon} dungeonUnits={dungeonUnits} dungeonFloaters={dungeonFloaters} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
             </div>
           </CombatErrorBoundary>
@@ -652,13 +653,13 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">{chestRateRows.map(([rarity, weight]) => <Fragment key={rarity}><span className="ui-text-small font-bold" style={{ color: RARITY_COLORS[rarity as keyof typeof RARITY_COLORS] }}>{RARITY_LABEL[rarity as keyof typeof RARITY_LABEL]}</span><span className="text-right ui-text-small tabular-nums text-[#ddd4c4]">{(weight / chestWeightTotal * 100).toFixed(2).replace(/\.?0+$/, '')}%</span></Fragment>)}</div>
               {state.chests.some((chest) => chest.boss) && <p className="mt-2 border-t border-white/10 pt-2 ui-text-small text-rose-200">Boss Chests use the same level table with a Rare/Epic minimum.</p>}
             </div>, document.body)}
-            <button ref={dropRatesButtonRef} type="button" onClick={() => setShowDropRates((value) => !value)} className="game-control grid h-8 w-8 place-items-center" aria-label="Show chest drop rates" aria-expanded={showDropRates}><Info size={15} /></button>
-            <div className="flex flex-col gap-1.5">
-              <button type="button" onClick={onBoostClick} className={`pm-boost game-control flex h-8 w-36 items-center justify-center gap-1 px-2 py-0.5 ui-text-small font-black ${state.boost.active ? 'boost-max-active' : 'boost-max-ready'}`} title="Boost your offline earnings to 24/7"><Rocket size={15} /><span>{state.boost.active ? 'BOOST ON' : 'BOOST MAX'}</span></button>
+            <button ref={dropRatesButtonRef} type="button" onClick={() => setShowDropRates((value) => !value)} className="game-control grid h-7 w-7 place-items-center sm:h-8 sm:w-8" aria-label="Show chest drop rates" aria-expanded={showDropRates}><Info size={15} /></button>
+            <div className="flex flex-row gap-1 sm:flex-col sm:gap-1.5">
+              <button type="button" onClick={onBoostClick} className={`pm-boost game-control flex h-7 w-auto shrink-0 items-center sm:h-8 sm:w-36 justify-center gap-1 px-1.5 py-0.5 sm:px-2 ui-text-small font-black ${state.boost.active ? 'boost-max-active' : 'boost-max-ready'}`} title="Boost your offline earnings to 24/7"><Rocket size={15} /><span>{state.boost.active ? 'BOOST ON' : 'BOOST MAX'}</span></button>
               <button
                 onClick={() => void game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem)}
                 disabled={state.chests.length === 0 || game.chestOpening}
-                className="pm-chest reward-cta game-control flex h-8 w-36 items-center justify-center gap-1 px-2 py-0.5 ui-text-small font-black disabled:opacity-55"
+                className="pm-chest reward-cta game-control flex h-7 w-auto shrink-0 items-center sm:h-8 sm:w-36 justify-center gap-1 px-1.5 py-0.5 sm:px-2 ui-text-small font-black disabled:opacity-55"
                 title="Open chests"
               >
                 <ChestCollectIcon size={34} />

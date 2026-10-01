@@ -1,9 +1,10 @@
+import { editionStorageKey } from './editionStorage';
 import type { GameState, OwnedHero, DailyQuest, ItemSlot, TrainingBoostKey, Rarity } from './types';
 import { generateRotatingShop, itemPower } from './items';
 import { emptyBalanceTelemetry, BALANCE_VERSION } from './balance';
 import { MAX_ENCHANT_LEVEL } from './enchant';
 
-const STORAGE_KEY = 'afk-heroes-save-v7';
+const STORAGE_KEY = editionStorageKey('afk-heroes-save-v7');
 
 export const STARTER_HERO_ID = 'shepherd-common';
 export const RESPAWN_TIME_MS = 15_000;
