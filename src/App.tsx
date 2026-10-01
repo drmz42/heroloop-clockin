@@ -2,6 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
 import { bagItemCount, useGame } from '@/game/useGame';
 import { GameNavBar } from '@/components/GameNavBar';
+import { GameProgressBar } from '@/components/GameProgressBar';
+import { isolatedHackathon } from '@/game/editionStorage';
+import { readyQuestCount } from '@/game/tutorialProgress';
 import { FooterBar } from '@/components/FooterBar';
 import { MobileTabBar } from '@/components/MobileTabBar';
 import { isAndroidLayout, isAppShell, type MobileSection } from '@/platform/platform';
@@ -430,6 +433,12 @@ function App() {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
+  const openQuests = () => {
+    setTab('main');
+    setMoreOpen(false);
+    setMobileSection('quests');
+    window.requestAnimationFrame(() => document.getElementById('game-quest-list')?.scrollIntoView({ block: 'start' }));
+  };
   const [routePath, setRoutePath] = useState(() => window.location.pathname);
   const [showBoost, setShowBoost] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
@@ -499,7 +508,8 @@ function App() {
   }
 
   return (
-    <div className={`game-shell game-motion-${game.state.battleAnimationMode} flex h-screen flex-col overflow-hidden bg-px-bg text-px-text`}>
+    <div className={`game-shell ${isolatedHackathon ? 'has-game-progress' : ''} game-motion-${game.state.battleAnimationMode} flex h-screen flex-col overflow-hidden bg-px-bg text-px-text`}>
+      {isolatedHackathon && <GameProgressBar power={game.teamPower()} readyQuests={readyQuestCount(game.state)} identity={game.state.walletAddress} onQuestsClick={openQuests} />}
       {isAndroidLayout && <OfflineBar />}
       <GameNavBar
         tab={tab}
@@ -528,7 +538,7 @@ function App() {
       )}
 
       <div className="flex-1 min-h-0 overflow-hidden">
-        <MainScreen game={game} tokenomics={tokenomics} onBoostClick={() => setShowBoost(true)} onGuidesClick={openWiki} onRewardBoostClick={() => setTab('shop')} />
+        <MainScreen game={game} tokenomics={tokenomics} onBoostClick={() => setShowBoost(true)} onGuidesClick={openWiki} onRewardBoostClick={() => setTab('shop')} onQuestsClick={openQuests} />
       </div>
 
       {tab !== 'main' && (
@@ -563,6 +573,7 @@ function App() {
 
       {isAndroidLayout ? (
         <MobileTabBar
+          readyQuests={readyQuestCount(game.state)}
           tab={tab}
           section={mobileSection}
           moreOpen={moreOpen}

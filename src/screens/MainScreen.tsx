@@ -1,5 +1,6 @@
 import { editionStorageKey, isolatedHackathon } from '../game/editionStorage';
 import { goldHealingEnabled } from '../../managed/functions/player-sync/automatic-healing.mjs';
+import { tutorialProgress, currentTutorialObjective } from '@/game/tutorialProgress';
 import { Fragment, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, DoorOpen, HeartPulse, Gem, Skull, BookOpen } from 'lucide-react';
@@ -28,6 +29,9 @@ import { recommendedTeamPower } from '@/game/balance';
 import { playerSync, authClient } from '@/game/backend';
 
 const SAVE_KEY = editionStorageKey('afk-heroes-save-v7');
+// Temporarily hide the first-use dialog for hackathon start-of-game recordings.
+// Restore this flag after recording; keep consent and the settings entry intact.
+const SHOW_HACKATHON_HEALING_INTRODUCTION = false;
 
 const SLOTS: ItemSlot[] = ['class_weapon', 'offhand', 'helmet', 'chest', 'gloves', 'boots', 'ring', 'amulet'];
 // Short slot names so all eight fit under the gear row at the small text tier.
@@ -133,7 +137,7 @@ function emptySlotArtworkId(slot: ItemSlot, heroClass: HeroClass): string {
   return `${slot}-common`;
 }
 
-export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRewardBoostClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void; onRewardBoostClick: () => void }) {
+export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRewardBoostClick, onQuestsClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void; onRewardBoostClick: () => void; onQuestsClick?: () => void }) {
   const { state, battleResult, respawnCountdowns, paused, setPaused } = game;
   const tok = tokenomics;
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
@@ -143,6 +147,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const [showBattleSettings, setShowBattleSettings] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [tutorialClaimBusy, setTutorialClaimBusy] = useState(false);
+  const [tutorialClaimError, setTutorialClaimError] = useState('');
   const [showBulkSellConfirm, setShowBulkSellConfirm] = useState(false);
   const [inventoryLockMode, setInventoryLockMode] = useState(false);
   const [inventoryTab, setInventoryTab] = useState<1 | 2 | 3 | 4 | 'resources'>(1);
@@ -260,6 +266,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const dropBase = drop ? ITEM_MAP[drop.itemId] : null;
   const hasBattleRewards = Boolean(banner && (banner.gold > 0 || banner.xp > 0 || dropBase || banner.chest));
   const power = game.teamPower();
+  const currentObjective = currentTutorialObjective(state);
   const selectedHero = selectedHeroUid ? state.ownedHeroes.find(h => h.uid === selectedHeroUid) : null;
   const selectedHeroBase = selectedHero ? HERO_MAP[selectedHero.heroId] : null;
   const selectedHeroStats = useMemo(
@@ -515,20 +522,27 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           )}
         </div>
 
-        <div className="hl-quest-list flex-1 p-2">
+        <div id="game-quest-list" className="hl-quest-list flex-1 p-2">
           <PartnerQuests claim={game.claimPartnerQuest} onOpenBoostMax={onBoostClick} shareState={state} teamPower={power} />
           {!state.tutorial.questCompleted && (() => {
             const ordinal = Math.max(1, Math.min(10, state.tutorial.questOrdinal));
             const quest = TUTORIAL_QUESTS[ordinal - 1];
-            const activeEquipped = state.ownedHeroes.some((hero) => state.team.includes(hero.uid) && Object.keys(hero.equipped).length > 0);
-            const progress = [state.totalKills, state.tutorial.openedCount, activeEquipped ? 1 : 0, state.summons, state.team.length, state.summons, state.trainingCamp.heroUids.some(Boolean) ? 1 : 0, state.autoPot.enabled ? 1 : 0, state.accountLevel >= locationUnlockLevel(2) ? state.highestLocation : Math.min(1, state.highestLocation), Math.max(0, state.totalBossKills - state.tutorial.bossKillsAtKeyGrant)][ordinal - 1];
+            const progress = tutorialProgress(state, ordinal);
             const done = progress >= quest[2];
             return <section className="mb-2" aria-label="Tutorial Quests">
               <div className="section-kicker mb-1">Tutorial Quests · {ordinal}/10</div>
               <div className={`quest-card px-2 py-1 ${done ? 'border-[#b48a43]' : ''}`}>
                 <div className="flex items-center gap-1.5"><Circle size={11} className={done ? 'fill-amber-400/30 text-amber-400' : 'text-slate-600'} /><span className="ui-text-medium min-w-0 flex-1 leading-tight text-px-text">{isolatedHackathon && quest[0] === 'enable-auto-pot' ? 'Automatic healing' : quest[1]}</span></div>
                 <div className="mt-1 flex items-center gap-1.5"><div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, progress / quest[2] * 100)}%` }} /></div><span className="ui-text-small shrink-0 text-px-dim">{progress}/{quest[2]}</span><span className="ui-text-small shrink-0 text-[#e7c579]">{quest[3]}</span></div>
-                {done && <button onClick={() => void game.claimTutorialQuest(quest[0])} className="game-control game-primary ui-text-medium mt-1 min-h-7 w-full px-2 py-0.5 font-bold">Claim & unlock next</button>}
+                {done && <button type="button" disabled={tutorialClaimBusy} aria-busy={tutorialClaimBusy} onClick={async () => {
+                  setTutorialClaimBusy(true); setTutorialClaimError('');
+                  try {
+                    const error = await game.claimTutorialQuest(quest[0]);
+                    if (error) setTutorialClaimError(error === 'state_conflict' ? 'Your game changed. Please try claiming again.' : error === 'tutorial_quest_incomplete' ? 'The server has not confirmed this task yet. Please try again.' : error === 'tutorial_quest_locked' || error === 'tutorial_completed' ? 'This tutorial step is no longer available. Reload the game.' : 'Could not claim the reward. Please try again.');
+                    else showToast('Tutorial reward claimed');
+                  } finally { setTutorialClaimBusy(false); }
+                }} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold disabled:opacity-50">{tutorialClaimBusy ? 'Claiming…' : 'Claim & unlock next'}</button>}
+                {tutorialClaimError && <p role="alert" className="mt-1 ui-text-small text-red-300">{tutorialClaimError}</p>}
               </div>
               {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1 px-2 py-1"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => void game.openTutorialChests(1)} className="game-control min-h-7 ui-text-small font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => void game.openTutorialChests(10)} className="game-control min-h-7 ui-text-small font-bold">Open 10</button></div></div>}
             </section>;
@@ -548,7 +562,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     <div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
                     <span className="ui-text-small shrink-0 text-px-dim">{q.progress}/{q.target}</span>
                   </div>
-                  {done && !q.claimed && <button onClick={() => game.claimQuest(q.id)} className="game-control game-primary ui-text-medium mt-1 min-h-7 w-full px-2 py-0.5 font-bold">Claim reward</button>}
+                  {done && !q.claimed && <button onClick={() => game.claimQuest(q.id)} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold">Claim reward</button>}
                 </div>
               );
             })}
@@ -569,7 +583,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     <span className="ui-text-small shrink-0 text-px-dim">{formatNum(q.progress)}/{formatNum(q.target)}</span>
                     <span className="ui-text-small shrink-0 font-bold uppercase text-[#8e887b]">T{(q.tier ?? 0) + 1}</span>
                   </div>
-                  {done && <button onClick={() => game.claimQuest(q.id)} className="game-control game-primary ui-text-medium mt-1 min-h-7 w-full px-2 py-0.5 font-bold">Claim & unlock next</button>}
+                  {done && <button onClick={() => game.claimQuest(q.id)} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold">Claim & unlock next</button>}
                 </div>
               );
             })}
@@ -579,6 +593,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
 
       {/* ── CENTER COLUMN — responsive, max-width removed ── */}
       <div className="hl-col-center game-scrollbar order-1 flex min-h-[464px] w-full shrink-0 flex-col overflow-hidden lg:order-none lg:min-h-0 lg:w-auto lg:min-w-0 lg:flex-1 lg:overflow-y-auto">
+        {isolatedHackathon && currentObjective && onQuestsClick && <div className="mobile-current-objective">
+          <div><span>{currentObjective.ready ? 'Quest complete' : 'Next goal'}</span><strong>{currentObjective.label}</strong></div>
+          <button type="button" onClick={onQuestsClick} className={`game-control ${currentObjective.ready ? 'quest-reward-ready' : ''}`}>{currentObjective.ready ? 'Claim reward' : `${currentObjective.progress}/${currentObjective.target}`}</button>
+        </div>}
         {/* Arena */}
         <div className={`battle-stage ${!activeDungeon ? 'battle-stage-normal' : ''} relative min-h-[320px] flex-1 overflow-hidden bg-arena`}>
           {!activeDungeon && showZoomTip && <div className="hl-zoom-tip absolute left-1/2 top-12 z-40 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-lg border border-[#80683f] bg-[#11130f]/95 px-3 py-1.5 font-vt ui-text-small font-bold text-[#d8c9ad] shadow-xl backdrop-blur-sm"><span>Adjust browser zoom with <kbd className="text-[#ffd36e]">Ctrl +</kbd> / <kbd className="text-[#ffd36e]">Ctrl -</kbd> to fit all interface elements.</span><button type="button" onClick={() => setShowZoomTip(false)} className="text-[#8f887b] hover:text-white" aria-label="Dismiss browser zoom tip"><X size={12} /></button></div>}
@@ -816,12 +834,6 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                 <button type="button" role="tab" aria-label="Resources" title="Resources" aria-selected={inventoryTab === 'resources'} onClick={() => { setInventoryTab('resources'); setSelectedItem(null); }} className={`pm-socket game-control ui-text-small flex h-6 w-[34px] shrink-0 items-center justify-center gap-px px-0 font-medium ${inventoryTab === 'resources' ? 'game-primary' : ''}`}><Package size={13} strokeWidth={1.7} aria-hidden="true" /><span>R</span></button>
               </div>
             </div>
-            {inventoryTab !== 'resources' && bagQuote && !bagQuote.complete && bagQuote.bag === inventoryTab && <div className="mt-2 rounded-md border border-[#6e5837] bg-black/25 p-2 ui-text-small text-[#e5d4b4]">
-              <div className="flex flex-wrap items-center justify-between gap-2"><span>{bagQuote.kind === 'buy' ? `Unlock Bag ${bagQuote.bag} · 48 cells` : `Upgrade Bag ${bagQuote.bag} · +16 cells`} · ${(bagQuote.catalogue_usd_cents / 100).toFixed(0)} in $HERO</span><button type="button" className="game-control game-primary min-h-9 px-2 font-bold disabled:opacity-50" disabled={!bagQuote.available || bagPurchaseBusy || !Number.isFinite(bagQuote.token_cost)} onClick={() => setBagPurchaseConfirm(true)}>{bagQuote.available ? `${formatNum(bagQuote.token_cost)} $HERO` : 'Quote unavailable'}</button></div>
-              {bagPurchaseConfirm && <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label="Confirm bag purchase"><span>Spend up to {formatNum(bagQuote.token_cost)} $HERO?</span><button type="button" className="game-control min-h-9 px-2" onClick={() => setBagPurchaseConfirm(false)}>Cancel</button><button type="button" className="game-control game-primary min-h-9 px-2 font-bold" disabled={bagPurchaseBusy} onClick={async () => { setBagPurchaseBusy(true); const result = await game.buyInventoryBag(bagQuote.bag, bagQuote.kind, bagQuote.token_cost); setBagPurchaseBusy(false); setBagPurchaseConfirm(false); if (result.ok) setBagQuote(null); showToast(result.ok ? 'Bag capacity unlocked' : `Bag purchase failed: ${result.error}`); }}>{bagPurchaseBusy ? 'Processing…' : 'Confirm'}</button></div>}
-            </div>}
-            {inventoryTab !== 'resources' && bagOpenSlots === 0 && bagQuote && !bagQuote.complete && bagQuote.bag !== inventoryTab && <p className="mt-2 ui-text-small text-[#a9a092]">Unlock and upgrade earlier bags first.</p>}
-            {inventoryTab !== 'resources' && bagQuoteReady && !bagQuote && <button type="button" className="game-control mt-2 min-h-9 w-full ui-text-small" onClick={() => void game.quoteInventoryBag().then(setBagQuote)}>Refresh bag price</button>}
             {inventoryTab !== 'resources' && <div className="mt-2 grid min-w-0 grid-cols-[1fr_1fr_32px_1fr] gap-1">
               <button onClick={() => { game.sortInventory(); showToast('Sorted by rarity'); }} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 ui-text-medium font-bold" title="Sort by rarity"><ArrowUpDown size={12} /> Sort</button>
               <button onClick={async () => { if (state.team.length === 0) return; showToast(await game.autoEquipBest() ? 'Best gear equipped on active team' : equipmentFailure('Auto Equip')); }} disabled={state.team.length === 0} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 ui-text-medium font-bold" title="Equip the strongest valid gear on each active hero in formation order"><Wand2 size={12} /> Auto</button>
@@ -842,7 +854,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             </div>
             {selectedResource && <div className={`mt-2 rounded-lg border p-2 ${selectedResource === 'summon-scroll' ? 'border-violet-400/45 bg-violet-950/20' : 'border-amber-400/45 bg-amber-950/20'}`}><div className="flex items-center gap-2">{selectedResource === 'summon-scroll' ? <SummonScrollArtwork size={40} /> : <BossKeyIcon size={40} />}<div className="min-w-0"><strong className="ui-text-large block text-[#efe4ce]">{selectedResource === 'summon-scroll' ? 'Summon Scroll' : 'Boss Key'}</strong><span className="ui-text-small text-[#9b9283]">Owned: {formatNum(selectedResource === 'summon-scroll' ? state.summonScrolls : state.bossKeys)}</span></div></div><p className="ui-text-medium mt-1.5 leading-snug text-[#c9c0b1]">{selectedResource === 'summon-scroll' ? 'Persistent consumable for one future Free Summon. Scroll spending is not available until server-authoritative Free Summon launches.' : 'Non-deletable resource used only to summon a Boss. One summon consumes one key; a Boss Chest is awarded only after victory.'}</p></div>}
           </div> : <div className={`grid min-w-0 grid-cols-8 gap-1 overflow-hidden ${inventoryLockMode ? 'inventory-lock-cursor' : ''}`}>
-            {cells.map((item, i) => {
+            {cells.slice(0, bagOpenSlots).map((item, i) => {
               const itemBase = item ? ITEM_MAP[item.itemId] : null;
               const rarity = itemBase?.rarity ?? (item ? 'common' : null);
               const rc = rarity ? RARITY_COLORS[rarity] : null;
@@ -858,7 +870,6 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                   style={item ? { borderColor: rc ? `${rc}99` : 'rgba(255,255,255,0.08)' } : { borderColor: i >= bagOpenSlots ? 'rgba(130,103,63,0.35)' : 'rgba(128,119,100,0.11)', background: i >= bagOpenSlots ? 'linear-gradient(145deg,#181612,#080909)' : 'linear-gradient(145deg,#151612,#0c0e0d)' }}
                 >
                   {i >= bagOpenSlots && <LockIcon size={13} className="text-[#8f7652]" aria-hidden="true" />}
-                  {i === bagOpenSlots && bagQuote?.bag === activeBag && <span className="ui-text-small absolute bottom-0 right-0 rounded-tl bg-[#6e5837] px-0.5 font-bold leading-4 text-[#f1deb7]">${(bagQuote.catalogue_usd_cents / 100).toFixed(0)}</span>}
                   {item && <ItemArtwork itemId={item.itemId} name={ITEM_MAP[item.itemId]?.name ?? 'Item'} fallback={ITEM_MAP[item.itemId]?.icon ?? '◆'} className="leading-none" />}
                   {item?.locked && <LockIcon size={11} className="absolute bottom-0.5 left-0.5 z-10 text-amber-300" />}
                   {item && item.enchantLevel > 0 && <div className="absolute top-0 left-0 ui-text-medium font-bold text-amber-400 font-vt leading-none px-0.5">+{item.enchantLevel}</div>}
@@ -869,6 +880,17 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                 </Fragment>
               );
             })}
+            {bagOpenSlots < GRID_SIZE && <div data-inventory-locked-region className="col-span-8 grid min-w-0">
+              <div data-inventory-locked-cells className="col-start-1 row-start-1 grid min-w-0 grid-cols-8 gap-1">
+                {Array.from({ length: GRID_SIZE - bagOpenSlots }, (_, index) => <button key={`locked-${index}`} type="button" disabled aria-label={`Bag ${activeBag} slot ${bagOpenSlots + index + 1} locked`} className="item-slot aspect-square flex min-w-0 w-full items-center justify-center overflow-hidden border opacity-70" style={{ borderColor: 'rgba(130,103,63,0.35)', background: 'linear-gradient(145deg,#181612,#080909)' }}><LockIcon size={13} className="text-[#8f7652]" aria-hidden="true" /></button>)}
+              </div>
+            {bagQuote && !bagQuote.complete && bagQuote.bag === inventoryTab && <div className="col-start-1 row-start-1 z-10 m-1 min-w-0 max-w-full self-center justify-self-center text-center ui-text-small text-[#e5d4b4]">
+              {!bagPurchaseConfirm && <button type="button" data-inventory-bag-action className="game-control game-primary min-h-11 max-w-full px-3 py-1.5 font-bold disabled:opacity-50" disabled={!bagQuote.available || bagPurchaseBusy || !Number.isFinite(bagQuote.token_cost)} onClick={() => setBagPurchaseConfirm(true)}><span className="block whitespace-normal leading-tight">{bagQuote.kind === 'buy' ? `Unlock Bag ${bagQuote.bag} · 48 cells` : `Upgrade Bag ${bagQuote.bag} · +16 cells`} · ${(bagQuote.catalogue_usd_cents / 100).toFixed(0)} in $HERO</span><span className="block leading-tight">{bagQuote.available ? `${formatNum(bagQuote.token_cost)} $HERO` : 'Quote unavailable'}</span></button>}
+              {bagPurchaseConfirm && <div className="flex max-w-full flex-wrap items-center justify-center gap-1" role="group" aria-label="Confirm bag purchase"><span>Spend up to {formatNum(bagQuote.token_cost)} $HERO?</span><button type="button" className="game-control min-h-11 px-2" onClick={() => setBagPurchaseConfirm(false)}>Cancel</button><button type="button" className="game-control game-primary min-h-11 px-2 font-bold" disabled={bagPurchaseBusy} onClick={async () => { setBagPurchaseBusy(true); const result = await game.buyInventoryBag(bagQuote.bag, bagQuote.kind, bagQuote.token_cost); setBagPurchaseBusy(false); setBagPurchaseConfirm(false); if (result.ok) setBagQuote(null); showToast(result.ok ? 'Bag capacity unlocked' : `Bag purchase failed: ${result.error}`); }}>{bagPurchaseBusy ? 'Processing…' : 'Confirm'}</button></div>}
+            </div>}
+            {bagOpenSlots === 0 && bagQuote && !bagQuote.complete && bagQuote.bag !== inventoryTab && <p className="col-start-1 row-start-1 z-10 m-2 self-center justify-self-center text-center ui-text-small text-[#a9a092]">Unlock and upgrade earlier bags first.</p>}
+            {bagQuoteReady && !bagQuote && <button type="button" className="game-control col-start-1 row-start-1 z-10 m-1 min-h-11 max-w-full self-center justify-self-center px-2 ui-text-small" onClick={() => void game.quoteInventoryBag().then(setBagQuote)}>Refresh bag price</button>}
+            </div>}
           </div>}
         </div>
 
@@ -896,7 +918,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-px-panel border-2 border-px-bright font-vt ui-text-large font-bold text-px-bright anim-slide-up" style={{ boxShadow: '3px 3px 0 #3d2008' }}>{toast}</div>
       )}
       {showAvatarPicker && <AvatarPicker game={game} onClose={() => setShowAvatarPicker(false)} />}
-      {isolatedHackathon && !state.autoPot.healingInfoSeen && <HealingIntroduction game={game} />}
+      {isolatedHackathon && SHOW_HACKATHON_HEALING_INTRODUCTION && !state.autoPot.healingInfoSeen && <HealingIntroduction game={game} />}
       {showDungeonInfo && <DungeonPreviewModal accountLevel={state.accountLevel} onStatus={enterDungeonArena} onClose={() => setShowDungeonInfo(false)} onGuidesClick={() => { setShowDungeonInfo(false); onGuidesClick(); }} />}
     </div>
   );

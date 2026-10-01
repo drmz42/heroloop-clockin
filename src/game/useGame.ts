@@ -2758,15 +2758,33 @@ export function useGame() {
     return null;
   }, [hydrateServerState, serverRevisionHint]);
 
-  const claimTutorialQuest = useCallback(async (questId: string): Promise<boolean> => {
-    if (!tokenomicsEnabled || !Number.isSafeInteger(serverRevisionHint)) return false;
-    const result = await playerSync<{
-      gold: number; revision: number; tutorial: GameState['tutorial'];
-      resources: { balances?: Record<string, string> };
-    }>('tutorial_quest_claim', {
-      quest_id: questId, expected_revision: serverRevisionHint, idempotency_key: createIdempotencyKey(),
-    });
-    if (!result || !Number.isSafeInteger(result.revision) || !result.tutorial) return false;
+  const claimTutorialQuest = useCallback(async (questId: string): Promise<string | null> => {
+    if (!tokenomicsEnabled || !Number.isSafeInteger(serverRevisionHint)) return 'state_unavailable';
+    const idempotencyKey = createIdempotencyKey();
+    let expectedRevision = serverRevisionHint;
+    let claimError = '';
+    const attemptClaim = () => {
+      claimError = '';
+      return playerSync<{
+        gold: number; revision: number; tutorial: GameState['tutorial'];
+        resources: { balances?: Record<string, string> };
+      }>('tutorial_quest_claim', {
+        quest_id: questId, expected_revision: expectedRevision, idempotency_key: idempotencyKey,
+      }, (error) => { claimError = error; });
+    };
+    let result = await attemptClaim();
+    if (!result && claimError === 'state_conflict') {
+      const refreshed = await playerSync<{ state: GameState; revision: number }>('game_state_load');
+      if (!refreshed?.state || !Number.isSafeInteger(refreshed.revision)) return 'state_unavailable';
+      expectedRevision = refreshed.revision;
+      result = await attemptClaim();
+      if (!result) {
+        setServerRevisionHint(refreshed.revision);
+        hydrateServerState(refreshed.state);
+        return claimError || 'unavailable';
+      }
+    }
+    if (!result || !Number.isSafeInteger(result.revision) || !result.tutorial) return claimError || 'invalid_server_response';
     const balances = result.resources?.balances ?? {};
     const read = (key: string, fallback: number) => /^\d+$/.test(balances[key] ?? '') ? Number(balances[key]) : fallback;
     setServerRevisionHint(result.revision);
@@ -2775,8 +2793,8 @@ export function useGame() {
       bossKeys: read('boss_key', prev.bossKeys), summonScrolls: read('summon_scroll', prev.summonScrolls),
       potions: { ...prev.potions, xs: read('potion_xs', prev.potions.xs) },
     }));
-    return true;
-  }, [serverRevisionHint]);
+    return null;
+  }, [hydrateServerState, serverRevisionHint]);
 
   const openTutorialChests = useCallback(async (requestedCount: 1 | 10): Promise<boolean> => {
     if (!tokenomicsEnabled || chestOpeningRef.current) return false;

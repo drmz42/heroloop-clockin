@@ -340,7 +340,10 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
       if (old.armor && !equipped.chest) equipped.chest = old.armor;
       const oldSecondItem = old.ring2 ? inventory.find((item) => item.uid === old.ring2) : undefined;
       if (oldSecondItem?.itemId.startsWith('offhand-warrior-')) equipped.offhand = old.ring2;
-      if (!equipped.ring) equipped.ring = old.ring1 ?? (oldSecondItem?.itemId.startsWith('offhand-') ? undefined : old.ring2);
+      if (!equipped.ring) {
+        const legacyRing = old.ring1 ?? (oldSecondItem?.itemId.startsWith('offhand-') ? undefined : old.ring2);
+        if (legacyRing) equipped.ring = legacyRing;
+      }
       delete equipped.weapon; delete equipped.armor; delete equipped.ring1; delete equipped.ring2;
       const level = Math.max(1, Math.min(MAX_LEVEL, h.level ?? 1));
       return { ...h, uid, equipped, level, xp: level >= MAX_LEVEL ? 0 : Math.max(0, h.xp ?? 0), locked: h.locked ?? false, stars: Math.max(0, Math.min(MAX_HERO_STARS, h.stars ?? 0)) };
@@ -351,7 +354,7 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
       const equipped = { ...hero.equipped };
       for (const [slot, itemUid] of Object.entries(equipped)) {
         const item = itemUid ? inventory.find((owned) => owned.uid === itemUid) : undefined;
-        if (item && item.level > accountLevel) delete equipped[slot as ItemSlot];
+        if (!itemUid || (item && item.level > accountLevel)) delete equipped[slot as ItemSlot];
       }
       return equipped !== hero.equipped ? { ...hero, equipped } : hero;
     });

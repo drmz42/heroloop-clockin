@@ -797,3 +797,25 @@ html { scroll-behavior: smooth; }
 .test-btn-green:hover { border-color: #7ee787; }
 .test-btn-reset { border-color: rgba(169,86,80,.55); color: #e8b3ae; }
 .test-btn-reset:hover { border-color: #c96f68; }
+
+/* Hackathon progress stays visible above phone windows, chest reveals and item actions. */
+:root { --game-progress-height: 56px; }
+.game-shell.has-game-progress { padding-top:calc(var(--game-progress-height) + env(safe-area-inset-top,0px)); }
+.game-progress-bar { position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:10010;display:flex;align-items:center;justify-content:space-between;gap:8px;height:var(--game-progress-height);padding:5px 10px;border-bottom:1px solid #80683f;background:linear-gradient(180deg,#262014,#100f0c);box-shadow:0 5px 18px #0008; }
+.game-progress-power { display:flex;align-items:center;gap:7px;min-width:0;color:#f3cf79; }
+.game-progress-label { display:block;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#c0ae8b; }
+.game-progress-power strong { display:block;font-size:22px;line-height:25px;font-weight:900;font-variant-numeric:tabular-nums; }
+.game-power-change { min-width:0;font-size:13px;font-weight:900;font-variant-numeric:tabular-nums; }
+.game-power-change.is-gain { color:#86efac; }
+.game-power-change.is-loss { color:#fca5a5; }
+.game-progress-quests { display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;flex-shrink:0;padding:4px 11px;border:1px solid #80683f;border-radius:4px;background:#1c1b13;color:#e8d5a9;font-size:13px;font-weight:800; }
+.game-progress-quests small { display:block;font-size:10px;font-weight:600;color:#c1ac82; }
+.quest-reward-ready:not(:disabled) { border-color:#ffd36e!important;color:#fff0b7!important;box-shadow:0 0 14px #e8ac4266,inset 0 0 10px #ffc75a22;animation:quest-reward-glow 1.8s ease-in-out infinite; }
+.quest-reward-ready:focus-visible,.game-progress-quests:focus-visible { outline:2px solid #fff0a2;outline-offset:2px; }
+@keyframes quest-reward-glow { 50% { box-shadow:0 0 22px #e8ac4299,inset 0 0 14px #ffc75a44; } }
+body:has(.has-game-progress) .fixed.inset-0 { top:calc(var(--game-progress-height) + env(safe-area-inset-top,0px)); }
+.has-game-progress .game-window { max-height:100%; }
+@media (prefers-reduced-motion:reduce) { .quest-reward-ready { animation:none!important; } }
+.game-motion-off .quest-reward-ready { animation:none!important; }
+
+.mobile-current-objective { display:none; }

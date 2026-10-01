@@ -17,7 +17,7 @@ const MORE_TABS = [
 ] satisfies { id: Tab; label: string; icon: typeof Shield }[];
 
 export function MobileTabBar({
-  tab, section, moreOpen, onTab, onSection, onMoreOpen, onGuides, onCode, onSupport, onLogout,
+  tab, section, moreOpen, onTab, onSection, onMoreOpen, onGuides, onCode, onSupport, onLogout, readyQuests = 0,
 }: {
   tab: Tab;
   section: MobileSection;
@@ -29,14 +29,16 @@ export function MobileTabBar({
   onCode: () => void;
   onSupport: () => void;
   onLogout: () => void;
+  readyQuests?: number;
 }) {
   useEffect(() => { setMobileSection(section); }, [section]);
   const moreActive = moreOpen || MORE_TABS.some((entry) => entry.id === tab);
   const sectionButton = (id: MobileSection, label: string, Icon: typeof Shield) => {
     const active = tab === 'main' && !moreOpen && section === id;
     return (
-      <button type="button" className={`hl-tabbar-item ${active ? 'is-active' : ''}`} aria-current={active ? 'page' : undefined} onClick={() => { onMoreOpen(false); onTab('main'); onSection(id); }}>
+      <button type="button" className={`hl-tabbar-item ${active ? 'is-active' : ''} ${id === 'quests' && readyQuests > 0 ? 'quest-reward-ready' : ''}`} aria-current={active ? 'page' : undefined} aria-label={id === 'quests' && readyQuests > 0 ? `Quests, ${readyQuests} rewards ready` : label} onClick={() => { onMoreOpen(false); onTab('main'); onSection(id); }}>
         <Icon size={20} aria-hidden="true" /><span>{label}</span>
+        {id === 'quests' && readyQuests > 0 && <b className="hl-quest-ready-badge" aria-hidden="true">{readyQuests}</b>}
       </button>
     );
   };

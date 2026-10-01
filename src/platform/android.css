@@ -249,3 +249,32 @@ html[data-hl-platform='android'] .hl-offline-bar {
   min-height: 30px; padding: 4px 10px; background: #4a1414; color: #ffd9d5; font-size: 12px; font-weight: 800;
   border-bottom: 1px solid #a8423f;
 }
+
+/* Clear next action and persistent Power for the first-session phone journey. */
+html[data-hl-platform='android'] .game-shell.has-game-progress {
+  padding-top:calc(var(--game-progress-height) + env(safe-area-inset-top,0px));
+}
+html[data-hl-platform='android'] .has-game-progress .game-window-overlay {
+  top:calc(var(--game-progress-height) + env(safe-area-inset-top,0px));
+}
+html[data-hl-platform='android'] .mobile-current-objective {
+  display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;
+  min-height:56px;margin-bottom:6px;padding:6px 9px;border:1px solid #80683f;
+  background:linear-gradient(120deg,#292015,#12130f);border-radius:4px;
+}
+html[data-hl-platform='android'] .mobile-current-objective > div { min-width:0; }
+html[data-hl-platform='android'] .mobile-current-objective span { display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#d6ad64; }
+html[data-hl-platform='android'] .mobile-current-objective strong { display:block;font-size:13px;line-height:17px;color:#f0e5cd; }
+html[data-hl-platform='android'] .mobile-current-objective button { min-height:44px;min-width:64px;flex-shrink:0;padding:5px 9px;font-size:12px;font-weight:800; }
+html[data-hl-platform='android'] .hl-tabbar-item { position:relative; }
+.hl-quest-ready-badge { position:absolute;top:3px;right:5px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 3px;border-radius:50%;background:#ffd36e;color:#24170b;font-size:11px;line-height:18px; }
+html[data-hl-platform='android'] .hl-quest-list .quest-card { padding:10px; }
+html[data-hl-platform='android'] .hl-quest-list .quest-card button { min-height:44px; }
+html[data-hl-platform='android'] .hl-quest-list .quest-card .ui-text-medium { font-size:14px; }
+html[data-hl-platform='android'] .hl-quest-list .quest-card .ui-text-small { font-size:12px; }
+@media(max-width:370px) {
+  .game-progress-bar { padding-inline:7px;gap:5px; }
+  .game-progress-power strong { font-size:20px; }
+  .game-progress-quests { padding-inline:7px;font-size:12px; }
+  .game-power-change { font-size:11px; }
+}
