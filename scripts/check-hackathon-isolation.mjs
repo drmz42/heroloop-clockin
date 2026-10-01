@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { transformSync } from 'esbuild';
+import { stripTypeScriptTypes } from 'node:module';
 const read=p=>readFileSync(new URL(`../${p}`,import.meta.url),'utf8');
 const compose=read('selfhosted/compose.hackathon.yml');
 assert.match(compose,/127\.0\.0\.1:25432:5432/);
@@ -30,7 +30,7 @@ const storage=read('src/game/editionStorage.ts');
 assert.match(storage,/\['staging2', 'seeker'\]/);
 assert.match(storage,/heroloop-seeker:v1:/);
 for (const mode of ['staging', 'production', 'staging2', 'seeker']) {
-  const compiled=transformSync(storage,{loader:'ts',format:'esm',define:{'import.meta.env':JSON.stringify({MODE:mode})}}).code;
+  const compiled=stripTypeScriptTypes(storage).replaceAll('import.meta.env',JSON.stringify({MODE:mode}));
   const {editionStorageKey}=await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
   const oldKey='afk-heroes-save-v7';
   const store=new Map([[oldKey,'ordinary-save']]);
