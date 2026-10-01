@@ -155,10 +155,12 @@ function ownedCollectionsError(state, allowMissingTeamReferences = false) {
 
 function validateSettings(state) {
   if (state.battleAnimationMode !== "light" && state.battleAnimationMode !== "spectacular" && state.battleAnimationMode !== "off") return false;
-  if (!keysExact(state.autoPot, new Set(["enabled", "autoBuy", "autoBuyTier", "autoSelectTier", "threshold"])) ||
+  if (!keysExact(state.autoPot, new Set(["enabled", "autoBuy", "autoBuyTier", "autoSelectTier", "threshold", "goldHealingOptOut", "healingInfoSeen"])) ||
       typeof state.autoPot.enabled !== "boolean" || typeof state.autoPot.autoBuy !== "boolean" ||
       !POTION_TIERS.has(state.autoPot.autoBuyTier) || !decimal(state.autoPot.threshold, 0.05, 1) ||
-      (state.autoPot.autoSelectTier !== undefined && typeof state.autoPot.autoSelectTier !== "boolean")) return false;
+      (state.autoPot.autoSelectTier !== undefined && typeof state.autoPot.autoSelectTier !== "boolean") ||
+      (state.autoPot.goldHealingOptOut !== undefined && typeof state.autoPot.goldHealingOptOut !== "boolean") ||
+      (state.autoPot.healingInfoSeen !== undefined && typeof state.autoPot.healingInfoSeen !== "boolean")) return false;
   if (!text(state.avatarHeroId, 96, ID_PATTERN) || !state.ownedHeroes.some((entry) => entry.heroId === state.avatarHeroId)) return false;
   return finite(state.currentLocation, 1, 100);
 }

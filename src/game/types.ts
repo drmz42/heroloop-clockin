@@ -197,6 +197,8 @@ export interface PotionInventory {
 }
 
 export interface AutoPotConfig {
+  goldHealingOptOut?: boolean;
+  healingInfoSeen?: boolean;
   enabled: boolean;
   autoBuy: boolean;
   autoBuyTier: PotionTier;
