@@ -221,3 +221,17 @@ html[data-hl-platform='android'] .dungeon-shared-stage .arena-portrait { width: 
    The whole window scrolls as one page instead. */
 html[data-hl-platform='android'] .themed-screen-heroes { height: auto; min-height: 100%; overflow: visible; }
 html[data-hl-platform='android'] .themed-screen-heroes > .game-scrollbar { flex: none; min-height: 0; overflow: visible; padding-bottom: 24px; }
+
+/* Heroes on a phone: four compact cards per row (three below 400 px) so a roster of a
+   hundred heroes is a short scroll; filters in three columns; a smaller Active Team. */
+html[data-hl-platform='android'] .hl-hero-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 399px) { html[data-hl-platform='android'] .hl-hero-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+html[data-hl-platform='android'] .hl-hero-card { padding: 4px; }
+html[data-hl-platform='android'] .hl-hero-card .hl-hero-meta,
+html[data-hl-platform='android'] .hl-hero-card .hl-hero-copies { display: none; }
+html[data-hl-platform='android'] .hl-hero-card > div:nth-child(2) { margin-top: 3px; font-size: 10px; }
+html[data-hl-platform='android'] .hl-hero-card > div:nth-child(4) { margin-top: 2px; padding-top: 2px; font-size: 9px; flex-direction: column; gap: 1px; }
+html[data-hl-platform='android'] .hl-hero-card .pointer-events-none.absolute span { padding: 0 3px; font-size: 7px; }
+html[data-hl-platform='android'] .hl-hero-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html[data-hl-platform='android'] .hl-team-row { min-height: 70px; gap: 10px; margin-top: 8px; }
+html[data-hl-platform='android'] .hl-team-empty { width: 64px; height: 64px; }

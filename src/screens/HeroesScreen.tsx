@@ -7,6 +7,7 @@ import { heroStats, getEquippedItems, teamPower as calculateTeamPower } from '@/
 import { COMBAT_EFFECTS_V2_PREVIEW, COMBAT_EFFECTS_V2_PRODUCTION_ACTIVE } from '@/game/combat-effects-v2-ui.mjs';
 import type { HeroBase, OwnedHero, Rarity } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
+import { isAndroidLayout } from '@/platform/platform';
 
 const FILTER_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
 const INACTIVE_COMBAT_LABEL = 'Coming soon — not active in combat';
@@ -54,14 +55,14 @@ function HeroGridCard({ base, hero, game, selected, onSelect }: { base: HeroBase
   const stats = heroStats(hero, getEquippedItems(hero, game.state.inventory));
   const power = stats ? Math.round(stats.atk + stats.hp / 10 + stats.def * 2) : 0;
   return (
-    <div role="button" tabIndex={0} onClick={onSelect} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelect(); }} className={`premium-hero-card rarity-${base.rarity} min-w-0 p-1.5 transition cursor-pointer ${selected ? 'premium-hero-card-selected' : ''} ${isInTeam ? 'premium-hero-card-active-team' : ''}`}>
+    <div role="button" tabIndex={0} onClick={onSelect} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelect(); }} className={`hl-hero-card premium-hero-card rarity-${base.rarity} min-w-0 p-1.5 transition cursor-pointer ${selected ? 'premium-hero-card-selected' : ''} ${isInTeam ? 'premium-hero-card-active-team' : ''}`}>
       <div className="relative mx-auto w-fit">
-        <HeroPortrait heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={80} active={isInTeam} badge={hero.level} respawn={respawn} />
+        <HeroPortrait heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={isAndroidLayout ? 60 : 80} active={isInTeam} badge={hero.level} respawn={respawn} />
       </div>
       <div className="mt-1.5 truncate text-center text-[11px] font-bold" style={{ color: rc }}>{base.name}</div>
-      <div className="mt-0.5 flex items-center justify-between gap-1 text-[8px] uppercase tracking-wide text-[#827d72]"><span>{CLASS_LABEL[base.heroClass]}</span><span style={{ color: rc }}>{RARITY_LABEL[base.rarity]}</span></div>
+      <div className="hl-hero-meta mt-0.5 flex items-center justify-between gap-1 text-[8px] uppercase tracking-wide text-[#827d72]"><span>{CLASS_LABEL[base.heroClass]}</span><span style={{ color: rc }}>{RARITY_LABEL[base.rarity]}</span></div>
       <div className="mt-1 flex items-center justify-between border-t border-white/5 pt-1 text-[9px]"><span className="font-bold text-[#ddd4c4]">{formatNum(power)} PWR</span><HeroStars stars={hero.stars} size={7} /></div>
-      {hero.stars < MAX_HERO_STARS && <div className="mt-1 truncate border-t border-white/5 pt-1 text-center text-[8px] font-bold text-violet-200">{dupes}/{starCost.dupes} copies · {formatNum(starCost.hero)} $HERO</div>}
+      {hero.stars < MAX_HERO_STARS && <div className="hl-hero-copies mt-1 truncate border-t border-white/5 pt-1 text-center text-[8px] font-bold text-violet-200">{dupes}/{starCost.dupes} copies · {formatNum(starCost.hero)} $HERO</div>}
       <div className="pointer-events-none absolute left-1.5 top-1.5 z-10 flex flex-col gap-1">
         {hero.isNew && <StateBadge label="New" tone="gold" />}
         {isInTeam && <StateBadge label="Selected" tone="green" />}
@@ -287,7 +288,7 @@ export function HeroesScreen({ game }: { game: GameApi }) {
             <div className="section-kicker">Hall of Champions</div>
             <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2"><h2 className="text-xl font-black text-[#eee4d3]">My Heroes <span className="text-sm text-[#8f897e]">{state.ownedHeroes.length}/{state.heroCapacity}</span></h2><button type="button" onClick={() => void openCapacityUpgrade()} disabled={!capacityUpgrade || capacityBusy} aria-busy={capacityBusy} className="game-control game-primary flex min-h-11 items-center gap-1 px-3 text-[9px] font-black uppercase disabled:cursor-not-allowed disabled:opacity-45" aria-label={capacityUpgrade ? `Get DEX quote to expand Hero capacity to ${capacityUpgrade.nextCapacity}; USD catalogue price $${(capacityUpgrade.usdCents / 100).toFixed(2)}` : `Maximum Hero capacity ${MAX_HERO_CAPACITY}`} title={capacityUpgrade ? `USD catalogue $${(capacityUpgrade.usdCents / 100).toFixed(2)} · $HERO amount comes from a fresh DEX quote` : `Maximum capacity ${MAX_HERO_CAPACITY}`}><UserPlus size={12} />{capacityBusy ? 'Getting quote…' : capacityUpgrade ? `+100 · $${(capacityUpgrade.usdCents / 100).toFixed(2)}` : `MAX ${MAX_HERO_CAPACITY}`}</button></div>
             {capacityNotice && <div role={capacityNoticeError ? 'alert' : 'status'} className={`mt-1 text-[10px] font-bold ${capacityNoticeError ? 'text-red-300' : 'text-amber-200'}`}>{capacityNotice}</div>}
-            <div className="mt-3 grid grid-cols-2 gap-1 sm:grid-cols-5">
+            <div className="hl-hero-filters mt-3 grid grid-cols-2 gap-1 sm:grid-cols-5">
                 <label className="relative block h-8"><Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#736d62]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search heroes" className="game-control h-8 w-full bg-transparent pl-7 pr-2 text-[10px] outline-none" /></label>
                   <Filter value={classFilter} onChange={setClassFilter} label="Class" options={['all', 'knight', 'archer', 'assassin', 'shepherd', 'druid']} />
                   <Filter value={rarityFilter} onChange={setRarityFilter} label="Rarity" options={['all', ...FILTER_RARITIES]} />
@@ -301,16 +302,16 @@ export function HeroesScreen({ game }: { game: GameApi }) {
             <Swords size={54} className="absolute -left-3 -top-3 rotate-[-18deg] text-[#8d6a37]/20" />
             <Shield size={58} className="absolute -bottom-4 -right-2 text-[#8d6a37]/20" />
             <div className="relative flex items-center justify-between gap-3"><span className="flex items-center gap-2 text-xs font-black uppercase tracking-[.15em] text-[#efc875]"><Users size={15} /> Active Team</span><div className="flex items-baseline gap-2"><span className="text-[9px] font-bold uppercase tracking-wider text-[#8f887b]">Team Power</span><b className="text-sm tabular-nums text-[#f5d98e]">{formatNum(activeTeamPower)}</b><span className="text-[10px] font-bold text-[#a99a7d]">{state.team.length}/3</span></div></div>
-            <div className="relative mt-3 flex min-h-[96px] items-center justify-center gap-4">
-              {state.team.map((uid) => { const hero = state.ownedHeroes.find((candidate) => candidate.uid === uid); const base = hero ? HERO_MAP[hero.heroId] : null; return hero && base ? <HeroPortrait key={uid} heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={88} active badge={hero.level} respawn={respawnCountdowns[uid] ?? 0} onClick={() => openHero(hero)} /> : null; })}
-              {Array.from({ length: 3 - state.team.length }, (_, index) => <div key={index} className="grid h-[88px] w-[88px] place-items-center rounded-xl border border-dashed border-[#665333] bg-black/20"><Shield size={24} className="text-[#5c4b31]" /></div>)}
+            <div className="hl-team-row relative mt-3 flex min-h-[96px] items-center justify-center gap-4">
+              {state.team.map((uid) => { const hero = state.ownedHeroes.find((candidate) => candidate.uid === uid); const base = hero ? HERO_MAP[hero.heroId] : null; return hero && base ? <HeroPortrait key={uid} heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={isAndroidLayout ? 64 : 88} active badge={hero.level} respawn={respawnCountdowns[uid] ?? 0} onClick={() => openHero(hero)} /> : null; })}
+              {Array.from({ length: 3 - state.team.length }, (_, index) => <div key={index} className="hl-team-empty grid h-[88px] w-[88px] place-items-center rounded-xl border border-dashed border-[#665333] bg-black/20"><Shield size={24} className="text-[#5c4b31]" /></div>)}
             </div>
             <div className="relative mt-1 text-center text-[9px] text-[#8f887b]">Your primary combat formation</div>
           </section>
         </div>
         {promotionNotice && <div className="anim-banner mt-2 flex items-start gap-2 rounded-lg border border-violet-500/45 bg-violet-950/45 px-3 py-2 text-xs font-bold text-violet-200"><span className="flex-1 text-center"><Sparkles size={13} className="mr-1 inline text-amber-300" />{promotionNotice}</span><button type="button" onClick={() => setPromotionNotice('')} aria-label="Dismiss promotion result"><X size={14} /></button></div>}
       </header>
-      <div className="game-scrollbar min-h-0 flex-1 overflow-y-auto p-2"><div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">{entries.map(({ base, hero }) => <HeroGridCard key={hero.uid} base={base} hero={hero} game={game} selected={selected?.uid === hero.uid} onSelect={() => openHero(hero)} />)}</div>{entries.length === 0 && <div className="material-panel mx-auto mt-16 max-w-sm p-6 text-center"><Shield className="mx-auto text-[#806b49]" /><div className="mt-2 font-bold text-[#d4c9b7]">No owned heroes match these filters</div><div className="mt-1 text-xs text-[#827c72]">Change class, rarity, level or search.</div></div>}</div>
+      <div className="game-scrollbar min-h-0 flex-1 overflow-y-auto p-2"><div className="hl-hero-grid grid grid-cols-2 gap-2.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">{entries.map(({ base, hero }) => <HeroGridCard key={hero.uid} base={base} hero={hero} game={game} selected={selected?.uid === hero.uid} onSelect={() => openHero(hero)} />)}</div>{entries.length === 0 && <div className="material-panel mx-auto mt-16 max-w-sm p-6 text-center"><Shield className="mx-auto text-[#806b49]" /><div className="mt-2 font-bold text-[#d4c9b7]">No owned heroes match these filters</div><div className="mt-1 text-xs text-[#827c72]">Change class, rarity, level or search.</div></div>}</div>
       {selected && <HeroDetailModal hero={selected} game={game} onClose={() => setSelectedUid(null)} />}
       {capacityQuote && (
         <div className="fixed inset-0 z-[90] grid place-items-center bg-black/80 p-3 backdrop-blur-sm">
