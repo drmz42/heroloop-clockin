@@ -204,7 +204,7 @@
     "check:admin-registry": "node scripts/check-admin-registry.mjs",
     "check:admin-hero-power": "node scripts/check-admin-hero-power-pin.mjs",
     "check:admin-env-diff": "node scripts/check-admin-env-diff.mjs",
-    "check:admin-ui": "tsc -p admin/ui-src/tsconfig.json --noEmit && node scripts/check-admin-ui-boundary.mjs && bash scripts/check-admin-ui-bundle.sh",
+    "check:admin-ui": "tsc -p admin/ui-src/tsconfig.json --noEmit && node scripts/check-admin-ui-boundary.mjs && node scripts/check-admin-environment.mjs && bash scripts/check-admin-ui-bundle.sh",
     "screens:admin-ui": "node scripts/admin-ui-screens.mjs",
     "check:sweep": "node scripts/check-sweep.mjs",
     "check:sweep:when-idle": "node scripts/check-sweep.mjs --include-heavy --wait-for-idle",
