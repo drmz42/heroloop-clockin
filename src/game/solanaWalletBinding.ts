@@ -1,6 +1,7 @@
+import { editionStorageKey } from './editionStorage';
 import type { Wallet } from '@wallet-standard/base';
 
-const BINDING_KEY = 'heroloop.siws.wallet-binding.v1';
+const BINDING_KEY = editionStorageKey('heroloop.siws.wallet-binding.v1');
 const ADDRESS_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 

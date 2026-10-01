@@ -1,3 +1,4 @@
+import { isolatedHackathon, editionStorageKey } from './editionStorage';
 import { createClient, type Session } from '@supabase/supabase-js';
 import { authFetch, isAuthTransient, runAuthCall } from './authTransient';
 
@@ -13,7 +14,7 @@ export const tokenomicsEnabled = import.meta.env.VITE_ENABLE_TOKENOMICS !== 'fal
 export const demoTokenomicsEnabled = import.meta.env.VITE_DEMO_TOKENOMICS === 'true';
 
 // GoTrue retains the supported Supabase Auth protocol after the database/API exit.
-export const authClient = createClient(backendUrl, supabaseAnonKey, { global: { fetch: authFetch } });
+export const authClient = createClient(backendUrl, supabaseAnonKey, { global: { fetch: authFetch }, ...(isolatedHackathon ? { auth: { storageKey: editionStorageKey('auth') } } : {}) });
 
 let replacementSession: Promise<Session | null> | null = null;
 

@@ -1,0 +1,20 @@
+# Dedicated project/volume/network; never combine with compose.staging.yml.
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:25432:5432"
+  auth:
+    ports:
+      - "127.0.0.1:29999:9999"
+  api:
+    ports:
+      - "127.0.0.1:28081:8080"
+    environment:
+      HEROLOOP_EDITION: seeker
+      TESTER_CONTROLS_ENABLED: "false"
+      SIWS_ADDITIONAL_URIS: ""
+      COMBAT_EFFECTS_VERSION: combat-effects-v2-team-contributions-candidate-2026.09.06-v1
+  worker:
+    environment:
+      HERO_DISTRIBUTION_ENABLED: "false"
+# Base backend network stays internal. No connection to ordinary Staging containers.

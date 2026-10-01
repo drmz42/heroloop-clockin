@@ -1,3 +1,4 @@
+import { editionStorageKey } from './editionStorage';
 import type { Wallet } from '@wallet-standard/base';
 import { authClient, backendUrl, validatedGuestSession } from './backend';
 import { isAuthTransient, isTemporaryAuthStatus, runAuthCall } from './authTransient';
@@ -11,7 +12,7 @@ import { awaitCompatibleSolanaWallets, compatibleSolanaWallets } from './solanaW
 import { clearWalletBinding, readWalletBinding, walletBindingExpired, walletBindingRestorable, writeWalletBinding } from './solanaWalletBinding';
 export { readWalletBinding, setWalletBindingBoost, walletBindingExpired } from './solanaWalletBinding';
 
-const STORAGE_KEY = 'heroloop.siws.wallet-session.v2';
+const STORAGE_KEY = editionStorageKey('heroloop.siws.wallet-session.v2');
 const TOKEN_PATTERN = /^hlw_[A-Za-z0-9_-]{43}$/;
 const ADDRESS_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

@@ -145,8 +145,9 @@ services:
 
   api:
     <<: *deno-service
-    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=AUTH_INTERNAL_URL,AUTH_WALLET_INTERNAL_URL,PGHOST,PGPORT,PGDATABASE,PGUSER,PGPASSWORD,PGPOOL_SIZE,TESTER_CONTROLS_ENABLED,COMBAT_EFFECTS_VERSION,SIWS_CHALLENGE_ENABLED,SIWS_VERIFICATION_ENABLED,SIWS_ACCOUNT_LOGIN_ENABLED,SIWS_CHAIN_ID,SIWS_DOMAIN,SIWS_URI,SIWS_ADDITIONAL_URIS,SIWS_HASH_PEPPER,X_CLIENT_ID,X_CLIENT_SECRET,TELEGRAM_BOT_USERNAME,TELEGRAM_WEBHOOK_SECRET", "--allow-net=0.0.0.0:8080,auth:9999,auth-wallet:9999,postgres:5432,api.x.com:443", "--allow-read=/var/lib/heroloop-storage", "--allow-write=/var/lib/heroloop-storage", "/app/api/main.ts"]
+    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=AUTH_INTERNAL_URL,AUTH_WALLET_INTERNAL_URL,HEROLOOP_EDITION,PGHOST,PGPORT,PGDATABASE,PGUSER,PGPASSWORD,PGPOOL_SIZE,TESTER_CONTROLS_ENABLED,COMBAT_EFFECTS_VERSION,SIWS_CHALLENGE_ENABLED,SIWS_VERIFICATION_ENABLED,SIWS_ACCOUNT_LOGIN_ENABLED,SIWS_CHAIN_ID,SIWS_DOMAIN,SIWS_URI,SIWS_ADDITIONAL_URIS,SIWS_HASH_PEPPER,X_CLIENT_ID,X_CLIENT_SECRET,TELEGRAM_BOT_USERNAME,TELEGRAM_WEBHOOK_SECRET", "--allow-net=0.0.0.0:8080,auth:9999,auth-wallet:9999,postgres:5432,api.x.com:443", "--allow-read=/var/lib/heroloop-storage", "--allow-write=/var/lib/heroloop-storage", "/app/api/main.ts"]
     environment:
+      HEROLOOP_EDITION: ${HEROLOOP_EDITION:-standard}
       AUTH_INTERNAL_URL: http://auth:9999
       AUTH_WALLET_INTERNAL_URL: http://auth-wallet:9999
       PGHOST: postgres
@@ -200,11 +201,12 @@ services:
 
   worker:
     <<: *deno-service
-    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=PGHOST,PGPORT,PGDATABASE,PGUSER,PGPASSWORD,PGPOOL_SIZE", "--allow-net=postgres:5432", "--allow-write=/tmp", "/app/worker/main.ts"]
+    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=PGHOST,PGPORT,PGDATABASE,PGUSER,PGPASSWORD,PGPOOL_SIZE,HERO_DISTRIBUTION_ENABLED", "--allow-net=postgres:5432", "--allow-write=/tmp", "/app/worker/main.ts"]
     environment:
       PGHOST: postgres
       PGPORT: "5432"
       PGDATABASE: postgres
+      HERO_DISTRIBUTION_ENABLED: ${HERO_DISTRIBUTION_ENABLED:-true}
       PGUSER: heroloop_worker_runtime
       PGPASSWORD: ${WORKER_DATABASE_PASSWORD:?set a separate worker database password in the root-owned runtime environment}
       PGPOOL_SIZE: "2"

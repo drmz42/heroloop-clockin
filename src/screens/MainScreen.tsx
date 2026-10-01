@@ -1,3 +1,4 @@
+import { editionStorageKey } from '../game/editionStorage';
 import { Fragment, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, DoorOpen, HeartPulse, Gem, Skull, BookOpen } from 'lucide-react';
@@ -25,7 +26,7 @@ import { FantasyBagIcon } from '@/components/FantasyBagIcon';
 import { recommendedTeamPower } from '@/game/balance';
 import { playerSync, authClient } from '@/game/backend';
 
-const SAVE_KEY = 'afk-heroes-save-v7';
+const SAVE_KEY = editionStorageKey('afk-heroes-save-v7');
 
 const SLOTS: ItemSlot[] = ['class_weapon', 'offhand', 'helmet', 'chest', 'gloves', 'boots', 'ring', 'amulet'];
 // Short slot names so all eight fit under the gear row at the small text tier.
