@@ -146,6 +146,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const [showBattleSettings, setShowBattleSettings] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [tutorialClaimBusy, setTutorialClaimBusy] = useState(false);
+  const [tutorialClaimError, setTutorialClaimError] = useState('');
   const [showBulkSellConfirm, setShowBulkSellConfirm] = useState(false);
   const [inventoryLockMode, setInventoryLockMode] = useState(false);
   const [inventoryTab, setInventoryTab] = useState<1 | 2 | 3 | 4 | 'resources'>(1);
@@ -531,7 +533,15 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               <div className={`quest-card px-2 py-1 ${done ? 'border-[#b48a43]' : ''}`}>
                 <div className="flex items-center gap-1.5"><Circle size={11} className={done ? 'fill-amber-400/30 text-amber-400' : 'text-slate-600'} /><span className="ui-text-medium min-w-0 flex-1 leading-tight text-px-text">{isolatedHackathon && quest[0] === 'enable-auto-pot' ? 'Automatic healing' : quest[1]}</span></div>
                 <div className="mt-1 flex items-center gap-1.5"><div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, progress / quest[2] * 100)}%` }} /></div><span className="ui-text-small shrink-0 text-px-dim">{progress}/{quest[2]}</span><span className="ui-text-small shrink-0 text-[#e7c579]">{quest[3]}</span></div>
-                {done && <button onClick={() => void game.claimTutorialQuest(quest[0])} className="game-control game-primary ui-text-medium mt-1 min-h-7 w-full px-2 py-0.5 font-bold">Claim & unlock next</button>}
+                {done && <button type="button" disabled={tutorialClaimBusy} aria-busy={tutorialClaimBusy} onClick={async () => {
+                  setTutorialClaimBusy(true); setTutorialClaimError('');
+                  try {
+                    const error = await game.claimTutorialQuest(quest[0]);
+                    if (error) setTutorialClaimError(error === 'state_conflict' ? 'Your game changed. Please try claiming again.' : error === 'tutorial_quest_incomplete' ? 'The server has not confirmed this task yet. Please try again.' : error === 'tutorial_quest_locked' || error === 'tutorial_completed' ? 'This tutorial step is no longer available. Reload the game.' : 'Could not claim the reward. Please try again.');
+                    else showToast('Tutorial reward claimed');
+                  } finally { setTutorialClaimBusy(false); }
+                }} className="game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold disabled:opacity-50">{tutorialClaimBusy ? 'Claiming…' : 'Claim & unlock next'}</button>}
+                {tutorialClaimError && <p role="alert" className="mt-1 ui-text-small text-red-300">{tutorialClaimError}</p>}
               </div>
               {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1 px-2 py-1"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => void game.openTutorialChests(1)} className="game-control min-h-7 ui-text-small font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => void game.openTutorialChests(10)} className="game-control min-h-7 ui-text-small font-bold">Open 10</button></div></div>}
             </section>;
