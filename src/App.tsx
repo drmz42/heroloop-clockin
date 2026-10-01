@@ -3,6 +3,8 @@ import { ArrowLeft, X } from 'lucide-react';
 import { bagItemCount, useGame } from '@/game/useGame';
 import { GameNavBar } from '@/components/GameNavBar';
 import { FooterBar } from '@/components/FooterBar';
+import { MobileTabBar } from '@/components/MobileTabBar';
+import { isAndroidLayout, isAppShell, type MobileSection } from '@/platform/platform';
 import { SupportTicketModal } from '@/components/SupportTicketModal';
 import { MailboxModal } from '@/components/MailboxModal';
 import { OfflineModal } from '@/components/OfflineModal';
@@ -11,6 +13,8 @@ import { BoostMaxModal } from '@/components/BoostMaxModal';
 import { GameWalletModal } from '@/components/GameWalletModal';
 import { PromoCodeModal, type PromoRedemption } from '@/components/PromoCodeModal';
 import { LandingScreen } from '@/screens/LandingScreen';
+import { AppEntryScreen } from '@/platform/AppEntryScreen';
+import { OfflineBar } from '@/platform/OfflineBar';
 import { MainScreen } from '@/screens/MainScreen';
 import { HeroesScreen } from '@/screens/HeroesScreen';
 import { SummonScreen } from '@/screens/SummonScreen';
@@ -393,6 +397,37 @@ function App() {
     return () => window.clearInterval(timer);
   }, [tokenomics.status?.my_hourly_share, game.state.walletAddress, game.state.boost.active, game.state.activeUntil, creditServerTokens]);
   const [tab, setTab] = useState<Tab>('main');
+  const [mobileSection, setMobileSection] = useState<MobileSection>('battle');
+  const [moreOpen, setMoreOpen] = useState(false);
+  // Android layout: a window or the More sheet takes one history entry, so the
+  // system Back button closes it instead of leaving the game.
+  const overlayOpen = isAndroidLayout && (tab !== 'main' || moreOpen);
+  const overlayHistory = useRef({ pushed: false, ignoreNextPop: false });
+  useEffect(() => {
+    if (!isAndroidLayout) return;
+    const entry = overlayHistory.current;
+    if (overlayOpen && !entry.pushed) {
+      window.history.pushState({ heroloopOverlay: true }, '');
+      entry.pushed = true;
+    } else if (!overlayOpen && entry.pushed) {
+      entry.pushed = false;
+      entry.ignoreNextPop = true;
+      window.history.back();
+    }
+  }, [overlayOpen]);
+  useEffect(() => {
+    if (!isAndroidLayout) return;
+    const entry = overlayHistory.current;
+    const onPop = () => {
+      if (entry.ignoreNextPop) { entry.ignoreNextPop = false; return; }
+      if (!entry.pushed) return;
+      entry.pushed = false;
+      setMoreOpen(false);
+      setTab('main');
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
   const [routePath, setRoutePath] = useState(() => window.location.pathname);
   const [showBoost, setShowBoost] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
@@ -454,12 +489,16 @@ function App() {
   }
 
   if (accountGate !== 'verified') {
+    // The Android app opens on the landing hero with one Play button; Play leads to
+    // wallet sign-in or registration. The marketing sections of the landing stay on the web.
+    if (accountGate === 'landing' && isAppShell) return <AppEntryScreen game={game} legacyWalletMode={legacyWalletMode} onAccountReady={() => setAccountCheckAttempt((value) => value + 1)} />;
     if (accountGate === 'landing') return <LandingScreen game={game} legacyWalletMode={legacyWalletMode} onAccountReady={() => setAccountCheckAttempt((value) => value + 1)} />;
     return <div className="grid h-screen place-items-center bg-[#07090d] p-4 text-center text-[#d9d0c0]"><div className="material-panel max-w-sm p-5"><div className="section-kicker">Account verification</div><div className="mt-2 text-sm">{accountGate === 'error' ? 'Account service is unavailable.' : 'Checking your registered account…'}</div>{accountGate === 'error' && <button type="button" onClick={() => setAccountCheckAttempt((value) => value + 1)} className="game-control game-primary mt-4 px-4 text-xs font-black">Retry</button>}</div></div>;
   }
 
   return (
     <div className={`game-shell game-motion-${game.state.battleAnimationMode} flex h-screen flex-col overflow-hidden bg-px-bg text-px-text`}>
+      {isAndroidLayout && <OfflineBar />}
       <GameNavBar
         tab={tab}
         onChange={(nextTab) => {
@@ -492,7 +531,7 @@ function App() {
 
       {tab !== 'main' && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-[5px]"
+          className="game-window-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-[5px]"
           onMouseDown={(event) => {
             if (event.currentTarget === event.target) setTab('main');
           }}
@@ -520,7 +559,22 @@ function App() {
         </div>
       )}
 
-      <FooterBar onLogout={() => void logout()} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} onSupportClick={() => setShowSupport(true)} />
+      {isAndroidLayout ? (
+        <MobileTabBar
+          tab={tab}
+          section={mobileSection}
+          moreOpen={moreOpen}
+          onTab={setTab}
+          onSection={setMobileSection}
+          onMoreOpen={setMoreOpen}
+          onGuides={openWiki}
+          onCode={() => setShowPromoCode(true)}
+          onSupport={() => setShowSupport(true)}
+          onLogout={() => void logout()}
+        />
+      ) : (
+        <FooterBar onLogout={() => void logout()} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} onSupportClick={() => setShowSupport(true)} />
+      )}
 
       {game.offlineEarnings && (
         <OfflineModal

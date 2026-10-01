@@ -7,14 +7,20 @@ function hasFeature(wallet: Wallet, name: `${string}:${string}`): boolean {
   return typeof wallet.features[name] === 'object';
 }
 
+// The Android layout (src/platform/platform.ts) registers the Solana Mobile Wallet
+// Adapter and then allows it here; every other build stays Phantom-only.
+let mobileWalletAdapterAllowed = false;
+export function allowMobileWalletAdapter() { mobileWalletAdapterAllowed = true; }
+
 export function compatibleSolanaWallets(wallets: readonly Wallet[] = getWallets().get()): readonly Wallet[] {
   return wallets.filter((wallet) =>
-    wallet.name.trim().toLowerCase() === 'phantom' &&
+    (wallet.name.trim().toLowerCase() === 'phantom' || (mobileWalletAdapterAllowed && wallet.name === 'Mobile Wallet Adapter')) &&
     hasFeature(wallet, StandardConnect) &&
     (hasFeature(wallet, SolanaSignIn) || hasFeature(wallet, SolanaSignMessage)) &&
     (wallet.chains.some((chain) => chain.startsWith('solana:')) ||
       wallet.accounts.some((account) => account.chains.some((chain) => chain.startsWith('solana:'))))
-  ).sort((left, right) => left.name.localeCompare(right.name));
+  // An injected Phantom (desktop extension or Phantom's in-app browser) wins over the adapter.
+  ).sort((left, right) => Number(left.name === 'Mobile Wallet Adapter') - Number(right.name === 'Mobile Wallet Adapter') || left.name.localeCompare(right.name));
 }
 
 export function observeCompatibleSolanaWallets(listener: (wallets: readonly Wallet[]) => void): () => void {
