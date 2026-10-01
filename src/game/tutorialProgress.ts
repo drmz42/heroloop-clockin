@@ -1,10 +1,10 @@
 import type { GameState } from './types';
-import { locationUnlockLevel } from './engine';
+import { getEquippedItems, locationUnlockLevel } from './engine';
 import contract from '../../config/tutorial-quests.v1.json';
 
 // Presentation only: claim eligibility and rewards remain server-owned.
 export function tutorialProgress(state: GameState, ordinal: number): number {
-  const equipped = state.ownedHeroes.some(hero => state.team.includes(hero.uid) && Object.keys(hero.equipped).length > 0);
+  const equipped = state.ownedHeroes.some(hero => state.team.includes(hero.uid) && getEquippedItems(hero, state.inventory).length > 0);
   return [state.totalKills, state.tutorial.openedCount, equipped ? 1 : 0, state.summons,
     state.team.length, state.summons, state.trainingCamp.heroUids.some(Boolean) ? 1 : 0,
     state.autoPot.enabled ? 1 : 0,
