@@ -28,6 +28,9 @@ import { recommendedTeamPower } from '@/game/balance';
 import { playerSync, authClient } from '@/game/backend';
 
 const SAVE_KEY = editionStorageKey('afk-heroes-save-v7');
+// Temporarily hide the first-use dialog for hackathon start-of-game recordings.
+// Restore this flag after recording; keep consent and the settings entry intact.
+const SHOW_HACKATHON_HEALING_INTRODUCTION = false;
 
 const SLOTS: ItemSlot[] = ['class_weapon', 'offhand', 'helmet', 'chest', 'gloves', 'boots', 'ring', 'amulet'];
 // Short slot names so all eight fit under the gear row at the small text tier.
@@ -896,7 +899,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-px-panel border-2 border-px-bright font-vt ui-text-large font-bold text-px-bright anim-slide-up" style={{ boxShadow: '3px 3px 0 #3d2008' }}>{toast}</div>
       )}
       {showAvatarPicker && <AvatarPicker game={game} onClose={() => setShowAvatarPicker(false)} />}
-      {isolatedHackathon && !state.autoPot.healingInfoSeen && <HealingIntroduction game={game} />}
+      {isolatedHackathon && SHOW_HACKATHON_HEALING_INTRODUCTION && !state.autoPot.healingInfoSeen && <HealingIntroduction game={game} />}
       {showDungeonInfo && <DungeonPreviewModal accountLevel={state.accountLevel} onStatus={enterDungeonArena} onClose={() => setShowDungeonInfo(false)} onGuidesClick={() => { setShowDungeonInfo(false); onGuidesClick(); }} />}
     </div>
   );
