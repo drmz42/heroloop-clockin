@@ -10,6 +10,7 @@ export {
 } from './solanaWalletRegistry';
 import { awaitCompatibleSolanaWallets, compatibleSolanaWallets } from './solanaWalletRegistry';
 import { clearWalletBinding, readWalletBinding, walletBindingExpired, walletBindingRestorable, writeWalletBinding } from './solanaWalletBinding';
+import { isNativeApp, MOBILE_WALLET_ADAPTER_NAME } from '@/platform/platform';
 export { readWalletBinding, setWalletBindingBoost, walletBindingExpired } from './solanaWalletBinding';
 
 const STORAGE_KEY = editionStorageKey('heroloop.siws.wallet-session.v2');
@@ -275,6 +276,12 @@ export async function connectSolanaWallet(
   return accepted;
 }
 
+// The native app signs in through its own Mobile Wallet Adapter session (createMwaSessionProof),
+// so the page's MWA wallet object never lists the account; the server-checked session binds it.
+export function nativeMwaSession(walletName: string): boolean {
+  return isNativeApp && walletName === MOBILE_WALLET_ADAPTER_NAME;
+}
+
 export async function restoreSolanaWalletSession(options: SolanaSessionOptions = {}): Promise<SolanaWalletSession | null> {
   const now = (options.now ?? Date.now)();
   const stored = parseStored(now);
@@ -286,11 +293,12 @@ export async function restoreSolanaWalletSession(options: SolanaSessionOptions =
     // wallet and that wallet still exposes the same address; never prompts.
     const binding = readWalletBinding();
     const session = await currentAccountSession();
-    const wallets = binding
+    const walletOptional = Boolean(binding && nativeMwaSession(binding.walletName));
+    const wallets = walletOptional ? [] : binding
       ? await awaitCompatibleSolanaWallets((list) => list.some((wallet) => wallet.name === binding.walletName &&
           wallet.accounts.some((account) => account.address === binding.address)), options.wallets)
       : compatibleSolanaWallets(options.wallets);
-    if (binding && walletBindingRestorable(binding, session, wallets)) {
+    if (binding && walletBindingRestorable(binding, session, wallets, !walletOptional)) {
       return { ...binding, expiresAt: new Date(0).toISOString(), token: '' };
     }
     clearSolanaWalletSession();
@@ -299,11 +307,13 @@ export async function restoreSolanaWalletSession(options: SolanaSessionOptions =
   // A reload can reach this check before the wallet extension finishes registering
   // itself with Wallet Standard; wait briefly for the register event rather than
   // reading an instant snapshot, or a valid session gets signed out from under it.
-  const wallets = await awaitCompatibleSolanaWallets((list) => list.some((candidate) => candidate.name === stored.walletName &&
-    candidate.accounts.some((account) => account.address === stored.address)), options.wallets);
-  const wallet = wallets.find((candidate) => candidate.name === stored.walletName &&
-    candidate.accounts.some((account) => account.address === stored.address));
-  if (!wallet) { clearSolanaWalletSession(); return null; }
+  if (!nativeMwaSession(stored.walletName)) {
+    const wallets = await awaitCompatibleSolanaWallets((list) => list.some((candidate) => candidate.name === stored.walletName &&
+      candidate.accounts.some((account) => account.address === stored.address)), options.wallets);
+    const wallet = wallets.find((candidate) => candidate.name === stored.walletName &&
+      candidate.accounts.some((account) => account.address === stored.address));
+    if (!wallet) { clearSolanaWalletSession(); return null; }
+  }
   const accountSession = await currentAccountSession();
   if (!accountSession || accountSession.user.id !== stored.authSubjectId) { clearSolanaWalletSession(); return null; }
   const response = await (options.fetch ?? globalThis.fetch)(`${backendUrl}/api/v1/auth/solana/session`, {

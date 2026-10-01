@@ -298,6 +298,13 @@ const SIGN_IN_STAGE_LABELS: Record<WalletSignInStage, string> = {
   account: 'Step 7/7 · Loading your account…',
 };
 
+// Native app lab diagnostics: each sign-in step and error code becomes one request line in the
+// Staging2 access log (no address or token), since the phone's own logs are out of reach.
+function reportSignInStep(step: string) {
+  if (!isNativeApp) return;
+  void fetch(`/assets/hl-signin-diag?step=${encodeURIComponent(step.slice(0, 160))}&t=${Date.now()}`, { cache: 'no-store' }).catch(() => undefined);
+}
+
 export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onClose, persistent = false }: { game: GameApi; legacyWalletMode?: 'link' | 'import' | null; onAccountReady: () => void; onClose: () => void; persistent?: boolean }) {
   const [step, setStep] = useState(1);
   const [starter, setStarter] = useState<StarterId>('shepherd-common');
@@ -361,12 +368,13 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         allowExistingAccountLogin: legacyWalletMode !== 'import',
         // The native app connects and signs in one wallet session, so one tap opens the wallet once.
         mwaSession: wallet.name === MOBILE_WALLET_ADAPTER_NAME && isNativeApp ? mobileWalletAppIdentity() : undefined,
-        onStage: setSignInStage,
+        onStage: (stage) => { setSignInStage(stage); reportSignInStep(stage); },
         confirmBeforeSign: wallet.name === MOBILE_WALLET_ADAPTER_NAME && !isNativeApp
           ? () => new Promise<void>((resolve) => { setSignConfirm(() => resolve); })
           : undefined,
       });
       setSignInStage('account');
+      reportSignInStep('account');
       const account = await accountRequest(playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status'));
       if (!account) {
         // The wallet and Auth session are already established. Let the game
@@ -389,6 +397,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
       const code = reason && typeof reason === 'object' && 'code' in reason ? String(reason.code) : '';
       const detail = reason instanceof Error && 'detail' in reason && typeof reason.detail === 'string' && reason.detail
         ? ` (${reason.detail})` : '';
+      reportSignInStep(`error:${code}${detail}`);
       setError(code === 'wallet_already_linked'
         ? 'This wallet already belongs to another HeroLoop account.'
         : code === 'wallet_signature_rejected'

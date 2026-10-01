@@ -74,9 +74,10 @@ export function walletBindingRestorable(
   binding: WalletBinding,
   accountSession: { user: { id: string; is_anonymous?: boolean } } | null,
   wallets: readonly Wallet[],
+  requireWallet = true,
 ): boolean {
   return Boolean(accountSession) && accountSession!.user.is_anonymous !== true &&
     accountSession!.user.id === binding.authSubjectId &&
-    wallets.some((wallet) => wallet.name === binding.walletName &&
-      wallet.accounts.some((account) => account.address === binding.address));
+    (!requireWallet || wallets.some((wallet) => wallet.name === binding.walletName &&
+      wallet.accounts.some((account) => account.address === binding.address)));
 }

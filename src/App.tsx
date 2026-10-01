@@ -39,6 +39,7 @@ import {
   setWalletBindingBoost,
   walletBindingExpired,
   solanaAuthEnabled,
+  nativeMwaSession,
   watchSolanaWalletSession,
 } from '@/game/solanaWalletSession';
 
@@ -138,9 +139,10 @@ function App() {
             if (!cancelled) setAccountGate('landing');
             return;
           }
+          const walletOptional = nativeMwaSession(walletSession.walletName);
           const wallet = compatibleSolanaWallets().find((candidate) =>
             candidate.name === walletSession.walletName && candidate.accounts.some((account) => account.address === walletSession.address));
-          if (!wallet) {
+          if (!wallet && !walletOptional) {
             await revokeSolanaWalletSession('wallet_disconnect');
             await authClient.auth.signOut({ scope: 'local' }).catch(() => undefined);
             if (!cancelled) setAccountGate('landing');
@@ -154,7 +156,7 @@ function App() {
             void revokeSolanaWalletSession('logout').finally(() =>
               authClient.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/')));
           }, 60_000);
-          stopWalletEvents = watchSolanaWalletSession(walletSession, wallet, (reason) => {
+          if (wallet) stopWalletEvents = watchSolanaWalletSession(walletSession, wallet, (reason) => {
             void revokeSolanaWalletSession(reason).finally(() =>
               authClient.auth.signOut({ scope: 'local' }).finally(() => window.location.replace('/')));
           });
