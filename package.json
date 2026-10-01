@@ -244,7 +244,8 @@
     "simulate:chest-pacing": "node scripts/simulate-chest-pacing.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "model:balance-v6": "tsx scripts/model-balance-v6.ts",
-    "check:hackathon-isolation": "node scripts/check-hackathon-isolation.mjs"
+    "check:hackathon-isolation": "node scripts/check-hackathon-isolation.mjs",
+    "check:automatic-healing": "node scripts/check-automatic-healing.mjs"
   },
   "dependencies": {
     "@mui/icons-material": "9.4.0",

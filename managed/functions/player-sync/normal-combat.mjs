@@ -1,4 +1,5 @@
 import { resolveCombat } from './combat-step.mjs';
+import { AUTOMATIC_HEALING_POLICY, AUTOMATIC_HEALING_BALANCE_VERSION, AUTOMATIC_HEALING_PRICES, automaticHealingConfig } from './automatic-healing.mjs';
 import { COMBAT_TIMELINE_VERSION, serializeCombatTimeline } from './combat-timeline.mjs';
 import { COMBAT_EFFECTS_V2_VERSION, serverEffectForClass } from './combat-effects-v2.mjs';
 import { BALANCE_V6_ID, v6EnchantMultiplier, v6EnemyBase, v6AttackSpeedPoints, v6ItemImplicit, v6LevelMastery, v6StarMultiplier } from './balance-v6.mjs';
@@ -168,9 +169,12 @@ function enemyUnits(location, teamSize, seed) {
   });
 }
 
-export function buildNormalCombat(state, ledgerItems, location, seed, resourceSnapshot, startedAtMs = Date.now(), combatEffectsVersion = /** @type {string | null} */ (null)) {
+export function buildNormalCombat(state, ledgerItems, location, seed, resourceSnapshot, startedAtMs = Date.now(), combatEffectsVersion = /** @type {string | null} */ (null), healingPolicy = /** @type {string | null} */ (null)) {
   if (combatEffectsVersion !== null && combatEffectsVersion !== COMBAT_EFFECTS_V2_VERSION) {
     throw new Error('normal_combat_invalid_effects_version');
+  }
+  if (healingPolicy !== null && (healingPolicy !== AUTOMATIC_HEALING_POLICY || combatEffectsVersion !== COMBAT_EFFECTS_V2_VERSION)) {
+    throw new Error('normal_combat_invalid_healing_policy');
   }
   if (!record(state) || !Array.isArray(state.team) || !Array.isArray(state.ownedHeroes)
     || state.team.length < 1 || state.team.length > 3 || new Set(state.team).size !== state.team.length) {
@@ -181,7 +185,11 @@ export function buildNormalCombat(state, ledgerItems, location, seed, resourceSn
   const savedHp = record(state.normalCombatHp) ? state.normalCombatHp : {};
   const built = state.team.map((uid, lane) => heroUnit(heroesByUid.get(uid), lane, items, savedHp[uid], startedAtMs, combatEffectsVersion));
   const initialUnits = [...built.map(({ unit }) => unit), ...enemyUnits(location, built.length, seed)];
-  const config = record(state.autoPot) ? state.autoPot : {};
+  const savedConfig = record(state.autoPot) ? state.autoPot : {};
+  const config = healingPolicy === AUTOMATIC_HEALING_POLICY ? automaticHealingConfig(savedConfig) : savedConfig;
+  const potions = healingPolicy === AUTOMATIC_HEALING_POLICY
+    ? Object.fromEntries(Object.entries(POTIONS).map(([tier, potion]) => [tier, { ...potion, cost: AUTOMATIC_HEALING_PRICES[tier] }]))
+    : POTIONS;
   const balances = record(resourceSnapshot) && record(resourceSnapshot.balances) ? resourceSnapshot.balances : {};
   const stock = Object.fromEntries(POTION_TIERS_ASC.map((tier) => {
     const value = balances[`potion_${tier}`];
@@ -199,13 +207,13 @@ export function buildNormalCombat(state, ledgerItems, location, seed, resourceSn
     let fromStock = true;
     if (!tier && config.autoBuy === true) {
       tier = config.autoSelectTier !== false
-        ? POTION_TIERS_ASC.find((candidate) => POTIONS[candidate].hpRestore >= hero.maxHp * .5) ?? 'xxl'
+        ? POTION_TIERS_ASC.find((candidate) => potions[candidate].hpRestore >= hero.maxHp * .5) ?? 'xxl'
         : autoBuyTier;
       fromStock = false;
-      if (availableGold < POTIONS[tier].cost) return units;
+      if (availableGold < potions[tier].cost) return units;
     }
     if (!tier) return units;
-    const potion = POTIONS[tier];
+    const potion = potions[tier];
     if (fromStock) stock[tier] -= 1;
     else availableGold -= potion.cost;
     const hpBefore = hero.hp;
@@ -217,13 +225,14 @@ export function buildNormalCombat(state, ledgerItems, location, seed, resourceSn
     return units.map((unit) => unit.uid === hero.uid ? { ...unit, hp: hpAfter } : unit);
   });
   return {
-    seed, balance_version: combatEffectsVersion === COMBAT_EFFECTS_V2_VERSION ? COMBAT_EFFECTS_V2_BALANCE_VERSION : BALANCE_VERSION,
+    seed, balance_version: healingPolicy === AUTOMATIC_HEALING_POLICY ? AUTOMATIC_HEALING_BALANCE_VERSION : combatEffectsVersion === COMBAT_EFFECTS_V2_VERSION ? COMBAT_EFFECTS_V2_BALANCE_VERSION : BALANCE_VERSION,
     initial_units: initialUnits,
     reward_bonuses: {
       gold: built.reduce((sum, hero) => sum + hero.goldBonus, 0),
       xp: built.reduce((sum, hero) => sum + hero.xpBonus, 0),
     },
     outcome: {
+      ...(healingPolicy === AUTOMATIC_HEALING_POLICY ? { healing_policy: AUTOMATIC_HEALING_POLICY } : {}),
       status: resolved.resolution.allCleared ? 'cleared' : 'failed',
       elapsed_ms: resolved.elapsedMs,
       timed_out: resolved.timedOut,

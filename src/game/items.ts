@@ -1,4 +1,6 @@
 import type { HeroClass, ItemBase, ItemSlot, OwnedItem, ItemStatRoll, ItemStatKey, Rarity, PotionDef, PotionTier } from './types';
+import { isolatedHackathon } from './editionStorage';
+import { AUTOMATIC_HEALING_PRICES } from '../../managed/functions/player-sync/automatic-healing.mjs';
 import { RARITY_COLORS, RARITY_INDEX } from './heroes';
 import {
   enchantGoldCost, enchantGuaranteedHeroCost, enchantMultiplier,
@@ -191,14 +193,14 @@ export function meetsItemLevelRequirement(item: OwnedItem, accountLevel: number)
 
 // ── Potions ────────────────────────────────────────────────────────────────
 
-export const POTIONS: PotionDef[] = [
+export const POTIONS: PotionDef[] = ([
   { tier: 'xs',  name: 'Minor Tonic',     hpRestore: 50,    cost: 15   },
   { tier: 'sm',  name: 'Healing Draught', hpRestore: 200,   cost: 50   },
   { tier: 'md',  name: 'Greater Potion',  hpRestore: 1000,  cost: 150  },
   { tier: 'lg',  name: 'Superior Elixir', hpRestore: 4000,  cost: 450  },
   { tier: 'xl',  name: 'Mythic Flask',    hpRestore: 15000, cost: 1200 },
   { tier: 'xxl', name: 'Divine Nectar',   hpRestore: 40000, cost: 3000 },
-];
+] satisfies PotionDef[]).map(potion => isolatedHackathon ? { ...potion, cost: AUTOMATIC_HEALING_PRICES[potion.tier] } : potion);
 
 export const POTION_MAP: Record<PotionTier, PotionDef> = Object.fromEntries(
   POTIONS.map((p) => [p.tier, p])

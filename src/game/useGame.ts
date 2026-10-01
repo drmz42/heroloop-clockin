@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { isolatedHackathon } from './editionStorage';
+import { automaticHealingConfig } from '../../managed/functions/player-sync/automatic-healing.mjs';
 import { flushSync } from 'react-dom';
 import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey } from '@/game/types';
 import {
@@ -737,7 +739,7 @@ export function useGame() {
       return { gold: acc.gold + s.goldBonus, xp: acc.xp + s.xpBonus };
     }, { gold: 0, xp: 0 });
     const xpPerEnemy = Math.round(baseXpPerEnemy * (1 + teamBonuses.xp));
-    const gold = goldRewardForLanes(loc.goldReward, clearedLanes, teamBonuses.gold);
+    const gold = goldRewardForLanes(loc.goldReward * (isolatedHackathon && !st.bossBattleActive ? 2 : 1), clearedLanes, teamBonuses.gold);
     const accountXpGain = xpPerEnemy * clearedLanes;
 
     const tokens = 0;
@@ -838,19 +840,20 @@ export function useGame() {
 
   const tryAutoPotion = useCallback(() => {
     const st = stateRef.current;
-    if (!st.autoPot.enabled) return;
+    const healing = isolatedHackathon ? automaticHealingConfig(st.autoPot) : st.autoPot;
+    if (!healing.enabled) return;
     const heroes = unitsRef.current.filter((u) => u.side === 'hero' && u.alive);
     for (const hero of heroes) {
       const hpFrac = hero.hp / hero.maxHp;
-      if (hpFrac < st.autoPot.threshold) {
+      if (hpFrac < healing.threshold) {
         const tiers: PotionTier[] = ['xxl', 'xl', 'lg', 'md', 'sm', 'xs'];
         let usedTier: PotionTier | null = null;
         for (const t of tiers) { if (st.potions[t] > 0) { usedTier = t; break; } }
-        if (!usedTier && st.autoPot.autoBuy) {
-          const autoTier = st.autoPot.autoSelectTier
+        if (!usedTier && healing.autoBuy) {
+          const autoTier = healing.autoSelectTier
             ? (['xs', 'sm', 'md', 'lg', 'xl', 'xxl'] as PotionTier[])
                 .find((tier) => POTION_MAP[tier].hpRestore >= hero.maxHp * 0.5) ?? 'xxl'
-            : st.autoPot.autoBuyTier;
+            : healing.autoBuyTier;
           const def = POTION_MAP[autoTier];
           if (st.gold >= def.cost) usedTier = autoTier;
         }
