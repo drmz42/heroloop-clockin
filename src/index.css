@@ -26,10 +26,16 @@ html { scroll-behavior: smooth; }
 /* The footer overlays the arena; it must never grow the stage or lift the heroes. */
 .normal-battle-footer { pointer-events:none; }
 .normal-battle-footer > * { pointer-events:auto; }
-/* Phones: leave exactly the one-row footer (44px touch targets) clear under the heroes' feet. */
-@media (max-width:639px) {
+/* Leave exactly the one-row footer clear under the heroes' feet (44px touch targets on phones). */
+.battle-stage-normal .arena-stage-inner { padding-bottom:44px; }
+@media (max-width:1023px) {
   .battle-stage-normal .arena-stage-inner { padding-bottom:40px; }
   .normal-battle-footer .pm-chest canvas { width:24px !important;height:24px !important; }
+}
+/* Tablets: heroes start under the 44px top controls; the arena is sized for three rows so it never grows with team size. */
+@media (min-width:640px) and (max-width:1023px) {
+  .battle-stage.battle-stage-normal { min-height:372px; }
+  .battle-stage-normal .arena-stage-inner { padding-top:60px; }
 }
 
 /* ── Public landing page ───────────────────────────────────────────────── */
