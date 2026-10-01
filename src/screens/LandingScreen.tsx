@@ -11,6 +11,7 @@ import { playerSync } from '@/game/backend';
 import { hasBlockedUsernameLanguage } from '@/game/username';
 import { clearSignupAttribution, readSignupAttribution } from '@/game/signupAttribution';
 import { clearLegacyState, makeRegisteredStarterState } from '@/game/state';
+import { canOpenInPhantom, isAndroidLayout, isNativeApp, phantomBrowseUrl } from '@/platform/platform';
 import {
   connectSolanaWallet,
   observeCompatibleSolanaWallets,
@@ -284,7 +285,7 @@ function Benefit({ title, text }: { title: string; text: string }) {
   );
 }
 
-export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onClose }: { game: GameApi; legacyWalletMode?: 'link' | 'import' | null; onAccountReady: () => void; onClose: () => void }) {
+export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onClose, persistent = false }: { game: GameApi; legacyWalletMode?: 'link' | 'import' | null; onAccountReady: () => void; onClose: () => void; persistent?: boolean }) {
   const [step, setStep] = useState(1);
   const [starter, setStarter] = useState<StarterId>('shepherd-common');
   const [username, setUsername] = useState('');
@@ -296,6 +297,8 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
   const [wallets, setWallets] = useState<readonly Wallet[]>([]);
   const [selectedWallet, setSelectedWallet] = useState('');
   const [legacyImportConfirmed, setLegacyImportConfirmed] = useState(false);
+  // Mobile Wallet Adapter needs a second tap before the signature request (see confirmBeforeSign).
+  const [signConfirm, setSignConfirm] = useState<(() => void) | null>(null);
   const blockedName = hasBlockedUsernameLanguage(username);
   const validName = /^[a-zA-Z0-9_]{3,16}$/.test(username) && !blockedName;
 
@@ -342,6 +345,10 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         // decision 2026-09-29). Only a one-time browser-progress import refuses, because that
         // progress has already been written into this Guest's server account.
         allowExistingAccountLogin: legacyWalletMode !== 'import',
+        // The native app's WebView hands wallet links to Android directly, so no second tap.
+        confirmBeforeSign: wallet.name === 'Mobile Wallet Adapter' && !isNativeApp
+          ? () => new Promise<void>((resolve) => { setSignConfirm(() => resolve); })
+          : undefined,
       });
       const account = await accountRequest(playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status'));
       if (!account) {
@@ -378,6 +385,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         : `Wallet authentication failed. Please try again.${/^[a-z0-9_]{3,64}$/.test(code) ? ` (${code})` : ''}`);
     } finally {
       setConnecting(false);
+      setSignConfirm(null);
     }
   };
 
@@ -438,9 +446,9 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
   return (
     <div className="hl-onboarding fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[#030308]/90 p-4 backdrop-blur-md">
       <div className="landing-card relative my-auto w-full max-w-4xl overflow-hidden">
-        <button onClick={onClose} className="absolute right-4 top-4 z-10 p-2 text-slate-500 transition hover:text-white" aria-label="Close">
+        {!persistent && <button onClick={onClose} className="absolute right-4 top-4 z-10 p-2 text-slate-500 transition hover:text-white" aria-label="Close">
           <X size={20} />
-        </button>
+        </button>}
         <div className="border-b border-white/10 px-6 py-5 sm:px-8">
           <div className="text-[10px] uppercase tracking-[.25em] text-violet-300">{step === 1 ? (solanaAuthEnabled ? 'Verify wallet ownership' : 'Check guest account') : 'Create your account'}</div>
           <div className="mt-3 flex items-center gap-2">
@@ -455,7 +463,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
             <div className="mx-auto max-w-xl py-5">
               <div className="mx-auto grid h-14 w-14 place-items-center border border-violet-400/40 bg-violet-400/10 text-violet-300">{solanaAuthEnabled ? <Shield size={26} /> : <UserRound size={26} />}</div>
               <h2 className="mt-6 text-center font-pixel text-sm text-white sm:text-lg">{solanaAuthEnabled ? 'CONNECT SOLANA WALLET' : 'CONTINUE AS GUEST'}</h2>
-              <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-slate-400">{solanaAuthEnabled ? 'Connect Phantom and sign one free message to prove ownership—no transaction and no gas.' : 'The current beta uses a temporary server account. Existing guests enter directly; new guests continue to registration.'}</p>
+              <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-slate-400">{solanaAuthEnabled ? (isNativeApp ? 'Choose any Solana wallet app — Phantom, Solflare, Backpack or Seed Vault —' : isAndroidLayout ? 'Connect your Solana wallet' : 'Connect Phantom') + ' and sign one free message to prove ownership—no transaction and no gas.' : 'The current beta uses a temporary server account. Existing guests enter directly; new guests continue to registration.'}</p>
               {solanaAuthEnabled && legacyWalletMode && (
                 <div className="mx-auto mt-5 max-w-md border border-amber-300/25 bg-amber-300/[.06] p-4 text-xs leading-5 text-amber-100/80">
                   {legacyWalletMode === 'link'
@@ -471,9 +479,12 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
               )}
               <div className="mx-auto mt-7 w-fit border border-emerald-400/25 bg-emerald-400/[.06] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-emerald-300"><Shield size={12} className="mr-1.5 inline" /> {solanaAuthEnabled ? 'Free ownership proof' : 'Server-saved guest progress'}</div>
               <button onClick={solanaAuthEnabled ? connectWallet : continueAsGuest} disabled={connecting || (solanaAuthEnabled && wallets.length === 0)} className="landing-cta mx-auto mt-4 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em] disabled:cursor-not-allowed disabled:opacity-60">
-                {solanaAuthEnabled ? <Shield size={19} /> : <UserRound size={19} />} {connecting ? 'Checking account…' : solanaAuthEnabled ? 'Connect Phantom' : 'Continue as Guest'}
+                {solanaAuthEnabled ? <Shield size={19} /> : <UserRound size={19} />} {connecting ? 'Checking account…' : solanaAuthEnabled ? (isAndroidLayout ? 'Connect wallet' : 'Connect Phantom') : 'Continue as Guest'}
               </button>
-              {solanaAuthEnabled && wallets.length === 0 && <div className="mx-auto mt-4 max-w-md text-center text-xs text-slate-400">Phantom was not detected. <a className="text-amber-300 underline underline-offset-4" href="https://phantom.com/" target="_blank" rel="noreferrer">Get Phantom</a></div>}
+              {signConfirm && <button type="button" onClick={() => { const confirm = signConfirm; setSignConfirm(null); confirm(); }} className="landing-cta mx-auto mt-3 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em]"><Shield size={19} /> Wallet connected · Sign in</button>}
+              {solanaAuthEnabled && canOpenInPhantom && <a href={phantomBrowseUrl()} className="landing-cta mx-auto mt-3 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em]">Open in Phantom app</a>}
+              {solanaAuthEnabled && canOpenInPhantom && <p className="mx-auto mt-2 max-w-md text-center text-xs leading-5 text-slate-400">No wallet window? “Open in Phantom app” opens HeroLoop inside Phantom, where you sign in the same way. No Phantom yet? <a className="text-amber-300 underline underline-offset-4" href="https://play.google.com/store/apps/details?id=app.phantom" target="_blank" rel="noreferrer">Get it on Google Play</a>.</p>}
+              {solanaAuthEnabled && !canOpenInPhantom && wallets.length === 0 && <div className="mx-auto mt-4 max-w-md text-center text-xs text-slate-400">Phantom was not detected. <a className="text-amber-300 underline underline-offset-4" href="https://phantom.com/" target="_blank" rel="noreferrer">Get Phantom</a></div>}
               {error && <div className="mt-5 border border-rose-400/30 bg-rose-400/10 p-3 text-center text-sm text-rose-300">{error}</div>}
               <div className="mx-auto mt-6 flex max-w-md items-start gap-3 border border-emerald-400/20 bg-emerald-400/[.05] p-4 text-xs leading-5 text-emerald-200/70"><Shield size={16} className="mt-0.5 shrink-0" /><span>{solanaAuthEnabled ? 'HeroLoop never asks for a transaction signature during login. A different wallet cannot inherit this account or its saves.' : 'Your Guest ID is not a wallet address and cannot receive funds. Verified wallet sign-in is a separate future feature.'}</span></div>
             </div>
@@ -526,9 +537,9 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         </div>
 
         <div className="flex items-center justify-between border-t border-white/10 bg-black/20 px-6 py-5 sm:px-8">
-          <button onClick={() => step === 1 ? onClose() : setStep(step - 1)} className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white">
+{persistent && step === 1 ? <span /> : <button onClick={() => step === 1 ? onClose() : setStep(step - 1)} className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white">
             {step === 1 ? 'Cancel' : 'Back'}
-          </button>
+          </button>}
           {step === 2 ? (
             <button onClick={() => setStep(3)} className="landing-cta flex items-center gap-2 px-6 py-3 disabled:cursor-not-allowed disabled:opacity-30">
               Continue <ArrowRight size={15} />

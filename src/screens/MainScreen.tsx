@@ -439,7 +439,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   return (
     <div className="game-main flex h-full flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
       {/* ── LEFT COLUMN ── */}
-      <div className="material-panel game-scrollbar order-2 flex w-full shrink-0 flex-col overflow-y-auto lg:order-none lg:w-60 xl:w-64">
+      <div className="hl-col-left material-panel game-scrollbar order-2 flex w-full shrink-0 flex-col overflow-y-auto lg:order-none lg:w-60 xl:w-64">
         <div className="border-b border-[#4f412e] p-3">
           <div className="section-kicker mb-2">Commander</div>
           <div className="mb-2 flex items-center gap-2.5">
@@ -514,7 +514,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           )}
         </div>
 
-        <div className="flex-1 p-2">
+        <div className="hl-quest-list flex-1 p-2">
           <PartnerQuests claim={game.claimPartnerQuest} onOpenBoostMax={onBoostClick} shareState={state} teamPower={power} />
           {!state.tutorial.questCompleted && (() => {
             const ordinal = Math.max(1, Math.min(10, state.tutorial.questOrdinal));
@@ -577,11 +577,11 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
       </div>
 
       {/* ── CENTER COLUMN — responsive, max-width removed ── */}
-      <div className="game-scrollbar order-1 flex min-h-[464px] w-full shrink-0 flex-col overflow-hidden lg:order-none lg:min-h-0 lg:w-auto lg:min-w-0 lg:flex-1 lg:overflow-y-auto">
+      <div className="hl-col-center game-scrollbar order-1 flex min-h-[464px] w-full shrink-0 flex-col overflow-hidden lg:order-none lg:min-h-0 lg:w-auto lg:min-w-0 lg:flex-1 lg:overflow-y-auto">
         {/* Arena */}
         <div className={`battle-stage ${!activeDungeon ? 'battle-stage-normal' : ''} relative min-h-[320px] flex-1 overflow-hidden bg-arena`}>
-          {!activeDungeon && showZoomTip && <div className="absolute left-1/2 top-12 z-40 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-lg border border-[#80683f] bg-[#11130f]/95 px-3 py-1.5 font-vt ui-text-small font-bold text-[#d8c9ad] shadow-xl backdrop-blur-sm"><span>Adjust browser zoom with <kbd className="text-[#ffd36e]">Ctrl +</kbd> / <kbd className="text-[#ffd36e]">Ctrl -</kbd> to fit all interface elements.</span><button type="button" onClick={() => setShowZoomTip(false)} className="text-[#8f887b] hover:text-white" aria-label="Dismiss browser zoom tip"><X size={12} /></button></div>}
-          <div className={`absolute left-3 top-3 flex items-start gap-1.5 ${showPotSettings || showBattleSettings ? 'z-[110]' : 'z-30'}`}>
+          {!activeDungeon && showZoomTip && <div className="hl-zoom-tip absolute left-1/2 top-12 z-40 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-lg border border-[#80683f] bg-[#11130f]/95 px-3 py-1.5 font-vt ui-text-small font-bold text-[#d8c9ad] shadow-xl backdrop-blur-sm"><span>Adjust browser zoom with <kbd className="text-[#ffd36e]">Ctrl +</kbd> / <kbd className="text-[#ffd36e]">Ctrl -</kbd> to fit all interface elements.</span><button type="button" onClick={() => setShowZoomTip(false)} className="text-[#8f887b] hover:text-white" aria-label="Dismiss browser zoom tip"><X size={12} /></button></div>}
+          <div className={`hl-battle-hud-left absolute left-3 top-3 flex items-start gap-1.5 ${showPotSettings || showBattleSettings ? 'z-[110]' : 'z-30'}`}>
             {!activeDungeon ? <div className="relative">
               <button onClick={() => setShowPotSettings(s => !s)} className={`game-control relative flex h-7 items-center gap-1.5 px-2 py-0.5 ui-text-small font-bold ${state.autoPot.enabled ? 'border-emerald-500/60 bg-emerald-950/30 text-emerald-300' : ''}`}>
                 <FlaskConical size={14} /> Pot-auto {state.autoPot.enabled ? 'ON' : 'OFF'}
@@ -631,7 +631,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           )}
           {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={(next) => void handleDungeonChange(next)} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls })} />}
           {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Server reward result:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Granted together exactly once by the server</small></> : <><span><SummonScrollArtwork size={18} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST PREVIEW</span><small>{dungeonCompletion.scrolls === 2 ? 'Scrolls granted exactly once by the server; Dungeon Chest is not yet granted' : 'No Scrolls granted for this run; Dungeon Chest is not yet granted'}</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
-          {!activeDungeon && <div className="absolute right-3 top-3 z-30 flex items-center gap-1.5">
+          {!activeDungeon && <div className="hl-battle-hud-right absolute right-3 top-3 z-30 flex items-center gap-1.5">
             <button type="button" onClick={() => setShowDungeonInfo(true)} className="pm-socket game-control flex h-7 items-center gap-1 px-2 py-0.5 ui-text-small font-bold text-[#d7c6ea]" aria-label="Open Dungeons information">
               <DoorOpen size={14} aria-hidden="true" /> DUNGEONS <Info size={11} aria-hidden="true" />
             </button>
@@ -644,9 +644,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             </button>
           </div>}
           {!activeDungeon && import.meta.env.MODE === 'staging' && <TestControls game={game} />}
-          {!activeDungeon && <div className="normal-battle-footer absolute inset-x-0 bottom-0 z-30 flex items-end justify-between gap-1.5 px-2 pb-1.5 sm:flex-wrap sm:gap-3 sm:px-3 sm:pb-3">
+          {!activeDungeon && <div className="hl-battle-footer normal-battle-footer relative z-30 flex shrink-0 flex-wrap items-end justify-between gap-3 px-3 pb-3">
             <TokenEarningsPanel status={tok.status} stale={tok.incomeStale} today={game.state.tokensEarnedToday} heroes={state.ownedHeroes.length} defeated={state.totalKills} bosses={state.totalBossKills} />
-            <div className="ml-auto flex items-end gap-1">
+            <div className="hl-battle-dock ml-auto flex items-end gap-1.5">
             {showDropRates && dropRatesPos && createPortal(<div role="dialog" aria-label="Chest drop rate" className="fixed z-[100] w-56 overflow-y-auto rounded-lg border border-[#80683f] bg-[#11130f]/98 p-2.5 shadow-2xl backdrop-blur-sm" style={{ right: dropRatesPos.right, bottom: dropRatesPos.bottom, maxHeight: dropRatesPos.maxHeight }}>
               <div className="flex items-center justify-between gap-2"><strong className="ui-text-small uppercase tracking-wider text-[#efd18a]">Chest drop rate</strong><button type="button" onClick={() => setShowDropRates(false)} aria-label="Close drop rates"><X size={13} /></button></div>
               <p className="mt-1 ui-text-small text-[#978f81]">Current Account Level {state.accountLevel}. Rates update with account level and global rarity availability.</p>
@@ -671,7 +671,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
         </div>
 
         {/* Location cards — redesigned like screenshot 4 */}
-        {!activeDungeon ? <div className="material-panel mt-1.5 shrink-0 p-2.5">
+        {!activeDungeon ? <div className="hl-locations material-panel mt-1.5 shrink-0 p-2.5">
           <div className="mb-1.5 flex items-center justify-between">
             <span className="section-kicker">Locations</span>
             <span className="ui-text-small font-semibold uppercase tracking-[.12em] text-[#77746d]">Progression path</span>
@@ -714,7 +714,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                   </div>
                   <div className="mt-0.5 flex items-center gap-1 ui-text-small font-vt">
                     <span className="flex items-center gap-1 text-[#c79b4e]"><Coins size={11} />{formatNum(l.goldReward)} Gold</span>
-                    {!locked && !notYetDiscovered && <span className={`ml-auto ui-text-small font-bold ${tokenEligible ? 'text-emerald-400' : 'text-[#776f63]'}`}>{tokenEligible ? '$HERO ACTIVE' : 'NO $HERO'}</span>}
+                    {!locked && !notYetDiscovered && <span className={`hl-hero-only ml-auto ui-text-small font-bold ${tokenEligible ? 'text-emerald-400' : 'text-[#776f63]'}`}>{tokenEligible ? '$HERO ACTIVE' : 'NO $HERO'}</span>}
                     {(locked || notYetDiscovered) && <LockIcon size={11} className="ml-auto text-[#777064]" />}
                   </div>
                 </button>
@@ -728,7 +728,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
       </div>
 
       {/* ── RIGHT COLUMN ── */}
-      <div className="material-panel order-3 flex min-w-0 w-full shrink-0 flex-col overflow-hidden lg:order-none lg:w-[390px] xl:w-[420px]">
+      <div className="hl-col-right material-panel order-3 flex min-w-0 w-full shrink-0 flex-col overflow-hidden lg:order-none lg:w-[390px] xl:w-[420px]">
         <div className="shrink-0 border-b border-[#4f412e] bg-[radial-gradient(circle_at_20%_0%,rgba(162,118,50,.11),transparent_50%)] px-3 py-2.5">
           <div className="section-kicker mb-2">Active Formation</div>
           <div className="flex min-h-[54px] items-end gap-1.5">
@@ -1336,25 +1336,18 @@ function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: 
     const v = tokens * TOKEN_PRICE_USD;
     return v >= 0.01 ? `$${v.toFixed(2)}` : `$${v.toFixed(4)}`;
   };
-  const [open, setOpen] = useState(false);
   const Row = ({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) => (
     <>
       <span className="ui-text-small font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span>
       <span className={`ui-text-small font-black tabular-nums ${valueClass ?? 'text-[#e8dfc8]'}`}>{value}</span>
     </>
   );
-  // Phones show a one-line chip so the overlay footer never covers the heroes; tap opens the full panel above it.
   return (
-    <div className="battle-income-wrap relative min-w-0 flex-1 sm:flex-none">
-    <button type="button" onClick={() => setOpen((value) => !value)} className="battle-income-chip game-control flex h-7 w-full max-w-[104px] items-center gap-1 px-2 ui-text-small font-black tabular-nums sm:hidden" aria-expanded={open} aria-label="$HERO income details">
-      <HeroTokenIcon size={14} />
-      <span className="truncate text-[#7ee787]">{status ? `${fmt(rate)}/h` : 'Syncing…'}</span>
-    </button>
-    <div className={`battle-income ${open ? 'flex' : 'hidden'} absolute bottom-full left-0 mb-1 w-max flex-col items-stretch gap-2 font-vt sm:static sm:mb-0 sm:flex`} style={{ zoom: 0.69 }}>
+    <div className="hl-battle-income battle-income flex w-max flex-col items-stretch gap-2 font-vt" style={{ zoom: 0.69 }}>
       <div className="grid w-full grid-cols-[repeat(3,1fr)] gap-2 rounded-2xl border-2 border-[#80683f] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_24px_rgba(128,104,63,.28)]">
         {[['Heroes', heroes], ['Defeated', defeated], ['Bosses', bosses]].map(([label, value]) => <div key={label} className="text-center"><span className="block ui-text-small font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span><strong className="mt-1 block ui-text-small tabular-nums text-[#e8dfc8]">{formatNum(Number(value))}</strong></div>)}
       </div>
-      <div className="token-earnings-panel flex w-full flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_34px_rgba(229,177,70,.4)]">
+      <div className="hl-hero-only token-earnings-panel flex w-full flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_34px_rgba(229,177,70,.4)]">
       <div className="flex items-center gap-2">
         <HeroTokenIcon size={22} />
         <span className="ui-text-small font-black uppercase tracking-[.14em] text-[#ffd36e]">$HERO Income</span>
@@ -1372,7 +1365,6 @@ function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: 
         <span className="ui-text-small font-semibold text-[#9a937f]">Syncing token pool…</span>
       )}
       </div>
-    </div>
     </div>
   );
 }

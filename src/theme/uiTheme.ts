@@ -1,7 +1,8 @@
 // Visual theme switch. "premium" is the Figma HL-LANDING-2 dark-fantasy skin; "classic" is the
 // previous look. 2026-09-29 Founder swap: premium is the default in the normal Staging build (or with
-// VITE_UI_THEME=premium); staging2 now keeps classic as the backup copy and Production stays classic
-// until a separately approved release. Instant per-browser rollback: add ?ui=classic
+// VITE_UI_THEME=premium); Production stays classic until a separately approved release. 2026-09-30:
+// staging2 became the Android (Solana Mobile) lab on the premium design; the classic backup build is
+// archived (docs/game/staging2-visual-lab.md) and ?ui=classic still shows the classic skin. Instant per-browser rollback: add ?ui=classic
 // to any URL (or ?ui=premium to return); the choice is remembered in localStorage.
 export type UiTheme = 'premium' | 'classic';
 
@@ -9,7 +10,7 @@ const STORAGE_KEY = 'heroloop-ui-theme';
 const isTheme = (value: unknown): value is UiTheme => value === 'premium' || value === 'classic';
 
 export const defaultUiTheme: UiTheme =
-  import.meta.env.VITE_UI_THEME === 'premium' || import.meta.env.MODE === 'staging' ? 'premium' : 'classic';
+  import.meta.env.VITE_UI_THEME === 'premium' || import.meta.env.MODE === 'staging' || import.meta.env.MODE === 'staging2' ? 'premium' : 'classic';
 
 export function resolveUiTheme(): UiTheme {
   try {

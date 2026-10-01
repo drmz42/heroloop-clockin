@@ -37,6 +37,7 @@ export type SolanaSessionOptions = {
   fetch?: Fetch;
   now?: () => number;
   wallets?: readonly Wallet[];
+  confirmBeforeSign?: () => Promise<void>;
 };
 
 function fail(code: string): never {
@@ -155,6 +156,7 @@ export async function connectSolanaWallet(
     challengeEndpoint: `${backendUrl}/api/v1/auth/solana/challenge`,
     fetch: fetchImpl,
     now: options.now,
+    confirmBeforeSign: options.confirmBeforeSign,
   });
   const verification = await fetchImpl(`${backendUrl}/api/v1/auth/solana/verify`, {
     method: 'POST',

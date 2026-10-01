@@ -1,0 +1,31 @@
+plugins {
+    id 'com.android.application'
+}
+
+// HeroLoop Seeker: a native Android shell (one full-screen WebView, no browser UI).
+// versionCode, versionName and the game URL are set by scripts/build-seeker-apk.sh.
+android {
+    namespace 'xyz.heroloop.seeker'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'xyz.heroloop.seeker'
+        minSdk 26
+        targetSdk 35
+        versionCode 4
+        versionName '0.2.0-lab'
+        buildConfigField 'String', 'GAME_URL', '"https://staging2.heroloop.xyz/?source=android#game"'
+        buildConfigField 'String', 'GAME_HOST', '"staging2.heroloop.xyz"'
+    }
+
+    buildFeatures { buildConfig true }
+
+    buildTypes {
+        release { minifyEnabled false }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
