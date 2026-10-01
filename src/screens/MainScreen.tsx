@@ -616,7 +616,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             resetKey={`${activeDungeon?.encounter_id ?? 'normal'}:${game.state.currentLocation}:${game.state.team.join('|')}`}
             onRetry={activeDungeon ? undefined : game.retry}
           >
-            <CombatPresentationLayer game={game} activeDungeon={activeDungeon} dungeonUnits={dungeonUnits} dungeonFloaters={dungeonFloaters} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
+            <div className={activeDungeon ? 'h-full' : 'normal-battle-content relative'}>
+              <CombatPresentationLayer game={game} activeDungeon={activeDungeon} dungeonUnits={dungeonUnits} dungeonFloaters={dungeonFloaters} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
+            </div>
           </CombatErrorBoundary>
           {!activeDungeon && game.combatRecovery.status !== 'healthy' && (
             <div className="absolute inset-x-0 bottom-3 z-30 flex justify-center px-3" data-combat-recovery={game.combatRecovery.status}>
@@ -641,7 +643,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             </button>
           </div>}
           {!activeDungeon && import.meta.env.MODE === 'staging' && <TestControls game={game} />}
-          {!activeDungeon && <div className="absolute bottom-3 right-3 z-30 flex items-end gap-1.5">
+          {!activeDungeon && <div className="normal-battle-footer relative z-30 flex shrink-0 flex-wrap items-end justify-between gap-3 px-3 pb-3">
+            <TokenEarningsPanel status={tok.status} stale={tok.incomeStale} today={game.state.tokensEarnedToday} heroes={state.ownedHeroes.length} defeated={state.totalKills} bosses={state.totalBossKills} />
+            <div className="ml-auto flex items-end gap-1.5">
             {showDropRates && dropRatesPos && createPortal(<div role="dialog" aria-label="Chest drop rate" className="fixed z-[100] w-56 overflow-y-auto rounded-lg border border-[#80683f] bg-[#11130f]/98 p-2.5 shadow-2xl backdrop-blur-sm" style={{ right: dropRatesPos.right, bottom: dropRatesPos.bottom, maxHeight: dropRatesPos.maxHeight }}>
               <div className="flex items-center justify-between gap-2"><strong className="ui-text-small uppercase tracking-wider text-[#efd18a]">Chest drop rate</strong><button type="button" onClick={() => setShowDropRates(false)} aria-label="Close drop rates"><X size={13} /></button></div>
               <p className="mt-1 ui-text-small text-[#978f81]">Current Account Level {state.accountLevel}. Rates update with account level and global rarity availability.</p>
@@ -661,8 +665,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                 <span>{game.chestOpening ? 'OPENING…' : `OPEN · ${state.chests.length}`}</span>
               </button>
             </div>
+            </div>
           </div>}
-          {!activeDungeon && <TokenEarningsPanel status={tok.status} stale={tok.incomeStale} today={game.state.tokensEarnedToday} heroes={state.ownedHeroes.length} defeated={state.totalKills} bosses={state.totalBossKills} />}
         </div>
 
         {/* Location cards — redesigned like screenshot 4 */}
@@ -1338,7 +1342,7 @@ function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: 
     </>
   );
   return (
-    <div className="absolute bottom-3 left-3 z-30 flex w-max origin-bottom-left scale-[.69] flex-col items-stretch gap-2 font-vt">
+    <div className="battle-income flex w-max flex-col items-stretch gap-2 font-vt" style={{ zoom: 0.69 }}>
       <div className="grid w-full grid-cols-[repeat(3,1fr)] gap-2 rounded-2xl border-2 border-[#80683f] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_24px_rgba(128,104,63,.28)]">
         {[['Heroes', heroes], ['Defeated', defeated], ['Bosses', bosses]].map(([label, value]) => <div key={label} className="text-center"><span className="block ui-text-small font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span><strong className="mt-1 block ui-text-small tabular-nums text-[#e8dfc8]">{formatNum(Number(value))}</strong></div>)}
       </div>

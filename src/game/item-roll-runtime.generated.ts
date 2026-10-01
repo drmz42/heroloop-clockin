@@ -1,27 +1,27 @@
 /**
  * Item-roll v5 runtime contract — GENERATED FILE. Do not edit by hand.
  * Regenerate: node scripts/generate-item-roll-runtime.mjs
- * Runtime stamp: item-roll-v5@sha256:43c23ab36bb2ed3ebbd15194fe00aba5ee74811214df5abc64e47bfaa4d21ea9
+ * Runtime stamp: item-roll-v5@sha256:3d2b8aad5127f2d1f22a34187a4524a9b465f8030d658e6262a970f809f1c469
  * Sources:
  *   config/balance/hero-power-model.v1.json sha256:4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc
- *   config/balance/balance-v4.v1.json sha256:22c4f45dca865be54e1be938ddf4c5765a756825660979e0dffd410801cdfaad
+ *   config/balance/balance-v4.v1.json sha256:81562e8826497182508dd4f60dbe7ec6ba4a4b56652f484373e3b0e4aa28faf2
  *   config/economy/enchant-v4.v1.json sha256:4c18f4186df22256327f9377c373335cf63a83517fc38a3d20e393ff9abfc359
  *
  * Option-A base rolls (founder-approved normalized equipment), six approved
  * Gold/XP slots (helmet, chest, gloves, boots, ring, amulet) and the existing
  * Balance-v4 Enchant curve through +20 (max 4.50x). Data + pure helpers for a
- * future client routing step; no active callsite references this module yet and
- * the server remains authoritative for every item roll.
+ * client helper routed through src/game/items.ts; the server remains
+ * authoritative for every item roll.
  */
 export const ITEM_ROLL_V5_RUNTIME_STAMP =
-  'item-roll-v5@sha256:43c23ab36bb2ed3ebbd15194fe00aba5ee74811214df5abc64e47bfaa4d21ea9' as const;
+  'item-roll-v5@sha256:3d2b8aad5127f2d1f22a34187a4524a9b465f8030d658e6262a970f809f1c469' as const;
 
 export const ITEM_ROLL_V5_CONTRACT_JSON = `
 {
   "version": "item-roll-v5",
   "sources": {
     "heroPowerModel": "4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc",
-    "balanceV4": "22c4f45dca865be54e1be938ddf4c5765a756825660979e0dffd410801cdfaad",
+    "balanceV4": "81562e8826497182508dd4f60dbe7ec6ba4a4b56652f484373e3b0e4aa28faf2",
     "enchantV4": "4c18f4186df22256327f9377c373335cf63a83517fc38a3d20e393ff9abfc359"
   },
   "modelVersion": "hero-power-proposal-2026.08.12-v3",
@@ -316,8 +316,8 @@ export const ITEM_ROLL_V5_CONTRACT_JSON = `
       }
     ]
   },
-  "runtimeStamp": "item-roll-v5@sha256:43c23ab36bb2ed3ebbd15194fe00aba5ee74811214df5abc64e47bfaa4d21ea9",
-  "contractSha": "43c23ab36bb2ed3ebbd15194fe00aba5ee74811214df5abc64e47bfaa4d21ea9"
+  "runtimeStamp": "item-roll-v5@sha256:3d2b8aad5127f2d1f22a34187a4524a9b465f8030d658e6262a970f809f1c469",
+  "contractSha": "3d2b8aad5127f2d1f22a34187a4524a9b465f8030d658e6262a970f809f1c469"
 }
 ` as const;
 

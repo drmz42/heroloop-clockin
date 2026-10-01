@@ -23,6 +23,11 @@ body {
 
 html { scroll-behavior: smooth; }
 
+/* Controls occupy their own flow row, sized by content rather than an overlay reserve. */
+.battle-stage-normal { display:flex;flex-direction:column;min-height:min-content; }
+.normal-battle-content { flex:1 0 auto; }
+.normal-battle-content .arena-stage-inner { height:auto;min-height:100%;justify-content:center; }
+
 /* ── Public landing page ───────────────────────────────────────────────── */
 .landing {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -792,4 +797,3 @@ html { scroll-behavior: smooth; }
 .test-btn-green:hover { border-color: #7ee787; }
 .test-btn-reset { border-color: rgba(169,86,80,.55); color: #e8b3ae; }
 .test-btn-reset:hover { border-color: #c96f68; }
-
