@@ -1427,7 +1427,7 @@ function HealingIntroduction({ game }: { game: GameApi }) {
       <div className="my-4 grid grid-cols-3 gap-2">{POTIONS.map(potion => <div key={potion.tier} className="rounded-md border border-white/10 bg-black/25 p-2 text-center ui-text-medium text-[#efd18a]">{potion.name}<span className="block text-[#c4bba7]">{potion.cost} Gold</span></div>)}</div>
       <p className="ui-text-medium leading-relaxed text-[#c4bba7]">Not enough Gold? No purchase is made. Heroes keep their remaining HP between waves. Potions do not revive heroes and are unavailable in Dungeons and Boss Hunts.</p>
       <p className="mt-3 ui-text-small leading-relaxed text-[#9e9687]">You can turn Gold spending off in Battle settings. Changes apply from the next wave.</p>
-      <button ref={firstButton} type="button" style={{ minHeight: 44 }} className="game-control mt-4 min-h-11 w-full border-emerald-500/60 text-emerald-200" onClick={() => game.setAutoPot({ healingInfoSeen: true })}>Got it</button>
+      <button ref={firstButton} type="button" style={{ minHeight: 44 }} className="game-control mt-4 min-h-11 w-full border-emerald-500/60 text-emerald-200" onClick={() => game.setAutoPot({ enabled: true, goldHealingOptOut: !goldHealingEnabled(game.state.autoPot), healingInfoSeen: true })}>Got it</button>
       <button type="button" style={{ minHeight: 44 }} className="game-control mt-2 min-h-11 w-full text-[#c4bba7]" onClick={stockOnly}>Use stored potions only</button>
     </section>
   </div>, document.body);
