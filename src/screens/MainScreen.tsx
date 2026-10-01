@@ -643,22 +643,22 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             </button>
           </div>}
           {!activeDungeon && import.meta.env.MODE === 'staging' && <TestControls game={game} />}
-          {!activeDungeon && <div className="normal-battle-footer absolute inset-x-0 bottom-0 z-30 flex flex-wrap items-end justify-between gap-3 px-3 pb-3">
+          {!activeDungeon && <div className="normal-battle-footer absolute inset-x-0 bottom-0 z-30 flex items-end justify-between gap-1.5 px-2 pb-1.5 sm:flex-wrap sm:gap-3 sm:px-3 sm:pb-3">
             <TokenEarningsPanel status={tok.status} stale={tok.incomeStale} today={game.state.tokensEarnedToday} heroes={state.ownedHeroes.length} defeated={state.totalKills} bosses={state.totalBossKills} />
-            <div className="ml-auto flex items-end gap-1.5">
+            <div className="ml-auto flex items-end gap-1">
             {showDropRates && dropRatesPos && createPortal(<div role="dialog" aria-label="Chest drop rate" className="fixed z-[100] w-56 overflow-y-auto rounded-lg border border-[#80683f] bg-[#11130f]/98 p-2.5 shadow-2xl backdrop-blur-sm" style={{ right: dropRatesPos.right, bottom: dropRatesPos.bottom, maxHeight: dropRatesPos.maxHeight }}>
               <div className="flex items-center justify-between gap-2"><strong className="ui-text-small uppercase tracking-wider text-[#efd18a]">Chest drop rate</strong><button type="button" onClick={() => setShowDropRates(false)} aria-label="Close drop rates"><X size={13} /></button></div>
               <p className="mt-1 ui-text-small text-[#978f81]">Current Account Level {state.accountLevel}. Rates update with account level and global rarity availability.</p>
               <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">{chestRateRows.map(([rarity, weight]) => <Fragment key={rarity}><span className="ui-text-small font-bold" style={{ color: RARITY_COLORS[rarity as keyof typeof RARITY_COLORS] }}>{RARITY_LABEL[rarity as keyof typeof RARITY_LABEL]}</span><span className="text-right ui-text-small tabular-nums text-[#ddd4c4]">{(weight / chestWeightTotal * 100).toFixed(2).replace(/\.?0+$/, '')}%</span></Fragment>)}</div>
               {state.chests.some((chest) => chest.boss) && <p className="mt-2 border-t border-white/10 pt-2 ui-text-small text-rose-200">Boss Chests use the same level table with a Rare/Epic minimum.</p>}
             </div>, document.body)}
-            <button ref={dropRatesButtonRef} type="button" onClick={() => setShowDropRates((value) => !value)} className="game-control grid h-8 w-8 place-items-center" aria-label="Show chest drop rates" aria-expanded={showDropRates}><Info size={15} /></button>
-            <div className="flex flex-col gap-1.5">
-              <button type="button" onClick={onBoostClick} className={`pm-boost game-control flex h-8 w-36 items-center justify-center gap-1 px-2 py-0.5 ui-text-small font-black ${state.boost.active ? 'boost-max-active' : 'boost-max-ready'}`} title="Boost your offline earnings to 24/7"><Rocket size={15} /><span>{state.boost.active ? 'BOOST ON' : 'BOOST MAX'}</span></button>
+            <button ref={dropRatesButtonRef} type="button" onClick={() => setShowDropRates((value) => !value)} className="game-control grid h-7 w-7 place-items-center sm:h-8 sm:w-8" aria-label="Show chest drop rates" aria-expanded={showDropRates}><Info size={15} /></button>
+            <div className="flex flex-row gap-1 sm:flex-col sm:gap-1.5">
+              <button type="button" onClick={onBoostClick} className={`pm-boost game-control flex h-7 w-auto shrink-0 items-center sm:h-8 sm:w-36 justify-center gap-1 px-1.5 py-0.5 sm:px-2 ui-text-small font-black ${state.boost.active ? 'boost-max-active' : 'boost-max-ready'}`} title="Boost your offline earnings to 24/7"><Rocket size={15} /><span>{state.boost.active ? 'BOOST ON' : 'BOOST MAX'}</span></button>
               <button
                 onClick={() => void game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem)}
                 disabled={state.chests.length === 0 || game.chestOpening}
-                className="pm-chest reward-cta game-control flex h-8 w-36 items-center justify-center gap-1 px-2 py-0.5 ui-text-small font-black disabled:opacity-55"
+                className="pm-chest reward-cta game-control flex h-7 w-auto shrink-0 items-center sm:h-8 sm:w-36 justify-center gap-1 px-1.5 py-0.5 sm:px-2 ui-text-small font-black disabled:opacity-55"
                 title="Open chests"
               >
                 <ChestCollectIcon size={34} />
@@ -1335,14 +1335,21 @@ function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: 
     const v = tokens * TOKEN_PRICE_USD;
     return v >= 0.01 ? `$${v.toFixed(2)}` : `$${v.toFixed(4)}`;
   };
+  const [open, setOpen] = useState(false);
   const Row = ({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) => (
     <>
       <span className="ui-text-small font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span>
       <span className={`ui-text-small font-black tabular-nums ${valueClass ?? 'text-[#e8dfc8]'}`}>{value}</span>
     </>
   );
+  // Phones show a one-line chip so the overlay footer never covers the heroes; tap opens the full panel above it.
   return (
-    <div className="battle-income flex w-max flex-col items-stretch gap-2 font-vt" style={{ zoom: 0.69 }}>
+    <div className="battle-income-wrap relative min-w-0 flex-1 sm:flex-none">
+    <button type="button" onClick={() => setOpen((value) => !value)} className="battle-income-chip game-control flex h-7 w-full max-w-[104px] items-center gap-1 px-2 ui-text-small font-black tabular-nums sm:hidden" aria-expanded={open} aria-label="$HERO income details">
+      <HeroTokenIcon size={14} />
+      <span className="truncate text-[#7ee787]">{status ? `${fmt(rate)}/h` : 'Syncing…'}</span>
+    </button>
+    <div className={`battle-income ${open ? 'flex' : 'hidden'} absolute bottom-full left-0 mb-1 w-max flex-col items-stretch gap-2 font-vt sm:static sm:mb-0 sm:flex`} style={{ zoom: 0.69 }}>
       <div className="grid w-full grid-cols-[repeat(3,1fr)] gap-2 rounded-2xl border-2 border-[#80683f] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_24px_rgba(128,104,63,.28)]">
         {[['Heroes', heroes], ['Defeated', defeated], ['Bosses', bosses]].map(([label, value]) => <div key={label} className="text-center"><span className="block ui-text-small font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span><strong className="mt-1 block ui-text-small tabular-nums text-[#e8dfc8]">{formatNum(Number(value))}</strong></div>)}
       </div>
@@ -1364,6 +1371,7 @@ function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: 
         <span className="ui-text-small font-semibold text-[#9a937f]">Syncing token pool…</span>
       )}
       </div>
+    </div>
     </div>
   );
 }
