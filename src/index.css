@@ -23,10 +23,9 @@ body {
 
 html { scroll-behavior: smooth; }
 
-/* Controls occupy their own flow row, sized by content rather than an overlay reserve. */
-.battle-stage-normal { display:flex;flex-direction:column;min-height:min-content; }
-.normal-battle-content { flex:1 0 auto; }
-.normal-battle-content .arena-stage-inner { height:auto;min-height:100%;justify-content:center; }
+/* The footer overlays the arena; it must never grow the stage or lift the heroes. */
+.normal-battle-footer { pointer-events:none; }
+.normal-battle-footer > * { pointer-events:auto; }
 
 /* ── Public landing page ───────────────────────────────────────────────── */
 .landing {
