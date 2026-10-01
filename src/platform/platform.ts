@@ -23,6 +23,7 @@ export const androidLayoutAvailable = import.meta.env.MODE === 'staging2' || imp
 // (sessionStorage), not per browser.
 function resolveAppShell(): boolean {
   if (!androidLayoutAvailable) return false;
+  if (typeof navigator !== 'undefined' && /HeroLoopApp\//.test(navigator.userAgent)) return true;
   try {
     if (new URLSearchParams(window.location.search).get('source') === 'android') {
       window.sessionStorage.setItem('heroloop-app-shell', '1');
@@ -38,6 +39,10 @@ function resolveAppShell(): boolean {
 export const isAppShell = typeof window !== 'undefined' && resolveAppShell();
 
 const isAndroidDevice = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+// The native HeroLoop Seeker app (android/seeker-app): a full-screen WebView whose user
+// agent carries "HeroLoopApp". Wallets connect through Mobile Wallet Adapter with Android's
+// own wallet chooser; there is no browser and no Phantom in-app browser path.
+export const isNativeApp = typeof navigator !== 'undefined' && /HeroLoopApp\//.test(navigator.userAgent);
 
 export function resolvePlatform(): Platform {
   if (!androidLayoutAvailable) return 'web';
@@ -130,7 +135,7 @@ export function setMobileSection(section: MobileSection) {
 // Fallback when no wallet app answers through Mobile Wallet Adapter: open this page in
 // Phantom's own in-app browser, where Phantom injects itself and the usual sign-in works.
 // https://docs.phantom.com/phantom-deeplinks/other-methods/browse
-export const canOpenInPhantom = isAndroidDevice;
+export const canOpenInPhantom = isAndroidDevice && !isNativeApp;
 
 export function phantomBrowseUrl(): string {
   const target = new URL(window.location.href);

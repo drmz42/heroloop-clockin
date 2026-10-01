@@ -209,6 +209,9 @@ html[data-hl-platform='android'] .dungeon-boss-phase-shared .arena-lanes { paddi
 html[data-hl-platform='android'] .dungeon-shared-stage .arena-portrait { width: 104px !important; height: 104px !important; }
 
 /* App start screen: the landing hero fills exactly one phone screen. */
-.hl-app-entry { min-height: 100dvh; }
-.hl-app-entry .l5-hero { min-height: 100dvh; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+/* Exactly one screen, never scrollable. */
+.hl-app-entry { height: 100dvh; min-height: 0; overflow: hidden; overscroll-behavior: none; }
+.hl-app-entry main, .hl-app-entry .l5-hero { height: 100dvh; min-height: 0 !important; margin: 0; }
+.hl-app-entry .l5-hero { display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; padding: 0 0 calc(32px + env(safe-area-inset-bottom, 0px)); }
+.hl-app-entry .l5-hero-copy { position: relative; margin: 0; }
 .hl-app-entry .l5-play { min-height: 56px; }

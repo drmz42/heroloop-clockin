@@ -11,7 +11,7 @@ import { playerSync } from '@/game/backend';
 import { hasBlockedUsernameLanguage } from '@/game/username';
 import { clearSignupAttribution, readSignupAttribution } from '@/game/signupAttribution';
 import { clearLegacyState, makeRegisteredStarterState } from '@/game/state';
-import { canOpenInPhantom, isAndroidLayout, phantomBrowseUrl } from '@/platform/platform';
+import { canOpenInPhantom, isAndroidLayout, isNativeApp, phantomBrowseUrl } from '@/platform/platform';
 import {
   connectSolanaWallet,
   observeCompatibleSolanaWallets,
@@ -345,7 +345,8 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         // decision 2026-09-29). Only a one-time browser-progress import refuses, because that
         // progress has already been written into this Guest's server account.
         allowExistingAccountLogin: legacyWalletMode !== 'import',
-        confirmBeforeSign: wallet.name === 'Mobile Wallet Adapter'
+        // The native app's WebView hands wallet links to Android directly, so no second tap.
+        confirmBeforeSign: wallet.name === 'Mobile Wallet Adapter' && !isNativeApp
           ? () => new Promise<void>((resolve) => { setSignConfirm(() => resolve); })
           : undefined,
       });
@@ -462,7 +463,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
             <div className="mx-auto max-w-xl py-5">
               <div className="mx-auto grid h-14 w-14 place-items-center border border-violet-400/40 bg-violet-400/10 text-violet-300">{solanaAuthEnabled ? <Shield size={26} /> : <UserRound size={26} />}</div>
               <h2 className="mt-6 text-center font-pixel text-sm text-white sm:text-lg">{solanaAuthEnabled ? 'CONNECT SOLANA WALLET' : 'CONTINUE AS GUEST'}</h2>
-              <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-slate-400">{solanaAuthEnabled ? (isAndroidLayout ? 'Connect your Solana wallet' : 'Connect Phantom') + ' and sign one free message to prove ownership—no transaction and no gas.' : 'The current beta uses a temporary server account. Existing guests enter directly; new guests continue to registration.'}</p>
+              <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-slate-400">{solanaAuthEnabled ? (isNativeApp ? 'Choose any Solana wallet app — Phantom, Solflare, Backpack or Seed Vault —' : isAndroidLayout ? 'Connect your Solana wallet' : 'Connect Phantom') + ' and sign one free message to prove ownership—no transaction and no gas.' : 'The current beta uses a temporary server account. Existing guests enter directly; new guests continue to registration.'}</p>
               {solanaAuthEnabled && legacyWalletMode && (
                 <div className="mx-auto mt-5 max-w-md border border-amber-300/25 bg-amber-300/[.06] p-4 text-xs leading-5 text-amber-100/80">
                   {legacyWalletMode === 'link'
