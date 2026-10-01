@@ -100,7 +100,7 @@ function SectionHeading({ id, title, subtitle }: { id?: string; title: string; s
   );
 }
 
-function ArtButton({ art, label, onClick, className = '' }: { art: string; label: string; onClick: () => void; className?: string }) {
+export function ArtButton({ art, label, onClick, className = '' }: { art: string; label: string; onClick: () => void; className?: string }) {
   return (
     <button type="button" className={`l5-art-button ${className}`} onClick={onClick} aria-label={label}>
       <img src={art} alt="" draggable={false} />

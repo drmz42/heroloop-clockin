@@ -1,0 +1,251 @@
+/* Android (Solana Mobile / Seeker) phone layout. Active only when
+   html[data-hl-platform="android"], which src/platform/platform.ts sets in the
+   staging2 build (or a VITE_PLATFORM=android build) — every rule is inert on
+   staging.heroloop.xyz and Production. Mobile button rules: rectangular plates
+   (square corners, forged border from the active skin), at least 44 px tall for
+   primary touch targets and 36 px for dense in-battle controls. */
+
+html[data-hl-platform='android'] {
+  --hl-tabbar-h: calc(60px + env(safe-area-inset-bottom, 0px));
+  --hl-header-h: 52px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html[data-hl-platform='android'] body { overscroll-behavior: none; }
+html[data-hl-platform='android'] .game-shell { height: 100dvh; padding-top: env(safe-area-inset-top, 0px); }
+
+/* ── Header: logo, wallet, mail and balances only; navigation lives in the tab bar ── */
+html[data-hl-platform='android'] .game-command-bar { min-height: var(--hl-header-h); gap: 6px; padding: 6px 8px; }
+html[data-hl-platform='android'] .hl-nav-tabs { display: none; }
+html[data-hl-platform='android'] .hl-nav-logo { border-right: 0; padding: 0; margin: 0; }
+/* Emblem only (the logo's left square); the HEROLOOP wordmark is dropped so balances fit. */
+html[data-hl-platform='android'] .hl-nav-logo img { width: 38px !important; max-width: 38px !important; height: 38px !important; object-fit: cover; object-position: left center; }
+html[data-hl-platform='android'] .hl-nav-right { border-left: 0; padding-left: 0; gap: 6px; min-width: 0; }
+html[data-hl-platform='android'] .hl-nav-wallet-label,
+html[data-hl-platform='android'] .hl-nav-unit { display: none; }
+html[data-hl-platform='android'] .hl-nav-right > * { min-height: 40px; border-radius: 3px; }
+html[data-hl-platform='android'] .hl-nav-right > button:first-child,
+html[data-hl-platform='android'] .hl-nav-right > button[title='Mailbox'] { width: 40px; padding: 0; justify-content: center; display: grid; place-items: center; }
+html[data-hl-platform='android'] .hl-nav-right > div,
+html[data-hl-platform='android'] .hl-nav-right > button[aria-label='Open Rewards and Tokenomics'] { height: 40px; padding: 0 8px; gap: 5px; }
+@media (max-width: 370px) {
+}
+
+/* ── Play screen: one column at a time, chosen from the tab bar ── */
+html[data-hl-platform='android'] .game-main { overflow: hidden; }
+html[data-hl-platform='android'] .game-main > .hl-col-left,
+html[data-hl-platform='android'] .game-main > .hl-col-center,
+html[data-hl-platform='android'] .game-main > .hl-col-right { display: none; }
+html[data-hl-platform='android'][data-hl-section='battle'] .game-main > .hl-col-center,
+html[data-hl-platform='android'][data-hl-section='quests'] .game-main > .hl-col-left,
+html[data-hl-platform='android'][data-hl-section='bag'] .game-main > .hl-col-right {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+html[data-hl-platform='android'] .game-main > .hl-col-center { overflow-x: hidden; }
+
+/* ── Battle: the stage takes the free height; HUD sits in the corners, not over the lanes ── */
+html[data-hl-platform='android'] .battle-stage { flex: 1 1 auto; min-height: 420px; }
+html[data-hl-platform='android'] .hl-zoom-tip { display: none; }
+html[data-hl-platform='android'] .hl-battle-hud-left,
+html[data-hl-platform='android'] .hl-battle-hud-right { top: 8px; }
+html[data-hl-platform='android'] .hl-battle-hud-left { left: 8px; }
+html[data-hl-platform='android'] .hl-battle-hud-right { right: 8px; }
+html[data-hl-platform='android'] .hl-battle-hud-left button,
+html[data-hl-platform='android'] .hl-battle-hud-right button { height: 36px; min-width: 36px; border-radius: 2px; }
+html[data-hl-platform='android'] .arena-stage-inner { padding: 56px 10px 12px; justify-content: center; }
+html[data-hl-platform='android'] .arena-lanes { gap: 18px; }
+html[data-hl-platform='android'] .hl-battle-income { zoom: .56 !important; }
+html[data-hl-platform='android'] .hl-battle-footer { padding: 0 8px 8px; gap: 8px; flex-wrap: nowrap; align-items: flex-end; }
+html[data-hl-platform='android'] .hl-battle-dock button { border-radius: 2px; }
+html[data-hl-platform='android'] .hl-battle-dock .pm-boost,
+html[data-hl-platform='android'] .hl-battle-dock .pm-chest { height: 44px; width: 150px; }
+html[data-hl-platform='android'] .hl-battle-dock button[aria-label='Show chest drop rates'] { height: 44px; width: 44px; }
+html[data-hl-platform='android'] .hl-locations { margin-top: 6px; padding: 8px; }
+html[data-hl-platform='android'] .hl-locations .location-card { min-height: 76px; }
+
+/* ── Quests and Bag columns: comfortable touch targets ── */
+html[data-hl-platform='android'] .hl-col-left .quest-card button,
+html[data-hl-platform='android'] .hl-col-right .game-control:not([aria-label^='Bag ']) { min-height: 40px; border-radius: 2px; }
+html[data-hl-platform='android'] .hl-col-left .game-primary { min-height: 44px; }
+
+/* ── Windows (Heroes, Summon, Store…): full screen above the tab bar ── */
+html[data-hl-platform='android'] .game-window-overlay { bottom: var(--hl-tabbar-h); padding: 0; top: env(safe-area-inset-top, 0px); backdrop-filter: none; }
+html[data-hl-platform='android'] .game-window-overlay > .game-window {
+  height: 100%;
+  max-height: none;
+  max-width: none;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  box-shadow: none;
+}
+html[data-hl-platform='android'] .game-window-close { width: 44px; height: 44px; top: 6px; right: 6px; border-radius: 2px; }
+
+/* Generic modals built on fixed overlays keep clear of the tab bar and the edges. */
+html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\],
+html[data-hl-platform='android'] .fixed.inset-0.z-\[100\] { padding: 8px; }
+html[data-hl-platform='android'] .game-primary { border-radius: 2px; }
+
+/* ── Bottom tab bar ── */
+.hl-tabbar { display: none; }
+html[data-hl-platform='android'] .hl-tabbar {
+  position: relative;
+  z-index: 60;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  flex-shrink: 0;
+  height: var(--hl-tabbar-h);
+  padding: 0 2px env(safe-area-inset-bottom, 0px);
+  border-top: 1px solid #6b5327;
+  background: linear-gradient(180deg, #1a1712 0%, #0b0b09 100%);
+  box-shadow: 0 -10px 28px rgba(0, 0, 0, .55);
+}
+.hl-tabbar-item {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  border-top: 2px solid transparent;
+  background: transparent;
+  color: #9b907c;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.hl-tabbar-item span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hl-tabbar-item.is-active { color: #ffd36e; border-top-color: #e0a83c; background: radial-gradient(circle at 50% 0%, rgba(224, 168, 60, .18), transparent 70%); }
+.hl-tabbar-item:focus-visible { outline: 2px solid #ffd36e; outline-offset: -3px; }
+
+/* ── More sheet ── */
+.hl-more-sheet {
+  position: fixed;
+  inset: 0 0 var(--hl-tabbar-h) 0;
+  z-index: 55;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(0, 0, 0, .62);
+}
+.hl-more-panel {
+  width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 12px 12px 14px;
+  border-top: 1px solid #9a6a22;
+  background: #100f0c;
+  box-shadow: 0 -18px 50px rgba(0, 0, 0, .7);
+}
+.hl-more-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.hl-more-close { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 2px; }
+.hl-more-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.hl-more-item {
+  display: flex;
+  min-height: 72px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 2px;
+  font-size: 13px;
+  font-weight: 800;
+}
+.hl-more-item.is-active { color: #ffd36e; }
+.hl-more-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.hl-more-links button { display: flex; min-height: 44px; align-items: center; justify-content: center; gap: 6px; border-radius: 2px; font-size: 13px; font-weight: 700; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hl-tabbar-item { transition: none; }
+}
+
+/* Battle HUD fits 360 px: Dungeons shows its icon only (the label stays for screen readers). */
+html[data-hl-platform='android'] .hl-battle-hud-right button[aria-label='Open Dungeons information'] { width: 40px; padding: 0; justify-content: center; font-size: 0; }
+html[data-hl-platform='android'] .hl-battle-hud-right button[aria-label='Open Dungeons information'] svg + svg { display: none; }
+html[data-hl-platform='android'] .hl-battle-hud-left button:first-child { padding-inline: 8px; }
+html[data-hl-platform='android'] .hl-nav-logo { min-height: 40px; }
+html[data-hl-platform='android'] .arena-lanes { transform: scale(.94); transform-origin: center; }
+@media (min-width: 400px) {
+  html[data-hl-platform='android'] .arena-lanes { transform: scale(1.1); }
+}
+
+/* Summon: the altar and the x1/x10/x100 buttons come first; balance and rates follow. */
+html[data-hl-platform='android'] .summon-side-panel { order: 1; }
+html[data-hl-platform='android'] .summon-layout { padding: 56px 10px 16px; gap: 12px; }
+html[data-hl-platform='android'] .summon-altar { padding: 12px; }
+html[data-hl-platform='android'] .summon-cta { border-radius: 2px; min-height: 48px; }
+
+/* Seeker edition preview: display-only $HERO surfaces are hidden (src/platform/platform.ts). */
+html[data-hl-edition='seeker'] .hl-hero-only { display: none !important; }
+
+/* Quests tab: the quest list comes before the Commander card, and the current
+   Tutorial quest leads the list so a new player sees the next step first. */
+html[data-hl-platform='android'] .hl-col-left > .hl-quest-list { order: -1; flex: 0 0 auto; display: flex; flex-direction: column; }
+html[data-hl-platform='android'] .hl-quest-list > section[aria-label='Tutorial Quests'] { order: -1; }
+
+/* Every full-screen overlay (hero card, item, chest result, mailbox…) ends above the
+   tab bar, so its bottom action row is never hidden behind the navigation. */
+html[data-hl-platform='android']:has(.hl-tabbar) .fixed.inset-0 { bottom: var(--hl-tabbar-h); }
+
+/* Dungeon / Boss Hunt: the room title sits under the taller Android HUD buttons. */
+html[data-hl-platform='android'] .dungeon-room-title { top: 52px; left: 8px; max-width: 44%; }
+/* Long unit names stay on one line in the battle lanes. */
+html[data-hl-platform='android'] .arena-lanes { overflow-wrap: normal; word-break: keep-all; }
+
+/* Dungeon / Boss Hunt on a phone: the control panel docks along the bottom of the
+   stage, leaving the top for the room title and the boss HUD; the shared Boss stands
+   on the right half above the panel. */
+html[data-hl-platform='android'] .dungeon-battle-panel { top: auto; right: 8px; bottom: 8px; left: 8px; width: auto; max-width: none; }
+html[data-hl-platform='android'] .dungeon-battle-panel button { min-height: 44px; border-radius: 2px; }
+html[data-hl-platform='android'] .arena-stage-inner.dungeon-panel-open { padding: 96px 10px 190px; }
+html[data-hl-platform='android'] .dungeon-shared-stage { top: 56px; right: 8px; bottom: 190px; width: 46%; }
+html[data-hl-platform='android'] .dungeon-boss-phase-shared .arena-lanes { padding-right: 48%; transform: none; }
+html[data-hl-platform='android'] .dungeon-shared-stage .arena-portrait { width: 104px !important; height: 104px !important; }
+
+/* App start screen: the landing hero fills exactly one phone screen. */
+/* Exactly one screen, never scrollable. */
+.hl-app-entry { height: 100dvh; min-height: 0; overflow: hidden; overscroll-behavior: none; }
+.hl-app-entry main, .hl-app-entry .l5-hero { height: 100dvh; min-height: 0 !important; margin: 0; }
+.hl-app-entry .l5-hero { display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; padding: 0 0 calc(32px + env(safe-area-inset-bottom, 0px)); }
+.hl-app-entry .l5-hero-copy { position: relative; margin: 0; }
+.hl-app-entry .l5-play { min-height: 56px; }
+/* The whole team stays on screen: the 1600x828 art is scaled so the five heroes (36-91 % of its
+   width) fit a phone's width, sits just above the copy and fades into the sky at its top. */
+.hl-app-entry { --hl-entry-art-top: max(0px, calc(56dvh - 86vw)); }
+.hl-app-entry .l5-hero-art { top: var(--hl-entry-art-top); height: 86vw; background-size: 166vw auto; background-position: 84% 50%; -webkit-mask-image: linear-gradient(180deg, transparent, #000 22%); mask-image: linear-gradient(180deg, transparent, #000 22%); }
+.hl-app-entry .l5-hero-fade { top: calc(var(--hl-entry-art-top) + 60vw); height: 50dvh; }
+
+/* Heroes window on a phone: filters and the Active Team took most of the screen and the
+   hero list was its own small scroller underneath, so a swipe on the top part did nothing.
+   The whole window scrolls as one page instead. */
+html[data-hl-platform='android'] .themed-screen-heroes { height: auto; min-height: 100%; overflow: visible; }
+html[data-hl-platform='android'] .themed-screen-heroes > .game-scrollbar { flex: none; min-height: 0; overflow: visible; padding-bottom: 24px; }
+
+/* Heroes on a phone: four compact cards per row (three below 400 px) so a roster of a
+   hundred heroes is a short scroll; filters in three columns; a smaller Active Team. */
+html[data-hl-platform='android'] .hl-hero-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 399px) { html[data-hl-platform='android'] .hl-hero-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+html[data-hl-platform='android'] .hl-hero-card { padding: 4px; }
+html[data-hl-platform='android'] .hl-hero-card .hl-hero-meta,
+html[data-hl-platform='android'] .hl-hero-card .hl-hero-copies { display: none; }
+html[data-hl-platform='android'] .hl-hero-card > div:nth-child(2) { margin-top: 3px; font-size: 10px; }
+html[data-hl-platform='android'] .hl-hero-card > div:nth-child(4) { margin-top: 2px; padding-top: 2px; font-size: 9px; flex-direction: column; gap: 1px; }
+html[data-hl-platform='android'] .hl-hero-card .pointer-events-none.absolute span { padding: 0 3px; font-size: 7px; }
+html[data-hl-platform='android'] .hl-hero-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html[data-hl-platform='android'] .hl-team-row { min-height: 70px; gap: 10px; margin-top: 8px; }
+html[data-hl-platform='android'] .hl-team-empty { width: 64px; height: 64px; }
+
+/* Lost connection: the "Battle link recovering" notice sat under the battle footer. */
+html[data-hl-platform='android'] [data-combat-recovery] { top: 52px; bottom: auto; z-index: 45; }
+.hl-offline-bar { display: none; }
+html[data-hl-platform='android'] .hl-offline-bar {
+  display: flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0;
+  min-height: 30px; padding: 4px 10px; background: #4a1414; color: #ffd9d5; font-size: 12px; font-weight: 800;
+  border-bottom: 1px solid #a8423f;
+}

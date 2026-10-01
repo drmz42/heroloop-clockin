@@ -26,6 +26,7 @@ import {
   recoverMissingFormationHeroes,
 } from "./state.ts";
 import { createFeatureFlagGate } from "./feature_flags.ts";
+import { parseEdition, seekerRefusal } from "./seeker_edition.ts";
 import {
   handleTelegramWebhook,
   handleXCallback,
@@ -44,6 +45,7 @@ const authInternalUrl = Deno.env.get("AUTH_INTERNAL_URL") ?? "http://auth:9999";
 const authWalletInternalUrl = Deno.env.get("AUTH_WALLET_INTERNAL_URL") ?? "http://auth-wallet:9999";
 const edition = parseEdition(Deno.env.get("HEROLOOP_EDITION"));
 const testerControlsEnabled = Deno.env.get("TESTER_CONTROLS_ENABLED") === "true";
+const edition = parseEdition(Deno.env.get("HEROLOOP_EDITION"));
 const siwsChallengeEnabled = Deno.env.get("SIWS_CHALLENGE_ENABLED") === "true";
 const siwsVerificationEnabled = Deno.env.get("SIWS_VERIFICATION_ENABLED") === "true";
 const siwsAccountLoginEnabled = Deno.env.get("SIWS_ACCOUNT_LOGIN_ENABLED") === "true";
@@ -905,6 +907,8 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
     if (editionRefusal) return errorResponse(409, editionRefusal, requestId);
     const pausedFlag = await pausedFlagFor(String(parsed.value.action));
     if (pausedFlag) return errorResponse(409, "feature_paused", requestId);
+    const editionRefusal = seekerRefusal(edition, String(parsed.value.action), payload);
+    if (editionRefusal) return errorResponse(409, editionRefusal, requestId);
     if (parsed.value.action === "account_status") {
       const payloadError = validateAccountStatusPayload(payload);
       if (payloadError) return errorResponse(400, payloadError, requestId);
