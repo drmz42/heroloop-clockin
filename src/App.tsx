@@ -571,6 +571,7 @@ function App() {
 
       {isAndroidLayout ? (
         <MobileTabBar
+          readyQuests={readyQuestCount(game.state)}
           tab={tab}
           section={mobileSection}
           moreOpen={moreOpen}
