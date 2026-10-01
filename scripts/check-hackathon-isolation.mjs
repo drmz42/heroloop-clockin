@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { stripTypeScriptTypes } from 'node:module';
 const read=p=>readFileSync(new URL(`../${p}`,import.meta.url),'utf8');
 const compose=read('selfhosted/compose.hackathon.yml');
 assert.match(compose,/127\.0\.0\.1:25432:5432/);
@@ -30,7 +29,9 @@ const storage=read('src/game/editionStorage.ts');
 assert.match(storage,/\['staging2', 'seeker'\]/);
 assert.match(storage,/heroloop-seeker:v1:/);
 for (const mode of ['staging', 'production', 'staging2', 'seeker']) {
-  const compiled=stripTypeScriptTypes(storage).replaceAll('import.meta.env',JSON.stringify({MODE:mode}));
+  // This small owner has only string annotations. Keep QA dependency-free;
+  // unsupported syntax fails during import rather than skipping execution.
+  const compiled=storage.replaceAll(': string','').replaceAll('import.meta.env',JSON.stringify({MODE:mode}));
   const {editionStorageKey}=await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
   const oldKey='afk-heroes-save-v7';
   const store=new Map([[oldKey,'ordinary-save']]);
