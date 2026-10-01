@@ -215,3 +215,9 @@ html[data-hl-platform='android'] .dungeon-shared-stage .arena-portrait { width: 
 .hl-app-entry .l5-hero { display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; padding: 0 0 calc(32px + env(safe-area-inset-bottom, 0px)); }
 .hl-app-entry .l5-hero-copy { position: relative; margin: 0; }
 .hl-app-entry .l5-play { min-height: 56px; }
+
+/* Heroes window on a phone: filters and the Active Team took most of the screen and the
+   hero list was its own small scroller underneath, so a swipe on the top part did nothing.
+   The whole window scrolls as one page instead. */
+html[data-hl-platform='android'] .themed-screen-heroes { height: auto; min-height: 100%; overflow: visible; }
+html[data-hl-platform='android'] .themed-screen-heroes > .game-scrollbar { flex: none; min-height: 0; overflow: visible; padding-bottom: 24px; }
