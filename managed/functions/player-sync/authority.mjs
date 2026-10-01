@@ -1,4 +1,4 @@
-import { V6_LOCATION_UNLOCK_LEVELS, v6EnchantMultiplier, v6ItemImplicit, v6LevelMastery, v6StarMultiplier } from './balance-v6.mjs';
+import { V6_LOCATION_UNLOCK_LEVELS, v6EnchantMultiplier, v6AttackSpeedPoints, v6ItemImplicit, v6LevelMastery, v6StarMultiplier } from './balance-v6.mjs';
 
 const RARITIES = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
 const RARITY_SCALE = [1, 1.441163, 2.147372, 3.084756, 4.435796, 6.370091, 9.143236, 13.119459, 18.814853];
@@ -299,7 +299,7 @@ function canonicalItemStats(slotted) {
       const effective = stat?.isPercent === true
         ? Math.round(bounded * multiplier * 1000) / 1000
         : Math.round(bounded * multiplier);
-      totals[stat.key] += effective;
+      totals[stat.key] += stat.key === 'atkSpeed' ? v6AttackSpeedPoints(effective, stat.isPercent) : effective;
     }
     const implicit = v6ItemImplicit(slot, item?.rarity, item?.item_level);
     for (const key of ['hp', 'atk', 'def']) {

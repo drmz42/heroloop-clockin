@@ -720,11 +720,16 @@ function smoothedRecommended(rows: (string | number)[][]) {
   const header = rows[0] as string[];
   const column = (name: string) => header.indexOf(name);
   const body = rows.slice(1);
-  const factors = [1, 2, 3].map((size) => Math.exp(avg(body.map((row) => Math.log(Number(row[column(`recommended_${size}`)]) / Number(row[column('target_power_per_lane')]))))));
+  // A local onboarding override must not retune the displayed Power of every other Location.
+  const factors = [1, 2, 3].map((size) => Math.exp(avg(body.map((row) => Math.log(
+    Number(LOC.rows[Number(row[0]) - 1].smoothingBaselineRecommendedPower?.[size - 1]
+      ?? row[column(`recommended_${size}`)]) / Number(row[column('target_power_per_lane')]),
+  )))));
   const out: (string | number)[][] = [['location', 'target_per_lane', ...[1, 2, 3].map((size) => `displayed_per_lane_${size}hero (x${factors[size - 1].toFixed(2)})`), 'displayed_team_3hero', ...[1, 2, 3].map((size) => `measured_per_lane_${size}hero`), 'v5_displayed_per_lane_3hero']];
   for (const row of body) {
     const target = Number(row[column('target_power_per_lane')]);
-    const shown = factors.map((factor) => sig3(target * factor));
+    const shown: number[] = LOC.rows[Number(row[0]) - 1].recommendedPowerOverride
+      ?? factors.map((factor) => sig3(target * factor));
     out.push([row[0], Math.round(target), ...shown, sig3(shown[2] * 3), ...[1, 2, 3].map((size) => row[column(`recommended_${size}`)]), row[column('v5_recommended_3')]]);
   }
   return out;

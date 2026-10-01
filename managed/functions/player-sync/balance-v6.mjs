@@ -27,6 +27,12 @@ export function v6EnchantMultiplier(level) {
   return 1 + clamp(Math.floor(finite(level)), 0, 20) * V6_ENCHANT_PER_LEVEL;
 }
 
+// Legacy non-percent Attack Speed rolls are milliseconds, not fractional bonus points.
+// Convert against a one-second reference; modern percent rolls already use fractions.
+export function v6AttackSpeedPoints(value, isPercent) {
+  return finite(value) / (isPercent === true ? 1 : 1000);
+}
+
 // Fixed slot base stat ("implicit") every item carries in addition to its random lines.
 const IMPLICIT_BY_SLOT = {
   class_weapon: { atk: 1 }, gloves: { atk: 1 }, ring: { atk: 1 }, amulet: { atk: 1 },
@@ -72,8 +78,9 @@ export const V6_LOCATION_UNLOCK_LEVELS = V6_LOCATION_RANGES.map(([low]) => low);
 // Lane-0 enemy base [HP, Attack, Defense] per Location, calibrated for a 72% reference win rate.
 // Location 1 keeps the v5 onboarding enemy so a new player's bare starter hero still wins it;
 // Location 2 keeps the v5 Attack (20) so a hero with 0-2 items can clear it.
+// Location 3 uses Attack 45 for a smoother four-item Common onboarding build.
 export const V6_ENEMY_BASE = [
-  [99, 10.24, 2.5], [126, 20, 3.94], [168, 76.5, 5.24], [240, 95.4, 7.48], [314, 144, 9.78],
+  [99, 10.24, 2.5], [126, 20, 3.94], [168, 45, 5.24], [240, 95.4, 7.48], [314, 144, 9.78],
   [439, 184, 13.6], [613, 242, 18.8], [869, 294, 26.5], [1130, 426, 34.1], [1600, 524, 47.6],
   [1970, 717, 58.5], [2650, 945, 77.9], [3810, 1140, 111], [4770, 1440, 134], [5870, 1900, 161],
   [7520, 2370, 199], [9530, 2990, 245], [11300, 4200, 291], [15200, 4790, 386], [19900, 5810, 486],
@@ -83,4 +90,3 @@ export function v6EnemyBase(location) {
   const [hp, atk, def] = V6_ENEMY_BASE[clamp(Math.floor(finite(location)), 1, V6_ENEMY_BASE.length) - 1];
   return { hp, atk, def };
 }
-

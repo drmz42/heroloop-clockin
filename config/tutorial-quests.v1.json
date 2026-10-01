@@ -10,7 +10,8 @@
     "hideAfterFinalClaim": true,
     "newRegistrationsStartAt": 1,
     "existingSavesDefaultCompleted": true,
-    "replayIsDisplayOnly": true
+    "replayIsDisplayOnly": true,
+    "refundTutorialBossKeyOnFailure": true
   },
   "claim": {
     "serverOwned": true,
@@ -28,7 +29,8 @@
     "openBatchSizes": [1, 10],
     "equipmentCapacity": 64,
     "countsTowardOrdinaryOpenChestProgress": true,
-    "atomicConsumeAndItemCreate": true
+    "atomicConsumeAndItemCreate": true,
+    "firstOpenGuarantee": { "slot": "helmet", "maximumItemLevel": "accountLevel", "preserveRarityOdds": true }
   },
   "quests": [
     {
@@ -99,7 +101,7 @@
       "ordinal": 9,
       "id": "reach-location-2",
       "label": "Reach Location 2",
-      "progressSource": "combat_settlement.highest_location",
+      "progressSource": "combat_settlement.highest_location_with_account_level_access",
       "target": 2,
       "reward": { "gold": 1000 }
     },

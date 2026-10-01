@@ -214,7 +214,7 @@ function validActionPayload(action: string, body: Record<string, unknown>): bool
       return uuid(body.idempotency_key) && (body.count === 1 || body.count === 10);
     case "item_mutate":
       return uuid(body.idempotency_key) && ["lock", "sell"].includes(String(body.operation))
-        && Array.isArray(body.item_uids) && body.item_uids.length >= 1 && body.item_uids.length <= 64
+        && Array.isArray(body.item_uids) && body.item_uids.length >= 1 && body.item_uids.length <= 256
         && body.item_uids.every(uuid)
         && (body.operation === "sell" || (body.item_uids.length === 1 && typeof body.locked === "boolean"));
     case "item_equip":

@@ -1675,7 +1675,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       const itemUids = payload.item_uids;
       const locked = operation === "lock" ? payload.locked : null;
       const valid = !payloadError && requestKey && ["lock", "sell"].includes(String(operation)) &&
-        Array.isArray(itemUids) && itemUids.length >= 1 && itemUids.length <= 64 &&
+        Array.isArray(itemUids) && itemUids.length >= 1 && itemUids.length <= 256 &&
         itemUids.every((uid) => typeof uid === "string" && uuidPattern.test(uid)) &&
         new Set(itemUids).size === itemUids.length &&
         (operation === "sell" || (itemUids.length === 1 && typeof locked === "boolean"));

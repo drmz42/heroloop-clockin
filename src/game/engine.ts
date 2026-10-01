@@ -3,7 +3,7 @@ import { HERO_MAP, RARITY_INDEX } from './heroes';
 import { ITEM_MAP, maxChestRarityForLocation } from './items';
 import { recommendedTeamPower } from './balance';
 import { enchantMultiplier, enchantResonancePercent, MAX_ENCHANT_LEVEL } from './enchant';
-import { V6_LOCATION_RANGES, v6EnemyBase, v6ItemImplicit, v6LevelMastery, v6StarMultiplier } from '../../managed/functions/player-sync/balance-v6.mjs';
+import { V6_LOCATION_RANGES, v6EnemyBase, v6AttackSpeedPoints, v6ItemImplicit, v6LevelMastery, v6StarMultiplier } from '../../managed/functions/player-sync/balance-v6.mjs';
 
 export interface HeroFullStats {
   hp: number; atk: number; def: number; speed: number;
@@ -97,7 +97,7 @@ export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
           case 'hp': hp += value; break;
           case 'atk': atk += value; break;
           case 'def': def += value; break;
-          case 'atkSpeed': atkSpeed += value; break;
+          case 'atkSpeed': atkSpeed += v6AttackSpeedPoints(value, s.isPercent); break;
           case 'critChance': critChance += value; break;
           case 'critDamage': critDamage += value; break;
           case 'dodge': dodge += value; break;

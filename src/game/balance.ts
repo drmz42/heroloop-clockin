@@ -7,8 +7,9 @@ export const BASE_POWER_PER_LANE = [49, 99, 136, 188, 259, 358, 494, 682, 941, 1
 // factor per team size (x0.98 / x1.36 / x1.57), measured as the 72% win-rate Power on the server combat
 // engine by `npx tsx scripts/model-balance-v6.ts` (recommended-power.csv), rounded to whole Power.
 // Locations 1-2 keep their v5 onboarding enemy strength and therefore their v5 values.
+// Location 3 uses its measured onboarding values after the Attack 45 override.
 export const RECOMMENDED_POWER_PER_LANE: readonly (readonly [number, number, number])[] = [
-  [44, 46, 77], [91, 133, 133], [134, 185, 214], [185, 256, 296], [255, 353, 408],
+  [44, 46, 77], [91, 133, 133], [128, 146, 152], [185, 256, 296], [255, 353, 408],
   [352, 488, 563], [486, 673, 778], [671, 929, 1070], [926, 1280, 1480], [1280, 1770, 2040],
   [1760, 2440, 2820], [2430, 3370, 3890], [3360, 4650, 5370], [4270, 5900, 6820], [5420, 7490, 8660],
   [6880, 9520, 11000], [8740, 12100, 14000], [11100, 15400, 17700], [14100, 19500, 22500], [17900, 24800, 28600],

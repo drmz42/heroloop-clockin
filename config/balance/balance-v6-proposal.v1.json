@@ -135,11 +135,14 @@
         },
         "enemy": {
           "hp": 168,
-          "atk": 76.5,
+          "atk": 45,
           "def": 5.24
         },
         "calibratedAttackPerReferenceHp": 0.1654,
-        "calibrationSamples": 850
+        "calibrationSamples": 850,
+        "onboardingOverride": "Founder 2026-09-30: Location 3 Attack 45 instead of calibrated 76.5. A Common Level 10 zero-Star hero with four Common Level 10 items at +0 won 80.8% of fresh waves across five classes (100 seeds/class); HP and Defense unchanged.",
+        "recommendedPowerOverride": [128, 146, 152],
+        "smoothingBaselineRecommendedPower": [149, 205, 257]
       },
       {
         "location": 4,

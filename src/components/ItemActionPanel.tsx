@@ -187,5 +187,5 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
 
 function CompareDelta({ delta, text }: { delta: number; text: string }) {
   if (delta === 0) return <span className="ml-1 font-semibold text-slate-400">(=)</span>;
-  return <span className={`ml-1 font-semibold ${delta > 0 ? 'text-emerald-300' : 'text-rose-400'}`}>({delta > 0 ? '▲' : '▼'}{text})</span>;
+  return <span className={`item-compare-delta ml-1 font-semibold ${delta > 0 ? 'item-compare-delta--up' : 'item-compare-delta--down'}`}>({delta > 0 ? '▲' : '▼'}{text})</span>;
 }

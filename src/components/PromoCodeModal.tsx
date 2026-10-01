@@ -4,13 +4,17 @@ import { playerSync } from '@/game/backend';
 import { BossKeyIcon } from '@/components/BossKeyIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 
+type PotionSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
+
 export interface PromoRedemption {
   label: string;
-  rewards: { gold: number; hero: number; summon_scrolls: number; boss_keys: number };
+  rewards: { gold: number; hero: number; summon_scrolls: number; boss_keys: number; chests?: number; potions?: Partial<Record<PotionSize, number>> };
   state: unknown;
   revision: number;
   token_balance: number;
 }
+
+const POTION_LABEL: Record<PotionSize, string> = { xs: 'XS', sm: 'S', md: 'M', lg: 'L', xl: 'XL', xxl: 'XXL' };
 
 const ERROR_TEXT: Record<string, string> = {
   invalid_promo_code: 'This code is invalid or has expired.',
@@ -47,6 +51,8 @@ export function PromoCodeModal({ onClose, onRedeemed }: { onClose: () => void; o
     result.rewards.hero > 0 && { label: `${result.rewards.hero.toLocaleString()} $HERO` },
     result.rewards.summon_scrolls > 0 && { label: `${result.rewards.summon_scrolls.toLocaleString()} Summon Scrolls`, icon: <SummonScrollArtwork size={20} /> },
     result.rewards.boss_keys > 0 && { label: `${result.rewards.boss_keys.toLocaleString()} Boss Keys`, icon: <BossKeyIcon size={20} /> },
+    (result.rewards.chests ?? 0) > 0 && { label: `${(result.rewards.chests ?? 0).toLocaleString()} ${result.rewards.chests === 1 ? 'Chest' : 'Chests'}` },
+    ...(Object.entries(result.rewards.potions ?? {}) as [PotionSize, number][]).map(([size, amount]) => amount > 0 && { label: `${amount.toLocaleString()} ${POTION_LABEL[size] ?? size} Potions` }),
   ].filter((reward): reward is { label: string; icon?: JSX.Element } => Boolean(reward)) : [];
 
   return (

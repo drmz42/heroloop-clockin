@@ -234,6 +234,21 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   };
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2000); };
+  // A Boss Hunt that ends changes Boss Keys on the server (a win spends the key for good;
+  // a loss during the Tutorial returns it), so re-read the save instead of guessing.
+  const handleDungeonChange = async (next: DungeonCheckpoint | null) => {
+    const endedBossHunt = next === null && activeDungeon?.type === 'boss_hunt';
+    const keysBefore = state.bossKeys;
+    setActiveDungeon(next);
+    if (!endedBossHunt) return;
+    const refreshed = await playerSync<{ revision: number; state?: { bossKeys?: number } }>('game_state_load');
+    if (!refreshed) return;
+    game.applyServerRevision(refreshed.revision);
+    const keys = refreshed.state?.bossKeys;
+    if (typeof keys !== 'number') return;
+    game.syncBossKeys(keys);
+    if (keys > keysBefore && !state.tutorial.questCompleted) showToast('Boss Key returned · grow stronger and try again');
+  };
   const equipmentFailure = (action: string) => {
     const code = game.equipmentError();
     return `${action} failed · ${(EQUIPMENT_ERROR_LABELS[code] ?? code) || 'unknown error'}`;
@@ -504,7 +519,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             const ordinal = Math.max(1, Math.min(10, state.tutorial.questOrdinal));
             const quest = TUTORIAL_QUESTS[ordinal - 1];
             const activeEquipped = state.ownedHeroes.some((hero) => state.team.includes(hero.uid) && Object.keys(hero.equipped).length > 0);
-            const progress = [state.totalKills, state.tutorial.openedCount, activeEquipped ? 1 : 0, state.summons, state.team.length, state.summons, state.trainingCamp.heroUids.some(Boolean) ? 1 : 0, state.autoPot.enabled ? 1 : 0, state.highestLocation, Math.max(0, state.totalBossKills - state.tutorial.bossKillsAtKeyGrant)][ordinal - 1];
+            const progress = [state.totalKills, state.tutorial.openedCount, activeEquipped ? 1 : 0, state.summons, state.team.length, state.summons, state.trainingCamp.heroUids.some(Boolean) ? 1 : 0, state.autoPot.enabled ? 1 : 0, state.accountLevel >= locationUnlockLevel(2) ? state.highestLocation : Math.min(1, state.highestLocation), Math.max(0, state.totalBossKills - state.tutorial.bossKillsAtKeyGrant)][ordinal - 1];
             const done = progress >= quest[2];
             return <section className="mb-2" aria-label="Tutorial Quests">
               <div className="section-kicker mb-1">Tutorial Quests · {ordinal}/10</div>
@@ -563,7 +578,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
       {/* ── CENTER COLUMN — responsive, max-width removed ── */}
       <div className="hl-col-center game-scrollbar order-1 flex min-h-[464px] w-full shrink-0 flex-col overflow-hidden lg:order-none lg:min-h-0 lg:w-auto lg:min-w-0 lg:flex-1 lg:overflow-y-auto">
         {/* Arena */}
-        <div className="battle-stage relative min-h-[320px] flex-1 overflow-hidden bg-arena">
+        <div className={`battle-stage ${!activeDungeon ? 'battle-stage-normal' : ''} relative min-h-[320px] flex-1 overflow-hidden bg-arena`}>
           {!activeDungeon && showZoomTip && <div className="hl-zoom-tip absolute left-1/2 top-12 z-40 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-lg border border-[#80683f] bg-[#11130f]/95 px-3 py-1.5 font-vt ui-text-small font-bold text-[#d8c9ad] shadow-xl backdrop-blur-sm"><span>Adjust browser zoom with <kbd className="text-[#ffd36e]">Ctrl +</kbd> / <kbd className="text-[#ffd36e]">Ctrl -</kbd> to fit all interface elements.</span><button type="button" onClick={() => setShowZoomTip(false)} className="text-[#8f887b] hover:text-white" aria-label="Dismiss browser zoom tip"><X size={12} /></button></div>}
           <div className={`hl-battle-hud-left absolute left-3 top-3 flex items-start gap-1.5 ${showPotSettings || showBattleSettings ? 'z-[110]' : 'z-30'}`}>
             {!activeDungeon ? <div className="relative">
@@ -601,7 +616,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             resetKey={`${activeDungeon?.encounter_id ?? 'normal'}:${game.state.currentLocation}:${game.state.team.join('|')}`}
             onRetry={activeDungeon ? undefined : game.retry}
           >
-            <CombatPresentationLayer game={game} activeDungeon={activeDungeon} dungeonUnits={dungeonUnits} dungeonFloaters={dungeonFloaters} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
+            <div className={activeDungeon ? 'h-full' : 'normal-battle-content relative'}>
+              <CombatPresentationLayer game={game} activeDungeon={activeDungeon} dungeonUnits={dungeonUnits} dungeonFloaters={dungeonFloaters} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
+            </div>
           </CombatErrorBoundary>
           {!activeDungeon && game.combatRecovery.status !== 'healthy' && (
             <div className="absolute inset-x-0 bottom-3 z-30 flex justify-center px-3" data-combat-recovery={game.combatRecovery.status}>
@@ -611,7 +628,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               </div>
             </div>
           )}
-          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={setActiveDungeon} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls })} />}
+          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={(next) => void handleDungeonChange(next)} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls })} />}
           {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Server reward result:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Granted together exactly once by the server</small></> : <><span><SummonScrollArtwork size={18} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST PREVIEW</span><small>{dungeonCompletion.scrolls === 2 ? 'Scrolls granted exactly once by the server; Dungeon Chest is not yet granted' : 'No Scrolls granted for this run; Dungeon Chest is not yet granted'}</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
           {!activeDungeon && <div className="hl-battle-hud-right absolute right-3 top-3 z-30 flex items-center gap-1.5">
             <button type="button" onClick={() => setShowDungeonInfo(true)} className="pm-socket game-control flex h-7 items-center gap-1 px-2 py-0.5 ui-text-small font-bold text-[#d7c6ea]" aria-label="Open Dungeons information">
@@ -626,7 +643,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             </button>
           </div>}
           {!activeDungeon && import.meta.env.MODE === 'staging' && <TestControls game={game} />}
-          {!activeDungeon && <div className="hl-battle-dock absolute bottom-3 right-3 z-30 flex items-end gap-1.5">
+          {!activeDungeon && <div className="hl-battle-footer normal-battle-footer relative z-30 flex shrink-0 flex-wrap items-end justify-between gap-3 px-3 pb-3">
+            <TokenEarningsPanel status={tok.status} stale={tok.incomeStale} today={game.state.tokensEarnedToday} heroes={state.ownedHeroes.length} defeated={state.totalKills} bosses={state.totalBossKills} />
+            <div className="hl-battle-dock ml-auto flex items-end gap-1.5">
             {showDropRates && dropRatesPos && createPortal(<div role="dialog" aria-label="Chest drop rate" className="fixed z-[100] w-56 overflow-y-auto rounded-lg border border-[#80683f] bg-[#11130f]/98 p-2.5 shadow-2xl backdrop-blur-sm" style={{ right: dropRatesPos.right, bottom: dropRatesPos.bottom, maxHeight: dropRatesPos.maxHeight }}>
               <div className="flex items-center justify-between gap-2"><strong className="ui-text-small uppercase tracking-wider text-[#efd18a]">Chest drop rate</strong><button type="button" onClick={() => setShowDropRates(false)} aria-label="Close drop rates"><X size={13} /></button></div>
               <p className="mt-1 ui-text-small text-[#978f81]">Current Account Level {state.accountLevel}. Rates update with account level and global rarity availability.</p>
@@ -646,8 +665,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                 <span>{game.chestOpening ? 'OPENING…' : `OPEN · ${state.chests.length}`}</span>
               </button>
             </div>
+            </div>
           </div>}
-          {!activeDungeon && <TokenEarningsPanel status={tok.status} stale={tok.incomeStale} today={game.state.tokensEarnedToday} heroes={state.ownedHeroes.length} defeated={state.totalKills} bosses={state.totalBossKills} />}
         </div>
 
         {/* Location cards — redesigned like screenshot 4 */}
@@ -800,7 +819,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               <button type="button" aria-label={inventoryLockMode ? 'Exit Inventory Lock mode' : 'Enter Inventory Lock mode'} aria-pressed={inventoryLockMode} onClick={() => { setInventoryLockMode((active) => !active); setSelectedItem(null); setSelectedItemSource(null); setSelectedItemSlot(null); setShowBulkSellConfirm(false); }} className={`game-control grid min-w-0 place-items-center px-0 py-1 ${inventoryLockMode ? 'border-red-500/70 bg-red-950/55 text-red-300' : 'text-[#a69c8c]'}`} title={inventoryLockMode ? 'Lock mode active — click to exit' : 'Lock mode — click items to lock or unlock'}><LockIcon size={13} /></button>
               <div className="relative">
                 <button onClick={() => setShowBulkSellConfirm((value) => !value)} disabled={unlockedSellTotal === 0} className="game-control game-danger flex min-w-0 w-full items-center justify-center gap-1 px-1 py-1 ui-text-medium font-bold" title={`Sell all unlocked items for ${formatNum(unlockedSellTotal)} gold`}><Coins size={12} /> Sell</button>
-                {showBulkSellConfirm && <div className="item-sell-confirm absolute right-0 top-full z-40 mt-1 w-48 rounded-md border border-[#80502d] p-2 text-left shadow-xl"><p className="ui-text-small font-bold text-[#ead9bf]">Sell all unlocked items for {formatNum(unlockedSellTotal)} Gold?</p><div className="mt-1.5 grid grid-cols-2 gap-1"><button type="button" onClick={() => setShowBulkSellConfirm(false)} className="game-control py-1 ui-text-small font-bold">Cancel</button><button type="button" onClick={async () => { const limited = bagItems.filter((item) => !item.locked && ['divine', 'celestial'].includes(ITEM_MAP[item.itemId]?.rarity ?? '')); await Promise.allSettled(limited.map((item) => tok.removeLimitedItem(item.uid))); game.sellAllUnlocked(); setShowBulkSellConfirm(false); }} className="rounded border border-rose-500/45 bg-rose-500/15 py-1 ui-text-small font-black text-rose-200">Sell all</button></div></div>}
+                {showBulkSellConfirm && <div className="item-sell-confirm absolute right-0 top-full z-40 mt-1 w-48 rounded-md border border-[#80502d] p-2 text-left shadow-xl"><p className="ui-text-small font-bold text-[#ead9bf]">Sell all unlocked items for {formatNum(unlockedSellTotal)} Gold?</p><div className="mt-1.5 grid grid-cols-2 gap-1"><button type="button" onClick={() => setShowBulkSellConfirm(false)} className="game-control py-1 ui-text-small font-bold">Cancel</button><button type="button" onClick={async () => { setShowBulkSellConfirm(false); const limited = bagItems.filter((item) => !item.locked && !item.serverOwned && ['divine', 'celestial'].includes(ITEM_MAP[item.itemId]?.rarity ?? '')); await Promise.allSettled(limited.map((item) => tok.removeLimitedItem(item.uid))); const unsold = await game.sellAllUnlocked(); if (unsold > 0) showToast(`${unsold} item${unsold === 1 ? '' : 's'} could not be sold`); }} className="rounded border border-rose-500/45 bg-rose-500/15 py-1 ui-text-small font-black text-rose-200">Sell all</button></div></div>}
               </div>
             </div>}
             {inventoryTab !== 'resources' && inventoryLockMode && <div className="mt-1.5 rounded-md border border-red-500/45 bg-red-950/35 px-2 py-1 text-center ui-text-small font-bold text-red-200" role="status">LOCK MODE · click an item to lock or unlock it</div>}
@@ -1323,7 +1342,7 @@ function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: 
     </>
   );
   return (
-    <div className="hl-battle-income absolute bottom-3 left-3 z-30 flex w-max origin-bottom-left scale-[.69] flex-col items-stretch gap-2 font-vt">
+    <div className="hl-battle-income battle-income flex w-max flex-col items-stretch gap-2 font-vt" style={{ zoom: 0.69 }}>
       <div className="grid w-full grid-cols-[repeat(3,1fr)] gap-2 rounded-2xl border-2 border-[#80683f] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_24px_rgba(128,104,63,.28)]">
         {[['Heroes', heroes], ['Defeated', defeated], ['Bosses', bosses]].map(([label, value]) => <div key={label} className="text-center"><span className="block ui-text-small font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span><strong className="mt-1 block ui-text-small tabular-nums text-[#e8dfc8]">{formatNum(Number(value))}</strong></div>)}
       </div>

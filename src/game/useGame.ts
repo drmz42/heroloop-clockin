@@ -34,6 +34,8 @@ const COMBAT_LOOP_INTERVAL_MS = 50;
 const FLOATER_LIFETIME_MS = 1_500;
 const MAX_LIVE_FLOATERS = 36;
 const NORMAL_COMBAT_START_INTERVAL_MS = 3_100;
+const SELL_BATCH_SIZE = 256; // server item_mutate accepts 1-256 item ids per call: all four bags at once
+const CHEST_OPEN_BATCH_SIZE = 64; // server chest_open accepts 1-64 chests per call
 const ACTIVE_CHEST_SECONDS = 86.4;
 const MAX_TRAINING_OFFLINE_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -2395,28 +2397,46 @@ export function useGame() {
   }, []);
 
   // FIXED: sellAllUnlocked only sells UNEQUIPPED, UNLOCKED items (not potions, not equipped)
-  const sellAllUnlocked = useCallback(async () => {
+  const sellAllUnlocked = useCallback(async (): Promise<number> => {
     const current = stateRef.current;
     const equipped = new Set(current.ownedHeroes.flatMap((hero) => Object.values(hero.equipped).filter((uid): uid is string => Boolean(uid))));
     const sellable = current.inventory.filter((item) => !item.locked && !equipped.has(item.uid));
     const serverItemUids = tokenomicsEnabled ? sellable.filter((item) => item.serverOwned).map((item) => item.uid) : [];
     const clientItems = sellable.filter((item) => !serverItemUids.includes(item.uid));
     let serverRefund = 0;
+    const serverSoldUids: string[] = [];
 
-    if (serverItemUids.length > 0) {
+    // Sell all empties every bag in one request. If the server rejects a batch because one item is missing from
+    // its ledger (for example an item an older client removed before selling), halve the batch so the rest still sells;
+    // the missing item stays in the bag.
+    const sellBatch = async (batch: string[]): Promise<void> => {
+      let error = '';
       const result = await playerSync<{ item_ids: string[]; gold_refund: number; revision: number }>('item_mutate', {
-        operation: 'sell', item_uids: serverItemUids, idempotency_key: createIdempotencyKey(),
-      });
-      if (!result || !Array.isArray(result.item_ids) || result.item_ids.length !== serverItemUids.length
+        operation: 'sell', item_uids: batch, idempotency_key: createIdempotencyKey(),
+      }, (message) => { error = message; });
+      if (!result) {
+        if (batch.length > 1 && (error === 'item_not_found' || error === 'item_state_mismatch')) {
+          const half = Math.ceil(batch.length / 2);
+          await sellBatch(batch.slice(0, half));
+          await sellBatch(batch.slice(half));
+        }
+        return;
+      }
+      if (!Array.isArray(result.item_ids) || result.item_ids.length !== batch.length
         || !Number.isSafeInteger(result.gold_refund) || result.gold_refund < 0) return;
       const settled = new Set(result.item_ids);
-      if (serverItemUids.some((uid) => !settled.has(uid))) return;
+      if (batch.some((uid) => !settled.has(uid))) return;
       if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
-      serverRefund = result.gold_refund;
+      serverRefund += result.gold_refund;
+      serverSoldUids.push(...batch);
+    };
+    for (let start = 0; start < serverItemUids.length; start += SELL_BATCH_SIZE) {
+      await sellBatch(serverItemUids.slice(start, start + SELL_BATCH_SIZE));
     }
 
-    const soldUids = new Set([...serverItemUids, ...clientItems.map((item) => item.uid)]);
-    if (soldUids.size === 0) return;
+    const soldUids = new Set([...serverSoldUids, ...clientItems.map((item) => item.uid)]);
+    const unsold = serverItemUids.length - serverSoldUids.length;
+    if (soldUids.size === 0) return unsold;
     const clientRefund = clientItems.reduce((total, item) => total + sellValue(item), 0);
     setState((prev) => {
       const stillEquipped = new Set(prev.ownedHeroes.flatMap((hero) => Object.values(hero.equipped).filter((uid): uid is string => Boolean(uid))));
@@ -2428,6 +2448,7 @@ export function useGame() {
       };
     });
     spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
+    return unsold;
   }, [spawnBattle]);
 
   // ── Potions ──────────────────────────────────────────────────────────────
@@ -2540,26 +2561,34 @@ export function useGame() {
     chestOpeningRef.current = true;
     setChestOpening(true);
     try {
-      const openCount = Math.min(freeSlots, st.chests.length);
+      let openCount = Math.min(freeSlots, st.chests.length);
       let results: OwnedItem[] = [];
       let revision: number | null = null;
       if (tokenomicsEnabled) {
-        const idempotencyKey = createIdempotencyKey();
-        let response: { items: OwnedItem[]; chest_count: number; revision: number } | null = null;
-        for (let attempt = 0; attempt < 3; attempt++) {
-          let error = '';
-          response = await playerSync<{ items: OwnedItem[]; chest_count: number; revision: number }>('chest_open', {
-            count: openCount,
-            idempotency_key: idempotencyKey,
-          }, (message) => { error = message; });
-          if (response || error !== 'chest_count_exceeded' || attempt === 2) break;
-          await new Promise((resolve) => window.setTimeout(resolve, 900));
+        // The server opens at most 64 chests per request; extra bags hold up to 256 items, so open in batches.
+        // A rejected batch stops the run and keeps every chest that was not settled.
+        while (results.length < openCount) {
+          const batchCount = Math.min(CHEST_OPEN_BATCH_SIZE, openCount - results.length);
+          const idempotencyKey = createIdempotencyKey();
+          let response: { items: OwnedItem[]; chest_count: number; revision: number } | null = null;
+          for (let attempt = 0; attempt < 3; attempt++) {
+            let error = '';
+            response = await playerSync<{ items: OwnedItem[]; chest_count: number; revision: number }>('chest_open', {
+              count: batchCount,
+              idempotency_key: idempotencyKey,
+            }, (message) => { error = message; });
+            if (response || error !== 'chest_count_exceeded' || attempt === 2) break;
+            await new Promise((resolve) => window.setTimeout(resolve, 900));
+          }
+          if (!response || response.chest_count !== batchCount || !Array.isArray(response.items) || response.items.length !== batchCount) break;
+          const batch = response.items.filter((item) => item && typeof item.uid === 'string' && item.serverOwned === true
+            && Boolean(ITEM_MAP[item.itemId]) && Array.isArray(item.stats));
+          if (batch.length !== batchCount) break;
+          results = [...results, ...batch];
+          if (Number.isSafeInteger(response.revision)) revision = response.revision;
         }
-        if (!response || response.chest_count !== openCount || !Array.isArray(response.items) || response.items.length !== openCount) return;
-        results = response.items.filter((item) => item && typeof item.uid === 'string' && item.serverOwned === true
-          && Boolean(ITEM_MAP[item.itemId]) && Array.isArray(item.stats));
-        if (results.length !== openCount) return;
-        revision = Number.isSafeInteger(response.revision) ? response.revision : null;
+        if (results.length === 0) return;
+        openCount = results.length;
       } else {
         for (let i = 0; i < openCount; i++) {
           const chest = st.chests[i];

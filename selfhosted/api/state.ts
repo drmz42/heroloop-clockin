@@ -379,8 +379,18 @@ export function mergeSaveState(
     return { code: "item_registry_incomplete", status: 409 };
   }
   const requestedItemUids = new Set(requestedInventory.map((item) => String(item.uid ?? "")));
+  // The client never mints items: an item outside the ledger survives only as
+  // the server already stored it (a legacy item awaiting migration).
+  const storedLegacyById = new Map(currentInventory
+    .filter((item) => !ledgerIds.has(String(item.uid ?? "")))
+    .map((item) => [String(item.uid ?? ""), item]));
   requested.inventory = [
-    ...requestedInventory.map((item) => canonicalItem(item, ledgerById)),
+    ...requestedInventory.flatMap((item) => {
+      const uid = String(item.uid ?? "");
+      if (ledgerIds.has(uid)) return [canonicalItem(item, ledgerById)];
+      const stored = storedLegacyById.get(uid);
+      return stored ? [structuredClone(stored)] : [];
+    }),
     ...currentInventory
       .filter((item) => ledgerIds.has(String(item.uid ?? "")) && !requestedItemUids.has(String(item.uid ?? "")))
       .map((item) => canonicalItem(item, ledgerById)),
