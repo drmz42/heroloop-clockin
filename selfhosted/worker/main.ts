@@ -27,12 +27,14 @@ await heartbeat();
 async function runTick() {
   const client = await pool.connect();
   try {
-    if (heroDistributionEnabled) {
-      await client.queryObject(
-        "SELECT heroloop_worker.run_distribution_tick($1::timestamptz) AS result",
-        [new Date().toISOString()],
-      );
-    }
+    await client.queryObject(
+      "SELECT set_config('heroloop.hero_distribution_enabled', $1::text, false)",
+      [String(heroDistributionEnabled)],
+    );
+    await client.queryObject(
+      "SELECT heroloop_worker.run_distribution_tick($1::timestamptz) AS result",
+      [new Date().toISOString()],
+    );
     await heartbeat();
   } catch (error) {
     console.error("worker distribution tick failed", {
