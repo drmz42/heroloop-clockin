@@ -61,9 +61,14 @@ export type SolanaWalletAuthOptions = {
   confirmBeforeSign?: () => Promise<void>;
 };
 
+export type WalletSignInStage = 'session' | 'connect' | 'challenge' | 'sign' | 'verify' | 'link' | 'login' | 'account';
+
 export type MwaSessionProofOptions = Pick<SolanaWalletAuthOptions, 'challengeEndpoint' | 'fetch' | 'now'> & {
   appIdentity: { name: string; uri: string; icon: string };
+  onStage?: (stage: WalletSignInStage) => void;
 };
+
+const MWA_CHALLENGE_TIMEOUT_MS = 15_000;
 
 export class SolanaWalletAuthError extends Error {
   readonly code: string;
@@ -394,6 +399,11 @@ export async function createMwaSessionProof(options: MwaSessionProofOptions): Pr
     import('@solana-mobile/mobile-wallet-adapter-protocol/encoding'),
   ]);
   const progress: { stage: 'connect' | 'challenge' | 'sign' } = { stage: 'connect' };
+  const fetchImpl = options.fetch ?? globalThis.fetch;
+  // The wallet holds the session open while the challenge loads: never wait on it forever.
+  const challengeFetch: typeof globalThis.fetch = (input, init) =>
+    fetchImpl(input, { ...init, signal: AbortSignal.timeout(MWA_CHALLENGE_TIMEOUT_MS) });
+  options.onStage?.('connect');
   try {
     return await transact(async (wallet) => {
       const authorization = await wallet.authorize({ chain: 'solana:mainnet', identity: options.appIdentity });
@@ -404,15 +414,17 @@ export async function createMwaSessionProof(options: MwaSessionProofOptions): Pr
       const account = { address: base58FromUint8Array(publicKey), publicKey } as unknown as WalletAccount;
 
       progress.stage = 'challenge';
+      options.onStage?.('challenge');
       const challenge = await requestChallenge(
         endpoint.toString(),
         account.address,
-        options.fetch ?? globalThis.fetch,
+        challengeFetch,
         (options.now ?? Date.now)(),
       );
       if (challenge.signInInput.chainId !== 'solana:mainnet') fail('wallet_chain_mismatch');
 
       progress.stage = 'sign';
+      options.onStage?.('sign');
       const message = new TextEncoder().encode(challenge.message);
       const { signed_payloads: signedPayloads } = await wallet.signMessages({
         addresses: [authorized.address],

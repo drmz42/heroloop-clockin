@@ -2,7 +2,7 @@ import { editionStorageKey } from './editionStorage';
 import type { Wallet } from '@wallet-standard/base';
 import { authClient, backendUrl, validatedGuestSession } from './backend';
 import { isAuthTransient, isTemporaryAuthStatus, runAuthCall } from './authTransient';
-import { createMwaSessionProof, createSolanaWalletProof, SolanaWalletAuthError, type MwaSessionProofOptions } from './solanaWalletAuth';
+import { createMwaSessionProof, createSolanaWalletProof, SolanaWalletAuthError, type MwaSessionProofOptions, type WalletSignInStage } from './solanaWalletAuth';
 export {
   compatibleSolanaWallets,
   observeCompatibleSolanaWallets,
@@ -40,6 +40,8 @@ export type SolanaSessionOptions = {
   confirmBeforeSign?: () => Promise<void>;
   // Native app: sign in through one Mobile Wallet Adapter session instead of `wallet`'s features.
   mwaSession?: MwaSessionProofOptions['appIdentity'];
+  // Reports each step so the screen can show where a sign-in stops.
+  onStage?: (stage: WalletSignInStage) => void;
 };
 
 function fail(code: string): never {
@@ -152,17 +154,19 @@ export async function connectSolanaWallet(
   options: SolanaSessionOptions = {},
 ): Promise<SolanaWalletSession> {
   const fetchImpl = options.fetch ?? globalThis.fetch;
+  options.onStage?.('session');
   const existing = await validatedGuestSession();
   if (!existing) fail('account_session_unavailable');
   const challengeEndpoint = `${backendUrl}/api/v1/auth/solana/challenge`;
   const proof = options.mwaSession
-    ? await createMwaSessionProof({ challengeEndpoint, fetch: fetchImpl, now: options.now, appIdentity: options.mwaSession })
+    ? await createMwaSessionProof({ challengeEndpoint, fetch: fetchImpl, now: options.now, appIdentity: options.mwaSession, onStage: options.onStage })
     : await createSolanaWalletProof(wallet, {
       challengeEndpoint,
       fetch: fetchImpl,
       now: options.now,
       confirmBeforeSign: options.confirmBeforeSign,
     });
+  options.onStage?.('verify');
   const verification = await fetchImpl(`${backendUrl}/api/v1/auth/solana/verify`, {
     method: 'POST',
     credentials: 'same-origin',
@@ -181,6 +185,7 @@ export async function connectSolanaWallet(
   }
 
   if (existing.user.is_anonymous !== false) {
+    options.onStage?.('link');
     try {
       const link = await linkAnonymousAccount(existing, token, fetchImpl);
       if (link === 'existing' && options.allowExistingAccountLogin !== true) {
@@ -192,6 +197,7 @@ export async function connectSolanaWallet(
     }
   }
 
+  options.onStage?.('login');
   const key = crypto.randomUUID();
   let login: Response;
   try {

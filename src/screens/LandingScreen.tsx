@@ -11,6 +11,7 @@ import { playerSync } from '@/game/backend';
 import { hasBlockedUsernameLanguage } from '@/game/username';
 import { clearSignupAttribution, readSignupAttribution } from '@/game/signupAttribution';
 import { clearLegacyState, makeRegisteredStarterState } from '@/game/state';
+import type { WalletSignInStage } from '@/game/solanaWalletAuth';
 import { canOpenInPhantom, isAndroidLayout, isNativeApp, MOBILE_WALLET_ADAPTER_NAME, mobileWalletAppIdentity, phantomBrowseUrl } from '@/platform/platform';
 import {
   connectSolanaWallet,
@@ -285,6 +286,18 @@ function Benefit({ title, text }: { title: string; text: string }) {
   );
 }
 
+// Shown under the button while a wallet sign-in runs, so a stalled step is visible.
+const SIGN_IN_STAGE_LABELS: Record<WalletSignInStage, string> = {
+  session: 'Step 1/7 · Preparing sign-in…',
+  connect: 'Step 2/7 · Approve the connection in your wallet app…',
+  challenge: 'Step 3/7 · Wallet connected · loading the sign-in message…',
+  sign: 'Step 4/7 · Sign the free message in your wallet app…',
+  verify: 'Step 5/7 · Checking the signature…',
+  link: 'Step 6/7 · Linking the wallet to your account…',
+  login: 'Step 6/7 · Signing in…',
+  account: 'Step 7/7 · Loading your account…',
+};
+
 export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onClose, persistent = false }: { game: GameApi; legacyWalletMode?: 'link' | 'import' | null; onAccountReady: () => void; onClose: () => void; persistent?: boolean }) {
   const [step, setStep] = useState(1);
   const [starter, setStarter] = useState<StarterId>('shepherd-common');
@@ -299,6 +312,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
   const [legacyImportConfirmed, setLegacyImportConfirmed] = useState(false);
   // Mobile Wallet Adapter needs a second tap before the signature request (see confirmBeforeSign).
   const [signConfirm, setSignConfirm] = useState<(() => void) | null>(null);
+  const [signInStage, setSignInStage] = useState<WalletSignInStage | null>(null);
   const blockedName = hasBlockedUsernameLanguage(username);
   const validName = /^[a-zA-Z0-9_]{3,16}$/.test(username) && !blockedName;
 
@@ -347,10 +361,12 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         allowExistingAccountLogin: legacyWalletMode !== 'import',
         // The native app connects and signs in one wallet session, so one tap opens the wallet once.
         mwaSession: wallet.name === MOBILE_WALLET_ADAPTER_NAME && isNativeApp ? mobileWalletAppIdentity() : undefined,
+        onStage: setSignInStage,
         confirmBeforeSign: wallet.name === MOBILE_WALLET_ADAPTER_NAME && !isNativeApp
           ? () => new Promise<void>((resolve) => { setSignConfirm(() => resolve); })
           : undefined,
       });
+      setSignInStage('account');
       const account = await accountRequest(playerSync<{ exists: boolean; username: string | null; account_id: string }>('account_status'));
       if (!account) {
         // The wallet and Auth session are already established. Let the game
@@ -389,6 +405,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
     } finally {
       setConnecting(false);
       setSignConfirm(null);
+      setSignInStage(null);
     }
   };
 
@@ -484,6 +501,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
               <button onClick={solanaAuthEnabled ? connectWallet : continueAsGuest} disabled={connecting || (solanaAuthEnabled && wallets.length === 0)} className="landing-cta mx-auto mt-4 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em] disabled:cursor-not-allowed disabled:opacity-60">
                 {solanaAuthEnabled ? <Shield size={19} /> : <UserRound size={19} />} {connecting ? 'Checking account…' : solanaAuthEnabled ? (selectedWallet === MOBILE_WALLET_ADAPTER_NAME ? 'Use Installed Wallet' : isAndroidLayout ? 'Connect wallet' : 'Connect Phantom') : 'Continue as Guest'}
               </button>
+              {connecting && signInStage && <p className="mx-auto mt-3 max-w-md text-center text-xs leading-5 text-slate-400" role="status">{SIGN_IN_STAGE_LABELS[signInStage]}</p>}
               {signConfirm && <button type="button" onClick={() => { const confirm = signConfirm; setSignConfirm(null); confirm(); }} className="landing-cta mx-auto mt-3 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em]"><Shield size={19} /> Wallet connected · Sign in</button>}
               {solanaAuthEnabled && canOpenInPhantom && <a href={phantomBrowseUrl()} className="landing-cta mx-auto mt-3 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em]">Open in Phantom app</a>}
               {solanaAuthEnabled && canOpenInPhantom && <p className="mx-auto mt-2 max-w-md text-center text-xs leading-5 text-slate-400">No wallet window? “Open in Phantom app” opens HeroLoop inside Phantom, where you sign in the same way. No Phantom yet? <a className="text-amber-300 underline underline-offset-4" href="https://play.google.com/store/apps/details?id=app.phantom" target="_blank" rel="noreferrer">Get it on Google Play</a>.</p>}
