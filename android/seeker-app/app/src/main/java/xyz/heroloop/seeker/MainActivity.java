@@ -14,6 +14,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import java.util.Locale;
+
 /**
  * HeroLoop Seeker: the game in one full-screen WebView, no browser UI.
  * The user agent carries "Solana Mobile Web Shell", which lets the page's Mobile Wallet
@@ -51,6 +53,8 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                // Subframe (iframe) navigation is never intercepted.
+                if (!request.isForMainFrame()) return false;
                 return route(request.getUrl());
             }
         });
@@ -59,27 +63,71 @@ public class MainActivity extends Activity {
         else webView.loadUrl(BuildConfig.GAME_URL);
     }
 
+    // Mirrors the official Solana Mobile web shell (npx solana-mobile webshell init,
+    // WebShellViewClient): docs/game/seeker-android-build.md.
     private boolean route(Uri uri) {
-        String scheme = uri.getScheme() == null ? "" : uri.getScheme();
-        if (("https".equals(scheme)) && BuildConfig.GAME_HOST.equals(uri.getHost())) return false;
+        String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+        switch (scheme) {
+            case "solana-wallet":
+                // Plain ACTION_VIEW, no CATEGORY_BROWSABLE: a wallet whose intent filter lacks
+                // BROWSABLE (Seed Vault) must still match.
+                if (launch(new Intent(Intent.ACTION_VIEW, uri))) {
+                    // Mobile Wallet Adapter treats a page "blur" within 3 s as proof that a wallet
+                    // app answered; a WebView never blurs on its own.
+                    webView.evaluateJavascript("window.dispatchEvent(new Event('blur'))", null);
+                } else {
+                    Toast.makeText(this, "Install a Solana wallet app (Seed Vault, Phantom, Solflare, Backpack) to sign in.", Toast.LENGTH_LONG).show();
+                }
+                return true;
+            case "intent":
+                launchIntentUri(uri.toString());
+                return true;
+            case "blob":
+            case "javascript":
+                return false;
+            case "http":
+            case "https":
+                if (BuildConfig.GAME_HOST.equalsIgnoreCase(uri.getHost())) return false;
+                launch(new Intent(Intent.ACTION_VIEW, uri));
+                return true;
+            default:
+                launch(new Intent(Intent.ACTION_VIEW, uri));
+                return true;
+        }
+    }
+
+    // A page-controlled intent: only implicit, browsable targets, never explicit components,
+    // selectors or URI permission grants; the fallback is honoured only for http(s).
+    private void launchIntentUri(String url) {
         try {
-            Intent intent = "intent".equals(scheme)
-                ? Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME)
-                : new Intent(Intent.ACTION_VIEW, uri);
+            Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
             intent.addCategory(Intent.CATEGORY_BROWSABLE);
             intent.setComponent(null);
-            startActivity(intent);
-            // Mobile Wallet Adapter treats a page "blur" within 3 s as proof that a wallet
-            // app answered; tell the page explicitly, since a WebView may not blur on its own.
-            if ("solana-wallet".equals(scheme)) webView.evaluateJavascript("window.dispatchEvent(new Event('blur'))", null);
-        } catch (ActivityNotFoundException error) {
-            if ("solana-wallet".equals(scheme)) {
-                Toast.makeText(this, "Install a Solana wallet app (Phantom, Solflare, Backpack) to sign in.", Toast.LENGTH_LONG).show();
+            intent.setSelector(null);
+            intent.removeFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+                | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
+            if (launch(intent)) return;
+            String fallback = intent.getStringExtra("browser_fallback_url");
+            if (fallback == null) return;
+            Uri fallbackUri = Uri.parse(fallback);
+            String fallbackScheme = fallbackUri.getScheme() == null ? "" : fallbackUri.getScheme().toLowerCase(Locale.ROOT);
+            if ("http".equals(fallbackScheme) || "https".equals(fallbackScheme)) {
+                launch(new Intent(Intent.ACTION_VIEW, fallbackUri));
             }
         } catch (Exception ignored) {
             // A malformed link is ignored rather than crashing the game.
         }
-        return true;
+    }
+
+    private boolean launch(Intent intent) {
+        try {
+            startActivity(intent);
+            return true;
+        } catch (ActivityNotFoundException | SecurityException error) {
+            return false;
+        }
     }
 
     @Override

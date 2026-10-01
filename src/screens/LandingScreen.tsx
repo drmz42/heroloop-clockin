@@ -11,7 +11,7 @@ import { playerSync } from '@/game/backend';
 import { hasBlockedUsernameLanguage } from '@/game/username';
 import { clearSignupAttribution, readSignupAttribution } from '@/game/signupAttribution';
 import { clearLegacyState, makeRegisteredStarterState } from '@/game/state';
-import { canOpenInPhantom, isAndroidLayout, isNativeApp, phantomBrowseUrl } from '@/platform/platform';
+import { canOpenInPhantom, isAndroidLayout, isNativeApp, MOBILE_WALLET_ADAPTER_NAME, phantomBrowseUrl } from '@/platform/platform';
 import {
   connectSolanaWallet,
   observeCompatibleSolanaWallets,
@@ -346,7 +346,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         // progress has already been written into this Guest's server account.
         allowExistingAccountLogin: legacyWalletMode !== 'import',
         // The native app's WebView hands wallet links to Android directly, so no second tap.
-        confirmBeforeSign: wallet.name === 'Mobile Wallet Adapter' && !isNativeApp
+        confirmBeforeSign: wallet.name === MOBILE_WALLET_ADAPTER_NAME && !isNativeApp
           ? () => new Promise<void>((resolve) => { setSignConfirm(() => resolve); })
           : undefined,
       });
@@ -481,7 +481,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
               )}
               <div className="mx-auto mt-7 w-fit border border-emerald-400/25 bg-emerald-400/[.06] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-emerald-300"><Shield size={12} className="mr-1.5 inline" /> {solanaAuthEnabled ? 'Free ownership proof' : 'Server-saved guest progress'}</div>
               <button onClick={solanaAuthEnabled ? connectWallet : continueAsGuest} disabled={connecting || (solanaAuthEnabled && wallets.length === 0)} className="landing-cta mx-auto mt-4 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em] disabled:cursor-not-allowed disabled:opacity-60">
-                {solanaAuthEnabled ? <Shield size={19} /> : <UserRound size={19} />} {connecting ? 'Checking account…' : solanaAuthEnabled ? (isAndroidLayout ? 'Connect wallet' : 'Connect Phantom') : 'Continue as Guest'}
+                {solanaAuthEnabled ? <Shield size={19} /> : <UserRound size={19} />} {connecting ? 'Checking account…' : solanaAuthEnabled ? (selectedWallet === MOBILE_WALLET_ADAPTER_NAME ? 'Use Installed Wallet' : isAndroidLayout ? 'Connect wallet' : 'Connect Phantom') : 'Continue as Guest'}
               </button>
               {signConfirm && <button type="button" onClick={() => { const confirm = signConfirm; setSignConfirm(null); confirm(); }} className="landing-cta mx-auto mt-3 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em]"><Shield size={19} /> Wallet connected · Sign in</button>}
               {solanaAuthEnabled && canOpenInPhantom && <a href={phantomBrowseUrl()} className="landing-cta mx-auto mt-3 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em]">Open in Phantom app</a>}
