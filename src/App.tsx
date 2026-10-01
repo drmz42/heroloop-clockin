@@ -14,6 +14,7 @@ import { GameWalletModal } from '@/components/GameWalletModal';
 import { PromoCodeModal, type PromoRedemption } from '@/components/PromoCodeModal';
 import { LandingScreen } from '@/screens/LandingScreen';
 import { AppEntryScreen } from '@/platform/AppEntryScreen';
+import { OfflineBar } from '@/platform/OfflineBar';
 import { MainScreen } from '@/screens/MainScreen';
 import { HeroesScreen } from '@/screens/HeroesScreen';
 import { SummonScreen } from '@/screens/SummonScreen';
@@ -497,6 +498,7 @@ function App() {
 
   return (
     <div className={`game-shell game-motion-${game.state.battleAnimationMode} flex h-screen flex-col overflow-hidden bg-px-bg text-px-text`}>
+      {isAndroidLayout && <OfflineBar />}
       <GameNavBar
         tab={tab}
         onChange={(nextTab) => {

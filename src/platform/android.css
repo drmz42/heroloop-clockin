@@ -235,3 +235,12 @@ html[data-hl-platform='android'] .hl-hero-card .pointer-events-none.absolute spa
 html[data-hl-platform='android'] .hl-hero-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 html[data-hl-platform='android'] .hl-team-row { min-height: 70px; gap: 10px; margin-top: 8px; }
 html[data-hl-platform='android'] .hl-team-empty { width: 64px; height: 64px; }
+
+/* Lost connection: the "Battle link recovering" notice sat under the battle footer. */
+html[data-hl-platform='android'] [data-combat-recovery] { top: 52px; bottom: auto; z-index: 45; }
+.hl-offline-bar { display: none; }
+html[data-hl-platform='android'] .hl-offline-bar {
+  display: flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0;
+  min-height: 30px; padding: 4px 10px; background: #4a1414; color: #ffd9d5; font-size: 12px; font-weight: 800;
+  border-bottom: 1px solid #a8423f;
+}

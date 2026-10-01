@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Backpack, BookOpen, Dumbbell, Hammer, KeyRound, LogOut, Menu, MessageCircle, ScrollText, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, UserPlus, X } from 'lucide-react';
+import { Backpack, BookOpen, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, ScrollText, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, UserPlus, X } from 'lucide-react';
 import type { Tab } from './TopMenu';
 import { setMobileSection, type MobileSection } from '@/platform/platform';
 import { defaultUiTheme, setUiTheme } from '@/theme/uiTheme';
@@ -9,7 +9,7 @@ import { defaultUiTheme, setUiTheme } from '@/theme/uiTheme';
 // and Summon open their windows; More holds every other window and the footer links.
 const MORE_TABS = [
   { id: 'training', label: 'Training', icon: Dumbbell },
-  { id: 'crafting', label: 'Crafting', icon: Hammer },
+  // Crafting has no recipes yet (its window says so); the phone menu shows only working screens.
   { id: 'shop', label: 'Store', icon: ShoppingBag },
   { id: 'market', label: 'Market', icon: Store },
   { id: 'leaderboard', label: 'Ranks', icon: Trophy },
