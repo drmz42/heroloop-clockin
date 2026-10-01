@@ -616,7 +616,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             resetKey={`${activeDungeon?.encounter_id ?? 'normal'}:${game.state.currentLocation}:${game.state.team.join('|')}`}
             onRetry={activeDungeon ? undefined : game.retry}
           >
-            <div className={activeDungeon ? 'h-full' : 'normal-battle-content relative'}>
+            <div className="h-full">
               <CombatPresentationLayer game={game} activeDungeon={activeDungeon} dungeonUnits={dungeonUnits} dungeonFloaters={dungeonFloaters} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
             </div>
           </CombatErrorBoundary>
@@ -643,7 +643,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             </button>
           </div>}
           {!activeDungeon && import.meta.env.MODE === 'staging' && <TestControls game={game} />}
-          {!activeDungeon && <div className="normal-battle-footer relative z-30 flex shrink-0 flex-wrap items-end justify-between gap-3 px-3 pb-3">
+          {!activeDungeon && <div className="normal-battle-footer absolute inset-x-0 bottom-0 z-30 flex flex-wrap items-end justify-between gap-3 px-3 pb-3">
             <TokenEarningsPanel status={tok.status} stale={tok.incomeStale} today={game.state.tokensEarnedToday} heroes={state.ownedHeroes.length} defeated={state.totalKills} bosses={state.totalBossKills} />
             <div className="ml-auto flex items-end gap-1.5">
             {showDropRates && dropRatesPos && createPortal(<div role="dialog" aria-label="Chest drop rate" className="fixed z-[100] w-56 overflow-y-auto rounded-lg border border-[#80683f] bg-[#11130f]/98 p-2.5 shadow-2xl backdrop-blur-sm" style={{ right: dropRatesPos.right, bottom: dropRatesPos.bottom, maxHeight: dropRatesPos.maxHeight }}>
