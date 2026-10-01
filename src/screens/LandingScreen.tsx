@@ -381,7 +381,9 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         : code === 'wallet_sign_message_unavailable'
         ? `Phantom sign-message could not start. Reload Phantom and try again.${detail}`
         : code === 'wallet_connect_rejected'
-        ? 'Phantom did not authorize the connection. Unlock Phantom, approve the request and try again.'
+        ? (isAndroidLayout
+          ? `The wallet app did not answer. Open your wallet, unlock it, approve the connection and come back.${detail}`
+          : 'Phantom did not authorize the connection. Unlock Phantom, approve the request and try again.')
         : `Wallet authentication failed. Please try again.${/^[a-z0-9_]{3,64}$/.test(code) ? ` (${code})` : ''}`);
     } finally {
       setConnecting(false);

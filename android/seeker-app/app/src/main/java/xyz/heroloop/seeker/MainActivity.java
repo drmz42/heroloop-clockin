@@ -40,6 +40,9 @@ public class MainActivity extends Activity {
         settings.setSupportMultipleWindows(false);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
+        // The wallet socket is ws://localhost from an https page; Chromium treats loopback as
+        // trustworthy, this only keeps older WebViews from refusing it as mixed content.
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
         settings.setUserAgentString(settings.getUserAgentString()
             + " Solana Mobile Web Shell HeroLoopApp/" + BuildConfig.VERSION_NAME);
         CookieManager.getInstance().setAcceptCookie(true);

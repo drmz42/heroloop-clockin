@@ -7,6 +7,7 @@
 // staging2: add ?platform=android or ?platform=web to any URL (remembered per browser);
 // without a choice, touch screens up to 900 px wide get the Android layout.
 import { allowMobileWalletAdapter } from '@/game/solanaWalletRegistry';
+import { registerInjectedPhantomFallback } from '@/game/phantomInjectedWallet';
 
 export type Platform = 'android' | 'web';
 export type MobileSection = 'battle' | 'quests' | 'bag';
@@ -24,6 +25,9 @@ export const androidLayoutAvailable = import.meta.env.MODE === 'staging2' || imp
 function resolveAppShell(): boolean {
   if (!androidLayoutAvailable) return false;
   if (typeof navigator !== 'undefined' && /HeroLoopApp\//.test(navigator.userAgent)) return true;
+  // On an Android phone (Chrome, the app or a wallet's in-app browser) the game always opens
+  // like an app: hero screen with Play, then wallet sign-in. The marketing landing is for desktop.
+  if (typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent)) return true;
   try {
     if (new URLSearchParams(window.location.search).get('source') === 'android') {
       window.sessionStorage.setItem('heroloop-app-shell', '1');
@@ -93,7 +97,7 @@ function resolveEdition(): Edition {
 export const edition: Edition = typeof window === 'undefined' ? 'standard' : resolveEdition();
 
 export function applyPlatform() {
-  if (androidLayoutAvailable) registerMobileWalletAdapter();
+  if (androidLayoutAvailable) { registerMobileWalletAdapter(); registerInjectedPhantomFallback(); }
   document.documentElement.dataset.hlPlatform = platform;
   document.documentElement.dataset.hlEdition = edition;
   if (isAndroidLayout) {
@@ -135,7 +139,9 @@ export function setMobileSection(section: MobileSection) {
 // Fallback when no wallet app answers through Mobile Wallet Adapter: open this page in
 // Phantom's own in-app browser, where Phantom injects itself and the usual sign-in works.
 // https://docs.phantom.com/phantom-deeplinks/other-methods/browse
-export const canOpenInPhantom = isAndroidDevice && !isNativeApp;
+// Not offered inside a wallet's own browser (Phantom already injected itself there).
+export const canOpenInPhantom = isAndroidDevice && !isNativeApp
+  && typeof window !== 'undefined' && !(window as unknown as { phantom?: unknown }).phantom;
 
 export function phantomBrowseUrl(): string {
   const target = new URL(window.location.href);

@@ -124,8 +124,8 @@ async function authorizeAccount(wallet: Wallet, requested?: string): Promise<Wal
     // wallet.accounts skipped Phantom's working connect path after the first
     // login and could leave us calling signing features with a stale account.
     ({ accounts } = await connect.call(connectFeature));
-  } catch {
-    return fail('wallet_connect_rejected');
+  } catch (error) {
+    return fail('wallet_connect_rejected', describeWalletError('standard-connect', error));
   }
   return chooseAccount(accounts, requested);
 }
