@@ -17,4 +17,7 @@ services:
   worker:
     environment:
       HERO_DISTRIBUTION_ENABLED: "false"
-# Base backend network stays internal. No connection to ordinary Staging containers.
+# Separate bridge is required for host loopback proxy ports. No shared Docker network.
+networks:
+  backend:
+    internal: false
