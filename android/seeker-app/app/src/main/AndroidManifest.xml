@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Keeps the page alive while a wallet app is in front (WalletSessionService). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:allowBackup="false"
@@ -24,6 +26,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".WalletSessionService"
+            android:exported="false"
+            android:foregroundServiceType="shortService" />
     </application>
 
     <!-- Android 11+ package visibility: wallet apps answer Mobile Wallet Adapter links. -->

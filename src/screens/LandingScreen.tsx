@@ -320,6 +320,13 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
   // Mobile Wallet Adapter needs a second tap before the signature request (see confirmBeforeSign).
   const [signConfirm, setSignConfirm] = useState<(() => void) | null>(null);
   const [signInStage, setSignInStage] = useState<WalletSignInStage | null>(null);
+  // Native lab diagnostics: a heartbeat while the wallet is in front shows whether Android
+  // keeps the page running (WalletSessionService) or freezes it.
+  useEffect(() => {
+    if (!isNativeApp || !signInStage) return;
+    const timer = window.setInterval(() => reportSignInStep(`wait:${signInStage}:${document.visibilityState}`), 5_000);
+    return () => window.clearInterval(timer);
+  }, [signInStage]);
   const blockedName = hasBlockedUsernameLanguage(username);
   const validName = /^[a-zA-Z0-9_]{3,16}$/.test(username) && !blockedName;
 

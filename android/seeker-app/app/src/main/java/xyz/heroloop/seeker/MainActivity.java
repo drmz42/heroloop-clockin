@@ -24,6 +24,7 @@ import java.util.Locale;
  * the app; wallet links go to the wallet app; any other link opens outside the app.
  */
 public class MainActivity extends Activity {
+    private static final int WALLET_REQUEST = 7001;
     private WebView webView;
 
     @Override
@@ -33,6 +34,8 @@ public class MainActivity extends Activity {
         webView.setBackgroundColor(0xFF070606);
         webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         setContentView(webView);
+        // The renderer keeps the app's priority while hidden (the wallet is in front).
+        webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -71,7 +74,7 @@ public class MainActivity extends Activity {
             case "solana-wallet":
                 // Plain ACTION_VIEW, no CATEGORY_BROWSABLE: a wallet whose intent filter lacks
                 // BROWSABLE (Seed Vault) must still match.
-                if (launch(new Intent(Intent.ACTION_VIEW, uri))) {
+                if (launchWallet(new Intent(Intent.ACTION_VIEW, uri))) {
                     // Mobile Wallet Adapter treats a page "blur" within 3 s as proof that a wallet
                     // app answered; a WebView never blurs on its own.
                     webView.evaluateJavascript("window.dispatchEvent(new Event('blur'))", null);
@@ -121,6 +124,19 @@ public class MainActivity extends Activity {
         }
     }
 
+    // For result, so the wallet can read the calling package and verify HeroLoop's identity
+    // (Digital Asset Links of the game host); the result itself is not used.
+    private boolean launchWallet(Intent intent) {
+        try {
+            WalletSessionService.start(this);
+            startActivityForResult(intent, WALLET_REQUEST);
+            return true;
+        } catch (ActivityNotFoundException | SecurityException error) {
+            WalletSessionService.stop(this);
+            return false;
+        }
+    }
+
     private boolean launch(Intent intent) {
         try {
             startActivity(intent);
@@ -144,6 +160,12 @@ public class MainActivity extends Activity {
 
     // The WebView is not paused: while the wallet app is in front, the page must keep its
     // Mobile Wallet Adapter session alive (fetch the challenge, send the signing request).
+    @Override
+    protected void onResume() {
+        super.onResume();
+        WalletSessionService.stop(this);
+    }
+
     @Override
     protected void onPause() {
         CookieManager.getInstance().flush();
