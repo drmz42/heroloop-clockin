@@ -17,7 +17,7 @@ const FALLBACK_TEXT = 'Linking is temporarily unavailable.';
 // Partner Quests need the player's own X/Telegram account, verified by the
 // provider: X via its sign-in page, Telegram via a one-time code sent to our
 // bot. One account can be linked to one player only.
-export function LinkedAccounts() {
+export function LinkedAccounts({ onLinksChange }: { onLinksChange?: (links: SocialLinks) => void } = {}) {
   const [links, setLinks] = useState<SocialLinks | null>(null);
   const [busy, setBusy] = useState<SocialProvider | null>(null);
   const [message, setMessage] = useState<Partial<Record<SocialProvider, { ok: boolean; text: string }>>>({});
@@ -25,9 +25,12 @@ export function LinkedAccounts() {
 
   const load = useCallback(async () => {
     const result = await playerSync<PartnerQuestList>('partner_quest_list', {});
-    if (result?.links) setLinks(result.links);
+    if (result?.links) {
+      setLinks(result.links);
+      onLinksChange?.(result.links);
+    }
     return result?.links ?? null;
-  }, []);
+  }, [onLinksChange]);
 
   useEffect(() => {
     void load();
