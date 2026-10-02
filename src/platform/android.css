@@ -383,7 +383,7 @@ html[data-hl-platform='android'] .hl-battle-dock .pm-chest { flex: 1 1 0; width:
 html[data-hl-platform='android'] .hl-battle-dock button[aria-label='Show chest drop rates'] { flex: none; height: 38px; width: 34px; }
 
 /* Centered modals (z-[9999]) sit above the top progress bar (10010) and the tab bar, inside the safe area. */
-html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\] { z-index: 10015; padding-top: calc(12px + env(safe-area-inset-top, 0px)); padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\] { overflow: hidden; z-index: 10015; padding-top: calc(12px + env(safe-area-inset-top, 0px)); padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\] > * { min-height: 0; max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important; }
 
 /* The location art covers the whole battle stage, footer included (the inner arena alone left the footer bare). */
@@ -476,3 +476,11 @@ html[data-hl-platform='android'] [class*='bg-[#2a0d0d]/9'] { background-color: r
 html[data-hl-platform='android'] .training-camp-screen .training-empty-post .training-dummy { transform: scale(.72); margin-bottom: -6px; }
 html[data-hl-platform='android'] .training-camp-screen .training-empty-post strong { font-size: 8px; letter-spacing: .04em; }
 html[data-hl-platform='android'] .training-camp-screen .training-empty-post small { display: none; }
+@media (max-width: 380px) {
+  .game-progress-bar { gap: 4px; }
+  .game-progress-power { gap: 4px; }
+  .game-progress-power > svg { width: 16px; height: 16px; }
+  .game-progress-power strong { font-size: 18px; }
+  .game-progress-boost { width: 46px; font-size: 7.5px; }
+  .game-progress-quests { padding-inline: 6px; gap: 4px; font-size: 11px; }
+}
