@@ -109,6 +109,7 @@
     "check:gold-reward-parity": "node scripts/check-gold-reward-parity.mjs",
     "check:game-functions": "node scripts/check-game-functions.mjs",
     "check:game-functions:registry": "node scripts/check-game-functions.mjs",
+    "check:skr-boost": "bash scripts/check-seeker-skr-ledger.sh",
     "check:game-functions:integration": "node scripts/check-game-function-checker.mjs",
     "check:hero-ascension": "node scripts/check-hero-ascension-pricing.mjs",
     "check:item-level-scaling": "node scripts/check-item-level-scaling.mjs",
