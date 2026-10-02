@@ -1,0 +1,22 @@
+# Judges' local run of the Seeker edition (scripts/clockin-local-backend.sh). Use instead of compose.hackathon.yml.
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:${HL_LOCAL_DB_PORT:-25432}:5432"
+  auth:
+    ports:
+      - "127.0.0.1:${HL_LOCAL_AUTH_PORT:-29999}:9999"
+  api:
+    ports:
+      - "127.0.0.1:${HL_LOCAL_API_PORT:-28081}:8080"
+    environment:
+      HEROLOOP_EDITION: seeker
+      TESTER_CONTROLS_ENABLED: "false"
+      SIWS_ADDITIONAL_URIS: ""
+      COMBAT_EFFECTS_VERSION: combat-effects-v2-team-contributions-candidate-2026.09.06-v1
+  worker:
+    environment:
+      HERO_DISTRIBUTION_ENABLED: "false"
+networks:
+  backend:
+    internal: false

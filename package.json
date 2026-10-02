@@ -245,7 +245,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "model:balance-v6": "tsx scripts/model-balance-v6.ts",
     "check:hackathon-isolation": "node scripts/check-hackathon-isolation.mjs",
-    "check:automatic-healing": "node scripts/check-automatic-healing.mjs"
+    "check:automatic-healing": "node scripts/check-automatic-healing.mjs",
+    "build:web": "vite build --mode staging2",
+    "apk:debug": "bash scripts/clockin-build-apk-debug.sh",
+    "backend:local": "bash scripts/clockin-local-backend.sh"
   },
   "dependencies": {
     "@mui/icons-material": "9.4.0",

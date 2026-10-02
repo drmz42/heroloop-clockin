@@ -42,3 +42,6 @@ upload/*
 !docs/game/source/legacy/HeroLoop_Brandbook_v2.pdf
 __pycache__/
 dist-seeker/
+
+# CLOCK IN local backend (scripts/clockin-local-backend.sh)
+selfhosted/.clockin-storage/
