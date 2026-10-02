@@ -327,7 +327,7 @@ html[data-hl-platform='android'] .market-row > .min-w-0 > span { display: block;
 
 /* Summon result on a phone: one full-screen layer above the top bar and tab bar; the cards
    scroll in the middle, "Break the seal" sits in the centre and "Continue" stays at the bottom. */
-html[data-hl-platform='android'] .summon-result { bottom: 0 !important; z-index: 120; justify-content: flex-start; padding: calc(12px + env(safe-area-inset-top, 0px)) 10px calc(14px + env(safe-area-inset-bottom, 0px)); }
+html[data-hl-platform='android'] .summon-result { bottom: 0 !important; z-index: 10020 !important; justify-content: flex-start; padding: calc(12px + env(safe-area-inset-top, 0px)) 10px calc(14px + env(safe-area-inset-bottom, 0px)); }
 html[data-hl-platform='android'] .summon-result-body { display: flex; height: 100%; min-height: 0; flex-direction: column; padding-top: 44px; }
 html[data-hl-platform='android'] .summon-result-grid { flex: 1 1 auto; min-height: 0; max-height: none !important; }
 html[data-hl-platform='android'] .summon-result-actions { flex: none; margin-top: 12px; }
