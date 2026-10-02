@@ -490,3 +490,39 @@ html[data-hl-platform='android'] .training-camp-screen .training-empty-post smal
 
 /* Version line on the app start and loading screens. */
 .hl-build-version { position: fixed; left: 0; right: 0; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 5; margin: 0; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: rgba(214, 196, 160, .55); pointer-events: none; }
+
+
+/* Android Play: keep the three actions together on the left, Power on the right. */
+html[data-hl-platform='android'] .game-progress-bar { justify-content: flex-start; gap: 6px; }
+html[data-hl-platform='android'] .game-progress-commander { order: 0; }
+html[data-hl-platform='android'] .game-progress-boost { order: 1; }
+html[data-hl-platform='android'] .game-progress-quests { order: 2; }
+html[data-hl-platform='android'] .game-progress-power { order: 3; margin-left: auto; }
+
+/* A local moving sheen keeps Boost luminous without animating the whole scene. */
+html[data-hl-platform='android'] .game-progress-boost {
+  position: relative; overflow: hidden; isolation: isolate;
+  border-color: #82f65e; color: #dcffc8;
+  background: linear-gradient(110deg, #102f16, #36a83f, #a1f36b, #237b32, #102f16);
+  box-shadow: 0 0 12px rgba(145,255,88,.6), inset 0 0 10px rgba(188,255,137,.2);
+  text-shadow: 0 1px 2px #102f16, 0 0 6px rgba(211,255,182,.8);
+}
+html[data-hl-platform='android'] .game-progress-boost > * { position: relative; z-index: 1; }
+html[data-hl-platform='android'] .game-progress-boost::after {
+  content: ''; position: absolute; inset: -20% auto -20% -70%; width: 55%;
+  background: linear-gradient(90deg, transparent, rgba(222,255,200,.55), transparent);
+  transform: skewX(-20deg); pointer-events: none; animation: android-boost-sheen 3.8s ease-in-out infinite;
+}
+@keyframes android-boost-sheen { 0%, 30% { transform: translateX(0) skewX(-20deg); } 80%, 100% { transform: translateX(320%) skewX(-20deg); } }
+html[data-hl-platform='android'] .game-motion-off .game-progress-boost::after { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  html[data-hl-platform='android'] .game-progress-boost::after { animation: none; }
+}
+
+/* The path opens below its trigger outside flex flow: the arena and footer keep their geometry.
+   The battle column can scroll down to the path without compressing combat. */
+html[data-hl-platform='android'] .hl-locations { position: relative; z-index: 35; }
+html[data-hl-platform='android'] #location-progression-path {
+  position: absolute; top: 100%; left: 0; right: 0; padding: 8px;
+  border: 1px solid #80683f; background: #11130f; box-shadow: 0 8px 20px #0008;
+}

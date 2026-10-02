@@ -1444,12 +1444,12 @@ function TokenEarningsPanel({ status: legacyStatus, stale, today, heroes, defeat
       <div className="grid w-full grid-cols-[repeat(3,1fr)] gap-2 rounded-2xl border-2 border-[#80683f] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_24px_rgba(128,104,63,.28)]">
         {[['Heroes', heroes], ['Defeated', defeated], ['Bosses', bosses]].map(([label, value]) => <div key={label} className="text-center"><span className="block ui-text-small font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span><strong className="mt-1 block ui-text-small tabular-nums text-[#e8dfc8]">{formatNum(Number(value))}</strong></div>)}
       </div>
-      <div className="hl-hero-only token-earnings-panel flex w-full flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_34px_rgba(229,177,70,.4)]">
+      <div className={`${isolatedHackathon ? 'hl-skr-income' : 'hl-hero-only'} token-earnings-panel flex w-full flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_34px_rgba(229,177,70,.4)]`}>
       <div className="flex items-center gap-2">
         <HeroTokenIcon size={22} />
         <span className="ui-text-small font-black uppercase tracking-[.14em] text-[#ffd36e]">$HERO Income</span>
         {isolatedHackathon && <span className="ml-auto ui-text-small font-bold uppercase tracking-wide text-emerald-300" title="SKR income and pool verification are not connected yet">Soon</span>}
-        {stale && <span className="ml-auto ui-text-small font-bold uppercase tracking-wide text-amber-300" title="Keeping the last confirmed server values while income refresh retries">Updating…</span>}
+        {!isolatedHackathon && stale && <span className="ml-auto ui-text-small font-bold uppercase tracking-wide text-amber-300" title="Keeping the last confirmed server values while income refresh retries">Updating…</span>}
       </div>
       {status || isolatedHackathon ? (
         <div className="grid grid-cols-[max-content_max-content] items-baseline gap-x-2 gap-y-2 whitespace-nowrap">
