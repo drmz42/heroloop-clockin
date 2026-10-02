@@ -1,3 +1,5 @@
+import { isolatedHackathon } from '@/game/editionStorage';
+import { SeekerMarketScreen } from './SeekerCommerceScreens';
 import { useEffect, useState, type ReactNode } from 'react';
 import { BarChart3, Clock3, Coins, List, Lock, PackageSearch, Search, ShieldCheck, ShoppingCart, Swords, Shield, Gem, PawPrint, Users } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
@@ -35,7 +37,10 @@ function listingFromServer(entry: ServerMarketListing): Listing | null {
   return { id: entry.id, kind: 'item', sourceId: entry.item.itemId, name: base.name, rarity: base.rarity, level: entry.item.level, enchantLevel: entry.item.enchantLevel, power: displayItemPower(entry.item), price: entry.price, seller: entry.is_own ? 'You' : entry.seller, createdAt: Date.parse(entry.created_at), stats: entry.item.stats.map(formatStatValue), owned: entry.item };
 }
 
-export function MarketplaceScreen({ game, tokenomics }: { game: GameApi; tokenomics: TokenomicsApi }) {
+export function MarketplaceScreen(props: { game: GameApi; tokenomics: TokenomicsApi }) {
+  return isolatedHackathon ? <SeekerMarketScreen game={props.game}/> : <StandardMarketplaceScreen {...props}/>;
+}
+function StandardMarketplaceScreen({ game, tokenomics }: { game: GameApi; tokenomics: TokenomicsApi }) {
   const [tab, setTab] = useState<MarketTab>('browse'); const [query, setQuery] = useState(''); const [selectedId, setSelectedId] = useState<string | null>(null); const [price, setPrice] = useState(10); const [notice, setNotice] = useState('');
   const [market, setMarket] = useState<ServerMarketSnapshot | null>(null); const [marketBusy, setMarketBusy] = useState(false);
   const [category, setCategory] = useState<Category>('all'); const [rarity, setRarity] = useState<Rarity | 'all'>('all'); const [enchant, setEnchant] = useState(0); const [levelFilter, setLevelFilter] = useState<LevelFilter>('all'); const [comparisonHeroUid, setComparisonHeroUid] = useState(game.state.team[0] ?? game.state.ownedHeroes[0]?.uid ?? '');

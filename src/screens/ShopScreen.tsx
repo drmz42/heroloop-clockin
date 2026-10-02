@@ -1,3 +1,5 @@
+import { isolatedHackathon } from '@/game/editionStorage';
+import { SeekerShopScreen } from './SeekerCommerceScreens';
 import { useState, type ReactNode } from 'react';
 import { Coins, FlaskConical, Package, Rocket, ShieldCheck, Store } from 'lucide-react';
 import { formatNum } from '@/game/state';
@@ -7,7 +9,10 @@ import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { BossKeyIcon } from '@/components/BossKeyIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 
-export function ShopScreen({ game }: { game: GameApi }) {
+export function ShopScreen(props: { game: GameApi }) {
+  return isolatedHackathon ? <SeekerShopScreen game={props.game}/> : <StandardShopScreen {...props}/>;
+}
+function StandardShopScreen({ game }: { game: GameApi }) {
   const { state } = game;
   return (
     <div className="premium-screen themed-screen themed-screen-store game-scrollbar h-full overflow-y-auto p-2">

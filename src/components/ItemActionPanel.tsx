@@ -1,3 +1,5 @@
+import { isolatedHackathon } from '@/game/editionStorage';
+import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { useState, type CSSProperties } from 'react';
 import { ArrowUp, Dice5, ShieldCheck, Trash2, Lock, Unlock, X, Coins } from 'lucide-react';
 import { HERO_USD_QUOTE, ITEM_MAP, SLOT_LABEL, displayItemPower, enchantedStats, itemBaseStats, formatStatValue, STAT_LABEL, sellValue, enchantSuccessChance, enchantCost, enchantCharmCost, rerollCost } from '@/game/items';
@@ -34,7 +36,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
   const charmCost = enchantCharmCost(item.enchantLevel);
   const canEnchant = item.enchantLevel < MAX_ENCHANT_LEVEL;
   const rCost = rerollCost(base.rarity, item.rerollCount);
-  const rerollAffordable = game.state.hero >= rCost;
+  const rerollAffordable = isolatedHackathon || game.state.hero >= rCost;
   const enchantAffordable = game.state.gold >= enchCost.gold && game.state.hero >= enchCost.hero;
   const guaranteedAffordable = enchantAffordable && game.state.hero >= enchCost.hero + charmCost;
   const enchantCostText = enchCost.gold > 0 ? `${formatNum(enchCost.gold)} Gold` : `${formatNum(enchCost.hero)} $HERO`;
@@ -121,8 +123,8 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
             <span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><ArrowUp size={12} /><span>{canEnchant ? `Enchant +${item.enchantLevel + 1}` : `Max +${MAX_ENCHANT_LEVEL}`}</span></span>{canEnchant && <span className="ui-text-small font-bold text-amber-100/70">{Math.round(enchChance * 100)}% · {formatNum(enchCost.gold)} G</span>}
           </button>
 
-          <button disabled={!rerollAffordable || game.itemUpgradeBusy} onClick={() => setShowReroll(s => !s)} aria-expanded={showReroll} className="item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 px-0.5 ui-text-small font-black text-cyan-300 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={rerollAffordable ? `Reroll for ${rCost} $HERO` : `Need ${rCost - game.state.hero} more $HERO`}>
-            <span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><Dice5 size={12} /><span>Reroll</span></span><span className="flex items-center gap-0.5 ui-text-small font-bold text-cyan-100/70"><HeroTokenIcon size={8} /> {usd(rCost)} · {formatNum(rCost)}</span>
+          <button disabled={!rerollAffordable || game.itemUpgradeBusy} onClick={() => setShowReroll(s => !s)} aria-expanded={showReroll} className="item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 px-0.5 ui-text-small font-black text-cyan-300 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={isolatedHackathon ? 'Get an exact SKR quote for Reroll' : rerollAffordable ? `Reroll for ${rCost} $HERO` : `Need ${rCost - game.state.hero} more $HERO`}>
+            <span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><Dice5 size={12} /><span>Reroll</span></span><span className="flex items-center gap-0.5 ui-text-small font-bold text-cyan-100/70">{isolatedHackathon ? <>{usd(rCost)} · SKR quote</> : <><HeroTokenIcon size={8} /> {usd(rCost)} · {formatNum(rCost)}</>}</span>
           </button>
 
           <div className="relative min-w-0">
@@ -153,7 +155,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
             >
               Ordinary ({enchCost.gold > 0 ? <><Coins size={10} className="inline" /> {formatNum(enchCost.gold)}</> : <><HeroTokenIcon size={10} className="inline" /> {usd(enchCost.hero)} · {formatNum(enchCost.hero)}</>})
             </button>
-            {charmCost > 0 && (
+            {charmCost > 0 && (isolatedHackathon ? <SkrPurchaseButton product="item_upgrade" params={{operation:"enchant",item_uid:item.uid,use_charm:true}} disabled={!enchantAffordable||game.itemUpgradeBusy||!item.serverOwned} label={`Guaranteed · ${formatNum(enchCost.gold)} Gold + SKR`} onDelivered={game.applySeekerPurchase}/> : (
               <button
                 type="button"
                 onClick={() => { void game.enchantItem(item.uid, true); setShowEnchant(false); }}
@@ -163,11 +165,11 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
               >
                 <ShieldCheck size={13} /> Guaranteed (<Coins size={10} /> {formatNum(enchCost.gold)} + <HeroTokenIcon size={10} /> ${enchantGuaranteedUsd(item.enchantLevel).toFixed(2)} · {formatNum(charmCost)})
               </button>
-            )}
+            ))}
           </div>
         )}
 
-        {showReroll && (
+        {showReroll && (isolatedHackathon ? <div className="item-act-sheet p-3"><p className="text-xs text-stone-300">Reroll replaces every stat roll and can improve or worsen this item. The approved USD price increases up to 5×.</p><SkrPurchaseButton product="item_upgrade" params={{operation:"reroll",item_uid:item.uid,use_charm:false}} disabled={game.itemUpgradeBusy||!item.serverOwned} label="Quote Reroll in SKR" onDelivered={game.applySeekerPurchase}/></div> : (
           <div className="item-act-sheet rounded-lg bg-black/30 p-2">
             <div className="ui-text-small text-slate-400 mb-1">Randomly rerolls all stats (within rarity range). Price is {usd(rCost)} · {formatNum(rCost)} $HERO and caps at 5×.</div>
             <button
@@ -179,7 +181,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
               {rerollAffordable ? `Reroll for ${rCost} $HERO` : `Need ${rCost - game.state.hero} more $HERO`}
             </button>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );

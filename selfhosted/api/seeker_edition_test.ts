@@ -11,9 +11,12 @@ Deno.test("standard edition refuses nothing", () => {
 
 Deno.test("seeker edition refuses $HERO commands before state", () => {
   const seeker = parseEdition("seeker");
-  for (const action of ["claim", "spend_tokens", "tester_credit_tokens", "tester_credit_gold", "store_buy_item", "market_list_item", "market_buy_listing"]) {
+  for (const action of ["claim", "spend_tokens", "tester_credit_tokens", "tester_credit_gold", "hero_ascend", "hero_promote_all", "hero_capacity_upgrade", "store_buy_item", "market_list_item", "market_buy_listing"]) {
     assert.equal(seekerRefusal(seeker, action, {}), "unavailable_in_seeker_edition");
   }
+  assert.equal(seekerRefusal(seeker, "item_upgrade", {operation:"reroll",use_charm:false}), "unavailable_in_seeker_edition");
+  assert.equal(seekerRefusal(seeker, "item_upgrade", {operation:"enchant",use_charm:true}), "unavailable_in_seeker_edition");
+  assert.equal(seekerRefusal(seeker, "item_upgrade", {operation:"enchant",use_charm:false}), null);
   assert.equal(seekerRefusal(seeker, "hero_summon", { payment_method: "paid" }), "unavailable_in_seeker_edition");
   assert.equal(seekerRefusal(seeker, "hero_summon", { payment_method: "scroll" }), null);
   for (const action of ["game_state_load", "normal_combat_complete", "quest_claim", "chest_open", "market_cancel_listing"]) {

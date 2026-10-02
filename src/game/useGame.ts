@@ -2966,12 +2966,40 @@ export function useGame() {
     });
   }, []);
 
+  // Apply only server-owned commerce fields; combat/timers and local progress
+  // continue unchanged. A recovered old receipt never overwrites a newer save.
+  const applySeekerPurchase = useCallback((result: Record<string, unknown>) => {
+    const revision=Number(result.revision);
+    if (Number.isSafeInteger(revision) && revision >= (serverRevisionHintRef.current ?? 0)) {
+      const current=stateRef.current;
+      const next={...current};
+      if (Array.isArray(result.inventory)) next.inventory=result.inventory as OwnedItem[];
+      if (Array.isArray(result.owned_heroes)) next.ownedHeroes=result.owned_heroes as OwnedHero[];
+      if (Number.isSafeInteger(result.hero_capacity)) next.heroCapacity=result.hero_capacity as number;
+      if (typeof result.gold==='number' && Number.isFinite(result.gold)) next.gold=result.gold;
+      if (Array.isArray(result.bag_slots) && result.bag_slots.length===4) next.bagSlots=result.bag_slots as GameState['bagSlots'];
+      if (Array.isArray(result.store)) next.rotatingShop=result.store as GameState['rotatingShop'];
+      if (Number.isSafeInteger(result.refresh_at)) next.rotatingShopRefreshAt=result.refresh_at as number;
+      const remote=result.state as Partial<GameState>|undefined;
+      if (remote) {
+        if (Number.isSafeInteger(remote.summonScrolls)) next.summonScrolls=remote.summonScrolls as number;
+        if (Number.isSafeInteger(remote.bossKeys)) next.bossKeys=remote.bossKeys as number;
+        if (remote.potions) next.potions=remote.potions;
+      }
+      stateRef.current=next;
+      setState(next);
+      setServerRevisionHint(revision);
+    }
+    void loadMail();
+    void refreshAccountBonus();
+  },[loadMail,refreshAccountBonus]);
+
   return {
     state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, trainingIncomeRevision, battleResult, combatRecovery, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
     offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
     starUpHero, promoteAllHeroes, releaseHero, quoteHeroCapacity, upgradeHeroCapacity, toggleHeroLock, markHeroSeen,
-    accountBonus, refreshAccountBonus, buyRewardBoost, buyShopBundle, quoteInventoryBag, buyInventoryBag,
+    applySeekerPurchase, accountBonus, refreshAccountBonus, buyRewardBoost, buyShopBundle, quoteInventoryBag, buyInventoryBag,
     quoteHeroSummon, summonHeroes, summonBoss, syncBossKeys, toggleTeamMember, confirmPersistedFormation, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,
     equipItem, unequipItem, unequipAll, equipmentError: () => equipmentErrorRef.current, sellItem, toggleItemLock, sellAllUnlocked,

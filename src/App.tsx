@@ -620,6 +620,7 @@ function App() {
       )}
       {showWallet && (
         <GameWalletModal
+          onPurchase={game.applySeekerPurchase}
           guestId={game.state.walletAddress}
           walletAddress={linkedWalletAddress}
           balance={game.state.hero}

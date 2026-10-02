@@ -109,3 +109,10 @@ Deno.test('holding conversion rounds up at the atomic-unit boundary', () => {
   const s = fixture(); s.rate!.usd_micros_per_skr = '11000';
   assert.equal(evaluateSkrBoost(s, now).hold.required_minor, '2727272728');
 });
+
+Deno.test('fractional-cent approved rerolls retain exact threshold accounting',()=>{
+ const s=fixture();buy(s,'a','reroll');s.purchases[0].usd_cents='999.5000';
+ assert.equal(evaluateSkrBoost(s,now).spend.complete,false);
+ buy(s,'b','reroll');s.purchases[1].usd_cents='0.5000';
+ assert.equal(evaluateSkrBoost(s,now).spend.complete,true);
+});

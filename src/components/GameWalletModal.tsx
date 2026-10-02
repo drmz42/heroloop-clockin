@@ -11,6 +11,8 @@ import { shortWalletAddress } from '@/components/walletAddress';
 import { solanaAuthEnabled, unlinkSolanaIdentity } from '@/game/solanaWalletSession';
 import { SeekerDepositPanel, SeekerHistoryPanel } from '@/components/SeekerWalletPanels';
 
+import { SeekerWithdrawalPanel,SeekerFounderPanel } from '@/components/SeekerWithdrawalPanels';
+
 type WalletTab = 'deposit' | 'withdraw' | 'history' | 'account';
 
 const TABS: { id: WalletTab; label: string; icon: typeof Wallet }[] = [
@@ -28,6 +30,7 @@ export function GameWalletModal({
   claimed,
   earned,
   onClose,
+  onPurchase,
 }: {
   guestId: string;
   walletAddress: string | null;
@@ -36,6 +39,7 @@ export function GameWalletModal({
   claimed: number;
   earned: number;
   onClose: () => void;
+  onPurchase?: (result:Record<string,unknown>)=>void;
 }) {
   const [tab, setTab] = useState<WalletTab>(walletAddress ? 'deposit' : 'account');
   const [copied, setCopied] = useState<'wallet' | 'id' | null>(null);
@@ -131,7 +135,7 @@ export function GameWalletModal({
 
         <div id={`wallet-panel-${tab}`} role="tabpanel" aria-labelledby={`wallet-tab-${tab}`} className="game-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
           {tab === 'deposit' && isolatedHackathon && <SeekerDepositPanel />}
-          {tab === 'history' && isolatedHackathon && <SeekerHistoryPanel />}
+          {tab === 'history' && isolatedHackathon && <SeekerHistoryPanel onPurchase={onPurchase} />}
 
           {tab === 'deposit' && !isolatedHackathon && (
             <>
@@ -144,7 +148,8 @@ export function GameWalletModal({
             </>
           )}
 
-          {tab === 'withdraw' && (
+          {tab === 'withdraw' && isolatedHackathon && <SeekerWithdrawalPanel />}
+          {tab === 'withdraw' && !isolatedHackathon && (
             <>
               <NotLive title="Withdrawals are not live yet">
                 Limits, fees and cooldowns will be published here once they are approved. Nothing can leave the game before then.
@@ -187,6 +192,7 @@ export function GameWalletModal({
                 {solanaAuthEnabled ? 'This internal account ID is not your public wallet address. HeroLoop login signatures never move funds or cost gas.' : 'Guest ID is not a Solana address and cannot receive funds. The displayed `$HERO` balance is the current in-game testing balance.'}
               </div>
 
+              {isolatedHackathon && <SeekerFounderPanel />}
               {solanaAuthEnabled && (
                 <div className="space-y-3 border-t border-white/10 pt-4">
                   <div className="flex gap-3 text-xs leading-5 text-slate-400">

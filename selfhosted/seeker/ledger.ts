@@ -5,7 +5,7 @@ export const SKR_ASSET = Object.freeze({
   decimals: 6,
   program: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
 });
-export type SkrAccountKind = 'player' | 'withdrawal_reserve' | 'fees' | 'merchant' | 'rewards' | 'chain';
+export type SkrAccountKind = 'player' | 'withdrawal_reserve' | 'fees' | 'merchant' | 'rewards' | 'chain' | 'commerce_escrow';
 export type SkrEventKind = 'deposit' | 'transfer' | 'withdraw_reserve' | 'withdraw_release' | 'withdraw_finalize';
 export type SkrLeg = { account_id: string; delta_minor: string };
 export type SkrAccount = { id: string; kind: SkrAccountKind; player_id: string | null; balance_minor: string };

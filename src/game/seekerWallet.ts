@@ -17,6 +17,7 @@ export type WalletSnapshot = {
   balances: Record<WalletAsset, string>;
   pending_deposits: { intent_id: string; asset: WalletAsset; amount_minor: string; expires_at: string }[];
   history: WalletHistoryRow[];
+  pending_purchases?: SkrPurchaseQuote[];
   chain: WalletChain;
 };
 type DepositIntent = { intent_id: string; asset: WalletAsset; amount_minor: string; payer: string; transaction: string; chain: WalletChain };
@@ -79,6 +80,11 @@ export function refreshWallet(): Promise<WalletSnapshot> {
     })
     .finally(() => { inflight = null; });
   return inflight;
+}
+async function refreshAfterChange(): Promise<WalletSnapshot> {
+  // Finish any pre-mutation read before requesting the post-mutation balance.
+  if (inflight) await inflight.catch(() => undefined);
+  return refreshWallet();
 }
 export const loadWalletSnapshot = refreshWallet;
 
@@ -187,10 +193,66 @@ export async function waitForDeposit(intentId: string, signature?: string): Prom
       throw error;
     });
     if (result.status !== 'pending') {
-      if (result.status === 'settled') void refreshWallet().catch(() => undefined);
+      if (result.status === 'settled') void refreshAfterChange().catch(() => undefined);
       return result;
     }
     await new Promise((resolve) => setTimeout(resolve, 4000));
   }
   return { status: 'pending', signature };
+}
+
+export type SkrPurchaseQuote = {
+  quote_id:string; usd_cents:number; amount_minor:string; expires_at:string;
+  status:'quoted'|'charged'|'committed'|'refunded'; context:{action:string;params:Record<string,unknown>};
+};
+export async function quoteSkrPurchase(product:string,params:Record<string,unknown>):Promise<SkrPurchaseQuote> {
+  return command('skr_purchase_quote',{product,params,idempotency_key:crypto.randomUUID()});
+}
+export async function commitSkrPurchase(quoteId:string):Promise<{status:'delivered'|'rejected';result:Record<string,unknown>}> {
+  try { return await command('skr_purchase_commit',{quote_id:quoteId}); }
+  finally { void refreshAfterChange().catch(()=>undefined); }
+}
+export function loadSkrRate():Promise<{usd_micros_per_skr:string;observed_at:string}> { return command('wallet_rates'); }
+
+export type WithdrawalRow={ request_id:string;asset:WalletAsset;amount_minor:string;destination:string;
+  usd_cents:number;status:'authorization'|'pending'|'approval_required'|'paying'|'paid'|'rejected';created_at:string;expires_at:string;signature:string|null;reject_reason:string|null };
+export function loadWithdrawals():Promise<{withdrawals:WithdrawalRow[]}>{return command('wallet_withdrawals');}
+async function signAuthorization(message:string,address:string,walletName:string):Promise<string> {
+  const payload=new TextEncoder().encode(message);
+  if(nativeMwaSession(walletName)) {
+    const [{transact},{base64ToUint8Array}]=await Promise.all([
+      import('@solana-mobile/mobile-wallet-adapter-protocol'),import('@solana-mobile/mobile-wallet-adapter-protocol/encoding')]);
+    return transact(async wallet=>{
+      const auth=await wallet.authorize({chain:'solana:mainnet',identity:mobileWalletAppIdentity()});
+      const account=auth.accounts.find(a=>base58(base64ToUint8Array(a.address))===address);
+      if(!account)throw new SeekerWalletError('wallet_account_mismatch');
+      const {signed_payloads}=await wallet.signMessages({addresses:[account.address],payloads:[btoa(String.fromCharCode(...payload))]});
+      if(signed_payloads.length!==1)throw new SeekerWalletError('invalid_withdrawal_signature');
+      const signed=base64ToUint8Array(signed_payloads[0]);
+      if(signed.length!==payload.length+64 || payload.some((byte,index)=>signed[index]!==byte))throw new SeekerWalletError('invalid_withdrawal_signature');
+      return btoa(String.fromCharCode(...signed.slice(-64)));
+    });
+  }
+  const wallet=compatibleSolanaWallets().find(w=>w.name===walletName);
+  const account=wallet?.accounts.find(a=>a.address===address);
+  const feature=wallet?.features['solana:signMessage'] as {signMessage:(input:{account:WalletAccount;message:Uint8Array})=>Promise<readonly {signature:Uint8Array}[]>}|undefined;
+  if(!account||!feature)throw new SeekerWalletError('wallet_account_mismatch');
+  const [proof]=await feature.signMessage({account,message:payload});
+  return btoa(String.fromCharCode(...proof.signature));
+}
+export async function requestWithdrawal(asset:WalletAsset,amount:string):Promise<WithdrawalRow> {
+  const bound=boundWallet();if(!bound)throw new SeekerWalletError('wallet_not_linked');
+  const intent=await command<WithdrawalRow&{message:string}>('wallet_withdraw_intent',{asset,amount,destination:bound.address});
+  const signature=await signAuthorization(intent.message,bound.address,bound.walletName);
+  try{return await command('wallet_withdraw_confirm',{request_id:intent.request_id,signature});}
+  finally{void refreshAfterChange().catch(()=>undefined);}
+}
+export type Reconciliation={withdrawals_blocked:boolean;checked_at:string;assets:Record<WalletAsset,{on_chain_minor:string;accounted_minor:string;liabilities_minor:string;earned_minor:string;shortfall:boolean}>};
+export function loadFounderWallet():Promise<{withdrawals:WithdrawalRow[];reconciliation:Reconciliation}> {
+ const bound=boundWallet();if(!bound)throw new SeekerWalletError('wallet_not_linked');
+ return command('wallet_founder_status',{founder_address:bound.address});
+}
+export function reviewWithdrawal(request_id:string,action:'begin_payout'|'finalize'|'reject',value=''):Promise<WithdrawalRow> {
+ const bound=boundWallet();if(!bound)throw new SeekerWalletError('wallet_not_linked');
+ return command('wallet_withdraw_review',{founder_address:bound.address,request_id,action,...(action==='finalize'?{signature:value}:action==='reject'?{reason:value}:{})});
 }

@@ -34,7 +34,7 @@ import {
   type SocialLinkStore,
 } from "./social_link.ts";
 import { parseEdition, seekerRefusal } from "./seeker_edition.ts";
-import { unavailableSkrBoost } from "./skr_boost.ts";
+import { quotePurchase, commitPurchase, SKR_PRODUCTS } from "./seeker_commerce.ts";
 import { parseAdditionalSiwsUris, siwsSiteForRequest } from "./siws_site.ts";
 
 const jsonHeaders = {
@@ -58,9 +58,27 @@ const walletServiceUrl = Deno.env.get("WALLET_SERVICE_URL") ?? "";
 const walletServiceToken = Deno.env.get("WALLET_SERVICE_TOKEN") ?? "";
 const walletActions: Record<string, string> = {
   wallet_snapshot: "/wallet/snapshot",
+  wallet_rates: "/wallet/rates",
+  wallet_withdrawals: "/wallet/withdrawals",
+  wallet_withdraw_intent: "/wallet/withdraw-intent",
+  wallet_withdraw_confirm: "/wallet/withdraw-confirm",
+  wallet_founder_status: "/wallet/founder",
+  wallet_withdraw_review: "/wallet/withdraw-review",
   wallet_deposit_intent: "/wallet/deposit-intent",
   wallet_deposit_confirm: "/wallet/deposit-confirm",
 };
+async function privateWallet(path: string,body: JsonRecord): Promise<JsonRecord> {
+  if (!walletServiceUrl || walletServiceToken.length<32) throw new Error('wallet_unavailable');
+  const response=await fetch(walletServiceUrl+path,{
+    method:'POST',headers:{'content-type':'application/json','x-wallet-token':walletServiceToken},
+    body:JSON.stringify(body),signal:AbortSignal.timeout(15_000),
+  });
+  const data=await response.json();
+  if (!isRecord(data) || !response.ok || data.ok!==true || !isRecord(data.result)) {
+    throw new Error(isRecord(data) && typeof data.code==='string' && /^[a-z_]{3,48}$/.test(data.code) ? data.code : 'wallet_unavailable');
+  }
+  return data.result;
+}
 const siwsAdditionalUris = parseAdditionalSiwsUris(Deno.env.get("SIWS_ADDITIONAL_URIS"));
 const combatEffectsVersion = Deno.env.get("COMBAT_EFFECTS_VERSION") ?? "combat-effects-v1";
 if (!["combat-effects-v1", COMBAT_EFFECTS_V2_VERSION].includes(combatEffectsVersion)) {
@@ -141,6 +159,14 @@ const commandActions = new Set([
   "set_boost_max_active",
   "skr_boost_status",
   "wallet_snapshot",
+  "wallet_rates",
+  "wallet_withdrawals",
+  "wallet_withdraw_intent",
+  "wallet_withdraw_confirm",
+  "wallet_founder_status",
+  "wallet_withdraw_review",
+  "skr_purchase_quote",
+  "skr_purchase_commit",
   "wallet_deposit_intent",
   "wallet_deposit_confirm",
   "promo_redeem",
@@ -902,6 +928,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       const requestedAction = String(parsed.value.action);
       const rateLimit = await consumeRateLimit(identity.playerId,
         requestedAction === "skr_boost_status" ? "status"
+          : ["skr_purchase_quote", "skr_purchase_commit"].includes(requestedAction) ? "status"
           : Object.hasOwn(walletActions, requestedAction) ? "status"
           : requestedAction.startsWith("tester_credit_") ? "tester_credit_tokens" : requestedAction);
       if (!rateLimit.allowed) {
@@ -923,18 +950,65 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       if (edition !== "seeker") return errorResponse(409, "unavailable_in_standard_edition", requestId);
       const payloadError = validatePayloadFields(payload, []);
       if (payloadError) return errorResponse(400, payloadError, requestId);
-      return json(200, { ok: true, contract_version: 1, request_id: requestId, result: unavailableSkrBoost() });
+      try {
+        const result=await privateWallet('/wallet/boost',{ player_id:identity.playerId });
+        return json(200,{ok:true,contract_version:1,request_id:requestId,result});
+      } catch { return errorResponse(503,'wallet_unavailable',requestId); }
+    }
+    if (['skr_purchase_quote','skr_purchase_commit'].includes(String(parsed.value.action))) {
+      if (edition!=='seeker' || !walletServiceUrl || walletServiceToken.length<32) return errorResponse(409,'unavailable_in_standard_edition',requestId);
+      const quoting=parsed.value.action==='skr_purchase_quote';
+      const payloadError=validatePayloadFields(payload,quoting ? ['product','params'] : ['quote_id']);
+      const key=quoting ? idempotencyKey(parsed.value) : payload.quote_id;
+      if (payloadError || typeof key!=='string' || !uuidPattern.test(key)
+        || (quoting && (typeof payload.product!=='string' || !Object.hasOwn(SKR_PRODUCTS,payload.product) || !isRecord(payload.params)))) {
+        return errorResponse(400,payloadError??'invalid_skr_product',requestId);
+      }
+      try {
+        if (quoting && await pausedFlagFor(String(payload.product))) return errorResponse(409,'feature_paused',requestId);
+        if(!quoting) {
+          const quote=await privateWallet('/wallet/purchase-get',{player_id:identity.playerId,quote_id:key});
+          if(quote.status==='quoted' && isRecord(quote.context) && await pausedFlagFor(String(quote.context.action))) return errorResponse(409,'feature_paused',requestId);
+        }
+        const adapters={game:databaseJson,wallet:privateWallet};
+        const result=quoting
+          ? await quotePurchase(adapters,identity.playerId,key,String(payload.product),payload.params as JsonRecord)
+          : await commitPurchase(adapters,identity.playerId,key);
+        return json(200,{ok:true,contract_version:1,request_id:requestId,result});
+      } catch(error) {
+        const code=databaseErrorCode(error,['invalid_skr_product','idempotency_conflict','skr_idempotency_conflict',
+          'skr_insufficient_balance_or_overflow','skr_quote_not_found','skr_quote_expired','skr_purchase_refunded',
+          'stale_skr_rate','account_restricted','market_listing_unavailable','market_self_purchase','item_not_found',
+          'invalid_market_price','store_offer_expired','store_offer_sold','invalid_store_slot',
+          'skr_product_changed','target_not_found','maximum_stars','insufficient_duplicates','unsupported_rarity','hero_capacity_quote_stale','hero_capacity_exceeded','maximum_enchant','insufficient_gold','invalid_item_upgrade','bag_step_unavailable','invalid_shop_bundle_purchase','invalid_reward_boost_purchase']);
+        if(code) return errorResponse(409,code,requestId);
+        return errorResponse(503,'skr_purchase_pending',requestId);
+      }
     }
     if (Object.hasOwn(walletActions, String(parsed.value.action))) {
       if (edition !== "seeker" || !walletServiceUrl || walletServiceToken.length < 32) {
         return errorResponse(409, "unavailable_in_standard_edition", requestId);
       }
       const action = String(parsed.value.action);
-      const allowed = action === "wallet_snapshot" ? [] : action === "wallet_deposit_intent"
-        ? ["asset", "amount", "payer"] : ["intent_id", "signature"];
+      const allowed = ({wallet_snapshot:[],wallet_rates:[],wallet_withdrawals:[],
+        wallet_deposit_intent:['asset','amount','payer'],wallet_deposit_confirm:['intent_id','signature'],
+        wallet_withdraw_intent:['asset','amount','destination'],wallet_withdraw_confirm:['request_id','signature'],
+        wallet_founder_status:['founder_address'],wallet_withdraw_review:['founder_address','request_id','action','signature','reason'],
+      } as Record<string,string[]>)[action];
       const payloadError = validatePayloadFields(payload, allowed);
       if (payloadError) return errorResponse(400, payloadError, requestId);
+      if (['wallet_withdraw_intent','wallet_founder_status','wallet_withdraw_review'].includes(action)) {
+        const address=action==='wallet_withdraw_intent'?payload.destination:payload.founder_address;
+        if(typeof address!=='string')return errorResponse(400,'invalid_wallet_address',requestId);
+        const proof=await databaseJson('SELECT heroloop_api.seeker_wallet_identity($1::uuid,$2::text) AS result',[identity.playerId,address]);
+        if(proof.verified!==true)return errorResponse(403,'wallet_identity_required',requestId);
+      }
       try {
+        if(action==='wallet_withdraw_confirm') {
+          const intent=await privateWallet('/wallet/withdraw-get',{player_id:identity.playerId,request_id:payload.request_id});
+          const proof=await databaseJson('SELECT heroloop_api.seeker_wallet_identity($1::uuid,$2::text) AS result',[identity.playerId,intent.destination]);
+          if(proof.verified!==true)return errorResponse(403,'wallet_identity_required',requestId);
+        }
         // The wallet service trusts only this verified player id, never a client value.
         const response = await fetch(walletServiceUrl + walletActions[action], {
           method: "POST",

@@ -58,14 +58,16 @@ export function evaluateSkrBoost(snapshot: SkrBoostSnapshot, now = Date.now()) {
   }
   const ownDelta = (eventId: string) => amount((legs.get(eventId) ?? []).find(row => row.account_id === player.id)?.delta_minor ?? '0', true);
   const merchantOnly = (eventId: string) => (legs.get(eventId) ?? []).filter(row => row.account_id !== player.id)
-    .every(row => ['merchant', 'fees'].includes(accounts.get(row.account_id)?.kind ?? ''));
+    .every(row => ['merchant', 'fees', 'commerce_escrow'].includes(accounts.get(row.account_id)?.kind ?? ''));
   const purchases = new Map<string, { paid: bigint; usd: bigint; refunded: bigint }>();
   for (const proof of snapshot.purchases) {
     if (proof.mint !== SKR_ASSET.mint || proof.network !== SKR_ASSET.network) throw new Error('invalid_skr_boost_asset');
     const event = events.get(proof.event_id);
     const paid = -ownDelta(proof.event_id);
     if (!event || event.kind !== 'transfer' || paid <= 0n) throw new Error('invalid_skr_boost_purchase');
-    const usd = amount(proof.usd_cents) * 10000n;
+    const match=/^(0|[1-9][0-9]{0,11})(?:\.([0-9]{1,4}))?$/.exec(proof.usd_cents);
+    if (!match) throw new Error('invalid_skr_boost_purchase');
+    const usd=BigInt(match[1])*10000n+BigInt((match[2]??'').padEnd(4,'0'));
     if (usd <= 0n) throw new Error('invalid_skr_boost_purchase');
     // Marketplace and peer transfers never qualify, even if mislabelled Store.
     if (!SKR_STORE_CATEGORIES.includes(proof.category as typeof SKR_STORE_CATEGORIES[number]) || !merchantOnly(proof.event_id)) continue;

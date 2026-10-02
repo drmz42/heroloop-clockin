@@ -5,12 +5,19 @@
 
 // Commands that exist only for $HERO (or for unlimited tester grants).
 export const SEEKER_REFUSED_ACTIONS: ReadonlySet<string> = new Set([
+  "hero_ascend",
+  "hero_promote_all",
+  "hero_capacity_quote",
+  "hero_capacity_upgrade",
   "claim",
   "spend_tokens",
   "tester_credit_tokens",
   "tester_credit_gold",
   "set_boost_max_active",
   "store_buy_item",
+  "shop_bundle_buy",
+  "reward_boost_buy",
+  "inventory_bag_buy",
   "reserve_limited_item",
   "remove_limited_item",
   "market_list_item",
@@ -30,5 +37,6 @@ export function seekerRefusal(edition: Edition, action: string, payload: Record<
   if (SEEKER_REFUSED_ACTIONS.has(action)) return "unavailable_in_seeker_edition";
   // Summon stays available with Summon Scrolls; the $HERO-paid path is off.
   if (action === "hero_summon" && payload.payment_method !== "scroll") return "unavailable_in_seeker_edition";
+  if (action === "item_upgrade" && (payload.operation === "reroll" || payload.use_charm === true)) return "unavailable_in_seeker_edition";
   return null;
 }

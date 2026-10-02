@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowDownToLine, Check, ExternalLink, Loader2, RefreshCw, ShieldCheck, AlertTriangle } from 'lucide-react';
 import {
-  boundWallet, deposit, formatMinor, refreshWallet, SeekerWalletError, useWalletSnapshot, waitForDeposit,
+  commitSkrPurchase,boundWallet, deposit, formatMinor, refreshWallet, SeekerWalletError, useWalletSnapshot, waitForDeposit,
   type WalletAsset, type WalletSnapshot,
 } from '@/game/seekerWallet';
 
@@ -176,11 +176,21 @@ export function SeekerDepositPanel() {
   );
 }
 
-export function SeekerHistoryPanel() {
+export function SeekerHistoryPanel({onPurchase}:{onPurchase?:(result:Record<string,unknown>)=>void}) {
   const { snapshot, error } = useWalletState();
+  const [recovering,setRecovering]=useState(false);
+  const [notice,setNotice]=useState('');
+  async function recover(id:string) {
+    setRecovering(true);
+    try {const result=await commitSkrPurchase(id);if(result.status==='delivered'){onPurchase?.(result.result);setNotice('Payment recovered. Your purchase is delivered.');}else setNotice('Purchase refused. Your SKR was refunded.');}
+    catch {setNotice('Payment is still pending. Keep the same request and retry later.');}
+    finally{setRecovering(false);}
+  }
   return (
     <>
       <Balances snapshot={snapshot} />
+      {snapshot?.pending_purchases?.map(quote=><div key={quote.quote_id} className="stat-tile p-3 text-xs"><p>Pending {quote.context.action.replace(/_/g,' ')} · {formatMinor(quote.amount_minor,'SKR',6)} SKR</p><button disabled={recovering} className="game-control mt-2 min-h-11 w-full" onClick={()=>void recover(quote.quote_id)}>Recover this payment</button></div>)}
+      {notice&&<p role="status" className="text-xs text-amber-200">{notice}</p>}
       {snapshot && snapshot.history.length === 0 && (
         <div className="stat-tile p-3 text-xs text-[#a29b8e]">No wallet activity yet.</div>
       )}
