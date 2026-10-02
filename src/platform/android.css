@@ -24,12 +24,21 @@ html[data-hl-platform='android'] .hl-nav-right { border-left: 0; padding-left: 0
 html[data-hl-platform='android'] .hl-nav-wallet-label,
 html[data-hl-platform='android'] .hl-nav-unit { display: none; }
 html[data-hl-platform='android'] .hl-nav-unit-token { display: inline; }
-@media (max-width: 380px) { html[data-hl-platform='android'] .hl-nav-unit-token { display: none; } }
 html[data-hl-platform='android'] .hl-nav-right > * { min-height: 40px; border-radius: 3px; }
 html[data-hl-platform='android'] .hl-nav-right > button:first-child,
 html[data-hl-platform='android'] .hl-nav-right > button[title='Mailbox'] { width: 40px; padding: 0; justify-content: center; display: grid; place-items: center; }
 html[data-hl-platform='android'] .hl-nav-right > div,
 html[data-hl-platform='android'] .hl-nav-right > button[aria-label='Open Rewards and Tokenomics'] { height: 40px; padding: 0 8px; gap: 5px; }
+/* 360px-wide phones (most 1080p Android at 3x): tighter top bar so the $SKR label still fits. */
+@media (max-width: 380px) {
+  html[data-hl-platform='android'] .hl-nav-logo img { width: 32px !important; max-width: 32px !important; height: 32px !important; }
+  html[data-hl-platform='android'] .hl-nav-right { gap: 4px; }
+  html[data-hl-platform='android'] .hl-nav-right > button:first-child,
+  html[data-hl-platform='android'] .hl-nav-right > button[title='Mailbox'] { width: 34px; }
+  html[data-hl-platform='android'] .hl-nav-right > div,
+  html[data-hl-platform='android'] .hl-nav-right > button[aria-label='Open Rewards and Tokenomics'] { padding: 0 5px; gap: 3px; }
+  html[data-hl-platform='android'] .hl-nav-unit-token { letter-spacing: .02em; }
+}
 @media (max-width: 370px) {
 }
 
