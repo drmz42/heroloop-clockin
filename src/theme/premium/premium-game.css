@@ -90,6 +90,12 @@
   box-shadow: 0 6px 16px rgba(0, 0, 0, .45), inset 0 0 18px rgba(0, 0, 0, .55);
 }
 /* Named component surfaces from the base stylesheet */
+/* Hero rarity belongs to the portrait, including the pause between waves. */
+[data-hl-theme=premium] .arena-portrait[data-combat-side=hero] {
+  border-image: none;
+  border-width: 2px;
+}
+
 [data-hl-theme=premium] :is(.market-shell, .merchant-surface, .reward-scene, .dungeon-gate-modal, .auto-pot-settings) {
   border-style: solid;
   border-image: var(--pm-frame) 200 / 22px / 6px stretch;

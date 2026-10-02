@@ -172,6 +172,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
       <div className={`relative ${unit.alive && motionEnabled ? 'anim-bob' : ''}`}>
         <div
           className={`arena-portrait combatant-card relative h-16 w-16 overflow-hidden sm:h-[80px] sm:w-[80px] xl:h-[88px] xl:w-[88px] 2xl:h-[96px] 2xl:w-[96px] ${side === 'enemy' ? 'ring-1 ring-rose-950/70' : ''} ${side === 'hero' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-hero' : 'anim-attack-hero-b') : ''} ${side === 'enemy' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-enemy' : 'anim-attack-enemy-b') : ''}`}
+          data-combat-side={side}
           style={{
             borderColor: portraitColor,
             boxShadow: unit.alive ? `inset 0 1px rgba(255,255,255,.08), inset 0 0 0 3px rgba(0,0,0,.22), 0 18px 38px rgba(0,0,0,.42), 0 0 20px ${portraitColor}22` : 'none',
