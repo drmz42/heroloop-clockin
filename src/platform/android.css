@@ -414,6 +414,7 @@ html[data-hl-platform='android'] .hl-gear-head .set-bonus-tooltip { left: 0; rig
 html[data-hl-platform='android'] *, html[data-hl-platform='android'] *::before, html[data-hl-platform='android'] *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 /* The inventory column sits inside the Bag window frame; its own frame drew a second, broken border around the cells. */
 html[data-hl-platform='android'] .hl-col-right.material-panel:not(#hl-a):not(#hl-b) { border-image: none !important; border-color: transparent !important; box-shadow: none !important; }
+html[data-hl-platform='android'] .hl-col-right.material-panel::after { content: none !important; }
 
 /* Ranks on phones: no 900px table and no sideways scroll (it left the header area empty); rank, player and
    Level/Kills/Bosses fit the width, the hero lineup wraps under the name. */
@@ -463,3 +464,15 @@ html[data-hl-platform='android'] .training-camp-screen .training-section.relativ
 html[data-hl-platform='android'] .training-camp-screen .training-roster-card { height: auto; padding: 5px 3px; }
 html[data-hl-platform='android'] .training-camp-screen .training-roster-portrait { width: 56px; height: 56px; }
 html[data-hl-platform='android'] .training-camp-screen .training-roster-portrait > :first-child { transform: scale(.7); transform-origin: top left; }
+/* These panels used opacity steps Tailwind does not generate (/88, /95, /97, /98), so only the blur made them readable. */
+html[data-hl-platform='android'] [class*='bg-[#11130f]/9'] { background-color: rgba(17, 19, 15, .97); }
+html[data-hl-platform='android'] [class*='bg-[#17130d]/9'] { background-color: rgba(23, 19, 13, .96); }
+html[data-hl-platform='android'] [class*='bg-[#08070a]/'] { background-color: rgba(8, 7, 10, .9); }
+html[data-hl-platform='android'] [class*='bg-[#0b0c0a]/9'] { background-color: rgba(11, 12, 10, .96); }
+html[data-hl-platform='android'] [class*='bg-[#0b0d0b]/9'] { background-color: rgba(11, 13, 11, .95); }
+html[data-hl-platform='android'] [class*='bg-[#030308]/9'] { background-color: rgba(3, 3, 8, .92); }
+html[data-hl-platform='android'] [class*='bg-[#2a1a08]/9'] { background-color: rgba(42, 26, 8, .92); }
+html[data-hl-platform='android'] [class*='bg-[#2a0d0d]/9'] { background-color: rgba(42, 13, 13, .95); }
+html[data-hl-platform='android'] .training-camp-screen .training-empty-post .training-dummy { transform: scale(.72); margin-bottom: -6px; }
+html[data-hl-platform='android'] .training-camp-screen .training-empty-post strong { font-size: 8px; letter-spacing: .04em; }
+html[data-hl-platform='android'] .training-camp-screen .training-empty-post small { display: none; }
