@@ -68,7 +68,7 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
       <div className="px-panel-raised relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl" role="dialog" aria-modal="true" aria-label="Rewards and Tokenomics">
         <header className="flex items-start justify-between gap-3 border-b border-[#5d4a2f] px-4 py-3">
           <div>
-            <div className="section-kicker">Live server data</div>
+            <div className="section-kicker">{isolatedHackathon ? 'SKR integration coming soon' : 'Live server data'}</div>
             <h2 className="mt-1 flex items-center gap-2 text-2xl font-black text-[#f1d188]"><Gift size={22} /> Rewards &amp; Tokenomics</h2>
             <p className="mt-1 text-xs text-[#aaa397]">Shared reward pool, your Boost Max and your standing.</p>
           </div>
@@ -79,7 +79,7 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
           <section className="stat-tile p-4" aria-label="Reward pool">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-bold uppercase tracking-[.16em] text-[#8f887b]">Reward pool</span>
-              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" /> Live · shared</span>
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" /> {isolatedHackathon ? 'Coming soon' : 'Live · shared'}</span>
             </div>
             <div className="mt-1 flex items-center gap-2 text-3xl font-black tabular-nums text-[#f1d188]"><HeroTokenIcon size={26} /> {money(status?.pool_amount)} <span className="text-sm font-bold text-[#8f887b]">$HERO</span></div>
             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
@@ -87,7 +87,7 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
               <PoolTile label="Distributed" value={money(status?.total_distributed)} />
               <PoolTile label="Your share" value={status ? `${decimals(status.pool_share_percent)}%` : '—'} />
             </div>
-            <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-[#b9b09d]"><Zap size={14} className="mt-0.5 shrink-0 text-[#e0a83c]" /> Income follows your Reward Power and how deep your farming location is. Push deeper and gear up to earn a bigger share.</p>
+            <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-[#b9b09d]"><Zap size={14} className="mt-0.5 shrink-0 text-[#e0a83c]" /> {isolatedHackathon ? 'SKR income and reward-pool verification are not connected yet. Confirmed values will appear here when available.' : 'Income follows your Reward Power and how deep your farming location is. Push deeper and gear up to earn a bigger share.'}</p>
           </section>
 
           <section className={`stat-tile p-4 ${active ? 'boost-progress-active' : ''}`} aria-label="Boost Max">
