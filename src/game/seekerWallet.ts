@@ -1,6 +1,7 @@
 // Seeker in-game wallet: SKR/SOL deposits into the private ledger (docs/game/seeker-skr-payments.md).
 // The server builds the exact unsigned transfer; the player's wallet only signs and sends it.
 // Balances, history and crediting come from the server, never from this client.
+import { useSyncExternalStore } from 'react';
 import type { Wallet, WalletAccount } from '@wallet-standard/base';
 import { playerSync } from './backend';
 import { compatibleSolanaWallets } from './solanaWalletRegistry';
@@ -61,7 +62,51 @@ async function command<T>(action: string, payload: Record<string, unknown> = {})
   return result;
 }
 
-export const loadWalletSnapshot = () => command<WalletSnapshot>('wallet_snapshot');
+// One shared snapshot for every SKR display (top bar, wallet). It refreshes on
+// first use, every 60 s and when the app becomes visible again, and right after
+// each deposit settles; callers that change SKR call refreshWallet().
+let current: WalletSnapshot | null = null;
+let inflight: Promise<WalletSnapshot> | null = null;
+let timer: ReturnType<typeof setInterval> | null = null;
+const listeners = new Set<() => void>();
+
+export function refreshWallet(): Promise<WalletSnapshot> {
+  inflight ??= command<WalletSnapshot>('wallet_snapshot')
+    .then((snapshot) => {
+      current = snapshot;
+      listeners.forEach((listener) => listener());
+      return snapshot;
+    })
+    .finally(() => { inflight = null; });
+  return inflight;
+}
+export const loadWalletSnapshot = refreshWallet;
+
+function onVisible() {
+  if (document.visibilityState === 'visible') void refreshWallet().catch(() => undefined);
+}
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  if (listeners.size === 1) {
+    void refreshWallet().catch(() => undefined);
+    timer = setInterval(() => { if (document.visibilityState === 'visible') void refreshWallet().catch(() => undefined); }, 60_000);
+    document.addEventListener('visibilitychange', onVisible);
+  }
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0) {
+      if (timer) clearInterval(timer);
+      timer = null;
+      document.removeEventListener('visibilitychange', onVisible);
+    }
+  };
+}
+
+/** The latest server wallet snapshot (null until the first load). */
+export function useWalletSnapshot(): WalletSnapshot | null {
+  return useSyncExternalStore(subscribe, () => current, () => null);
+}
 
 /** The signing wallet bound to this account session (address and wallet name). */
 export function boundWallet(): { address: string; walletName: string } | null {
@@ -141,7 +186,10 @@ export async function waitForDeposit(intentId: string, signature?: string): Prom
       }
       throw error;
     });
-    if (result.status !== 'pending') return result;
+    if (result.status !== 'pending') {
+      if (result.status === 'settled') void refreshWallet().catch(() => undefined);
+      return result;
+    }
     await new Promise((resolve) => setTimeout(resolve, 4000));
   }
   return { status: 'pending', signature };

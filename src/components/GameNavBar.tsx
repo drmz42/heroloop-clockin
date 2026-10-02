@@ -3,6 +3,8 @@ import { Mail, ChevronLeft, ChevronRight, UserRound, Wallet, Shield, Sparkles, D
 import type { Tab } from './TopMenu';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { shortWalletAddress } from '@/components/walletAddress';
+import { isolatedHackathon } from '@/game/editionStorage';
+import { formatMinor, useWalletSnapshot } from '@/game/seekerWallet';
 
 const TABS = [
   { id: 'heroes',      label: 'Heroes',   icon: Shield },
@@ -92,10 +94,16 @@ export function GameNavBar({
           title="Rewards & Tokenomics"
         >
           <HeroTokenIcon size={12} />
-          <span className="ui-text-medium font-black tabular-nums text-lime-300">{formatResource(hero)}</span>
+          <span className="ui-text-medium font-black tabular-nums text-lime-300">{isolatedHackathon ? <SkrBalance /> : formatResource(hero)}</span>
           <span className="hl-nav-unit hl-nav-unit-token ui-text-small font-bold uppercase tracking-[.1em] text-[#7f8a69]">$Hero</span>
         </button>
       </div>
     </div>
   );
+}
+
+// Hackathon build: the server SKR ledger balance (deposits), not the legacy $HERO save field.
+function SkrBalance() {
+  const snapshot = useWalletSnapshot();
+  return <>{snapshot ? formatMinor(snapshot.balances.SKR, 'SKR', 2) : '—'}</>;
 }

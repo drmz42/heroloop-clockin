@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowDownToLine, Check, ExternalLink, Loader2, RefreshCw, ShieldCheck, AlertTriangle } from 'lucide-react';
 import {
-  boundWallet, deposit, formatMinor, loadWalletSnapshot, SeekerWalletError, waitForDeposit,
+  boundWallet, deposit, formatMinor, refreshWallet, SeekerWalletError, useWalletSnapshot, waitForDeposit,
   type WalletAsset, type WalletSnapshot,
 } from '@/game/seekerWallet';
 
@@ -25,12 +25,12 @@ const QUICK: Record<WalletAsset, string[]> = { SKR: ['10', '50', '100', '500'], 
 const explorer = (signature: string, cluster: string) =>
   `https://explorer.solana.com/tx/${signature}${cluster === 'devnet' ? '?cluster=devnet' : ''}`;
 
-function useWalletSnapshot() {
-  const [snapshot, setSnapshot] = useState<WalletSnapshot | null>(null);
+function useWalletState() {
+  const snapshot = useWalletSnapshot();
   const [error, setError] = useState('');
   const refresh = useCallback(async () => {
     try {
-      setSnapshot(await loadWalletSnapshot());
+      await refreshWallet();
       setError('');
     } catch (reason) {
       setError(reason instanceof SeekerWalletError ? reason.code : 'wallet_unavailable');
@@ -66,7 +66,7 @@ function Balances({ snapshot }: { snapshot: WalletSnapshot | null }) {
 }
 
 export function SeekerDepositPanel() {
-  const { snapshot, error, refresh } = useWalletSnapshot();
+  const { snapshot, error, refresh } = useWalletState();
   const [asset, setAsset] = useState<WalletAsset>('SKR');
   const [amount, setAmount] = useState('');
   const [stage, setStage] = useState<'idle' | 'prepare' | 'sign' | 'confirm'>('idle');
@@ -177,7 +177,7 @@ export function SeekerDepositPanel() {
 }
 
 export function SeekerHistoryPanel() {
-  const { snapshot, error } = useWalletSnapshot();
+  const { snapshot, error } = useWalletState();
   return (
     <>
       <Balances snapshot={snapshot} />
