@@ -370,3 +370,7 @@ html[data-hl-platform='android'] .hl-battle-footer > .hl-battle-dock { flex: 1 1
 html[data-hl-platform='android'] .hl-battle-dock .pm-boost,
 html[data-hl-platform='android'] .hl-battle-dock .pm-chest { flex: 1 1 0; width: auto; max-width: 124px; min-width: 0; height: 38px; font-size: 11px; }
 html[data-hl-platform='android'] .hl-battle-dock button[aria-label='Show chest drop rates'] { flex: none; height: 38px; width: 34px; }
+
+/* Centered modals (z-[9999]) sit above the top progress bar (10010) and the tab bar, inside the safe area. */
+html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\] { z-index: 10015; padding-top: calc(12px + env(safe-area-inset-top, 0px)); padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\] > [role='dialog'] { max-height: 100%; }

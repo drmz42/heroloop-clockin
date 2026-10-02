@@ -1411,18 +1411,19 @@ function TokenEarningsPanel({ status: legacyStatus, stale, today, heroes, defeat
       <div className="flex items-center gap-2">
         <HeroTokenIcon size={22} />
         <span className="ui-text-small font-black uppercase tracking-[.14em] text-[#ffd36e]">$HERO Income</span>
+        {isolatedHackathon && <span className="ml-auto ui-text-small font-bold uppercase tracking-wide text-emerald-300" title="SKR income and pool verification are not connected yet">Soon</span>}
         {stale && <span className="ml-auto ui-text-small font-bold uppercase tracking-wide text-amber-300" title="Keeping the last confirmed server values while income refresh retries">Updating…</span>}
       </div>
-      {status ? (
+      {status || isolatedHackathon ? (
         <div className="grid grid-cols-[max-content_max-content] items-baseline gap-x-2 gap-y-2 whitespace-nowrap">
-          <Row label="Per hour" value={`${fmt(rate)} (${usd(rate)})`} valueClass="text-[#7ee787]" />
-          <Row label="Per day" value={`${fmt(daily)} (${usd(daily)})`} valueClass="text-[#e5bd68]" />
-          <Row label="Pool share" value={`${poolSharePct.toFixed(poolSharePct < 0.01 ? 4 : 2)}%`} valueClass="text-[#9ed7ff]" />
-          <Row label="Today" value={`${formatNum(today)} (${usd(today)})`} valueClass="text-[#ffd36e]" />
-          <Row label="Daily pool" value={`${formatNum(pool)} $HERO`} valueClass="text-[#c8b3f0]" />
+          <Row label="Per hour" value={status ? `${fmt(rate)} (${usd(rate)})` : '—'} valueClass="text-[#7ee787]" />
+          <Row label="Per day" value={status ? `${fmt(daily)} (${usd(daily)})` : '—'} valueClass="text-[#e5bd68]" />
+          <Row label="Pool share" value={status ? `${poolSharePct.toFixed(poolSharePct < 0.01 ? 4 : 2)}%` : '—'} valueClass="text-[#9ed7ff]" />
+          <Row label="Today" value={status ? `${formatNum(today)} (${usd(today)})` : '—'} valueClass="text-[#ffd36e]" />
+          <Row label="Daily pool" value={status ? `${formatNum(pool)} $HERO` : '—'} valueClass="text-[#c8b3f0]" />
         </div>
       ) : (
-        <span className="ui-text-small font-semibold text-[#9a937f]">{isolatedHackathon ? 'SKR income and pool verification are not connected yet.' : 'Syncing token pool…'}</span>
+        <span className="ui-text-small font-semibold text-[#9a937f]">Syncing token pool…</span>
       )}
       </div>
     </div>
