@@ -34,6 +34,7 @@ import {
   type SocialLinkStore,
 } from "./social_link.ts";
 import { parseEdition, seekerRefusal } from "./seeker_edition.ts";
+import { unavailableSkrBoost } from "./skr_boost.ts";
 import { parseAdditionalSiwsUris, siwsSiteForRequest } from "./siws_site.ts";
 
 const jsonHeaders = {
@@ -131,6 +132,7 @@ const commandActions = new Set([
   "claim",
   "spend_tokens",
   "set_boost_max_active",
+  "skr_boost_status",
   "promo_redeem",
   "player_report",
   "support_ticket_submit",
@@ -889,7 +891,8 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
     try {
       const requestedAction = String(parsed.value.action);
       const rateLimit = await consumeRateLimit(identity.playerId,
-        requestedAction.startsWith("tester_credit_") ? "tester_credit_tokens" : requestedAction);
+        requestedAction === "skr_boost_status" ? "status"
+          : requestedAction.startsWith("tester_credit_") ? "tester_credit_tokens" : requestedAction);
       if (!rateLimit.allowed) {
         return errorResponse(429, "rate_limited", requestId, {
           "retry-after": String(rateLimit.retryAfter),
@@ -905,6 +908,12 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
     if (editionRefusal) return errorResponse(409, editionRefusal, requestId);
     const pausedFlag = await pausedFlagFor(String(parsed.value.action));
     if (pausedFlag) return errorResponse(409, "feature_paused", requestId);
+    if (parsed.value.action === "skr_boost_status") {
+      if (edition !== "seeker") return errorResponse(409, "unavailable_in_standard_edition", requestId);
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      return json(200, { ok: true, contract_version: 1, request_id: requestId, result: unavailableSkrBoost() });
+    }
     if (parsed.value.action === "account_status") {
       const payloadError = validateAccountStatusPayload(payload);
       if (payloadError) return errorResponse(400, payloadError, requestId);

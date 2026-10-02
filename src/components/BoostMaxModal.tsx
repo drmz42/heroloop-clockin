@@ -6,11 +6,17 @@ import type { TokenomicsApi } from '@/game/useTokenomics';
 import { formatNum } from '@/game/state';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { LinkedAccounts } from '@/components/LinkedAccounts';
+import { isolatedHackathon } from '@/game/editionStorage';
+import { SkrBoostMaxModal } from './SkrBoostMaxModal';
 
 const money = (value: number | undefined | null) => (typeof value === 'number' && Number.isFinite(value) ? formatNum(value) : '—');
 const decimals = (value: number | undefined | null, digits = 2) => (typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '—');
 
-export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; tokenomics: TokenomicsApi; onClose: () => void }) {
+export function BoostMaxModal(props: { game: GameApi; tokenomics: TokenomicsApi; onClose: () => void }) {
+  return isolatedHackathon ? <SkrBoostMaxModal onClose={props.onClose} /> : <HeroBoostMaxModal {...props} />;
+}
+
+function HeroBoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; tokenomics: TokenomicsApi; onClose: () => void }) {
   const [updating, setUpdating] = useState(false);
   const status = tokenomics.status;
   const boost = status?.boost;
