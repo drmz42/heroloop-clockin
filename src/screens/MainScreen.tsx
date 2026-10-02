@@ -153,6 +153,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const [showPotSettings, setShowPotSettings] = useState(false);
   const [showBattleSettings, setShowBattleSettings] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [autoGearNotice, setAutoGearNotice] = useState<string | null>(null);
+  const autoGearNoticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (autoGearNoticeTimer.current) clearTimeout(autoGearNoticeTimer.current); }, []);
   const [toast, setToast] = useState<string | null>(null);
   const [tutorialClaimBusy, setTutorialClaimBusy] = useState(false);
   const [tutorialFinished, setTutorialFinished] = useState(false);
@@ -902,7 +905,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             </div>
             {inventoryTab !== 'resources' && <div className="mt-2 grid min-w-0 grid-cols-[1fr_1fr_32px_1fr] gap-1">
               <button onClick={() => { game.sortInventory(); showToast('Sorted by rarity'); }} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 ui-text-medium font-bold" title="Sort by rarity"><ArrowUpDown size={12} /> Sort</button>
-              <button onClick={async () => { if (state.team.length === 0) return; showToast(await game.autoEquipBest() ? 'Best gear equipped on active team' : equipmentFailure('Auto Equip')); }} disabled={state.team.length === 0} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 ui-text-medium font-bold" title="Equip the strongest valid gear on each active hero in formation order"><Wand2 size={12} /> Auto</button>
+              <div className="relative min-w-0">
+              <button onClick={async () => { if (state.team.length === 0) return; const message = await game.autoEquipBest() ? 'Best gear equipped on active team' : equipmentFailure('Auto Equip'); if (!isolatedHackathon) { showToast(message); return; } if (autoGearNoticeTimer.current) clearTimeout(autoGearNoticeTimer.current); setAutoGearNotice(message); autoGearNoticeTimer.current = setTimeout(() => setAutoGearNotice(null), 2400); }} disabled={state.team.length === 0} className="game-control flex w-full min-w-0 items-center justify-center gap-1 px-1 py-1 ui-text-medium font-bold" title="Equip the strongest valid gear on each active hero in formation order"><Wand2 size={12} /> Auto</button>
+              {autoGearNotice && <div role="status" className="auto-gear-notice pointer-events-none absolute left-1/2 top-full z-40 mt-1 w-52 -translate-x-1/2 rounded border border-[#9e7b3d] bg-[#15130f] px-2 py-1 text-center ui-text-small font-bold text-[#f2d393] shadow-lg">{autoGearNotice}</div>}
+              </div>
               <button type="button" aria-label={inventoryLockMode ? 'Exit Inventory Lock mode' : 'Enter Inventory Lock mode'} aria-pressed={inventoryLockMode} onClick={() => { setInventoryLockMode((active) => !active); setSelectedItem(null); setSelectedItemSource(null); setSelectedItemSlot(null); setShowBulkSellConfirm(false); }} className={`game-control grid min-w-0 place-items-center px-0 py-1 ${inventoryLockMode ? 'border-red-500/70 bg-red-950/55 text-red-300' : 'text-[#a69c8c]'}`} title={inventoryLockMode ? 'Lock mode active — click to exit' : 'Lock mode — click items to lock or unlock'}><LockIcon size={13} /></button>
               <div className="relative">
                 <button onClick={() => setShowBulkSellConfirm((value) => !value)} disabled={unlockedSellTotal === 0} className="game-control game-danger flex min-w-0 w-full items-center justify-center gap-1 px-1 py-1 ui-text-medium font-bold" title={`Sell all unlocked items for ${formatNum(unlockedSellTotal)} gold`}><Coins size={12} /> Sell</button>
