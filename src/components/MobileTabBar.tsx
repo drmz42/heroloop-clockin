@@ -32,6 +32,13 @@ export function MobileTabBar({
   readyQuests?: number;
 }) {
   useEffect(() => { setMobileSection(section); }, [section]);
+  // While a window covers the Play screen, the screen underneath is not painted (android.css):
+  // a phone WebView left the Bag grid showing through an unfinished Summon window.
+  useEffect(() => {
+    if (tab === 'main') delete document.documentElement.dataset.hlWindow;
+    else document.documentElement.dataset.hlWindow = tab;
+    return () => { delete document.documentElement.dataset.hlWindow; };
+  }, [tab]);
   const moreActive = moreOpen || MORE_TABS.some((entry) => entry.id === tab);
   const sectionButton = (id: MobileSection, label: string, Icon: typeof Shield) => {
     const active = tab === 'main' && !moreOpen && section === id;

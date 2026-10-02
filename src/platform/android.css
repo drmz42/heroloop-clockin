@@ -47,6 +47,8 @@ html[data-hl-platform='android'][data-hl-section='bag'] .game-main > .hl-col-rig
   padding-bottom: 8px;
 }
 html[data-hl-platform='android'] .game-main > .hl-col-center { overflow-x: hidden; }
+/* A window (Summon, Heroes, More…) is open: do not paint the Play screen underneath. */
+html[data-hl-platform='android'][data-hl-window] .game-main { visibility: hidden; }
 
 /* ── Battle: the stage takes the free height; HUD sits in the corners, not over the lanes ── */
 html[data-hl-platform='android'] .battle-stage { flex: 1 1 auto; min-height: 420px; }
