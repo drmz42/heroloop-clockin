@@ -6,7 +6,7 @@
    primary touch targets and 36 px for dense in-battle controls. */
 
 html[data-hl-platform='android'] {
-  --hl-tabbar-h: calc(60px + env(safe-area-inset-bottom, 0px));
+  --hl-tabbar-h: calc(108px + env(safe-area-inset-bottom, 0px)); /* two rows of 54 px */
   --hl-header-h: 52px;
   -webkit-tap-highlight-color: transparent;
 }
@@ -100,6 +100,7 @@ html[data-hl-platform='android'] .hl-tabbar {
   z-index: 60;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   flex-shrink: 0;
   height: var(--hl-tabbar-h);
   padding: 0 2px env(safe-area-inset-bottom, 0px);
@@ -126,6 +127,17 @@ html[data-hl-platform='android'] .hl-tabbar {
 .hl-tabbar-item span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hl-tabbar-item.is-active { color: #ffd36e; border-top-color: #e0a83c; background: radial-gradient(circle at 50% 0%, rgba(224, 168, 60, .18), transparent 70%); }
 .hl-tabbar-item:focus-visible { outline: 2px solid #ffd36e; outline-offset: -3px; }
+html[data-hl-platform='android'] .hl-tabbar-item { font-size: 10px; letter-spacing: .02em; }
+/* Second row sits on a slightly darker band, so the two rows read as primary and secondary. */
+html[data-hl-platform='android'] .hl-tabbar-item:nth-child(n + 7) { background-color: rgba(0, 0, 0, .22); }
+/* The upcoming $ORE Mine: a soft gold glow and a "Soon" tag, never louder than the active tab. */
+.hl-tabbar-mine { color: #e9c77a; background: radial-gradient(circle at 50% 45%, rgba(224, 168, 60, .2), transparent 68%) !important; }
+.hl-tabbar-mine svg { filter: drop-shadow(0 0 4px rgba(255, 196, 92, .55)); animation: hl-mine-glow 2.8s ease-in-out infinite; }
+.hl-mine-badge { position: absolute; top: 3px; right: 3px; padding: 0 3px; border-radius: 2px; background: #e0a83c; color: #24170b; font-size: 8px; line-height: 12px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+@keyframes hl-mine-glow { 50% { filter: drop-shadow(0 0 7px rgba(255, 196, 92, .85)); } }
+.hl-mine-soon { display: grid; justify-items: center; gap: 6px; padding: 18px 8px 10px; text-align: center; color: #e9c77a; }
+.hl-mine-soon strong { font-size: 16px; color: #f0e5cd; }
+.hl-mine-soon span { font-size: 13px; color: #9b907c; }
 
 /* ── More sheet ── */
 .hl-more-sheet {
@@ -165,6 +177,7 @@ html[data-hl-platform='android'] .hl-tabbar {
 
 @media (prefers-reduced-motion: reduce) {
   .hl-tabbar-item { transition: none; }
+  .hl-tabbar-mine svg { animation: none; }
 }
 
 /* Battle HUD fits 360 px: Dungeons shows its icon only (the label stays for screen readers). */
