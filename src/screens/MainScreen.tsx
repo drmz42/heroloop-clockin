@@ -177,6 +177,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const [selectedItemSource, setSelectedItemSource] = useState<'bag' | 'hero' | null>(null);
   const [selectedItemSlot, setSelectedItemSlot] = useState<ItemSlot | null>(null);
   const locationRailRef = useRef<HTMLDivElement>(null);
+  const [locationsExpanded, setLocationsExpanded] = useState(!isolatedHackathon);
 
   useEffect(() => {
     if (!bagQuoteReady) return undefined;
@@ -346,11 +347,21 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   })();
 
   const totalLocations = LOCATION_RANGES.length;
+  const nextLocation = state.currentLocation + 1;
+  const nextLocationAvailable = nextLocation <= totalLocations
+    && nextLocation <= state.highestLocation
+    && state.accountLevel >= locationUnlockLevel(nextLocation);
 
   useEffect(() => {
+    if (!locationsExpanded) return;
     const current = locationRailRef.current?.querySelector<HTMLElement>(`[data-location="${state.currentLocation}"]`);
-    current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  }, [state.currentLocation]);
+    if (!isolatedHackathon) {
+      current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    } else if (current && locationRailRef.current) {
+      locationRailRef.current.scrollLeft = current.offsetLeft - locationRailRef.current.offsetLeft
+        - (locationRailRef.current.clientWidth - current.clientWidth) / 2;
+    }
+  }, [state.currentLocation, locationsExpanded]);
 
   const scrollLocations = (direction: -1 | 1) => {
     locationRailRef.current?.scrollBy({ left: direction * 360, behavior: 'smooth' });
@@ -724,13 +735,26 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           </div>}
         </div>
 
-        {/* Location cards — redesigned like screenshot 4 */}
+        {/* Hackathon locations collapse to reserve phone space for combat. */}
         {!activeDungeon ? <div className="hl-locations material-panel mt-1.5 shrink-0 p-2.5">
-          <div className="mb-1.5 flex items-center justify-between">
+          {isolatedHackathon ? <button
+            type="button"
+            className="location-disclosure game-control flex min-h-11 w-full items-center justify-between gap-2 px-2 text-left"
+            aria-expanded={locationsExpanded}
+            aria-controls="location-progression-path"
+            onClick={() => setLocationsExpanded(expanded => !expanded)}
+          >
+            <span className={`section-kicker ${nextLocationAvailable ? 'location-disclosure-ready' : ''}`}>
+              Locations <span className="ui-text-small">· {String(state.currentLocation).padStart(2, '0')}</span>
+              {nextLocationAvailable && <span className="block ui-text-small">Next location available</span>}
+            </span>
+            <ChevronDown size={20} className={locationsExpanded ? 'rotate-180 shrink-0' : 'shrink-0'} aria-hidden="true" />
+          </button> : <div className="mb-1.5 flex items-center justify-between">
             <span className="section-kicker">Locations</span>
             <span className="ui-text-small font-semibold uppercase tracking-[.12em] text-[#77746d]">Progression path</span>
-          </div>
-          <div className="grid grid-cols-[38px_minmax(0,1fr)_38px] items-stretch gap-1.5">
+          </div>}
+          <div id="location-progression-path" hidden={!locationsExpanded}>
+          <div className={`grid grid-cols-[38px_minmax(0,1fr)_38px] items-stretch gap-1.5 ${isolatedHackathon ? 'mt-1.5' : ''}`}>
             <button onClick={() => scrollLocations(-1)} className="game-control grid place-items-center" aria-label="Previous locations"><ChevronLeft size={20} /></button>
             <div ref={locationRailRef} className="game-scrollbar flex gap-1.5 overflow-x-auto pb-1.5">
             {Array.from({ length: totalLocations }).map((_, i) => {
@@ -776,6 +800,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             })}
             </div>
             <button onClick={() => scrollLocations(1)} className="game-control grid place-items-center" aria-label="Next locations"><ChevronRight size={20} /></button>
+          </div>
           </div>
         </div> : activeDungeon.type === 'boss_hunt' ? <div className="material-panel mt-1.5 shrink-0 p-3"><div className="flex items-center justify-between gap-3"><span className="section-kicker">Boss Hunt</span><span className="ui-text-small font-black uppercase tracking-widest text-violet-300">Server combat · reload-safe · potions disabled</span></div><div className="mt-2 grid grid-cols-2 gap-1.5"><div className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room_state?.kind === 'retinue' ? 'border-violet-400 bg-violet-950/40 text-violet-100' : 'border-emerald-700/60 bg-emerald-950/25 text-emerald-300'}`}>1. Retinue</div><div className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room_state?.kind === 'shared_boss' ? 'border-violet-400 bg-violet-950/40 text-violet-100' : 'border-white/10 bg-black/20 text-[#77706f]'}`}>2. Shared Boss</div></div></div> : <div className="material-panel mt-1.5 shrink-0 p-3"><div className="flex items-center justify-between gap-3"><span className="section-kicker">Cursed Citadel</span><span className="ui-text-small font-black uppercase tracking-widest text-violet-300">HP persists · potions disabled</span></div><div className="mt-2 grid grid-cols-4 gap-1.5">{['Guards', 'Elite', 'Crossroads', 'Boss'].map((label, index) => <div key={label} className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room === index + 1 ? 'border-violet-400 bg-violet-950/40 text-violet-100' : activeDungeon.room > index + 1 ? 'border-emerald-700/60 bg-emerald-950/25 text-emerald-300' : 'border-white/10 bg-black/20 text-[#77706f]'}`}>{index + 1}. {label}</div>)}</div></div>}
 
