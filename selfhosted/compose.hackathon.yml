@@ -33,20 +33,19 @@ services:
       - /tmp:rw,noexec,nosuid,size=16m
     networks:
       - backend
-    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=PGHOST,PGPORT,PGUSER,PGPASSWORD,WALLET_SERVICE_TOKEN,SOLANA_RPC_URL,SEEKER_CLUSTER,SKR_MINT,WALLET_TREASURY,WALLET_ALLOWED_PAYERS", "--allow-net=0.0.0.0:8090,postgres:5432,${SOLANA_RPC_HOST:-api.devnet.solana.com}:443,api.jup.ag:443", "/app/seeker/wallet_service.ts"]
+    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=PGHOST,PGPORT,PGUSER,PGPASSWORD,WALLET_SERVICE_TOKEN,SOLANA_RPC_URL,SKR_MINT,WALLET_TREASURY,WALLET_ALLOWED_PAYERS", "--allow-net=0.0.0.0:8090,postgres:5432,${SOLANA_RPC_HOST:-api.mainnet-beta.solana.com}:443,api.jup.ag:443", "/app/seeker/wallet_service.ts"]
     environment:
       PGHOST: postgres
       PGPORT: "5432"
       PGUSER: seeker_wallet_runtime
       PGPASSWORD: ${WALLET_DATABASE_PASSWORD:?set the wallet database password in the root-owned runtime environment}
       WALLET_SERVICE_TOKEN: ${WALLET_SERVICE_TOKEN:?set the wallet service token in the root-owned runtime environment}
-      SEEKER_CLUSTER: ${SEEKER_CLUSTER:-devnet}
-      SOLANA_RPC_URL: https://${SOLANA_RPC_HOST:-api.devnet.solana.com}
-      # Devnet test mint and treasury (no value); mainnet values come from the runtime environment.
-      SKR_MINT: ${SKR_MINT:-45HbhfcjjsvxeWV93dRcuJ8ZepjY3qSCgXwaunqPup1b}
-      WALLET_TREASURY: ${WALLET_TREASURY:-744zoJV751yE97iUTqWwBaKVkCyg6KgMyME4m8rNWGiE}
-      # Comma-separated payer allowlist; mandatory on mainnet.
-      WALLET_ALLOWED_PAYERS: ${WALLET_ALLOWED_PAYERS:-}
+      SOLANA_RPC_URL: https://${SOLANA_RPC_HOST:-api.mainnet-beta.solana.com}
+      # Mainnet SKR; the project wallet (Founder key, never on the server) comes from the runtime environment.
+      SKR_MINT: SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3
+      WALLET_TREASURY: ${WALLET_TREASURY:?set the project wallet address in the root-owned runtime environment}
+      # Comma-separated payer allowlist; mandatory.
+      WALLET_ALLOWED_PAYERS: ${WALLET_ALLOWED_PAYERS:?set the payer allowlist in the root-owned runtime environment}
     volumes:
       - ./seeker:/app/seeker:ro
       - ./deno.json:/app/deno.json:ro

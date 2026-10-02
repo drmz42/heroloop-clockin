@@ -10,7 +10,7 @@ import {
 } from "./chain.ts";
 
 const config = {
-  cluster: "devnet" as const,
+  cluster: "mainnet" as const,
   skrMint: "45HbhfcjjsvxeWV93dRcuJ8ZepjY3qSCgXwaunqPup1b",
   treasury: "744zoJV751yE97iUTqWwBaKVkCyg6KgMyME4m8rNWGiE",
 };

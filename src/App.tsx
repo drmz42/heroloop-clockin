@@ -518,7 +518,7 @@ function App() {
 
   return (
     <div className={`game-shell ${isolatedHackathon ? 'has-game-progress' : ''} game-motion-${game.state.battleAnimationMode} flex h-screen flex-col overflow-hidden bg-px-bg text-px-text`}>
-      {isolatedHackathon && <GameProgressBar power={game.teamPower()} readyQuests={readyQuestCount(game.state)} identity={game.state.walletAddress} onQuestsClick={openQuests} commander={isAndroidLayout ? { heroId: HERO_MAP[game.state.avatarHeroId] ? game.state.avatarHeroId : game.state.ownedHeroes[0]?.heroId ?? '', level: game.state.accountLevel } : undefined} />}
+      {isolatedHackathon && <GameProgressBar power={game.teamPower()} readyQuests={readyQuestCount(game.state)} identity={game.state.walletAddress} onQuestsClick={openQuests} commander={isAndroidLayout ? { heroId: HERO_MAP[game.state.avatarHeroId] ? game.state.avatarHeroId : game.state.ownedHeroes[0]?.heroId ?? '', level: game.state.accountLevel } : undefined}  boost={isAndroidLayout ? { active: game.state.boost.active, onClick: () => setShowBoost(true) } : undefined} />}
       {isAndroidLayout && <OfflineBar />}
       <GameNavBar
         tab={tab}

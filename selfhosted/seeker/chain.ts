@@ -5,7 +5,7 @@
 export type WalletAsset = "SKR" | "SOL";
 
 export type ChainConfig = {
-  cluster: "devnet" | "mainnet";
+  cluster: "mainnet";
   skrMint: string;
   treasury: string;
 };

@@ -384,4 +384,82 @@ html[data-hl-platform='android'] .hl-battle-dock button[aria-label='Show chest d
 
 /* Centered modals (z-[9999]) sit above the top progress bar (10010) and the tab bar, inside the safe area. */
 html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\] { z-index: 10015; padding-top: calc(12px + env(safe-area-inset-top, 0px)); padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
-html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\] > [role='dialog'] { max-height: 100%; }
+html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\] > * { min-height: 0; max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important; }
+
+/* The location art covers the whole battle stage, footer included (the inner arena alone left the footer bare). */
+html[data-hl-platform='android'] .battle-stage-normal { background-image: linear-gradient(180deg, rgba(4, 6, 8, .12), rgba(4, 6, 8, .78)), var(--location-arena-art); background-position: center; background-size: cover; background-repeat: no-repeat; }
+html[data-hl-platform='android'] .battle-stage-normal .arena-location-art { background-image: radial-gradient(ellipse at 50% 78%, rgba(205, 153, 70, .17), transparent 55%); }
+
+/* Boost Max lives in the top bar between the Commander and Quests; the battle dock keeps the drop-rate info next to the chests. */
+.game-progress-boost { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: 54px; height: 44px; flex-shrink: 0; padding: 0 2px; border: 1px solid #b98a3c; border-radius: 4px; background: radial-gradient(ellipse 90% 70% at 50% 110%, rgba(229, 177, 70, .28), transparent 70%), linear-gradient(180deg, #2a2114, #110e09); color: #ffd36e; font-size: 8.5px; font-weight: 900; line-height: 1; letter-spacing: .06em; text-transform: uppercase; text-align: center; box-shadow: inset 0 1px rgba(255, 230, 170, .14), 0 0 10px rgba(229, 177, 70, .22); }
+.game-progress-boost.is-active { border-color: #9fe39a; color: #c9f5c2; background: radial-gradient(ellipse 90% 70% at 50% 110%, rgba(126, 231, 135, .3), transparent 70%), linear-gradient(180deg, #1b2416, #0c100a); box-shadow: inset 0 1px rgba(214, 255, 208, .14), 0 0 12px rgba(126, 231, 135, .35); }
+.game-progress-boost:focus-visible { outline: 2px solid #fff0a2; outline-offset: 2px; }
+html[data-hl-platform='android'] .hl-battle-dock .pm-boost { display: none; }
+html[data-hl-platform='android'] .hl-battle-dock .pm-chest { max-width: 150px; }
+/* Chest button: dark bronze with a warm glow instead of the bright red gem. */
+html[data-hl-platform='android'] .hl-battle-dock .pm-chest:not(#hl-a):not(#hl-b):not(#hl-c) {
+  background: radial-gradient(ellipse 80% 90% at 50% 120%, rgba(232, 172, 68, .32), transparent 70%), linear-gradient(180deg, #2c2416 0%, #17120b 55%, #0d0a06 100%) !important;
+  color: #ffd98a !important;
+  box-shadow: inset 0 0 0 1px rgba(242, 204, 128, .55), inset 0 0 0 2px rgba(0, 0, 0, .7), inset 0 1px 8px rgba(255, 220, 150, .08), 0 0 12px rgba(229, 177, 70, .22), 0 4px 10px rgba(0, 0, 0, .6);
+}
+html[data-hl-platform='android'] .hl-battle-dock .pm-chest:disabled:not(#hl-a):not(#hl-b):not(#hl-c) { background: linear-gradient(180deg, #211b13, #0d0a07) !important; color: #9d8c72 !important; }
+
+/* Set bonus tooltip spans the gear panel width instead of hanging off the badge's right edge (it ran off the left side). */
+html[data-hl-platform='android'] .hl-gear-head { position: relative; }
+html[data-hl-platform='android'] .hl-gear-head > .group\/set { position: static; }
+html[data-hl-platform='android'] .hl-gear-head .set-bonus-tooltip { left: 0; right: 0; width: auto; max-width: none; }
+
+/* Android WebView repaint glitches (bars and grid cells left unpainted after switching bags) point at
+   backdrop blur layers; the overlays already have dark backgrounds, so drop the blur on phones. */
+html[data-hl-platform='android'] *, html[data-hl-platform='android'] *::before, html[data-hl-platform='android'] *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+/* The inventory column sits inside the Bag window frame; its own frame drew a second, broken border around the cells. */
+html[data-hl-platform='android'] .hl-col-right.material-panel:not(#hl-a):not(#hl-b) { border-image: none !important; border-color: transparent !important; box-shadow: none !important; }
+
+/* Ranks on phones: no 900px table and no sideways scroll (it left the header area empty); rank, player and
+   Level/Kills/Bosses fit the width, the hero lineup wraps under the name. */
+html[data-hl-platform='android'] .themed-screen-ranks :is(.leader-head, .leader-row) { min-width: 0; grid-template-columns: 30px minmax(0, 1fr) 30px 40px 36px; gap: 6px; padding-inline: 8px; }
+html[data-hl-platform='android'] .themed-screen-ranks :is(.leader-head, .leader-row) > :nth-child(n + 6) { display: none; }
+html[data-hl-platform='android'] .themed-screen-ranks .leader-row > :nth-child(2) { flex-wrap: wrap; row-gap: 4px; }
+html[data-hl-platform='android'] .themed-screen-ranks .leader-row > :nth-child(2) > span:last-child { flex-basis: 100%; }
+html[data-hl-platform='android'] .themed-screen-ranks .leader-row .rank-avatar { width: 42px; height: 42px; }
+html[data-hl-platform='android'] .themed-screen-ranks .leader-head > :nth-child(2) { font-size: 0; }
+html[data-hl-platform='android'] .themed-screen-ranks .leader-head > :nth-child(2)::after { content: 'Player'; font-size: 9px; }
+html[data-hl-platform='android'] .themed-screen-ranks { overflow-x: clip; }
+
+/* Store on phones: compact header and offers side by side (3 boost plans, 2 bundles per row). */
+html[data-hl-platform='android'] .themed-screen-store > header { padding: 8px 10px; gap: 6px; }
+html[data-hl-platform='android'] .themed-screen-store > header > div:first-child > span { width: 36px; height: 36px; }
+html[data-hl-platform='android'] .themed-screen-store > header h2 { font-size: 17px; }
+html[data-hl-platform='android'] .themed-screen-store > header p { display: none; }
+html[data-hl-platform='android'] .themed-screen-store section.material-panel { padding: 10px; }
+html[data-hl-platform='android'] .themed-screen-store section.material-panel h3 { font-size: 15px; }
+html[data-hl-platform='android'] .themed-screen-store section.material-panel > .grid { margin-top: 8px; gap: 6px; }
+html[data-hl-platform='android'] .themed-screen-store section[aria-labelledby='reward-boost-title'] > .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html[data-hl-platform='android'] .themed-screen-store section[aria-labelledby='shop-bundles-title'] > .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html[data-hl-platform='android'] .themed-screen-store article.stat-tile { padding: 7px; gap: 2px; }
+html[data-hl-platform='android'] .themed-screen-store article.stat-tile b { font-size: 11px; }
+html[data-hl-platform='android'] .themed-screen-store article.stat-tile > div:nth-child(2) { font-size: 16px; }
+html[data-hl-platform='android'] .themed-screen-store article.stat-tile > div:nth-child(3) { font-size: 9px; }
+html[data-hl-platform='android'] .themed-screen-store article.stat-tile button { min-height: 32px; padding-inline: 4px; font-size: 10px; }
+
+/* Training Camp on phones: compact header and status, four posts and four reserve heroes per row. */
+html[data-hl-platform='android'] .training-camp-screen { padding: 8px; }
+html[data-hl-platform='android'] .training-camp-screen > header { gap: 6px; }
+html[data-hl-platform='android'] .training-camp-screen > header h2 { font-size: 20px; line-height: 1.15; }
+html[data-hl-platform='android'] .training-camp-screen > header p { margin-top: 2px; font-size: 10px; }
+html[data-hl-platform='android'] .training-camp-screen .training-status-row { width: 100%; min-width: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; }
+html[data-hl-platform='android'] .training-camp-screen .training-status-metric { gap: 4px; padding: 5px; }
+html[data-hl-platform='android'] .training-camp-screen .training-status-metric > svg { width: 14px; height: 14px; }
+html[data-hl-platform='android'] .training-camp-screen .training-status-metric strong { font-size: 11px; white-space: normal; }
+html[data-hl-platform='android'] .training-camp-screen .training-status-metric small { font-size: 7px; white-space: normal; }
+html[data-hl-platform='android'] .training-camp-screen .training-guide { margin-top: 8px; padding: 8px; gap: 6px; }
+html[data-hl-platform='android'] .training-camp-screen .training-guide p { font-size: 10px; line-height: 14px; }
+html[data-hl-platform='android'] .training-camp-screen .training-main-grid { margin-top: 8px; gap: 8px; }
+html[data-hl-platform='android'] .training-camp-screen .training-yard { padding: 8px; }
+html[data-hl-platform='android'] .training-camp-screen .training-post-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 5px; }
+html[data-hl-platform='android'] .training-camp-screen .training-empty-post { height: 86px; }
+html[data-hl-platform='android'] .training-camp-screen .training-section { padding: 8px; }
+html[data-hl-platform='android'] .training-camp-screen .training-section.relative > .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 8px; }
+html[data-hl-platform='android'] .training-camp-screen .training-roster-card { height: auto; padding: 5px 3px; }
+html[data-hl-platform='android'] .training-camp-screen .training-roster-portrait { width: 56px; height: 56px; }
+html[data-hl-platform='android'] .training-camp-screen .training-roster-portrait > :first-child { transform: scale(.7); transform-origin: top left; }

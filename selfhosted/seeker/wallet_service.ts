@@ -24,20 +24,19 @@ type Json = Record<string, unknown>;
 const env = (name: string) => Deno.env.get(name) ?? "";
 const serviceToken = env("WALLET_SERVICE_TOKEN");
 const rpcUrl = env("SOLANA_RPC_URL");
-const cluster = env("SEEKER_CLUSTER");
 const config: ChainConfig = {
-  cluster: cluster === "mainnet" ? "mainnet" : "devnet",
+  cluster: "mainnet",
   skrMint: env("SKR_MINT"),
   treasury: env("WALLET_TREASURY"),
 };
-if (serviceToken.length < 32 || !/^https:\/\//.test(rpcUrl) || !["devnet", "mainnet"].includes(cluster)
+if (serviceToken.length < 32 || !/^https:\/\//.test(rpcUrl)
   || !ADDRESS.test(config.skrMint) || !ADDRESS.test(config.treasury)) {
   throw new Error("invalid wallet service configuration");
 }
-// Optional payer allowlist (comma-separated addresses). Required on mainnet, where
-// Staging2 is open to any wallet login and must not accept strangers' real funds.
+// Payer allowlist (comma-separated addresses), required: Staging2 is open to any
+// wallet login and must not accept strangers' real funds until the Founder opens deposits.
 const allowedPayers = new Set(env("WALLET_ALLOWED_PAYERS").split(",").map((v) => v.trim()).filter(Boolean));
-if ([...allowedPayers].some((address) => !ADDRESS.test(address)) || (config.cluster === "mainnet" && allowedPayers.size === 0)) {
+if ([...allowedPayers].some((address) => !ADDRESS.test(address)) || allowedPayers.size === 0) {
   throw new Error("invalid wallet payer allowlist");
 }
 const DEPOSIT_TTL_SECONDS = 600;

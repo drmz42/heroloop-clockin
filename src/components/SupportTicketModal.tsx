@@ -72,6 +72,7 @@ export function SupportTicketModal({ onClose }: { onClose: () => void }) {
     if (result) {
       setSent(true);
       setBody('');
+      setPriority(2);
       setKey(crypto.randomUUID());
       await load();
     } else setError(ERRORS[code] ?? 'The ticket could not be sent. Please try again.');
@@ -98,9 +99,9 @@ export function SupportTicketModal({ onClose }: { onClose: () => void }) {
               {PRIORITIES.map((label, index) => <option key={label} value={index + 1}>{label}</option>)}
             </select>
             <label className="text-xs font-bold text-[#f0dfbb]" htmlFor="support-details">What happened?</label>
-            <textarea id="support-details" value={body} onChange={(event) => setBody(event.target.value)} minLength={10} maxLength={2000} rows={4} required className="game-control w-full resize-y bg-[#15130f] px-3 py-2 text-sm text-[#f4e6c7]" placeholder="What were you doing, what did you expect, and what happened instead?" />
+            <textarea id="support-details" value={body} onChange={(event) => { setBody(event.target.value); setSent(false); setError(''); }} minLength={10} maxLength={2000} rows={4} required className="game-control w-full resize-y bg-[#15130f] px-3 py-2 text-sm text-[#f4e6c7]" placeholder="What were you doing, what did you expect, and what happened instead?" />
             <div className="text-right text-[10px] text-[#a79a82]">{body.length}/2000</div>
-            {error && <p role="alert" className="rounded border border-red-700/50 bg-red-950/35 p-3 text-xs text-red-200">{error}</p>}
+            {error && <p role="alert" ref={(node) => node?.scrollIntoView({ block: 'nearest' })} className="rounded border border-red-700/50 bg-red-950/35 p-3 text-xs text-red-200">{error}</p>}
             {confirmCritical && <div role="alertdialog" aria-label="Confirm critical priority" className="rounded-lg border border-red-600/60 bg-red-950/40 p-3 text-xs text-red-100">
               <p className="font-bold">Are you sure this is critical?</p>
               <p className="mt-2">Critical priority is only for serious problems that need immediate attention. Please do not mark ordinary problems as critical or send false reports. These tickets are reviewed first.</p>

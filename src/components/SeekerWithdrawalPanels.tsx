@@ -31,7 +31,7 @@ export function SeekerWithdrawalPanel() {
     <button style={{minHeight:44}} className="game-control game-primary min-h-11 w-full text-xs font-bold" disabled={busy||!amount||!boundWallet()} onClick={()=>void submit()}>{busy?'Authorizing…':'Sign withdrawal request'}</button>
     {message&&<p role="status" className="text-xs leading-5 text-amber-200">{message}</p>}
     <h3 className="text-sm font-bold text-amber-100">Withdrawal history</h3>
-    {rows.map(row=><div key={row.request_id} className="stat-tile space-y-1 p-3 text-xs"><p>{formatMinor(row.amount_minor,row.asset,row.asset==='SKR'?6:9)} {row.asset} · {row.status.replace(/_/g,' ')}</p><p className="text-stone-400">{new Date(row.created_at).toLocaleString()}</p>{row.signature&&<a className="block break-all text-lime-200" target="_blank" rel="noreferrer" href={`https://explorer.solana.com/tx/${row.signature}${wallet?.chain.cluster==='devnet'?'?cluster=devnet':''}`}>View finalized payout</a>}{row.reject_reason&&<p>{row.reject_reason}</p>}</div>)}
+    {rows.map(row=><div key={row.request_id} className="stat-tile space-y-1 p-3 text-xs"><p>{formatMinor(row.amount_minor,row.asset,row.asset==='SKR'?6:9)} {row.asset} · {row.status.replace(/_/g,' ')}</p><p className="text-stone-400">{new Date(row.created_at).toLocaleString()}</p>{row.signature&&<a className="block break-all text-lime-200" target="_blank" rel="noreferrer" href={`https://explorer.solana.com/tx/${row.signature}`}>View finalized payout</a>}{row.reject_reason&&<p>{row.reject_reason}</p>}</div>)}
     <button style={{minHeight:44}} className="game-control min-h-11 w-full text-xs" onClick={()=>void refresh()}>Refresh withdrawals</button>
   </div>;
 }
