@@ -1,4 +1,3 @@
-import { isolatedHackathon } from '@/game/editionStorage';
 import { useRef } from 'react';
 import { Mail, ChevronLeft, ChevronRight, UserRound, Wallet, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus, Hammer } from 'lucide-react';
 import type { Tab } from './TopMenu';
@@ -93,8 +92,8 @@ export function GameNavBar({
           title="Rewards & Tokenomics"
         >
           <HeroTokenIcon size={12} />
-          <span className="ui-text-medium font-black tabular-nums text-lime-300">{isolatedHackathon ? '—' : formatResource(hero)}</span>
-          <span className="hl-nav-unit ui-text-small font-bold uppercase tracking-[.1em] text-[#7f8a69]">$Hero</span>
+          <span className="ui-text-medium font-black tabular-nums text-lime-300">{formatResource(hero)}</span>
+          <span className="hl-nav-unit hl-nav-unit-token ui-text-small font-bold uppercase tracking-[.1em] text-[#7f8a69]">$Hero</span>
         </button>
       </div>
     </div>

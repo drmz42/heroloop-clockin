@@ -23,6 +23,7 @@ html[data-hl-platform='android'] .hl-nav-logo img { width: 38px !important; max-
 html[data-hl-platform='android'] .hl-nav-right { border-left: 0; padding-left: 0; gap: 6px; min-width: 0; }
 html[data-hl-platform='android'] .hl-nav-wallet-label,
 html[data-hl-platform='android'] .hl-nav-unit { display: none; }
+html[data-hl-platform='android'] .hl-nav-unit-token { display: inline; }
 html[data-hl-platform='android'] .hl-nav-right > * { min-height: 40px; border-radius: 3px; }
 html[data-hl-platform='android'] .hl-nav-right > button:first-child,
 html[data-hl-platform='android'] .hl-nav-right > button[title='Mailbox'] { width: 40px; padding: 0; justify-content: center; display: grid; place-items: center; }
