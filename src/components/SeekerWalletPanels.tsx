@@ -1,8 +1,9 @@
+import { WalletAmount, WalletAssetPicker, type DisplayWalletAsset } from './SeekerWalletControls';
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowDownToLine, Check, ExternalLink, Loader2, RefreshCw, ShieldCheck, AlertTriangle } from 'lucide-react';
 import {
-  commitSkrPurchase,boundWallet, deposit, formatAmountShort, formatMinor, refreshWallet, SeekerWalletError, useWalletSnapshot, waitForDeposit,
-  type WalletAsset, type WalletSnapshot,
+  commitSkrPurchase,boundWallet, deposit, loadExternalWallet, exactWalletAmount, ASSET_DECIMALS, formatAmountShort, formatMinor, refreshWallet, SeekerWalletError, useWalletSnapshot, waitForDeposit,
+  type WalletSnapshot,
 } from '@/game/seekerWallet';
 
 const ERRORS: Record<string, string> = {
@@ -21,7 +22,6 @@ const ERRORS: Record<string, string> = {
   deposit_outside_window: 'The transfer arrived after the deposit expired. Contact support with the transaction link.',
 };
 const message = (code: string) => ERRORS[code] ?? 'The deposit could not be completed. Nothing was credited twice; try again.';
-const QUICK: Record<WalletAsset, string[]> = { SKR: ['10', '50', '100', '500'], SOL: ['0.01', '0.05', '0.1', '0.5'] };
 const explorer = (signature: string) => `https://explorer.solana.com/tx/${signature}`;
 
 function useWalletState() {
@@ -43,9 +43,9 @@ function Balances({ snapshot }: { snapshot: WalletSnapshot | null }) {
   return (
     <div className="grid grid-cols-2 gap-2">
       {(['SKR', 'SOL'] as const).map((asset) => (
-        <div key={asset} className="stat-tile p-3">
+        <div key={asset} className="stat-tile p-2.5">
           <div className="text-[10px] font-bold uppercase tracking-wider text-[#8f887b]">In-game {asset}</div>
-          <div className="mt-1 text-xl font-black tabular-nums text-[#f1d188]">
+          <div className="mt-1 text-lg font-black tabular-nums text-[#f1d188]">
             {snapshot ? formatAmountShort(snapshot.balances[asset], asset, 'down') : '—'}
           </div>
         </div>
@@ -56,15 +56,41 @@ function Balances({ snapshot }: { snapshot: WalletSnapshot | null }) {
 
 export function SeekerDepositPanel() {
   const { snapshot, error, refresh } = useWalletState();
-  const [asset, setAsset] = useState<WalletAsset>('SKR');
+  const [asset, setAsset] = useState<DisplayWalletAsset>('SKR');
   const [amount, setAmount] = useState('');
   const [stage, setStage] = useState<'idle' | 'prepare' | 'sign' | 'confirm'>('idle');
+  const [external, setExternal] = useState<WalletSnapshot | null>(null);
+  const [balanceError, setBalanceError] = useState(false);
+  const [checkingBalance, setCheckingBalance] = useState(false);
+  const address = boundWallet()?.address;
+  useEffect(() => {
+    let cancelled = false;
+    setExternal(null); setBalanceError(false);
+    const refresh = () => loadExternalWallet().then(data => { if (!cancelled) { setExternal(data); setBalanceError(false); } }).catch(() => { if (!cancelled) { setExternal(null); setBalanceError(true); } });
+    if (address) void refresh();
+    const visible = () => { if (document.visibilityState === 'visible' && address) void refresh(); };
+    const timer = setInterval(visible, 60000);
+    document.addEventListener('visibilitychange', visible);
+    return () => { cancelled = true; clearInterval(timer); document.removeEventListener('visibilitychange', visible); };
+  }, [address, stage]);
   const [result, setResult] = useState<{ ok: boolean; text: string; signature?: string } | null>(null);
   const bound = boundWallet();
-  const busy = stage !== 'idle';
+  const busy = stage !== 'idle' || checkingBalance;
+  const fillMax = async () => {
+    if (asset === 'ORE') return;
+    setCheckingBalance(true);
+    try {
+      const latest = await loadExternalWallet();
+      setExternal(latest); setBalanceError(false);
+      if (latest.max_deposit_balances) setAmount(exactWalletAmount(latest.max_deposit_balances[asset], asset));
+    } catch {
+      setExternal(null); setBalanceError(true); setAmount('');
+    } finally { setCheckingBalance(false); }
+  };
   const valid = /^\d{1,12}(\.\d{1,9})?$/.test(amount) && Number(amount) > 0;
 
   const submit = async () => {
+    if (asset === 'ORE') return;
     setResult(null);
     try {
       const outcome = await deposit(asset, amount, setStage);
@@ -100,31 +126,11 @@ export function SeekerDepositPanel() {
   return (
     <>
       <Balances snapshot={snapshot} />
-      <div role="radiogroup" aria-label="Token to deposit" className="grid grid-cols-2 gap-2">
-        {(['SKR', 'SOL'] as const).map((entry) => (
-          <button key={entry} type="button" role="radio" aria-checked={asset === entry} disabled={busy}
-            onClick={() => { setAsset(entry); setAmount(''); }}
-            className={`game-control min-h-11 px-3 text-sm font-black ${asset === entry ? 'border-[#e0a83c] text-[#f6d283]' : 'text-[#8f887b]'}`}>
-            {entry}{entry === 'SOL' ? <span className="ml-1 text-[10px] font-bold text-[#8f887b]">for ORE Mines</span> : null}
-          </button>
-        ))}
-      </div>
-      <div>
-        <label htmlFor="seeker-deposit-amount" className="text-xs font-semibold uppercase tracking-[.14em] text-[#8f887b]">Amount to deposit</label>
-        <div className="mt-2 flex items-center gap-2">
-          <input id="seeker-deposit-amount" inputMode="decimal" autoComplete="off" value={amount} disabled={busy}
-            onChange={(event) => setAmount(event.target.value.replace(',', '.').replace(/[^\d.]/g, ''))}
-            placeholder="0" className="min-h-12 min-w-0 flex-1 rounded-xl border border-[#3f3626] bg-black/30 px-4 text-lg font-bold text-[#f1d188]" />
-          <span className="text-sm font-black text-[#8f887b]">{asset}</span>
-        </div>
-        <div className="mt-2 grid grid-cols-4 gap-1.5">
-          {QUICK[asset].map((value) => (
-            <button key={value} type="button" disabled={busy} onClick={() => setAmount(value)}
-              className="game-control min-h-9 px-1 text-xs font-bold text-[#d9d1c0]">{value}</button>
-          ))}
-        </div>
-      </div>
-      <button type="button" disabled={!bound || !valid || busy} onClick={() => void submit()}
+      <WalletAssetPicker asset={asset} busy={busy} onChange={entry => { setAsset(entry); setAmount(''); setResult(null); }} />
+      <WalletAmount id="seeker-deposit-amount" amount={amount} asset={asset} busy={busy} onChange={setAmount}
+        available={asset === 'ORE' ? 'ORE transfers are not available yet.' : `In your wallet: ${external?.external_balances ? formatMinor(external.external_balances[asset], asset, ASSET_DECIMALS[asset]) : balanceError ? 'Unavailable' : '—'} $${asset}`}
+        onMax={asset !== 'ORE' && external?.max_deposit_balances ? () => void fillMax() : undefined} />
+      <button type="button" disabled={!bound || !valid || busy || asset === 'ORE'} onClick={() => void submit()}
         className="game-control flex min-h-12 w-full items-center justify-center gap-2 px-4 py-3 font-black text-[#f6d283] disabled:opacity-45">
         {busy ? <Loader2 size={16} className="animate-spin" /> : <ArrowDownToLine size={16} />}
         {stage === 'prepare' ? 'Preparing transfer…' : stage === 'sign' ? 'Approve in your wallet…' : stage === 'confirm'
@@ -158,7 +164,7 @@ export function SeekerDepositPanel() {
       {error && !snapshot && <div role="alert" className="text-xs text-rose-200">{message(error)}</div>}
       <div className="flex gap-2 text-[11px] leading-5 text-[#8f887b]">
         <ShieldCheck size={15} className="mt-0.5 shrink-0 text-amber-300/80" />
-        <span>Your wallet shows the exact amount and the HeroLoop address before you approve. The Solana network fee is about 0.000005 SOL. HeroLoop credits your balance only after the transfer is final on chain, once per transfer.</span>
+        <span>Approve the amount and destination in your wallet. MAX keeps SOL for the network fee and respects deposit limits. Credits arrive after network finalization.</span>
       </div>
     </>
   );
@@ -177,10 +183,10 @@ export function SeekerHistoryPanel({onPurchase}:{onPurchase?:(result:Record<stri
   return (
     <>
       <Balances snapshot={snapshot} />
-      {snapshot?.pending_purchases?.map(quote=><div key={quote.quote_id} className="stat-tile p-3 text-xs"><p>Pending {quote.context.action.replace(/_/g,' ')} · {formatAmountShort(quote.amount_minor,'SKR','up')} SKR</p><button disabled={recovering} className="game-control mt-2 min-h-11 w-full" onClick={()=>void recover(quote.quote_id)}>Recover this payment</button></div>)}
+      {snapshot?.pending_purchases?.map(quote=><div key={quote.quote_id} className="stat-tile p-2.5 text-xs"><p>Pending {quote.context.action.replace(/_/g,' ')} · {formatAmountShort(quote.amount_minor,'SKR','up')} SKR</p><button disabled={recovering} className="game-control mt-2 min-h-11 w-full" onClick={()=>void recover(quote.quote_id)}>Recover this payment</button></div>)}
       {notice&&<p role="status" className="text-xs text-amber-200">{notice}</p>}
       {snapshot && snapshot.history.length === 0 && (
-        <div className="stat-tile p-3 text-xs text-[#a29b8e]">No wallet activity yet.</div>
+        <div className="stat-tile p-2.5 text-xs text-[#a29b8e]">No wallet activity yet.</div>
       )}
       {snapshot && snapshot.history.length > 0 && (
         <ul className="space-y-1.5">

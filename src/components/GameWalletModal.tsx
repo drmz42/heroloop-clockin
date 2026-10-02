@@ -88,10 +88,10 @@ export function GameWalletModal({
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 p-3 backdrop-blur-[3px] anim-fade" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section className="px-panel-raised relative flex max-h-[92vh] w-full max-w-md flex-col overflow-hidden rounded-2xl" role="dialog" aria-modal="true" aria-label="Wallet">
-        <header className="flex items-start justify-between gap-3 border-b border-[#5d4a2f] px-4 py-3">
+        <header className="flex items-start justify-between gap-2 border-b border-[#5d4a2f] px-3 py-2.5">
           <div className="min-w-0">
             <div className="section-kicker">HeroLoop</div>
-            <h2 className="mt-1 flex items-center gap-2 text-2xl font-black text-[#f1d188]"><Wallet size={22} /> Wallet</h2>
+            <h2 className="mt-1 flex items-center gap-2 text-xl font-black text-[#f1d188]"><Wallet size={22} /> Wallet</h2>
             {walletAddress ? (
               <button type="button" onClick={() => void copy(walletAddress, 'wallet')} className="mt-1.5 flex max-w-full items-center gap-1.5 rounded-full border border-[#54462f] bg-black/30 px-2.5 py-1 text-xs font-semibold text-[#cfc7b6] hover:border-[#9a6a22]" aria-label="Copy wallet address" title={walletAddress}>
                 <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400" aria-hidden="true" />
@@ -133,7 +133,7 @@ export function GameWalletModal({
           })}
         </div>
 
-        <div id={`wallet-panel-${tab}`} role="tabpanel" aria-labelledby={`wallet-tab-${tab}`} className="game-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+        <div id={`wallet-panel-${tab}`} role="tabpanel" aria-labelledby={`wallet-tab-${tab}`} className="game-scrollbar min-h-0 flex-1 space-y-2.5 overflow-y-auto p-3">
           {tab === 'deposit' && isolatedHackathon && <SeekerDepositPanel />}
           {tab === 'history' && isolatedHackathon && <SeekerHistoryPanel onPurchase={onPurchase} />}
 

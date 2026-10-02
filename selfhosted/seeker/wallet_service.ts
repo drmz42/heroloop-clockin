@@ -3,6 +3,7 @@
 // backend network by the game API, which authenticates the player and forwards
 // the verified player id with a shared service token. Holds no signing key:
 // deposits are verified read-only against Solana RPC.
+import { externalBalances } from "./wallet_display.ts";
 import { Pool } from "@db/postgres";
 import {
   ADDRESS,
@@ -106,10 +107,18 @@ function publicConfig(): Json {
   return { cluster: config.cluster, skr_mint: config.skrMint, treasury: config.treasury, decimals: { SKR: 6, SOL: 9 } };
 }
 
-async function snapshot(player: string): Promise<Response> {
+async function snapshot(player: string, address?: unknown): Promise<Response> {
   const result = await call("SELECT seeker_skr.wallet_snapshot($1::uuid) AS result", [player]);
   const pending=await call('SELECT seeker_skr.purchase_pending($1::uuid) AS result',[player]);
-  return json(200, { ok: true, result: { ...result,...pending, chain: publicConfig() } });
+  let external = {};
+  if (typeof address === 'string' && ADDRESS.test(address)) {
+    const [sol, tokens] = await Promise.all([
+      rpc('getBalance', [address, { commitment: 'confirmed' }]),
+      rpc('getTokenAccountsByOwner', [address, { mint: config.skrMint }, { encoding: 'jsonParsed', commitment: 'confirmed' }]),
+    ]);
+    external = externalBalances(sol, tokens, LIMITS);
+  }
+  return json(200, { ok: true, result: { ...result,...pending, ...external, chain: publicConfig() } });
 }
 
 async function createIntent(player: string, body: Json): Promise<Response> {
@@ -221,8 +230,9 @@ async function rates(): Promise<Record<string, PriceRate>> {
 }
 async function commerce(path: string,player: string,body: Json): Promise<Response|null> {
   if (path==='/wallet/rates') {
-    const price=(await rates())[SKR_ASSET.mint];
-    return json(200,{ok:true,result:{ ...price }});
+    const prices = await rates();
+    const price = prices[SKR_ASSET.mint];
+    return json(200,{ok:true,result:{ ...price, asset_rates: { SKR: price, SOL: prices[SOL_MINT] } }});
   }
   if (path==='/wallet/boost') {
     const data=await call('SELECT seeker_skr.boost_snapshot($1::uuid) AS result',[player]);
@@ -351,7 +361,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8090 }, async (request) => {
     return json(400, { ok: false, code: "invalid_player" });
   }
   try {
-    if (url.pathname === "/wallet/snapshot") return await snapshot(body.player_id);
+    if (url.pathname === "/wallet/snapshot") return await snapshot(body.player_id, body.address);
     if (url.pathname === "/wallet/deposit-intent") return await createIntent(body.player_id, body);
     if (url.pathname === "/wallet/deposit-confirm") return await confirm(body.player_id, body);
     const response=await commerce(url.pathname,body.player_id,body)??await withdrawals(url.pathname,body.player_id,body);

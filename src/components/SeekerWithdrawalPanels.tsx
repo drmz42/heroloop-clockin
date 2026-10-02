@@ -1,5 +1,6 @@
+import { WalletAmount, WalletAssetPicker, type DisplayWalletAsset } from './SeekerWalletControls';
 import { useCallback,useEffect,useState } from 'react';
-import { boundWallet,formatMinor,loadWithdrawals,loadFounderWallet,requestWithdrawal,reviewWithdrawal,useWalletSnapshot,type WithdrawalRow,type WalletAsset,type Reconciliation } from '@/game/seekerWallet';
+import { boundWallet,formatMinor,exactWalletAmount,ASSET_DECIMALS,loadWalletRates,loadWithdrawals,loadFounderWallet,requestWithdrawal,reviewWithdrawal,useWalletSnapshot,type WithdrawalRow,type WalletRate,type Reconciliation } from '@/game/seekerWallet';
 import { skrError } from '@/game/skrPurchase';
 const withdrawalError=(error:unknown)=>{
   const code=error instanceof Error?error.message:'';
@@ -17,18 +18,36 @@ const withdrawalError=(error:unknown)=>{
 };
 export function SeekerWithdrawalPanel() {
   const wallet=useWalletSnapshot();
-  const [asset,setAsset]=useState<WalletAsset>('SKR');const [amount,setAmount]=useState('');
+  const [asset,setAsset]=useState<DisplayWalletAsset>('SKR');const [amount,setAmount]=useState('');
   const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');const [rows,setRows]=useState<WithdrawalRow[]>([]);
   const refresh=useCallback(()=>loadWithdrawals().then(r=>setRows(r.withdrawals)).catch(()=>setMessage('Withdrawal history is unavailable.')),[]);
   useEffect(()=>{void refresh();},[refresh]);
-  async function submit(){setBusy(true);setMessage('');try{const r=await requestWithdrawal(asset,amount);setMessage(r.status==='approval_required'?'Balance reserved. This request needs Founder approval above the daily $20 limit.':'Balance reserved. Awaiting a manual Founder payout.');setAmount('');await refresh();}catch(error){setMessage(withdrawalError(error));}finally{setBusy(false);}}
-  return <div className="space-y-3">
-    <p className="text-xs leading-5 text-stone-300">Withdraw to the verified wallet you signed in with. Your wallet signs an authorization; the Founder pays manually. Requests over $20 per day need Founder approval.</p>
-    <div className="flex gap-2">{(['SKR','SOL'] as const).map(a=><button style={{minHeight:44}} key={a} disabled={busy} aria-pressed={asset===a} className={`game-control min-h-11 flex-1 ${asset===a?'game-primary':''}`} onClick={()=>setAsset(a)}>{a}</button>)}</div>
-    <label className="block text-xs text-stone-300">Amount<input className="market-input mt-2 min-h-11 w-full px-3" inputMode="decimal" value={amount} disabled={busy} onChange={e=>setAmount(e.target.value)}/></label>
-    <p className="text-xs text-amber-200">Available: {wallet?formatMinor(wallet.balances[asset],asset,asset==='SKR'?6:9):'—'} {asset}</p>
+  const [rates, setRates] = useState<Record<'SKR' | 'SOL', WalletRate> | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => loadWalletRates().then(data => { if (!cancelled) setRates(data.asset_rates); }).catch(() => { if (!cancelled) setRates(null); });
+    void refresh();
+    const timer = setInterval(() => { if (document.visibilityState === 'visible') void refresh(); }, 30000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, []);
+  const rate = asset === 'ORE' ? null : rates?.[asset];
+  const valid = asset !== 'ORE' && new RegExp(`^\\d{1,12}(\\.\\d{1,${ASSET_DECIMALS[asset]}})?$`).test(amount) && Number(amount) > 0;
+  const overLimit = (() => {
+    if (asset === 'ORE' || !valid || !rate || Date.now() - Date.parse(rate.observed_at) >= 60000 || !/^\d+$/.test(rate.usd_micros_per_skr)) return false;
+    const [whole, fraction = ''] = amount.split('.');
+    const units = BigInt(whole + fraction.padEnd(ASSET_DECIMALS[asset], '0'));
+    return units * BigInt(rate.usd_micros_per_skr) > 20_000_000n * 10n ** BigInt(ASSET_DECIMALS[asset]);
+  })();
+  async function submit(){if(asset==='ORE')return;setBusy(true);setMessage('');try{const r=await requestWithdrawal(asset,amount);setMessage(r.status==='approval_required'?'Balance reserved. This request needs Founder approval above the daily $20 limit.':'Balance reserved. Awaiting a manual Founder payout.');setAmount('');await refresh();}catch(error){setMessage(withdrawalError(error));}finally{setBusy(false);}}
+  return <div className="space-y-2.5">
+    <p className="text-xs leading-5 text-stone-300">Withdraw to the verified wallet you signed in with. Your wallet signs an authorization; the Founder pays manually.</p>
+    <WalletAssetPicker asset={asset} busy={busy} onChange={entry => { setAsset(entry); setAmount(''); setMessage(''); }} />
+    <WalletAmount id="seeker-withdraw-amount" amount={amount} asset={asset} busy={busy} onChange={setAmount}
+      available={asset === 'ORE' ? 'ORE transfers are not available yet.' : `Available to withdraw: ${wallet ? formatMinor(wallet.balances[asset], asset, ASSET_DECIMALS[asset]) : '—'} $${asset}`}
+      onMax={asset !== 'ORE' && wallet ? () => setAmount(exactWalletAmount(wallet.balances[asset], asset)) : undefined} />
+    {overLimit && <p role="status" className="text-[11px] text-amber-200">This withdrawal exceeds $20 and requires Founder approval.</p>}
     <p className="break-all text-xs text-stone-300">Destination: {boundWallet()?.address??'Link a wallet first'}</p>
-    <button style={{minHeight:44}} className="game-control game-primary min-h-11 w-full text-xs font-bold" disabled={busy||!amount||!boundWallet()} onClick={()=>void submit()}>{busy?'Authorizing…':'Sign withdrawal request'}</button>
+    <button style={{minHeight:44}} className="game-control game-primary min-h-11 w-full text-xs font-bold" disabled={busy||!valid||!boundWallet()} onClick={()=>void submit()}>{busy?'Authorizing…':'Sign withdrawal request'}</button>
     {message&&<p role="status" className="text-xs leading-5 text-amber-200">{message}</p>}
     <h3 className="text-sm font-bold text-amber-100">Withdrawal history</h3>
     {rows.map(row=><div key={row.request_id} className="stat-tile space-y-1 p-3 text-xs"><p>{formatMinor(row.amount_minor,row.asset,row.asset==='SKR'?6:9)} {row.asset} · {row.status.replace(/_/g,' ')}</p><p className="text-stone-400">{new Date(row.created_at).toLocaleString()}</p>{row.signature&&<a className="block break-all text-lime-200" target="_blank" rel="noreferrer" href={`https://explorer.solana.com/tx/${row.signature}`}>View finalized payout</a>}{row.reject_reason&&<p>{row.reject_reason}</p>}</div>)}

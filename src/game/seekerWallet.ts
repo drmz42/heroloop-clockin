@@ -15,6 +15,8 @@ export type WalletChain = { cluster: 'mainnet'; skr_mint: string; treasury: stri
 export type WalletHistoryRow = { event_id: string; kind: string; asset: WalletAsset; delta_minor: string; signature: string | null; at: string };
 export type WalletSnapshot = {
   balances: Record<WalletAsset, string>;
+  external_balances?: Record<WalletAsset, string>;
+  max_deposit_balances?: Record<WalletAsset, string>;
   pending_deposits: { intent_id: string; asset: WalletAsset; amount_minor: string; expires_at: string }[];
   history: WalletHistoryRow[];
   pending_purchases?: SkrPurchaseQuote[];
@@ -224,6 +226,16 @@ export async function quoteSkrPurchase(product:string,params:Record<string,unkno
 export async function commitSkrPurchase(quoteId:string):Promise<{status:'delivered'|'rejected';result:Record<string,unknown>}> {
   try { return await command('skr_purchase_commit',{quote_id:quoteId}); }
   finally { void refreshAfterChange().catch(()=>undefined); }
+}
+export type WalletRate = {usd_micros_per_skr:string;observed_at:string};
+export function loadExternalWallet(): Promise<WalletSnapshot> {
+  const bound = boundWallet();
+  if (!bound) return Promise.reject(new SeekerWalletError('wallet_not_linked'));
+  return command('wallet_snapshot', { address: bound.address });
+}
+export function loadWalletRates(): Promise<WalletRate & {asset_rates: Record<WalletAsset, WalletRate>}> { return command('wallet_rates'); }
+export function exactWalletAmount(minor: string, asset: WalletAsset): string {
+  return formatMinor(minor, asset, ASSET_DECIMALS[asset]).replace(/,/g, '');
 }
 export function loadSkrRate():Promise<{usd_micros_per_skr:string;observed_at:string}> { return command('wallet_rates'); }
 
