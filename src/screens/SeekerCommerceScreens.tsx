@@ -49,7 +49,7 @@ export function SeekerMarketScreen({game}:{game:GameApi}) {
     </div>
     {!market&&<p className="my-4 text-xs text-stone-400">Loading server listings…</p>}
     {market&&tab!=='sell'&&tab!=='history'&&listings.length===0&&<p className="my-4 text-xs text-stone-400">No active listings.</p>}
-    {tab==='sell'&&eligible.length===0&&<p className="my-4 text-xs text-stone-400">No server-owned Legendary+ equipment to list.</p>}
+    {tab==='sell'&&eligible.length===0&&<p className="my-4 text-xs text-stone-400">No server-owned equipment to list.</p>}
   </div>;
 }
 export function SeekerShopScreen({game}:{game:GameApi}) {

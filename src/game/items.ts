@@ -117,8 +117,9 @@ const CHEST_ROLL_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'le
 export const ALL_PRODUCT_RARITIES: Rarity[] = [...CHEST_ROLL_RARITIES, 'cursed', 'immortal', 'god'];
 export const MARKET_MIN_EQUIPMENT_RARITY: Rarity = 'legendary';
 
+// The Seeker Market accepts any rarity: every listing pays the $0.02 SKR fee.
 export function isMarketEligibleEquipment(item: Pick<ItemBase, 'rarity'>): boolean {
-  return RARITY_INDEX[item.rarity] >= RARITY_INDEX[MARKET_MIN_EQUIPMENT_RARITY];
+  return isolatedHackathon || RARITY_INDEX[item.rarity] >= RARITY_INDEX[MARKET_MIN_EQUIPMENT_RARITY];
 }
 
 const RARITY_NAMES = ['Worn', 'Verdant', 'Sapphire', 'Amethyst', 'Legendary', 'Mythic', 'Cosmic', 'Divine', 'Celestial', 'Cursed', 'Immortal', 'God'];
