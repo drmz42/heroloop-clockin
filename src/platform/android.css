@@ -271,11 +271,20 @@ html[data-hl-platform='android'] .hl-hero-card > div:nth-child(4) { margin-top: 
 html[data-hl-platform='android'] .hl-hero-card .pointer-events-none.absolute span { padding: 0 3px; font-size: 7px; }
 /* Heroes filters in two rows (Founder 2026-10-02): search, class, rarity, level / the three
    sorts, Clear and Promote All. */
-html[data-hl-platform='android'] .hl-hero-filters { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-html[data-hl-platform='android'] .hl-hero-filters > :first-child { grid-column: span 2; }
-html[data-hl-platform='android'] .hl-hero-filters > :nth-child(5),
-html[data-hl-platform='android'] .hl-hero-filters > :nth-child(6) { order: 1; }
-html[data-hl-platform='android'] .hl-hero-filters > * { min-width: 0; padding-inline: 4px; }
+/* Three even rows (Founder 2026-10-02 review): search + Clear / Class, Rarity, Level / the sorts; one height for all. */
+html[data-hl-platform='android'] .hl-hero-filters { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+html[data-hl-platform='android'] .hl-hero-filters > * { grid-column: span 2; min-width: 0; height: 36px !important; min-height: 36px; padding-inline: 4px; order: 3; }
+html[data-hl-platform='android'] .hl-hero-filters > :first-child { grid-column: span 4; order: 1; padding: 0; }
+html[data-hl-platform='android'] .hl-hero-filters > :nth-child(5) { order: 2; }
+html[data-hl-platform='android'] .hl-hero-filters > :nth-child(n + 6) { order: 4; }
+html[data-hl-platform='android'] .hl-hero-filters :is(button, select, input) { height: 36px !important; font-size: 10px !important; line-height: 1; }
+html[data-hl-platform='android'] .hl-hero-filters > button { display: flex; align-items: center; justify-content: center; white-space: nowrap; letter-spacing: .04em; }
+html[data-hl-platform='android'] .hl-hero-filters > label > select { width: 100%; }
+/* Capacity upgrade sits on the "My Heroes 1/500" line. */
+html[data-hl-platform='android'] .heroes-head > .mt-0\.5 { flex-wrap: nowrap; justify-content: space-between; }
+html[data-hl-platform='android'] .heroes-head > .mt-0\.5 > :not(h2) { flex: none; max-width: 55%; margin-top: 0; }
+html[data-hl-platform='android'] .heroes-head > .mt-0\.5 > :not(h2) button,
+html[data-hl-platform='android'] .heroes-head > .mt-0\.5 > button { min-height: 34px !important; height: 34px; width: auto; padding-inline: 12px; font-size: 11px; white-space: nowrap; }
 html[data-hl-platform='android'] .hl-hero-filters select { appearance: none; -webkit-appearance: none; padding: 0 14px 0 5px !important; font-size: 10px !important; text-overflow: ellipsis; border-image-width: 4px !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23d1c8b9' stroke-width='1.5'/%3E%3C/svg%3E") !important; background-repeat: no-repeat !important; background-position: right 4px center !important; background-size: 9px 6px !important; }
 html[data-hl-platform='android'] .hl-team-row { min-height: 70px; gap: 10px; margin-top: 8px; }
 html[data-hl-platform='android'] .hl-team-empty { width: 64px; height: 64px; }
@@ -526,3 +535,14 @@ html[data-hl-platform='android'] #location-progression-path {
   position: absolute; top: 100%; left: 0; right: 0; padding: 8px;
   border: 1px solid #80683f; background: #11130f; box-shadow: 0 8px 20px #0008;
 }
+/* Top-left emblem (Founder art, upload/Design2/my/logo.png). */
+html[data-hl-platform='android'] .hl-nav-logo img.hl-nav-emblem { width: 38px !important; max-width: 38px !important; height: 40px !important; object-fit: contain; object-position: center; filter: drop-shadow(0 0 6px rgba(226, 150, 61, .35)); }
+
+/* Toasts (e.g. "Best gear equipped"): one fixed spot above the tab bar, compact; the slide animation used to
+   override the centring transform, so the text jumped sideways and ended under the menu. */
+html[data-hl-platform='android'] .hl-toast { left: 16px !important; right: 16px; bottom: calc(var(--hl-tabbar-h) + 12px) !important; z-index: 10012 !important; width: fit-content; max-width: calc(100vw - 32px); margin: 0 auto; transform: none !important; animation: hl-toast-in .18s ease-out; padding: 6px 12px; font-size: 13px !important; line-height: 1.25; text-align: center; border-width: 1px; border-radius: 3px; }
+@keyframes hl-toast-in { from { opacity: 0; } to { opacity: 1; } }
+/* Bag: the scroll area must not be a positioned layer, or a stray grey frame stays fixed over the cells while they
+   scroll; empty and locked cells also lose the grey inner outline. */
+html[data-hl-platform='android'] .hl-col-right > .game-scrollbar { position: static; }
+html[data-hl-platform='android'] .hl-col-right .item-slot:not([class*='rarity-'])::before { border-color: transparent !important; }

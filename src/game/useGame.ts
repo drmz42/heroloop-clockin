@@ -2710,12 +2710,13 @@ export function useGame() {
       }, (error) => { claimError = error; });
     };
     let result = await attemptClaim();
-    if (!result && claimError === 'state_conflict') {
+    // Combat saves move the revision every few seconds, so a single retry can lose the race again.
+    for (let attempt = 0; attempt < 4 && !result && claimError === 'state_conflict'; attempt += 1) {
       const refreshed = await playerSync<{ state: GameState; revision: number }>('game_state_load');
       if (!refreshed?.state || !Number.isSafeInteger(refreshed.revision)) return false;
       expectedRevision = refreshed.revision;
       result = await attemptClaim();
-      if (!result) {
+      if (!result && (claimError !== 'state_conflict' || attempt === 3)) {
         setServerRevisionHint(refreshed.revision);
         hydrateServerState(refreshed.state);
         return false;
@@ -2741,12 +2742,13 @@ export function useGame() {
       }, (error) => { claimError = error; });
     };
     let result = await attemptClaim();
-    if (!result && claimError === 'state_conflict') {
+    // Combat saves move the revision every few seconds, so a single retry can lose the race again.
+    for (let attempt = 0; attempt < 4 && !result && claimError === 'state_conflict'; attempt += 1) {
       const refreshed = await playerSync<{ state: GameState; revision: number }>('game_state_load');
       if (!refreshed?.state || !Number.isSafeInteger(refreshed.revision)) return 'unavailable';
       expectedRevision = refreshed.revision;
       result = await attemptClaim();
-      if (!result) {
+      if (!result && (claimError !== 'state_conflict' || attempt === 3)) {
         setServerRevisionHint(refreshed.revision);
         hydrateServerState(refreshed.state);
         return claimError || 'unavailable';
@@ -2773,12 +2775,13 @@ export function useGame() {
       }, (error) => { claimError = error; });
     };
     let result = await attemptClaim();
-    if (!result && claimError === 'state_conflict') {
+    // Combat saves move the revision every few seconds, so a single retry can lose the race again.
+    for (let attempt = 0; attempt < 4 && !result && claimError === 'state_conflict'; attempt += 1) {
       const refreshed = await playerSync<{ state: GameState; revision: number }>('game_state_load');
       if (!refreshed?.state || !Number.isSafeInteger(refreshed.revision)) return 'state_unavailable';
       expectedRevision = refreshed.revision;
       result = await attemptClaim();
-      if (!result) {
+      if (!result && (claimError !== 'state_conflict' || attempt === 3)) {
         setServerRevisionHint(refreshed.revision);
         hydrateServerState(refreshed.state);
         return claimError || 'unavailable';

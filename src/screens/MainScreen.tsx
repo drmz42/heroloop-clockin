@@ -970,8 +970,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
         )}
       </div>
 
-      {toast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-px-panel border-2 border-px-bright font-vt ui-text-large font-bold text-px-bright anim-slide-up" style={{ boxShadow: '3px 3px 0 #3d2008' }}>{toast}</div>
+      {toast && createPortal(
+        <div role="status" className="hl-toast fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-px-panel border-2 border-px-bright font-vt ui-text-large font-bold text-px-bright anim-slide-up" style={{ boxShadow: '3px 3px 0 #3d2008' }}>{toast}</div>,
+        document.body,
       )}
       {isAndroidLayout && commanderOpen && createPortal(
         <div className="hl-commander-sheet" role="dialog" aria-modal="true" aria-label="Commander" onClick={() => setCommanderOpen(false)}>

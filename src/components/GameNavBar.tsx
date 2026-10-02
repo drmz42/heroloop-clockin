@@ -1,3 +1,4 @@
+import { isAndroidLayout } from '@/platform/platform';
 import { useRef } from 'react';
 import { Mail, ChevronLeft, ChevronRight, UserRound, Wallet, Shield, Sparkles, Dumbbell, ShoppingBag, Store, Trophy, UserPlus, Hammer } from 'lucide-react';
 import type { Tab } from './TopMenu';
@@ -35,7 +36,9 @@ export function GameNavBar({
     <div className="game-command-bar flex min-h-[54px] shrink-0 items-center gap-1 border-b px-2.5 py-2 shadow-[0_12px_35px_rgba(0,0,0,.42)] z-40">
       {/* Logo */}
       <button type="button" onClick={() => onChange('main')} className="hl-nav-logo mr-1 flex shrink-0 items-center border-r border-[#59472d] pl-1 pr-3" aria-label="Open Play screen">
-        <img src="/assets/brand/heroloop-logo.png" alt="HeroLoop" width={154} height={46} className="h-9 w-auto max-w-[148px] object-contain drop-shadow-[0_0_8px_rgba(226,170,61,.28)]" />
+        {isAndroidLayout
+          ? <img src="/assets/brand/heroloop-emblem.png" alt="HeroLoop" width={154} height={160} className="hl-nav-emblem" />
+          : <img src="/assets/brand/heroloop-logo.png" alt="HeroLoop" width={154} height={46} className="h-9 w-auto max-w-[148px] object-contain drop-shadow-[0_0_8px_rgba(226,170,61,.28)]" />}
       </button>
 
       {/* Nav tabs */}
