@@ -11,7 +11,7 @@ import { mobileWalletAppIdentity } from '@/platform/platform';
 export type WalletAsset = 'SKR' | 'SOL';
 export const ASSET_DECIMALS: Record<WalletAsset, number> = { SKR: 6, SOL: 9 };
 
-export type WalletChain = { cluster: 'devnet' | 'mainnet'; skr_mint: string; treasury: string };
+export type WalletChain = { cluster: 'mainnet'; skr_mint: string; treasury: string };
 export type WalletHistoryRow = { event_id: string; kind: string; asset: WalletAsset; delta_minor: string; signature: string | null; at: string };
 export type WalletSnapshot = {
   balances: Record<WalletAsset, string>;

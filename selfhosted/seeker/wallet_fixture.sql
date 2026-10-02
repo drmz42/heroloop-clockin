@@ -17,12 +17,12 @@ BEGIN
   IF NOT failed THEN RAISE EXCEPTION 'wallet role reached post'; END IF;
 
   i1 := seeker_skr.deposit_intent_create(p,'SKR',1500000,payer,'Ref1111111111111111111111111111111111111111',
-    'devnet',900);
+    'mainnet',900);
   i2 := seeker_skr.deposit_intent_create(p,'SOL',250000000,payer,'Ref2222222222222222222222222222222222222222',
-    'devnet',900);
-  PERFORM seeker_skr.deposit_intent_create(p,'SKR',1,payer,'Ref3333333333333333333333333333333333333333','devnet',900);
+    'mainnet',900);
+  PERFORM seeker_skr.deposit_intent_create(p,'SKR',1,payer,'Ref3333333333333333333333333333333333333333','mainnet',900);
   BEGIN
-    PERFORM seeker_skr.deposit_intent_create(p,'SKR',1,payer,'Ref4444444444444444444444444444444444444444','devnet',900);
+    PERFORM seeker_skr.deposit_intent_create(p,'SKR',1,payer,'Ref4444444444444444444444444444444444444444','mainnet',900);
     failed := false;
   EXCEPTION WHEN raise_exception THEN failed := SQLERRM = 'deposit_intent_limit'; END;
   IF NOT failed THEN RAISE EXCEPTION 'open intent limit missing'; END IF;

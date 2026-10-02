@@ -22,8 +22,7 @@ const ERRORS: Record<string, string> = {
 };
 const message = (code: string) => ERRORS[code] ?? 'The deposit could not be completed. Nothing was credited twice; try again.';
 const QUICK: Record<WalletAsset, string[]> = { SKR: ['10', '50', '100', '500'], SOL: ['0.01', '0.05', '0.1', '0.5'] };
-const explorer = (signature: string, cluster: string) =>
-  `https://explorer.solana.com/tx/${signature}${cluster === 'devnet' ? '?cluster=devnet' : ''}`;
+const explorer = (signature: string) => `https://explorer.solana.com/tx/${signature}`;
 
 function useWalletState() {
   const snapshot = useWalletSnapshot();
@@ -38,16 +37,6 @@ function useWalletState() {
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);
   return { snapshot, error, refresh };
-}
-
-function NetworkBadge({ cluster }: { cluster?: string }) {
-  if (cluster !== 'devnet') return null;
-  return (
-    <div className="flex gap-2 rounded-xl border border-sky-400/30 bg-sky-400/[.06] p-3 text-xs leading-5 text-sky-100">
-      <AlertTriangle size={16} className="mt-0.5 shrink-0 text-sky-300" />
-      <span>Test network (Solana devnet). Use test SKR and test SOL only; switch your wallet to devnet / testnet mode.</span>
-    </div>
-  );
 }
 
 function Balances({ snapshot }: { snapshot: WalletSnapshot | null }) {
@@ -110,7 +99,6 @@ export function SeekerDepositPanel() {
 
   return (
     <>
-      <NetworkBadge cluster={snapshot?.chain.cluster} />
       <Balances snapshot={snapshot} />
       <div role="radiogroup" aria-label="Token to deposit" className="grid grid-cols-2 gap-2">
         {(['SKR', 'SOL'] as const).map((entry) => (
@@ -148,7 +136,7 @@ export function SeekerDepositPanel() {
           <span>
             {result.text}
             {result.signature && snapshot && (
-              <a href={explorer(result.signature, snapshot.chain.cluster)} target="_blank" rel="noreferrer" className="ml-1 inline-flex items-center gap-1 underline">
+              <a href={explorer(result.signature)} target="_blank" rel="noreferrer" className="ml-1 inline-flex items-center gap-1 underline">
                 Transaction <ExternalLink size={11} />
               </a>
             )}
@@ -197,7 +185,7 @@ export function SeekerHistoryPanel() {
                   {row.delta_minor.startsWith('-') ? '' : '+'}{formatMinor(row.delta_minor, row.asset)} {row.asset}
                 </span>
                 {row.signature && (
-                  <a href={explorer(row.signature, snapshot.chain.cluster)} target="_blank" rel="noreferrer" aria-label="Open transaction" className="text-[#8f887b]">
+                  <a href={explorer(row.signature)} target="_blank" rel="noreferrer" aria-label="Open transaction" className="text-[#8f887b]">
                     <ExternalLink size={13} />
                   </a>
                 )}
