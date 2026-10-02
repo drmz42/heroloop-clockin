@@ -362,3 +362,11 @@ html[data-hl-platform='android'] .hero-detail-panel > footer button { min-height
 /* Automatic healing status sat under Dungeons and Boss in the same corner (Founder 2026-10-02):
    on a phone it goes just below them. */
 html[data-hl-platform='android'] .hl-healing-status { top: 54px; right: 8px; z-index: 29; }
+
+/* Phone battle footer: Boost and Chest share the full width (the Chest button was clipped
+   off the right edge); the earnings counters go to a slim row underneath. */
+html[data-hl-platform='android'] .hl-battle-footer { flex-wrap: wrap; row-gap: 4px; }
+html[data-hl-platform='android'] .hl-battle-footer > .hl-battle-dock { order: 1; width: 100%; margin-left: 0; }
+html[data-hl-platform='android'] .hl-battle-footer > :not(.hl-battle-dock) { order: 2; width: 100%; }
+html[data-hl-platform='android'] .hl-battle-dock .pm-boost,
+html[data-hl-platform='android'] .hl-battle-dock .pm-chest { flex: 1 1 0; width: auto; min-width: 0; }
