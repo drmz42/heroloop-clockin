@@ -595,10 +595,11 @@ html[data-hl-platform='android'] .seeker-market .market-supply-tile > div:nth-ch
 
 /* Compact Seeker battle: income opens upward; counts live in Commander. */
 html[data-hl-edition='seeker'] .battle-income-chip { min-height: 32px; height: 32px; font-size: 12px; white-space: nowrap; }
-html[data-hl-edition='seeker'] .battle-income-popover { width: 280px; max-width: calc(100vw - 32px); zoom: 1 !important; z-index: 60; }
+html[data-hl-edition='seeker'] .battle-income-popover.hl-battle-income { width: 216px; max-width: calc(100vw - 16px); zoom: 1 !important; z-index: 10012; }
 html[data-hl-edition='seeker'] .battle-income-popover[hidden] { display: none !important; }
-html[data-hl-edition='seeker'] .battle-income-popover .token-earnings-panel { padding: 12px; border-radius: 6px; }
-html[data-hl-edition='seeker'] .battle-income-popover .ui-text-small { font-size: 12px; line-height: 17px; }
+html[data-hl-edition='seeker'] .battle-income-popover .token-earnings-panel { padding: 8px; gap: 6px; border-radius: 6px; }
+html[data-hl-edition='seeker'] .battle-income-popover .ui-text-small { font-size: 11px; line-height: 15px; }
+html[data-hl-edition='seeker'] .battle-income-popover .token-earnings-panel > .grid { grid-template-columns: minmax(0, 1fr) max-content; gap: 4px 8px; }
 html[data-hl-edition='seeker'] .battle-entry-actions button { flex: 1; max-width: 200px; justify-content: center; }
 html[data-hl-edition='seeker'] .battle-stage-normal .arena-lanes { transform: scale(.85); transform-origin: center bottom; }
 html[data-hl-platform='android'] .battle-stage-normal .arena-stage-inner { justify-content: flex-end; padding-bottom: 4px; }
