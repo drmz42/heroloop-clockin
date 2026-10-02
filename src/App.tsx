@@ -15,7 +15,7 @@ import { ChestOpenModal } from '@/components/ChestOpenModal';
 import { BoostMaxModal } from '@/components/BoostMaxModal';
 import { GameWalletModal } from '@/components/GameWalletModal';
 import { PromoCodeModal, type PromoRedemption } from '@/components/PromoCodeModal';
-import { LandingScreen } from '@/screens/LandingScreen';
+import { LandingScreen, Onboarding } from '@/screens/LandingScreen';
 import { BuildVersion } from '@/platform/BuildVersion';
 import { AppEntryScreen } from '@/platform/AppEntryScreen';
 import { HERO_MAP } from '@/game/heroes';
@@ -49,6 +49,7 @@ import {
 } from '@/game/solanaWalletSession';
 
 function App() {
+  const [directGameEntry] = useState(() => window.location.hash === '#game');
   const game = useGame();
   const walletAddress = game.state.walletAddress;
   const hydrateServerState = game.hydrateServerState;
@@ -487,11 +488,11 @@ function App() {
   useEffect(() => {
     if (accountGate === 'checking' || accountGate === 'error') return;
     if (routePath === '/wiki') return;
-    const target = accountGate === 'verified' ? '/#game' : '/';
+    const target = accountGate === 'verified' || directGameEntry ? '/#game' : '/';
     if (`${window.location.pathname}${window.location.hash}` !== target) {
       window.history.replaceState(null, '', target);
     }
-  }, [accountGate, routePath]);
+  }, [accountGate, routePath, directGameEntry]);
 
   if (routePath === '/wiki') {
     return (
@@ -510,6 +511,8 @@ function App() {
   }
 
   if (accountGate !== 'verified') {
+    // A Play link has already selected the game: sign in without another landing or Play step.
+    if (accountGate === 'landing' && directGameEntry) return <Onboarding game={game} legacyWalletMode={legacyWalletMode} onAccountReady={() => setAccountCheckAttempt((value) => value + 1)} onClose={() => undefined} persistent />;
     // The Android app opens on the landing hero with one Play button; Play leads to
     // wallet sign-in or registration. The marketing sections of the landing stay on the web.
     if (accountGate === 'landing' && isAppShell) return <AppEntryScreen game={game} legacyWalletMode={legacyWalletMode} onAccountReady={() => setAccountCheckAttempt((value) => value + 1)} />;
