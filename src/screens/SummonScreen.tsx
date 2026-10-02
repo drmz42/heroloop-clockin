@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, ChevronDown, Info, Sparkles, Target, X } from 'lucide-react';
 import { HERO_MAP, RARITY_COLORS, RARITY_GLOW, RARITY_INDEX, RARITY_LABEL, RARITY_WEIGHT } from '@/game/heroes';
 import { formatNum } from '@/game/state';
@@ -29,8 +30,10 @@ function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () =>
     window.setTimeout(() => setPhase('revealed'), 950);
   };
 
-  return (
-    <div className={`summon-result fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur p-4 anim-fade${revealed && screenWow ? ' summon-rarity-burst' : ''}${phase === 'revealing' ? ' summon-rupture' : ''}`} style={{ '--summon-best': RARITY_COLORS[best] } as React.CSSProperties}>
+  // Portal to <body>: inside the Summon window the result sat under the top bar and the phone
+  // tab bar, which hid its buttons (Founder 2026-10-02).
+  return createPortal(
+    <div data-phase={phase} className={`summon-result fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur p-4 anim-fade${revealed && screenWow ? ' summon-rarity-burst' : ''}${phase === 'revealing' ? ' summon-rupture' : ''}`} style={{ '--summon-best': RARITY_COLORS[best] } as React.CSSProperties}>
       {revealed && screenWow && <div className="summon-screen-rays" aria-hidden="true" />}
       {phase === 'revealing' && <i className="summon-flash" aria-hidden="true" />}
       <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(circle at 50% 50%, ${RARITY_COLORS[best]}26, transparent 62%)` }} />
@@ -40,9 +43,9 @@ function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () =>
           <div className="mt-7 text-[10px] font-black uppercase tracking-[.38em] text-[#d9b9ff]">The Covenant Answers</div>
           <div className="mt-2 text-xs text-[#8d8196]">Fate is gathering beyond the veil…</div>
         </div>
-      ) : <div className="relative w-full max-w-4xl">
+      ) : <div className="summon-result-body relative w-full max-w-4xl">
         {revealed && <div className="summon-best-banner mb-3 text-center" style={{ color: RARITY_COLORS[best] }}><span>{RARITY_LABEL[best]}</span><strong>{displayHeroes.length === 1 ? HERO_MAP[displayHeroes[0].heroId]?.name : `Best of ${displayHeroes.length} summons`}</strong></div>}
-        <div className={`no-scrollbar max-h-[72vh] overflow-y-auto rounded-xl ${heroes.length > 20 ? 'p-1' : ''}`}>
+        <div className={`summon-result-grid no-scrollbar max-h-[72vh] overflow-y-auto rounded-xl ${heroes.length > 20 ? 'p-1' : ''}`}>
         <div className={`mx-auto grid gap-3 ${displayHeroes.length === 1 ? 'w-[210px] grid-cols-1' : displayHeroes.length > 20 ? 'grid-cols-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8' : 'grid-cols-3 sm:grid-cols-5'}`}>
           {displayHeroes.map((h, index) => {
             const base = HERO_MAP[h.heroId]; if (!base) return null;
@@ -59,13 +62,14 @@ function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () =>
           })}
         </div>
         </div>
-        <div className="mt-5 flex flex-col items-center gap-3">
+        <div className="summon-result-actions mt-5 flex flex-col items-center gap-3">
           {phase === 'ready' ? <button type="button" onClick={reveal} className="summon-break-seal px-7 py-2.5 rounded-full border text-sm font-black uppercase tracking-wider">Break the seal · Reveal {heroes.length}</button> : phase === 'revealing' ? <div className="text-[10px] font-black uppercase tracking-[.3em] text-white">Fate Unbound</div> : <button type="button" onClick={onClose} className="summon-continue px-6 py-2.5 rounded-full bg-slate-800 border border-white/20 text-slate-200 font-bold text-sm hover:bg-slate-700 transition">Continue</button>}
         </div>
       </div>
       }
       <button type="button" onClick={onClose} aria-label="Close summon results" className="summon-close absolute top-4 right-4 p-2 rounded-full bg-slate-800/80 border border-white/10"><X size={18} className="text-slate-400" /></button>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

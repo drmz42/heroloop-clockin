@@ -181,7 +181,9 @@ html[data-hl-platform='android'] .hl-tabbar-item:nth-child(n + 7) { background-c
 }
 
 /* Battle HUD fits 360 px: Dungeons shows its icon only (the label stays for screen readers). */
-html[data-hl-platform='android'] .hl-battle-hud-right button[aria-label='Open Dungeons information'] { width: 40px; padding: 0; justify-content: center; font-size: 0; }
+/* Dungeons keeps its label: the icon-only version let the premium skin's text leak out from
+   behind the icon (Founder 2026-10-02: unreadable buttons behind the Boss key). */
+html[data-hl-platform='android'] .hl-battle-hud-right button[aria-label='Open Dungeons information'] { padding: 0 8px; justify-content: center; font-size: 11px; white-space: nowrap; }
 html[data-hl-platform='android'] .hl-battle-hud-right button[aria-label='Open Dungeons information'] svg + svg { display: none; }
 html[data-hl-platform='android'] .hl-battle-hud-left button:first-child { padding-inline: 8px; }
 html[data-hl-platform='android'] .hl-nav-logo { min-height: 40px; }
@@ -252,7 +254,14 @@ html[data-hl-platform='android'] .hl-hero-card .hl-hero-copies { display: none; 
 html[data-hl-platform='android'] .hl-hero-card > div:nth-child(2) { margin-top: 3px; font-size: 10px; }
 html[data-hl-platform='android'] .hl-hero-card > div:nth-child(4) { margin-top: 2px; padding-top: 2px; font-size: 9px; flex-direction: column; gap: 1px; }
 html[data-hl-platform='android'] .hl-hero-card .pointer-events-none.absolute span { padding: 0 3px; font-size: 7px; }
-html[data-hl-platform='android'] .hl-hero-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* Heroes filters in two rows (Founder 2026-10-02): search, class, rarity, level / the three
+   sorts, Clear and Promote All. */
+html[data-hl-platform='android'] .hl-hero-filters { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+html[data-hl-platform='android'] .hl-hero-filters > :first-child { grid-column: span 2; }
+html[data-hl-platform='android'] .hl-hero-filters > :nth-child(5),
+html[data-hl-platform='android'] .hl-hero-filters > :nth-child(6) { order: 1; }
+html[data-hl-platform='android'] .hl-hero-filters > * { min-width: 0; padding-inline: 4px; }
+html[data-hl-platform='android'] .hl-hero-filters select { padding-inline: 4px 14px; text-overflow: ellipsis; }
 html[data-hl-platform='android'] .hl-team-row { min-height: 70px; gap: 10px; margin-top: 8px; }
 html[data-hl-platform='android'] .hl-team-empty { width: 64px; height: 64px; }
 
@@ -293,3 +302,35 @@ html[data-hl-platform='android'] .hl-quest-list .quest-card .ui-text-small { fon
   .game-progress-quests { padding-inline:7px;font-size:12px; }
   .game-power-change { font-size:11px; }
 }
+
+/* Ranks: the whole window scrolls as one page; the list was squeezed to zero height under the
+   header, podium and standing on a phone. */
+html[data-hl-platform='android'] .themed-screen-ranks { height: auto; min-height: 100%; overflow: visible; }
+html[data-hl-platform='android'] .themed-screen-ranks > .material-panel { flex: none; overflow: visible; }
+html[data-hl-platform='android'] .themed-screen-ranks .game-scrollbar { flex: none; overflow: visible; }
+
+/* Play columns scroll on a phone, so a viewport-sized decorative frame on the column drew stray
+   lines across the Bag grid (Founder 2026-10-02). */
+html[data-hl-platform='android'] .game-main > [class*='hl-col-']::after { display: none; }
+
+/* Market on a phone (Founder 2026-10-02): listings as a three-column card grid, filters in a
+   compact 2 × 2 block under the search field. */
+html[data-hl-platform='android'] .market-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html[data-hl-platform='android'] .market-filters > :first-child { grid-column: 1 / -1; }
+html[data-hl-platform='android'] .market-filters .market-input { height: 34px; font-size: 11px; }
+html[data-hl-platform='android'] .market-rows { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; align-content: start; padding: 8px; }
+html[data-hl-platform='android'] .market-rows > * { margin: 0 !important; }
+html[data-hl-platform='android'] .market-rows > .market-empty { grid-column: 1 / -1; }
+html[data-hl-platform='android'] .market-row { min-width: 0; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; text-align: center; }
+html[data-hl-platform='android'] .market-row > .min-w-0 { width: 100%; }
+html[data-hl-platform='android'] .market-row > .min-w-0 > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Summon result on a phone: one full-screen layer above the top bar and tab bar; the cards
+   scroll in the middle, "Break the seal" sits in the centre and "Continue" stays at the bottom. */
+html[data-hl-platform='android'] .summon-result { bottom: 0 !important; z-index: 120; justify-content: flex-start; padding: calc(12px + env(safe-area-inset-top, 0px)) 10px calc(14px + env(safe-area-inset-bottom, 0px)); }
+html[data-hl-platform='android'] .summon-result-body { display: flex; height: 100%; min-height: 0; flex-direction: column; padding-top: 44px; }
+html[data-hl-platform='android'] .summon-result-grid { flex: 1 1 auto; min-height: 0; max-height: none !important; }
+html[data-hl-platform='android'] .summon-result-actions { flex: none; margin-top: 12px; }
+html[data-hl-platform='android'] .summon-result-actions button { min-height: 52px; min-width: 230px; font-size: 15px; }
+html[data-hl-platform='android'] .summon-result[data-phase='ready'] .summon-result-actions { position: absolute; inset: 50% 0 auto; z-index: 5; margin: 0; transform: translateY(-50%); }
+html[data-hl-platform='android'] .summon-result .summon-close { top: calc(10px + env(safe-area-inset-top, 0px)); right: 10px; }
