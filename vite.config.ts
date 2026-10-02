@@ -53,12 +53,17 @@ export default defineConfig(({ mode }) => ({
       transform(code: string, id: string) {
         if (!/\/(?:src|test\/landing4)\/.*\.[jt]sx?(?:\?|$)/.test(id)) return null;
         // Currency copy/assets only. Never rename saved fields or API actions.
-        return { code: code.replace(/\$HERO\b/gi, '$SKR')
+        // Legacy currency amounts are not SKR quotes. Native SKR copy stays intact.
+        const presentation = code.replace(/\$\{[^{}]*\}\s+\$HERO\b/gi, 'Price unavailable');
+        const marketCopy = id.includes('/screens/MarketplaceScreen.')
+          ? presentation.replaceAll('{row.price}', "{'—'}").replaceAll('{game.state.hero}', "{'—'}") : presentation;
+        return { code: marketCopy.replace(/\$HERO\b/gi, '$SKR')
           .replaceAll('/assets/brand/hero-token.png', '/assets/brand/skr-token.svg')
           .replaceAll('/assets/landing4/coin.webp', '/assets/brand/skr-token.svg')
           .replaceAll('HERO...p7Xq9M', 'SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3')
           .replaceAll('$SKR rewards are currently simulated', 'SKR rewards are not available yet')
-          .replaceAll('Earn $SKR by winning battles in locations.', 'SKR rewards are not available yet.'), map: null };
+          .replaceAll('Earn $SKR by winning battles in locations.', 'SKR rewards are not available yet.')
+          .replaceAll('Price is {usd(rCost)} · {formatNum(rCost)} $SKR and caps at 5×.', 'SKR reroll pricing is not available yet.'), map: null };
       },
     }] : []),
     react(), qaEndpoint(),
