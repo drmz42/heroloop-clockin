@@ -4,34 +4,28 @@ import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { enemyArtSrc } from '@/game/art';
 import { Crosshair, Shield, Skull, Star, Swords, DoorOpen, Flame, Timer, Users } from 'lucide-react';
-import { MAX_HERO_STARS } from '@/game/state';
+import { locationLevelRange } from '@/game/engine';
 
-const STAR_COLORS = ['#fbbf24', '#a855f7', '#ef4444', '#ec4899'];
 const HEALTH_NUMBER_FORMAT = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
 const DUNGEON_BOSS_ART: Record<string, string> = {
   'iron-warden': 'boss-titan', 'ash-warlock': 'boss-lich', 'thorn-shaman': 'boss-ogre',
   'rift-behemoth': 'boss-dragon', 'grave-necromancer': 'boss-lich',
 };
 
+/** Display-only rank for enemies: a level inside the location's range (stable per enemy) and stars for
+ * elites (2) and bosses (3). It does not affect combat. */
+function enemyRank(unit: CombatUnit, locationId: number | undefined, dungeonDepth: number | undefined): { level: number; stars: number } {
+  const [lo, hi] = dungeonDepth ? [dungeonDepth * 5, dungeonDepth * 5 + 4] : locationLevelRange(locationId ?? 1);
+  let hash = 0;
+  for (const char of unit.uid) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  const boss = /boss/i.test(unit.uid) || /boss/i.test(unit.name);
+  const stars = boss ? 3 : unit.eliteAffix ? 2 : 0;
+  return { level: Math.min(hi + 2, lo + (hash % (hi - lo + 1)) + (boss ? 2 : unit.eliteAffix ? 1 : 0)), stars };
+}
+
 function formatHealth(value: number) {
   const rounded = Math.max(0, Math.ceil(value));
   return rounded >= 10_000 ? HEALTH_NUMBER_FORMAT.format(rounded) : rounded.toLocaleString('en-US');
-}
-
-function BattleHeroStars({ stars }: { stars: number }) {
-  const clamped = Number.isFinite(stars) ? Math.max(0, Math.min(MAX_HERO_STARS, stars)) : 0;
-  if (clamped === 0) return null;
-  const tier = Math.floor((clamped - 1) / 5);
-  const currentCount = ((clamped - 1) % 5) + 1;
-  return (
-    <span className="battle-hero-stars" aria-label={`${clamped} of ${MAX_HERO_STARS} hero stars`}>
-      {Array.from({ length: 5 }, (_, index) => {
-        const slotTier = index < currentCount ? tier : tier - 1;
-        const color = slotTier >= 0 ? STAR_COLORS[slotTier] : undefined;
-        return <Star key={index} className={color ? '' : 'text-[#625c50]'} style={color ? { color, fill: color } : undefined} />;
-      })}
-    </span>
-  );
 }
 
 interface ArenaProps {
@@ -71,7 +65,7 @@ function floaterOffset(f: FloatingNumber): { x: number; y: number } {
   return { x: 24, y: f.id % 2 === 0 ? 0 : -14 };
 }
 
-function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAlive, animationMode, targeted = false }: { unit: CombatUnit; floaters: FloatingNumber[]; side: 'hero' | 'enemy'; heroData?: OwnedHero; respawnSeconds?: number; opponentAlive: boolean; animationMode: GameState['battleAnimationMode']; targeted?: boolean }) {
+function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAlive, animationMode, targeted = false, rank }: { unit: CombatUnit; floaters: FloatingNumber[]; side: 'hero' | 'enemy'; heroData?: OwnedHero; respawnSeconds?: number; opponentAlive: boolean; animationMode: GameState['battleAnimationMode']; targeted?: boolean; rank?: { level: number; stars: number } }) {
   const lastOutgoing = useRef(0);
   const lastIncoming = useRef(0);
   const [attackPhase, setAttackPhase] = useState<0 | 1 | 2>(0);
@@ -169,6 +163,9 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
           );
         })}
       </div>
+      {(heroData || rank) && <span className="battle-rank-plate" aria-label={heroData ? `Hero level ${heroData.level}, ${heroData.stars} stars` : `Level ${rank?.level}`}>
+        LV {heroData ? heroData.level : rank?.level}{heroData ? <> · <Star size={9} aria-hidden="true" />{heroData.stars}</> : rank && rank.stars > 0 ? <> · {Array.from({ length: rank.stars }, (_, index) => <Star key={index} size={9} aria-hidden="true" />)}</> : null}
+      </span>}
       <div className={`relative ${unit.alive && motionEnabled ? 'anim-bob' : ''}`}>
         <div
           className={`arena-portrait combatant-card relative h-16 w-16 overflow-hidden sm:h-[80px] sm:w-[80px] xl:h-[88px] xl:w-[88px] 2xl:h-[96px] 2xl:w-[96px] ${side === 'enemy' ? 'ring-1 ring-rose-950/70' : ''} ${side === 'hero' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-hero' : 'anim-attack-hero-b') : ''} ${side === 'enemy' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-enemy' : 'anim-attack-enemy-b') : ''}`}
@@ -183,8 +180,6 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
             {!unit.alive && <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/65"><Skull size={30} className="text-[#d9d1c3] drop-shadow-[0_0_8px_rgba(0,0,0,.9)]" />{side === 'hero' && Boolean(respawnSeconds) && <strong className="mt-0.5 rounded bg-black/75 px-1.5 py-0.5 ui-text-small tabular-nums text-rose-300">{respawnSeconds}s</strong>}<span className="sr-only">Dead</span></span>}
             {unit.alive && slash && <div className="anim-slash absolute inset-0 flex items-center justify-center text-4xl pointer-events-none">⚡</div>}
             {unit.alive && heal && <div className="anim-heal absolute inset-0 flex items-center justify-center text-3xl pointer-events-none">💚</div>}
-            {side === 'hero' && heroData && <span className="battle-hero-level" aria-label={`Hero level ${heroData.level}`}>Lv {heroData.level}</span>}
-            {side === 'hero' && heroData && <BattleHeroStars stars={heroData.stars} />}
             {side === 'enemy' && unit.role && <span className="enemy-role-badge">{unit.role}</span>}
             {side === 'enemy' && unit.eliteAffix && <span className="enemy-elite-badge">ELITE · {unit.eliteAffix.replace('-', ' ')}</span>}
             {side === 'enemy' && (Boolean(unit.shield) || Boolean(unit.curseRemainingMs) || unit.enraged || unit.summoned) && <span className="enemy-status-badges" aria-label="Enemy combat statuses">
@@ -265,7 +260,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
         </div>
         <div className="dungeon-boss-floor-sigil" />
         {Boolean(dungeonBossScene.summons) && <div className="dungeon-summon-rack" aria-label={`${dungeonBossScene.summons} summoned guards protect the Boss`}>{Array.from({ length: Math.min(2, dungeonBossScene.summons ?? 0) }, (_, index) => <div key={index}><Skull size={18} /><span>SUMMON {index + 1}</span><i /></div>)}</div>}
-        <UnitView unit={sharedBoss} floaters={floaters} side="enemy" opponentAlive={heroes.some((hero) => hero.alive)} animationMode={animationMode} />
+        <UnitView unit={sharedBoss} floaters={floaters} side="enemy" opponentAlive={heroes.some((hero) => hero.alive)} animationMode={animationMode} rank={{ ...enemyRank(sharedBoss, locationId, dungeonRoom?.depth), stars: 3 }} />
       </div>}
       {dungeonBossScene?.transition && <div className="dungeon-phase-banner" role="status">{dungeonBossScene.transition}</div>}
       <div className="pointer-events-none absolute inset-x-[8%] bottom-[18%] h-16 rounded-[50%] border-b border-[#9b7540]/25 bg-[radial-gradient(ellipse,rgba(168,122,58,.13),transparent_68%)]" />
@@ -278,7 +273,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
           {heroes.length === 0 && <div className="intentional-empty p-4 ui-text-medium">Assemble a team to fight</div>}
         </div>
         <div className="arena-roster flex min-w-0 flex-col items-start justify-center gap-2">
-          {laneEnemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive)} animationMode={animationMode} />)}
+          {laneEnemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive)} animationMode={animationMode} rank={enemyRank(u, locationId, dungeonRoom?.depth)} />)}
           {laneEnemies.length === 0 && !sharedBoss && <div className="intentional-empty p-4 ui-text-medium">Enemies defeated</div>}
         </div>
       </div>

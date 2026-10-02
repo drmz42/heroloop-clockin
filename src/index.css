@@ -608,6 +608,8 @@ html { scroll-behavior: smooth; }
 /* Large desktop battle scaling: fill 2K/4K stages without enlarging the whole UI. */
 .battle-hero-stars { position:absolute;z-index:12;left:50%;bottom:3px;display:flex;transform:translateX(-50%);gap:1px;border:1px solid rgba(201,163,91,.38);border-radius:999px;background:rgba(5,7,7,.84);padding:2px 3px;box-shadow:0 2px 8px rgba(0,0,0,.6); }
 .battle-hero-stars svg { width:9px;height:9px;filter:drop-shadow(0 1px 2px #000); }
+.battle-rank-plate { position:absolute;z-index:25;left:50%;top:-15px;display:flex;align-items:center;gap:3px;transform:translateX(-50%);white-space:nowrap;border:1px solid #b98a3c;border-radius:2px;background:#15110b;padding:0 5px;color:#ffd36e;font-size:9px;font-weight:800;line-height:13px;letter-spacing:.04em;box-shadow:0 2px 6px rgba(0,0,0,.65);pointer-events:none; }
+.battle-rank-plate svg { color:#efc65d;fill:#efc65d;flex:none; }
 .battle-hero-level { position:absolute;z-index:12;left:4px;top:4px;border:1px solid rgba(220,181,104,.55);border-radius:5px;background:rgba(5,7,7,.88);padding:2px 5px;color:#f5d58f;font-size:var(--ui-text-small);font-weight:900;line-height:1.2;box-shadow:0 2px 8px rgba(0,0,0,.65);text-shadow:0 1px 2px #000; }
 .enemy-role-badge,.enemy-elite-badge { position:absolute;z-index:13;left:50%;transform:translateX(-50%);border:1px solid rgba(203,169,105,.55);border-radius:999px;background:rgba(6,7,8,.9);padding:2px 5px;color:#e8d7b5;font-size:var(--ui-text-small);font-style:normal;font-weight:900;line-height:1.1;text-transform:uppercase;white-space:nowrap;box-shadow:0 2px 8px #000; }
 .enemy-role-badge { bottom:3px; }
