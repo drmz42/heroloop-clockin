@@ -1,11 +1,11 @@
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { editionStorageKey, isolatedHackathon } from '../game/editionStorage';
 import { goldHealingEnabled } from '../../managed/functions/player-sync/automatic-healing.mjs';
-import { tutorialProgress, currentTutorialObjective } from '@/game/tutorialProgress';
+import { tutorialProgress } from '@/game/tutorialProgress';
 import { Fragment, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { isAndroidLayout } from '@/platform/platform';
-import { COMMANDER_OPEN_EVENT } from '@/components/GameProgressBar';
+import { COMMANDER_OPEN_EVENT, BATTLE_ACTIONS_SLOT } from '@/components/GameProgressBar';
 import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, DoorOpen, HeartPulse, Gem, Skull, BookOpen } from 'lucide-react';
 import { Arena, locationArtStyle } from '@/components/Arena';
 import { CombatErrorBoundary } from '@/components/CombatErrorBoundary';
@@ -144,7 +144,7 @@ function emptySlotArtworkId(slot: ItemSlot, heroClass: HeroClass): string {
   return `${slot}-common`;
 }
 
-export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRewardBoostClick, onQuestsClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void; onRewardBoostClick: () => void; onQuestsClick?: () => void }) {
+export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRewardBoostClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void; onRewardBoostClick: () => void; onQuestsClick?: () => void }) {
   const { state, battleResult, respawnCountdowns, paused, setPaused } = game;
   const tok = tokenomics;
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
@@ -283,7 +283,6 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const dropBase = drop ? ITEM_MAP[drop.itemId] : null;
   const hasBattleRewards = Boolean(banner && (banner.gold > 0 || banner.xp > 0 || dropBase || banner.chest));
   const power = game.teamPower();
-  const currentObjective = currentTutorialObjective(state);
   const selectedHero = selectedHeroUid ? state.ownedHeroes.find(h => h.uid === selectedHeroUid) : null;
   const selectedHeroBase = selectedHero ? HERO_MAP[selectedHero.heroId] : null;
   const selectedHeroStats = useMemo(
@@ -471,6 +470,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     label: activeDungeon.room === 1 ? 'OUTER BASTION' : activeDungeon.room === 2 ? 'HALL OF THE CURSED GUARD' : activeDungeon.room === 3 ? 'CROSSROADS OF FATE' : 'THRONE OF THE ABYSS',
   }) : null, [activeDungeon]);
 
+  const [battleActionsHost, setBattleActionsHost] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (isolatedHackathon) setBattleActionsHost(document.getElementById(BATTLE_ACTIONS_SLOT));
+  }, []);
   const [commanderOpen, setCommanderOpen] = useState(false);
   useEffect(() => {
     const open = () => setCommanderOpen(true);
@@ -480,6 +483,21 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
 
   // Commander panel: in the Quests column on desktop; on a phone it opens from the avatar in the
   // top bar (Founder 2026-10-02).
+  const encounterActions = (
+    !activeDungeon && <div className="battle-entry-actions flex shrink-0 items-center justify-center gap-2 px-2 py-1.5">
+            <button type="button" onClick={() => setShowDungeonInfo(true)} className="pm-socket game-control flex min-h-11 items-center gap-1 px-2 py-0.5 ui-text-small font-bold text-[#d7c6ea]" aria-label="Open Dungeons information">
+              <DoorOpen size={14} aria-hidden="true" /> DUNGEONS <Info size={11} aria-hidden="true" />
+            </button>
+            <button
+              onClick={handleSummonBoss}
+              disabled={state.bossKeys < 1 || state.bossBattleActive}
+              className="pm-socket game-control flex min-h-11 items-center gap-1 px-2 py-0.5 ui-text-small font-bold"
+            >
+              <BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}
+            </button>
+          </div>
+  );
+
   const commanderPanel = (
   <div className="hl-commander border-b border-[#4f412e] p-3">
     <div className="section-kicker mb-2">Commander</div>
@@ -512,6 +530,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
         <div className="mt-1 ui-text-small font-semibold tabular-nums text-[#928b7d]">{formatNum(selectedHero.xp)} / {formatNum(heroXpForLevel(selectedHero.level))} XP</div>
       </div>
     )}
+    <div className="commander-kill-stats stat-tile mb-2 grid grid-cols-3 gap-1 px-2 py-2" aria-label="Combat totals">
+      {[['Heroes', state.ownedHeroes.length], ['Defeated', state.totalKills], ['Bosses', state.totalBossKills]].map(([label, value]) => <div key={label} className="text-center"><span className="block ui-text-small font-bold uppercase tracking-wide text-[#a79a82]">{label}</span><strong className="mt-1 block ui-text-medium tabular-nums text-[#e8dfc8]">{formatNum(Number(value))}</strong></div>)}
+    </div>
     {selectedHeroStats && (
       <div className="stat-tile overflow-hidden">
         <button
@@ -639,10 +660,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
 
       {/* ── CENTER COLUMN — responsive, max-width removed ── */}
       <div className="hl-col-center game-scrollbar order-1 flex min-h-[464px] w-full shrink-0 flex-col overflow-hidden lg:order-none lg:min-h-0 lg:w-auto lg:min-w-0 lg:flex-1 lg:overflow-y-auto">
-        {isolatedHackathon && currentObjective && onQuestsClick && <div className="mobile-current-objective">
-          <div><span>{currentObjective.ready ? 'Quest complete' : 'Next goal'}</span><strong>{currentObjective.label}</strong></div>
-          <button type="button" onClick={onQuestsClick} className={`game-control ${currentObjective.ready ? 'quest-reward-ready' : ''}`}>{currentObjective.ready ? 'Claim reward' : `${currentObjective.progress}/${currentObjective.target}`}</button>
-        </div>}
+        {battleActionsHost ? createPortal(encounterActions, battleActionsHost) : encounterActions}
         {/* Arena */}
         <div className={`battle-stage ${!activeDungeon ? 'battle-stage-normal' : ''} relative min-h-[320px] flex-1 overflow-hidden bg-arena`} style={activeDungeon ? undefined : locationArtStyle(game.state.currentLocation)}>
           {!activeDungeon && showZoomTip && <div className="hl-zoom-tip absolute left-1/2 top-12 z-40 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-lg border border-[#80683f] bg-[#11130f]/95 px-3 py-1.5 font-vt ui-text-small font-bold text-[#d8c9ad] shadow-xl backdrop-blur-sm"><span>Adjust browser zoom with <kbd className="text-[#ffd36e]">Ctrl +</kbd> / <kbd className="text-[#ffd36e]">Ctrl -</kbd> to fit all interface elements.</span><button type="button" onClick={() => setShowZoomTip(false)} className="text-[#8f887b] hover:text-white" aria-label="Dismiss browser zoom tip"><X size={12} /></button></div>}
@@ -703,21 +721,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           )}
           {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={(next) => void handleDungeonChange(next)} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls })} />}
           {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Server reward result:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Granted together exactly once by the server</small></> : <><span><SummonScrollArtwork size={18} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST PREVIEW</span><small>{dungeonCompletion.scrolls === 2 ? 'Scrolls granted exactly once by the server; Dungeon Chest is not yet granted' : 'No Scrolls granted for this run; Dungeon Chest is not yet granted'}</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
-          {!activeDungeon && <div className="hl-battle-hud-right absolute right-3 top-3 z-30 flex items-center gap-1.5">
-            <button type="button" onClick={() => setShowDungeonInfo(true)} className="pm-socket game-control flex h-7 items-center gap-1 px-2 py-0.5 ui-text-small font-bold text-[#d7c6ea]" aria-label="Open Dungeons information">
-              <DoorOpen size={14} aria-hidden="true" /> DUNGEONS <Info size={11} aria-hidden="true" />
-            </button>
-            <button
-              onClick={handleSummonBoss}
-              disabled={state.bossKeys < 1 || state.bossBattleActive}
-              className="pm-socket game-control flex h-7 items-center gap-1 px-2 py-0.5 ui-text-small font-bold"
-            >
-              <BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}
-            </button>
-          </div>}
           {!activeDungeon && import.meta.env.MODE === 'staging' && <TestControls game={game} />}
           {!activeDungeon && <div className="hl-battle-footer normal-battle-footer relative z-30 flex shrink-0 flex-wrap items-end justify-between gap-3 px-3 pb-3">
-            <TokenEarningsPanel status={tok.status} stale={tok.incomeStale} today={game.state.tokensEarnedToday} heroes={state.ownedHeroes.length} defeated={state.totalKills} bosses={state.totalBossKills} />
+            <TokenEarningsPanel status={tok.status} stale={tok.incomeStale} today={game.state.tokensEarnedToday} />
             <div className="hl-battle-dock ml-auto flex items-end gap-1.5">
             {showDropRates && dropRatesPos && createPortal(<div role="dialog" aria-label="Chest drop rate" className="fixed z-[100] w-56 overflow-y-auto rounded-lg border border-[#80683f] bg-[#11130f]/98 p-2.5 shadow-2xl backdrop-blur-sm" style={{ right: dropRatesPos.right, bottom: dropRatesPos.bottom, maxHeight: dropRatesPos.maxHeight }}>
               <div className="flex items-center justify-between gap-2"><strong className="ui-text-small uppercase tracking-wider text-[#efd18a]">Chest drop rate</strong><button type="button" onClick={() => setShowDropRates(false)} aria-label="Close drop rates"><X size={13} /></button></div>
@@ -1428,7 +1434,28 @@ function TestControls({ game }: { game: GameApi }) {
   );
 }
 
-function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: { status: TokenomicsStatus | null; stale: boolean; today: number; heroes: number; defeated: number; bosses: number }) {
+function TokenEarningsPanel({ status, stale, today }: { status: TokenomicsStatus | null; stale: boolean; today: number }) {
+  const [open, setOpen] = useState(false);
+  const incomeButton = useRef<HTMLButtonElement>(null);
+  const [popoverHost, setPopoverHost] = useState<HTMLElement | null>(null);
+  const [popoverHeight, setPopoverHeight] = useState(200);
+  useEffect(() => {
+    if (!open) return;
+    const stage = incomeButton.current?.closest<HTMLElement>('.battle-stage');
+    if (!stage) return;
+    const top = stage.getBoundingClientRect().top;
+    const fighterTops = [...stage.querySelectorAll('.arena-unit')].map(unit => unit.getBoundingClientRect().top);
+    setPopoverHeight(Math.max(80, (fighterTops.length ? Math.min(...fighterTops) : stage.getBoundingClientRect().bottom) - top - 60));
+    setPopoverHost(stage);
+  }, [open]);
+  useEffect(() => {
+    if (!isolatedHackathon || !open) return;
+    const observer = new MutationObserver(() => {
+      if (document.documentElement.dataset.hlSection !== 'battle') setOpen(false);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-hl-section'] });
+    return () => observer.disconnect();
+  }, [open]);
   // SKR rewards are disabled until funded activation. Keep the server score share
   // independent of the zero SKR budget; never display legacy HERO payouts as SKR.
   const TOKEN_PRICE_USD = 0.001;
@@ -1448,11 +1475,8 @@ function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: 
       <span className={`ui-text-small font-black tabular-nums ${valueClass ?? 'text-[#e8dfc8]'}`}>{value}</span>
     </>
   );
-  return (
-    <div className="hl-battle-income battle-income flex w-max flex-col items-stretch gap-2 font-vt" style={{ zoom: 0.69 }}>
-      <div className="grid w-full grid-cols-[repeat(3,1fr)] gap-2 rounded-2xl border-2 border-[#80683f] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_24px_rgba(128,104,63,.28)]">
-        {[['Heroes', heroes], ['Defeated', defeated], ['Bosses', bosses]].map(([label, value]) => <div key={label} className="text-center"><span className="block ui-text-small font-bold uppercase tracking-[.08em] text-[#a79a82]">{label}</span><strong className="mt-1 block ui-text-small tabular-nums text-[#e8dfc8]">{formatNum(Number(value))}</strong></div>)}
-      </div>
+  const incomeDetails = (
+      <div id="battle-income-details" hidden={isolatedHackathon && !open} className={`hl-battle-income battle-income flex w-max flex-col items-stretch gap-2 font-vt ${isolatedHackathon ? 'battle-income-popover absolute left-2 top-12 overflow-y-auto' : ''}`} style={isolatedHackathon ? { maxHeight: popoverHeight } : undefined}>
       <div className={`${isolatedHackathon ? 'hl-skr-income' : 'hl-hero-only'} token-earnings-panel flex w-full flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_34px_rgba(229,177,70,.4)]`}>
       <div className="flex items-center gap-2">
         <HeroTokenIcon size={22} />
@@ -1471,6 +1495,14 @@ function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: 
         <span className="ui-text-small font-semibold text-[#9a937f]">Syncing token pool…</span>
       )}
       </div>
+      </div>
+  );
+  return (
+    <div className="battle-income-wrap relative min-w-0" onKeyDown={event => { if (event.key === 'Escape') setOpen(false); }}>
+      {isolatedHackathon && <button ref={incomeButton} type="button" className="battle-income-chip game-control flex items-center justify-between gap-2 px-2 font-vt font-black tabular-nums" onClick={() => setOpen(value => !value)} aria-expanded={open} aria-controls="battle-income-details" aria-label="$SKR income details">
+        <HeroTokenIcon size={18} /><span>{fmt(daily)} SKR / day</span><ChevronDown size={15} aria-hidden="true" className={open ? '' : 'rotate-180'} />
+      </button>}
+      {popoverHost && open ? createPortal(incomeDetails, popoverHost) : incomeDetails}
     </div>
   );
 }

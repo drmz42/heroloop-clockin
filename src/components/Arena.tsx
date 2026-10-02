@@ -163,19 +163,21 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
           );
         })}
       </div>
+      <div className={`relative ${unit.alive && motionEnabled ? 'anim-bob' : ''}`}>
+        <div className={`arena-portrait-motion relative ${side === 'hero' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-hero' : 'anim-attack-hero-b') : ''} ${side === 'enemy' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-enemy' : 'anim-attack-enemy-b') : ''}`}>
+          <div className={`relative ${hit ? 'anim-hit' : ''}`}>
       {(heroData || rank) && <span className="battle-rank-plate" aria-label={heroData ? `Hero level ${heroData.level}, ${heroData.stars} stars` : `Level ${rank?.level}`}>
         LV {heroData ? heroData.level : rank?.level}{heroData ? <> · <Star size={9} aria-hidden="true" />{heroData.stars}</> : rank && rank.stars > 0 ? <> · {Array.from({ length: rank.stars }, (_, index) => <Star key={index} size={9} aria-hidden="true" />)}</> : null}
       </span>}
-      <div className={`relative ${unit.alive && motionEnabled ? 'anim-bob' : ''}`}>
         <div
-          className={`arena-portrait combatant-card relative h-16 w-16 overflow-hidden sm:h-[80px] sm:w-[80px] xl:h-[88px] xl:w-[88px] 2xl:h-[96px] 2xl:w-[96px] ${side === 'enemy' ? 'ring-1 ring-rose-950/70' : ''} ${side === 'hero' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-hero' : 'anim-attack-hero-b') : ''} ${side === 'enemy' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-enemy' : 'anim-attack-enemy-b') : ''}`}
+          className={`arena-portrait combatant-card relative h-16 w-16 overflow-hidden sm:h-[80px] sm:w-[80px] xl:h-[88px] xl:w-[88px] 2xl:h-[96px] 2xl:w-[96px] ${side === 'enemy' ? 'ring-1 ring-rose-950/70' : ''}`}
           data-combat-side={side}
           style={{
             borderColor: portraitColor,
             boxShadow: unit.alive ? `inset 0 1px rgba(255,255,255,.08), inset 0 0 0 3px rgba(0,0,0,.22), 0 18px 38px rgba(0,0,0,.42), 0 0 20px ${portraitColor}22` : 'none',
           }}
         >
-          <div className={`arena-portrait-impact-layer absolute inset-0 ${hit ? 'anim-hit' : ''}`}>
+          <div className="arena-portrait-impact-layer absolute inset-0">
             {portraitSrc && !artFailed ? <img src={portraitSrc} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" style={{ ...portraitCrop, filter: unit.alive ? 'none' : 'grayscale(1)' }} onError={() => setArtFailed(true)} /> : <span className="grid h-full w-full place-items-center text-3xl sm:text-4xl select-none" style={{ filter: unit.alive ? 'none' : 'grayscale(1)' }}>{unit.icon}</span>}
             {!unit.alive && <span className="absolute inset-0 flex flex-col items-center justify-center bg-black/65"><Skull size={30} className="text-[#d9d1c3] drop-shadow-[0_0_8px_rgba(0,0,0,.9)]" />{side === 'hero' && Boolean(respawnSeconds) && <strong className="mt-0.5 rounded bg-black/75 px-1.5 py-0.5 ui-text-small tabular-nums text-rose-300">{respawnSeconds}s</strong>}<span className="sr-only">Dead</span></span>}
             {unit.alive && slash && <div className="anim-slash absolute inset-0 flex items-center justify-center text-4xl pointer-events-none">⚡</div>}
@@ -186,6 +188,8 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
               {Boolean(unit.shield) && <i title="Barrier">◆</i>}{Boolean(unit.curseRemainingMs) && <i title="Curse">☾</i>}{unit.enraged && <i title="Enraged">🔥</i>}{unit.summoned && <i title="Summoned">✦</i>}
             </span>}
           </div>
+        </div>
+        </div>
         </div>
       </div>
       </div>

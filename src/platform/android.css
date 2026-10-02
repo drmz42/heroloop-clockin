@@ -585,3 +585,37 @@ html[data-hl-platform='android'] .themed-screen-ranks .leader-row { padding-bloc
 html[data-hl-platform='android'] .themed-screen-ranks .rank-scroll { flex: 1 1 auto; overflow: auto; touch-action: pan-x pan-y; overscroll-behavior-x: contain; }
 
 html[data-hl-platform='android'] .arena-unit-name { overflow-wrap: normal; word-break: normal; font-size: 9px !important; }
+
+/* Compact Seeker battle: income opens upward; counts live in Commander. */
+html[data-hl-edition='seeker'] .battle-income-chip { min-height: 32px; height: 32px; font-size: 12px; white-space: nowrap; }
+html[data-hl-edition='seeker'] .battle-income-popover { width: 280px; max-width: calc(100vw - 32px); zoom: 1 !important; z-index: 60; }
+html[data-hl-edition='seeker'] .battle-income-popover[hidden] { display: none !important; }
+html[data-hl-edition='seeker'] .battle-income-popover .token-earnings-panel { padding: 12px; border-radius: 6px; }
+html[data-hl-edition='seeker'] .battle-income-popover .ui-text-small { font-size: 12px; line-height: 17px; }
+html[data-hl-edition='seeker'] .battle-entry-actions button { flex: 1; max-width: 200px; justify-content: center; }
+html[data-hl-edition='seeker'] .battle-stage-normal .arena-lanes { transform: scale(.85); transform-origin: center bottom; }
+html[data-hl-platform='android'] .battle-stage-normal .arena-stage-inner { justify-content: flex-end; padding-bottom: 4px; }
+html[data-hl-platform='android'] .battle-income-wrap { flex: 1 1 auto; }
+html[data-hl-platform='android'] .battle-income-chip { min-height: 44px; height: 44px; width: 100%; gap: 4px; padding-inline: 6px; }
+html[data-hl-platform='android'] .battle-entry-actions { padding-block: 2px; }
+html[data-hl-edition='seeker'] .game-progress-encounters { order: 2; min-width: 0; }
+html[data-hl-edition='seeker'] .game-progress-encounters .battle-entry-actions { gap: 4px; padding: 0; }
+html[data-hl-edition='seeker'] .game-progress-encounters button { min-height: 44px; padding: 0 6px; gap: 3px; font-size: 10px; white-space: nowrap; }
+html[data-hl-edition='seeker'] .game-progress-encounters button > svg { width: 13px; height: 13px; flex-shrink: 0; }
+html[data-hl-edition='seeker'] .game-progress-encounters button > svg + svg { display: none; }
+html[data-hl-platform='android'] .game-progress-power { gap: 4px; }
+html[data-hl-platform='android'] .game-progress-power strong { font-size: 20px; }
+html[data-hl-platform='android'] .game-progress-label { font-size: 8px; }
+/* The narrower desktop battle column uses the same single-row footer. */
+html[data-hl-edition='seeker'][data-hl-platform='web'] .battle-stage-normal { display: flex; flex-direction: column; }
+html[data-hl-edition='seeker'][data-hl-platform='web'] .battle-stage-normal > .h-full { flex: 1 1 auto; height: auto; min-height: 0; }
+html[data-hl-edition='seeker'][data-hl-platform='web'] .battle-stage-normal .arena-stage-inner { padding-bottom: 8px; }
+html[data-hl-edition='seeker'][data-hl-platform='web'] .normal-battle-footer { flex: none; flex-wrap: nowrap; gap: 6px; }
+html[data-hl-edition='seeker'][data-hl-platform='web'] .battle-income-chip { min-height: 36px; height: 36px; padding-inline: 6px; gap: 4px; font-size: 11px; }
+html[data-hl-edition='seeker'][data-hl-platform='web'] .hl-battle-dock { min-width: 0; gap: 4px; }
+html[data-hl-edition='seeker'][data-hl-platform='web'] .hl-battle-dock > .flex { flex-direction: row; gap: 4px; }
+html[data-hl-edition='seeker'][data-hl-platform='web'] .hl-battle-dock :is(.pm-boost, .pm-chest) { width: auto; height: 36px; padding-inline: 6px; font-size: 10px; }
+html[data-hl-edition='seeker'][data-hl-platform='web'] .battle-income-wrap { flex: none; }
+html[data-hl-edition='seeker'][data-hl-platform='web'] .hl-battle-dock :is(.pm-boost, .pm-chest) > span { font-size: 9px; }
+html[data-hl-edition='seeker'][data-hl-platform='web'] .hl-battle-dock .pm-chest > :first-child { width: 22px; height: 22px; }
+html[data-hl-edition='seeker'][data-hl-platform='web'] .normal-battle-footer { padding-inline: 4px; gap: 4px; }

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { Rocket, ScrollText, Zap } from 'lucide-react';
+import { Rocket, Zap } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { HERO_MAP } from '@/game/heroes';
 
 // The phone top bar's Commander avatar opens the Commander sheet in MainScreen.
 export const COMMANDER_OPEN_EVENT = 'hl:commander-open';
+export const BATTLE_ACTIONS_SLOT = 'battle-entry-actions-slot';
 
-export function GameProgressBar({ power, readyQuests, identity, onQuestsClick, commander, boost, objective }: {
+export function GameProgressBar({ power, identity, commander, boost }: {
   power: number; readyQuests: number; identity: string; onQuestsClick: () => void;
   objective?: { label: string; progress: number; target: number } | null;
   commander?: { heroId: string; level: number };
@@ -38,8 +39,6 @@ export function GameProgressBar({ power, readyQuests, identity, onQuestsClick, c
     {boost && <button type="button" className={`game-progress-boost ${boost.active ? 'is-active' : ''}`} onClick={boost.onClick} aria-label={boost.active ? 'Boost Max active' : 'Open Boost Max'}>
       <Rocket size={17} aria-hidden="true" /><span>{boost.active ? 'Boost on' : 'Boost max'}</span>
     </button>}
-    <button type="button" onClick={onQuestsClick} className={`game-progress-quests ${readyQuests > 0 ? 'quest-reward-ready' : ''}`} aria-label={readyQuests > 0 ? `Quests, ${readyQuests} rewards ready` : 'Open quests'}>
-      <ScrollText size={19} aria-hidden="true" /><span>{readyQuests > 0 ? 'Reward ready' : objective ? `${objective.progress}/${objective.target}` : 'Quests'}<small>{readyQuests > 0 ? `${readyQuests} to claim` : objective ? objective.label : 'Your next goal'}</small></span>
-    </button>
+    <div id={BATTLE_ACTIONS_SLOT} className="game-progress-encounters" aria-label="Encounter actions" />
   </aside>;
 }
