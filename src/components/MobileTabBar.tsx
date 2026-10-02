@@ -74,7 +74,7 @@ export function MobileTabBar({
         <div className="hl-more-sheet" role="dialog" aria-modal="true" aria-label="$ORE Mine" onMouseDown={(event) => { if (event.currentTarget === event.target) setMineOpen(false); }}>
           <div className="hl-more-panel">
             <div className="hl-more-head">
-              <span className="section-kicker">$ORE Mine</span>
+              <span className="section-kicker">Mine</span>
               <button type="button" className="game-control hl-more-close" onClick={() => setMineOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
             <div className="hl-mine-soon"><Pickaxe size={34} aria-hidden="true" /><strong>Coming soon</strong><span>The $ORE Mine opens in a future update.</span></div>
