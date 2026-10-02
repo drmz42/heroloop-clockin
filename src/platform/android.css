@@ -51,7 +51,11 @@ html[data-hl-platform='android'] .game-main > .hl-col-center { overflow-x: hidde
 html[data-hl-platform='android'][data-hl-window] .game-main { visibility: hidden; }
 
 /* ── Battle: the stage takes the free height; HUD sits in the corners, not over the lanes ── */
-html[data-hl-platform='android'] .battle-stage { flex: 1 1 auto; min-height: 420px; }
+html[data-hl-platform='android'] .battle-stage { flex: 1 1 auto; min-height: 420px; display: flex; flex-direction: column; }
+/* The arena wrapper is h-full; as a flex item it now shrinks so the Boost/Chest footer stays
+   inside the stage instead of being clipped under Locations (Founder 2026-10-02: chests gone). */
+html[data-hl-platform='android'] .battle-stage > .h-full { height: auto; flex: 1 1 auto; min-height: 0; }
+html[data-hl-platform='android'] .battle-stage > .hl-battle-footer { flex: none; }
 html[data-hl-platform='android'] .hl-zoom-tip { display: none; }
 html[data-hl-platform='android'] .hl-battle-hud-left,
 html[data-hl-platform='android'] .hl-battle-hud-right { top: 8px; }
