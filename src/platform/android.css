@@ -359,14 +359,15 @@ html[data-hl-platform='android'] .hero-detail-panel > footer button { min-height
 .hl-commander-sheet-panel { position: relative; width: 100%; max-height: 100%; overflow-y: auto; padding-top: 4px; }
 .hl-commander-sheet-close { position: absolute; top: 8px; right: 8px; z-index: 1; display: grid; width: 40px; height: 40px; place-items: center; border-radius: 2px; }
 
-/* Automatic healing status sat under Dungeons and Boss in the same corner (Founder 2026-10-02):
-   on a phone it goes just below them. */
-html[data-hl-platform='android'] .hl-healing-status { top: 54px; right: 8px; z-index: 29; }
+/* Founder 2026-10-02: the status label is not needed on a phone. */
+html[data-hl-platform='android'] .hl-healing-status { display: none; }
 
 /* Phone battle footer: Boost and Chest share the full width (the Chest button was clipped
    off the right edge); the earnings counters go to a slim row underneath. */
 html[data-hl-platform='android'] .hl-battle-footer { flex-wrap: wrap; row-gap: 4px; }
 html[data-hl-platform='android'] .hl-battle-footer > .hl-battle-dock { order: 1; width: 100%; margin-left: 0; }
 html[data-hl-platform='android'] .hl-battle-footer > :not(.hl-battle-dock) { order: 2; width: 100%; }
+html[data-hl-platform='android'] .hl-battle-footer > .hl-battle-dock { justify-content: center; }
 html[data-hl-platform='android'] .hl-battle-dock .pm-boost,
-html[data-hl-platform='android'] .hl-battle-dock .pm-chest { flex: 1 1 0; width: auto; min-width: 0; }
+html[data-hl-platform='android'] .hl-battle-dock .pm-chest { flex: none; width: 128px; height: 38px; font-size: 12px; }
+html[data-hl-platform='android'] .hl-battle-dock button[aria-label='Show chest drop rates'] { height: 38px; width: 38px; }

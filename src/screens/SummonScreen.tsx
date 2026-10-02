@@ -8,6 +8,7 @@ import type { OwnedHero, Rarity } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
+import { isolatedHackathon } from '@/game/editionStorage';
 
 function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () => void }) {
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -87,7 +88,9 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
   const [focusSaving, setFocusSaving] = useState(false);
   const [showFocus, setShowFocus] = useState(false);
   const [showPityInfo, setShowPityInfo] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'paid' | 'scroll'>('paid');
+  // Seeker / Staging2: $HERO is gone and SKR payments are not connected yet (Founder 2026-10-02),
+  // so Scrolls are the only working method and the SKR option shows as coming soon.
+  const [paymentMethod, setPaymentMethod] = useState<'paid' | 'scroll'>(isolatedHackathon ? 'scroll' : 'paid');
   const heroPriceLabel = (count: 1 | 10 | 100) => `${formatNum(count * 20)} $HERO`;
   const singleHasSpace = state.ownedHeroes.length < state.heroCapacity;
   const tenHasSpace = state.ownedHeroes.length + 10 <= state.heroCapacity;
@@ -215,7 +218,9 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
         <div className="flex w-full max-w-sm flex-col gap-2.5">
           {summonNotice && <div role="alert" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-red-700/65 bg-[linear-gradient(135deg,rgba(75,16,22,.92),rgba(20,8,12,.96))] px-3 py-2.5 text-left shadow-[inset_0_1px_rgba(255,255,255,.06),0_8px_22px_rgba(0,0,0,.35)]"><AlertTriangle size={17} className="shrink-0 text-red-300" /><span className="flex-1 text-[11px] font-bold text-red-100">{summonNotice}</span><button type="button" onClick={() => setSummonNotice('')} aria-label="Dismiss Summon message" className="rounded p-1 text-red-300 hover:bg-white/10"><X size={14} /></button></div>}
           <div className="summon-pay grid grid-cols-2 gap-1 rounded-lg border border-violet-500/25 bg-black/40 p-1" aria-label="Summon payment method">
-            <button type="button" onClick={() => setPaymentMethod('paid')} aria-pressed={paymentMethod === 'paid'} disabled={summoning !== null} className={`summon-pay-option min-h-11 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'paid' ? 'bg-violet-800/65 text-violet-100' : 'text-slate-500'}`}>Test · $HERO</button>
+            {isolatedHackathon
+              ? <button type="button" disabled aria-disabled="true" className="summon-pay-option min-h-11 rounded-md px-2 text-[10px] font-black uppercase text-slate-500 opacity-60" title="SKR payments are coming soon">SKR · Soon</button>
+              : <button type="button" onClick={() => setPaymentMethod('paid')} aria-pressed={paymentMethod === 'paid'} disabled={summoning !== null} className={`summon-pay-option min-h-11 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'paid' ? 'bg-violet-800/65 text-violet-100' : 'text-slate-500'}`}>Test · $HERO</button>}
             <button type="button" onClick={() => setPaymentMethod('scroll')} aria-pressed={paymentMethod === 'scroll'} disabled={summoning !== null} className={`summon-pay-option flex min-h-11 items-center justify-center gap-1 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'scroll' ? 'bg-amber-800/55 text-amber-100' : 'text-slate-500'}`}><SummonScrollArtwork size={25} /> Scrolls · {formatNum(state.summonScrolls)}</button>
           </div>
           <button type="button" onClick={() => void beginSummon(1)} disabled={!canSingle || summoning !== null || promoting} className="summon-cta summon-cta--1 flex h-[46px] items-center justify-between rounded-xl border border-purple-500/40 bg-gradient-to-r from-purple-600/30 to-blue-600/30 px-5 transition hover:from-purple-600/40 hover:to-blue-600/40 disabled:opacity-40">
