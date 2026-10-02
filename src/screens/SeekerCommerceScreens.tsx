@@ -65,7 +65,7 @@ export function SeekerShopScreen({game}:{game:GameApi}) {
   useEffect(()=>{void refresh();},[refresh]);
   const delivered=(result:Record<string,unknown>)=>game.applySeekerPurchase(result);
   return <div className="premium-screen themed-screen themed-screen-store game-scrollbar h-full overflow-y-auto p-3">
-    <header className="merchant-surface flex flex-wrap items-center justify-between gap-3 p-4"><h2 className="flex items-center gap-2 text-xl font-black text-amber-100"><Store/>Store · SKR</h2><Balance/></header>
+    <header className="merchant-surface flex flex-wrap items-center justify-between gap-3 p-4 pr-14"><h2 className="flex items-center gap-2 text-xl font-black text-amber-100"><Store/>Store · SKR</h2><Balance/></header>
     <p className="my-3 text-xs leading-5 text-stone-300">Pay from your in-game SKR balance. Check the exact amount before confirming. Free game progress stays available.</p>
     <h3 className="mb-2 text-lg font-black text-amber-100">Resource bundles</h3>
     <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">{(game.accountBonus?.bundles??[]).map(offer=><article key={offer.bundle} className="stat-tile min-w-0 p-3"><div className="flex items-center gap-2"><BundleArt resource={offer.resourceId}/><h4 className="min-w-0 text-sm font-bold text-amber-100">{offer.quantity} × {offer.resourceId.replace(/_/g,' ')}</h4></div><p className="my-2 text-xs text-amber-200">{skrPrice(offer.usdCents,rate)}</p><SkrPurchaseButton product="shop_bundle_buy" params={{bundle:offer.bundle}} onDelivered={delivered}/></article>)}</div>
