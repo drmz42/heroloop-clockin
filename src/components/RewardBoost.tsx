@@ -23,16 +23,22 @@ export function formatBoostRemaining(ms: number): string {
   return hours > 0 ? `${hours}h ${minutes % 60}m` : `${minutes}m`;
 }
 
-/** Commander tile: account-wide Gold/XP bonuses and the paid boost timer. */
+/** Account-wide passives shown inside the Commander characteristics spoiler. */
+export function AccountBonusPassives({ bonus }: { bonus: AccountBonusSnapshot | null }) {
+  return (
+      <div className="flex items-center justify-between ui-text-small font-bold uppercase tracking-[.1em] text-[#8e887b]">
+        <span>Account bonuses</span>
+        <span className="tabular-nums text-[#d5bd85]">+{Math.round((bonus?.gold ?? 0) * 100)}% G · +{Math.round((bonus?.xp ?? 0) * 100)}% XP</span>
+      </div>
+  );
+}
+
+/** Commander tile: paid boost entry and timer. */
 export function RewardBoostTile({ bonus, onOpenShop }: { bonus: AccountBonusSnapshot | null; onOpenShop: () => void }) {
   const remaining = useBoostRemaining(bonus?.boostEndsAt ?? null);
   const active = remaining > 0;
   return (
     <div className={`stat-tile mb-2 px-2 py-1.5 ${active ? 'border-[#b48a43] shadow-[0_0_12px_rgba(225,177,77,.22)]' : ''}`}>
-      <div className="flex items-center justify-between ui-text-small font-bold uppercase tracking-[.1em] text-[#8e887b]">
-        <span>Account bonuses</span>
-        <span className="tabular-nums text-[#d5bd85]">+{Math.round((bonus?.gold ?? 0) * 100)}% G · +{Math.round((bonus?.xp ?? 0) * 100)}% XP</span>
-      </div>
       <button
         type="button"
         onClick={onOpenShop}

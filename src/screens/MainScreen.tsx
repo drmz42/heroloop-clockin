@@ -19,7 +19,7 @@ import type { GameApi } from '@/game/useGame';
 import type { CombatUnit, FloatingNumber, HeroClass, ItemSlot, OwnedItem, PotionTier } from '@/game/types';
 import { ItemArtwork } from '@/components/ItemArtwork';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
-import { RewardBoostTile } from '@/components/RewardBoost';
+import { AccountBonusPassives, RewardBoostTile } from '@/components/RewardBoost';
 import { ChestCollectIcon } from '@/components/ChestCollectIcon';
 import { BossKeyIcon } from '@/components/BossKeyIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
@@ -513,8 +513,12 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                       </div>
                     ))}
                   </div>
+                  <div className="mt-1.5 border-t border-[#4f412e]/80 px-1 pt-1.5">
+                    <div className="mb-1 ui-text-small font-bold uppercase tracking-[.08em] text-[#a59b88]">Passives</div>
+                    <AccountBonusPassives bonus={game.accountBonus} />
+                  </div>
                   <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-[#4f412e]/80 px-1 pt-1.5">
-                    <span className="ui-text-small font-bold uppercase tracking-[.08em] text-[#777269]">Passives · Skills · Auras</span>
+                    <span className="ui-text-small font-bold uppercase tracking-[.08em] text-[#777269]">Skills · Auras</span>
                     <span className="shrink-0 ui-text-small font-semibold text-[#9b8862]">Coming soon</span>
                   </div>
               </div>
