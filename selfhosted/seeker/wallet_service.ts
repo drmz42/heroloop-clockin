@@ -30,6 +30,12 @@ if (serviceToken.length < 32 || !/^https:\/\//.test(rpcUrl) || !["devnet", "main
   || !ADDRESS.test(config.skrMint) || !ADDRESS.test(config.treasury)) {
   throw new Error("invalid wallet service configuration");
 }
+// Optional payer allowlist (comma-separated addresses). Required on mainnet, where
+// Staging2 is open to any wallet login and must not accept strangers' real funds.
+const allowedPayers = new Set(env("WALLET_ALLOWED_PAYERS").split(",").map((v) => v.trim()).filter(Boolean));
+if ([...allowedPayers].some((address) => !ADDRESS.test(address)) || (config.cluster === "mainnet" && allowedPayers.size === 0)) {
+  throw new Error("invalid wallet payer allowlist");
+}
 const DEPOSIT_TTL_SECONDS = 600;
 const LIMITS: Record<WalletAsset, bigint> = {
   SKR: 10_000n * 10n ** 6n, // 10 000 SKR per deposit
@@ -113,6 +119,7 @@ async function createIntent(player: string, body: Json): Promise<Response> {
     return json(400, { ok: false, code: "invalid_payer" });
   }
   const payer = body.payer;
+  if (allowedPayers.size > 0 && !allowedPayers.has(payer)) return json(403, { ok: false, code: "payer_not_allowed" });
   const reference = newReference();
   // Build the unsigned transfer first, so an RPC failure or missing balance never uses an intent slot.
   const latest = await rpc("getLatestBlockhash", [{ commitment: "confirmed" }]);

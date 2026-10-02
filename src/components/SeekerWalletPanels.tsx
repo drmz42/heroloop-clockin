@@ -11,6 +11,7 @@ const ERRORS: Record<string, string> = {
   wallet_account_mismatch: 'Your wallet shows a different account. Switch to the account you signed in with.',
   wallet_send_unsupported: 'This wallet cannot send transactions from the game. Use Phantom or the Seeker wallet.',
   wallet_send_failed: 'The wallet did not send the transfer. Nothing was credited; try again.',
+  payer_not_allowed: 'Deposits from this wallet are not enabled yet on this test server.',
   insufficient_skr: 'Your wallet does not hold enough SKR for this deposit.',
   invalid_amount: 'Enter an amount between the minimum and the per-deposit limit.',
   deposit_intent_limit: 'You have three unfinished deposits. Wait for them to complete or expire (10 minutes).',

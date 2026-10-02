@@ -33,7 +33,7 @@ services:
       - /tmp:rw,noexec,nosuid,size=16m
     networks:
       - backend
-    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=PGHOST,PGPORT,PGUSER,PGPASSWORD,WALLET_SERVICE_TOKEN,SOLANA_RPC_URL,SEEKER_CLUSTER,SKR_MINT,WALLET_TREASURY", "--allow-net=0.0.0.0:8090,postgres:5432,${SOLANA_RPC_HOST:-api.devnet.solana.com}:443", "/app/seeker/wallet_service.ts"]
+    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=PGHOST,PGPORT,PGUSER,PGPASSWORD,WALLET_SERVICE_TOKEN,SOLANA_RPC_URL,SEEKER_CLUSTER,SKR_MINT,WALLET_TREASURY,WALLET_ALLOWED_PAYERS", "--allow-net=0.0.0.0:8090,postgres:5432,${SOLANA_RPC_HOST:-api.devnet.solana.com}:443", "/app/seeker/wallet_service.ts"]
     environment:
       PGHOST: postgres
       PGPORT: "5432"
@@ -45,6 +45,8 @@ services:
       # Devnet test mint and treasury (no value); mainnet values come from the runtime environment.
       SKR_MINT: ${SKR_MINT:-45HbhfcjjsvxeWV93dRcuJ8ZepjY3qSCgXwaunqPup1b}
       WALLET_TREASURY: ${WALLET_TREASURY:-744zoJV751yE97iUTqWwBaKVkCyg6KgMyME4m8rNWGiE}
+      # Comma-separated payer allowlist; mandatory on mainnet.
+      WALLET_ALLOWED_PAYERS: ${WALLET_ALLOWED_PAYERS:-}
     volumes:
       - ./seeker:/app/seeker:ro
       - ./deno.json:/app/deno.json:ro

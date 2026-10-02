@@ -947,7 +947,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
           return json(200, { ok: true, contract_version: 1, request_id: requestId, result: body.result });
         }
         const code = typeof body.code === "string" && /^[a-z_]{3,48}$/.test(body.code) ? body.code : "wallet_unavailable";
-        return errorResponse(response.status >= 500 ? 503 : response.status === 404 ? 404 : response.status === 400 ? 400 : 409, code, requestId);
+        return errorResponse(response.status >= 500 ? 503 : [400, 403, 404].includes(response.status) ? response.status : 409, code, requestId);
       } catch {
         console.error("wallet service adapter failed", { requestId });
         return errorResponse(503, "wallet_unavailable", requestId);
