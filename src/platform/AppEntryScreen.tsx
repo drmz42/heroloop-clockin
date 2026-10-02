@@ -9,6 +9,7 @@ import heroHost from '@/theme/premium/assets/hero-host.webp';
 import logo from '@/theme/premium/assets/logo-heroloop.webp';
 import playArt from '@/theme/premium/assets/btn-play.webp';
 import '@/theme/premium/premium-landing.css';
+import { BuildVersion } from '@/platform/BuildVersion';
 
 export function AppEntryScreen({ game, legacyWalletMode = null, onAccountReady }: {
   game: ReturnType<typeof useGame>;
@@ -33,6 +34,7 @@ export function AppEntryScreen({ game, legacyWalletMode = null, onAccountReady }
           </div>
         </section>
       </main>
+      <BuildVersion />
       {signingIn && <Onboarding game={game} legacyWalletMode={legacyWalletMode} onAccountReady={onAccountReady} onClose={() => setSigningIn(false)} />}
     </div>
   );

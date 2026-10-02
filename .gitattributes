@@ -1,1 +1,2 @@
 *.pdf binary
+src/platform/buildInfo.ts export-subst

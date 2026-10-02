@@ -16,6 +16,7 @@ import { BoostMaxModal } from '@/components/BoostMaxModal';
 import { GameWalletModal } from '@/components/GameWalletModal';
 import { PromoCodeModal, type PromoRedemption } from '@/components/PromoCodeModal';
 import { LandingScreen } from '@/screens/LandingScreen';
+import { BuildVersion } from '@/platform/BuildVersion';
 import { AppEntryScreen } from '@/platform/AppEntryScreen';
 import { HERO_MAP } from '@/game/heroes';
 import { OfflineBar } from '@/platform/OfflineBar';
@@ -513,7 +514,7 @@ function App() {
     // wallet sign-in or registration. The marketing sections of the landing stay on the web.
     if (accountGate === 'landing' && isAppShell) return <AppEntryScreen game={game} legacyWalletMode={legacyWalletMode} onAccountReady={() => setAccountCheckAttempt((value) => value + 1)} />;
     if (accountGate === 'landing') return <LandingScreen game={game} legacyWalletMode={legacyWalletMode} onAccountReady={() => setAccountCheckAttempt((value) => value + 1)} />;
-    return <div className="grid h-screen place-items-center bg-[#07090d] p-4 text-center text-[#d9d0c0]"><div className="material-panel max-w-sm p-5"><div className="section-kicker">Account verification</div><div className="mt-2 text-sm">{accountGate === 'error' ? 'Account service is unavailable.' : 'Checking your registered account…'}</div>{accountGate === 'error' && <button type="button" onClick={() => setAccountCheckAttempt((value) => value + 1)} className="game-control game-primary mt-4 px-4 text-xs font-black">Retry</button>}</div></div>;
+    return <div className="grid h-screen place-items-center bg-[#07090d] p-4 text-center text-[#d9d0c0]"><div className="material-panel max-w-sm p-5"><div className="section-kicker">Account verification</div><div className="mt-2 text-sm">{accountGate === 'error' ? 'Account service is unavailable.' : 'Checking your registered account…'}</div>{accountGate === 'error' && <button type="button" onClick={() => setAccountCheckAttempt((value) => value + 1)} className="game-control game-primary mt-4 px-4 text-xs font-black">Retry</button>}</div>{isAppShell && <BuildVersion />}</div>;
   }
 
   return (

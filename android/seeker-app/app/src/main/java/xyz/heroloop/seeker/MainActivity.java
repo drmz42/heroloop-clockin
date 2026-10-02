@@ -15,7 +15,9 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.view.Gravity;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.Locale;
@@ -30,6 +32,7 @@ import java.util.Locale;
 public class MainActivity extends Activity {
     private static final int WALLET_REQUEST = 7001;
     private WebView webView;
+    private View loadingView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +46,17 @@ public class MainActivity extends Activity {
         root.setBackgroundColor(0xFF070606);
         root.addView(webView, new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        // Loading screen: dark backdrop with the app version at the bottom until the first page has loaded.
+        TextView loading = new TextView(this);
+        loading.setBackgroundColor(0xFF070606);
+        loading.setTextColor(0x8CD6C4A0);
+        loading.setTextSize(11);
+        loading.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM);
+        loading.setPadding(0, 0, 0, Math.round(28 * getResources().getDisplayMetrics().density));
+        loading.setText("HeroLoop · App " + BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");
+        root.addView(loading, new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        loadingView = loading;
         setContentView(root);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             getWindow().setDecorFitsSystemWindows(false);
@@ -73,6 +87,14 @@ public class MainActivity extends Activity {
 
         webView.setWebChromeClient(new WebChromeClient());
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                if (loadingView != null) {
+                    ((FrameLayout) loadingView.getParent()).removeView(loadingView);
+                    loadingView = null;
+                }
+            }
+
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 // Subframe (iframe) navigation is never intercepted.
