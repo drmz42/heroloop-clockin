@@ -83,10 +83,10 @@
     },
     {
       "ordinal": 7,
-      "id": "assign-training-hero",
-      "label": "Assign a reserve hero to Training Camp",
-      "progressSource": "persisted_training.active_assignment_count",
-      "target": 1,
+      "id": "defeat-25-enemies",
+      "label": "Defeat 25 enemies",
+      "progressSource": "combat_settlement.verified_enemy_kills",
+      "target": 25,
       "reward": { "potions": { "xs": 3 } }
     },
     {
@@ -99,10 +99,10 @@
     },
     {
       "ordinal": 9,
-      "id": "reach-location-2",
-      "label": "Reach Location 2",
-      "progressSource": "combat_settlement.highest_location_with_account_level_access",
-      "target": 2,
+      "id": "defeat-50-enemies",
+      "label": "Defeat 50 enemies",
+      "progressSource": "combat_settlement.verified_enemy_kills",
+      "target": 50,
       "reward": { "gold": 1000 }
     },
     {

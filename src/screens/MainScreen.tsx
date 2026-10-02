@@ -67,9 +67,9 @@ const TUTORIAL_QUESTS = [
   ['summon-two-heroes', 'Summon two heroes', 2, '1 Summon Scroll'],
   ['fill-active-formation', 'Fill the three-hero Active Formation', 3, '3 XS Potions'],
   ['summon-reserve-hero', 'Summon one reserve hero', 3, '500 Gold'],
-  ['assign-training-hero', 'Assign a reserve hero to Training Camp', 1, '3 XS Potions'],
+  ['defeat-25-enemies', 'Defeat 25 enemies', 25, '3 XS Potions'],
   ['enable-auto-pot', 'Enable Auto-pot', 1, '1 Boss Key'],
-  ['reach-location-2', 'Reach Location 2', 2, '1,000 Gold'],
+  ['defeat-50-enemies', 'Defeat 50 enemies', 50, '1,000 Gold'],
   ['defeat-tutorial-boss', 'Use the granted key and defeat one summoned Boss', 1, '1 Summon Scroll'],
 ] as const;
 const DUNGEON_BOSS_ART: Record<string, string> = { 'iron-warden': 'boss-titan', 'ash-warlock': 'boss-lich', 'thorn-shaman': 'boss-ogre', 'rift-behemoth': 'boss-dragon', 'grave-necromancer': 'boss-lich' };
