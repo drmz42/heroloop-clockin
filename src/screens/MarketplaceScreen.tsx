@@ -1,5 +1,5 @@
 import { isolatedHackathon } from '@/game/editionStorage';
-import { SeekerMarketScreen } from './SeekerCommerceScreens';
+import { SeekerMarketScreen } from './SeekerMarketplaceScreen';
 import { useEffect, useState, type ReactNode } from 'react';
 import { BarChart3, Clock3, Coins, List, Lock, PackageSearch, Search, ShieldCheck, ShoppingCart, Swords, Shield, Gem, PawPrint, Users } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
@@ -38,7 +38,7 @@ function listingFromServer(entry: ServerMarketListing): Listing | null {
 }
 
 export function MarketplaceScreen(props: { game: GameApi; tokenomics: TokenomicsApi }) {
-  return isolatedHackathon ? <SeekerMarketScreen game={props.game}/> : <StandardMarketplaceScreen {...props}/>;
+  return isolatedHackathon ? <SeekerMarketScreen {...props}/> : <StandardMarketplaceScreen {...props}/>;
 }
 function StandardMarketplaceScreen({ game, tokenomics }: { game: GameApi; tokenomics: TokenomicsApi }) {
   const [tab, setTab] = useState<MarketTab>('browse'); const [query, setQuery] = useState(''); const [selectedId, setSelectedId] = useState<string | null>(null); const [price, setPrice] = useState(10); const [notice, setNotice] = useState('');
