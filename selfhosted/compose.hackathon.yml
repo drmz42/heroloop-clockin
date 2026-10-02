@@ -48,6 +48,7 @@ services:
       WALLET_ALLOWED_PAYERS: ${WALLET_ALLOWED_PAYERS:?set the payer allowlist in the root-owned runtime environment}
     volumes:
       - ./seeker:/app/seeker:ro
+      - ./api/skr_boost.ts:/app/api/skr_boost.ts:ro
       - ./deno.json:/app/deno.json:ro
       - ./deno.lock:/app/deno.lock:ro
       - ./vendor:/app/vendor:ro
