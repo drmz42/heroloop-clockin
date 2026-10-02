@@ -14,9 +14,54 @@ services:
       TESTER_CONTROLS_ENABLED: "false"
       SIWS_ADDITIONAL_URIS: ""
       COMBAT_EFFECTS_VERSION: combat-effects-v2-team-contributions-candidate-2026.09.06-v1
+      WALLET_SERVICE_URL: http://wallet:8090
+      WALLET_SERVICE_TOKEN: ${WALLET_SERVICE_TOKEN:?set the wallet service token in the root-owned runtime environment}
   worker:
     environment:
       HERO_DISTRIBUTION_ENABLED: "false"
+  # The only process with seeker_skr access; no published port, no signing key.
+  wallet:
+    image: denoland/deno:2.9.4@sha256:c777b4b225501a61074837e90a826a58f99124837824023cd60334b1e2374498
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    networks:
+      - backend
+    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=PGHOST,PGPORT,PGUSER,PGPASSWORD,WALLET_SERVICE_TOKEN,SOLANA_RPC_URL,SEEKER_CLUSTER,SKR_MINT,WALLET_TREASURY", "--allow-net=0.0.0.0:8090,postgres:5432,${SOLANA_RPC_HOST:-api.devnet.solana.com}:443", "/app/seeker/wallet_service.ts"]
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: seeker_wallet_runtime
+      PGPASSWORD: ${WALLET_DATABASE_PASSWORD:?set the wallet database password in the root-owned runtime environment}
+      WALLET_SERVICE_TOKEN: ${WALLET_SERVICE_TOKEN:?set the wallet service token in the root-owned runtime environment}
+      SEEKER_CLUSTER: ${SEEKER_CLUSTER:-devnet}
+      SOLANA_RPC_URL: https://${SOLANA_RPC_HOST:-api.devnet.solana.com}
+      # Devnet test mint and treasury (no value); mainnet values come from the runtime environment.
+      SKR_MINT: ${SKR_MINT:-45HbhfcjjsvxeWV93dRcuJ8ZepjY3qSCgXwaunqPup1b}
+      WALLET_TREASURY: ${WALLET_TREASURY:-744zoJV751yE97iUTqWwBaKVkCyg6KgMyME4m8rNWGiE}
+    volumes:
+      - ./seeker:/app/seeker:ro
+      - ./deno.json:/app/deno.json:ro
+      - ./deno.lock:/app/deno.lock:ro
+      - ./vendor:/app/vendor:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "deno", "eval", "const r=await fetch('http://127.0.0.1:8090/health');if(!r.ok)Deno.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    cpus: 0.15
+    mem_limit: 160m
+    pids_limit: 64
 # Separate bridge is required for host loopback proxy ports. No shared Docker network.
 networks:
   backend:

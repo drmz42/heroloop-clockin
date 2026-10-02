@@ -9,6 +9,7 @@ import { formatNum } from '@/game/state';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { shortWalletAddress } from '@/components/walletAddress';
 import { solanaAuthEnabled, unlinkSolanaIdentity } from '@/game/solanaWalletSession';
+import { SeekerDepositPanel, SeekerHistoryPanel } from '@/components/SeekerWalletPanels';
 
 type WalletTab = 'deposit' | 'withdraw' | 'history' | 'account';
 
@@ -98,10 +99,10 @@ export function GameWalletModal({
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <div className="flex h-9 items-center gap-1.5 rounded-full border border-lime-500/40 bg-[#0d1009] px-3" title="In-game $HERO balance">
+            {!isolatedHackathon && <div className="flex h-9 items-center gap-1.5 rounded-full border border-lime-500/40 bg-[#0d1009] px-3" title="In-game $HERO balance">
               <HeroTokenIcon size={14} />
-              <span className="text-sm font-black tabular-nums text-lime-300">{(isolatedHackathon ? '—' : formatNum(balance))}</span>
-            </div>
+              <span className="text-sm font-black tabular-nums text-lime-300">{formatNum(balance)}</span>
+            </div>}
             <button type="button" onClick={onClose} className="game-control grid h-9 w-9 place-items-center" aria-label="Close wallet"><X size={16} /></button>
           </div>
         </header>
@@ -129,7 +130,10 @@ export function GameWalletModal({
         </div>
 
         <div id={`wallet-panel-${tab}`} role="tabpanel" aria-labelledby={`wallet-tab-${tab}`} className="game-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
-          {tab === 'deposit' && (
+          {tab === 'deposit' && isolatedHackathon && <SeekerDepositPanel />}
+          {tab === 'history' && isolatedHackathon && <SeekerHistoryPanel />}
+
+          {tab === 'deposit' && !isolatedHackathon && (
             <>
               <NotLive title="On-chain deposits are not live yet">
                 {isolatedHackathon ? 'SKR deposits are not connected yet. Balance verification and payment processing must be available before deposits open.' : 'In-game $HERO is an internal server balance today. Deposits open only after the on-chain token launches and Founder approves the launch.'}
@@ -154,7 +158,7 @@ export function GameWalletModal({
             </>
           )}
 
-          {tab === 'history' && (
+          {tab === 'history' && !isolatedHackathon && (
             <>
               <div className="grid grid-cols-2 gap-2">
                 <SummaryTile label="In-game balance" value={(isolatedHackathon ? '—' : formatNum(balance))} tone="lime" />

@@ -54,6 +54,13 @@ const siwsEndpointConfig = {
   hashPepper: Deno.env.get("SIWS_HASH_PEPPER") ?? "",
   uri: Deno.env.get("SIWS_URI") ?? "",
 };
+const walletServiceUrl = Deno.env.get("WALLET_SERVICE_URL") ?? "";
+const walletServiceToken = Deno.env.get("WALLET_SERVICE_TOKEN") ?? "";
+const walletActions: Record<string, string> = {
+  wallet_snapshot: "/wallet/snapshot",
+  wallet_deposit_intent: "/wallet/deposit-intent",
+  wallet_deposit_confirm: "/wallet/deposit-confirm",
+};
 const siwsAdditionalUris = parseAdditionalSiwsUris(Deno.env.get("SIWS_ADDITIONAL_URIS"));
 const combatEffectsVersion = Deno.env.get("COMBAT_EFFECTS_VERSION") ?? "combat-effects-v1";
 if (!["combat-effects-v1", COMBAT_EFFECTS_V2_VERSION].includes(combatEffectsVersion)) {
@@ -133,6 +140,9 @@ const commandActions = new Set([
   "spend_tokens",
   "set_boost_max_active",
   "skr_boost_status",
+  "wallet_snapshot",
+  "wallet_deposit_intent",
+  "wallet_deposit_confirm",
   "promo_redeem",
   "player_report",
   "support_ticket_submit",
@@ -892,6 +902,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       const requestedAction = String(parsed.value.action);
       const rateLimit = await consumeRateLimit(identity.playerId,
         requestedAction === "skr_boost_status" ? "status"
+          : Object.hasOwn(walletActions, requestedAction) ? "status"
           : requestedAction.startsWith("tester_credit_") ? "tester_credit_tokens" : requestedAction);
       if (!rateLimit.allowed) {
         return errorResponse(429, "rate_limited", requestId, {
@@ -913,6 +924,34 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       const payloadError = validatePayloadFields(payload, []);
       if (payloadError) return errorResponse(400, payloadError, requestId);
       return json(200, { ok: true, contract_version: 1, request_id: requestId, result: unavailableSkrBoost() });
+    }
+    if (Object.hasOwn(walletActions, String(parsed.value.action))) {
+      if (edition !== "seeker" || !walletServiceUrl || walletServiceToken.length < 32) {
+        return errorResponse(409, "unavailable_in_standard_edition", requestId);
+      }
+      const action = String(parsed.value.action);
+      const allowed = action === "wallet_snapshot" ? [] : action === "wallet_deposit_intent"
+        ? ["asset", "amount", "payer"] : ["intent_id", "signature"];
+      const payloadError = validatePayloadFields(payload, allowed);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        // The wallet service trusts only this verified player id, never a client value.
+        const response = await fetch(walletServiceUrl + walletActions[action], {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-wallet-token": walletServiceToken },
+          body: JSON.stringify({ ...payload, player_id: identity.playerId }),
+          signal: AbortSignal.timeout(20_000),
+        });
+        const body = await response.json() as JsonRecord;
+        if (response.ok && body.ok === true) {
+          return json(200, { ok: true, contract_version: 1, request_id: requestId, result: body.result });
+        }
+        const code = typeof body.code === "string" && /^[a-z_]{3,48}$/.test(body.code) ? body.code : "wallet_unavailable";
+        return errorResponse(response.status >= 500 ? 503 : response.status === 404 ? 404 : response.status === 400 ? 400 : 409, code, requestId);
+      } catch {
+        console.error("wallet service adapter failed", { requestId });
+        return errorResponse(503, "wallet_unavailable", requestId);
+      }
     }
     if (parsed.value.action === "account_status") {
       const payloadError = validateAccountStatusPayload(payload);
