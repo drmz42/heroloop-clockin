@@ -1421,15 +1421,16 @@ function TestControls({ game }: { game: GameApi }) {
   );
 }
 
-function TokenEarningsPanel({ status: legacyStatus, stale, today, heroes, defeated, bosses }: { status: TokenomicsStatus | null; stale: boolean; today: number; heroes: number; defeated: number; bosses: number }) {
-  const status = isolatedHackathon ? null : legacyStatus;
+function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: { status: TokenomicsStatus | null; stale: boolean; today: number; heroes: number; defeated: number; bosses: number }) {
+  // SKR rewards are disabled until funded activation. Keep the server score share
+  // independent of the zero SKR budget; never display legacy HERO payouts as SKR.
   const TOKEN_PRICE_USD = 0.001;
   const DAILY_POOL = 20_000;
-  const daily = status?.my_daily_share ?? 0;
-  const rate = status?.my_hourly_share ?? 0;
-  const pool = status?.pool_amount ?? DAILY_POOL;
+  const daily = isolatedHackathon ? 0 : status?.my_daily_share ?? 0;
+  const rate = isolatedHackathon ? 0 : status?.my_hourly_share ?? 0;
+  const pool = isolatedHackathon ? 0 : status?.pool_amount ?? DAILY_POOL;
   const poolSharePct = status?.pool_share_percent ?? 0;
-  const fmt = (value: number) => value < 1 ? value.toFixed(3) : formatNum(value);
+  const fmt = (value: number) => value === 0 ? '0' : value < 1 ? value.toFixed(3) : formatNum(value);
   const usd = (tokens: number) => {
     const v = tokens * TOKEN_PRICE_USD;
     return v >= 0.01 ? `$${v.toFixed(2)}` : `$${v.toFixed(4)}`;
@@ -1449,16 +1450,15 @@ function TokenEarningsPanel({ status: legacyStatus, stale, today, heroes, defeat
       <div className="flex items-center gap-2">
         <HeroTokenIcon size={22} />
         <span className="ui-text-small font-black uppercase tracking-[.14em] text-[#ffd36e]">$HERO Income</span>
-        {isolatedHackathon && <span className="ml-auto ui-text-small font-bold uppercase tracking-wide text-emerald-300" title="SKR income and pool verification are not connected yet">Soon</span>}
-        {!isolatedHackathon && stale && <span className="ml-auto ui-text-small font-bold uppercase tracking-wide text-amber-300" title="Keeping the last confirmed server values while income refresh retries">Updating…</span>}
+        {stale && <span className="ml-auto ui-text-small font-bold uppercase tracking-wide text-amber-300" title="Keeping the last confirmed server values while income refresh retries">Updating…</span>}
       </div>
-      {status || isolatedHackathon ? (
+      {status ? (
         <div className="grid grid-cols-[max-content_max-content] items-baseline gap-x-2 gap-y-2 whitespace-nowrap">
-          <Row label="Per hour" value={status ? `${fmt(rate)} (${usd(rate)})` : '—'} valueClass="text-[#7ee787]" />
-          <Row label="Per day" value={status ? `${fmt(daily)} (${usd(daily)})` : '—'} valueClass="text-[#e5bd68]" />
-          <Row label="Pool share" value={status ? `${poolSharePct.toFixed(poolSharePct < 0.01 ? 4 : 2)}%` : '—'} valueClass="text-[#9ed7ff]" />
-          <Row label="Today" value={status ? `${formatNum(today)} (${usd(today)})` : '—'} valueClass="text-[#ffd36e]" />
-          <Row label="Daily pool" value={status ? `${formatNum(pool)} $HERO` : '—'} valueClass="text-[#c8b3f0]" />
+          <Row label="Per hour" value={isolatedHackathon ? `${fmt(rate)} SKR` : `${fmt(rate)} (${usd(rate)})`} valueClass="text-[#7ee787]" />
+          <Row label="Per day" value={isolatedHackathon ? `${fmt(daily)} SKR` : `${fmt(daily)} (${usd(daily)})`} valueClass="text-[#e5bd68]" />
+          <Row label="Pool share" value={`${poolSharePct.toFixed(poolSharePct < 0.01 ? 4 : 2)}%`} valueClass="text-[#9ed7ff]" />
+          <Row label="Today" value={isolatedHackathon ? '0 SKR' : `${formatNum(today)} (${usd(today)})`} valueClass="text-[#ffd36e]" />
+          <Row label="Daily pool" value={isolatedHackathon ? `${formatNum(pool)} SKR` : `${formatNum(pool)} $HERO`} valueClass="text-[#c8b3f0]" />
         </div>
       ) : (
         <span className="ui-text-small font-semibold text-[#9a937f]">Syncing token pool…</span>
