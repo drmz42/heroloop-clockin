@@ -6,6 +6,7 @@ import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { shortWalletAddress } from '@/components/walletAddress';
 import { isolatedHackathon } from '@/game/editionStorage';
 import { formatAmountShort, useWalletSnapshot } from '@/game/seekerWallet';
+import { groupNumber } from '@/game/numberFormat';
 
 const TABS = [
   { id: 'heroes',      label: 'Heroes',   icon: Shield },
@@ -18,7 +19,7 @@ const TABS = [
   { id: 'referrals',   label: 'Refer',    icon: UserPlus },
 ] satisfies { id: Tab; label: string; icon: typeof Shield }[];
 
-const formatResource = (value: number) => Math.floor(value).toLocaleString('en-US').replace(/,/g, ' ');
+const formatResource = (value: number) => groupNumber(Math.floor(value));
 
 export function GameNavBar({
   tab, onChange, gold, hero, mailCount, onMailClick, walletAddress, onWalletClick, onTokensClick,

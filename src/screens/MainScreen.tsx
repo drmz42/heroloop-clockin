@@ -31,6 +31,7 @@ import { PartnerQuests } from '@/components/PartnerQuests';
 import { FantasyBagIcon } from '@/components/FantasyBagIcon';
 import { recommendedTeamPower } from '@/game/balance';
 import { playerSync, authClient } from '@/game/backend';
+import { groupNumber, groupDigits } from '@/game/numberFormat';
 
 const SAVE_KEY = editionStorageKey('afk-heroes-save-v7');
 // Temporarily hide the first-use dialog for hackathon start-of-game recordings.
@@ -71,7 +72,7 @@ const TUTORIAL_QUESTS = [
   ['summon-reserve-hero', 'Summon one reserve hero', 3, '500 Gold'],
   ['defeat-25-enemies', 'Defeat 25 enemies', 25, '3 XS Potions'],
   ['enable-auto-pot', 'Enable Auto-pot', 1, '1 Boss Key'],
-  ['defeat-50-enemies', 'Defeat 50 enemies', 50, '1,000 Gold'],
+  ['defeat-50-enemies', 'Defeat 50 enemies', 50, `${groupNumber(1000)} Gold`],
   ['defeat-tutorial-boss', 'Use the granted key and defeat one summoned Boss', 1, '1 Summon Scroll'],
 ] as const;
 const DUNGEON_BOSS_ART: Record<string, string> = { 'iron-warden': 'boss-titan', 'ash-warlock': 'boss-lich', 'thorn-shaman': 'boss-ogre', 'rift-behemoth': 'boss-dragon', 'grave-necromancer': 'boss-lich' };
@@ -655,12 +656,12 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                 <div key={q.id} className={`quest-card px-2 py-1 ${done && !q.claimed ? 'border-[#b48a43]' : ''}`}>
                   <div className="flex items-center gap-1.5">
                     {q.claimed ? <CheckCircle2 size={11} className="shrink-0 text-emerald-400" /> : done ? <Circle size={11} className="shrink-0 fill-amber-400/30 text-amber-400" /> : <Circle size={11} className="shrink-0 text-slate-600" />}
-                    <span className="ui-text-medium min-w-0 flex-1 truncate leading-tight text-px-text" title={q.label}>{q.label}</span>
-                    <span className="ui-text-small flex shrink-0 items-center gap-1 text-px-text"><Coins size={10} />{q.reward.gold} <HeroTokenIcon size={10} />{q.reward.hero}</span>
+                    <span className="ui-text-medium min-w-0 flex-1 truncate leading-tight text-px-text" title={groupDigits(q.label)}>{groupDigits(q.label)}</span>
+                    <span className="ui-text-small flex shrink-0 items-center gap-1 text-px-text"><Coins size={10} />{groupNumber(q.reward.gold)} <HeroTokenIcon size={10} />{q.reward.hero}</span>
                   </div>
                   <div className="mt-1 flex items-center gap-1.5">
                     <div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
-                    <span className="ui-text-small shrink-0 text-px-dim">{q.progress}/{q.target}</span>
+                    <span className="ui-text-small shrink-0 text-px-dim">{groupNumber(q.progress)}/{groupNumber(q.target)}</span>
                   </div>
                   {done && !q.claimed && <button onClick={() => game.claimQuest(q.id)} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold">Claim reward</button>}
                 </div>
@@ -675,7 +676,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                 <div key={q.id} className={`quest-card px-2 py-1 ${done ? 'border-[#b48a43]' : ''}`}>
                   <div className="flex items-center gap-1.5">
                     {done ? <Circle size={11} className="shrink-0 fill-amber-400/30 text-amber-400" /> : <Circle size={11} className="shrink-0 text-slate-600" />}
-                    <span className="ui-text-medium min-w-0 flex-1 truncate leading-tight text-px-text" title={q.label}>{q.label}</span>
+                    <span className="ui-text-medium min-w-0 flex-1 truncate leading-tight text-px-text" title={groupDigits(q.label)}>{groupDigits(q.label)}</span>
                     <span className="ui-text-small flex shrink-0 items-center gap-1 text-px-text">{q.reward.summonScrolls ? <><SummonScrollArtwork size={14} />{q.reward.summonScrolls}</> : <><Coins size={10} />{formatNum(q.reward.gold)} <HeroTokenIcon size={10} />{q.reward.hero}</>}</span>
                   </div>
                   <div className="mt-1 flex items-center gap-1.5">

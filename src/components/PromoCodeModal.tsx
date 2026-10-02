@@ -3,6 +3,7 @@ import { CheckCircle2, Gift, KeyRound, X } from 'lucide-react';
 import { playerSync } from '@/game/backend';
 import { BossKeyIcon } from '@/components/BossKeyIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
+import { groupNumber } from '@/game/numberFormat';
 
 type PotionSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 
@@ -47,12 +48,12 @@ export function PromoCodeModal({ onClose, onRedeemed }: { onClose: () => void; o
   };
 
   const rewards = result ? [
-    result.rewards.gold > 0 && { label: `${result.rewards.gold.toLocaleString()} Gold` },
-    result.rewards.hero > 0 && { label: `${result.rewards.hero.toLocaleString()} $HERO` },
-    result.rewards.summon_scrolls > 0 && { label: `${result.rewards.summon_scrolls.toLocaleString()} Summon Scrolls`, icon: <SummonScrollArtwork size={20} /> },
-    result.rewards.boss_keys > 0 && { label: `${result.rewards.boss_keys.toLocaleString()} Boss Keys`, icon: <BossKeyIcon size={20} /> },
-    (result.rewards.chests ?? 0) > 0 && { label: `${(result.rewards.chests ?? 0).toLocaleString()} ${result.rewards.chests === 1 ? 'Chest' : 'Chests'}` },
-    ...(Object.entries(result.rewards.potions ?? {}) as [PotionSize, number][]).map(([size, amount]) => amount > 0 && { label: `${amount.toLocaleString()} ${POTION_LABEL[size] ?? size} Potions` }),
+    result.rewards.gold > 0 && { label: `${groupNumber(result.rewards.gold)} Gold` },
+    result.rewards.hero > 0 && { label: `${groupNumber(result.rewards.hero)} $HERO` },
+    result.rewards.summon_scrolls > 0 && { label: `${groupNumber(result.rewards.summon_scrolls)} Summon Scrolls`, icon: <SummonScrollArtwork size={20} /> },
+    result.rewards.boss_keys > 0 && { label: `${groupNumber(result.rewards.boss_keys)} Boss Keys`, icon: <BossKeyIcon size={20} /> },
+    (result.rewards.chests ?? 0) > 0 && { label: `${groupNumber((result.rewards.chests ?? 0))} ${result.rewards.chests === 1 ? 'Chest' : 'Chests'}` },
+    ...(Object.entries(result.rewards.potions ?? {}) as [PotionSize, number][]).map(([size, amount]) => amount > 0 && { label: `${groupNumber(amount)} ${POTION_LABEL[size] ?? size} Potions` }),
   ].filter((reward): reward is { label: string; icon?: JSX.Element } => Boolean(reward)) : [];
 
   return (

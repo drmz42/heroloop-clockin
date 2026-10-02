@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Rocket, Zap } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { HERO_MAP } from '@/game/heroes';
+import { groupNumber } from '@/game/numberFormat';
 
 // The phone top bar's Commander avatar opens the Commander sheet in MainScreen.
 export const COMMANDER_OPEN_EVENT = 'hl:commander-open';
@@ -25,11 +26,11 @@ export function GameProgressBar({ power, identity, commander, boost }: {
   }, [power, identity]);
   const format = (value: number) => value >= 1_000_000
     ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
-    : Math.round(value).toLocaleString('en-US');
+    : groupNumber(Math.round(value));
   return <aside className="game-progress-bar" aria-label="Team progress">
     <div className="game-progress-power">
       <Zap size={21} aria-hidden="true" />
-      <div><span className="game-progress-label">Team Power</span><strong title={Math.round(power).toLocaleString('en-US')} data-team-power={Math.round(power)}>{format(power)}</strong></div>
+      <div><span className="game-progress-label">Team Power</span><strong title={groupNumber(Math.round(power))} data-team-power={Math.round(power)}>{format(power)}</strong></div>
       <span role="status" className={`game-power-change ${delta > 0 ? 'is-gain' : 'is-loss'}`}>{delta !== 0 && `${delta > 0 ? '+' : '−'}${format(Math.abs(delta))}`}</span>
     </div>
     {commander && avatar && <button type="button" className="game-progress-commander" onClick={() => window.dispatchEvent(new Event(COMMANDER_OPEN_EVENT))} aria-label={`Commander, level ${commander.level}`}>

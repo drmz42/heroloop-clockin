@@ -1,6 +1,7 @@
 import { HERO_MAP } from '@/game/heroes';
 import { heroPortraitSrc } from '@/game/portraits';
 import type { GameState } from '@/game/types';
+import { groupNumber } from '@/game/numberFormat';
 
 const WIDTH = 1200;
 const HEIGHT = 675;
@@ -76,9 +77,9 @@ export async function renderPartnerQuestShareCard(state: GameState, power: numbe
 
   ctx.fillStyle = '#e9d9b2';
   ctx.font = 'bold 25px Georgia, serif';
-  ctx.fillText(`POWER  ${Math.max(0, Math.floor(power)).toLocaleString('en-US')}`, 55, 515);
+  ctx.fillText(`POWER  ${groupNumber(Math.max(0, Math.floor(power)))}`, 55, 515);
   ctx.fillText(`LOCATION  ${Math.max(1, Math.floor(state.currentLocation))}`, 55, 552);
-  ctx.fillText(`GOLD EARNED  ${Math.max(0, Math.floor(state.totalGoldEarned)).toLocaleString('en-US')}`, 55, 589);
+  ctx.fillText(`GOLD EARNED  ${groupNumber(Math.max(0, Math.floor(state.totalGoldEarned)))}`, 55, 589);
   const referral = /^[A-Z2-9]{6}$/.test(state.referral.code) ? `?ref=${state.referral.code}` : '';
   ctx.fillStyle = '#c9ab72';
   ctx.font = 'bold 21px Georgia, serif';

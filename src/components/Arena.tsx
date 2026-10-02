@@ -5,6 +5,7 @@ import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { enemyArtSrc } from '@/game/art';
 import { Crosshair, Shield, Skull, Star, Swords, DoorOpen, Flame, Timer, Users } from 'lucide-react';
 import { locationLevelRange } from '@/game/engine';
+import { groupNumber } from '@/game/numberFormat';
 
 const HEALTH_NUMBER_FORMAT = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
 const DUNGEON_BOSS_ART: Record<string, string> = {
@@ -25,7 +26,7 @@ function enemyRank(unit: CombatUnit, locationId: number | undefined, dungeonDept
 
 function formatHealth(value: number) {
   const rounded = Math.max(0, Math.ceil(value));
-  return rounded >= 10_000 ? HEALTH_NUMBER_FORMAT.format(rounded) : rounded.toLocaleString('en-US');
+  return rounded >= 10_000 ? HEALTH_NUMBER_FORMAT.format(rounded) : groupNumber(rounded);
 }
 
 interface ArenaProps {

@@ -53,7 +53,7 @@ export function formatMinor(minor: string, asset: WalletAsset, maxFraction = 4):
   const decimals = ASSET_DECIMALS[asset];
   const negative = minor.startsWith('-');
   const digits = (negative ? minor.slice(1) : minor).padStart(decimals + 1, '0');
-  const whole = BigInt(digits.slice(0, -decimals)).toLocaleString('en-US');
+  const whole = BigInt(digits.slice(0, -decimals)).toLocaleString('en-US').replace(/,/g, '\u00a0');
   const fraction = digits.slice(-decimals).slice(0, maxFraction).replace(/0+$/, '');
   return `${negative ? '-' : ''}${whole}${fraction ? `.${fraction}` : ''}`;
 }
@@ -66,7 +66,7 @@ export function formatAmountShort(minor: string, asset: WalletAsset, round: 'up'
   const value = BigInt(negative ? minor.slice(1) : minor);
   const step = 10n ** BigInt(Math.max(0, decimals - 1));
   const tenths = round === 'up' ? (value + step - 1n) / step : value / step;
-  const whole = (tenths / 10n).toLocaleString('en-US');
+  const whole = (tenths / 10n).toLocaleString('en-US').replace(/,/g, '\u00a0');
   const fraction = tenths % 10n;
   return `${negative ? '-' : ''}${whole}${fraction ? `.${fraction}` : ''}`;
 }

@@ -8,6 +8,7 @@ import { buildLocation, latestTokenLocation, teamPower } from '@/game/engine';
 import { heroXpForLevel, trainingTokenPenalty, TRAINING_BOOST_COSTS, TRAINING_SLOT_COSTS } from '@/game/state';
 import type { HeroClass, TrainingBoostKey } from '@/game/types';
 import type { useGame } from '@/game/useGame';
+import { groupNumber } from '@/game/numberFormat';
 
 type Game = ReturnType<typeof useGame>;
 type SortKey = 'stars' | 'level' | 'power' | 'rarity' | 'class';
@@ -72,7 +73,7 @@ export function TrainingCampScreen({ game }: { game: Game }) {
       <header className="relative z-10 flex flex-wrap items-end justify-between gap-3">
         <div><div className="section-kicker">Training Grounds</div><h2 className="font-vt text-3xl font-black text-[#f5d88b]">Ironkeep War Camp</h2><p className="mt-1 text-xs text-[#aaa08c]">Prepare reserve heroes at 160% solo XP from Location {locationId}.</p></div>
         <div className={`training-status-row ${activeBoost ? 'training-status-boosted' : ''}`}>
-          <span className="training-status-metric"><Swords size={19} /><span><strong>{xpPerHour.toLocaleString()} XP/h</strong><small>{activeBoost ? `${baseXpPerHour.toLocaleString()} base × ${state.trainingCamp.boostMultiplier}` : 'Current training speed'}</small></span></span>
+          <span className="training-status-metric"><Swords size={19} /><span><strong>{groupNumber(xpPerHour)} XP/h</strong><small>{activeBoost ? `${baseXpPerHour.toLocaleString()} base × ${state.trainingCamp.boostMultiplier}` : 'Current training speed'}</small></span></span>
           <span className="training-status-metric"><ShieldCheck size={19} /><span><strong>{trainingHeroCount}/{state.trainingCamp.unlockedSlots} training</strong><small>{state.trainingCamp.unlockedSlots - trainingHeroCount} posts available</small></span></span>
           <span className="training-status-metric"><Clock3 size={19} /><span><strong>{activeBoost ? `${state.trainingCamp.boostMultiplier}× ACTIVE` : 'Normal speed'}</strong><small className="tabular-nums">{activeBoost ? `${boostTime} remaining` : 'No active boost'}</small></span></span>
         </div>
