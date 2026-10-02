@@ -78,7 +78,7 @@ const DUNGEON_BOSS_ART: Record<string, string> = { 'iron-warden': 'boss-titan', 
 type DungeonCheckpoint = {
   type: 'dungeon' | 'boss_hunt'; encounter_id: string; boss_encounter_id?: string; depth: number; room: number; revision: number;
   roster_snapshot?: Array<{ uid: string; hero_id: string; stats?: Record<string, number> }>;
-  run_state?: { heroes?: DungeonUnitState[]; rooms_cleared?: number };
+  run_state?: { heroes?: DungeonUnitState[]; rooms_cleared?: number; tutorial_boss?: boolean };
   room_state: null | { status: string; kind?: string; choice?: string; modifier?: string; heroes?: DungeonUnitState[]; enemies?: DungeonUnitState[]; boss?: { boss_id: string; name: string; status: string; current_hp?: number; max_hp?: number }; reward_preview?: { summon_scrolls?: number; dungeon_chests?: number; settled?: boolean; reward_table_version?: string }; playback_tick?: number; elapsed_ms?: number; heavy_target_uid?: string; heavy_casts?: number; identity_ability?: string; identity_casts?: number };
 };
 type DungeonUnitState = {
@@ -98,8 +98,12 @@ const DUNGEON_PREVIEW_STATS: Record<number, Record<number, { hp: number; atk: nu
 };
 
 function dungeonPreviewEnemies(checkpoint: DungeonCheckpoint, heroes: DungeonUnitState[]): DungeonUnitState[] {
-  const stats = DUNGEON_PREVIEW_STATS[checkpoint.room]?.[checkpoint.depth];
-  if (!stats) return [];
+  const base = DUNGEON_PREVIEW_STATS[checkpoint.room]?.[checkpoint.depth];
+  if (!base) return [];
+  // The first Tutorial Boss Hunt is weakened on the server (20% HP, 40% ATK, 50% DEF);
+  // show the same numbers before the room starts.
+  const tutorial = checkpoint.run_state?.tutorial_boss === true;
+  const stats = tutorial ? { ...base, hp: Math.max(1, Math.round(base.hp * 0.2)), atk: Math.max(1, Math.round(base.atk * 0.4)), def: Math.round(base.def * 0.5) } : base;
   return heroes.filter((hero) => hero.alive).map((hero, index) => ({
     unit_id: `preview-${checkpoint.room}-${hero.position ?? index}`,
     lane: hero.position ?? index,
@@ -151,6 +155,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [tutorialClaimBusy, setTutorialClaimBusy] = useState(false);
+  const [tutorialFinished, setTutorialFinished] = useState(false);
   const [tutorialClaimError, setTutorialClaimError] = useState('');
   const [showBulkSellConfirm, setShowBulkSellConfirm] = useState(false);
   const [inventoryLockMode, setInventoryLockMode] = useState(false);
@@ -559,6 +564,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     <div className="game-main flex h-full flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
       {/* ── LEFT COLUMN ── */}
       <div className="hl-col-left material-panel game-scrollbar order-2 flex w-full shrink-0 flex-col overflow-y-auto lg:order-none lg:w-60 xl:w-64">
+        {tutorialFinished && createPortal(<div className="dungeon-complete is-victory" style={{ position: 'fixed', zIndex: 9999 }} role="dialog" aria-modal="true" aria-label="Tutorial complete"><div className="dungeon-complete-crest"><Sparkles size={38} /><small>TUTORIAL · 10/10</small><strong>TUTORIAL COMPLETE</strong><p>Your team is built, geared and has beaten its first Boss.</p><div className="dungeon-reward-preview"><span><SummonScrollArtwork size={18} /> 1 SUMMON SCROLL</span><span><CheckCircle2 size={14} /> DAILY QUESTS NEXT</span><small>Final reward granted exactly once by the server</small></div><button type="button" autoFocus className="game-control game-primary" onClick={() => setTutorialFinished(false)}>CONTINUE</button></div></div>, document.body)}
         {!isAndroidLayout && commanderPanel}
 
         <div id="game-quest-list" className="hl-quest-list flex-1 p-2">
@@ -578,6 +584,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                   try {
                     const error = await game.claimTutorialQuest(quest[0]);
                     if (error) setTutorialClaimError(error === 'state_conflict' ? 'Your game changed. Please try claiming again.' : error === 'tutorial_quest_incomplete' ? 'The server has not confirmed this task yet. Please try again.' : error === 'tutorial_quest_locked' || error === 'tutorial_completed' ? 'This tutorial step is no longer available. Reload the game.' : 'Could not claim the reward. Please try again.');
+                    else if (quest[0] === 'defeat-tutorial-boss') setTutorialFinished(true);
                     else showToast('Tutorial reward claimed');
                   } finally { setTutorialClaimBusy(false); }
                 }} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold disabled:opacity-50">{tutorialClaimBusy ? 'Claiming…' : 'Claim & unlock next'}</button>}

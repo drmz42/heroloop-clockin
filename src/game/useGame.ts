@@ -267,7 +267,12 @@ function combatFloater(event: {
     'affix.barrier': [`BARRIER +${amount}`, false],
     'affix.curse': ['CURSE', false],
   }[event.effectId ?? ''] as [string, boolean] | undefined;
-  return { id, sourceUid: event.sourceUid, targetUid: event.targetUid, value: amount, crit: false, heal: effect?.[1] ?? false, label: effect?.[0] ?? 'EFFECT', effect: true, born };
+  // Unlisted team/core effects (e.g. team.druid.wild-growth-heal) read their own name
+  // instead of a generic placeholder.
+  const name = (event.effectId ?? '').split('.').pop()?.replace(/-heal$/, '').replace(/-/g, ' ').toUpperCase() || 'SKILL';
+  const heal = effect?.[1] ?? /heal/.test(event.effectId ?? '');
+  const fallback = amount > 0 ? `${name} ${heal ? '+' : '-'}${amount}` : name;
+  return { id, sourceUid: event.sourceUid, targetUid: event.targetUid, value: amount, crit: false, heal, label: effect?.[0] ?? fallback, effect: true, born };
 }
 
 interface NormalCombatCompleteResult {

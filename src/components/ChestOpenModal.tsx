@@ -61,8 +61,8 @@ export function ChestOpenModal({
           </button>
         </div>
 
-        <button onClick={onClose} className="absolute -top-2 -right-2 p-1.5 bg-px-panel border-2 border-px-border">
-          <X size={14} className="text-px-text" />
+        <button type="button" onClick={onClose} aria-label="Close and send items to bag" className="absolute right-1 top-1 grid h-11 w-11 place-items-center bg-px-panel border-2 border-px-border">
+          <X size={18} className="text-px-text" />
         </button>
       </div>
     </div>,

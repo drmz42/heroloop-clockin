@@ -106,8 +106,10 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
       ? 'Not enough $HERO in the server balance'
       : game.summonError.includes('resource_insufficient_balance')
         ? 'Not enough Summon Scrolls'
-        : game.summonError.includes('quote_expired') || game.summonError.includes('quote_mismatch') || game.summonError.includes('state_conflict')
-          ? 'The quote expired or your account changed · Please try again'
+        : game.summonError.includes('quote_expired') || game.summonError.includes('quote_mismatch')
+          ? 'The quote expired · Please try again'
+          : game.summonError.includes('state_conflict')
+          ? 'Your game was still updating · Please try again'
           : game.summonError.includes('dex_quote_unavailable')
             ? 'Paid Summon is temporarily unavailable · No $HERO was spent'
       : game.summonError.includes('hero_capacity_exceeded')
@@ -178,7 +180,7 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
         <div className="summon-altar flex w-full max-w-2xl flex-col items-center rounded-xl border border-[#8c6231]/60 bg-[#08070a]/72 px-6 py-4 shadow-[0_16px_50px_rgba(0,0,0,.65),inset_0_1px_rgba(255,224,165,.08)] backdrop-blur-[2px]">
         <div className="section-kicker">The Obsidian Covenant</div>
         <h2 className="summon-title mb-1 mt-1 text-2xl font-black text-white"><span className="text-[#d7a9ff]">Hero</span> Summon</h2>
-        <p className="summon-lede text-slate-400 text-sm max-w-sm mb-1">Summon heroes using $HERO tokens. All heroes are unique and tradeable.</p>
+        <p className="summon-lede text-slate-400 text-sm max-w-sm mb-1">{isolatedHackathon ? 'Summon heroes with Summon Scrolls. Every hero is unique.' : 'Summon heroes using $HERO tokens. All heroes are unique and tradeable.'}</p>
         <section className="summon-focus mb-2 w-full max-w-xl rounded-lg border border-violet-500/30 bg-black/45 text-left">
           <button type="button" onClick={() => setShowFocus((value) => !value)} aria-expanded={showFocus} className="flex min-h-10 w-full items-center gap-2 px-3 py-2"><Target size={13} className="text-violet-300" /><span className="text-[10px] font-black uppercase tracking-wide text-violet-200">Ascension Focus</span><span className="min-w-0 flex-1 truncate text-right text-[9px] text-[#9b8ea2]">{selectedFocus ? HERO_MAP[selectedFocus]?.name ?? 'Selected' : 'Off'}</span><ChevronDown size={13} className={`text-[#87788e] transition-transform ${showFocus ? 'rotate-180' : ''}`} /></button>
           {showFocus && <div className="border-t border-violet-500/20 px-2.5 pb-2.5">

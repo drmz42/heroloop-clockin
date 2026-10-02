@@ -6,8 +6,9 @@ import { HERO_MAP } from '@/game/heroes';
 // The phone top bar's Commander avatar opens the Commander sheet in MainScreen.
 export const COMMANDER_OPEN_EVENT = 'hl:commander-open';
 
-export function GameProgressBar({ power, readyQuests, identity, onQuestsClick, commander, boost }: {
+export function GameProgressBar({ power, readyQuests, identity, onQuestsClick, commander, boost, objective }: {
   power: number; readyQuests: number; identity: string; onQuestsClick: () => void;
+  objective?: { label: string; progress: number; target: number } | null;
   commander?: { heroId: string; level: number };
   boost?: { active: boolean; onClick: () => void };
 }) {
@@ -38,7 +39,7 @@ export function GameProgressBar({ power, readyQuests, identity, onQuestsClick, c
       <Rocket size={17} aria-hidden="true" /><span>{boost.active ? 'Boost on' : 'Boost max'}</span>
     </button>}
     <button type="button" onClick={onQuestsClick} className={`game-progress-quests ${readyQuests > 0 ? 'quest-reward-ready' : ''}`} aria-label={readyQuests > 0 ? `Quests, ${readyQuests} rewards ready` : 'Open quests'}>
-      <ScrollText size={19} aria-hidden="true" /><span>{readyQuests > 0 ? 'Reward ready' : 'Quests'}<small>{readyQuests > 0 ? `${readyQuests} to claim` : 'Your next goal'}</small></span>
+      <ScrollText size={19} aria-hidden="true" /><span>{readyQuests > 0 ? 'Reward ready' : objective ? `${objective.progress}/${objective.target}` : 'Quests'}<small>{readyQuests > 0 ? `${readyQuests} to claim` : objective ? objective.label : 'Your next goal'}</small></span>
     </button>
   </aside>;
 }

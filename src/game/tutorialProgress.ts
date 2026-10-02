@@ -14,14 +14,15 @@ export function tutorialProgress(state: GameState, ordinal: number): number {
 
 export function readyQuestCount(state: GameState): number {
   const ordinal = Math.max(1, Math.min(10, state.tutorial.questOrdinal));
-  const tutorialReady = state.tutorial.welcomeCompleted && !state.tutorial.questCompleted
+  // The legacy welcome modal is gone, so welcomeCompleted no longer gates the quest chain.
+  const tutorialReady = !state.tutorial.questCompleted
     && tutorialProgress(state, ordinal) >= contract.quests[ordinal - 1].target;
   return Number(tutorialReady) + [...state.dailyQuests, ...state.milestoneQuests]
     .filter(quest => !quest.claimed && quest.progress >= quest.target).length;
 }
 
 export function currentTutorialObjective(state: GameState) {
-  if (!state.tutorial.welcomeCompleted || state.tutorial.questCompleted) return null;
+  if (state.tutorial.questCompleted) return null;
   const ordinal = Math.max(1, Math.min(10, state.tutorial.questOrdinal));
   const quest = contract.quests[ordinal - 1];
   const progress = tutorialProgress(state, ordinal);
