@@ -585,3 +585,10 @@ html[data-hl-platform='android'] .themed-screen-ranks .leader-row { padding-bloc
 html[data-hl-platform='android'] .themed-screen-ranks .rank-scroll { flex: 1 1 auto; overflow: auto; touch-action: pan-x pan-y; overscroll-behavior-x: contain; }
 
 html[data-hl-platform='android'] .arena-unit-name { overflow-wrap: normal; word-break: normal; font-size: 9px !important; }
+
+/* Compact secondary Market tabs retain the same server statistics. */
+html[data-hl-platform='android'] .seeker-market .market-metric { padding: 6px 8px; }
+html[data-hl-platform='android'] .seeker-market .market-metric > span svg { width: 14px; height: 14px; }
+html[data-hl-platform='android'] .seeker-market .market-metric > div:last-child { font-size: 9px !important; }
+html[data-hl-platform='android'] .seeker-market .market-supply-tile { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 8px; padding: 6px 8px; }
+html[data-hl-platform='android'] .seeker-market .market-supply-tile > div:nth-child(2) { margin-top: 0; font-size: 13px !important; }
