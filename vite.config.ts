@@ -56,7 +56,7 @@ export default defineConfig(({ mode }) => ({
         // Legacy currency amounts are not SKR quotes. Native SKR copy stays intact.
         const presentation = code.replace(/\$\{[^{}]*\}\s+\$HERO\b/gi, 'Price unavailable');
         const marketCopy = id.includes('/screens/MarketplaceScreen.')
-          ? presentation.replaceAll('{row.price}', "{'—'}").replaceAll('{game.state.hero}', "{'—'}") : presentation;
+          ? presentation.replaceAll('{row.price}', "{'—'}").replaceAll('formatNum(game.state.hero)', "'—'") : presentation;
         return { code: marketCopy.replace(/\$HERO\b/gi, '$SKR')
           .replaceAll('/assets/brand/hero-token.png', '/assets/brand/skr-token.svg')
           .replaceAll('/assets/landing4/coin.webp', '/assets/brand/skr-token.svg')
