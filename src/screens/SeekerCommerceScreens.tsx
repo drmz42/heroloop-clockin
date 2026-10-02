@@ -37,7 +37,7 @@ export function SeekerMarketScreen({game}:{game:GameApi}) {
   const eligible=game.state.inventory.filter(item=>item.serverOwned&&!!ITEM_MAP[item.itemId]&&isMarketEligibleEquipment(ITEM_MAP[item.itemId]));
   const listings=(market?.listings??[]).filter(l=>tab!=='listings'||l.is_own);
   return <div className="premium-screen themed-screen themed-screen-market game-scrollbar h-full overflow-y-auto p-3">
-    <header className="merchant-surface flex flex-wrap items-center justify-between gap-3 p-4"><h2 className="flex items-center gap-2 text-xl font-black text-amber-100"><ShoppingBag/>Market · SKR</h2><Balance/></header>
+    <header className="merchant-surface flex flex-wrap items-center justify-between gap-3 p-4 pr-14"><h2 className="flex items-center gap-2 text-xl font-black text-amber-100"><ShoppingBag/>Market · SKR</h2><Balance/></header>
     <p className="my-3 text-xs leading-5 text-stone-300">Listing fee: {skrPrice(2,rate)}. Non-refundable after listing, including cancellation. Sale fee: 5%; the seller receives 95% in SKR. Purchases arrive in Mailbox.</p>
     <nav aria-label="Market sections" className="mb-3 flex flex-wrap gap-2">{(['browse','sell','listings','history'] as const).map(t=><button style={{minHeight:44}} key={t} className={`game-control min-h-11 px-3 text-xs capitalize ${tab===t?'game-primary':''}`} aria-pressed={tab===t} onClick={()=>setTab(t)}>{t==='listings'?'My listings':t}</button>)}<button style={{minHeight:44}} aria-label="Refresh market" className="game-control min-h-11 px-3" onClick={()=>void refresh()}><RefreshCw size={15}/></button></nav>
     {message&&<p role="status" className="my-2 text-xs text-amber-200">{message}</p>}
