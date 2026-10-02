@@ -1444,7 +1444,7 @@ function AutomaticHealingStatus({ game }: { game: GameApi }) {
     ? 'Healing · stored potions only'
     : stock ? 'Healing · stock first' : game.state.gold < potion.cost
       ? `Healing · not enough Gold (needs ${potion.cost})` : 'Healing · automatic Gold';
-  return <div role="status" className="pointer-events-none absolute right-3 top-3 z-30 max-w-[65%] rounded-md border border-emerald-500/30 bg-[#11130f]/90 px-2 py-1 ui-text-small text-emerald-200">{label}</div>;
+  return <div role="status" className="hl-healing-status pointer-events-none absolute right-3 top-3 z-30 max-w-[65%] rounded-md border border-emerald-500/30 bg-[#11130f]/90 px-2 py-1 ui-text-small text-emerald-200">{label}</div>;
 }
 
 function HealingIntroduction({ game }: { game: GameApi }) {

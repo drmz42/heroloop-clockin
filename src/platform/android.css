@@ -354,3 +354,7 @@ html[data-hl-platform='android'] .hero-detail-panel > footer button { min-height
 .hl-commander-sheet { position: fixed; inset: calc(var(--game-progress-height) + env(safe-area-inset-top, 0px)) 0 var(--hl-tabbar-h) 0; z-index: 10005; display: flex; align-items: flex-start; background: rgba(0, 0, 0, .55); }
 .hl-commander-sheet-panel { position: relative; width: 100%; max-height: 100%; overflow-y: auto; padding-top: 4px; }
 .hl-commander-sheet-close { position: absolute; top: 8px; right: 8px; z-index: 1; display: grid; width: 40px; height: 40px; place-items: center; border-radius: 2px; }
+
+/* Automatic healing status sat under Dungeons and Boss in the same corner (Founder 2026-10-02):
+   on a phone it goes just below them. */
+html[data-hl-platform='android'] .hl-healing-status { top: 54px; right: 8px; z-index: 29; }
