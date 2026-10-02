@@ -362,12 +362,11 @@ html[data-hl-platform='android'] .hero-detail-panel > footer button { min-height
 /* Founder 2026-10-02: the status label is not needed on a phone. */
 html[data-hl-platform='android'] .hl-healing-status { display: none; }
 
-/* Phone battle footer: Boost and Chest share the full width (the Chest button was clipped
-   off the right edge); the earnings counters go to a slim row underneath. */
-html[data-hl-platform='android'] .hl-battle-footer { flex-wrap: wrap; row-gap: 4px; }
-html[data-hl-platform='android'] .hl-battle-footer > .hl-battle-dock { order: 1; width: 100%; margin-left: 0; }
-html[data-hl-platform='android'] .hl-battle-footer > :not(.hl-battle-dock) { order: 2; width: 100%; }
-html[data-hl-platform='android'] .hl-battle-footer > .hl-battle-dock { justify-content: center; }
+/* Phone battle footer, one row: the income block on the left, then drop rates, Boost and Chest,
+   which shrink to fit instead of running off the right edge (Founder 2026-10-02). */
+html[data-hl-platform='android'] .hl-battle-footer { flex-wrap: nowrap; gap: 6px; }
+html[data-hl-platform='android'] .hl-battle-footer > :not(.hl-battle-dock) { flex: none; }
+html[data-hl-platform='android'] .hl-battle-footer > .hl-battle-dock { flex: 1 1 auto; min-width: 0; justify-content: flex-end; gap: 6px; }
 html[data-hl-platform='android'] .hl-battle-dock .pm-boost,
-html[data-hl-platform='android'] .hl-battle-dock .pm-chest { flex: none; width: 128px; height: 38px; font-size: 12px; }
-html[data-hl-platform='android'] .hl-battle-dock button[aria-label='Show chest drop rates'] { height: 38px; width: 38px; }
+html[data-hl-platform='android'] .hl-battle-dock .pm-chest { flex: 1 1 0; width: auto; max-width: 124px; min-width: 0; height: 38px; font-size: 11px; }
+html[data-hl-platform='android'] .hl-battle-dock button[aria-label='Show chest drop rates'] { flex: none; height: 38px; width: 34px; }
