@@ -30,7 +30,7 @@ const config: ChainConfig = {
   treasury: env("WALLET_TREASURY"),
 };
 if (serviceToken.length < 32 || !/^https:\/\//.test(rpcUrl)
-  || !ADDRESS.test(config.skrMint) || !ADDRESS.test(config.treasury)) {
+  || config.skrMint!==SKR_ASSET.mint || !ADDRESS.test(config.treasury)) {
   throw new Error("invalid wallet service configuration");
 }
 // Payer allowlist (comma-separated addresses), required: Staging2 is open to any

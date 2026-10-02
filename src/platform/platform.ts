@@ -73,14 +73,14 @@ export const platform: Platform = typeof window === 'undefined' ? 'web' : resolv
 export const isAndroidLayout = platform === 'android';
 
 // Seeker edition preview (docs/game/seeker-hero-removal-map.md): hides the display-only
-// $HERO surfaces. A VITE_EDITION=seeker build always has it; staging2 can preview it with
-// ?edition=seeker (remembered; ?edition=standard returns). Hiding is not a control: the
+// $HERO surfaces. Isolated staging2/seeker builds always use Seeker, matching
+// their server payment gate. Other preview builds keep the edition switch. Hiding is not a control: the
 // Seeker backend must also refuse every $HERO action.
 export type Edition = 'seeker' | 'standard';
 const EDITION_KEY = 'heroloop-edition';
 
 function resolveEdition(): Edition {
-  if (import.meta.env.VITE_EDITION === 'seeker') return 'seeker';
+  if (import.meta.env.VITE_EDITION === 'seeker' || ['staging2','seeker'].includes(import.meta.env.MODE)) return 'seeker';
   if (!androidLayoutAvailable) return 'standard';
   try {
     const requested = new URLSearchParams(window.location.search).get('edition');
