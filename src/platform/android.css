@@ -610,9 +610,16 @@ html[data-hl-edition='seeker'] .game-progress-encounters .battle-entry-actions {
 html[data-hl-edition='seeker'] .game-progress-encounters button { min-height: 44px; padding: 0 6px; gap: 3px; font-size: 10px; white-space: nowrap; }
 html[data-hl-edition='seeker'] .game-progress-encounters button > svg { width: 13px; height: 13px; flex-shrink: 0; }
 html[data-hl-edition='seeker'] .game-progress-encounters button > svg + svg { display: none; }
-html[data-hl-platform='android'] .game-progress-power { gap: 4px; }
-html[data-hl-platform='android'] .game-progress-power strong { font-size: 20px; }
-html[data-hl-platform='android'] .game-progress-label { font-size: 8px; }
+/* Keep the label, value and transient change aligned without shifting the top-bar controls. */
+html[data-hl-platform='android'] .game-progress-power {
+  display: grid; grid-template-columns: 14px max-content; grid-template-rows: 10px 22px 10px;
+  column-gap: 4px; flex-shrink: 0; height: 42px; align-items: center;
+}
+html[data-hl-platform='android'] .game-progress-power > svg { grid-column: 1; grid-row: 2; width: 14px; height: 14px; }
+html[data-hl-platform='android'] .game-progress-power > div { display: contents; }
+html[data-hl-platform='android'] .game-progress-power strong { grid-column: 2; grid-row: 2; font-size: 20px; line-height: 22px; text-align: center; white-space: nowrap; }
+html[data-hl-platform='android'] .game-progress-label { grid-column: 1 / -1; grid-row: 1; font-size: 8px; line-height: 10px; text-align: center; white-space: nowrap; }
+html[data-hl-platform='android'] .game-power-change { grid-column: 1 / -1; grid-row: 3; min-width: 0; contain: inline-size; font-size: 10px; line-height: 10px; text-align: center; white-space: nowrap; }
 /* The narrower desktop battle column uses the same single-row footer. */
 html[data-hl-edition='seeker'][data-hl-platform='web'] .battle-stage-normal { display: flex; flex-direction: column; }
 html[data-hl-edition='seeker'][data-hl-platform='web'] .battle-stage-normal > .h-full { flex: 1 1 auto; height: auto; min-height: 0; }
