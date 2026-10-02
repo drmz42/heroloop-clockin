@@ -2,7 +2,7 @@ import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { editionStorageKey, isolatedHackathon } from '../game/editionStorage';
 import { goldHealingEnabled } from '../../managed/functions/player-sync/automatic-healing.mjs';
 import { tutorialProgress } from '@/game/tutorialProgress';
-import { Fragment, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
+import { Fragment, useCallback, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { isAndroidLayout } from '@/platform/platform';
 import { COMMANDER_OPEN_EVENT, BATTLE_ACTIONS_SLOT } from '@/components/GameProgressBar';
@@ -18,7 +18,8 @@ import { ITEM_MAP, SLOT_LABEL, POTIONS, sellValue, meetsItemLevelRequirement, ca
 import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, CLASS_LABEL, RARITY_INDEX } from '@/game/heroes';
 import type { TokenomicsApi } from '@/game/useTokenomics';
 import type { TokenomicsStatus } from '@/game/useTokenomics';
-import type { GameApi } from '@/game/useGame';
+import { bagItemCount, type GameApi } from '@/game/useGame';
+import { InventoryFullModal } from '@/components/InventoryFullModal';
 import type { CombatUnit, FloatingNumber, HeroClass, ItemSlot, OwnedItem, PotionTier } from '@/game/types';
 import { ItemArtwork } from '@/components/ItemArtwork';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
@@ -157,6 +158,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const autoGearNoticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (autoGearNoticeTimer.current) clearTimeout(autoGearNoticeTimer.current); }, []);
   const [toast, setToast] = useState<string | null>(null);
+  const [showInventoryFull, setShowInventoryFull] = useState(false);
+  const closeInventoryFull = useCallback(() => setShowInventoryFull(false), []);
   const [tutorialClaimBusy, setTutorialClaimBusy] = useState(false);
   const [tutorialFinished, setTutorialFinished] = useState(false);
   const [tutorialClaimError, setTutorialClaimError] = useState('');
@@ -738,7 +741,13 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             <div className="flex flex-row gap-1 sm:flex-col sm:gap-1.5">
               <button type="button" onClick={onBoostClick} className={`pm-boost game-control flex h-7 w-auto shrink-0 items-center sm:h-8 sm:w-36 justify-center gap-1 px-1.5 py-0.5 sm:px-2 ui-text-small font-black ${state.boost.active ? 'boost-max-active' : 'boost-max-ready'}`} title="Boost your offline earnings to 24/7"><Rocket size={15} /><span>{state.boost.active ? 'BOOST ON' : 'BOOST MAX'}</span></button>
               <button
-                onClick={() => void game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem)}
+                onClick={() => {
+                  if (isolatedHackathon && bagItemCount(state) >= inventoryCapacity(state)) {
+                    setShowInventoryFull(true);
+                    return;
+                  }
+                  void game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem);
+                }}
                 disabled={state.chests.length === 0 || game.chestOpening}
                 className="pm-chest reward-cta game-control flex h-7 w-auto shrink-0 items-center sm:h-8 sm:w-36 justify-center gap-1 px-1.5 py-0.5 sm:px-2 ui-text-small font-black disabled:opacity-55"
                 title="Open chests"
@@ -989,6 +998,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
         )}
       </div>
 
+      {showInventoryFull && <InventoryFullModal onClose={closeInventoryFull} />}
       {toast && createPortal(
         <div role="status" className="hl-toast fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-px-panel border-2 border-px-bright font-vt ui-text-large font-bold text-px-bright anim-slide-up" style={{ boxShadow: '3px 3px 0 #3d2008' }}>{toast}</div>,
         document.body,
@@ -1443,16 +1453,30 @@ function TestControls({ game }: { game: GameApi }) {
 function TokenEarningsPanel({ status, stale, today }: { status: TokenomicsStatus | null; stale: boolean; today: number }) {
   const [open, setOpen] = useState(false);
   const incomeButton = useRef<HTMLButtonElement>(null);
-  const [popoverHost, setPopoverHost] = useState<HTMLElement | null>(null);
-  const [popoverHeight, setPopoverHeight] = useState(200);
+  const [popoverPosition, setPopoverPosition] = useState({ left: 8, bottom: 0, maxHeight: 200 });
   useEffect(() => {
-    if (!open) return;
-    const stage = incomeButton.current?.closest<HTMLElement>('.battle-stage');
-    if (!stage) return;
-    const top = stage.getBoundingClientRect().top;
-    const fighterTops = [...stage.querySelectorAll('.arena-unit')].map(unit => unit.getBoundingClientRect().top);
-    setPopoverHeight(Math.max(80, (fighterTops.length ? Math.min(...fighterTops) : stage.getBoundingClientRect().bottom) - top - 60));
-    setPopoverHost(stage);
+    if (!isolatedHackathon || !open) return;
+    const place = () => {
+      const rect = incomeButton.current?.getBoundingClientRect();
+      if (!rect) return;
+      setPopoverPosition({
+        left: Math.max(8, Math.min(rect.left, window.innerWidth - 224)),
+        bottom: window.innerHeight - rect.top + 6,
+        maxHeight: Math.max(60, Math.min(220, rect.top - 72)),
+      });
+    };
+    const outside = (event: PointerEvent) => {
+      if (event.target instanceof Element && !event.target.closest('.battle-income-wrap, .battle-income-popover')) setOpen(false);
+    };
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    document.addEventListener('pointerdown', outside);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+      document.removeEventListener('pointerdown', outside);
+    };
   }, [open]);
   useEffect(() => {
     if (!isolatedHackathon || !open) return;
@@ -1482,7 +1506,7 @@ function TokenEarningsPanel({ status, stale, today }: { status: TokenomicsStatus
     </>
   );
   const incomeDetails = (
-      <div id="battle-income-details" hidden={isolatedHackathon && !open} className={`hl-battle-income battle-income flex w-max flex-col items-stretch gap-2 font-vt ${isolatedHackathon ? 'battle-income-popover absolute left-2 top-12 overflow-y-auto' : ''}`} style={isolatedHackathon ? { maxHeight: popoverHeight } : undefined}>
+      <div id="battle-income-details" hidden={isolatedHackathon && !open} className={`hl-battle-income battle-income flex w-max flex-col items-stretch gap-2 font-vt ${isolatedHackathon ? 'battle-income-popover fixed overflow-y-auto' : ''}`} style={isolatedHackathon ? popoverPosition : undefined}>
       <div className={`${isolatedHackathon ? 'hl-skr-income' : 'hl-hero-only'} token-earnings-panel flex w-full flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_34px_rgba(229,177,70,.4)]`}>
       <div className="flex items-center gap-2">
         <HeroTokenIcon size={22} />
@@ -1491,11 +1515,11 @@ function TokenEarningsPanel({ status, stale, today }: { status: TokenomicsStatus
       </div>
       {status ? (
         <div className="grid grid-cols-[max-content_max-content] items-baseline gap-x-2 gap-y-2 whitespace-nowrap">
-          <Row label="Per hour" value={isolatedHackathon ? `${fmt(rate)} SKR` : `${fmt(rate)} (${usd(rate)})`} valueClass="text-[#7ee787]" />
-          <Row label="Per day" value={isolatedHackathon ? `${fmt(daily)} SKR` : `${fmt(daily)} (${usd(daily)})`} valueClass="text-[#e5bd68]" />
+          <Row label="Per hour" value={isolatedHackathon ? `${fmt(rate)} $SKR` : `${fmt(rate)} (${usd(rate)})`} valueClass="text-[#7ee787]" />
+          <Row label="Per day" value={isolatedHackathon ? `${fmt(daily)} $SKR` : `${fmt(daily)} (${usd(daily)})`} valueClass="text-[#e5bd68]" />
           <Row label="Pool share" value={`${poolSharePct.toFixed(poolSharePct < 0.01 ? 4 : 2)}%`} valueClass="text-[#9ed7ff]" />
-          <Row label="Today" value={isolatedHackathon ? '0 SKR' : `${formatNum(today)} (${usd(today)})`} valueClass="text-[#ffd36e]" />
-          <Row label="Daily pool" value={isolatedHackathon ? `${formatNum(pool)} SKR` : `${formatNum(pool)} $HERO`} valueClass="text-[#c8b3f0]" />
+          <Row label="Today" value={isolatedHackathon ? '0 $SKR' : `${formatNum(today)} (${usd(today)})`} valueClass="text-[#ffd36e]" />
+          <Row label="Daily pool" value={isolatedHackathon ? `${formatNum(pool)} $SKR` : `${formatNum(pool)} $HERO`} valueClass="text-[#c8b3f0]" />
         </div>
       ) : (
         <span className="ui-text-small font-semibold text-[#9a937f]">Syncing token pool…</span>
@@ -1506,9 +1530,9 @@ function TokenEarningsPanel({ status, stale, today }: { status: TokenomicsStatus
   return (
     <div className="battle-income-wrap relative min-w-0" onKeyDown={event => { if (event.key === 'Escape') setOpen(false); }}>
       {isolatedHackathon && <button ref={incomeButton} type="button" className="battle-income-chip game-control flex items-center justify-between gap-2 px-2 font-vt font-black tabular-nums" onClick={() => setOpen(value => !value)} aria-expanded={open} aria-controls="battle-income-details" aria-label="$SKR income details">
-        <HeroTokenIcon size={18} /><span>{fmt(daily)} SKR / day</span><ChevronDown size={15} aria-hidden="true" className={open ? '' : 'rotate-180'} />
+        <HeroTokenIcon size={18} /><span>{fmt(daily)} $SKR / day</span><ChevronDown size={15} aria-hidden="true" className={open ? '' : 'rotate-180'} />
       </button>}
-      {popoverHost && open ? createPortal(incomeDetails, popoverHost) : incomeDetails}
+      {isolatedHackathon && open ? createPortal(incomeDetails, document.body) : incomeDetails}
     </div>
   );
 }
