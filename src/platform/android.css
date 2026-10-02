@@ -634,3 +634,33 @@ html[data-hl-edition='seeker'][data-hl-platform='web'] .battle-income-wrap { fle
 html[data-hl-edition='seeker'][data-hl-platform='web'] .hl-battle-dock :is(.pm-boost, .pm-chest) > span { font-size: 9px; }
 html[data-hl-edition='seeker'][data-hl-platform='web'] .hl-battle-dock .pm-chest > :first-child { width: 22px; height: 22px; }
 html[data-hl-edition='seeker'][data-hl-platform='web'] .normal-battle-footer { padding-inline: 4px; gap: 4px; }
+
+/* One page style for every menu item (Founder 2026-10-02). Heroes, Summon, Market, Training, Store, Ranks and
+   Refer fill exactly the Play area like the Bag: under the top bar, no frame, no crest ornaments and no close
+   button (Battle in the tab bar and Android Back return to the battle). App.tsx hosts the overlay there. */
+html[data-hl-platform='android'] .game-main-host { position: relative; }
+html[data-hl-platform='android'] .game-main-host > .game-window-overlay,
+html[data-hl-platform='android'] .has-game-progress .game-main-host > .game-window-overlay { position: absolute; inset: 0; z-index: 40; padding: 0; background: transparent; }
+html[data-hl-platform='android'] .game-window-overlay > .game-window:not(#hl-a):not(#hl-b) { height: 100%; max-height: none; border: 0 !important; border-image: none !important; border-radius: 0; background: transparent !important; box-shadow: none !important; }
+html[data-hl-platform='android'] .game-window::before,
+html[data-hl-platform='android'] .game-window::after,
+html[data-hl-platform='android'] .summon-altar::before { content: none !important; display: none !important; }
+html[data-hl-platform='android'] .game-window-close { display: none !important; }
+html[data-hl-platform='android'] .heroes-head > .mt-0\.5 { padding-right: 0; }
+
+/* No dark band between the Play content and the tab bar: the Battle and Bag columns run to the menu. */
+html[data-hl-platform='android'] .game-main { padding-bottom: 0 !important; }
+html[data-hl-platform='android'][data-hl-section] .game-main > :is(.hl-col-left, .hl-col-center, .hl-col-right) { padding-bottom: 0; }
+html[data-hl-platform='android'] .hl-col-right > .game-scrollbar { padding-bottom: 4px; }
+html[data-hl-platform='android'] .hl-locations { margin-bottom: 0; }
+
+/* Battle: bigger fighters in the middle of the stage instead of small ones on its floor; the settings button
+   moved beside Locations (MainScreen.tsx), so the top of the stage only needs room for the level plates. */
+html[data-hl-platform='android'] .battle-stage-normal .arena-stage-inner { justify-content: center; padding: 22px 8px 8px; }
+html[data-hl-platform='android'] .battle-stage-normal .arena-lanes { transform: none; gap: 12px; }
+html[data-hl-platform='android'] .battle-stage-normal .arena-portrait { width: clamp(84px, 26vw, 112px) !important; height: clamp(84px, 26vw, 112px) !important; }
+html[data-hl-platform='android'] .battle-stage-normal .arena-unit-name { font-size: 10px !important; }
+html[data-hl-platform='android'] .hl-battle-hud-left:empty { display: none; }
+html[data-hl-platform='android'] .hl-locations .hl-battle-settings > button { height: auto; min-height: 44px; width: 44px; padding: 0; }
+/* Beside the settings button the Locations label stays on one line. */
+html[data-hl-platform='android'] .location-disclosure .section-kicker { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: .03em; }

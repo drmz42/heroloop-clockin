@@ -547,39 +547,40 @@ function App() {
         </div>
       )}
 
-      <div className="flex-1 min-h-0 overflow-hidden">
+      {/* The window overlay lives in the Play area's host: fixed on the web, but on the Android layout
+          (android.css) it fills exactly the Play area, so every menu item reads as a page like the Bag. */}
+      <div className="game-main-host flex-1 min-h-0 overflow-hidden">
         <MainScreen game={game} tokenomics={tokenomics} onBoostClick={() => setShowBoost(true)} onGuidesClick={openWiki} onRewardBoostClick={() => setTab('shop')} onQuestsClick={openQuests} />
+        {tab !== 'main' && (
+          <div
+            className="game-window-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-[5px]"
+            onMouseDown={(event) => {
+              if (event.currentTarget === event.target) setTab('main');
+            }}
+          >
+            <section className={`game-window relative flex max-h-[calc(100vh-24px)] w-full flex-col overflow-hidden rounded-xl border border-[#9a6a22] bg-[#100f0c] shadow-[0_24px_90px_rgba(0,0,0,.8),0_0_32px_rgba(199,135,31,.12)] ${tab === 'summon' ? 'h-[calc(100vh-32px)] max-w-[1225px]' : tab === 'training' ? 'h-[calc(100vh-32px)] max-w-[1120px]' : tab === 'shop' || tab === 'referrals' ? 'max-w-[760px]' : 'max-w-[980px]'}`}>
+              <button
+                type="button"
+                className="game-control game-window-close absolute right-3 top-3 z-20 grid h-9 w-9 place-items-center"
+                onClick={() => setTab('main')}
+                aria-label="Close"
+              >
+                <X size={17} />
+              </button>
+              <div className="min-h-0 flex-1 overflow-auto">
+                {tab === 'heroes'      && <HeroesScreen game={game} />}
+                {tab === 'summon'      && <SummonScreen game={game} rarityCapacity={tokenomics.status?.rarity_capacity} />}
+                {tab === 'training'    && <TrainingCampScreen game={game} />}
+                {tab === 'crafting'    && <CraftingScreen />}
+                {tab === 'shop'        && <ShopScreen game={game} />}
+                {tab === 'market'      && <MarketplaceScreen game={game} tokenomics={tokenomics} />}
+                {tab === 'leaderboard' && <LeaderboardScreen game={game} />}
+                {tab === 'referrals'   && <ReferralsScreen game={game} />}
+              </div>
+            </section>
+          </div>
+        )}
       </div>
-
-      {tab !== 'main' && (
-        <div
-          className="game-window-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-[5px]"
-          onMouseDown={(event) => {
-            if (event.currentTarget === event.target) setTab('main');
-          }}
-        >
-          <section className={`game-window relative flex max-h-[calc(100vh-24px)] w-full flex-col overflow-hidden rounded-xl border border-[#9a6a22] bg-[#100f0c] shadow-[0_24px_90px_rgba(0,0,0,.8),0_0_32px_rgba(199,135,31,.12)] ${tab === 'summon' ? 'h-[calc(100vh-32px)] max-w-[1225px]' : tab === 'training' ? 'h-[calc(100vh-32px)] max-w-[1120px]' : tab === 'shop' || tab === 'referrals' ? 'max-w-[760px]' : 'max-w-[980px]'}`}>
-            <button
-              type="button"
-              className="game-control game-window-close absolute right-3 top-3 z-20 grid h-9 w-9 place-items-center"
-              onClick={() => setTab('main')}
-              aria-label="Close"
-            >
-              <X size={17} />
-            </button>
-            <div className="min-h-0 flex-1 overflow-auto">
-              {tab === 'heroes'      && <HeroesScreen game={game} />}
-              {tab === 'summon'      && <SummonScreen game={game} rarityCapacity={tokenomics.status?.rarity_capacity} />}
-              {tab === 'training'    && <TrainingCampScreen game={game} />}
-              {tab === 'crafting'    && <CraftingScreen />}
-              {tab === 'shop'        && <ShopScreen game={game} />}
-              {tab === 'market'      && <MarketplaceScreen game={game} tokenomics={tokenomics} />}
-              {tab === 'leaderboard' && <LeaderboardScreen game={game} />}
-              {tab === 'referrals'   && <ReferralsScreen game={game} />}
-            </div>
-          </section>
-        </div>
-      )}
 
       {isAndroidLayout ? (
         <MobileTabBar

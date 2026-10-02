@@ -362,6 +362,33 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     && nextLocation <= state.highestLocation
     && state.accountLevel >= locationUnlockLevel(nextLocation);
 
+  // Android puts the settings beside Locations (Founder 2026-10-02), so the menu opens upward there.
+  const settingsInLocations = isAndroidLayout && isolatedHackathon && !activeDungeon;
+  const battleSettingsControl = (
+    <div className="hl-battle-settings relative">
+      <button type="button" onClick={() => setShowBattleSettings((value) => !value)} className={`game-control flex items-center gap-1.5 px-2 ui-text-small font-black uppercase ${settingsInLocations ? 'h-11 min-w-11 justify-center' : 'h-7'}`} aria-label={isolatedHackathon ? 'Battle settings' : 'Battle graphics quality settings'} aria-expanded={showBattleSettings}><Settings2 size={14} /><span className="hidden sm:inline">{battleAnimationLabel}</span></button>
+      {showBattleSettings && <div className={`absolute left-0 z-[111] w-56 ${settingsInLocations ? 'bottom-full mb-1 max-h-[60dvh] overflow-y-auto' : 'top-full mt-1'} rounded-lg border border-[#80683f] bg-[#11130f]/97 p-2 shadow-2xl backdrop-blur-sm`}>
+        {isolatedHackathon && <section className="mb-2 border-b border-[#80683f]/50 pb-2" aria-label="Healing settings">
+          <h3 className="ui-text-medium font-bold text-emerald-300">Automatic healing</h3>
+          <p className="my-1 ui-text-small leading-relaxed text-[#c4bba7]">Stored potions are used first below 35% HP. Gold buys instant healing only when stock runs out.</p>
+          <label className="flex items-center gap-2 py-1 ui-text-medium text-[#e8decd]"><input type="checkbox" checked={goldHealingEnabled(state.autoPot)} onChange={event => game.setAutoPot({ enabled: true, goldHealingOptOut: !event.target.checked, healingInfoSeen: true })} className="h-4 w-4 accent-emerald-400" /> Spend Gold on healing</label>
+          <p className="ui-text-small leading-relaxed text-[#9e9687]">XS / S / M / L / XL / XXL: 1 / 1 / 1 / 2 / 4 / 10 Gold. Not enough Gold means no purchase. Normal battles only; changes apply next wave.</p>
+        </section>}
+        <div className="mb-1.5 ui-text-small font-black uppercase tracking-[.14em] text-[#efd18a]">Battle graphics</div>
+        {([
+          ['spectacular', 'Maximum', 'Full battle movement and effects'],
+          ['light', 'Medium', 'Standard battle movement and effects'],
+          ['off', 'Minimum', 'Static portraits; essential feedback only'],
+        ] as const).map(([mode, label, description]) => <button key={mode} type="button" onClick={() => { game.setBattleAnimationMode(mode); setShowBattleSettings(false); }} className={`mt-1 w-full rounded-md border px-2 py-1.5 text-left ${state.battleAnimationMode === mode ? 'border-amber-400/60 bg-amber-400/12' : 'border-white/10 bg-black/25 hover:border-white/20'}`}><span className="block ui-text-small font-black text-[#e8decd]">{label}</span><span className="block ui-text-small text-[#8f887b]">{description}</span></button>)}
+      </div>}
+    </div>
+  );
+
+  // Opening the collapsed hackathon path scrolls the battle column so the whole path is on screen at once.
+  useEffect(() => {
+    if (isolatedHackathon && locationsExpanded) document.getElementById('location-progression-path')?.scrollIntoView({ block: 'nearest' });
+  }, [locationsExpanded]);
+
   useEffect(() => {
     if (!locationsExpanded) return;
     const current = locationRailRef.current?.querySelector<HTMLElement>(`[data-location="${state.currentLocation}"]`);
@@ -677,23 +704,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               </button>
               {showPotSettings && <PotionSettings game={game} onClose={() => setShowPotSettings(false)} />}
             </div> : activeDungeon ? <div className="game-control flex h-9 items-center gap-2 border-violet-500/60 bg-violet-950/40 px-3 ui-text-small font-black uppercase text-violet-200"><DoorOpen size={15} /> {activeDungeon.type === 'boss_hunt' ? 'Boss Hunt' : `Depth ${activeDungeon.depth} · Room ${activeDungeon.room}/4`}</div> : null}
-            <div className="relative">
-              <button type="button" onClick={() => setShowBattleSettings((value) => !value)} className="game-control flex h-7 items-center gap-1.5 px-2 ui-text-small font-black uppercase" aria-label={isolatedHackathon ? 'Battle settings' : 'Battle graphics quality settings'} aria-expanded={showBattleSettings}><Settings2 size={14} /><span className="hidden sm:inline">{battleAnimationLabel}</span></button>
-              {showBattleSettings && <div className="absolute left-0 top-full z-[111] mt-1 w-56 rounded-lg border border-[#80683f] bg-[#11130f]/97 p-2 shadow-2xl backdrop-blur-sm">
-                {isolatedHackathon && <section className="mb-2 border-b border-[#80683f]/50 pb-2" aria-label="Healing settings">
-                  <h3 className="ui-text-medium font-bold text-emerald-300">Automatic healing</h3>
-                  <p className="my-1 ui-text-small leading-relaxed text-[#c4bba7]">Stored potions are used first below 35% HP. Gold buys instant healing only when stock runs out.</p>
-                  <label className="flex items-center gap-2 py-1 ui-text-medium text-[#e8decd]"><input type="checkbox" checked={goldHealingEnabled(state.autoPot)} onChange={event => game.setAutoPot({ enabled: true, goldHealingOptOut: !event.target.checked, healingInfoSeen: true })} className="h-4 w-4 accent-emerald-400" /> Spend Gold on healing</label>
-                  <p className="ui-text-small leading-relaxed text-[#9e9687]">XS / S / M / L / XL / XXL: 1 / 1 / 1 / 2 / 4 / 10 Gold. Not enough Gold means no purchase. Normal battles only; changes apply next wave.</p>
-                </section>}
-                <div className="mb-1.5 ui-text-small font-black uppercase tracking-[.14em] text-[#efd18a]">Battle graphics</div>
-                {([
-                  ['spectacular', 'Maximum', 'Full battle movement and effects'],
-                  ['light', 'Medium', 'Standard battle movement and effects'],
-                  ['off', 'Minimum', 'Static portraits; essential feedback only'],
-                ] as const).map(([mode, label, description]) => <button key={mode} type="button" onClick={() => { game.setBattleAnimationMode(mode); setShowBattleSettings(false); }} className={`mt-1 w-full rounded-md border px-2 py-1.5 text-left ${state.battleAnimationMode === mode ? 'border-amber-400/60 bg-amber-400/12' : 'border-white/10 bg-black/25 hover:border-white/20'}`}><span className="block ui-text-small font-black text-[#e8decd]">{label}</span><span className="block ui-text-small text-[#8f887b]">{description}</span></button>)}
-              </div>}
-            </div>
+            {!settingsInLocations && battleSettingsControl}
           </div>
           {isolatedHackathon && !activeDungeon && <AutomaticHealingStatus game={game} />}
           {!activeDungeon && banner && (
@@ -762,9 +773,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
 
         {/* Hackathon locations collapse to reserve phone space for combat. */}
         {!activeDungeon ? <div className="hl-locations material-panel mt-1.5 shrink-0 p-2.5">
-          {isolatedHackathon ? <button
+          {isolatedHackathon ? <div className="flex items-stretch gap-1.5">{settingsInLocations && battleSettingsControl}<button
             type="button"
-            className="location-disclosure game-control flex min-h-11 w-full items-center justify-between gap-2 px-2 text-left"
+            className="location-disclosure game-control flex min-h-11 min-w-0 flex-1 items-center justify-between gap-2 px-2 text-left"
             aria-expanded={locationsExpanded}
             aria-controls="location-progression-path"
             onClick={() => setLocationsExpanded(expanded => !expanded)}
@@ -774,7 +785,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               {nextLocationAvailable && <span className="block ui-text-small">Next location available</span>}
             </span>
             <ChevronDown size={20} className={locationsExpanded ? 'rotate-180 shrink-0' : 'shrink-0'} aria-hidden="true" />
-          </button> : <div className="mb-1.5 flex items-center justify-between">
+          </button></div> : <div className="mb-1.5 flex items-center justify-between">
             <span className="section-kicker">Locations</span>
             <span className="ui-text-small font-semibold uppercase tracking-[.12em] text-[#77746d]">Progression path</span>
           </div>}
