@@ -56,6 +56,19 @@ export function formatMinor(minor: string, asset: WalletAsset, maxFraction = 4):
   return `${negative ? '-' : ''}${whole}${fraction ? `.${fraction}` : ''}`;
 }
 
+/** Player-facing amount with one decimal: prices round up (never shown below the charge), balances round down
+ * (never shown above what the player holds). Exact amounts stay in formatMinor. */
+export function formatAmountShort(minor: string, asset: WalletAsset, round: 'up' | 'down'): string {
+  const decimals = ASSET_DECIMALS[asset];
+  const negative = minor.startsWith('-');
+  const value = BigInt(negative ? minor.slice(1) : minor);
+  const step = 10n ** BigInt(Math.max(0, decimals - 1));
+  const tenths = round === 'up' ? (value + step - 1n) / step : value / step;
+  const whole = (tenths / 10n).toLocaleString('en-US');
+  const fraction = tenths % 10n;
+  return `${negative ? '-' : ''}${whole}${fraction ? `.${fraction}` : ''}`;
+}
+
 async function command<T>(action: string, payload: Record<string, unknown> = {}): Promise<T> {
   let code = 'wallet_unavailable';
   const result = await playerSync<T>(action, payload, (message) => { code = message; });

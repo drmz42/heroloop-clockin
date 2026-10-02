@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowDownToLine, Check, ExternalLink, Loader2, RefreshCw, ShieldCheck, AlertTriangle } from 'lucide-react';
 import {
-  commitSkrPurchase,boundWallet, deposit, formatMinor, refreshWallet, SeekerWalletError, useWalletSnapshot, waitForDeposit,
+  commitSkrPurchase,boundWallet, deposit, formatAmountShort, formatMinor, refreshWallet, SeekerWalletError, useWalletSnapshot, waitForDeposit,
   type WalletAsset, type WalletSnapshot,
 } from '@/game/seekerWallet';
 
@@ -46,7 +46,7 @@ function Balances({ snapshot }: { snapshot: WalletSnapshot | null }) {
         <div key={asset} className="stat-tile p-3">
           <div className="text-[10px] font-bold uppercase tracking-wider text-[#8f887b]">In-game {asset}</div>
           <div className="mt-1 text-xl font-black tabular-nums text-[#f1d188]">
-            {snapshot ? formatMinor(snapshot.balances[asset], asset) : '—'}
+            {snapshot ? formatAmountShort(snapshot.balances[asset], asset, 'down') : '—'}
           </div>
         </div>
       ))}
@@ -177,7 +177,7 @@ export function SeekerHistoryPanel({onPurchase}:{onPurchase?:(result:Record<stri
   return (
     <>
       <Balances snapshot={snapshot} />
-      {snapshot?.pending_purchases?.map(quote=><div key={quote.quote_id} className="stat-tile p-3 text-xs"><p>Pending {quote.context.action.replace(/_/g,' ')} · {formatMinor(quote.amount_minor,'SKR',6)} SKR</p><button disabled={recovering} className="game-control mt-2 min-h-11 w-full" onClick={()=>void recover(quote.quote_id)}>Recover this payment</button></div>)}
+      {snapshot?.pending_purchases?.map(quote=><div key={quote.quote_id} className="stat-tile p-3 text-xs"><p>Pending {quote.context.action.replace(/_/g,' ')} · {formatAmountShort(quote.amount_minor,'SKR','up')} SKR</p><button disabled={recovering} className="game-control mt-2 min-h-11 w-full" onClick={()=>void recover(quote.quote_id)}>Recover this payment</button></div>)}
       {notice&&<p role="status" className="text-xs text-amber-200">{notice}</p>}
       {snapshot && snapshot.history.length === 0 && (
         <div className="stat-tile p-3 text-xs text-[#a29b8e]">No wallet activity yet.</div>

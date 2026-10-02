@@ -5,7 +5,7 @@ import type { Tab } from './TopMenu';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { shortWalletAddress } from '@/components/walletAddress';
 import { isolatedHackathon } from '@/game/editionStorage';
-import { formatMinor, useWalletSnapshot } from '@/game/seekerWallet';
+import { formatAmountShort, useWalletSnapshot } from '@/game/seekerWallet';
 
 const TABS = [
   { id: 'heroes',      label: 'Heroes',   icon: Shield },
@@ -108,5 +108,5 @@ export function GameNavBar({
 // Hackathon build: the server SKR ledger balance (deposits), not the legacy $HERO save field.
 function SkrBalance() {
   const snapshot = useWalletSnapshot();
-  return <>{snapshot ? formatMinor(snapshot.balances.SKR, 'SKR', 2) : '—'}</>;
+  return <>{snapshot ? formatAmountShort(snapshot.balances.SKR, 'SKR', 'down') : '—'}</>;
 }

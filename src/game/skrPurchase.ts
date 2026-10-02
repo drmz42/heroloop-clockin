@@ -1,5 +1,5 @@
 import { useEffect,useState } from 'react';
-import { formatMinor,loadSkrRate,SeekerWalletError } from './seekerWallet';
+import { formatAmountShort,loadSkrRate,SeekerWalletError } from './seekerWallet';
 export function skrError(error: unknown): string {
   const code=error instanceof SeekerWalletError ? error.code : String(error);
   return ({
@@ -26,8 +26,8 @@ export function useSkrRate() {
   return rate;
 }
 export function skrPrice(cents:number,rate:string|null):string {
-  const usd=`$${(cents/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:6})}`;
+  const usd=`$${(Math.ceil(cents)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
   if(!rate)return `${usd} · SKR rate unavailable`;
   const d=BigInt(rate),n=BigInt(Math.round(cents*10000))*1_000_000n;
-  return `${usd} · ${formatMinor(((n+d-1n)/d).toString(),'SKR',6)} SKR`;
+  return `${usd} · ${formatAmountShort(((n+d-1n)/d).toString(),'SKR','up')} SKR`;
 }

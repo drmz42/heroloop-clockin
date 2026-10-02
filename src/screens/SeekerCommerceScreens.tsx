@@ -5,7 +5,7 @@ import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 import type { GameApi } from '@/game/useGame';
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { skrPrice,useSkrRate } from '@/game/skrPurchase';
-import { formatMinor,useWalletSnapshot } from '@/game/seekerWallet';
+import { formatAmountShort,useWalletSnapshot } from '@/game/seekerWallet';
 
 function BundleArt({resource}:{resource:string}) {
   if(resource==='summon_scroll')return <SummonScrollArtwork size={36}/>;
@@ -14,7 +14,7 @@ function BundleArt({resource}:{resource:string}) {
 }
 function Balance() {
   const wallet=useWalletSnapshot();
-  return <span className="stat-tile px-3 py-2 text-sm font-bold text-lime-200">{wallet?formatMinor(wallet.balances.SKR,'SKR',6):'—'} SKR</span>;
+  return <span className="stat-tile px-3 py-2 text-sm font-bold text-lime-200">{wallet?formatAmountShort(wallet.balances.SKR,'SKR','down'):'—'} SKR</span>;
 }
 export function SeekerShopScreen({game}:{game:GameApi}) {
   const rate=useSkrRate();

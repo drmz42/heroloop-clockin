@@ -377,7 +377,7 @@ html[data-hl-platform='android'] .hero-detail-panel > footer button { min-height
 .game-progress-commander > b { position: absolute; right: 0; bottom: 0; padding: 0 3px; border-top-left-radius: 3px; background: rgba(0, 0, 0, .82); color: #ffe6a2; font-size: 11px; line-height: 14px; }
 .hl-commander-sheet { position: fixed; inset: calc(var(--game-progress-height) + env(safe-area-inset-top, 0px)) 0 var(--hl-tabbar-h) 0; z-index: 10005; display: flex; align-items: flex-start; background: rgba(0, 0, 0, .55); }
 .hl-commander-sheet-panel { position: relative; width: 100%; max-height: 100%; overflow-y: auto; padding-top: 4px; }
-.hl-commander-sheet-close { position: absolute; top: 8px; right: 8px; z-index: 1; display: grid; width: 40px; height: 40px; place-items: center; border-radius: 2px; }
+.hl-commander-sheet-close { position: absolute !important; top: 8px; right: 8px; z-index: 5 !important; display: grid; width: 40px; height: 40px; place-items: center; border-radius: 2px; }
 
 /* Founder 2026-10-02: the status label is not needed on a phone. */
 html[data-hl-platform='android'] .hl-healing-status { display: none; }
@@ -546,3 +546,13 @@ html[data-hl-platform='android'] .hl-toast { left: 16px !important; right: 16px;
    scroll; empty and locked cells also lose the grey inner outline. */
 html[data-hl-platform='android'] .hl-col-right > .game-scrollbar { position: static; }
 html[data-hl-platform='android'] .hl-col-right .item-slot:not([class*='rarity-'])::before { border-color: transparent !important; }
+
+/* Heroes filters, Founder review 2026-10-02: one size and one frame for search, selects and buttons; the
+   capacity button stays clear of the window close button. */
+html[data-hl-platform='android'] .hl-hero-filters > * { height: 40px !important; min-height: 40px; padding: 0 !important; }
+html[data-hl-platform='android'] .hl-hero-filters :is(button, select, input) { height: 40px !important; min-height: 40px !important; width: 100%; border-image-width: 8px !important; font-size: 10px !important; }
+html[data-hl-platform='android'] .hl-hero-filters select { padding: 0 18px 0 10px !important; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+html[data-hl-platform='android'] .hl-hero-filters > button { padding: 0 8px !important; text-transform: uppercase; }
+html[data-hl-platform='android'] .heroes-head > .mt-0\.5 { padding-right: 52px; }
+/* Commander sheet: the level row keeps clear of the close button. */
+.hl-commander-sheet-close + * { padding-right: 48px; }
