@@ -384,7 +384,10 @@ html[data-hl-platform='android'] .hl-battle-dock button[aria-label='Show chest d
 
 /* Centered modals (z-[9999]) sit above the top progress bar (10010) and the tab bar, inside the safe area. */
 html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\] { overflow: hidden; z-index: 10015; padding-top: calc(12px + env(safe-area-inset-top, 0px)); padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
-html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\] > * { min-height: 0; max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important; }
+/* Some of these overlays sit inside a contained ancestor (their "fixed" box is shorter than the screen), so cap the
+   dialog by the overlay itself: a flex column gives the percentage a definite height. */
+html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\] { display: flex !important; flex-direction: column; align-items: center; justify-content: center; }
+html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\] > * { flex: 0 1 auto; min-height: 0; max-height: 100% !important; }
 
 /* The location art covers the whole battle stage, footer included (the inner arena alone left the footer bare). */
 html[data-hl-platform='android'] .battle-stage-normal { background-image: linear-gradient(180deg, rgba(4, 6, 8, .12), rgba(4, 6, 8, .78)), var(--location-arena-art); background-position: center; background-size: cover; background-repeat: no-repeat; }
