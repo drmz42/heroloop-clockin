@@ -1,3 +1,4 @@
+import { useSkrRate } from '@/game/skrPurchase';
 import { useEffect, useState } from 'react';
 import { X, CalendarDays, Timer, Crown, CheckCircle2, Circle, Gift, Clock3, Layers, Trophy, Zap, ShoppingBag, Wallet, Pickaxe, Send, AtSign } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -21,6 +22,7 @@ const money = (value: number | undefined | null) => (typeof value === 'number' &
 const decimals = (value: number | undefined | null, digits = 2) => (typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '—');
 
 export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; tokenomics: TokenomicsApi; onClose: () => void }) {
+  const rate = useSkrRate(isolatedHackathon);
   const [updating, setUpdating] = useState(false);
   const [skrStatus, setSkrStatus] = useState<SkrBoostStatus | null>(null);
   const [links, setLinks] = useState<SocialLinks | null>(null);
@@ -43,7 +45,7 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
     { key: 'hold', label: 'Hold 1,000 $HERO', icon: <HeroTokenIcon size={15} />, done: (boost?.token_balance ?? 0) >= 1000, value: Math.min(Math.floor(boost?.token_balance ?? 0), 1000), goal: 1000, unit: '' },
   ];
   const tasks: BoostTask[] = isolatedHackathon ? [
-    ...skrBoostTasks(skrStatus).map(task => ({ ...task, icon: task.key === 'spend' ? <ShoppingBag size={15} /> : <Wallet size={15} />, value: task.percent, goal: 100, unit: '' })),
+    ...skrBoostTasks(skrStatus, rate).map(task => ({ ...task, icon: task.key === 'spend' ? <ShoppingBag size={15} /> : <Wallet size={15} />, value: task.percent, goal: 100, unit: '' })),
     { key: 'ore', label: 'Attempt ORE mining every 7 days', icon: <Pickaxe size={15} />, done: false, value: 0, goal: 1, unit: '', pending: true, progress: 'Coming soon', detail: 'One completed mining attempt within the last 7 days. Each new attempt renews the 7-day window; finding ORE is not required. Not required until mining is available.' },
     ...(['telegram', 'x'] as const).map(provider => ({ key: provider, label: provider === 'telegram' ? 'Link Telegram' : 'Link X', icon: provider === 'telegram' ? <Send size={15} /> : <AtSign size={15} />, done: !!links?.[provider], value: links?.[provider] ? 1 : 0, goal: 1, unit: '', progress: links ? 'Not linked' : 'Checking linked accounts…' })),
   ] : heroTasks;

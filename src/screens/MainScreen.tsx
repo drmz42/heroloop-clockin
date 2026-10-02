@@ -875,7 +875,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     )}
                     {ib && item!.enchantLevel > 0 && <div className="absolute top-0 left-0 ui-text-medium font-bold text-amber-400 font-vt leading-none px-0.5">+{item!.enchantLevel}</div>}
                     {ib?.heroClass && <div className="item-class-badge absolute right-0 top-0" title={`${CLASS_LABEL[ib.heroClass]} only`}>{CLASS_SHORT_LABEL[ib.heroClass]}</div>}
-                    {ib && <div className="absolute bottom-0 right-0 ui-text-medium font-bold font-vt px-1 leading-tight" style={{ background: ic, color: '#000' }}>{item!.level}</div>}
+                    {ib && <div className="item-level-label absolute bottom-0 right-0 ui-text-medium font-bold font-vt px-1 leading-tight" style={{ background: ic, color: '#000' }}>{item!.level}</div>}
                   </button>
                   <div className="mt-1 min-w-0 truncate text-center ui-text-small font-semibold tracking-[-.03em] text-[#8a867c]" title={SLOT_LABEL[slot]}>{slotLabel}</div>
                 </div>;
@@ -934,7 +934,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                   {item?.locked && <LockIcon size={11} className="absolute bottom-0.5 left-0.5 z-10 text-amber-300" />}
                   {item && item.enchantLevel > 0 && <div className="absolute top-0 left-0 ui-text-medium font-bold text-amber-400 font-vt leading-none px-0.5">+{item.enchantLevel}</div>}
                   {itemBase?.heroClass && <div className="item-class-badge absolute right-0 top-0" title={`${CLASS_LABEL[itemBase.heroClass]} only`}>{CLASS_SHORT_LABEL[itemBase.heroClass]}</div>}
-                  {item && <span className="ui-text-small absolute bottom-0 right-0 min-w-4 rounded-tl bg-[#d9d0c0] px-0.5 text-center font-bold leading-4 text-black" title={`Item level ${item.level}`}>{item.level}</span>}
+                  {item && <span className="item-level-label ui-text-small absolute bottom-0 right-0 min-w-4 rounded-tl bg-[#d9d0c0] px-0.5 text-center font-bold leading-4 text-black" title={`Item level ${item.level}`}>{item.level}</span>}
                 </button>
                 {gridIndex === selectedBagRowEnd && liveSelectedItem && selectedItemSource === 'bag' && <div className="col-span-8 rounded-lg border border-[#6e5837] bg-[#10120f] p-2 shadow-inner"><ItemActionPanel item={liveSelectedItem} game={game} equippedSlot={null} comparisonItem={comparisonItem} equipDisabledReason={selectedEquipReason} onEquip={async (slot) => { if (!selectedHero) return; if (await game.equipItem(selectedHero.uid, liveSelectedItem.uid, slot)) { setSelectedItem(null); showToast('Item equipped'); } else showToast(equipmentFailure('Equip')); }} onBeforeSell={async (selected) => { if (selected.serverOwned) return true; const selectedRarity = ITEM_MAP[selected.itemId]?.rarity; return selectedRarity === 'divine' || selectedRarity === 'celestial' ? tok.removeLimitedItem(selected.uid) : true; }} onClose={() => setSelectedItem(null)} /></div>}
                 </Fragment>

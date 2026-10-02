@@ -1,3 +1,4 @@
+import { useSkrRate } from '@/game/skrPurchase';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Circle, Crown, ShoppingBag, Wallet, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -36,7 +37,8 @@ export function SkrBoostMaxModal({ onClose }: { onClose: () => void }) {
     window.addEventListener('keydown', escape);
     return () => window.removeEventListener('keydown', escape);
   }, [onClose]);
-  const tasks = skrBoostTasks(status);
+  const rate = useSkrRate();
+  const tasks = skrBoostTasks(status, rate);
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-3 backdrop-blur-[2px]" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
       <div ref={panel} className="px-panel-raised flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl" role="dialog" aria-modal="true" aria-labelledby="skr-boost-title">
@@ -47,7 +49,7 @@ export function SkrBoostMaxModal({ onClose }: { onClose: () => void }) {
         <div className="game-scrollbar min-h-0 space-y-3 overflow-y-auto p-4">
           <section className="stat-tile p-4" aria-label="SKR Boost tasks">
             <p className="text-sm font-bold text-[#e3dccf]">Complete your SKR tasks</p>
-            <p className="mt-1 text-xs leading-5 text-[#aaa397]">Your progress is confirmed by the server. USD targets are paid and held in SKR.</p>
+            <p className="mt-1 text-xs leading-5 text-[#aaa397]">Your progress is confirmed by the server. Targets use the current server SKR rate.</p>
             <ul className="mt-4 space-y-4">
               {tasks.map(task => <li key={task.key} className="flex items-start gap-2.5">
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#51442f] text-[#dcb55f]">{task.key === 'spend' ? <ShoppingBag size={17} /> : <Wallet size={17} />}</span>

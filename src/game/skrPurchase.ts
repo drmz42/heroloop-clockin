@@ -1,3 +1,4 @@
+export { skrListingPriceCents } from './skrListingPrice';
 import { useEffect,useState } from 'react';
 import { formatAmountShort,loadSkrRate,SeekerWalletError } from './seekerWallet';
 export function skrError(error: unknown): string {
@@ -15,19 +16,19 @@ export function skrError(error: unknown): string {
     store_offer_expired:'The equipment offer expired. Refresh the Store.',
   } as Record<string,string>)[code]??'The purchase could not finish. Check Wallet history before trying again.';
 }
-export function useSkrRate() {
+export function useSkrRate(enabled = true) {
   const [rate,setRate]=useState<string|null>(null);
   useEffect(()=>{
+    if (!enabled) return;
     let active=true;
     const refresh=()=>{void loadSkrRate().then(r=>{if(active)setRate(r.usd_micros_per_skr);}).catch(()=>{if(active)setRate(null);});};
     refresh();const timer=setInterval(refresh,30_000);
     return ()=>{active=false;clearInterval(timer);};
-  },[]);
+  },[enabled]);
   return rate;
 }
 export function skrPrice(cents:number,rate:string|null):string {
-  const usd=`$${(Math.ceil(cents)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-  if(!rate)return `${usd} · SKR rate unavailable`;
+  if(!rate || !/^\d+$/.test(rate) || BigInt(rate) <= 0n)return 'SKR rate unavailable';
   const d=BigInt(rate),n=BigInt(Math.round(cents*10000))*1_000_000n;
-  return `${usd} · ${formatAmountShort(((n+d-1n)/d).toString(),'SKR','up')} SKR`;
+  return `${formatAmountShort(((n+d-1n)/d).toString(),'SKR','up')} SKR`;
 }

@@ -428,16 +428,7 @@ html[data-hl-platform='android'] *, html[data-hl-platform='android'] *::before, 
 html[data-hl-platform='android'] .hl-col-right.material-panel:not(#hl-a):not(#hl-b) { border-image: none !important; border-color: transparent !important; box-shadow: none !important; }
 html[data-hl-platform='android'] .hl-col-right.material-panel::after { content: none !important; }
 
-/* Ranks on phones: no 900px table and no sideways scroll (it left the header area empty); rank, player and
-   Level/Kills/Bosses fit the width, the hero lineup wraps under the name. */
-html[data-hl-platform='android'] .themed-screen-ranks :is(.leader-head, .leader-row) { min-width: 0; grid-template-columns: 30px minmax(0, 1fr) 30px 40px 36px; gap: 6px; padding-inline: 8px; }
-html[data-hl-platform='android'] .themed-screen-ranks :is(.leader-head, .leader-row) > :nth-child(n + 6) { display: none; }
-html[data-hl-platform='android'] .themed-screen-ranks .leader-row > :nth-child(2) { flex-wrap: wrap; row-gap: 4px; }
-html[data-hl-platform='android'] .themed-screen-ranks .leader-row > :nth-child(2) > span:last-child { flex-basis: 100%; }
-html[data-hl-platform='android'] .themed-screen-ranks .leader-row .rank-avatar { width: 42px; height: 42px; }
-html[data-hl-platform='android'] .themed-screen-ranks .leader-head > :nth-child(2) { font-size: 0; }
-html[data-hl-platform='android'] .themed-screen-ranks .leader-head > :nth-child(2)::after { content: 'Player'; font-size: 9px; }
-html[data-hl-platform='android'] .themed-screen-ranks { overflow-x: clip; }
+
 
 /* Store on phones: compact header and offers side by side (3 boost plans, 2 bundles per row). */
 html[data-hl-platform='android'] .themed-screen-store > header { padding: 8px 10px; gap: 6px; }
@@ -556,3 +547,41 @@ html[data-hl-platform='android'] .hl-hero-filters > button { padding: 0 8px !imp
 html[data-hl-platform='android'] .heroes-head > .mt-0\.5 { padding-right: 52px; }
 /* Commander sheet: the level row keeps clear of the close button. */
 .hl-commander-sheet-close + * { padding-right: 48px; }
+
+/* Seeker phone density: preserve touch targets while freeing space for artwork. */
+html[data-hl-platform='android'] .arena-lanes { transform: none; gap: 18px; }
+html[data-hl-platform='android'] .arena-unit { gap: 4px; }
+html[data-hl-platform='android'] .arena-portrait { width: clamp(78px, 22vw, 96px) !important; height: clamp(78px, 22vw, 96px) !important; }
+html[data-hl-platform='android'] .arena-unit-info { width: clamp(58px, 17vw, 74px) !important; padding-inline: 3px; }
+html[data-hl-platform='android'] .hl-locations { margin-top: 3px; padding: 2px 4px; }
+html[data-hl-platform='android'] .location-disclosure { padding-block: 2px; }
+html[data-hl-platform='android'] .location-disclosure .section-kicker > .block { display: inline; margin-left: 4px; font-size: 9px !important; }
+html[data-hl-platform='android'] .item-slot .item-level-label { font-size: 9px !important; line-height: 12px !important; padding-inline: 2px; min-width: 12px; }
+html[data-hl-platform='android'] .seeker-market .market-header { flex-wrap: nowrap; padding-left: 8px; }
+html[data-hl-platform='android'] .seeker-market .market-header > div { gap: 6px; min-width: 0; }
+html[data-hl-platform='android'] .seeker-market .market-header > div > span { width: 28px; height: 28px; flex-shrink: 0; }
+html[data-hl-platform='android'] .seeker-market .market-header .stat-tile { padding: 3px 6px; gap: 4px; flex-shrink: 0; }
+html[data-hl-platform='android'] .seeker-market .market-header .text-lg { font-size: 16px !important; }
+html[data-hl-platform='android'] .seeker-market .market-fee-copy { font-size: 10px !important; line-height: 1.3 !important; }
+html[data-hl-platform='android'] .seeker-market .market-categories { flex-wrap: nowrap; }
+html[data-hl-platform='android'] .seeker-market .market-chip { flex-shrink: 0; padding-inline: 7px; font-size: 10px !important; }
+html[data-hl-platform='android'] .seeker-market .market-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
+html[data-hl-platform='android'] .seeker-market .market-input { min-width: 0; font-size: 11px !important; }
+html[data-hl-platform='android'] .seeker-market .market-filters > :first-child { grid-column: 1 / -1; }
+html[data-hl-platform='android'] .seeker-market .market-tabs { padding-top: 0; padding-inline: 8px; }
+html[data-hl-platform='android'] .seeker-market .market-tab { padding-inline: 8px; font-size: 11px !important; }
+/* One scroll container owns both the rank headings and all columns. */
+html[data-hl-platform='android'] .themed-screen-ranks { height: 100%; min-height: 0; overflow-x: hidden; overflow-y: auto; }
+html[data-hl-platform='android'] .themed-screen-ranks > header { padding: 8px; }
+html[data-hl-platform='android'] .themed-screen-ranks > header h2 { font-size: 18px !important; }
+html[data-hl-platform='android'] .themed-screen-ranks > header .h-14 { width: 36px; height: 36px; }
+html[data-hl-platform='android'] .themed-screen-ranks .reward-scene { min-height: 0; padding: 6px 8px; }
+html[data-hl-platform='android'] .themed-screen-ranks .reward-object { width: 30px; height: 30px; }
+html[data-hl-platform='android'] .themed-screen-ranks .rank-podium { min-height: 72px; }
+html[data-hl-platform='android'] .themed-screen-ranks .rank-table { flex: 1 0 220px; min-height: 220px; overflow: hidden; }
+html[data-hl-platform='android'] .themed-screen-ranks :is(.leader-head, .leader-row) { min-width: 720px; grid-template-columns: 30px minmax(220px, 1fr) 38px 58px 48px 58px 78px 68px; gap: 6px; padding-inline: 8px; }
+html[data-hl-platform='android'] .themed-screen-ranks .rank-avatar { width: 36px; height: 36px; }
+html[data-hl-platform='android'] .themed-screen-ranks .leader-row { padding-block: 5px; }
+html[data-hl-platform='android'] .themed-screen-ranks .rank-scroll { flex: 1 1 auto; overflow: auto; touch-action: pan-x pan-y; overscroll-behavior-x: contain; }
+
+html[data-hl-platform='android'] .arena-unit-name { overflow-wrap: normal; word-break: normal; font-size: 9px !important; }

@@ -33,7 +33,7 @@ export function SkrPurchaseButton({product,params,label='Buy',disabled=false,onD
   }
   const affordable=!quote||!snapshot||BigInt(snapshot.balances.SKR)>=BigInt(quote.amount_minor)||pending;
   return <div className="mt-2 space-y-2">
-    {quote&&<p className="break-words text-xs text-amber-200">${(Math.ceil(quote.usd_cents)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} · {formatAmountShort(quote.amount_minor,'SKR','up')} SKR · expires {new Date(quote.expires_at).toLocaleTimeString()}</p>}
+    {quote&&<p className="break-words text-xs text-amber-200">{formatAmountShort(quote.amount_minor,'SKR','up')} SKR · expires {new Date(quote.expires_at).toLocaleTimeString()}</p>}
     <button type="button" disabled={busy||disabled||!affordable} onClick={()=>void buy()} style={{minHeight:44}} className="game-control game-primary min-h-11 w-full px-3 text-xs font-bold disabled:opacity-40">
       {busy?'Checking…':pending?'Retry pending payment':quote?`Confirm ${formatAmountShort(quote.amount_minor,'SKR','up')} SKR`:label}
     </button>
