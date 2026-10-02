@@ -1,3 +1,4 @@
+import { isolatedHackathon } from '@/game/editionStorage';
 import { Shield } from 'lucide-react';
 import { accountXpForLevel, accountXpProgress } from '@/game/state';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
@@ -39,7 +40,7 @@ export function TopBar({
         </div>
         <div className="flex h-8 items-center gap-2 rounded-full border border-lime-500/40 bg-[linear-gradient(180deg,#12150d_0%,#080a07_100%)] px-3 shadow-[inset_0_1px_0_rgba(255,255,255,.05),0_3px_10px_rgba(0,0,0,.3)]" title="$HERO Token">
           <HeroTokenIcon size={12} />
-          <span className="text-sm font-black tabular-nums text-lime-300">{formatResource(hero)}</span>
+          <span className="text-sm font-black tabular-nums text-lime-300">{isolatedHackathon ? '—' : formatResource(hero)}</span>
           <span className="text-[9px] font-bold uppercase tracking-[.1em] text-[#7f8a69]">$Hero</span>
         </div>
       </div>

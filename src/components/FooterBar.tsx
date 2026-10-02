@@ -1,3 +1,4 @@
+import { isolatedHackathon } from '@/game/editionStorage';
 import { MessageCircle, BookOpen, KeyRound, LogOut, Globe, Send, Twitter } from 'lucide-react';
 import { useState } from 'react';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
@@ -5,7 +6,7 @@ import { defaultUiTheme, setUiTheme } from '@/theme/uiTheme';
 
 export function FooterBar({ onLogout, onGuidesClick, onCodeClick, onSupportClick }: { onLogout: () => void; onGuidesClick: () => void; onCodeClick: () => void; onSupportClick: () => void }) {
   const [copied, setCopied] = useState(false);
-  const tokenCA = 'HERO...p7Xq9M'; // placeholder contract address
+  const tokenCA = isolatedHackathon ? 'SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3' : 'HERO...p7Xq9M'; // placeholder contract address
 
   const copyCA = () => {
     navigator.clipboard?.writeText(tokenCA).catch(() => {});
@@ -19,7 +20,7 @@ export function FooterBar({ onLogout, onGuidesClick, onCodeClick, onSupportClick
       <button onClick={copyCA} className="game-control flex min-h-7 items-center gap-1 whitespace-nowrap px-2 py-1 font-vt" title="Copy token contract">
         <HeroTokenIcon size={13} />
         <span className="text-px-dim text-xs">CA:</span>
-        <span className="text-purple-200 font-bold text-xs">{copied ? 'COPIED!' : tokenCA}</span>
+        <span className="text-purple-200 font-bold text-xs">{copied ? 'COPIED!' : isolatedHackathon ? `${tokenCA.slice(0,4)}…${tokenCA.slice(-4)}` : tokenCA}</span>
       </button>
 
       <div className="w-px h-4 bg-px-border mx-0.5" />

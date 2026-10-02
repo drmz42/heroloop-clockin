@@ -1,5 +1,6 @@
 /* eslint-disable */
 // @ts-nocheck — preserved Qwen reference implementation with a typed game bridge.
+import { isolatedHackathon } from '@/game/editionStorage';
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useGame } from "@/game/useGame";
 import { Onboarding } from "@/screens/LandingScreen";
@@ -275,13 +276,13 @@ function HeroSection({ onStart }) {
       </div>
 
       <div className="hl-hero-inner">
-        <Kicker>AFK RPG · EARN $HERO</Kicker>
+        <Kicker>{isolatedHackathon ? 'AFK RPG · SKR FEATURES COMING SOON' : 'AFK RPG · EARN $HERO'}</Kicker>
         <h1 className="hl-wordmark" data-reveal>HEROLOOP</h1>
         <p className="hl-hero-tag" data-reveal style={{ transitionDelay: "120ms" }}>
           Summon champions across five classes.<br />Build your squad.
         </p>
         <p className="hl-hero-desc" data-reveal style={{ transitionDelay: "220ms" }}>
-          Defeat powerful bosses, earn $HERO while you are away, and collect
+          {isolatedHackathon ? 'Defeat powerful bosses, explore upcoming SKR features, and collect' : 'Defeat powerful bosses, earn $HERO while you are away, and collect'}
           heroes and equipment for the player marketplace.
         </p>
 
@@ -349,7 +350,7 @@ function HeroesSection() {
 function BattleSection() {
   const steps = [
     { icon: <IconSword width={26} height={26} />, t: "FIGHT", d: "Lead your squad of 3 through auto-battles, regions and powerful bosses." },
-    { icon: <HeroToken size={26} />, t: "EARN $HERO", d: "Receive your proportional share of the daily token pool, including while you are away." },
+    { icon: <HeroToken size={26} />, t: "EARN $HERO", d: isolatedHackathon ? 'SKR payment and reward integration is under development.' : 'Receive your proportional share of the daily token pool, including while you are away.' },
     { icon: <IconAnvil width={26} height={26} />, t: "LOOT & UPGRADE", d: "Open chests, equip gear across 12 item rarities and ascend your heroes." },
     { icon: <IconCoin width={26} height={26} />, t: "TRADE", d: "Build a valuable collection of unique heroes and equipment for the player marketplace." },
   ];
@@ -446,7 +447,7 @@ function RewardsSection({ onClaim }) {
     { icon: <IcoCoins />, v: "1,245,600", l: "Gold" },
     { icon: <IcoShards />, v: "92,500", l: "Hero XP" },
     { icon: <IcoChest />, v: "145", l: "Treasure Chests" },
-    { icon: <HeroToken size={27} />, v: "65,400", l: "$HERO" },
+    { icon: <HeroToken size={27} />, v: isolatedHackathon ? "—" : "65,400", l: "$HERO" },
   ];
 
   return (

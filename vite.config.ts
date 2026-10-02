@@ -43,9 +43,26 @@ function qaEndpoint() {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   envDir: process.env.HEROLOOP_SKIP_ENV_FILES === 'true' ? '/tmp/heroloop-no-env-files' : undefined,
-  plugins: [react(), qaEndpoint()],
+  plugins: [
+    ...(['staging2', 'seeker'].includes(mode) ? [{
+      name: 'heroloop-skr-presentation',
+      enforce: 'pre' as const,
+      transformIndexHtml(html: string) { return html.replace(/\$HERO\b/gi, '$SKR'); },
+      transform(code: string, id: string) {
+        if (!/\/(?:src|test\/landing4)\/.*\.[jt]sx?(?:\?|$)/.test(id)) return null;
+        // Currency copy/assets only. Never rename saved fields or API actions.
+        return { code: code.replace(/\$HERO\b/gi, '$SKR')
+          .replaceAll('/assets/brand/hero-token.png', '/assets/brand/skr-token.svg')
+          .replaceAll('/assets/landing4/coin.webp', '/assets/brand/skr-token.svg')
+          .replaceAll('HERO...p7Xq9M', 'SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3')
+          .replaceAll('$SKR rewards are currently simulated', 'SKR rewards are not available yet')
+          .replaceAll('Earn $SKR by winning battles in locations.', 'SKR rewards are not available yet.'), map: null };
+      },
+    }] : []),
+    react(), qaEndpoint(),
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -57,4 +74,4 @@ export default defineConfig({
   preview: {
     allowedHosts: ['a240afbe538feb86-45-66-228-118.serveousercontent.com'],
   },
-});
+}));

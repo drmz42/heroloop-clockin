@@ -1,3 +1,4 @@
+import { isolatedHackathon } from '@/game/editionStorage';
 import { useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
@@ -99,7 +100,7 @@ export function GameWalletModal({
           <div className="flex shrink-0 items-center gap-2">
             <div className="flex h-9 items-center gap-1.5 rounded-full border border-lime-500/40 bg-[#0d1009] px-3" title="In-game $HERO balance">
               <HeroTokenIcon size={14} />
-              <span className="text-sm font-black tabular-nums text-lime-300">{formatNum(balance)}</span>
+              <span className="text-sm font-black tabular-nums text-lime-300">{(isolatedHackathon ? '—' : formatNum(balance))}</span>
             </div>
             <button type="button" onClick={onClose} className="game-control grid h-9 w-9 place-items-center" aria-label="Close wallet"><X size={16} /></button>
           </div>
@@ -131,9 +132,9 @@ export function GameWalletModal({
           {tab === 'deposit' && (
             <>
               <NotLive title="On-chain deposits are not live yet">
-                In-game $HERO is an internal server balance today. Deposits open only after the on-chain token launches and Founder approves the launch.
+                {isolatedHackathon ? 'SKR deposits are not connected yet. Balance verification and payment processing must be available before deposits open.' : 'In-game $HERO is an internal server balance today. Deposits open only after the on-chain token launches and Founder approves the launch.'}
               </NotLive>
-              <AmountField label="Amount to deposit" balanceLabel={`In-game balance: ${formatNum(balance)} $HERO`} />
+              <AmountField label="Amount to deposit" balanceLabel={`In-game balance: ${(isolatedHackathon ? '—' : formatNum(balance))} $HERO`} />
               <button type="button" disabled className="game-control flex w-full items-center justify-center gap-2 px-4 py-3 font-black opacity-45"><Lock size={16} /> Deposit unavailable</button>
               <SafetyNote>Never send tokens to your HeroLoop account ID. It is not a Solana address and cannot receive funds.</SafetyNote>
             </>
@@ -144,7 +145,7 @@ export function GameWalletModal({
               <NotLive title="Withdrawals are not live yet">
                 Limits, fees and cooldowns will be published here once they are approved. Nothing can leave the game before then.
               </NotLive>
-              <AmountField label="Amount to withdraw" balanceLabel={`Available: ${formatNum(balance)} $HERO`} />
+              <AmountField label="Amount to withdraw" balanceLabel={`Available: ${(isolatedHackathon ? '—' : formatNum(balance))} $HERO`} />
               <div className="stat-tile flex items-center justify-between gap-3 p-3 text-xs">
                 <span className="text-[#918b80]">Destination wallet</span>
                 <code className="text-[#e3dccf]">{walletAddress ? shortWalletAddress(walletAddress) : 'Link a wallet first'}</code>
@@ -156,13 +157,13 @@ export function GameWalletModal({
           {tab === 'history' && (
             <>
               <div className="grid grid-cols-2 gap-2">
-                <SummaryTile label="In-game balance" value={formatNum(balance)} tone="lime" />
-                <SummaryTile label="Ready to claim" value={formatNum(pending)} tone="gold" />
-                <SummaryTile label="Total claimed" value={formatNum(claimed)} tone="muted" />
-                <SummaryTile label="Total earned" value={formatNum(earned)} tone="muted" />
+                <SummaryTile label="In-game balance" value={(isolatedHackathon ? '—' : formatNum(balance))} tone="lime" />
+                <SummaryTile label="Ready to claim" value={(isolatedHackathon ? '—' : formatNum(pending))} tone="gold" />
+                <SummaryTile label="Total claimed" value={(isolatedHackathon ? '—' : formatNum(claimed))} tone="muted" />
+                <SummaryTile label="Total earned" value={(isolatedHackathon ? '—' : formatNum(earned))} tone="muted" />
               </div>
               <div className="stat-tile p-3 text-xs leading-5 text-[#a29b8e]">
-                A dated list of individual transactions is not available yet. These totals come from your server-saved account. There are no blockchain transactions to show because on-chain $HERO is not live.
+                {isolatedHackathon ? 'Verified SKR transaction history is not connected yet. No SKR balance or payment totals are available.' : 'A dated list of individual transactions is not available yet. These totals come from your server-saved account. There are no blockchain transactions to show because on-chain $HERO is not live.'}
               </div>
             </>
           )}

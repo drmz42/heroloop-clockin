@@ -1,3 +1,4 @@
+import { isolatedHackathon } from '@/game/editionStorage';
 import { CheckCircle2, Coins, X, Package, Star } from 'lucide-react';
 import { formatNum } from '@/game/state';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
@@ -23,7 +24,7 @@ export function OfflineModal({
           Your hero fought for <span className="font-bold text-px-text">{timeStr}</span>.
         </p>
         <div className="offline-afk-total mb-3">
-          <span>+{formatNum(tokens ?? 0)}</span> <HeroTokenIcon size={15} /> $HERO
+          <span>{isolatedHackathon ? 'Rewards unavailable' : `+${formatNum(tokens ?? 0)}`}</span> <HeroTokenIcon size={15} /> $HERO
         </div>
         <div className="mb-2 grid grid-cols-2 gap-2">
           {[

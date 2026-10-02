@@ -117,13 +117,14 @@ function GuideDetails({ details }: { details: string[] }) {
 }
 
 export function GuidesScreen() {
+  const editionGuides = useMemo(() => isolatedHackathon ? GUIDES.map(entry => /\$HERO/i.test(`${entry.question} ${entry.answer} ${entry.details?.join(' ') ?? ''}`) ? { ...entry, status: 'Coming soon' as const, answer: 'SKR payment pricing, rewards and balance verification are not connected yet. Current SKR quotes and confirmed transactions are required before these features become available.', details: undefined } : entry) : GUIDES, []);
   const [category, setCategory] = useState('All');
   const [query, setQuery] = useState('');
   const filtered = useMemo(() => {
     const search = query.trim().toLowerCase();
-    return GUIDES.filter((entry) => (category === 'All' || entry.category === category)
+    return editionGuides.filter((entry) => (category === 'All' || entry.category === category)
       && (!search || `${entry.question} ${entry.answer} ${entry.details?.join(' ') ?? ''}`.toLowerCase().includes(search)));
-  }, [category, query]);
+  }, [category, query, editionGuides]);
 
   return (
     <div className="premium-screen min-h-full p-4 sm:p-6">
@@ -133,7 +134,7 @@ export function GuidesScreen() {
         <h1 className="mt-2 font-vt text-3xl font-black text-[#f4dfb0]">Wiki &amp; Player Guide</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-[#b8ae9d]">Rules, drop tables and system guides in one searchable codex. Planned mechanics are always separated from the live game.</p>
         <div className="mt-5 grid max-w-2xl grid-cols-3 gap-2">
-          {[['Answers', GUIDES.length], ['Categories', CATEGORIES.length - 1], ['Live now', GUIDES.filter((entry) => entry.status === 'Live').length]].map(([label, value]) => <div key={label} className="rounded-xl border border-[#5c492d] bg-black/25 px-3 py-2"><strong className="block font-vt text-lg text-[#f1cb77]">{value}</strong><span className="text-[9px] font-bold uppercase tracking-[.12em] text-[#928673]">{label}</span></div>)}
+          {[['Answers', editionGuides.length], ['Categories', CATEGORIES.length - 1], ['Live now', editionGuides.filter((entry) => entry.status === 'Live').length]].map(([label, value]) => <div key={label} className="rounded-xl border border-[#5c492d] bg-black/25 px-3 py-2"><strong className="block font-vt text-lg text-[#f1cb77]">{value}</strong><span className="text-[9px] font-bold uppercase tracking-[.12em] text-[#928673]">{label}</span></div>)}
         </div>
       </header>
 
@@ -146,7 +147,7 @@ export function GuidesScreen() {
       <div className="mt-4 grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
         <nav className="no-scrollbar flex gap-1 overflow-x-auto rounded-xl border border-[#4f402b] bg-black/20 p-2 md:flex-col md:self-start" aria-label="Guide categories">
           {CATEGORIES.map((item) => (
-            <button key={item} type="button" onClick={() => setCategory(item)} className={`game-control flex shrink-0 items-center justify-between gap-3 px-3 py-2 text-left text-xs font-bold ${category === item ? 'game-primary' : ''}`} aria-pressed={category === item}><span>{item}</span><span className="rounded-full bg-black/25 px-1.5 text-[9px] text-[#b9a886]">{item === 'All' ? GUIDES.length : GUIDES.filter((entry) => entry.category === item).length}</span></button>
+            <button key={item} type="button" onClick={() => setCategory(item)} className={`game-control flex shrink-0 items-center justify-between gap-3 px-3 py-2 text-left text-xs font-bold ${category === item ? 'game-primary' : ''}`} aria-pressed={category === item}><span>{item}</span><span className="rounded-full bg-black/25 px-1.5 text-[9px] text-[#b9a886]">{item === 'All' ? editionGuides.length : editionGuides.filter((entry) => entry.category === item).length}</span></button>
           ))}
         </nav>
 

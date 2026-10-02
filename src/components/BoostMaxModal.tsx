@@ -32,7 +32,7 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
     });
     return () => { cancelled = true; };
   }, []);
-  const status = tokenomics.status;
+  const status = isolatedHackathon ? null : tokenomics.status;
   const boost = status?.boost;
   const active = isolatedHackathon ? false : boost?.active ?? false;
   const heroTasks: BoostTask[] = [

@@ -1,3 +1,4 @@
+import { isolatedHackathon } from '@/game/editionStorage';
 import { useState } from 'react';
 import { Users, Copy, Check, Gift } from 'lucide-react';
 import { formatNum } from '@/game/state';
@@ -21,7 +22,7 @@ export function ReferralsScreen({ game }: { game: GameApi }) {
     <div className="themed-screen themed-screen-referrals flex h-full flex-col overflow-y-auto no-scrollbar">
       <div className="shrink-0 border-b border-[#4f412e] py-3 pl-4 pr-14">
         <h2 className="flex items-center gap-2 font-pixel text-sm text-gold-glow"><Users size={16} /> Referrals</h2>
-        <p className="mt-1 font-vt text-xs text-px-dim">Invite heroes · earn 3 tiers deep on eligible $HERO earnings.</p>
+        <p className="mt-1 font-vt text-xs text-px-dim">{isolatedHackathon ? 'Invite friends. SKR referral rewards are not available yet.' : 'Invite heroes · earn 3 tiers deep on eligible $HERO earnings.'}</p>
       </div>
 
       <div className="mx-auto w-full max-w-2xl space-y-3 p-4">
@@ -32,8 +33,8 @@ export function ReferralsScreen({ game }: { game: GameApi }) {
         </div>
 
         <div className="stat-tile flex items-center justify-between gap-3 p-3">
-          <div><div className="text-[10px] font-bold uppercase text-px-dim">Claimable now</div><div className="flex items-center gap-2 font-vt text-2xl font-bold text-[#ffd268]"><HeroTokenIcon size={18} />{formatNum(ref.pendingReward)} <span className="text-xs">$HERO</span></div></div>
-          <button onClick={game.claimReferralReward} disabled={ref.pendingReward <= 0} className="game-primary inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-6 font-bold"><Gift size={16} className="inline-block shrink-0" /> Claim</button>
+          <div><div className="text-[10px] font-bold uppercase text-px-dim">Claimable now</div><div className="flex items-center gap-2 font-vt text-2xl font-bold text-[#ffd268]"><HeroTokenIcon size={18} />{(isolatedHackathon ? '—' : formatNum(ref.pendingReward))} <span className="text-xs">$HERO</span></div></div>
+          <button onClick={game.claimReferralReward} disabled={isolatedHackathon || ref.pendingReward <= 0} className="game-primary inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-6 font-bold"><Gift size={16} className="inline-block shrink-0" /> Claim</button>
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -45,8 +46,8 @@ export function ReferralsScreen({ game }: { game: GameApi }) {
 
         <div className="stat-tile p-3">
           <div className="mb-2 font-pixel text-[10px] text-px-bright">EARNINGS BY TIER</div>
-          <div className="grid grid-cols-2 gap-y-1 border-b border-[#3f3527] pb-2 font-vt text-sm"><span className="text-px-dim">Tier 1 · 8%</span><b className="text-right">{formatNum(ref.totalEarned + ref.pendingReward)}</b><span className="text-px-dim">Tier 2 · 3%</span><b className="text-right">0</b><span className="text-px-dim">Tier 3 · 1%</span><b className="text-right">0</b></div>
-          <div className="mt-2 grid grid-cols-2 font-vt text-sm"><span className="text-px-dim">Already claimed</span><b className="text-right">{formatNum(ref.alreadyClaimed)}</b></div>
+          <div className="grid grid-cols-2 gap-y-1 border-b border-[#3f3527] pb-2 font-vt text-sm"><span className="text-px-dim">Tier 1 · 8%</span><b className="text-right">{(isolatedHackathon ? '—' : formatNum(ref.totalEarned + ref.pendingReward))}</b><span className="text-px-dim">Tier 2 · 3%</span><b className="text-right">0</b><span className="text-px-dim">Tier 3 · 1%</span><b className="text-right">0</b></div>
+          <div className="mt-2 grid grid-cols-2 font-vt text-sm"><span className="text-px-dim">Already claimed</span><b className="text-right">{(isolatedHackathon ? '—' : formatNum(ref.alreadyClaimed))}</b></div>
         </div>
 
         <div className="stat-tile p-3">

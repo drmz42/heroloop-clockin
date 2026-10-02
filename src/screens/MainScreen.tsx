@@ -759,7 +759,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                   </div>
                   <div className="mt-0.5 flex items-center gap-1 ui-text-small font-vt">
                     <span className="flex items-center gap-1 text-[#c79b4e]"><Coins size={11} />{formatNum(l.goldReward * (isolatedHackathon ? 2 : 1))} Gold</span>
-                    {!locked && !notYetDiscovered && <span className={`hl-hero-only ml-auto ui-text-small font-bold ${tokenEligible ? 'text-emerald-400' : 'text-[#776f63]'}`}>{tokenEligible ? '$HERO ACTIVE' : 'NO $HERO'}</span>}
+                    {!isolatedHackathon && !locked && !notYetDiscovered && <span className={`hl-hero-only ml-auto ui-text-small font-bold ${tokenEligible ? 'text-emerald-400' : 'text-[#776f63]'}`}>{tokenEligible ? '$HERO ACTIVE' : 'NO $HERO'}</span>}
                     {(locked || notYetDiscovered) && <LockIcon size={11} className="ml-auto text-[#777064]" />}
                   </div>
                 </button>
@@ -1335,7 +1335,7 @@ function TestControls({ game }: { game: GameApi }) {
         <button type="button" className="test-btn test-btn-gold" disabled={creditingGold} onClick={() => void creditGold()}>{creditingGold ? 'Crediting…' : '+50k Gold'}</button>
         <button type="button" className="test-btn test-btn-gold" disabled={creditingAccountXp} onClick={() => void creditAccountXp()}>{creditingAccountXp ? 'Crediting…' : '+40k Account XP'}</button>
         <button type="button" className="test-btn test-btn-gold" disabled={creditingFormationXp} onClick={() => void creditFormationXp()}>{creditingFormationXp ? 'Crediting…' : '+40k Formation XP'}</button>
-        <button type="button" className="test-btn test-btn-green" disabled={crediting} onClick={() => void creditTokens()}>{crediting ? 'Crediting…' : '+50k $HERO'}</button>
+        {!isolatedHackathon && <button type="button" className="test-btn test-btn-green" disabled={crediting} onClick={() => void creditTokens()}>{crediting ? 'Crediting…' : '+50k $HERO'}</button>}
         {creditError && <div role="alert" className="max-w-40 rounded border border-red-500/45 bg-red-950/80 px-2 py-1 ui-text-medium text-red-200">{creditError}</div>}
         <button type="button" className="test-btn test-btn-reset" onClick={() => setOpen(true)}>Delete account</button>
       </div>
@@ -1383,7 +1383,8 @@ function TestControls({ game }: { game: GameApi }) {
   );
 }
 
-function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: { status: TokenomicsStatus | null; stale: boolean; today: number; heroes: number; defeated: number; bosses: number }) {
+function TokenEarningsPanel({ status: legacyStatus, stale, today, heroes, defeated, bosses }: { status: TokenomicsStatus | null; stale: boolean; today: number; heroes: number; defeated: number; bosses: number }) {
+  const status = isolatedHackathon ? null : legacyStatus;
   const TOKEN_PRICE_USD = 0.001;
   const DAILY_POOL = 20_000;
   const daily = status?.my_daily_share ?? 0;
@@ -1421,7 +1422,7 @@ function TokenEarningsPanel({ status, stale, today, heroes, defeated, bosses }: 
           <Row label="Daily pool" value={`${formatNum(pool)} $HERO`} valueClass="text-[#c8b3f0]" />
         </div>
       ) : (
-        <span className="ui-text-small font-semibold text-[#9a937f]">Syncing token pool…</span>
+        <span className="ui-text-small font-semibold text-[#9a937f]">{isolatedHackathon ? 'SKR income and pool verification are not connected yet.' : 'Syncing token pool…'}</span>
       )}
       </div>
     </div>
