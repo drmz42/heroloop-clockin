@@ -822,6 +822,7 @@ body:has(.has-game-progress) .fixed.inset-0 { top:calc(var(--game-progress-heigh
 
 /* A readable, slow cue for an actionable hackathon location transition. */
 .location-disclosure-ready { color:#f0c461; animation:location-available-pulse 2s ease-in-out infinite; }
+.location-disclosure { min-height:44px; }
 .location-disclosure:focus-visible { outline:2px solid #fff0a2; outline-offset:2px; }
 @keyframes location-available-pulse { 50% { color:#fff0b7; text-shadow:0 0 8px #e8ac4299; } }
 @media (prefers-reduced-motion:reduce) { .location-disclosure-ready { animation:none!important; } }
