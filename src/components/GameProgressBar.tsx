@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { ScrollText, Zap } from 'lucide-react';
+import { HeroPortrait } from '@/components/HeroPortrait';
+import { HERO_MAP } from '@/game/heroes';
 
-export function GameProgressBar({ power, readyQuests, identity, onQuestsClick }: {
+// The phone top bar's Commander avatar opens the Commander sheet in MainScreen.
+export const COMMANDER_OPEN_EVENT = 'hl:commander-open';
+
+export function GameProgressBar({ power, readyQuests, identity, onQuestsClick, commander }: {
   power: number; readyQuests: number; identity: string; onQuestsClick: () => void;
+  commander?: { heroId: string; level: number };
 }) {
+  const avatar = commander ? HERO_MAP[commander.heroId] : undefined;
   const previous = useRef({ power, identity });
   const [delta, setDelta] = useState(0);
   useEffect(() => {
@@ -22,6 +29,10 @@ export function GameProgressBar({ power, readyQuests, identity, onQuestsClick }:
       <div><span className="game-progress-label">Team Power</span><strong title={Math.round(power).toLocaleString('en-US')} data-team-power={Math.round(power)}>{format(power)}</strong></div>
       <span role="status" className={`game-power-change ${delta > 0 ? 'is-gain' : 'is-loss'}`}>{delta !== 0 && `${delta > 0 ? '+' : '−'}${format(Math.abs(delta))}`}</span>
     </div>
+    {commander && avatar && <button type="button" className="game-progress-commander" onClick={() => window.dispatchEvent(new Event(COMMANDER_OPEN_EVENT))} aria-label={`Commander, level ${commander.level}`}>
+      <HeroPortrait heroId={avatar.id} heroClass={avatar.heroClass} rarity={avatar.rarity} color={avatar.color} size={40} />
+      <b>{commander.level}</b>
+    </button>}
     <button type="button" onClick={onQuestsClick} className={`game-progress-quests ${readyQuests > 0 ? 'quest-reward-ready' : ''}`} aria-label={readyQuests > 0 ? `Quests, ${readyQuests} rewards ready` : 'Open quests'}>
       <ScrollText size={19} aria-hidden="true" /><span>{readyQuests > 0 ? 'Reward ready' : 'Quests'}<small>{readyQuests > 0 ? `${readyQuests} to claim` : 'Your next goal'}</small></span>
     </button>

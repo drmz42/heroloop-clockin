@@ -3,6 +3,8 @@ import { goldHealingEnabled } from '../../managed/functions/player-sync/automati
 import { tutorialProgress, currentTutorialObjective } from '@/game/tutorialProgress';
 import { Fragment, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
+import { isAndroidLayout } from '@/platform/platform';
+import { COMMANDER_OPEN_EVENT } from '@/components/GameProgressBar';
 import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, DoorOpen, HeartPulse, Gem, Skull, BookOpen } from 'lucide-react';
 import { Arena } from '@/components/Arena';
 import { CombatErrorBoundary } from '@/components/CombatErrorBoundary';
@@ -444,87 +446,100 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     label: activeDungeon.room === 1 ? 'OUTER BASTION' : activeDungeon.room === 2 ? 'HALL OF THE CURSED GUARD' : activeDungeon.room === 3 ? 'CROSSROADS OF FATE' : 'THRONE OF THE ABYSS',
   }) : null, [activeDungeon]);
 
+  const [commanderOpen, setCommanderOpen] = useState(false);
+  useEffect(() => {
+    const open = () => setCommanderOpen(true);
+    window.addEventListener(COMMANDER_OPEN_EVENT, open);
+    return () => window.removeEventListener(COMMANDER_OPEN_EVENT, open);
+  }, []);
+
+  // Commander panel: in the Quests column on desktop; on a phone it opens from the avatar in the
+  // top bar (Founder 2026-10-02).
+  const commanderPanel = (
+  <div className="hl-commander border-b border-[#4f412e] p-3">
+    <div className="section-kicker mb-2">Commander</div>
+    <div className="mb-2 flex items-center gap-2.5">
+      <button type="button" onClick={() => setShowAvatarPicker(true)} className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-[#e0b45f] bg-black/30 shadow-[inset_0_1px_rgba(255,249,214,.28),0_0_14px_rgba(208,163,74,.24)]" title="Change account avatar">
+        {avatarBase && <HeroPortrait heroId={avatarBase.id} heroClass={avatarBase.heroClass} rarity={avatarBase.rarity} color={avatarBase.color} size={46} />}
+        <span className="absolute bottom-0 right-0 rounded-tl bg-black/80 px-1 ui-text-small font-black text-[#ffe6a2]">{state.accountLevel}</span>
+      </button>
+      <div className="flex-1">
+        <div className="ui-text-large font-extrabold text-[#f0dfba]">Level {state.accountLevel}</div>
+        <div className="health-track mt-1 h-2.5 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#9b6824,#efc760)] shadow-[0_0_8px_rgba(225,177,77,.35)]" style={{ width: `${Math.min(100, (accountXpCurrent / accountXpForLevel(state.accountLevel)) * 100)}%` }} /></div>
+        <div className="mt-1 ui-text-small font-semibold tabular-nums text-[#928b7d]">{formatNum(accountXpCurrent)} / {formatNum(accountXpForLevel(state.accountLevel))} XP</div>
+      </div>
+    </div>
+    <div className="mb-2 grid grid-cols-2 gap-1.5">
+      <div className="stat-tile px-2 py-1.5">
+        <div className="ui-text-small font-bold uppercase tracking-[.1em] text-[#8e887b]">Team Power</div>
+        <div className="mt-0.5 ui-text-medium font-black tabular-nums text-[#f0c563]">⚡ {formatNum(power)}</div>
+      </div>
+      <div className="stat-tile px-2 py-1.5">
+        <div className="ui-text-small font-bold uppercase tracking-[.1em] text-[#8e887b]">Hero Power</div>
+        <div className="mt-0.5 ui-text-medium font-black tabular-nums text-[#f0c563]">⚡ {formatNum(selectedHeroPower)}</div>
+      </div>
+    </div>
+    <RewardBoostTile bonus={game.accountBonus} onOpenShop={onRewardBoostClick} />
+    {selectedHero && (
+      <div className="stat-tile mb-2 px-2 py-1.5">
+        <div className="flex items-center justify-between ui-text-small font-bold uppercase tracking-[.1em] text-[#8e887b]"><span>Hero XP</span><span>Level {selectedHero.level}</span></div>
+        <div className="health-track mt-1 h-2.5 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#705028,#ddb557)]" style={{ width: `${Math.min(100, (selectedHero.xp / heroXpForLevel(selectedHero.level)) * 100)}%` }} /></div>
+        <div className="mt-1 ui-text-small font-semibold tabular-nums text-[#928b7d]">{formatNum(selectedHero.xp)} / {formatNum(heroXpForLevel(selectedHero.level))} XP</div>
+      </div>
+    )}
+    {selectedHeroStats && (
+      <div className="stat-tile overflow-hidden">
+        <button
+          type="button"
+          className="flex min-h-11 w-full items-center justify-between gap-2 px-2 py-1 text-left"
+          aria-expanded={showHeroDetails}
+          aria-controls="commander-hero-details"
+          onClick={() => setShowHeroDetails((visible) => !visible)}
+        >
+          <span className="ui-text-small font-bold uppercase tracking-[.1em] text-[#a59b88]">Hero characteristics</span>
+          <span className="flex items-center gap-1 ui-text-small font-semibold text-[#d5bd85]">
+            {showHeroDetails ? 'Hide' : 'Show'}
+            <ChevronDown size={12} aria-hidden="true" className={`transition-transform ${showHeroDetails ? 'rotate-180' : ''}`} />
+          </span>
+        </button>
+        <div id="commander-hero-details" hidden={!showHeroDetails} className="border-t border-[#4f412e] px-1.5 py-1.5">
+            <div className="grid grid-cols-2 gap-1">
+              {[
+                ['Attack', formatNum(selectedHeroStats.atk)],
+                ['Health', formatNum(selectedHeroStats.hp)],
+                ['Armor', formatNum(selectedHeroStats.def)],
+                ['Dodge', `${(selectedHeroStats.dodge * 100).toFixed(1)}%`],
+                ['Attack Speed', formatNum(selectedHeroStats.speed + selectedHeroStats.atkSpeed)],
+                ['Crit', `${(selectedHeroStats.critChance * 100).toFixed(1)}%`],
+                ['Crit Damage', `+${(selectedHeroStats.critDamage * 100).toFixed(0)}%`],
+                ['XP Bonus', `+${(activeTeamBonuses.xp * 100).toFixed(1)}%`],
+                ['Gold Bonus', `+${(activeTeamBonuses.gold * 100).toFixed(1)}%`],
+              ].map(([label, value]) => (
+                <div key={label} className="flex min-w-0 items-baseline justify-between gap-1 rounded border border-[#4a4032]/70 bg-black/10 px-1.5 py-0.5">
+                  <span className="truncate ui-text-small font-semibold text-[#8f897d]">{label}</span>
+                  <span className="shrink-0 ui-text-medium font-bold tabular-nums text-[#e8e1d3]">{value}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-1.5 border-t border-[#4f412e]/80 px-1 pt-1.5">
+              <div className="mb-1 ui-text-small font-bold uppercase tracking-[.08em] text-[#a59b88]">Passives</div>
+              <AccountBonusPassives bonus={game.accountBonus} />
+            </div>
+            <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-[#4f412e]/80 px-1 pt-1.5">
+              <span className="ui-text-small font-bold uppercase tracking-[.08em] text-[#777269]">Skills · Auras</span>
+              <span className="shrink-0 ui-text-small font-semibold text-[#9b8862]">Coming soon</span>
+            </div>
+        </div>
+      </div>
+    )}
+  </div>
+  );
+
   return (
     <div className="game-main flex h-full flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
       {/* ── LEFT COLUMN ── */}
       <div className="hl-col-left material-panel game-scrollbar order-2 flex w-full shrink-0 flex-col overflow-y-auto lg:order-none lg:w-60 xl:w-64">
-        <div className="border-b border-[#4f412e] p-3">
-          <div className="section-kicker mb-2">Commander</div>
-          <div className="mb-2 flex items-center gap-2.5">
-            <button type="button" onClick={() => setShowAvatarPicker(true)} className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-[#e0b45f] bg-black/30 shadow-[inset_0_1px_rgba(255,249,214,.28),0_0_14px_rgba(208,163,74,.24)]" title="Change account avatar">
-              {avatarBase && <HeroPortrait heroId={avatarBase.id} heroClass={avatarBase.heroClass} rarity={avatarBase.rarity} color={avatarBase.color} size={46} />}
-              <span className="absolute bottom-0 right-0 rounded-tl bg-black/80 px-1 ui-text-small font-black text-[#ffe6a2]">{state.accountLevel}</span>
-            </button>
-            <div className="flex-1">
-              <div className="ui-text-large font-extrabold text-[#f0dfba]">Level {state.accountLevel}</div>
-              <div className="health-track mt-1 h-2.5 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#9b6824,#efc760)] shadow-[0_0_8px_rgba(225,177,77,.35)]" style={{ width: `${Math.min(100, (accountXpCurrent / accountXpForLevel(state.accountLevel)) * 100)}%` }} /></div>
-              <div className="mt-1 ui-text-small font-semibold tabular-nums text-[#928b7d]">{formatNum(accountXpCurrent)} / {formatNum(accountXpForLevel(state.accountLevel))} XP</div>
-            </div>
-          </div>
-          <div className="mb-2 grid grid-cols-2 gap-1.5">
-            <div className="stat-tile px-2 py-1.5">
-              <div className="ui-text-small font-bold uppercase tracking-[.1em] text-[#8e887b]">Team Power</div>
-              <div className="mt-0.5 ui-text-medium font-black tabular-nums text-[#f0c563]">⚡ {formatNum(power)}</div>
-            </div>
-            <div className="stat-tile px-2 py-1.5">
-              <div className="ui-text-small font-bold uppercase tracking-[.1em] text-[#8e887b]">Hero Power</div>
-              <div className="mt-0.5 ui-text-medium font-black tabular-nums text-[#f0c563]">⚡ {formatNum(selectedHeroPower)}</div>
-            </div>
-          </div>
-          <RewardBoostTile bonus={game.accountBonus} onOpenShop={onRewardBoostClick} />
-          {selectedHero && (
-            <div className="stat-tile mb-2 px-2 py-1.5">
-              <div className="flex items-center justify-between ui-text-small font-bold uppercase tracking-[.1em] text-[#8e887b]"><span>Hero XP</span><span>Level {selectedHero.level}</span></div>
-              <div className="health-track mt-1 h-2.5 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#705028,#ddb557)]" style={{ width: `${Math.min(100, (selectedHero.xp / heroXpForLevel(selectedHero.level)) * 100)}%` }} /></div>
-              <div className="mt-1 ui-text-small font-semibold tabular-nums text-[#928b7d]">{formatNum(selectedHero.xp)} / {formatNum(heroXpForLevel(selectedHero.level))} XP</div>
-            </div>
-          )}
-          {selectedHeroStats && (
-            <div className="stat-tile overflow-hidden">
-              <button
-                type="button"
-                className="flex min-h-11 w-full items-center justify-between gap-2 px-2 py-1 text-left"
-                aria-expanded={showHeroDetails}
-                aria-controls="commander-hero-details"
-                onClick={() => setShowHeroDetails((visible) => !visible)}
-              >
-                <span className="ui-text-small font-bold uppercase tracking-[.1em] text-[#a59b88]">Hero characteristics</span>
-                <span className="flex items-center gap-1 ui-text-small font-semibold text-[#d5bd85]">
-                  {showHeroDetails ? 'Hide' : 'Show'}
-                  <ChevronDown size={12} aria-hidden="true" className={`transition-transform ${showHeroDetails ? 'rotate-180' : ''}`} />
-                </span>
-              </button>
-              <div id="commander-hero-details" hidden={!showHeroDetails} className="border-t border-[#4f412e] px-1.5 py-1.5">
-                  <div className="grid grid-cols-2 gap-1">
-                    {[
-                      ['Attack', formatNum(selectedHeroStats.atk)],
-                      ['Health', formatNum(selectedHeroStats.hp)],
-                      ['Armor', formatNum(selectedHeroStats.def)],
-                      ['Dodge', `${(selectedHeroStats.dodge * 100).toFixed(1)}%`],
-                      ['Attack Speed', formatNum(selectedHeroStats.speed + selectedHeroStats.atkSpeed)],
-                      ['Crit', `${(selectedHeroStats.critChance * 100).toFixed(1)}%`],
-                      ['Crit Damage', `+${(selectedHeroStats.critDamage * 100).toFixed(0)}%`],
-                      ['XP Bonus', `+${(activeTeamBonuses.xp * 100).toFixed(1)}%`],
-                      ['Gold Bonus', `+${(activeTeamBonuses.gold * 100).toFixed(1)}%`],
-                    ].map(([label, value]) => (
-                      <div key={label} className="flex min-w-0 items-baseline justify-between gap-1 rounded border border-[#4a4032]/70 bg-black/10 px-1.5 py-0.5">
-                        <span className="truncate ui-text-small font-semibold text-[#8f897d]">{label}</span>
-                        <span className="shrink-0 ui-text-medium font-bold tabular-nums text-[#e8e1d3]">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-1.5 border-t border-[#4f412e]/80 px-1 pt-1.5">
-                    <div className="mb-1 ui-text-small font-bold uppercase tracking-[.08em] text-[#a59b88]">Passives</div>
-                    <AccountBonusPassives bonus={game.accountBonus} />
-                  </div>
-                  <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-[#4f412e]/80 px-1 pt-1.5">
-                    <span className="ui-text-small font-bold uppercase tracking-[.08em] text-[#777269]">Skills · Auras</span>
-                    <span className="shrink-0 ui-text-small font-semibold text-[#9b8862]">Coming soon</span>
-                  </div>
-              </div>
-            </div>
-          )}
-        </div>
+        {!isAndroidLayout && commanderPanel}
 
         <div id="game-quest-list" className="hl-quest-list flex-1 p-2">
           <PartnerQuests claim={game.claimPartnerQuest} onOpenBoostMax={onBoostClick} shareState={state} teamPower={power} />
@@ -920,6 +935,15 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
 
       {toast && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-px-panel border-2 border-px-bright font-vt ui-text-large font-bold text-px-bright anim-slide-up" style={{ boxShadow: '3px 3px 0 #3d2008' }}>{toast}</div>
+      )}
+      {isAndroidLayout && commanderOpen && createPortal(
+        <div className="hl-commander-sheet" role="dialog" aria-modal="true" aria-label="Commander" onClick={() => setCommanderOpen(false)}>
+          <div className="hl-commander-sheet-panel material-panel" onClick={(event) => event.stopPropagation()}>
+            <button type="button" className="game-control hl-commander-sheet-close" onClick={() => setCommanderOpen(false)} aria-label="Close Commander"><X size={18} /></button>
+            {commanderPanel}
+          </div>
+        </div>,
+        document.body,
       )}
       {showAvatarPicker && <AvatarPicker game={game} onClose={() => setShowAvatarPicker(false)} />}
       {isolatedHackathon && SHOW_HACKATHON_HEALING_INTRODUCTION && !state.autoPot.healingInfoSeen && <HealingIntroduction game={game} />}

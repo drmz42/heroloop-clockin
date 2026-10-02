@@ -334,3 +334,23 @@ html[data-hl-platform='android'] .summon-result-actions { flex: none; margin-top
 html[data-hl-platform='android'] .summon-result-actions button { min-height: 52px; min-width: 230px; font-size: 15px; }
 html[data-hl-platform='android'] .summon-result[data-phase='ready'] .summon-result-actions { position: absolute; inset: 50% 0 auto; z-index: 5; margin: 0; transform: translateY(-50%); }
 html[data-hl-platform='android'] .summon-result .summon-close { top: calc(10px + env(safe-area-inset-top, 0px)); right: 10px; }
+
+/* Hero details on a phone (Founder 2026-10-02): the panel fits between the top bar and the tab
+   bar so Add to Team stays visible; skills and traits fold under one summary. */
+html[data-hl-platform='android'] .hero-detail-panel { max-height: 100%; }
+html[data-hl-platform='android'] .hero-detail-panel > header { padding: 8px 10px; }
+html[data-hl-platform='android'] .hero-detail-panel > footer { padding: 8px 10px; }
+html[data-hl-platform='android'] .hero-detail-panel > footer button { min-height: 44px; }
+.hero-detail-more { margin-top: 8px; }
+.hero-detail-more-summary { display: flex; min-height: 40px; cursor: pointer; align-items: center; justify-content: space-between; border: 1px solid #54442e; border-radius: 4px; padding: 0 10px; background: rgba(0, 0, 0, .25); color: #d6ad64; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; list-style: none; }
+.hero-detail-more-summary::-webkit-details-marker { display: none; }
+.hero-detail-more-summary::after { content: '+'; font-size: 16px; }
+.hero-detail-more[open] > .hero-detail-more-summary::after { content: '−'; }
+
+/* Commander avatar in the top bar and its sheet (Founder 2026-10-02): level, XP, Team and Hero
+   Power, hero stats and the avatar picker move out of the Quests column. */
+.game-progress-commander { position: relative; width: 44px; height: 44px; flex-shrink: 0; overflow: hidden; border: 1px solid #e0b45f; border-radius: 4px; background: rgba(0, 0, 0, .35); padding: 0; box-shadow: 0 0 12px rgba(208, 163, 74, .3); }
+.game-progress-commander > b { position: absolute; right: 0; bottom: 0; padding: 0 3px; border-top-left-radius: 3px; background: rgba(0, 0, 0, .82); color: #ffe6a2; font-size: 11px; line-height: 14px; }
+.hl-commander-sheet { position: fixed; inset: calc(var(--game-progress-height) + env(safe-area-inset-top, 0px)) 0 var(--hl-tabbar-h) 0; z-index: 10005; display: flex; align-items: flex-start; background: rgba(0, 0, 0, .55); }
+.hl-commander-sheet-panel { position: relative; width: 100%; max-height: 100%; overflow-y: auto; padding-top: 4px; }
+.hl-commander-sheet-close { position: absolute; top: 8px; right: 8px; z-index: 1; display: grid; width: 40px; height: 40px; place-items: center; border-radius: 2px; }

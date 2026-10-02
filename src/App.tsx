@@ -17,6 +17,7 @@ import { GameWalletModal } from '@/components/GameWalletModal';
 import { PromoCodeModal, type PromoRedemption } from '@/components/PromoCodeModal';
 import { LandingScreen } from '@/screens/LandingScreen';
 import { AppEntryScreen } from '@/platform/AppEntryScreen';
+import { HERO_MAP } from '@/game/heroes';
 import { OfflineBar } from '@/platform/OfflineBar';
 import { MainScreen } from '@/screens/MainScreen';
 import { HeroesScreen } from '@/screens/HeroesScreen';
@@ -509,7 +510,7 @@ function App() {
 
   return (
     <div className={`game-shell ${isolatedHackathon ? 'has-game-progress' : ''} game-motion-${game.state.battleAnimationMode} flex h-screen flex-col overflow-hidden bg-px-bg text-px-text`}>
-      {isolatedHackathon && <GameProgressBar power={game.teamPower()} readyQuests={readyQuestCount(game.state)} identity={game.state.walletAddress} onQuestsClick={openQuests} />}
+      {isolatedHackathon && <GameProgressBar power={game.teamPower()} readyQuests={readyQuestCount(game.state)} identity={game.state.walletAddress} onQuestsClick={openQuests} commander={isAndroidLayout ? { heroId: HERO_MAP[game.state.avatarHeroId] ? game.state.avatarHeroId : game.state.ownedHeroes[0]?.heroId ?? '', level: game.state.accountLevel } : undefined} />}
       {isAndroidLayout && <OfflineBar />}
       <GameNavBar
         tab={tab}
