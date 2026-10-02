@@ -67,7 +67,7 @@ export function LeaderboardScreen({ game }: { game: GameApi }) {
       </section>
 
       <section className="material-panel mt-2 flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="grid min-w-[900px] grid-cols-[52px_minmax(300px,1fr)_64px_90px_78px_90px_105px_90px] gap-2 border-b border-[#4d402d] px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-[#8c867b]"><span>Rank</span><span>Player · Active lineup</span><span>Level</span><span>Kills</span><span>Bosses</span><span>Summons</span><span>$HERO mined</span><span>Reward</span></div>
+        <div className="leader-head grid min-w-[900px] grid-cols-[52px_minmax(300px,1fr)_64px_90px_78px_90px_105px_90px] gap-2 border-b border-[#4d402d] px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-[#8c867b]"><span>Rank</span><span>Player · Active lineup</span><span>Level</span><span>Kills</span><span>Bosses</span><span>Summons</span><span>$HERO mined</span><span>Reward</span></div>
         <div className="game-scrollbar min-h-0 flex-1 overflow-auto p-2">
           {loading && <EmptyState icon={<Sparkles size={22} />} title="Reading the tournament ledger" detail="Live ranks update every 30 seconds." />}
           {!loading && board.length === 0 && <EmptyState icon={<Trophy size={22} />} title="No ranked players yet" detail="Win battles and defeat bosses to claim the first position." />}

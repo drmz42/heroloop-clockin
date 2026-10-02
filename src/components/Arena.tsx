@@ -198,6 +198,12 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   );
 }
 
+/** Location art as a CSS variable; the Android battle stage reuses it so the art also fills the footer. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function locationArtStyle(locationId: number): React.CSSProperties {
+  return { '--location-arena-art': `url('/assets/locations/${locationId > 10 ? 'endgame' : 'standard'}/location-${locationId}.webp')` } as React.CSSProperties;
+}
+
 function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode, dungeonPanelOpen, locationId, dungeonBossScene, dungeonRoom }: ArenaProps) {
   const heroes = units.filter((u) => u.side === 'hero');
   const enemies = units.filter((u) => u.side === 'enemy');
@@ -224,7 +230,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
   void inventory; void potionFx;
 
   return (
-    <div className={`arena-stage-inner arena-mode-${animationMode} ${locationId ? 'arena-location-art' : ''} ${dungeonPanelOpen ? 'dungeon-panel-open' : ''} ${dungeonRoom ? `dungeon-room dungeon-depth-${dungeonRoom.depth} dungeon-room-${dungeonRoom.room}` : ''} ${dungeonBossScene ? `dungeon-boss-phase-${dungeonBossScene.phase} dungeon-boss-${dungeonBossScene.bossId}` : ''} relative flex h-full w-full flex-col justify-end px-3 pb-4 pt-16 sm:px-6 ${shake ? 'anim-shake' : ''}`} style={locationId ? { '--location-arena-art': `url('/assets/locations/${locationId > 10 ? 'endgame' : 'standard'}/location-${locationId}.webp')` } as React.CSSProperties : undefined}>
+    <div className={`arena-stage-inner arena-mode-${animationMode} ${locationId ? 'arena-location-art' : ''} ${dungeonPanelOpen ? 'dungeon-panel-open' : ''} ${dungeonRoom ? `dungeon-room dungeon-depth-${dungeonRoom.depth} dungeon-room-${dungeonRoom.room}` : ''} ${dungeonBossScene ? `dungeon-boss-phase-${dungeonBossScene.phase} dungeon-boss-${dungeonBossScene.bossId}` : ''} relative flex h-full w-full flex-col justify-end px-3 pb-4 pt-16 sm:px-6 ${shake ? 'anim-shake' : ''}`} style={locationId ? locationArtStyle(locationId) : undefined}>
       {animationMode === 'spectacular' && <div className="arena-spectacular-atmosphere pointer-events-none absolute inset-0" aria-hidden="true" />}
       {dungeonRoom && <div className="dungeon-route" aria-label={`Dungeon route, room ${dungeonRoom.room} of 4`}>
         {['GUARDS', 'ELITE', 'FATE', 'BOSS'].map((label, index) => <div key={label} className={index + 1 < dungeonRoom.room ? 'is-done' : index + 1 === dungeonRoom.room ? 'is-active' : ''}><i>{index + 1 < dungeonRoom.room ? '✓' : index + 1}</i><span>{label}</span></div>)}

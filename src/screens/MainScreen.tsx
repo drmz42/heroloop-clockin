@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 import { isAndroidLayout } from '@/platform/platform';
 import { COMMANDER_OPEN_EVENT } from '@/components/GameProgressBar';
 import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, DoorOpen, HeartPulse, Gem, Skull, BookOpen } from 'lucide-react';
-import { Arena } from '@/components/Arena';
+import { Arena, locationArtStyle } from '@/components/Arena';
 import { CombatErrorBoundary } from '@/components/CombatErrorBoundary';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
@@ -203,15 +203,23 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
       const rect = dropRatesButtonRef.current?.getBoundingClientRect();
       if (!rect) return;
       setDropRatesPos({
-        right: Math.max(8, window.innerWidth - rect.right),
+        // Keep the 224px-wide popup inside the screen even when the button sits left of centre.
+        right: Math.max(8, Math.min(window.innerWidth - rect.right, window.innerWidth - 232)),
         bottom: window.innerHeight - rect.top + 8,
         maxHeight: Math.max(120, rect.top - 16),
       });
     };
     place();
+    // A tap anywhere else (another tab, the battle) closes the popup; it is portalled, so it would otherwise stay open.
+    const outside = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && (dropRatesButtonRef.current?.contains(target) || (target instanceof Element && target.closest('[aria-label="Chest drop rate"]')))) return;
+      setShowDropRates(false);
+    };
+    document.addEventListener('pointerdown', outside, true);
     window.addEventListener('resize', place);
     window.addEventListener('scroll', place, true);
-    return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true); };
+    return () => { document.removeEventListener('pointerdown', outside, true); window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true); };
   }, [showDropRates]);
 
   useEffect(() => {
@@ -617,7 +625,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           <button type="button" onClick={onQuestsClick} className={`game-control ${currentObjective.ready ? 'quest-reward-ready' : ''}`}>{currentObjective.ready ? 'Claim reward' : `${currentObjective.progress}/${currentObjective.target}`}</button>
         </div>}
         {/* Arena */}
-        <div className={`battle-stage ${!activeDungeon ? 'battle-stage-normal' : ''} relative min-h-[320px] flex-1 overflow-hidden bg-arena`}>
+        <div className={`battle-stage ${!activeDungeon ? 'battle-stage-normal' : ''} relative min-h-[320px] flex-1 overflow-hidden bg-arena`} style={activeDungeon ? undefined : locationArtStyle(game.state.currentLocation)}>
           {!activeDungeon && showZoomTip && <div className="hl-zoom-tip absolute left-1/2 top-12 z-40 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-lg border border-[#80683f] bg-[#11130f]/95 px-3 py-1.5 font-vt ui-text-small font-bold text-[#d8c9ad] shadow-xl backdrop-blur-sm"><span>Adjust browser zoom with <kbd className="text-[#ffd36e]">Ctrl +</kbd> / <kbd className="text-[#ffd36e]">Ctrl -</kbd> to fit all interface elements.</span><button type="button" onClick={() => setShowZoomTip(false)} className="text-[#8f887b] hover:text-white" aria-label="Dismiss browser zoom tip"><X size={12} /></button></div>}
           <div className={`hl-battle-hud-left absolute left-3 top-3 flex items-start gap-1.5 ${showPotSettings || showBattleSettings ? 'z-[110]' : 'z-30'}`}>
             {!activeDungeon && !isolatedHackathon ? <div className="relative">
@@ -788,7 +796,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
 
         {selectedHero && selectedHeroBase ? (
           <div className="shrink-0 border-b border-[#4f412e] px-3 py-2.5" style={{ zIndex: 10 }}>
-            <div className="mb-2 flex min-w-0 items-center gap-1 whitespace-nowrap">
+            <div className="hl-gear-head mb-2 flex min-w-0 items-center gap-1 whitespace-nowrap">
                 <span className="section-kicker shrink-0">Equipped Gear</span>
                 <span className="min-w-0 truncate ui-text-small font-vt font-black" style={{ color: RARITY_COLORS[selectedHeroBase.rarity], textShadow: `0 0 8px ${RARITY_COLORS[selectedHeroBase.rarity]}55` }}>{RARITY_LABEL[selectedHeroBase.rarity]} {CLASS_LABEL[selectedHeroBase.heroClass]}</span>
                 <span className="group/set relative ml-auto shrink-0">

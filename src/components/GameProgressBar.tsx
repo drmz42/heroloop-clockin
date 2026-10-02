@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { ScrollText, Zap } from 'lucide-react';
+import { Rocket, ScrollText, Zap } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { HERO_MAP } from '@/game/heroes';
 
 // The phone top bar's Commander avatar opens the Commander sheet in MainScreen.
 export const COMMANDER_OPEN_EVENT = 'hl:commander-open';
 
-export function GameProgressBar({ power, readyQuests, identity, onQuestsClick, commander }: {
+export function GameProgressBar({ power, readyQuests, identity, onQuestsClick, commander, boost }: {
   power: number; readyQuests: number; identity: string; onQuestsClick: () => void;
   commander?: { heroId: string; level: number };
+  boost?: { active: boolean; onClick: () => void };
 }) {
   const avatar = commander ? HERO_MAP[commander.heroId] : undefined;
   const previous = useRef({ power, identity });
@@ -32,6 +33,9 @@ export function GameProgressBar({ power, readyQuests, identity, onQuestsClick, c
     {commander && avatar && <button type="button" className="game-progress-commander" onClick={() => window.dispatchEvent(new Event(COMMANDER_OPEN_EVENT))} aria-label={`Commander, level ${commander.level}`}>
       <HeroPortrait heroId={avatar.id} heroClass={avatar.heroClass} rarity={avatar.rarity} color={avatar.color} size={40} />
       <b>{commander.level}</b>
+    </button>}
+    {boost && <button type="button" className={`game-progress-boost ${boost.active ? 'is-active' : ''}`} onClick={boost.onClick} aria-label={boost.active ? 'Boost Max active' : 'Open Boost Max'}>
+      <Rocket size={17} aria-hidden="true" /><span>{boost.active ? 'Boost on' : 'Boost max'}</span>
     </button>}
     <button type="button" onClick={onQuestsClick} className={`game-progress-quests ${readyQuests > 0 ? 'quest-reward-ready' : ''}`} aria-label={readyQuests > 0 ? `Quests, ${readyQuests} rewards ready` : 'Open quests'}>
       <ScrollText size={19} aria-hidden="true" /><span>{readyQuests > 0 ? 'Reward ready' : 'Quests'}<small>{readyQuests > 0 ? `${readyQuests} to claim` : 'Your next goal'}</small></span>
