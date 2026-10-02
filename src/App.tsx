@@ -466,7 +466,15 @@ function App() {
   }, []);
 
   const openWiki = () => {
-    window.history.pushState(null, '', '/wiki');
+    // Guides opened from the More sheet reuse its history entry; closing the sheet must not
+    // step Back over the new /wiki entry (Android layout).
+    const entry = overlayHistory.current;
+    if (entry.pushed) {
+      entry.pushed = false;
+      window.history.replaceState(null, '', '/wiki');
+    } else {
+      window.history.pushState(null, '', '/wiki');
+    }
     setRoutePath('/wiki');
   };
 
