@@ -1,4 +1,5 @@
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
+import { SkrUsd } from '@/components/SkrUsd';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
 import { editionStorageKey, isolatedHackathon } from '../game/editionStorage';
 import { goldHealingEnabled } from '../../managed/functions/player-sync/automatic-healing.mjs';
@@ -1063,7 +1064,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               </div>
             {bagQuote && !bagQuote.complete && bagQuote.bag === inventoryTab && <div className="col-start-1 row-start-1 z-10 m-1 min-w-0 max-w-full self-center justify-self-center text-center ui-text-small text-[#e5d4b4]">
               {isolatedHackathon && <SkrPurchaseButton product="inventory_bag_buy" params={{bag:bagQuote.bag,kind:bagQuote.kind}}
-                label={`${bagQuote.kind==='buy'?'Unlock':'Upgrade'} Bag ${bagQuote.bag} · ${bagSkrRate ? skrPrice(bagQuote.catalogue_usd_cents, bagSkrRate) : '… SKR'}`}
+                label={<>{bagQuote.kind==='buy'?'Unlock':'Upgrade'} Bag {bagQuote.bag} · {bagSkrRate ? skrPrice(bagQuote.catalogue_usd_cents, bagSkrRate) : '… SKR'}<SkrUsd cents={bagQuote.catalogue_usd_cents}/></>}
                 onDelivered={result=>{game.applySeekerPurchase(result);setBagQuote(null);showToast('Bag capacity unlocked with SKR');}} />}
               {!isolatedHackathon && !bagPurchaseConfirm && <button type="button" data-inventory-bag-action className="game-control game-primary min-h-11 max-w-full px-3 py-1.5 font-bold disabled:opacity-50" disabled={!bagQuote.available || bagPurchaseBusy || !Number.isFinite(bagQuote.token_cost)} onClick={() => setBagPurchaseConfirm(true)}><span className="block whitespace-normal leading-tight">{bagQuote.kind === 'buy' ? `Unlock Bag ${bagQuote.bag} · 48 cells` : `Upgrade Bag ${bagQuote.bag} · +16 cells`} · ${(bagQuote.catalogue_usd_cents / 100).toFixed(0)} in $HERO</span><span className="block leading-tight">{bagQuote.available ? `${formatNum(bagQuote.token_cost)} $HERO` : 'Quote unavailable'}</span></button>}
               {!isolatedHackathon && bagPurchaseConfirm && <div className="flex max-w-full flex-wrap items-center justify-center gap-1" role="group" aria-label="Confirm bag purchase"><span>Spend up to {formatNum(bagQuote.token_cost)} $HERO?</span><button type="button" className="game-control min-h-11 px-2" onClick={() => setBagPurchaseConfirm(false)}>Cancel</button><button type="button" className="game-control game-primary min-h-11 px-2 font-bold" disabled={bagPurchaseBusy} onClick={async () => { setBagPurchaseBusy(true); const result = await game.buyInventoryBag(bagQuote.bag, bagQuote.kind, bagQuote.token_cost); setBagPurchaseBusy(false); setBagPurchaseConfirm(false); if (result.ok) setBagQuote(null); showToast(result.ok ? 'Bag capacity unlocked' : `Bag purchase failed: ${result.error}`); }}>{bagPurchaseBusy ? 'Processing…' : 'Confirm'}</button></div>}

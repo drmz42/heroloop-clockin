@@ -1,5 +1,6 @@
 import { isolatedHackathon } from '@/game/editionStorage';
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
+import { SkrUsd } from '@/components/SkrUsd';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
 import { useState, type CSSProperties } from 'react';
 import { ArrowUp, Dice5, ShieldCheck, Trash2, Lock, Unlock, X, Coins } from 'lucide-react';
@@ -126,7 +127,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
           </button>
 
           <button disabled={!rerollAffordable || game.itemUpgradeBusy} onClick={() => setShowReroll(s => !s)} aria-expanded={showReroll} className="item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 px-0.5 ui-text-small font-black text-cyan-300 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={isolatedHackathon ? 'Get an exact SKR quote for Reroll' : rerollAffordable ? `Reroll for ${rCost} $HERO` : `Need ${rCost - game.state.hero} more $HERO`}>
-            <span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><Dice5 size={12} /><span>Reroll</span></span><span className="flex items-center gap-0.5 ui-text-small font-bold text-cyan-100/70">{isolatedHackathon ? <>≈ {skrPrice(Math.round(rCost * HERO_USD_QUOTE * 100), skrRate)}</> : <><HeroTokenIcon size={8} /> {usd(rCost)} · {formatNum(rCost)}</>}</span>
+            <span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><Dice5 size={12} /><span>Reroll</span></span><span className="flex items-center gap-0.5 ui-text-small font-bold text-cyan-100/70">{isolatedHackathon ? <>≈ {skrPrice(Math.round(rCost * HERO_USD_QUOTE * 100), skrRate)}<SkrUsd cents={Math.round(rCost * HERO_USD_QUOTE * 100)} /></> : <><HeroTokenIcon size={8} /> {usd(rCost)} · {formatNum(rCost)}</>}</span>
           </button>
 
           <div className="relative min-w-0">
@@ -157,7 +158,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
             >
               Ordinary ({enchCost.gold > 0 ? <><Coins size={10} className="inline" /> {formatNum(enchCost.gold)}</> : <><HeroTokenIcon size={10} className="inline" /> {usd(enchCost.hero)} · {formatNum(enchCost.hero)}</>})
             </button>
-            {charmCost > 0 && (isolatedHackathon ? <SkrPurchaseButton product="item_upgrade" params={{operation:"enchant",item_uid:item.uid,use_charm:true}} disabled={!enchantAffordable||game.itemUpgradeBusy||!item.serverOwned} label={`Guaranteed · ${formatNum(enchCost.gold)} Gold + ≈ ${skrPrice(Math.round(enchantGuaranteedUsd(item.enchantLevel) * 100), skrRate)}`} onDelivered={game.applySeekerPurchase}/> : (
+            {charmCost > 0 && (isolatedHackathon ? <SkrPurchaseButton product="item_upgrade" params={{operation:"enchant",item_uid:item.uid,use_charm:true}} disabled={!enchantAffordable||game.itemUpgradeBusy||!item.serverOwned} label={<>Guaranteed · {formatNum(enchCost.gold)} Gold + ≈ {skrPrice(Math.round(enchantGuaranteedUsd(item.enchantLevel) * 100), skrRate)}<SkrUsd cents={Math.round(enchantGuaranteedUsd(item.enchantLevel) * 100)} /></>} onDelivered={game.applySeekerPurchase}/> : (
               <button
                 type="button"
                 onClick={() => { void game.enchantItem(item.uid, true); setShowEnchant(false); }}
