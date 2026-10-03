@@ -1,0 +1,122 @@
+/* Android top bar v2 (Founder 2026-10-03: "a mess of styles and sizes"). One stone ledger row for the
+   emblem, Gold, SKR and Team Power, then one row of same-height plates. Every value uses the same
+   caption + number pattern; every action is a bronze plate, Boost is the crimson seal. */
+html[data-hl-platform='android'] .game-progress-bar.tb-bar {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 5px;
+  padding: 4px 8px 5px;
+  border-bottom: 1px solid rgba(199, 158, 97, .45);
+  background:
+    linear-gradient(180deg, rgba(14, 10, 8, .92), rgba(5, 4, 3, .97)),
+    url('../premium/assets/panel-stone.webp') center / 260px;
+  box-shadow: 0 1px 0 #000, 0 6px 16px rgba(0, 0, 0, .55);
+}
+.tb-row { display: flex; height: 44px; min-width: 0; align-items: center; gap: 6px; }
+
+/* ── Ledger ── */
+.tb-ledger { gap: 0; border: 1px solid rgba(199, 158, 97, .4); border-radius: 2px; background: linear-gradient(180deg, rgba(30, 22, 15, .9), rgba(8, 6, 5, .95)); box-shadow: inset 0 1px 0 rgba(242, 204, 128, .12), inset 0 -8px 14px rgba(0, 0, 0, .45); }
+.tb-logo { display: grid; flex: none; width: 46px; height: 100%; place-items: center; border: 0; border-right: 1px solid rgba(199, 158, 97, .3); padding: 0; background: radial-gradient(circle, rgba(242, 160, 70, .18), transparent 70%); }
+.tb-logo img { width: 34px; height: 36px; object-fit: contain; filter: drop-shadow(0 0 5px rgba(226, 150, 61, .45)); }
+.tb-cell {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  height: 100%;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  padding: 0 4px;
+  background: none;
+  color: inherit;
+}
+.tb-cell + .tb-cell::before { content: ''; position: absolute; left: 0; top: 7px; bottom: 7px; width: 1px; background: linear-gradient(180deg, transparent, rgba(199, 158, 97, .55), transparent); }
+.tb-cap,
+.hl-topbar.tb-bar .tb-power .game-progress-label { color: #a8916a; font: 700 7.5px/1 'Cinzel', Georgia, serif; letter-spacing: .18em; text-transform: uppercase; white-space: nowrap; }
+.tb-val { display: flex; min-width: 0; max-width: 100%; align-items: center; gap: 4px; color: #f2cc80; font-size: 14px; font-weight: 900; line-height: 16px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tb-val > :last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tb-gold { flex-grow: 1.5; }
+.tb-skr { flex-grow: .85; }
+.tb-power { flex-grow: 1.1; }
+.tb-coin { width: 12px; height: 12px; flex: none; border: 1px solid rgba(253, 230, 138, .7); border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff1a5 0%, #e8ad21 38%, #89520a 78%); box-shadow: 0 0 6px rgba(245, 184, 45, .5); }
+.tb-skr { cursor: pointer; }
+.tb-gold .tb-val { letter-spacing: -.01em; }
+.tb-skr .tb-val { color: #ebdfca; }
+.tb-skr:focus-visible, .tb-logo:focus-visible { outline: 2px solid #fff0a2; outline-offset: -2px; }
+/* Team Power keeps its shared readout (value + transient change); only the layout is unified. */
+html[data-hl-platform='android'] .hl-topbar.tb-bar .tb-power .game-progress-power {
+  position: relative;
+  display: grid;
+  height: auto;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  justify-content: center;
+  align-items: center;
+  gap: 3px 4px;
+  margin: 0;
+  color: #f2cc80;
+}
+html[data-hl-platform='android'] .hl-topbar.tb-bar .tb-power .game-progress-power > div { display: contents; }
+html[data-hl-platform='android'] .hl-topbar.tb-bar .tb-power .game-progress-label { grid-column: 1 / -1; grid-row: 1; text-align: center; }
+html[data-hl-platform='android'] .hl-topbar.tb-bar .tb-power .game-progress-power > svg { grid-column: 1; grid-row: 2; width: 13px; height: 13px; }
+html[data-hl-platform='android'] .hl-topbar.tb-bar .tb-power .game-progress-power strong { grid-column: 2; grid-row: 2; font-size: 14px; line-height: 16px; }
+html[data-hl-platform='android'] .hl-topbar.tb-bar .tb-power .game-power-change { position: absolute; left: 50%; top: 100%; margin-top: 1px; font-size: 9px; line-height: 10px; transform: translateX(-50%); white-space: nowrap; }
+
+/* ── Plates ── */
+.tb-plate {
+  display: inline-flex;
+  min-width: 0;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 0 solid transparent;
+  border-width: 8px 12px;
+  border-image: url('../premium/assets/btn-bronze-9.webp') 85 150 fill / 8px 12px / 0 2px stretch;
+  border-radius: 0;
+  padding: 0 2px;
+  background: none;
+  color: #f1dfb8;
+  font: 700 10.5px/1 'Cinzel', Georgia, serif;
+  letter-spacing: .06em;
+  text-shadow: 0 1px 2px #000;
+  text-transform: uppercase;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.tb-plate > svg { flex: none; color: #f2cc80; }
+.tb-plate > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tb-plate:active { filter: brightness(.88); }
+.tb-plate:focus-visible, .tb-commander:focus-visible { outline: 2px solid #fff0a2; outline-offset: 2px; }
+.tb-boost { flex: 1.1 1 0; border-width: 9px 13px; border-image: url('../premium/assets/btn-crimson-9.webp') 90 170 fill / 9px 13px / 0 3px stretch; color: #fff0cf; text-shadow: 0 1px 2px #000, 0 0 8px rgba(255, 120, 90, .35); }
+.tb-boost > svg { color: #ffd38a; }
+.tb-boost.is-active { border-width: 8px 12px; border-image: url('../premium/assets/btn-bronze-9.webp') 85 150 fill / 8px 12px / 0 2px stretch; color: #c9f5c2; text-shadow: 0 1px 2px #000, 0 0 8px rgba(126, 231, 135, .55); }
+.tb-boost.is-active > svg { color: #86efac; }
+.tb-wallet { flex: 1.2 1 0; font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .02em; text-transform: none; }
+.tb-mail { position: relative; flex: none; width: 48px; padding: 0; }
+.tb-badge { position: absolute; top: -9px; right: -11px; z-index: 1; display: grid; min-width: 17px; height: 17px; place-items: center; padding: 0 4px; border: 1px solid #f2cc80; border-radius: 9px; background: radial-gradient(circle at 35% 30%, #ff7a5c, #b3261a 55%, #6d1109); box-shadow: 0 0 0 1px rgba(0, 0, 0, .7), 0 0 8px rgba(255, 90, 60, .55); color: #fff6e6; font: 900 10px/1 system-ui, sans-serif; }
+.tb-commander {
+  position: relative;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border: 0;
+  border-radius: 2px;
+  padding: 0;
+  background: #0a0706;
+  box-shadow: inset 0 0 0 1.5px #c79e61, 0 0 0 1px #000, 0 0 8px rgba(242, 180, 80, .3);
+}
+.tb-commander > b { position: absolute; right: 0; bottom: 0; z-index: 1; border-top-left-radius: 2px; padding: 1px 3px; background: rgba(0, 0, 0, .85); color: #ffe6a2; font-size: 10px; line-height: 1.1; }
+@media (max-width: 380px) {
+  .tb-row { gap: 4px; }
+  .tb-val { font-size: 13px; }
+  .tb-plate { font-size: 9.5px; letter-spacing: .03em; }
+  .tb-wallet { font-size: 10px; }
+}

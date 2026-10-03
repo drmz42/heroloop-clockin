@@ -6,9 +6,16 @@ import { SkrBalance } from '@/components/GameNavBar';
 import { shortWalletAddress } from '@/components/walletAddress';
 import { HERO_MAP } from '@/game/heroes';
 import { groupNumber } from '@/game/numberFormat';
+import '@/theme/scene/topbar.css';
 
-// Android top bar, two rows (Founder 2026-10-03): logo, Gold, SKR and Team Power; then Commander,
-// Boost Max, wallet and Mailbox. It replaces the web progress bar and command bar on the phone layout.
+// Android top bar, two rows (Founder 2026-10-03, restyled v2 the same day): a stone resource ledger with
+// the emblem, Gold, SKR and Team Power; then Commander, Boost Max, wallet and Mailbox as one row of plates.
+// It replaces the web progress bar and command bar on the phone layout.
+// Full Gold up to a billion; beyond that the number would not fit a phone cell, so it goes compact.
+const formatGold = (gold: number) => gold >= 1_000_000_000
+  ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(gold)
+  : groupNumber(Math.floor(gold));
+
 export function AndroidTopBar({ power, identity, gold, commander, boostActive, walletAddress, mailCount, onLogo, onTokens, onBoost, onWallet, onMail }: {
   power: number; identity: string; gold: number;
   commander: { heroId: string; level: number };
@@ -16,38 +23,36 @@ export function AndroidTopBar({ power, identity, gold, commander, boostActive, w
   onLogo: () => void; onTokens: () => void; onBoost: () => void; onWallet: () => void; onMail: () => void;
 }) {
   const avatar = HERO_MAP[commander.heroId];
-  return <header className="game-progress-bar hl-topbar" aria-label="Account and resources">
-    <div className="hl-topbar-row">
-      <button type="button" onClick={onLogo} className="hl-topbar-logo" aria-label="Open Play screen">
+  return <header className="game-progress-bar hl-topbar tb-bar" aria-label="Account and resources">
+    <div className="tb-row tb-ledger">
+      <button type="button" onClick={onLogo} className="tb-logo" aria-label="Open Play screen">
         <img src="/assets/brand/heroloop-emblem.png" alt="HeroLoop" width={154} height={160} />
       </button>
-      <div className="hl-topbar-pill hl-topbar-gold" title="Gold">
-        <span className="hl-topbar-coin" aria-hidden="true" />
-        <span className="hl-topbar-value">{groupNumber(Math.floor(gold))}</span>
-        <span className="hl-topbar-unit">Gold</span>
+      <div className="tb-cell tb-gold" title={`${groupNumber(Math.floor(gold))} Gold`}>
+        <span className="tb-cap">Gold</span>
+        <span className="tb-val"><span className="tb-coin" aria-hidden="true" /><span>{formatGold(gold)}</span></span>
       </div>
-      <button type="button" onClick={onTokens} className="hl-topbar-pill hl-topbar-skr" aria-label="Open Rewards and Tokenomics" title="Rewards & Tokenomics">
-        <HeroTokenIcon size={14} />
-        <span className="hl-topbar-value"><SkrBalance /></span>
-        <span className="hl-topbar-unit">SKR</span>
+      <button type="button" onClick={onTokens} className="tb-cell tb-skr" aria-label="Open Rewards and Tokenomics" title="Rewards & Tokenomics">
+        <span className="tb-cap">SKR</span>
+        <span className="tb-val"><HeroTokenIcon size={13} /><SkrBalance /></span>
       </button>
-      <TeamPowerReadout power={power} identity={identity} />
+      <div className="tb-cell tb-power"><TeamPowerReadout power={power} identity={identity} /></div>
     </div>
-    <div className="hl-topbar-row">
-      {avatar && <button type="button" className="game-progress-commander" onClick={() => window.dispatchEvent(new Event(COMMANDER_OPEN_EVENT))} aria-label={`Commander, level ${commander.level}`}>
-        <HeroPortrait heroId={avatar.id} heroClass={avatar.heroClass} rarity={avatar.rarity} color={avatar.color} size={40} />
+    <div className="tb-row tb-actions">
+      {avatar && <button type="button" className="tb-commander" onClick={() => window.dispatchEvent(new Event(COMMANDER_OPEN_EVENT))} aria-label={`Commander, level ${commander.level}`}>
+        <HeroPortrait heroId={avatar.id} heroClass={avatar.heroClass} rarity={avatar.rarity} color={avatar.color} size={38} />
         <b>{commander.level}</b>
       </button>}
-      <button type="button" className={`game-progress-boost hl-topbar-boost ${boostActive ? 'is-active' : ''}`} onClick={onBoost} aria-label={boostActive ? 'Boost Max active' : 'Open Boost Max'}>
-        <Rocket size={17} aria-hidden="true" /><span>{boostActive ? 'Boost on' : 'Boost max'}</span>
+      <button type="button" className={`tb-plate tb-boost${boostActive ? ' is-active' : ''}`} onClick={onBoost} aria-label={boostActive ? 'Boost Max active' : 'Open Boost Max'}>
+        <Rocket size={15} aria-hidden="true" /><span>{boostActive ? 'Boost on' : 'Boost max'}</span>
       </button>
-      <button type="button" onClick={onWallet} className="game-control hl-topbar-wallet" aria-label={walletAddress ? `Open wallet ${shortWalletAddress(walletAddress)}` : 'Open account'} title={walletAddress ?? 'Account'}>
-        {walletAddress ? <Wallet size={17} aria-hidden="true" /> : <UserRound size={17} aria-hidden="true" />}
+      <button type="button" onClick={onWallet} className="tb-plate tb-wallet" aria-label={walletAddress ? `Open wallet ${shortWalletAddress(walletAddress)}` : 'Open account'} title={walletAddress ?? 'Account'}>
+        {walletAddress ? <Wallet size={15} aria-hidden="true" /> : <UserRound size={15} aria-hidden="true" />}
         <span>{walletAddress ? shortWalletAddress(walletAddress) : 'Account'}</span>
       </button>
-      <button type="button" onClick={onMail} className="game-control hl-topbar-mail" title="Mailbox" aria-label={mailCount > 0 ? `Mailbox, ${mailCount} waiting` : 'Mailbox'}>
-        <Mail size={18} aria-hidden="true" />
-        {mailCount > 0 && <span className="hl-topbar-badge">{mailCount}</span>}
+      <button type="button" onClick={onMail} className="tb-plate tb-mail" title="Mailbox" aria-label={mailCount > 0 ? `Mailbox, ${mailCount} waiting` : 'Mailbox'}>
+        <Mail size={16} aria-hidden="true" />
+        {mailCount > 0 && <span className="tb-badge">{mailCount}</span>}
       </button>
     </div>
   </header>;

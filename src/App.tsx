@@ -466,7 +466,7 @@ function App() {
     if (!target.closest('button, a') || target.closest('.hl-more-sheet')) return;
     // More and Mine toggle their own sheets (and close each other); closing them here as well reopened More.
     const sheetToggle = Boolean(target.closest('[aria-expanded]'));
-    const commanderToggle = Boolean(target.closest('.game-progress-commander'));
+    const commanderToggle = Boolean(target.closest('.game-progress-commander, .tb-commander'));
     setShowBoost(false); setShowWallet(false); setShowPromoCode(false); setShowSupport(false); setShowMail(false);
     if (!sheetToggle) setMoreOpen(false);
     window.dispatchEvent(new CustomEvent(OVERLAYS_CLOSE_EVENT, { detail: { sheetToggle, commanderToggle } }));
