@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { BookOpen, ChevronRight, LibraryBig, Search, ShieldCheck, Sparkles } from 'lucide-react';
 import { STAR_UP_BASE_USD_CENTS } from '@/game/state';
 import { isolatedHackathon } from '@/game/editionStorage';
+import { MINE_GUIDE, MINE_LIMIT_ROWS } from '@/game/seekerMine';
 
 type GuideStatus = 'Live' | 'Testing' | 'Coming soon';
 
@@ -86,6 +87,13 @@ const GUIDES: GuideEntry[] = [
   { category: 'Features', question: 'How do promo codes work?', answer: 'Use Code in the bottom bar. A valid code is redeemed once by the server and can award Gold, $HERO, Summon Scrolls or Boss Keys. Invalid, expired, exhausted and previously used codes never change your balance.', status: 'Live' },
   { category: 'Features', question: 'Are Crafting, Salvage, Pets, Spells and Auras available?', answer: 'Not yet. Their controls or placeholders may be visible, but no undefined recipe, reward or bonus is active.', status: 'Coming soon' },
   { category: 'Accessibility', question: 'Can I reduce battle motion?', answer: 'Yes. Battle graphics quality modes include Maximum, Medium and Minimum. System Reduced Motion also suppresses nonessential effects.', status: 'Live' },
+  // Android/Seeker wallet, Market and Mine rules. Owners: seeker-skr-payments.md, seeker-ore-mine.md.
+  ...(isolatedHackathon ? [
+    { category: 'Wallet & Mine', question: 'What are the deposit and withdrawal limits?', answer: 'Deposit SKR or SOL from the Solana wallet linked to your account. Withdrawals go to that same wallet and keep a 5% fee: you sign the full amount and receive 95%.', details: ['One deposit: up to 10,000 SKR or 2 SOL', 'Withdrawal fee: 5% of the requested amount', 'Daily review: requests above $20 per UTC day need manual approval', 'Payouts: sent manually on this test server; a request is final once paid on Solana'], status: 'Testing' as const },
+    { category: 'Wallet & Mine', question: 'What does the Market charge?', answer: 'Listing an item costs $0.02 in SKR, also when you later cancel it. When an item sells, the buyer pays the quoted SKR price and the seller receives 90%; the 10% sale fee goes to HeroLoop.', details: ['Listing: $0.02 in SKR', 'Sale fee: 10%', 'Seller receives: 90% of the SKR price'], status: 'Testing' as const },
+    { category: 'Wallet & Mine', question: 'How does the ORE Mine work?', answer: 'The Mine will let you play one-minute ORE rounds on Solana with your in-game SOL. Open it from Wallet → Mine; the Guide & Terms button there shows these rules.', details: MINE_GUIDE.map(section => `${section.title}: ${section.body}`), status: 'Coming soon' as const },
+    { category: 'Wallet & Mine', question: 'What are the ORE Mine stakes and limits?', answer: 'Pick a fixed stake for the whole session. Limits protect your balance and are checked by the server.', details: MINE_LIMIT_ROWS.map(([label, value]) => `${label}: ${value}`), status: 'Coming soon' as const },
+  ] : []),
 ];
 
 const CATEGORIES = ['All', ...Array.from(new Set(GUIDES.map((entry) => entry.category)))];
