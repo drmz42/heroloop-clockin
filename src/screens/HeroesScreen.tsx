@@ -7,6 +7,8 @@ import { skrPrice, useSkrRate } from '@/game/skrPurchase';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Star, Lock, Unlock, Trash2, Search, X, Sparkles, Users, Swords, Shield, AlertTriangle, UserPlus, Gem, ChevronsUp, Zap } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
+import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
+import '@/theme/scene/scene.css';
 import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, RARITY_INDEX, CLASS_LABEL } from '@/game/heroes';
 import { formatNum, starUpCost, heroXpForLevel, heroCapacityUpgradeCost, MAX_HERO_CAPACITY, MAX_HERO_STARS } from '@/game/state';
 import { heroStats, getEquippedItems, teamPower as calculateTeamPower } from '@/game/engine';
@@ -53,7 +55,7 @@ function HeroStars({ stars, size }: { stars: number; size: number }) {
   })}</span>;
 }
 
-function HeroGridCard({ base, hero, game, selected, onSelect }: { base: HeroBase; hero: OwnedHero; game: GameApi; selected: boolean; onSelect: () => void }) {
+function HeroGridCard({ base, hero, game, onSelect }: { base: HeroBase; hero: OwnedHero; game: GameApi; onSelect: () => void }) {
   const rc = RARITY_COLORS[base.rarity];
   const isInTeam = game.state.team.includes(hero.uid);
   const respawn = game.respawnCountdowns[hero.uid] ?? 0;
@@ -63,27 +65,31 @@ function HeroGridCard({ base, hero, game, selected, onSelect }: { base: HeroBase
   const stats = heroStats(hero, getEquippedItems(hero, game.state.inventory));
   const power = stats ? Math.round(stats.atk + stats.hp / 10 + stats.def * 2) : 0;
   return (
-    <div role="button" tabIndex={0} onClick={onSelect} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelect(); }} className={`hl-hero-card premium-hero-card rarity-${base.rarity} min-w-0 p-1.5 transition cursor-pointer ${selected ? 'premium-hero-card-selected' : ''} ${isInTeam ? 'premium-hero-card-active-team' : ''}`}>
-      <div className="relative mx-auto w-fit">
-        <HeroPortrait heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={isAndroidLayout ? 60 : 80} active={isInTeam} badge={hero.level} respawn={respawn} />
-      </div>
-      <div className="mt-1.5 truncate text-center text-[11px] font-bold" style={{ color: rc }}>{base.name}</div>
-      <div className="hl-hero-meta mt-0.5 flex items-center justify-between gap-1 text-[8px] uppercase tracking-wide text-[#827d72]"><span>{CLASS_LABEL[base.heroClass]}</span><span style={{ color: rc }}>{RARITY_LABEL[base.rarity]}</span></div>
-      <div className="mt-1 flex items-center justify-between border-t border-white/5 pt-1 text-[9px]"><span className="font-bold text-[#ddd4c4]">{formatNum(power)} PWR</span><HeroStars stars={hero.stars} size={7} /></div>
-      {hero.stars < MAX_HERO_STARS && <div className="hl-hero-copies mt-1 truncate border-t border-white/5 pt-1 text-center text-[8px] font-bold text-violet-200">{dupes}/{starCost.dupes} copies · {isolatedHackathon ? `${formatNum(seekerStarGoldCost(base.rarity, hero.stars + 1) ?? 0)} Gold` : formatNum(starCost.hero)+' $HERO'}</div>}
-      <div className="pointer-events-none absolute left-1.5 top-1.5 z-10 flex flex-col gap-1">
-        {hero.isNew && <StateBadge label="New" tone="gold" />}
-        {isInTeam && <StateBadge label="Selected" tone="green" />}
-        {upgradeable && <StateBadge label="Upgrade" tone="purple" />}
-      </div>
-      {hero.locked && <Lock size={12} className="absolute right-2 top-2 z-10 text-amber-300" />}
-    </div>
+    <li>
+      <button type="button" onClick={onSelect} aria-label={`${base.name}, ${RARITY_LABEL[base.rarity]}, level ${hero.level}`} className={`hv-card${RARITY_INDEX[base.rarity] >= RARITY_INDEX.rare ? ' is-rare' : ''}${isInTeam ? ' is-team' : ''}`} style={{ '--hv-color': rc } as React.CSSProperties}>
+        <span className="hv-card-art">
+          <img src={heroPortraitSrc(base.id, base.heroClass, base.rarity, base.color)} alt="" loading="lazy" decoding="async" style={{ ...heroPortraitStyle(base.id, base.heroClass), transform: 'none' }} />
+          <span className="hv-card-lv">Lv {hero.level}</span>
+          {respawn > 0 && <span className="hv-card-dead">Fallen<br />{respawn}s</span>}
+          <span className="hv-card-badges">
+            {hero.isNew && <StateBadge label="New" tone="gold" />}
+            {isInTeam && <StateBadge label="Selected" tone="green" />}
+            {upgradeable && <StateBadge label="Upgrade" tone="purple" />}
+          </span>
+          {hero.locked && <Lock size={12} className="hv-card-lock" />}
+        </span>
+        <span className="hv-card-info">
+          <span className="hv-card-name">{base.name}</span>
+          <span className="hv-card-row"><span>{formatNum(power)} PWR</span><HeroStars stars={hero.stars} size={7} /></span>
+          {hero.stars < MAX_HERO_STARS && dupes > 0 && <span className="hv-card-copies">{dupes}/{starCost.dupes} copies · {isolatedHackathon ? `${formatNum(seekerStarGoldCost(base.rarity, hero.stars + 1) ?? 0)} Gold` : formatNum(starCost.hero)+' $HERO'}</span>}
+        </span>
+      </button>
+    </li>
   );
 }
 
 function StateBadge({ label, tone }: { label: string; tone: 'gold' | 'green' | 'purple' }) {
-  const cls = tone === 'green' ? 'border-emerald-200 bg-emerald-400 text-[#04150d] shadow-[0_0_0_1px_rgba(4,21,13,.9),0_0_12px_rgba(52,211,153,.8)]' : tone === 'purple' ? 'border-violet-500/60 bg-violet-950/85 text-violet-200' : 'border-amber-500/60 bg-[#2a1a08]/90 text-amber-200';
-  return <span className={`rounded border px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[.08em] ${cls}`}>{label}</span>;
+  return <span className={`hv-badge hv-badge--${tone}`}>{label}</span>;
 }
 
 function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameApi; onClose: () => void }) {
@@ -147,11 +153,18 @@ function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameA
           <button type="button" onClick={() => setTeamError('')} className="game-control grid h-11 w-11 shrink-0 place-items-center" aria-label="Dismiss team error"><X size={16} /></button>
         </div>
       )}
-      <div className={`hero-detail-panel px-panel-raised rarity-${base.rarity} relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl`} onClick={(event) => event.stopPropagation()}>
-        <header className="flex items-start gap-3 border-b border-[#54442e] p-3">
-          <HeroPortrait heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={82} active={isInTeam} badge={hero.level} />
-          <div className="min-w-0 flex-1"><div className="truncate text-xl font-black" style={{ color: rc }}>{base.name}</div><div className="text-xs text-[#918b80]">{RARITY_LABEL[base.rarity]} · {CLASS_LABEL[base.heroClass]}</div><div className="mt-2 flex items-center gap-2"><span className="rounded-md border border-[#665131] bg-black/25 px-2 py-1 text-sm font-black text-[#f0d08b]">{formatNum(power)} POWER</span><HeroStars stars={hero.stars} size={12} /><span className="text-[9px] text-[#837d72]">{hero.stars}/{MAX_HERO_STARS}</span></div><div className="mt-2 health-track h-2 overflow-hidden"><div className="h-full bg-emerald-600/75" style={{ width: `${Math.min(100, hero.xp / xpNeed * 100)}%` }} /></div><div className="mt-0.5 text-[9px] text-[#837d72]">Lv {hero.level} · {formatNum(hero.xp)}/{formatNum(xpNeed)} XP</div></div>
-          <button type="button" onClick={onClose} className="game-control grid h-9 w-9 place-items-center" aria-label="Close hero details"><X size={16} /></button>
+      <div className={`hero-detail-panel hv-detail rarity-${base.rarity} relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden`} style={{ '--hv-color': rc } as React.CSSProperties} onClick={(event) => event.stopPropagation()}>
+        <header className="hv-detail-hero">
+          <img className="hv-detail-art" src={heroPortraitSrc(base.id, base.heroClass, base.rarity, base.color)} alt="" decoding="async" style={{ ...heroPortraitStyle(base.id, base.heroClass), transform: 'none' }} />
+          <div className="hv-detail-copy">
+            <span className="hv-detail-rarity">{RARITY_LABEL[base.rarity]} · {CLASS_LABEL[base.heroClass]}</span>
+            <h3 className="hv-detail-name">{base.name}</h3>
+            <div className="hv-detail-power"><b>{formatNum(power)}</b><span>Power</span></div>
+            <div className="hv-detail-stars"><HeroStars stars={hero.stars} size={12} /><span>{hero.stars}/{MAX_HERO_STARS}</span></div>
+            <div className="hv-detail-xp"><i style={{ width: `${Math.min(100, hero.xp / xpNeed * 100)}%` }} /></div>
+            <div className="hv-detail-lv">Lv {hero.level} · {formatNum(hero.xp)}/{formatNum(xpNeed)} XP{isInTeam ? ' · In team' : ''}</div>
+          </div>
+          <button type="button" onClick={onClose} className="sc-socket hv-detail-close" aria-label="Close hero details"><X size={16} /></button>
         </header>
         <div className="game-scrollbar min-h-0 overflow-y-auto p-3">
           <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6"><StatBox label="HP" value={formatNum(stats.hp)} /><StatBox label="ATK" value={formatNum(stats.atk)} /><StatBox label="DEF" value={formatNum(stats.def)} /><StatBox label="Crit" value={`${(stats.critChance * 100).toFixed(1)}%`} /><StatBox label="Dodge" value={`${(stats.dodge * 100).toFixed(1)}%`} /><StatBox label="Speed" value={`+${stats.atkSpeed}`} /></div>
@@ -291,39 +304,67 @@ export function HeroesScreen({ game }: { game: GameApi }) {
       setCapacityBusy(false);
     }
   };
+  const teamHeroes = state.team.map((uid) => state.ownedHeroes.find((candidate) => candidate.uid === uid)).filter((hero): hero is OwnedHero => Boolean(hero));
+  const filtersSet = classFilter !== 'all' || rarityFilter !== 'all' || levelFilter !== 'all' || search !== '';
   return (
-    <div className="premium-screen themed-screen themed-screen-heroes flex h-full flex-col overflow-hidden">
-      <header className="material-panel m-2 mb-0 shrink-0 p-3">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="heroes-head min-w-0">
-            <div className="section-kicker">Hall of Champions</div>
-            <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2"><h2 className="text-xl font-black text-[#eee4d3]">My Heroes <span className="text-sm text-[#8f897e]">{state.ownedHeroes.length}/{state.heroCapacity}</span></h2>{isolatedHackathon ? <SkrPurchaseButton product="hero_capacity_upgrade" params={{previous_capacity:state.heroCapacity}} disabled={!capacityUpgrade} label={capacityUpgrade?<>+100 slots · {skrCost(capacityUpgrade.usdCents, skrRate)}<SkrUsd cents={capacityUpgrade.usdCents} /></>:'Max'} onDelivered={game.applySeekerPurchase}/> : (<button type="button" onClick={() => void openCapacityUpgrade()} disabled={!capacityUpgrade || capacityBusy} aria-busy={capacityBusy} className="game-control game-primary flex min-h-11 items-center gap-1 px-3 text-[9px] font-black uppercase disabled:cursor-not-allowed disabled:opacity-45" aria-label={capacityUpgrade ? `Get DEX quote to expand Hero capacity to ${capacityUpgrade.nextCapacity}; USD catalogue price $${(capacityUpgrade.usdCents / 100).toFixed(2)}` : `Maximum Hero capacity ${MAX_HERO_CAPACITY}`} title={capacityUpgrade ? `USD catalogue $${(capacityUpgrade.usdCents / 100).toFixed(2)} · $HERO amount comes from a fresh DEX quote` : `Maximum capacity ${MAX_HERO_CAPACITY}`}><UserPlus size={12} />{capacityBusy ? 'Getting quote…' : capacityUpgrade ? `+100 slots · $${(capacityUpgrade.usdCents / 100).toFixed(2)}` : `MAX ${MAX_HERO_CAPACITY}`}</button>)}</div>
-            {capacityNotice && <div role={capacityNoticeError ? 'alert' : 'status'} className={`mt-1 text-[10px] font-bold ${capacityNoticeError ? 'text-red-300' : 'text-amber-200'}`}>{capacityNotice}</div>}
-            {isolatedHackathon && <div className="hl-heroes-promote mt-2"><SeekerPromoteAll game={game} /></div>}
-            <div className="hl-hero-filters mt-3 grid grid-cols-2 gap-1 sm:grid-cols-5">
-                <label className="relative block h-8"><Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#736d62]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search heroes" className="game-control h-8 w-full bg-transparent pl-7 pr-2 text-[10px] outline-none" /></label>
-                  <Filter value={classFilter} onChange={setClassFilter} label="Class" icon={Swords} options={['all', 'knight', 'archer', 'assassin', 'shepherd', 'druid']} />
-                  <Filter value={rarityFilter} onChange={setRarityFilter} label="Rarity" icon={Gem} options={['all', ...FILTER_RARITIES]} />
-                  <Filter value={levelFilter} onChange={(value) => setLevelFilter(value as typeof levelFilter)} label="Level" icon={ChevronsUp} options={['all', '1-19', '20-39', '40-59', '60-79', '80-99']} />
-                  <button type="button" onClick={() => { setClassFilter('all'); setRarityFilter('all'); setLevelFilter('all'); setSearch(''); }} className="game-control h-8 px-2 text-[8px] font-black uppercase"><X size={11} className="mr-1 inline" />Clear filters</button>
-                  {!isolatedHackathon && <button type="button" disabled={promoting} onClick={() => void promoteAll()} className="game-control game-primary flex h-8 w-full items-center justify-center gap-1 px-2 text-[8px] font-black uppercase disabled:opacity-55"><Sparkles size={11} /> {promoting ? 'Promoting…' : 'Promote All'}</button>}
-                  {(['stars', 'power', 'level'] as const).map((value) => <button type="button" key={value} onClick={() => setSort(value)} className={`game-control flex h-8 items-center justify-center gap-1 px-2 text-[8px] font-bold uppercase ${sort === value ? 'game-primary' : ''}`}>{value}{(() => { const Icon = SORT_ICONS[value]; return <Icon size={10} className="shrink-0 text-amber-300" aria-hidden="true" />; })()}</button>)}
+    <div className={`sc-root hv-root${state.battleAnimationMode === 'off' ? ' sc-still' : ''}`}>
+      <section className="sc-stage hv-hall" aria-label="Hall of Champions">
+        <div className="sc-stage-art" aria-hidden="true" />
+        <div className="sc-glow" aria-hidden="true" />
+        <div className="sc-embers" aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <i key={index} style={{ '--i': index } as React.CSSProperties} />)}</div>
+        <header className="sc-head heroes-head">
+          <span className="sc-kicker">Hall of Champions</span>
+          <h2 className="sc-title">My Heroes</h2>
+          <div className="hv-head-row">
+            <span className="sc-chip"><Users size={12} /> {state.ownedHeroes.length}/{state.heroCapacity}</span>
+            {isolatedHackathon ? <SkrPurchaseButton product="hero_capacity_upgrade" params={{previous_capacity:state.heroCapacity}} disabled={!capacityUpgrade} label={capacityUpgrade?<>+100 slots · {skrCost(capacityUpgrade.usdCents, skrRate)}<SkrUsd cents={capacityUpgrade.usdCents} /></>:'Max'} onDelivered={game.applySeekerPurchase}/> : (<button type="button" onClick={() => void openCapacityUpgrade()} disabled={!capacityUpgrade || capacityBusy} aria-busy={capacityBusy} className="sc-seal" aria-label={capacityUpgrade ? `Get DEX quote to expand Hero capacity to ${capacityUpgrade.nextCapacity}; USD catalogue price $${(capacityUpgrade.usdCents / 100).toFixed(2)}` : `Maximum Hero capacity ${MAX_HERO_CAPACITY}`} title={capacityUpgrade ? `USD catalogue $${(capacityUpgrade.usdCents / 100).toFixed(2)} · $HERO amount comes from a fresh DEX quote` : `Maximum capacity ${MAX_HERO_CAPACITY}`}><UserPlus size={12} />{capacityBusy ? 'Getting quote…' : capacityUpgrade ? `+100 slots · $${(capacityUpgrade.usdCents / 100).toFixed(2)}` : `MAX ${MAX_HERO_CAPACITY}`}</button>)}
+          </div>
+        </header>
+        <div className="hv-team" aria-label="Active team">
+          {[0, 1, 2].map((slot) => {
+            const hero = teamHeroes[slot];
+            const base = hero ? HERO_MAP[hero.heroId] : undefined;
+            const color = base ? RARITY_COLORS[base.rarity] : undefined;
+            return (
+              <div key={slot} className="hv-seat" style={color ? { '--hv-color': color } as React.CSSProperties : undefined}>
+                {hero && base
+                  ? <span className="hv-seat-hero"><HeroPortrait heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={76} active badge={hero.level} respawn={respawnCountdowns[hero.uid] ?? 0} onClick={() => openHero(hero)} /></span>
+                  : <span className="hv-seat-empty" aria-label="Empty team slot"><Shield size={26} /></span>}
+                <span className="hv-plinth">{hero && base ? <><b>{base.name}</b><small>{CLASS_LABEL[base.heroClass]}</small></> : <><b>Empty</b><small>Choose a hero</small></>}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="hv-power"><span>Team Power</span><b>{formatNum(activeTeamPower)}</b><span>{state.team.length}/3</span></div>
+      </section>
+
+      <div className="sc-body">
+        {capacityNotice && <div role={capacityNoticeError ? 'alert' : 'status'} className={`hv-notice${capacityNoticeError ? ' is-error' : ''}`}><span>{capacityNotice}</span><button type="button" onClick={() => setCapacityNotice('')} aria-label="Dismiss capacity message"><X size={13} /></button></div>}
+        {isolatedHackathon
+          ? <div className="hl-heroes-promote"><SeekerPromoteAll game={game} /></div>
+          : <button type="button" disabled={promoting} onClick={() => void promoteAll()} className="sc-seal w-full"><Sparkles size={13} /> {promoting ? 'Promoting…' : 'Promote All'}</button>}
+        {promotionNotice && <div className="hv-notice"><span><Sparkles size={13} className="mr-1 inline text-amber-300" />{promotionNotice}</span><button type="button" onClick={() => setPromotionNotice('')} aria-label="Dismiss promotion result"><X size={14} /></button></div>}
+
+        <section className="sc-panel" aria-label="Hero collection">
+          <div className="sc-section-head"><span>Collection</span><span className="sc-muted">{entries.length} shown</span></div>
+          <div className="hv-tools">
+            <label className="hv-search"><Search size={13} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search heroes" aria-label="Search heroes" /></label>
+            <div className="hv-filters">
+              <Filter value={classFilter} onChange={setClassFilter} label="Class" icon={Swords} options={['all', 'knight', 'archer', 'assassin', 'shepherd', 'druid']} />
+              <Filter value={rarityFilter} onChange={setRarityFilter} label="Rarity" icon={Gem} options={['all', ...FILTER_RARITIES]} />
+              <Filter value={levelFilter} onChange={(value) => setLevelFilter(value as typeof levelFilter)} label="Level" icon={ChevronsUp} options={['all', '1-19', '20-39', '40-59', '60-79', '80-99']} />
+              <button type="button" disabled={!filtersSet} onClick={() => { setClassFilter('all'); setRarityFilter('all'); setLevelFilter('all'); setSearch(''); }} className="sc-chip" aria-label="Clear filters"><X size={12} /></button>
+            </div>
+            <div className="hv-sort" role="group" aria-label="Sort heroes">
+              {(['rarity', 'stars', 'power', 'level'] as const).map((value) => { const Icon = SORT_ICONS[value]; return <button type="button" key={value} onClick={() => setSort(value)} aria-pressed={sort === value} className="sc-chip">{value}<Icon size={10} aria-hidden="true" /></button>; })}
             </div>
           </div>
-          <section className="relative overflow-hidden rounded-xl border border-[#a87b35] bg-[radial-gradient(circle_at_50%_0%,rgba(190,137,55,.2),transparent_58%),linear-gradient(160deg,#211b12,#0c0d0c)] p-3 shadow-[inset_0_1px_rgba(255,226,163,.12),0_8px_25px_rgba(0,0,0,.35)]">
-            <Swords size={54} className="absolute -left-3 -top-3 rotate-[-18deg] text-[#8d6a37]/20" />
-            <Shield size={58} className="absolute -bottom-4 -right-2 text-[#8d6a37]/20" />
-            <div className="relative flex items-center justify-between gap-3"><span className="flex items-center gap-2 text-xs font-black uppercase tracking-[.15em] text-[#efc875]"><Users size={15} /> Active Team</span><div className="flex items-baseline gap-2"><span className="text-[9px] font-bold uppercase tracking-wider text-[#8f887b]">Team Power</span><b className="text-sm tabular-nums text-[#f5d98e]">{formatNum(activeTeamPower)}</b><span className="text-[10px] font-bold text-[#a99a7d]">{state.team.length}/3</span></div></div>
-            <div className="hl-team-row relative mt-3 flex min-h-[96px] items-center justify-center gap-4">
-              {state.team.map((uid) => { const hero = state.ownedHeroes.find((candidate) => candidate.uid === uid); const base = hero ? HERO_MAP[hero.heroId] : null; return hero && base ? <HeroPortrait key={uid} heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={isAndroidLayout ? 64 : 88} active badge={hero.level} respawn={respawnCountdowns[uid] ?? 0} onClick={() => openHero(hero)} /> : null; })}
-              {Array.from({ length: 3 - state.team.length }, (_, index) => <div key={index} className="hl-team-empty grid h-[88px] w-[88px] place-items-center rounded-xl border border-dashed border-[#665333] bg-black/20"><Shield size={24} className="text-[#5c4b31]" /></div>)}
-            </div>
-            <div className="relative mt-1 text-center text-[9px] text-[#8f887b]">Your primary combat formation</div>
-          </section>
-        </div>
-        {promotionNotice && <div className="anim-banner mt-2 flex items-start gap-2 rounded-lg border border-violet-500/45 bg-violet-950/45 px-3 py-2 text-xs font-bold text-violet-200"><span className="flex-1 text-center"><Sparkles size={13} className="mr-1 inline text-amber-300" />{promotionNotice}</span><button type="button" onClick={() => setPromotionNotice('')} aria-label="Dismiss promotion result"><X size={14} /></button></div>}
-      </header>
-      <div className="game-scrollbar min-h-0 flex-1 overflow-y-auto p-2"><div className="hl-hero-grid grid grid-cols-2 gap-2.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">{entries.map(({ base, hero }) => <HeroGridCard key={hero.uid} base={base} hero={hero} game={game} selected={selected?.uid === hero.uid} onSelect={() => openHero(hero)} />)}</div>{entries.length === 0 && <div className="material-panel mx-auto mt-16 max-w-sm p-6 text-center"><Shield className="mx-auto text-[#806b49]" /><div className="mt-2 font-bold text-[#d4c9b7]">No owned heroes match these filters</div><div className="mt-1 text-xs text-[#827c72]">Change class, rarity, level or search.</div></div>}</div>
+        </section>
+
+        {entries.length > 0
+          ? <ol className="hv-grid hl-hero-grid">{entries.map(({ base, hero }) => <HeroGridCard key={hero.uid} base={base} hero={hero} game={game} onSelect={() => openHero(hero)} />)}</ol>
+          : <div className="sc-panel hv-empty"><Shield className="mx-auto text-[#806b49]" /><b>No owned heroes match these filters</b><div className="sc-muted mt-1">Change class, rarity, level or search.</div></div>}
+      </div>
       {selected && <HeroDetailModal hero={selected} game={game} onClose={() => setSelectedUid(null)} />}
       {capacityQuote && (
         <div className="fixed inset-0 z-[90] grid place-items-center bg-black/80 p-3 backdrop-blur-sm">
@@ -349,8 +390,8 @@ export function HeroesScreen({ game }: { game: GameApi }) {
   );
 }
 
-const SORT_ICONS = { stars: Star, power: Zap, level: ChevronsUp } as const;
+const SORT_ICONS = { rarity: Gem, stars: Star, power: Zap, level: ChevronsUp } as const;
 
 // A small icon follows each filter name (Founder 2026-10-03); the native select stays on top, transparent,
 // so tapping still opens the platform picker.
-function Filter({ value, onChange, label, icon: Icon, options }: { value: string; onChange: (value: string) => void; label: string; icon: typeof Star; options: string[] }) { const text = value === 'all' ? (isAndroidLayout ? label : `All ${label}`) : value; return <label className="hl-filter-select game-control relative flex h-8 min-w-0 items-center justify-center gap-1 bg-[#171915] px-2 text-[9px] font-bold capitalize text-[#d1c8b9] focus-within:outline focus-within:outline-1 focus-within:outline-amber-300"><span className="sr-only">{label}</span><span className="min-w-0 truncate" aria-hidden="true">{text}</span><Icon size={10} className="shrink-0 text-amber-300" aria-hidden="true" /><select value={value} onChange={(event) => onChange(event.target.value)} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" style={{ colorScheme: 'dark' }}>{options.map((option) => <option key={option} value={option} style={{ backgroundColor: '#171915', color: '#d1c8b9' }}>{option === 'all' ? (isAndroidLayout ? label : `All ${label}`) : option}</option>)}</select></label>; }
+function Filter({ value, onChange, label, icon: Icon, options }: { value: string; onChange: (value: string) => void; label: string; icon: typeof Star; options: string[] }) { const text = value === 'all' ? label : value; return <label className={`hv-filter sc-chip${value === 'all' ? '' : ' is-set'}`}><span className="sr-only">{label}</span><span aria-hidden="true">{text}</span><Icon size={10} aria-hidden="true" /><select value={value} onChange={(event) => onChange(event.target.value)} style={{ colorScheme: 'dark' }}>{options.map((option) => <option key={option} value={option} style={{ backgroundColor: '#171915', color: '#d1c8b9' }}>{option === 'all' ? `All ${label}` : option}</option>)}</select></label>; }
