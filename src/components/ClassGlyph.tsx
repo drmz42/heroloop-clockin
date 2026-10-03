@@ -4,7 +4,7 @@ import { CLASS_LABEL } from '@/game/heroes';
 
 // Class-only gear mark: one distinct silhouette and colour per class, so items read at a glance
 // without text. Warrior sword, Mage staff with a glowing gem, Assassin crossed daggers,
-// Druid antlered oak leaf, Crossbowman crossbow.
+// Druid antlered oak leaf, Ranger (archer) crossbow.
 const glyphs = (steel: string, glow: string, leaf: string): Record<HeroClass, JSX.Element> => ({
   knight: <>
     <path d="M12 2.2 13.6 4.4V14.6H10.4V4.4Z" fill={steel} stroke="#2a2118" strokeWidth=".6" />

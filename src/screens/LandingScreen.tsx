@@ -40,7 +40,7 @@ const STARTERS: { id: StarterId; role: string; tagline: string; stat: string }[]
   { id: 'assassin-common', role: 'Assassin', tagline: 'Move through shadows', stat: 'Burst & criticals' },
   { id: 'knight-common', role: 'Warrior', tagline: 'Hold the line', stat: 'High HP & DEF' },
   { id: 'druid-common', role: 'Druid', tagline: 'Command living magic', stat: 'Regen & sustain' },
-  { id: 'archer-common', role: 'Crossbowman', tagline: 'Keep relentless tempo', stat: 'Fast bolt attacks' },
+  { id: 'archer-common', role: 'Ranger', tagline: 'Keep relentless tempo', stat: 'Fast bolt attacks' },
 ];
 
 const LOOP = [

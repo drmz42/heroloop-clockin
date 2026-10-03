@@ -84,7 +84,7 @@ export const CLASS_ICON: Record<HeroClass, string> = {
 
 export const CLASS_LABEL: Record<HeroClass, string> = {
   knight:   'Warrior',
-  archer:   'Crossbowman',
+  archer:   'Ranger',
   assassin: 'Assassin',
   shepherd: 'Mage',
   druid:    'Druid',
@@ -360,7 +360,7 @@ const HERO_ARCHETYPES: Omit<HeroBase, 'id' | 'name' | 'rarity'>[] = [
   { heroClass: 'archer', faction: 'light', baseHp: 360, baseAtk: 70, baseDef: 14, baseSpeed: 124, critChance: .15, critDamage: 2.15, skillName: 'Rapid Bolts', skillDesc: 'Fires a fast mechanical crossbow volley', passiveName: 'Tempo', passiveDesc: 'Starts with 8% attack speed', color: '#f59e0b' },
 ];
 const CANONICAL_CLASS_NAME: Record<HeroClass, string> = {
-  shepherd: 'Mage', assassin: 'Assassin', knight: 'Warrior', druid: 'Druid', archer: 'Crossbowman',
+  shepherd: 'Mage', assassin: 'Assassin', knight: 'Warrior', druid: 'Druid', archer: 'Ranger',
 };
 
 export const HEROES: HeroBase[] = HERO_ARCHETYPES.flatMap((hero) =>

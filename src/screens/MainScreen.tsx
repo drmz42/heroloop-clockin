@@ -12,6 +12,7 @@ import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, 
 import { Arena, locationArtStyle } from '@/components/Arena';
 import { CombatErrorBoundary } from '@/components/CombatErrorBoundary';
 import { HeroPortrait } from '@/components/HeroPortrait';
+import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
 import { buildLocation, canMineTokens, equippedEnchantResonance, equippedSetBonus, getEquippedItems, heroStats, locationUnlockLevel, locationLevelRange, LOCATION_RANGES, SET_BONUS_PERCENT, teamPower as calculateHeroPower } from '@/game/engine';
 import { ENCHANT_RESONANCE_PERCENT } from '@/game/enchant';
@@ -610,8 +611,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   <div className="hl-commander border-b border-[#4f412e] p-3">
     <div className="section-kicker mb-2">Commander</div>
     <div className="commander-profile stat-tile mb-3 grid grid-cols-[112px_minmax(0,1fr)] items-center gap-3 p-3">
-      <button type="button" onClick={() => setShowAvatarPicker(true)} className="relative h-28 w-28 shrink-0 overflow-hidden rounded-lg border border-[#e0b45f] bg-black/30 shadow-[0_0_14px_rgba(208,163,74,.24)]" aria-label="Change account avatar">
-        {avatarBase && <HeroPortrait heroId={avatarBase.id} heroClass={avatarBase.heroClass} rarity={avatarBase.rarity} color={avatarBase.color} size={110} />}
+      <button type="button" onClick={() => setShowAvatarPicker(true)} className="commander-avatar relative h-28 w-28 shrink-0 overflow-hidden rounded-lg bg-black/30" aria-label="Change account avatar">
+        {avatarBase && <img src={heroPortraitSrc(avatarBase.id, avatarBase.heroClass, avatarBase.rarity, avatarBase.color)} alt="" className="h-full w-full object-cover" style={{ ...heroPortraitStyle(avatarBase.id, avatarBase.heroClass), transform: 'none' }} />}
       </button>
       <div className="min-w-0 space-y-2">
         <RewardBoostTile bonus={game.accountBonus} onOpenShop={() => { setCommanderOpen(false); onRewardBoostClick(); }} />
@@ -639,7 +640,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           </button> : <div key={slot} className="flex min-h-28 items-center justify-center border border-dashed border-[#4f412e] ui-text-small text-[#8e887b]">Empty slot</div>;
         })}
       </div>
-      {selectedHero && <div className="mt-3 flex items-center justify-between gap-2 ui-text-medium"><span className="min-w-0 truncate text-[#e8e1d3]">{selectedHeroBase?.name} · Hero Power</span><strong className="shrink-0 tabular-nums text-[#f0c563]">⚡ {formatNum(selectedHeroPower)}</strong></div>}
+      {selectedHero && <div className="commander-hero-power mb-2 mt-4 flex items-center justify-between gap-2 ui-text-medium"><span className="min-w-0 truncate ui-text-small font-bold uppercase tracking-[.1em] text-[#8e887b]">Hero Power</span><strong className="shrink-0 tabular-nums text-[#f0c563]">⚡ {formatNum(selectedHeroPower)}</strong></div>}
     {selectedHero && (
       <div className="stat-tile mb-2 px-2 py-1.5">
         <div className="flex items-center justify-between ui-text-small font-bold uppercase tracking-[.1em] text-[#8e887b]"><span>Hero XP</span><span>Level {selectedHero.level}</span></div>

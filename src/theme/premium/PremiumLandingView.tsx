@@ -47,7 +47,7 @@ const CLASSES = [
   { id: 'mage', name: 'Mage', tagline: 'Masters of the arcane', art: classMage },
   { id: 'assassin', name: 'Assassin', tagline: 'Shadows strike', art: classAssassin },
   { id: 'druid', name: 'Druid', tagline: 'Harmony with nature', art: classDruid },
-  { id: 'crossbowman', name: 'Crossbowman', tagline: 'Precision wins', art: classCrossbowman },
+  { id: 'crossbowman', name: 'Ranger', tagline: 'Precision wins', art: classCrossbowman },
 ];
 
 const WORLD = [

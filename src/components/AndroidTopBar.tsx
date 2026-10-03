@@ -1,10 +1,11 @@
 import { Mail, Rocket, UserRound, Wallet } from 'lucide-react';
-import { HeroPortrait } from '@/components/HeroPortrait';
+import type { CSSProperties } from 'react';
+import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { COMMANDER_OPEN_EVENT, TeamPowerReadout } from '@/components/GameProgressBar';
 import { SkrBalance } from '@/components/GameNavBar';
 import { shortWalletAddress } from '@/components/walletAddress';
-import { HERO_MAP } from '@/game/heroes';
+import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { groupNumber } from '@/game/numberFormat';
 import '@/theme/scene/topbar.css';
 
@@ -39,8 +40,8 @@ export function AndroidTopBar({ power, identity, gold, commander, boostActive, w
       <div className="tb-cell tb-power"><TeamPowerReadout power={power} identity={identity} /></div>
     </div>
     <div className="tb-row tb-actions">
-      {avatar && <button type="button" className="tb-commander" onClick={() => window.dispatchEvent(new Event(COMMANDER_OPEN_EVENT))} aria-label={`Commander, level ${commander.level}`}>
-        <HeroPortrait heroId={avatar.id} heroClass={avatar.heroClass} rarity={avatar.rarity} color={avatar.color} size={38} />
+      {avatar && <button type="button" className="tb-commander" style={{ '--tb-rarity': RARITY_COLORS[avatar.rarity] } as CSSProperties} onClick={() => window.dispatchEvent(new Event(COMMANDER_OPEN_EVENT))} aria-label={`Commander, level ${commander.level}`}>
+        <img src={heroPortraitSrc(avatar.id, avatar.heroClass, avatar.rarity, avatar.color)} alt="" style={{ ...heroPortraitStyle(avatar.id, avatar.heroClass), transform: 'none' }} />
         <b>{commander.level}</b>
       </button>}
       <button type="button" className={`tb-plate tb-boost${boostActive ? ' is-active' : ''}`} onClick={onBoost} aria-label={boostActive ? 'Boost Max active' : 'Open Boost Max'}>

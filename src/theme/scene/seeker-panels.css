@@ -90,3 +90,8 @@ html[data-hl-edition='seeker'] .battle-rank-plate:not(#hl-b) {
   letter-spacing: .06em;
 }
 html[data-hl-edition='seeker'] .arena-portrait[data-combat-side='enemy']:not(#hl-b) { border-color: #7a3a2c !important; }
+/* Long names (e.g. "World Tree Druid") wrap to two short lines instead of overflowing the plate. */
+html[data-hl-edition='seeker'] .arena-unit-name:not(#hl-b) { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: 9px !important; line-height: 10.5px !important; letter-spacing: 0; overflow-wrap: normal; word-break: normal; hyphens: none; }
+
+/* Commander sheet: the avatar fills its tile; no gold hairline (Founder 2026-10-03). */
+html[data-hl-edition='seeker'] .commander-avatar:not(#hl-b) { border: 0 !important; box-shadow: 0 0 0 1px #000, 0 8px 18px rgba(0, 0, 0, .55), inset 0 -24px 18px -12px rgba(0, 0, 0, .8) !important; }
