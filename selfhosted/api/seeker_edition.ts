@@ -7,7 +7,6 @@
 export const SEEKER_REFUSED_ACTIONS: ReadonlySet<string> = new Set([
   "ascension_focus_set",
   "hero_summon_quote",
-  "hero_ascend",
   "hero_promote_all",
   "hero_capacity_quote",
   "hero_capacity_upgrade",
@@ -39,6 +38,10 @@ export function seekerRefusal(edition: Edition, action: string, payload: Record<
   if (SEEKER_REFUSED_ACTIONS.has(action)) return "unavailable_in_seeker_edition";
   // Summon stays available with Summon Scrolls; the $HERO-paid path is off.
   if (action === "hero_summon" && payload.payment_method !== "scroll") return "unavailable_in_seeker_edition";
+  // Star Up runs only as Promote All for duplicates + Gold; a single paid Star Up is the SKR product.
+  if (action === "hero_ascend" && !(Array.isArray(payload.target_uids) && payload.repeat === true && typeof payload.expected_gold === "number")) {
+    return "unavailable_in_seeker_edition";
+  }
   if (action === "item_upgrade" && (payload.operation === "reroll" || payload.use_charm === true)) return "unavailable_in_seeker_edition";
   return null;
 }

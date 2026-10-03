@@ -125,7 +125,7 @@ export async function playerSync<T>(
             ...(detail.revision === undefined ? {} : { revision: detail.revision }),
           } as T;
         }
-        if (action === 'spend_tokens' || action === 'hero_ascend') {
+        if ((action === 'spend_tokens' || action === 'hero_ascend') && !isolatedHackathon) {
           const label = action === 'hero_ascend' ? 'Ascension' : '$HERO purchase';
           window.alert(`${label} failed: ${message}`);
         }
@@ -159,7 +159,7 @@ export async function playerSync<T>(
     );
     if (retrySafe && networkRetry < 1) return playerSync<T>(action, payload, onError, networkRetry + 1);
     onError?.(message);
-    if (action === 'spend_tokens' || action === 'hero_ascend') {
+    if ((action === 'spend_tokens' || action === 'hero_ascend') && !isolatedHackathon) {
       const label = action === 'hero_ascend' ? 'Ascension' : '$HERO purchase';
       window.alert(`${label} failed: ${message}`);
     }

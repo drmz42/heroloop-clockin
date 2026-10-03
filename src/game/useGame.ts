@@ -28,6 +28,7 @@ import { MAX_ENCHANT_LEVEL } from '@/game/enchant';
 import { goldRewardForLanes } from '@/game/goldRewards';
 import { advanceCombatFrame, combatResolution, seededCombatRandom } from '../../managed/functions/player-sync/combat-step.mjs';
 import { playerSync, tokenomicsEnabled } from '@/game/backend';
+import type { SeekerPromotionPlan, SeekerPromotionStep } from '@/game/seekerPromotion';
 import { combatPresentationDue, scheduleFloaters } from '@/game/floater-queue.mjs';
 import { combatRecoveryDelay, createCombatSession, stalledCombatGeneration } from '@/game/combat-session.mjs';
 import { COMBAT_TIMELINE_VERSION, parseCombatTimeline } from '../../managed/functions/player-sync/combat-timeline.mjs';
@@ -1610,6 +1611,40 @@ export function useGame() {
     };
   }, []);
 
+  // Seeker Promote All: duplicates + the Gold total the player saw (src/game/seekerPromotion.ts).
+  const seekerPromoteAll = useCallback(async (plan: SeekerPromotionPlan): Promise<
+    { ok: true; promotions: SeekerPromotionStep[]; goldSpent: number } | { ok: false; error: string }> => {
+    if (!tokenomicsEnabled || plan.targets.length === 0) return { ok: false, error: 'nothing_to_promote' };
+    let failure = 'ascension_failed';
+    const result = await playerSync<{
+      owned_heroes: OwnedHero[];
+      gold: number;
+      gold_spent: number;
+      revision: number;
+      promotions: { target_uid: string; hero_id: string; from_stars: number; to_stars: number; gold: number }[];
+    }>('hero_ascend', {
+      target_uids: plan.targets,
+      repeat: true,
+      expected_gold: plan.gold,
+      idempotency_key: createIdempotencyKey(),
+    }, (message) => { failure = message; });
+    if (!result || !Array.isArray(result.owned_heroes) || !Array.isArray(result.promotions) || !Number.isFinite(Number(result.gold))) {
+      return { ok: false, error: failure };
+    }
+    const heroes = result.owned_heroes.filter((hero) => hero && typeof hero.uid === 'string' && Boolean(HERO_MAP[hero.heroId]));
+    if (heroes.length !== result.owned_heroes.length) return { ok: false, error: 'invalid_server_response' };
+    if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
+    const gold = Math.max(0, Number(result.gold));
+    setState((prev) => ({ ...prev, ownedHeroes: heroes, gold }));
+    return {
+      ok: true,
+      goldSpent: Math.max(0, Math.floor(Number(result.gold_spent) || 0)),
+      promotions: result.promotions.map((entry) => ({
+        uid: entry.target_uid, heroId: entry.hero_id, from: entry.from_stars, to: entry.to_stars, gold: entry.gold,
+      })),
+    };
+  }, []);
+
   const releaseHero = useCallback(async (uid: string): Promise<{ ok: true } | { ok: false; error: string }> => {
     const expectedRevision = serverRevisionHint;
     if (!tokenomicsEnabled || typeof expectedRevision !== 'number' || !Number.isSafeInteger(expectedRevision)) {
@@ -3031,7 +3066,7 @@ export function useGame() {
     state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, trainingIncomeRevision, battleResult, combatRecovery, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
     offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
-    starUpHero, promoteAllHeroes, releaseHero, quoteHeroCapacity, upgradeHeroCapacity, toggleHeroLock, markHeroSeen,
+    starUpHero, promoteAllHeroes, seekerPromoteAll, releaseHero, quoteHeroCapacity, upgradeHeroCapacity, toggleHeroLock, markHeroSeen,
     applySeekerPurchase, accountBonus, refreshAccountBonus, buyRewardBoost, buyShopBundle, quoteInventoryBag, buyInventoryBag,
     quoteHeroSummon, summonHeroes, summonBoss, syncBossKeys, toggleTeamMember, confirmPersistedFormation, setLocation,
     setAutoProgress, setPaused, collectOffline, creditServerTokens, applyServerTokenClaim, setServerTokenBalance, applyServerBoostStatus, applyServerPityStatus, applyServerAscensionFocus, setHeroAscensionFocus, retry,

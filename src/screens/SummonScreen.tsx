@@ -10,6 +10,7 @@ import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 import { isolatedHackathon } from '@/game/editionStorage';
 import { SkrTokenIcon } from '@/components/SkrTokenIcon';
+import { SeekerPromoteAll } from '@/components/SeekerPromoteAll';
 import { quoteSkrPurchase, formatAmountShort, formatMinor, type SkrPurchaseQuote } from '@/game/seekerWallet';
 import { useSkrRate, skrPrice, skrError } from '@/game/skrPurchase';
 
@@ -266,6 +267,7 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
             <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-fuchsia-300" /> {!hundredHasSpace ? 'Need 100 free slots' : !canPay(100) ? `Need ${100 - state.summonScrolls} more Scrolls` : summoning === 100 ? 'Preparing…' : 'Summon x100'}</span>
             <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod !== 'scroll' ? heroPriceLabel(100) : <><SummonScrollArtwork size={18} />100 Scrolls</>}</span>
           </button>
+          {isolatedHackathon && <><div className="mt-2 h-px bg-gradient-to-r from-transparent via-[#8c6231]/65 to-transparent" /><SeekerPromoteAll game={game} /></>}
           {!isolatedHackathon && <><div className="mt-2 h-px bg-gradient-to-r from-transparent via-[#8c6231]/65 to-transparent" />
           <button type="button" disabled={promoting || summoning !== null} onClick={() => void promoteAll()} className="summon-promote game-control flex h-[46px] items-center justify-center gap-1.5 px-3 text-[9px] font-black uppercase disabled:opacity-55"><Sparkles size={13} className="text-amber-300" /> {promoting ? 'Promoting heroes…' : 'Promote all heroes · Free space for Summon'}</button></>}
         </div>

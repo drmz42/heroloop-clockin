@@ -19,6 +19,9 @@ Deno.test("seeker edition refuses $HERO commands before state", () => {
   assert.equal(seekerRefusal(seeker, "item_upgrade", {operation:"enchant",use_charm:false}), null);
   assert.equal(seekerRefusal(seeker, "hero_summon", { payment_method: "paid" }), "unavailable_in_seeker_edition");
   assert.equal(seekerRefusal(seeker, "hero_summon", { payment_method: "scroll" }), null);
+  assert.equal(seekerRefusal(seeker, "hero_ascend", { target_uid: "a", repeat: false }), "unavailable_in_seeker_edition");
+  assert.equal(seekerRefusal(seeker, "hero_ascend", { target_uids: ["a"], repeat: true }), "unavailable_in_seeker_edition");
+  assert.equal(seekerRefusal(seeker, "hero_ascend", { target_uids: ["a"], repeat: true, expected_gold: 50 }), null);
   for (const action of ["game_state_load", "normal_combat_complete", "quest_claim", "chest_open", "market_cancel_listing"]) {
     assert.equal(seekerRefusal(seeker, action, {}), null);
   }

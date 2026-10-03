@@ -850,3 +850,47 @@ body:has(.has-game-progress) .fixed.inset-0 { top:calc(var(--game-progress-heigh
 .class-glyph-orb { animation:class-glyph-orb 2.4s ease-in-out infinite;transform-origin:12.3px 5.6px; }
 @keyframes class-glyph-orb { 50% { opacity:.55;transform:scale(.82); } }
 @media (prefers-reduced-motion: reduce) { .class-glyph-orb { animation:none; } }
+
+/* Seeker Promote All button and result ceremony (src/components/SeekerPromoteAll.tsx). */
+.seeker-promote-all { display:flex;width:100%;min-height:48px;align-items:center;justify-content:center;gap:8px;margin-top:8px;padding:0 14px;border-style:solid;border-color:transparent;border-image:url('./theme/premium/assets/btn-crimson-9.webp') 90 170 fill / 11px 16px / 0 3px stretch!important;background:none!important;color:#fbeccb!important;font-family:'Cinzel',Georgia,serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-shadow:0 1px 2px #000;filter:drop-shadow(0 0 10px rgba(179,48,28,.3)); }
+.seeker-promote-all svg { color:#ffd9a8; }
+.seeker-promote-all:disabled { filter:grayscale(.75) brightness(.6); cursor:not-allowed; }
+.seeker-promote-all:not(:disabled):hover { filter:brightness(1.15) drop-shadow(0 0 12px rgba(242,204,128,.35)); }
+.seeker-promote-all-cost { display:inline-flex;align-items:center;gap:4px;font-family:Inter,system-ui,sans-serif;font-size:12px;letter-spacing:0;text-transform:none;color:#ffe2a6; }
+.seeker-promote-all-cost b { color:#ffd36e; }
+.seeker-promote-all-idle { color:#c9b894;font-size:11px; }
+.seeker-promote-all-hint { margin-top:4px;text-align:center;font-size:10px;color:#a39987; }
+.seeker-promote-all-error { margin-top:6px;text-align:center;font-size:11px;font-weight:700;color:#ffb4a3; }
+
+.promo-ceremony { position:fixed;inset:0;z-index:10040;display:grid;place-items:center;overflow:hidden;padding:max(16px,env(safe-area-inset-top)) 12px max(16px,env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% 35%,rgba(70,22,10,.78),rgba(0,0,0,.95) 70%);animation:promo-fade .3s ease-out both; }
+.promo-ceremony-rays { position:absolute;left:50%;top:22%;width:160vmax;height:160vmax;margin:-80vmax 0 0 -80vmax;pointer-events:none;background:conic-gradient(from 0deg,transparent 0 10deg,rgba(255,196,96,.13) 12deg 16deg,transparent 18deg 40deg,rgba(255,140,70,.1) 42deg 45deg,transparent 47deg 90deg);mask-image:radial-gradient(circle,#000 0 18%,transparent 52%);animation:promo-rays 22s linear infinite; }
+.promo-ceremony-panel { position:relative;display:flex;width:min(100%,460px);max-height:100%;flex-direction:column;border:26px solid transparent;border-image:url('./theme/premium/assets/frame-9.webp') 200 / 26px / 6px stretch;background:linear-gradient(180deg,rgba(10,8,7,.6),rgba(5,4,3,.92)),url('./theme/premium/assets/panel-stone.webp') center/cover,#0b0908;background-origin:border-box;box-shadow:0 30px 90px rgba(0,0,0,.85),0 0 70px rgba(179,48,28,.2);animation:promo-rise .45s cubic-bezier(.2,.9,.25,1.15) both; }
+.promo-ceremony-head { display:grid;justify-items:center;gap:2px;padding:4px 4px 12px;text-align:center;border-bottom:1px solid rgba(199,158,97,.25); }
+.promo-ceremony-crest { display:grid;width:56px;height:56px;place-items:center;border:1px solid #f2cc80;border-radius:50%;background:radial-gradient(circle at 45% 35%,#ffe7a8,#c98a2c 45%,#5a3510 80%);color:#fff6dc;box-shadow:0 0 26px rgba(255,190,90,.6),inset 0 0 10px rgba(0,0,0,.45);animation:promo-crest 1.6s ease-in-out infinite alternate; }
+.promo-ceremony-head small { margin-top:8px;font-family:'Cinzel',Georgia,serif;font-size:10px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:#c79e61; }
+.promo-ceremony-head h2 { font-family:'Cinzel',Georgia,serif!important;font-size:24px!important;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#ffe2a6;text-shadow:0 2px 3px #000,0 0 18px rgba(255,190,90,.45); }
+.promo-ceremony-head p { font-size:12px;font-weight:700;color:#e8d6b2; }
+.promo-ceremony-list { display:grid;min-height:0;flex:1;gap:6px;margin:0;padding:12px 0;overflow-y:auto;list-style:none;scrollbar-width:thin; }
+.promo-row { display:flex;align-items:center;gap:10px;padding:6px 8px;border:1px solid color-mix(in srgb,var(--promo-color) 45%,#3a2e1f);background:linear-gradient(100deg,color-mix(in srgb,var(--promo-color) 14%,rgba(20,16,12,.92)),rgba(10,9,8,.94));box-shadow:inset 0 1px rgba(255,236,190,.05);animation:promo-row .5s cubic-bezier(.2,.9,.25,1.1) var(--promo-delay) both; }
+.promo-row-portrait { flex:none;border-radius:4px;box-shadow:0 0 12px color-mix(in srgb,var(--promo-color) 55%,transparent); }
+.promo-row-body { display:grid;min-width:0;flex:1;gap:1px; }
+.promo-row-body b { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px; }
+.promo-row-body small { display:flex;align-items:center;gap:3px;font-size:10px;color:#9b9385; }
+.promo-row-stars { display:flex;align-items:center;gap:6px;font-size:13px;font-weight:900; }
+.promo-star-old { color:#8a8170; }
+.promo-arrow { color:#c79e61; }
+.promo-star-new { color:#ffd36e;text-shadow:0 0 10px rgba(255,200,90,.8);animation:promo-star .7s cubic-bezier(.2,1.4,.4,1) calc(var(--promo-delay) + .35s) both; }
+.promo-row-gain { display:flex;flex:none;align-items:center;gap:2px;padding:4px 8px;border:1px solid rgba(255,211,110,.6);background:rgba(60,38,10,.7);font-size:14px;font-weight:900;color:#ffd36e;animation:promo-star .6s cubic-bezier(.2,1.4,.4,1) calc(var(--promo-delay) + .45s) both; }
+.promo-ceremony-foot { display:flex;justify-content:space-between;gap:8px;padding:10px 2px 0;border-top:1px solid rgba(199,158,97,.25);font-size:11px;font-weight:700;color:#e8d6b2; }
+.promo-ceremony-foot span { display:flex;align-items:center;gap:4px; }
+.promo-ceremony-continue { min-height:48px;margin-top:12px;font-size:14px!important;font-weight:900;text-transform:uppercase;letter-spacing:.1em; }
+@keyframes promo-fade { from{opacity:0} }
+@keyframes promo-rise { from{opacity:0;transform:translateY(24px) scale(.94)} }
+@keyframes promo-row { from{opacity:0;transform:translateX(-18px)} }
+@keyframes promo-star { 0%{opacity:0;transform:scale(.3)} 60%{opacity:1;transform:scale(1.35)} 100%{transform:scale(1)} }
+@keyframes promo-crest { from{box-shadow:0 0 16px rgba(255,190,90,.4),inset 0 0 10px rgba(0,0,0,.45)} to{box-shadow:0 0 34px rgba(255,190,90,.8),inset 0 0 10px rgba(0,0,0,.45)} }
+@keyframes promo-rays { to{transform:rotate(360deg)} }
+@media (prefers-reduced-motion: reduce) {
+  .promo-ceremony,.promo-ceremony-panel,.promo-row,.promo-star-new,.promo-row-gain,.promo-ceremony-crest,.promo-ceremony-rays { animation:none; }
+}
+.game-motion-off :is(.promo-ceremony,.promo-ceremony-panel,.promo-row,.promo-star-new,.promo-row-gain,.promo-ceremony-crest,.promo-ceremony-rays) { animation:none; }

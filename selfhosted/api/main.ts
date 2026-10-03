@@ -1504,9 +1504,12 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       }
     }
     if (parsed.value.action === "hero_ascend") {
-      const payloadError = validatePayloadFields(payload, ["target_uid", "target_uids", "repeat"]);
+      const payloadError = validatePayloadFields(payload, ["target_uid", "target_uids", "repeat", "expected_gold"]);
       if (payloadError) return errorResponse(400, payloadError, requestId);
       const requestKey = idempotencyKey(parsed.value);
+      // Seeker Promote All costs duplicates plus Gold (no $HERO); expected_gold is the total the player saw.
+      const expectedGold = payload.expected_gold;
+      if (expectedGold !== undefined && edition !== "seeker") return errorResponse(400, "invalid_ascension", requestId);
       const repeat = payload.repeat === true;
       const targetUid = typeof payload.target_uid === "string" ? payload.target_uid : null;
       const targetUids = Array.isArray(payload.target_uids) ? payload.target_uids : null;
@@ -1518,6 +1521,16 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         return errorResponse(400, "invalid_ascension", requestId);
       }
       try {
+        if (edition === "seeker") {
+          if (!validAll || typeof expectedGold !== "number" || !Number.isSafeInteger(expectedGold) || expectedGold < 0) {
+            return errorResponse(400, "invalid_ascension", requestId);
+          }
+          const result = await databaseJson(
+            "SELECT heroloop_api.seeker_hero_promote_all($1::uuid, $2::uuid, $3::jsonb, $4::bigint) AS result",
+            [identity.playerId, requestKey, JSON.stringify(targetUids), expectedGold],
+          );
+          return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+        }
         const result = validAll
           ? await databaseJson(
             "SELECT heroloop_api.hero_promote_all($1::uuid, $2::uuid, $3::jsonb) AS result",
@@ -1531,6 +1544,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       } catch (error) {
         const code = databaseErrorCode(error, [
           "insufficient_duplicates", "insufficient_tokens", "maximum_stars", "target_not_found", "idempotency_conflict",
+          "promotion_quote_changed", "invalid_ascension",
         ]);
         if (code) return errorResponse(409, code, requestId);
         console.error("hero_ascend database adapter failed", { requestId });
