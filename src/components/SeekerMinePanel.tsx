@@ -16,7 +16,7 @@ export function SeekerMinePanel() {
             <h3 className="text-sm font-black text-[#f6d283]">ORE Mine</h3>
             <span className="rounded-full border border-[#5d4a2f] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#aaa397]">Coming soon</span>
           </div>
-          <p className="mt-1 text-xs leading-5 text-[#d9d1c0]">Play one-minute ORE rounds on Solana with your in-game SOL. Read the guide before you start.</p>
+          <p className="mt-1 text-xs leading-5 text-[#d9d1c0]">Play short ORE rounds on Solana with your in-game SOL. Read the guide before you start.</p>
         </div>
       </div>
 

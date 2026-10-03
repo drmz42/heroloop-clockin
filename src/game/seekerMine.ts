@@ -9,7 +9,7 @@ export const MINE_LIMITS = {
   roundsPerSession: 60,
   sessionSol: '10',
   dailySol: '25',
-  roundSeconds: 60,
+  roundSeconds: 96,
   feePercent: 0,
 } as const;
 
@@ -29,7 +29,7 @@ export interface MineGuideSection {
 export const MINE_GUIDE: MineGuideSection[] = [
   {
     title: 'How the Mine works',
-    body: 'The Mine plays rounds of ORE, a third-party game on Solana. Each round lasts about one minute. Your SOL is placed on a 5×5 grid and one block wins at random. If yours wins, you share the SOL from the other blocks and may receive ORE. If it loses, that round\'s SOL is gone.',
+    body: 'The Mine plays rounds of ORE, a third-party game on Solana. Each round lasts about a minute and a half. Your stake is spread evenly across all 25 blocks of a 5×5 grid, and one block wins at random. You get back your share of the SOL on the winning block, minus the ORE protocol\'s 10% cut, and may also receive ORE. Because every block is covered, most rounds return part of the stake, but on average you get back less than you put in.',
   },
   {
     title: 'What it costs',
