@@ -941,3 +941,10 @@ html[data-hl-platform='android'][data-hl-encounter] .arena-stage-inner.dungeon-p
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-retinue .dungeon-throne-boss { top: 64px; right: auto; left: 50%; width: 180px; transform: translateX(-50%); }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-retinue .dungeon-throne-boss img { width: clamp(120px, 38vw, 160px); height: clamp(120px, 38vw, 160px); }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .arena-lanes .dungeon-target-label { top: -32px; }
+
+/* Selecting Market equipment opens its form in place of the mobile inventory grid. */
+@media (max-width: 1023px) {
+  .seeker-market[data-detail='true'] .market-rows,
+  .seeker-market[data-detail='true'] .market-filter-panel { display: none; }
+  .seeker-market[data-detail='false'] .market-selected-detail { display: none; }
+}

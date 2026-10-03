@@ -1907,7 +1907,9 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       const payloadError = validatePayloadFields(payload, []);
       if (payloadError) return errorResponse(400, payloadError, requestId);
       try {
-        const result = await databaseJson("SELECT heroloop_api.market_snapshot($1::uuid) AS result", [identity.playerId]);
+        const result = await databaseJson(edition === "seeker"
+          ? "SELECT heroloop_api.seeker_market_snapshot($1::uuid) AS result"
+          : "SELECT heroloop_api.market_snapshot($1::uuid) AS result", [identity.playerId]);
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
       } catch {
         return errorResponse(503, "market_unavailable", requestId);

@@ -199,6 +199,7 @@ export interface ServerMarketListing {
 export interface ServerMarketSnapshot {
   listings: ServerMarketListing[];
   history: { id: string; name: string; price: number; createdAt: number; action: 'bought' | 'sold' }[];
+  activity?: ServerMarketSnapshot['history'];
   active_limit: number;
   fee_percent: number;
   pool_day: string;
