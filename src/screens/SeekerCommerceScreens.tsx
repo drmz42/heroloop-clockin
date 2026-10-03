@@ -3,6 +3,7 @@ import { FlaskConical,Rocket,Store } from 'lucide-react';
 import { BossKeyIcon } from '@/components/BossKeyIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 import type { GameApi } from '@/game/useGame';
+import { SkrTokenIcon } from '@/components/SkrTokenIcon';
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { skrPrice,useSkrRate } from '@/game/skrPurchase';
 import { formatAmountShort,useWalletSnapshot } from '@/game/seekerWallet';
@@ -14,7 +15,7 @@ function BundleArt({resource}:{resource:string}) {
 }
 function Balance() {
   const wallet=useWalletSnapshot();
-  return <span className="stat-tile px-3 py-2 text-sm font-bold text-lime-200">{wallet?formatAmountShort(wallet.balances.SKR,'SKR','down'):'—'} SKR</span>;
+  return <span className="stat-tile flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-lime-200"><SkrTokenIcon size={16} />{wallet?formatAmountShort(wallet.balances.SKR,'SKR','down'):'—'} SKR</span>;
 }
 export function SeekerShopScreen({game}:{game:GameApi}) {
   const rate=useSkrRate();

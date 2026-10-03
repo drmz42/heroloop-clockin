@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Clock3, Coins, List, Lock, PackageSearch, Search, ShieldCheck, ShoppingCart, Swords, Shield, Gem, PawPrint, Users } from 'lucide-react';
+import { Clock3, List, Lock, PackageSearch, Search, ShieldCheck, ShoppingCart, Swords, Shield, Gem, PawPrint, Users } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
+import { SkrTokenIcon } from '@/components/SkrTokenIcon';
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { skrPrice, skrListingPriceCents, useSkrRate } from '@/game/skrPurchase';
 import { formatMinor, useWalletSnapshot } from '@/game/seekerWallet';
@@ -89,7 +90,7 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
     } catch { flash('Cancellation failed. Refresh and try again.'); }
     finally { setMarketBusy(false); }
   };
-  return <div ref={screenRef} data-detail={Boolean(selected)} className="seeker-market premium-screen themed-screen themed-screen-market game-scrollbar h-full overflow-y-auto p-2"><div className="market-shell mx-auto flex min-h-full max-w-6xl flex-col overflow-hidden"><header className="market-header flex items-center justify-between gap-2 py-2 pl-3 pr-14"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-lg border border-[#a8762d] bg-black/25 text-[#efbd52]"><ShoppingCart size={20} /></span><div><div className="text-lg font-black text-[#f1e5d0]">MARKET</div><div className="text-[9px] text-[#92897b]">20 listings per seller</div></div></div><Balance icon={<Coins size={13} />} value={wallet ? `${formatMinor(wallet.balances.SKR, 'SKR', 6)} SKR` : '— SKR'} label="In-game balance" /></header>
+  return <div ref={screenRef} data-detail={Boolean(selected)} className="seeker-market premium-screen themed-screen themed-screen-market game-scrollbar h-full overflow-y-auto p-2"><div className="market-shell mx-auto flex min-h-full max-w-6xl flex-col overflow-hidden"><header className="market-header flex items-center justify-between gap-2 py-2 pl-3 pr-14"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-lg border border-[#a8762d] bg-black/25 text-[#efbd52]"><ShoppingCart size={20} /></span><div><div className="text-lg font-black text-[#f1e5d0]">MARKET</div><div className="text-[9px] text-[#92897b]">20 listings per seller</div></div></div><Balance icon={<SkrTokenIcon size={16} />} value={wallet ? `${formatMinor(wallet.balances.SKR, 'SKR', 6)} SKR` : '— SKR'} label="In-game balance" /></header>
   <p className="market-fee-copy px-3 py-1 text-[10px] leading-tight text-stone-300">Listing fee: {skrPrice(2, rate)}. Non-refundable after listing, including cancellation. Sale fee: 5%; the seller receives 95% in SKR. Purchases arrive in Mailbox. The final SKR amount is shown before confirmation.</p>
   <nav aria-label="Market sections" className="market-tabs flex gap-1 overflow-x-auto px-4 pt-2">{TABS.map((item) => <button key={item.id} type="button" style={{ minHeight: 44 }} aria-pressed={tab === item.id} onClick={() => { setTab(item.id); setSelectedId(null); setPrice(''); }} className={`market-tab min-h-11 whitespace-nowrap ${tab === item.id ? 'market-tab-active' : ''}`}>{item.label}</button>)}</nav>
   {notice && <div className="mx-4 mt-2 rounded border border-emerald-700/50 bg-emerald-950/45 px-3 py-2 text-center text-xs text-emerald-200">{notice}</div>}

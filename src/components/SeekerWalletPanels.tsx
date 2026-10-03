@@ -1,3 +1,4 @@
+import { SkrTokenIcon } from './SkrTokenIcon';
 import { WalletAmount, WalletAssetPicker, type DisplayWalletAsset } from './SeekerWalletControls';
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowDownToLine, Check, ExternalLink, Loader2, RefreshCw, ShieldCheck, AlertTriangle } from 'lucide-react';
@@ -45,8 +46,8 @@ function Balances({ snapshot }: { snapshot: WalletSnapshot | null }) {
       {(['SKR', 'SOL'] as const).map((asset) => (
         <div key={asset} className="stat-tile p-2.5">
           <div className="text-[10px] font-bold uppercase tracking-wider text-[#8f887b]">In-game {asset}</div>
-          <div className="mt-1 text-lg font-black tabular-nums text-[#f1d188]">
-            {snapshot ? formatAmountShort(snapshot.balances[asset], asset, 'down') : '—'}
+          <div className="mt-1 flex items-center gap-1.5 text-lg font-black tabular-nums text-[#f1d188]">
+            {asset === 'SKR' && <SkrTokenIcon size={18} />}{snapshot ? formatAmountShort(snapshot.balances[asset], asset, 'down') : '—'}
           </div>
         </div>
       ))}

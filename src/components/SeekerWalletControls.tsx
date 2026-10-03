@@ -1,9 +1,10 @@
+import { SkrTokenIcon } from './SkrTokenIcon';
 import type { WalletAsset } from '@/game/seekerWallet';
 export type DisplayWalletAsset = WalletAsset | 'ORE';
 export function WalletAssetPicker({ asset, busy, onChange }: {asset: DisplayWalletAsset; busy: boolean; onChange: (asset: DisplayWalletAsset) => void}) {
   return <div role="radiogroup" aria-label="Token" className="grid grid-cols-3 gap-2">
     {(['SKR', 'SOL', 'ORE'] as const).map(entry => <button key={entry} type="button" role="radio" aria-checked={asset === entry} disabled={busy}
-      onClick={() => onChange(entry)} className={`game-control min-h-11 px-2 text-sm font-black ${asset === entry ? 'border-[#e0a83c] text-[#f6d283]' : 'text-[#8f887b]'}`}>{entry}</button>)}
+      onClick={() => onChange(entry)} className={`game-control flex min-h-11 items-center justify-center gap-1.5 px-2 text-sm font-black ${asset === entry ? 'border-[#e0a83c] text-[#f6d283]' : 'text-[#8f887b]'}`}>{entry === 'SKR' && <SkrTokenIcon size={16} />}{entry}</button>)}
   </div>;
 }
 export function WalletAmount({id, amount, asset, busy, available, onChange, onMax}: {id: string; amount: string; asset: DisplayWalletAsset; busy: boolean; available: string; onChange: (amount: string) => void; onMax?: () => void}) {

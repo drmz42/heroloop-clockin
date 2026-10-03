@@ -9,6 +9,7 @@ import type { GameApi } from '@/game/useGame';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 import { isolatedHackathon } from '@/game/editionStorage';
+import { SkrTokenIcon } from '@/components/SkrTokenIcon';
 
 function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () => void }) {
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -225,7 +226,7 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
           {summonNotice && <div role="alert" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-red-700/65 bg-[linear-gradient(135deg,rgba(75,16,22,.92),rgba(20,8,12,.96))] px-3 py-2.5 text-left shadow-[inset_0_1px_rgba(255,255,255,.06),0_8px_22px_rgba(0,0,0,.35)]"><AlertTriangle size={17} className="shrink-0 text-red-300" /><span className="flex-1 text-[11px] font-bold text-red-100">{summonNotice}</span><button type="button" onClick={() => setSummonNotice('')} aria-label="Dismiss Summon message" className="rounded p-1 text-red-300 hover:bg-white/10"><X size={14} /></button></div>}
           <div className="summon-pay grid grid-cols-2 gap-1 rounded-lg border border-violet-500/25 bg-black/40 p-1" aria-label="Summon payment method">
             {isolatedHackathon
-              ? <button type="button" disabled aria-disabled="true" className="summon-pay-option min-h-11 rounded-md px-2 text-[10px] font-black uppercase text-slate-500 opacity-60" title="SKR payments are coming soon">SKR · Soon</button>
+              ? <button type="button" disabled aria-disabled="true" className="summon-pay-option min-h-11 rounded-md px-2 text-[10px] font-black uppercase text-slate-500 opacity-60" title="SKR payments are coming soon"><span className="inline-flex items-center justify-center gap-1"><SkrTokenIcon size={12} />SKR · Soon</span></button>
               : <button type="button" onClick={() => setPaymentMethod('paid')} aria-pressed={paymentMethod === 'paid'} disabled={summoning !== null} className={`summon-pay-option min-h-11 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'paid' ? 'bg-violet-800/65 text-violet-100' : 'text-slate-500'}`}>Test · $HERO</button>}
             <button type="button" onClick={() => setPaymentMethod('scroll')} aria-pressed={paymentMethod === 'scroll'} disabled={summoning !== null} className={`summon-pay-option flex min-h-11 items-center justify-center gap-1 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'scroll' ? 'bg-amber-800/55 text-amber-100' : 'text-slate-500'}`}><SummonScrollArtwork size={25} /> Scrolls · {formatNum(state.summonScrolls)}</button>
           </div>

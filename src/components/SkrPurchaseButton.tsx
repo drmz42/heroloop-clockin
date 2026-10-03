@@ -1,6 +1,7 @@
 import { useEffect,useState } from 'react';
 import { commitSkrPurchase,formatAmountShort,quoteSkrPurchase,SeekerWalletError,useWalletSnapshot,type SkrPurchaseQuote } from '@/game/seekerWallet';
 import { skrError } from '@/game/skrPurchase';
+import { SkrTokenIcon } from '@/components/SkrTokenIcon';
 export function SkrPurchaseButton({product,params,label='Buy',disabled=false,onDelivered}:{
   product:string;params:Record<string,unknown>;label?:string;disabled?:boolean;
   onDelivered:(result:Record<string,unknown>)=>void;
@@ -33,7 +34,7 @@ export function SkrPurchaseButton({product,params,label='Buy',disabled=false,onD
   }
   const affordable=!quote||!snapshot||BigInt(snapshot.balances.SKR)>=BigInt(quote.amount_minor)||pending;
   return <div className="mt-2 space-y-2">
-    {quote&&<p className="break-words text-xs text-amber-200">{formatAmountShort(quote.amount_minor,'SKR','up')} SKR · expires {new Date(quote.expires_at).toLocaleTimeString()}</p>}
+    {quote&&<p className="flex flex-wrap items-center gap-1 break-words text-xs text-amber-200"><SkrTokenIcon size={14} />{formatAmountShort(quote.amount_minor,'SKR','up')} SKR · expires {new Date(quote.expires_at).toLocaleTimeString()}</p>}
     <button type="button" disabled={busy||disabled||!affordable} onClick={()=>void buy()} style={{minHeight:44}} className="game-control game-primary min-h-11 w-full px-3 text-xs font-bold disabled:opacity-40">
       {busy?'Checking…':pending?'Retry pending payment':quote?`Confirm ${formatAmountShort(quote.amount_minor,'SKR','up')} SKR`:label}
     </button>
