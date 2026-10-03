@@ -186,7 +186,7 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
     ['Celestial', game.summonPity.celestial, 20000, 'celestial'],
   ] as const);
   const again = results && {
-    label: <><Sparkles size={15} /> Summon ×{resultBatch} again</>,
+    label: <><Sparkles size={15} /> Again ×{resultBatch}</>,
     disabled: busy || !canSummon(resultBatch),
     onClick: () => { setResults(null); void beginSummon(resultBatch); },
   };
