@@ -635,6 +635,17 @@ html[data-hl-platform='android'] .hl-hero-filters > * { height: 40px !important;
 html[data-hl-platform='android'] .hl-hero-filters :is(button, select, input) { height: 40px !important; min-height: 40px !important; width: 100%; border-image-width: 8px !important; font-size: 10px !important; }
 html[data-hl-platform='android'] .hl-hero-filters select { padding: 0 18px 0 10px !important; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
 html[data-hl-platform='android'] .hl-hero-filters > button { padding: 0 8px !important; text-transform: uppercase; }
+/* Seeker Heroes controls share a left edge, including native-picker labels and sort buttons. */
+html[data-hl-edition='seeker'] .hl-hero-filters > :is(button, .hl-filter-select) {
+  justify-content: flex-start;
+  padding-inline: 10px !important;
+  text-align: left;
+}
+html[data-hl-edition='seeker'] .hl-hero-filters > :first-child input {
+  padding-left: 28px;
+  text-align: left;
+}
+html[data-hl-edition='seeker'] .hl-hero-filters > button > svg { flex-shrink: 0; }
 html[data-hl-platform='android'] .heroes-head > .mt-0\.5 { padding-right: 52px; }
 
 /* Seeker phone density: preserve touch targets while freeing space for artwork. */
