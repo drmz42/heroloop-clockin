@@ -26,13 +26,15 @@ async function lamports(rpc: Rpc, address: string): Promise<bigint> {
 }
 
 // SOL held in Mine custody (float + custody wallets of unclosed sessions); reconciliation adds it.
-export async function mineCustodyLamports(master: Uint8Array | null, call: Call, rpc: Rpc): Promise<bigint> {
+export async function mineCustodyLamports(master: Uint8Array | null, call: Call, rpc: Rpc, excluded: ReadonlySet<string> = new Set()): Promise<bigint> {
   if (!master) return 0n;
-  let total = await lamports(rpc, (await floatKey(master)).address);
+  const owners = new Set<string>([(await floatKey(master)).address]);
+  let total = 0n;
   const work = await call("SELECT seeker_skr.mine_runner_work() AS result", []);
   for (const session of (Array.isArray(work.sessions) ? work.sessions : []) as Json[]) {
-    if (typeof session.custody_address === "string") total += await lamports(rpc, session.custody_address);
+    if (typeof session.custody_address === "string") owners.add(session.custody_address);
   }
+  for (const owner of owners) if (!excluded.has(owner)) total += await lamports(rpc, owner);
   return total;
 }
 

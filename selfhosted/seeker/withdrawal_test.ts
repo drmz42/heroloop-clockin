@@ -38,3 +38,25 @@ Deno.test('manual SKR payout binds classic mint, treasury debit, recipient credi
  tx.meta.postTokenBalances[0].uiTokenAmount.amount='2000000';assert.equal(verifyPayout(w,config,signature,tx),'payout_wrong_amount');
  tx.meta.postTokenBalances[0].uiTokenAmount.amount='1000000';tx.transaction.message.accountKeys[0].pubkey='other';assert.equal(verifyPayout(w,config,signature,tx),'payout_wrong_sender');
 });
+
+Deno.test('dedicated payout sender is authoritative while deposit treasury remains separate',async()=>{
+ const {w}=await fixture();w.asset='SOL';
+ const deposit='deposit',payout='payout',signature='sig';
+ const config={cluster:'mainnet' as const,treasury:deposit,payoutTreasury:payout,skrMint:'mint'};
+ const tx={blockTime:Math.floor(Date.now()/1000),transaction:{signatures:[signature],message:{accountKeys:[{pubkey:payout,signer:true},{pubkey:w.destination,signer:false}],instructions:[{programId:SYSTEM_PROGRAM,parsed:{type:'transfer',info:{source:payout,destination:w.destination,lamports:1000000}}}]}},meta:{err:null,preBalances:[2000000,0],postBalances:[995000,1000000]}};
+ assert.equal(verifyPayout(w,config,signature,tx),null);
+ assert.equal(verifyPayout(w,{...config,payoutTreasury:deposit},signature,tx),'payout_wrong_sender');
+ tx.transaction.message.accountKeys[0].pubkey=deposit;
+ assert.equal(verifyPayout(w,config,signature,tx),'payout_wrong_sender');
+});
+
+Deno.test('separate SKR payout binds payout debit rather than deposit treasury debit',async()=>{
+ const {w}=await fixture();const sender='payout',signature='sig',mint='mint';
+ const balance=(accountIndex:number,owner:string,amount:string)=>({accountIndex,owner,mint,uiTokenAmount:{amount,decimals:6}});
+ const tx={blockTime:Math.floor(Date.now()/1000),transaction:{signatures:[signature],message:{accountKeys:[{pubkey:sender,signer:true},{pubkey:'source',signer:false},{pubkey:'destination',signer:false}],instructions:[{programId:TOKEN_PROGRAM,parsed:{type:'transferChecked',info:{source:'source',destination:'destination',authority:sender,mint,tokenAmount:{amount:'1000000',decimals:6}}}}]}},meta:{err:null,preTokenBalances:[balance(1,sender,'2000000')],postTokenBalances:[balance(1,sender,'1000000'),balance(2,w.destination,'1000000')]}};
+ const config={cluster:'mainnet' as const,treasury:'deposit',payoutTreasury:sender,skrMint:mint};
+ assert.equal(verifyPayout(w,config,signature,tx),null);
+ assert.equal(verifyPayout(w,{...config,payoutTreasury:'deposit'},signature,tx),'payout_wrong_sender');
+ tx.meta.preTokenBalances[0].owner='deposit';
+ assert.equal(verifyPayout(w,config,signature,tx),'payout_wrong_amount');
+});

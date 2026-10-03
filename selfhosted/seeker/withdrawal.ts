@@ -23,19 +23,20 @@ const record=(v:unknown):v is Record<string,unknown>=>typeof v==='object'&&v!==n
 // The RPC caller requests finalized commitment by the exact supplied signature.
 // Require one direct transfer instruction as well as exact balance deltas; a
 // pre-request payment or a third-party inflow cannot discharge this liability.
-export function verifyPayout(w:Withdrawal,config:ChainConfig,signature:string,tx:unknown):string|null {
+export function verifyPayout(w:Withdrawal,config:ChainConfig & {payoutTreasury?:string},signature:string,tx:unknown):string|null {
+  const sender=config.payoutTreasury??config.treasury;
   if(!record(tx)||!record(tx.meta)||!record(tx.transaction)||tx.meta.err!==null)return 'payout_not_finalized';
   const transaction=tx.transaction,meta=tx.meta,message=transaction.message;
   if(!Array.isArray(transaction.signatures)||transaction.signatures[0]!==signature||!record(message)||!Array.isArray(message.accountKeys))return 'payout_unreadable';
   const keys=message.accountKeys.filter(record);
-  if(keys[0]?.pubkey!==config.treasury||keys[0]?.signer!==true)return 'payout_wrong_sender';
+  if(keys[0]?.pubkey!==sender||keys[0]?.signer!==true)return 'payout_wrong_sender';
   const time=typeof tx.blockTime==='number'?tx.blockTime*1000:0;
   if(time<Date.parse(w.created_at))return 'payout_before_request';
   const instructions=Array.isArray(message.instructions)?message.instructions.filter(record):[];
   const amount=BigInt(w.payout_minor);
   if(w.asset==='SOL') {
     const hit=instructions.some(i=>i.programId===SYSTEM_PROGRAM&&record(i.parsed)&&i.parsed.type==='transfer'&&record(i.parsed.info)
-      &&i.parsed.info.source===config.treasury&&i.parsed.info.destination===w.destination&&String(i.parsed.info.lamports)===w.payout_minor);
+      &&i.parsed.info.source===sender&&i.parsed.info.destination===w.destination&&String(i.parsed.info.lamports)===w.payout_minor);
     const index=keys.findIndex(k=>k.pubkey===w.destination);
     if(!hit||index<1||!Array.isArray(meta.preBalances)||!Array.isArray(meta.postBalances))return 'payout_wrong_recipient';
     const before=meta.preBalances[index],after=meta.postBalances[index];
@@ -53,10 +54,10 @@ export function verifyPayout(w:Withdrawal,config:ChainConfig,signature:string,tx
   const destinationAccounts=new Set((Array.isArray(meta.postTokenBalances)?meta.postTokenBalances:[]).filter(record)
     .filter(b=>b.owner===w.destination&&b.mint===config.skrMint).map(b=>keys[Number(b.accountIndex)]?.pubkey));
   const hit=instructions.some(i=>i.programId===TOKEN_PROGRAM&&record(i.parsed)&&['transfer','transferChecked'].includes(String(i.parsed.type))
-    &&record(i.parsed.info)&&i.parsed.info.authority===config.treasury&&destinationAccounts.has(i.parsed.info.destination));
+    &&record(i.parsed.info)&&i.parsed.info.authority===sender&&destinationAccounts.has(i.parsed.info.destination));
   if(!hit)return 'payout_wrong_recipient';
   try {
     return total(meta.postTokenBalances,w.destination)-total(meta.preTokenBalances,w.destination)===amount
-      &&total(meta.preTokenBalances,config.treasury)-total(meta.postTokenBalances,config.treasury)===amount?null:'payout_wrong_amount';
+      &&total(meta.preTokenBalances,sender)-total(meta.postTokenBalances,sender)===amount?null:'payout_wrong_amount';
   }catch{return 'payout_wrong_mint';}
 }

@@ -22,17 +22,19 @@ import { evaluateSkrBoost, type SkrBoostSnapshot } from './boost.ts';
 import { authorizationMessage,verifyAuthorization,verifyPayout,FOUNDER_WALLETS,type Withdrawal } from "./withdrawal.ts";
 import { SKR_ASSET } from './ledger.ts';
 import { mineCustodyLamports, mineRoute, parseMineMaster, startMineRunner } from './mine_service.ts';
+import { custodyBalances } from './payout_custody.ts';
 type Json = Record<string, unknown>;
 const env = (name: string) => Deno.env.get(name) ?? "";
 const serviceToken = env("WALLET_SERVICE_TOKEN");
 const rpcUrl = env("SOLANA_RPC_URL");
-const config: ChainConfig = {
+const config: ChainConfig & {payoutTreasury:string} = {
   cluster: "mainnet",
   skrMint: env("SKR_MINT"),
   treasury: env("WALLET_TREASURY"),
+  payoutTreasury: env("WALLET_PAYOUT_TREASURY") || env("WALLET_TREASURY"),
 };
 if (serviceToken.length < 32 || !/^https:\/\//.test(rpcUrl)
-  || config.skrMint!==SKR_ASSET.mint || !ADDRESS.test(config.treasury)) {
+  || config.skrMint!==SKR_ASSET.mint || !ADDRESS.test(config.treasury) || !ADDRESS.test(config.payoutTreasury)) {
   throw new Error("invalid wallet service configuration");
 }
 // Payer allowlist (comma-separated addresses), required: Staging2 is open to any
@@ -272,18 +274,10 @@ async function commerce(path: string,player: string,body: Json): Promise<Respons
 
 async function reconcile():Promise<Json> {
   const liabilities=await call('SELECT seeker_skr.liabilities() AS result',[]);
-  const sol=await rpc('getBalance',[config.treasury,{commitment:'finalized'}]);
-  if(!isRecord(sol)||!Number.isSafeInteger(sol.value))throw new Error('rpc_balance');
-  const tokens=await rpc('getTokenAccountsByOwner',[config.treasury,{mint:config.skrMint},{encoding:'jsonParsed',commitment:'finalized'}]);
-  if(!isRecord(tokens)||!Array.isArray(tokens.value))throw new Error('rpc_balance');
-  let skr=0n;
-  for(const entry of tokens.value) {
-    const info=isRecord(entry)&&isRecord(entry.account)&&isRecord(entry.account.data)&&isRecord(entry.account.data.parsed)?entry.account.data.parsed.info:null;
-    if(!isRecord(info)||!isRecord(info.tokenAmount)||info.tokenAmount.decimals!==6||typeof info.tokenAmount.amount!=='string'||!/^\d+$/.test(info.tokenAmount.amount))throw new Error('rpc_balance');
-    skr+=BigInt(info.tokenAmount.amount);
-  }
-  // Mine float and custody wallets hold SOL owed to players too.
-  const chain:Record<string,bigint>={ SKR:skr,SOL:BigInt(sol.value as number)+await mineCustodyLamports(mineMaster,call,rpc) };
+  const owners = new Set([config.treasury, config.payoutTreasury]);
+  const chain: Record<string,bigint> = await custodyBalances(owners, config.skrMint, rpc);
+  // Deduplicate against customer and payout custody, including Mine session wallets.
+  chain.SOL += await mineCustodyLamports(mineMaster, call, rpc, owners);
   const assets:Json={};let blocked=false;
   for(const asset of ['SKR','SOL']) {
     const row=isRecord(liabilities[asset])?liabilities[asset] as Json:{};
@@ -302,7 +296,7 @@ async function withdrawals(path:string,player:string,body:Json):Promise<Response
   }
   if(path==='/wallet/withdraw-intent') {
     const asset=body.asset==='SKR'||body.asset==='SOL'?body.asset:null;
-    if(!asset||typeof body.destination!=='string'||!ADDRESS.test(body.destination)||body.destination===config.treasury)return json(400,{ok:false,code:'invalid_withdrawal'});
+    if(!asset||typeof body.destination!=='string'||!ADDRESS.test(body.destination)||(body.destination===config.treasury||body.destination===config.payoutTreasury))return json(400,{ok:false,code:'invalid_withdrawal'});
     const amount=parseAmount(body.amount,asset);
     if(amount===null||amount>18446744073709551615n)return json(400,{ok:false,code:'invalid_amount'});
     const report=await reconcile();
@@ -333,7 +327,7 @@ async function withdrawals(path:string,player:string,body:Json):Promise<Response
   if(typeof body.founder_address!=='string'||!FOUNDER_WALLETS.has(body.founder_address))return json(403,{ok:false,code:'founder_required'});
   if(path==='/wallet/founder') {
     const result=await call('SELECT seeker_skr.withdrawal_list($1::uuid,true) AS result',[player]);
-    return json(200,{ok:true,result:{...result,reconciliation:await reconcile()}});
+    return json(200,{ok:true,result:{...result,payout_treasury:config.payoutTreasury,reconciliation:await reconcile()}});
   }
   if(typeof body.request_id!=='string'||!uuid.test(body.request_id))return json(400,{ok:false,code:'invalid_withdrawal'});
   const w=await call('SELECT seeker_skr.withdrawal_admin_get($1::uuid) AS result',[body.request_id]);
@@ -368,6 +362,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8090 }, async (request) => {
     return json(400, { ok: false, code: "invalid_player" });
   }
   try {
+    if (url.pathname === "/wallet/payout-config") return json(200, {ok:true,result:{treasury:config.payoutTreasury,depositTreasury:config.treasury,skrMint:config.skrMint}});
     if (url.pathname === "/wallet/snapshot") return await snapshot(body.player_id, body.address);
     if (url.pathname === "/wallet/deposit-intent") return await createIntent(body.player_id, body);
     if (url.pathname === "/wallet/deposit-confirm") return await confirm(body.player_id, body);
