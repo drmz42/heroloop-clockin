@@ -241,11 +241,11 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
             <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-fuchsia-300" /> {!hundredHasSpace ? 'Need 100 free slots' : !canPay(100) ? `Need ${100 - state.summonScrolls} more Scrolls` : summoning === 100 ? 'Preparing…' : 'Summon x100'}</span>
             <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(100) : <><SummonScrollArtwork size={18} />100 Scrolls</>}</span>
           </button>
-          <div className="mt-2 h-px bg-gradient-to-r from-transparent via-[#8c6231]/65 to-transparent" />
-          <button type="button" disabled={promoting || summoning !== null} onClick={() => void promoteAll()} className="summon-promote game-control flex h-[46px] items-center justify-center gap-1.5 px-3 text-[9px] font-black uppercase disabled:opacity-55"><Sparkles size={13} className="text-amber-300" /> {promoting ? 'Promoting heroes…' : 'Promote all heroes · Free space for Summon'}</button>
+          {!isolatedHackathon && <><div className="mt-2 h-px bg-gradient-to-r from-transparent via-[#8c6231]/65 to-transparent" />
+          <button type="button" disabled={promoting || summoning !== null} onClick={() => void promoteAll()} className="summon-promote game-control flex h-[46px] items-center justify-center gap-1.5 px-3 text-[9px] font-black uppercase disabled:opacity-55"><Sparkles size={13} className="text-amber-300" /> {promoting ? 'Promoting heroes…' : 'Promote all heroes · Free space for Summon'}</button></>}
         </div>
         {promotionNotice && <div role="status" className="mt-2 flex max-w-sm items-start gap-2 rounded border border-violet-500/50 bg-violet-950/55 px-3 py-2 text-[10px] font-bold text-violet-100"><span className="flex-1">{promotionNotice}</span><button type="button" onClick={() => setPromotionNotice('')} aria-label="Dismiss promotion result"><X size={13} /></button></div>}
-        <p className="mt-4 text-[10px] text-[#7f7887]">Earn $HERO by winning battles in locations.</p>
+        {!isolatedHackathon && <p className="mt-4 text-[10px] text-[#7f7887]">Earn $HERO by winning battles in locations.</p>}
         </div>
       </main>
       <aside className="summon-side-panel self-center rounded-xl border border-[#6b536f] bg-[#08070a]/88 p-3 text-left shadow-[0_18px_45px_rgba(0,0,0,.65),inset_0_1px_rgba(255,224,165,.06)] backdrop-blur-[2px]" aria-label="Summon account and rates">

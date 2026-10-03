@@ -68,6 +68,32 @@ BEGIN
  PERFORM heroloop_api.seeker_purchase_prepare(p,request,'hero_capacity_upgrade','{"previous_capacity":500}');
  r:=heroloop_api.seeker_purchase_deliver(p,request);
  IF r#>>'{result,hero_capacity}'<>'600' OR heroloop_api.seeker_purchase_deliver(p,request)<>r THEN RAISE EXCEPTION 'capacity replay %',r; END IF;
+ -- Training posts and speed boosts settle server-side from the SKR receipt.
+ request:=gen_random_uuid();
+ r:=heroloop_api.seeker_purchase_prepare(p,request,'training_slot_unlock',jsonb_build_object('unlocked_slots',2+public.training_slot_purchase_count(p)));
+ IF (r->>'usd_cents')::numeric<>5 THEN RAISE EXCEPTION 'training slot catalog %',r; END IF;
+ r:=heroloop_api.seeker_purchase_deliver(p,request);
+ IF r->>'status'<>'delivered' OR r#>>'{result,training_camp,unlockedSlots}'<>'3' THEN RAISE EXCEPTION 'training slot refused %',r; END IF;
+ IF heroloop_api.seeker_purchase_deliver(p,request)<>r OR public.training_slot_purchase_count(p)<>1 THEN RAISE EXCEPTION 'training slot replay'; END IF;
+ BEGIN
+  PERFORM heroloop_api.seeker_purchase_prepare(p,gen_random_uuid(),'training_slot_unlock','{"unlocked_slots":2}');
+  RAISE EXCEPTION 'stale training slot quoted';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM<>'skr_product_changed' THEN RAISE; END IF;
+ END;
+ BEGIN
+  PERFORM heroloop_api.seeker_purchase_prepare(p,gen_random_uuid(),'training_boost_buy','{"boost":"9x-1h"}');
+  RAISE EXCEPTION 'unknown training boost quoted';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM<>'invalid_skr_product' THEN RAISE; END IF;
+ END;
+ request:=gen_random_uuid();
+ r:=heroloop_api.seeker_purchase_prepare(p,request,'training_boost_buy','{"boost":"2x-1h"}');
+ IF (r->>'usd_cents')::numeric<>2.5 THEN RAISE EXCEPTION 'training boost catalog %',r; END IF;
+ r:=heroloop_api.seeker_purchase_deliver(p,request);
+ IF r->>'status'<>'delivered' OR r#>>'{result,training_camp,boostMultiplier}'<>'2' OR r#>>'{result,training_camp,activeBoostKey}'<>'2x-1h'
+  OR r#>>'{result,training_camp,unlockedSlots}'<>'3' THEN RAISE EXCEPTION 'training boost refused %',r; END IF;
+ IF heroloop_api.seeker_purchase_deliver(p,request)<>r THEN RAISE EXCEPTION 'training boost replay'; END IF;
  item:=gen_random_uuid();
  INSERT INTO public.player_items(id,player_id,base_item_id,slot,rarity,item_level,stats,power,enchant_level,locked,reroll_count,enchant_stats_version,item_roll_version,source_kind)
  VALUES(item,p,'weapon-warrior-common','class_weapon','common',1,'[]',100,6,false,0,4,5,'store');

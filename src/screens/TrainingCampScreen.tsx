@@ -3,6 +3,8 @@ import { useMemo, useState } from 'react';
 import { Axe, ChevronDown, Clock3, Crosshair, Dumbbell, Info, LockKeyhole, Shield, ShieldCheck, Sparkles, Swords, Target, UserRoundPlus, X } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
+import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
+import { skrPrice, useSkrRate } from '@/game/skrPurchase';
 import { CLASS_LABEL, HERO_MAP, RARITY_COLORS, RARITY_INDEX } from '@/game/heroes';
 import { buildLocation, latestTokenLocation, teamPower } from '@/game/engine';
 import { heroXpForLevel, trainingTokenPenalty, TRAINING_BOOST_COSTS, TRAINING_SLOT_COSTS } from '@/game/state';
@@ -32,6 +34,11 @@ const TRAINING_BOOSTS = [
   { key: '4x-4h', multiplier: 4, hours: 4 },
 ] as const satisfies ReadonlyArray<{ key: TrainingBoostKey; multiplier: 2 | 4; hours: 1 | 4 }>;
 
+// Seeker prices: the HERO costs at the server's $0.001 HERO quote (50 HERO = 5 cents).
+const usdCents = (heroCost: number) => heroCost / 10;
+const usdLabel = (cents: number) => `$${(cents / 100).toFixed(cents % 1 ? 3 : 2)}`;
+type SkrTrainingOffer = { product: 'training_slot_unlock' | 'training_boost_buy'; params: Record<string, unknown>; title: string; cents: number };
+
 function formatBoostTime(milliseconds: number): string {
   const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
   const hours = Math.floor(totalSeconds / 3600);
@@ -46,6 +53,9 @@ export function TrainingCampScreen({ game }: { game: Game }) {
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [sort, setSort] = useState<SortKey>('power');
   const [classFilter, setClassFilter] = useState<'all' | HeroClass>('all');
+  const [skrOffer, setSkrOffer] = useState<SkrTrainingOffer | null>(null);
+  const skrRate = useSkrRate(isolatedHackathon);
+  const skrLabel = (cents: number) => `${usdLabel(cents)} · ${skrRate ? skrPrice(cents, skrRate) : '… SKR'}`;
   const locationId = latestTokenLocation(state.accountLevel, state.highestLocation);
   const baseXpPerHour = Math.floor(buildLocation(locationId, 1).xpReward * 300 * 1.6);
   const trainingHeroCount = state.trainingCamp.heroUids.filter(Boolean).length;
@@ -105,7 +115,9 @@ export function TrainingCampScreen({ game }: { game: Game }) {
                   <div className="mt-1 flex items-center justify-between gap-1"><strong className="min-w-0 truncate text-[10px]" style={{ color: RARITY_COLORS[base.rarity] }}>{base.name}</strong><button type="button" className="training-icon-button" onClick={() => { void game.setTrainingHero(index, null); }} aria-label={`Remove ${base.name}`}><X size={11} /></button></div>
                   <div className="training-xp-track"><span style={{ width: `${hero.level >= state.accountLevel ? 100 : Math.min(100, hero.xp / heroXpForLevel(hero.level) * 100)}%` }} /></div>
                   <div className="mt-1 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 text-[8px] font-bold text-[#8e836f]"><span className="min-w-0 truncate">{hero.level >= state.accountLevel ? 'LEVEL CAPPED' : 'TRAINING'}</span><span className="whitespace-nowrap text-right">{teamPower([hero], state.inventory)} PWR</span></div>
-                </> : unlocked ? <button type="button" onClick={() => setSelectedSlot(index)} className="training-empty-post"><span className="training-dummy"><span className="training-dummy-head" /><span className="training-dummy-body" /><span className="training-dummy-arms" /></span><UserRoundPlus size={17} /><strong>{selected ? 'SELECT HERO BELOW' : 'ASSIGN HERO'}</strong><small>Combat dummy ready</small></button> : <div className="training-locked-post"><LockKeyhole size={25} /><span>{isNextLocked ? 'NEXT POST' : 'LOCKED'}</span>{isNextLocked && <button type="button" onClick={() => game.unlockTrainingSlot()} className="game-control training-unlock-button"><HeroTokenIcon size={11} /> Unlock {TRAINING_SLOT_COSTS[index]}</button>}</div>}
+                </> : unlocked ? <button type="button" onClick={() => setSelectedSlot(index)} className="training-empty-post"><span className="training-dummy"><span className="training-dummy-head" /><span className="training-dummy-body" /><span className="training-dummy-arms" /></span><UserRoundPlus size={17} /><strong>{selected ? 'SELECT HERO BELOW' : 'ASSIGN HERO'}</strong><small>Combat dummy ready</small></button> : <div className="training-locked-post"><LockKeyhole size={25} /><span>{isNextLocked ? 'NEXT POST' : 'LOCKED'}</span>{isNextLocked && (isolatedHackathon
+                  ? <button type="button" onClick={() => setSkrOffer({ product: 'training_slot_unlock', params: { unlocked_slots: index }, title: `Unlock Post ${index + 1}`, cents: usdCents(TRAINING_SLOT_COSTS[index]) })} className="game-control training-unlock-button">Unlock {usdLabel(usdCents(TRAINING_SLOT_COSTS[index]))}</button>
+                  : <button type="button" onClick={() => game.unlockTrainingSlot()} className="game-control training-unlock-button"><HeroTokenIcon size={11} /> Unlock {TRAINING_SLOT_COSTS[index]}</button>)}</div>}
               </article>
             );
           })}
@@ -118,8 +130,14 @@ export function TrainingCampScreen({ game }: { game: Game }) {
           const cost = TRAINING_BOOST_COSTS[key];
           const isActive = activeBoost && state.trainingCamp.activeBoostKey === key;
           const queuedCount = state.trainingCamp.boostQueue.filter((entry) => entry.key === key).length;
-          return <button key={key} type="button" onClick={() => game.buyTrainingBoost(multiplier, hours)} className={`training-boost-button ${isActive ? 'training-boost-active' : ''}`}><span className="training-boost-main"><Dumbbell size={14} /><span><strong>{multiplier * 100}%</strong><small>{hours}h</small></span><em><HeroTokenIcon size={9} /> {cost}</em></span>{isActive && <span className="training-boost-status"><strong>ACTIVE</strong><time>{boostTime}</time></span>}{queuedCount > 0 && <span className="training-boost-queued">QUEUED ×{queuedCount}</span>}</button>;
+          return <button key={key} type="button" onClick={() => isolatedHackathon
+            ? setSkrOffer({ product: 'training_boost_buy', params: { boost: key }, title: `${multiplier * 100}% speed · ${hours}h`, cents: usdCents(cost) })
+            : game.buyTrainingBoost(multiplier, hours)} className={`training-boost-button ${isActive ? 'training-boost-active' : ''}`}><span className="training-boost-main"><Dumbbell size={14} /><span><strong>{multiplier * 100}%</strong><small>{hours}h</small></span><em>{isolatedHackathon ? usdLabel(usdCents(cost)) : <><HeroTokenIcon size={9} /> {cost}</>}</em></span>{isActive && <span className="training-boost-status"><strong>ACTIVE</strong><time>{boostTime}</time></span>}{queuedCount > 0 && <span className="training-boost-queued">QUEUED ×{queuedCount}</span>}</button>;
         })}</div>
+        {isolatedHackathon && skrOffer && <div className="mt-3 rounded-lg border border-[#8c6231]/60 bg-black/30 p-3" role="group" aria-label="SKR training purchase">
+          <div className="flex items-start justify-between gap-2"><div className="min-w-0"><strong className="block text-xs text-[#f2d48a]">{skrOffer.title}</strong><span className="text-[11px] text-[#b8ad99]">≈ {skrLabel(skrOffer.cents)}</span></div><button type="button" className="training-icon-button" onClick={() => setSkrOffer(null)} aria-label="Close SKR purchase"><X size={11} /></button></div>
+          <SkrPurchaseButton product={skrOffer.product} params={skrOffer.params} label="Quote in SKR" onDelivered={(result) => { game.applySeekerPurchase(result); setSkrOffer(null); }} />
+        </div>}
       </section>
       </div>
 

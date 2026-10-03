@@ -2989,6 +2989,7 @@ export function useGame() {
       if (Array.isArray(result.bag_slots) && result.bag_slots.length===4) next.bagSlots=result.bag_slots as GameState['bagSlots'];
       if (Array.isArray(result.store)) next.rotatingShop=result.store as GameState['rotatingShop'];
       if (Number.isSafeInteger(result.refresh_at)) next.rotatingShopRefreshAt=result.refresh_at as number;
+      if (result.training_camp && typeof result.training_camp==='object') next.trainingCamp=result.training_camp as GameState['trainingCamp'];
       const remote=result.state as Partial<GameState>|undefined;
       if (remote) {
         if (Number.isSafeInteger(remote.summonScrolls)) next.summonScrolls=remote.summonScrolls as number;
@@ -2998,6 +2999,7 @@ export function useGame() {
       stateRef.current=next;
       setState(next);
       setServerRevisionHint(revision);
+      if (result.training_camp) setTrainingIncomeRevision(revision);
     }
     void loadMail();
     void refreshAccountBonus();

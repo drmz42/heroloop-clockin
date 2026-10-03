@@ -8,6 +8,7 @@ export const SKR_PRODUCTS: Record<string, readonly string[]> = {
   hero_ascend:['target_uid'],hero_capacity_upgrade:['previous_capacity'],item_upgrade:['operation','item_uid','use_charm'],
   market_list_item: ['item_id','price'], market_buy_listing: ['listing_id'],
   store_buy_item: ['slot_index','refresh_at'], inventory_bag_buy:['bag','kind'], shop_bundle_buy: ['bundle'], reward_boost_buy: ['plan'],
+  training_slot_unlock: ['unlocked_slots'], training_boost_buy: ['boost'],
 };
 export async function quotePurchase(a: CommerceAdapters,player: string,key: string,action: string,params: Json) {
   const fields=SKR_PRODUCTS[action];
