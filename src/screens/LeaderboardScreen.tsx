@@ -1,5 +1,5 @@
 import { isolatedHackathon } from '@/game/editionStorage';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Trophy, Crown, Medal, Swords, Skull, ChevronUp, UserRound, Sparkles, Star, Flag } from 'lucide-react';
 import { formatNum } from '@/game/state';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
@@ -10,6 +10,7 @@ import { playerSync } from '@/game/backend';
 import { teamPower } from '@/game/engine';
 import { PlayerReportModal } from '@/components/PlayerReportModal';
 import { isAndroidLayout } from '@/platform/platform';
+import '@/theme/scene/scene.css';
 
 interface RankHero { hero_id: string; level: number; stars: number; }
 interface LeaderRow { player_id: string; username: string; account_level: number; power: number; collection_power: number; total_kills: number; boss_kills: number; online: boolean; lineup: RankHero[]; avatar_hero_id: string; summons: number; total_tokens_earned: number; }
@@ -51,30 +52,37 @@ export function LeaderboardScreen({ game }: { game: GameApi }) {
     return `${myRank - 100} positions to monthly reward eligibility`;
   }, [myRank]);
 
+  const still = state.battleAnimationMode === 'off';
   return (
-    <div className="premium-screen themed-screen themed-screen-ranks flex h-full flex-col overflow-hidden p-2">
-      <header className="material-panel shrink-0 overflow-hidden p-3">
-        <div className="grid items-center gap-3 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="flex items-center gap-3"><div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl border border-[#9d793f] bg-[radial-gradient(circle,#6f5228,#181710)] shadow-[0_0_22px_rgba(197,145,54,.16)]"><Trophy size={29} className="text-[#efc96f]" /></div><div><div className="section-kicker">Monthly Competition</div><h2 className="mt-0.5 text-2xl font-black text-[#f0e5d2]">HeroLoop Ranks</h2><p className="mt-1 text-xs text-[#9d9689]">Ranked by Level, Kills and Boss Kills. The live server determines final order.</p></div></div>
-          <div className="reward-scene flex min-h-[82px] items-center gap-3 px-4 py-3"><span className="reward-object grid h-12 w-12 place-items-center rounded-full border border-[#d2a24b] bg-black/30"><HeroTokenIcon size={34} /></span><div><div className="text-[9px] font-bold uppercase tracking-[.16em] text-[#a99a80]">Monthly {isolatedHackathon ? 'SKR' : '$HERO'} rewards</div><div className="mt-0.5 text-lg font-black text-[#efca74]">{isolatedHackathon ? 'Coming soon' : 'Top 100 qualify'}</div><div className="text-[10px] text-[#aaa295]">{isolatedHackathon ? 'SKR rewards and pool verification are not connected yet' : 'Exact pool share is not published yet'}</div></div></div>
-        </div>
-      </header>
-
-      <section className="mt-2 grid shrink-0 gap-2 md:grid-cols-[minmax(0,1fr)_310px]">
-        <div className="grid grid-cols-3 items-end gap-2">
-          {[2, 1, 3].map((rank) => <PodiumCard key={rank} rank={rank} player={board[rank - 1]} />)}
-        </div>
-        <div className="material-panel p-3"><div className="flex items-center justify-between"><div><div className="section-kicker">Your standing</div><div className="mt-1 text-xl font-black text-[#efc66f]">#{myRank || '—'} <span className="text-sm text-[#d9d0c0]">{state.username || 'Unranked'}</span></div></div><ChevronUp size={24} className="text-[#806c4b]" /></div><div className="mt-2 health-track h-2 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#75521e,#d9aa4c)]" style={{ width: `${myRank ? Math.max(8, 100 - Math.min(100, myRank)) : 3}%` }} /></div><div className="mt-2 text-xs text-[#9c9588]">{progressCopy}</div><div className="mt-3 grid grid-cols-4 gap-1"><Metric icon={<Star size={12} />} label="Reward Power" value={myRow ? formatNum(myRow.power) : '—'} /><Metric icon={<Medal size={12} />} label="Collection Power" value={myRow ? formatNum(myRow.collection_power) : '—'} /><Metric icon={<UserRound size={12} />} label="Level" value={state.accountLevel} /><Metric icon={<Swords size={12} />} label="Kills" value={formatNum(state.totalKills)} /><Metric icon={<Skull size={12} />} label="Bosses" value={state.totalBossKills} /><Metric icon={<Sparkles size={12} />} label="Summons" value={formatNum(state.summons)} /><Metric icon={<HeroTokenIcon size={12} />} label="Mined" value={formatNum(state.totalTokensEarned)} /></div></div>
+    <div className={`sc-root rk-root${still ? ' sc-still' : ''}`}>
+      <section className="sc-stage rk-hall" aria-label="Hall of Ranks">
+        <div className="sc-stage-art" aria-hidden="true" />
+        <div className="sc-glow" aria-hidden="true" />
+        {!still && <div className="sc-embers" aria-hidden="true">{[0, 1, 2, 3, 4, 5, 6].map((i) => <i key={i} style={{ '--i': i } as CSSProperties} />)}</div>}
+        <header className="sc-head"><span className="sc-kicker">Monthly Competition</span><h2 className="sc-title">HeroLoop Ranks</h2><p className="sc-lede">Ranked by Level, Kills and Boss Kills. The live server determines final order.</p></header>
+        <div className="rk-podium">{[2, 1, 3].map((rank) => <PodiumCard key={rank} rank={rank} player={board[rank - 1]} />)}</div>
+        <div className="rk-reward"><HeroTokenIcon size={26} /><span><small>Monthly {isolatedHackathon ? 'SKR' : '$HERO'} rewards</small><b>{isolatedHackathon ? 'Coming soon' : 'Top 100 qualify'}</b><em>{isolatedHackathon ? 'SKR rewards and pool verification are not connected yet' : 'Exact pool share is not published yet'}</em></span></div>
       </section>
 
-      <section className="rank-table material-panel mt-2 flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="rank-scroll game-scrollbar min-h-0 flex-1 overflow-auto p-2" tabIndex={0} aria-label="Rankings: scroll horizontally for all statistics">
+      <div className="sc-body">
+      <section className="sc-panel rk-standing">
+        <div className="sc-section-head"><span>Your standing</span><ChevronUp size={18} /></div>
+        <div className="rk-me"><b>#{myRank || '—'}</b><span>{state.username || 'Unranked'}</span></div>
+        <div className="rk-track"><i style={{ width: `${myRank ? Math.max(8, 100 - Math.min(100, myRank)) : 3}%` }} /></div>
+        <p className="sc-muted rk-progress">{progressCopy}</p>
+        <div className="rk-metrics"><Metric icon={<Star size={12} />} label="Reward Power" value={myRow ? formatNum(myRow.power) : '—'} /><Metric icon={<Medal size={12} />} label="Collection Power" value={myRow ? formatNum(myRow.collection_power) : '—'} /><Metric icon={<UserRound size={12} />} label="Level" value={state.accountLevel} /><Metric icon={<Swords size={12} />} label="Kills" value={formatNum(state.totalKills)} /><Metric icon={<Skull size={12} />} label="Bosses" value={state.totalBossKills} /><Metric icon={<Sparkles size={12} />} label="Summons" value={formatNum(state.summons)} /><Metric icon={<HeroTokenIcon size={12} />} label="Mined" value={formatNum(state.totalTokensEarned)} /></div>
+      </section>
+
+      <section className="sc-panel rk-table">
+        <div className="sc-section-head"><span>Top 100</span></div>
+        <div className="rank-scroll game-scrollbar overflow-x-auto" tabIndex={0} aria-label="Rankings: scroll horizontally for all statistics">
           {!isAndroidLayout && <div className="leader-head grid min-w-[900px] grid-cols-[52px_minmax(300px,1fr)_64px_90px_78px_90px_105px_90px] gap-2 border-b border-[#4d402d] px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-[#8c867b]"><span>Rank</span><span>Player · Active lineup</span><span>Level</span><span>Kills</span><span>Bosses</span><span>Summons</span><span>{isolatedHackathon ? 'SKR mined' : '$HERO mined'}</span><span>Reward</span></div>}
           {loading && <EmptyState icon={<Sparkles size={22} />} title="Reading the tournament ledger" detail="Live ranks update every 30 seconds." />}
           {!loading && board.length === 0 && <EmptyState icon={<Trophy size={22} />} title="No ranked players yet" detail="Win battles and defeat bosses to claim the first position." />}
           {isAndroidLayout ? <div className="rank-cards">{board.slice(0, 100).map((player, index) => <RankCard key={player.player_id} rank={index + 1} player={player} isMe={player.player_id === myId} onReport={player.player_id === myId ? undefined : () => setReportTarget({ playerId: player.player_id, username: player.username })} />)}</div> : <div className="space-y-1.5">{board.slice(0, 100).map((player, index) => { const rank = index + 1; const isMe = player.player_id === myId; return <div key={player.player_id} className={`leader-row grid min-w-[900px] grid-cols-[52px_minmax(300px,1fr)_64px_90px_78px_90px_105px_90px] items-center gap-2 px-3 py-2 ${isMe ? 'border-[#d0a34f] bg-[#6f5120]/15' : ''}`}><span className={`font-black ${rank <= 3 ? 'text-[#ebc36c]' : 'text-[#918a7e]'}`}>#{rank}</span><RankIdentity player={player} isMe={isMe} onReport={isMe ? undefined : () => setReportTarget({ playerId: player.player_id, username: player.username })} /><b className="text-xs text-[#d0c7b8]">{player.account_level}</b><span className="text-xs tabular-nums text-[#b9b1a4]">{formatNum(player.total_kills)}</span><span className="text-xs tabular-nums text-[#b9b1a4]">{formatNum(player.boss_kills)}</span><span className="text-xs tabular-nums text-[#b9b1a4]">{formatNum(player.summons)}</span><span className="flex items-center gap-1 text-xs tabular-nums text-[#e5bb62]"><HeroTokenIcon size={13} />{isolatedHackathon ? '—' : formatNum(player.total_tokens_earned)}</span><span className={`text-[10px] font-bold ${rank <= 100 ? 'text-[#e5bb62]' : 'text-[#746f66]'}`}>{rank <= 100 ? 'Pool share' : '—'}</span></div>; })}</div>}
         </div>
       </section>
+      </div>
       {reportTarget && <PlayerReportModal target={reportTarget} onClose={() => setReportTarget(null)} />}
     </div>
   );
@@ -113,6 +121,14 @@ function RankCard({ rank, player, isMe, onReport }: { rank: number; player: Lead
   </article>;
 }
 
-function PodiumCard({ rank, player }: { rank: number; player?: LeaderRow }) { const metal = rank === 1 ? '#e0b85d' : rank === 2 ? '#adb5bd' : '#ad7145'; return <div className={`rank-podium material-panel p-2 text-center ${rank === 1 ? 'min-h-[112px]' : 'min-h-[96px]'}`} style={{ borderColor: metal }}><div className="mx-auto grid h-8 w-8 place-items-center rounded-full border bg-black/30" style={{ borderColor: metal, color: metal }}>{rank === 1 ? <Crown size={16} /> : <Medal size={15} />}</div><div className="mt-1 truncate text-xs font-black text-[#e8dfd0]">{player?.username ?? `Rank ${rank} open`}</div><div className="mt-0.5 text-[9px]" style={{ color: metal }}>#{rank} · {player ? `Lv ${player.account_level}` : 'Unclaimed'}</div></div>; }
-function Metric({ icon, label, value }: { icon: ReactNode; label: string; value: string | number }) { return <div className="stat-tile p-1.5 text-center"><span className="flex items-center justify-center gap-1 text-[8px] uppercase text-[#777268]">{icon}{label}</span><b className="mt-0.5 block text-xs text-[#ddd3c2]">{value}</b></div>; }
+function PodiumCard({ rank, player }: { rank: number; player?: LeaderRow }) {
+  const lineup = player && Array.isArray(player.lineup) ? player.lineup : [];
+  const avatar = player ? HERO_MAP[player.avatar_hero_id] ?? HERO_MAP[lineup[0]?.hero_id] : undefined;
+  return <div className={`rk-seat rk-seat-${rank}`}>
+    <span className="rk-seat-crest">{rank === 1 ? <Crown size={16} /> : <Medal size={14} />}</span>
+    <span className="rk-seat-hero">{avatar ? <HeroPortrait heroId={avatar.id} heroClass={avatar.heroClass} rarity={avatar.rarity} color={avatar.color} size={rank === 1 ? 74 : 60} /> : <span className="rk-seat-empty">{player ? player.username.slice(0, 2).toUpperCase() : '?'}</span>}</span>
+    <span className="rk-seat-plinth"><b>{player?.username ?? `Rank ${rank} open`}</b><small>#{rank} · {player ? `Lv ${player.account_level}` : 'Unclaimed'}</small></span>
+  </div>;
+}
+function Metric({ icon, label, value }: { icon: ReactNode; label: string; value: string | number }) { return <div className="rk-metric"><span>{icon}{label}</span><b>{value}</b></div>; }
 function EmptyState({ icon, title, detail }: { icon: ReactNode; title: string; detail: string }) { return <div className="mx-auto my-12 max-w-sm text-center text-[#887f70]"><span className="mx-auto grid h-11 w-11 place-items-center rounded-xl border border-[#55452e] bg-black/25">{icon}</span><div className="mt-2 font-bold text-[#d4cabb]">{title}</div><div className="mt-1 text-xs">{detail}</div></div>; }

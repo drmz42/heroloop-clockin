@@ -1,9 +1,10 @@
 import { createPortal } from 'react-dom';
 import { isolatedHackathon } from '@/game/editionStorage';
 import { isAndroidLayout } from '@/platform/platform';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { Axe, ChevronDown, Clock3, Crosshair, Dumbbell, Info, LockKeyhole, Shield, ShieldCheck, Sparkles, Swords, Target, UserRoundPlus, X } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
+import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
@@ -13,6 +14,7 @@ import { heroXpForLevel, trainingTokenPenalty, TRAINING_BOOST_COSTS, TRAINING_SL
 import type { HeroClass, TrainingBoostKey } from '@/game/types';
 import type { useGame } from '@/game/useGame';
 import { groupNumber } from '@/game/numberFormat';
+import '@/theme/scene/scene.css';
 
 type Game = ReturnType<typeof useGame>;
 type SortKey = 'stars' | 'level' | 'power' | 'rarity' | 'class';
@@ -80,26 +82,32 @@ export function TrainingCampScreen({ game }: { game: Game }) {
       return CLASS_LABEL[aBase.heroClass].localeCompare(CLASS_LABEL[bBase.heroClass]) || teamPower([b], state.inventory) - teamPower([a], state.inventory);
     }), [state.ownedHeroes, state.inventory, classFilter, sort]);
 
+  const still = state.battleAnimationMode === 'off';
   return (
-    <div className="training-camp-screen min-h-full p-4 text-[#ddd4c2] sm:p-5">
-      <header className="relative z-10 flex flex-wrap items-end justify-between gap-3">
-        <div><div className="section-kicker">Training Grounds</div><h2 className="font-vt text-3xl font-black text-[#f5d88b]">Ironkeep War Camp</h2><p className="mt-1 text-xs text-[#aaa08c]">Prepare reserve heroes at 160% solo XP from Location {locationId}.</p></div>
-        <div className={`training-status-row ${activeBoost ? 'training-status-boosted' : ''}`}>
-          <span className="training-status-metric"><Swords size={19} /><span><strong>{groupNumber(xpPerHour)} XP/h</strong><small>{activeBoost ? `${baseXpPerHour.toLocaleString()} base × ${state.trainingCamp.boostMultiplier}` : 'Current training speed'}</small></span></span>
-          <span className="training-status-metric"><ShieldCheck size={19} /><span><strong>{trainingHeroCount}/{state.trainingCamp.unlockedSlots} training</strong><small>{state.trainingCamp.unlockedSlots - trainingHeroCount} posts available</small></span></span>
-          <span className="training-status-metric"><Clock3 size={19} /><span><strong>{activeBoost ? `${state.trainingCamp.boostMultiplier}× ACTIVE` : 'Normal speed'}</strong><small className="tabular-nums">{activeBoost ? `${boostTime} remaining` : 'No active boost'}</small></span></span>
+    <div className={`sc-root tc-root training-camp-screen${still ? ' sc-still' : ''}`}>
+      <section className="sc-stage tc-camp" aria-label="Ironkeep War Camp">
+        <div className="sc-stage-art" aria-hidden="true" />
+        <div className="sc-glow" aria-hidden="true" />
+        {!still && <div className="sc-embers" aria-hidden="true">{[0, 1, 2, 3, 4, 5, 6].map((i) => <i key={i} style={{ '--i': i } as CSSProperties} />)}</div>}
+        <header className="sc-head"><span className="sc-kicker">Training Grounds</span><h2 className="sc-title">Ironkeep War Camp</h2><p className="sc-lede">Prepare reserve heroes at 160% solo XP from Location {locationId}.</p></header>
+        <div className={`tc-plaques${activeBoost ? ' is-boosted' : ''}`}>
+          <span className="tc-plaque"><Swords size={16} /><strong>{groupNumber(xpPerHour)} XP/h</strong><small>{activeBoost ? `${baseXpPerHour.toLocaleString()} base × ${state.trainingCamp.boostMultiplier}` : 'Current training speed'}</small></span>
+          <span className="tc-plaque"><ShieldCheck size={16} /><strong>{trainingHeroCount}/{state.trainingCamp.unlockedSlots} training</strong><small>{state.trainingCamp.unlockedSlots - trainingHeroCount} posts available</small></span>
+          <span className="tc-plaque"><Clock3 size={16} /><strong>{activeBoost ? `${state.trainingCamp.boostMultiplier}× ACTIVE` : 'Normal speed'}</strong><small className="tabular-nums">{activeBoost ? `${boostTime} remaining` : 'No active boost'}</small></span>
         </div>
-      </header>
+      </section>
 
-      <aside className="training-guide relative z-10 mt-4 grid gap-3 p-3 lg:grid-cols-[minmax(260px,1fr)_minmax(420px,1.5fr)]">
-        <div className="flex gap-3"><Info size={19} className="mt-0.5 shrink-0 text-amber-300" /><div><strong className="block text-xs uppercase tracking-[.14em] text-[#f2d48a]">Camp orders</strong><p className="mt-1 text-[11px] leading-5 text-[#b8ad99]">Training continues offline, stops at Account Level and gives no Gold, loot, chests or $HERO. Speed boosts multiply training XP.</p></div></div>
+      <div className="sc-body">
+      <aside className="tc-orders">
+        <p><Info size={14} /><span><b>Camp orders.</b> Training continues offline, stops at Account Level and gives no Gold, loot, chests or $HERO. Speed boosts multiply training XP.</span></p>
         {!isolatedHackathon && <div className="hl-hero-only"><div className="flex items-center justify-between gap-2"><strong className="text-xs uppercase tracking-[.14em] text-[#f2d48a]">$HERO mining penalty</strong><span className="text-xs font-black text-rose-300">Current −{currentPenalty}%</span></div><div className="mt-2 grid grid-cols-5 gap-1.5">{[10, 25, 50, 75, 90].map((value, index) => { const count = index + 1; const active = trainingHeroCount === count || (count === 5 && trainingHeroCount >= 5); return <div key={count} className={`training-penalty-step ${active ? 'training-penalty-active' : ''}`}><span>{count === 5 ? '5+' : count} hero{count > 1 ? 'es' : ''}</span><strong>−{value}%</strong></div>; })}</div><p className="mt-2 text-[10px] text-[#928673]">Only token mining is reduced. Battle rewards and quests stay unchanged.</p></div>}
       </aside>
 
-      <div className="training-main-grid relative z-10 mt-4">
-      <section className="training-yard p-3">
-        <div className="mb-3 flex items-center justify-between gap-3"><div><div className="section-kicker">Training posts</div><p className="mt-1 text-[10px] text-[#8f846f]">Choose an empty post, then assign a reserve hero below.</p></div><div className="flex items-center gap-2 text-[10px] font-bold text-[#9e927d]"><Target size={15} className="text-amber-400" /> Live drills</div></div>
-        <div className="training-post-grid grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+      <div className="tc-main">
+      <section className="sc-panel tc-posts-panel">
+        <div className="sc-section-head"><span>Training posts</span><span className="tc-live"><Target size={13} /> Live drills</span></div>
+        <p className="sc-muted tc-note">Choose an empty post, then assign a reserve hero below.</p>
+        <div className="tc-posts">
           {state.trainingCamp.heroUids.map((uid, index) => {
             const hero = uid ? state.ownedHeroes.find((owned) => owned.uid === uid) : null;
             const base = hero ? HERO_MAP[hero.heroId] : null;
@@ -111,32 +119,34 @@ export function TrainingCampScreen({ game }: { game: Game }) {
             const DrillIcon = drill?.Icon ?? Target;
             const selected = selectedSlot === index;
             return (
-              <article key={index} className={`training-post ${unlocked ? 'training-post-open' : 'training-post-locked'} ${selected ? 'training-post-selected' : ''}`}>
-                <div className="training-post-head"><span>POST</span><span>{unlocked ? 'READY' : 'LOCKED'}</span></div>
+              <article key={index} className={`tc-post ${unlocked ? 'is-open' : 'is-locked'}${selected ? ' is-selected' : ''}${hero ? ' is-busy' : ''}`} style={base ? { '--tc-color': RARITY_COLORS[base.rarity] } as CSSProperties : undefined}>
+                <span className="tc-post-num">Post {index + 1}</span>
                 {hero && base ? <>
-                  <div className="training-apparatus"><DrillIcon size={24} /><span>{drill?.label}</span></div>
-                  <div className="training-hero-stage"><HeroPortrait heroClass={base.heroClass} heroId={base.id} rarity={base.rarity} color={base.color} size={46} badge={hero.level} className="training-hero-portrait" /><span className="training-spark training-spark-a" /><span className="training-spark training-spark-b" /><span className="training-spark training-spark-c" /></div>
-                  <div className="mt-1 flex items-center justify-between gap-1"><strong className="min-w-0 truncate text-[10px]" style={{ color: RARITY_COLORS[base.rarity] }}>{base.name}</strong><button type="button" className="training-icon-button" onClick={() => { void game.setTrainingHero(index, null); }} aria-label={`Remove ${base.name}`}><X size={11} /></button></div>
-                  <div className="training-xp-track"><span style={{ width: `${hero.level >= state.accountLevel ? 100 : Math.min(100, hero.xp / heroXpForLevel(hero.level) * 100)}%` }} /></div>
-                  <div className="mt-1 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 text-[8px] font-bold text-[#8e836f]"><span className="min-w-0 truncate">{hero.level >= state.accountLevel ? 'LEVEL CAPPED' : 'TRAINING'}</span><span className="whitespace-nowrap text-right">{teamPower([hero], state.inventory)} PWR</span></div>
-                </> : unlocked ? <button type="button" onClick={() => setSelectedSlot(index)} className="training-empty-post"><span className="training-dummy"><span className="training-dummy-head" /><span className="training-dummy-body" /><span className="training-dummy-arms" /></span><UserRoundPlus size={17} /><strong>{selected ? 'SELECT HERO BELOW' : 'ASSIGN HERO'}</strong><small>Combat dummy ready</small></button> : <div className="training-locked-post"><LockKeyhole size={25} /><span>{isNextLocked ? 'NEXT POST' : 'LOCKED'}</span>{isNextLocked && (isolatedHackathon
-                  ? <button type="button" onClick={() => setSkrOffer({ product: 'training_slot_unlock', params: { unlocked_slots: index }, title: `Unlock Post ${index + 1}`, cents: usdCents(TRAINING_SLOT_COSTS[index]) })} className="game-control training-unlock-button">Unlock {usdLabel(usdCents(TRAINING_SLOT_COSTS[index]))}</button>
-                  : <button type="button" onClick={() => game.unlockTrainingSlot()} className="game-control training-unlock-button"><HeroTokenIcon size={11} /> Unlock {TRAINING_SLOT_COSTS[index]}</button>)}</div>}
+                  <span className="tc-drill"><DrillIcon size={11} />{drill?.label}</span>
+                  <span className="tc-post-hero"><HeroPortrait heroClass={base.heroClass} heroId={base.id} rarity={base.rarity} color={base.color} size={54} badge={hero.level} className="training-hero-portrait" /></span>
+                  <strong className="tc-post-name">{base.name}</strong>
+                  <span className="tc-xp"><i style={{ width: `${hero.level >= state.accountLevel ? 100 : Math.min(100, hero.xp / heroXpForLevel(hero.level) * 100)}%` }} /></span>
+                  <span className="tc-post-meta"><span>{hero.level >= state.accountLevel ? 'LEVEL CAPPED' : 'TRAINING'}</span><span>{teamPower([hero], state.inventory)} PWR</span></span>
+                  <button type="button" className="tc-remove" onClick={() => { void game.setTrainingHero(index, null); }} aria-label={`Remove ${base.name}`}><X size={11} /></button>
+                </> : unlocked ? <button type="button" onClick={() => setSelectedSlot(index)} className="tc-empty"><span className="training-dummy"><span className="training-dummy-head" /><span className="training-dummy-body" /><span className="training-dummy-arms" /></span><UserRoundPlus size={15} /><strong>{selected ? 'SELECT HERO BELOW' : 'ASSIGN HERO'}</strong><small>Combat dummy ready</small></button> : <div className="tc-locked"><LockKeyhole size={20} /><span>{isNextLocked ? 'NEXT POST' : 'LOCKED'}</span>{isNextLocked && (isolatedHackathon
+                  ? <button type="button" onClick={() => setSkrOffer({ product: 'training_slot_unlock', params: { unlocked_slots: index }, title: `Unlock Post ${index + 1}`, cents: usdCents(TRAINING_SLOT_COSTS[index]) })} className="sc-seal tc-unlock">Unlock {usdLabel(usdCents(TRAINING_SLOT_COSTS[index]))}</button>
+                  : <button type="button" onClick={() => game.unlockTrainingSlot()} className="sc-seal tc-unlock"><HeroTokenIcon size={11} /> Unlock {TRAINING_SLOT_COSTS[index]}</button>)}</div>}
               </article>
             );
           })}
         </div>
       </section>
 
-      <section className="training-section training-boost-panel p-3">
-        <div className="mb-2 flex items-center justify-between"><div><div className="section-kicker">Drill intensity</div><p className="mt-1 text-[10px] text-[#8f846f]">Speed boost</p></div><Dumbbell size={17} className="text-[#c99b4d]" /></div>
-        <div className="grid gap-1.5">{TRAINING_BOOSTS.map(({ key, multiplier, hours }) => {
+      <section className="sc-panel tc-boosts">
+        <div className="sc-section-head"><span>Drill intensity</span><Dumbbell size={15} /></div>
+        <p className="sc-muted tc-note">Speed boost</p>
+        <div className="tc-boost-grid">{TRAINING_BOOSTS.map(({ key, multiplier, hours }) => {
           const cost = TRAINING_BOOST_COSTS[key];
           const isActive = activeBoost && state.trainingCamp.activeBoostKey === key;
           const queuedCount = state.trainingCamp.boostQueue.filter((entry) => entry.key === key).length;
-          return <button key={key} type="button" onClick={() => isolatedHackathon
+          return <button key={key} type="button" aria-pressed={isActive} onClick={() => isolatedHackathon
             ? setSkrOffer({ product: 'training_boost_buy', params: { boost: key }, title: `${multiplier * 100}% speed · ${hours}h`, cents: usdCents(cost) })
-            : game.buyTrainingBoost(multiplier, hours)} className={`training-boost-button ${isActive ? 'training-boost-active' : ''}`}><span className="training-boost-main"><Dumbbell size={14} /><span><strong>{multiplier * 100}%</strong><small>{hours}h</small></span><em>{isolatedHackathon ? usdLabel(usdCents(cost)) : <><HeroTokenIcon size={9} /> {cost}</>}</em></span>{isActive && <span className="training-boost-status"><strong>ACTIVE</strong><time>{boostTime}</time></span>}{queuedCount > 0 && <span className="training-boost-queued">QUEUED ×{queuedCount}</span>}</button>;
+            : game.buyTrainingBoost(multiplier, hours)} className="sc-plate tc-boost"><span className="tc-boost-main"><strong>{multiplier * 100}%</strong><small>{hours}h</small><em>{isolatedHackathon ? usdLabel(usdCents(cost)) : <><HeroTokenIcon size={9} /> {cost}</>}</em></span>{isActive && <span className="tc-boost-status">ACTIVE <time>{boostTime}</time></span>}{queuedCount > 0 && <span className="tc-boost-status">QUEUED ×{queuedCount}</span>}</button>;
         })}</div>
         {/* The offer opens as a dialog over the screen: inline under the boosts it rendered below the
             fold on phones, so tapping a post's Unlock looked like nothing happened. */}
@@ -149,10 +159,13 @@ export function TrainingCampScreen({ game }: { game: Game }) {
       </section>
       </div>
 
-      <section className="training-section relative z-10 mt-4 p-4">
-        <div className="flex flex-wrap items-end justify-between gap-3"><div><div className="section-kicker">Reserve roster</div><p className="mt-1 text-[10px] text-[#8f846f]">{assignmentSlot >= 0 ? `Click an available hero to send them to Post ${assignmentSlot + 1}.` : 'Unlock or clear a post, then click an available hero to begin training.'}</p></div><div className="training-filter-bar flex flex-wrap gap-1.5"><label className="training-select"><ChevronDown size={12} /><select value={classFilter} onChange={(event) => setClassFilter(event.target.value as 'all' | HeroClass)}><option value="all">All Classes</option>{(Object.keys(CLASS_LABEL) as HeroClass[]).map((heroClass) => <option key={heroClass} value={heroClass}>{CLASS_LABEL[heroClass]}</option>)}</select></label>{SORTS.map((option) => <button type="button" key={option.id} onClick={() => setSort(option.id)} className={`training-sort-button ${sort === option.id ? 'training-sort-active' : ''}`}>{option.label}</button>)}</div></div>
-        <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">{sortedHeroes.map((hero) => { const base = HERO_MAP[hero.heroId]; if (!base) return null; const inTeam = state.team.includes(hero.uid); const training = state.trainingCamp.heroUids.includes(hero.uid); const capped = hero.level >= state.accountLevel; const disabled = inTeam || training || capped || assignmentSlot < 0; const assign = () => { void game.setTrainingHero(assignmentSlot, hero.uid).then((accepted) => { if (accepted) setSelectedSlot(null); }); }; return <button type="button" disabled={disabled} key={hero.uid} onClick={assign} className={`training-roster-card ${disabled ? 'opacity-45' : ''}`}><span className="training-roster-portrait"><HeroPortrait heroClass={base.heroClass} heroId={base.id} rarity={base.rarity} color={base.color} size={80} badge={hero.level} className="pointer-events-none mx-auto" />{inTeam && <span className="training-in-formation-badge">IN FORMATION</span>}</span><strong style={{ color: RARITY_COLORS[base.rarity] }}>{base.name}</strong><span>{hero.stars}★ · {teamPower([hero], state.inventory)} PWR</span><small>{inTeam ? 'IN FORMATION' : training ? 'TRAINING' : capped ? 'LEVEL CAPPED' : CLASS_LABEL[base.heroClass]}</small></button>; })}</div>
+      <section className="sc-panel tc-roster">
+        <div className="sc-section-head"><span>Reserve roster</span></div>
+        <p className="sc-muted tc-note">{assignmentSlot >= 0 ? `Click an available hero to send them to Post ${assignmentSlot + 1}.` : 'Unlock or clear a post, then click an available hero to begin training.'}</p>
+        <div className="tc-filters"><label className="sc-chip tc-class"><span>{classFilter === 'all' ? 'All Classes' : CLASS_LABEL[classFilter]}</span><ChevronDown size={12} /><select aria-label="Class" value={classFilter} onChange={(event) => setClassFilter(event.target.value as 'all' | HeroClass)}><option value="all">All Classes</option>{(Object.keys(CLASS_LABEL) as HeroClass[]).map((heroClass) => <option key={heroClass} value={heroClass}>{CLASS_LABEL[heroClass]}</option>)}</select></label>{SORTS.map((option) => <button type="button" key={option.id} aria-pressed={sort === option.id} onClick={() => setSort(option.id)} className="sc-chip tc-sort">{option.label}</button>)}</div>
+        <ul className="hv-grid tc-roster-grid">{sortedHeroes.map((hero) => { const base = HERO_MAP[hero.heroId]; if (!base) return null; const inTeam = state.team.includes(hero.uid); const training = state.trainingCamp.heroUids.includes(hero.uid); const capped = hero.level >= state.accountLevel; const disabled = inTeam || training || capped || assignmentSlot < 0; const assign = () => { void game.setTrainingHero(assignmentSlot, hero.uid).then((accepted) => { if (accepted) setSelectedSlot(null); }); }; return <li key={hero.uid}><button type="button" disabled={disabled} onClick={assign} className={`hv-card tc-card${RARITY_INDEX[base.rarity] >= RARITY_INDEX.rare ? ' is-rare' : ''}${disabled ? ' is-off' : ''}`} style={{ '--hv-color': RARITY_COLORS[base.rarity] } as CSSProperties}><span className="hv-card-art"><img src={heroPortraitSrc(base.id, base.heroClass, base.rarity, base.color)} alt="" loading="lazy" decoding="async" style={{ ...heroPortraitStyle(base.id, base.heroClass), transform: 'none' }} /><span className="hv-card-lv">Lv {hero.level}</span>{(inTeam || training || capped) && <span className="tc-card-state">{inTeam ? 'IN FORMATION' : training ? 'TRAINING' : 'LEVEL CAPPED'}</span>}</span><span className="hv-card-info"><span className="hv-card-name">{base.name}</span><span className="hv-card-row"><span>{teamPower([hero], state.inventory)} PWR</span><span>{hero.stars}★</span></span><span className="tc-card-class">{CLASS_LABEL[base.heroClass]}</span></span></button></li>; })}</ul>
       </section>
+      </div>
     </div>
   );
 }
