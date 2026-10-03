@@ -568,8 +568,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   }, []);
   // A top-bar or tab-bar button closes this screen's sheets and panels (App.tsx closeOverlaysFromBar).
   useEffect(() => {
-    const close = () => {
-      setCommanderOpen(false); setBattleMenuOpen(false); setShowBattleSettings(false); setShowDungeonInfo(false);
+    const close = (event: Event) => {
+      // Keep the current state until the Commander button toggles it in the bubble phase.
+      if (!(event as CustomEvent<{ commanderToggle?: boolean }>).detail?.commanderToggle) setCommanderOpen(false);
+      setBattleMenuOpen(false); setShowBattleSettings(false); setShowDungeonInfo(false);
       setShowAvatarPicker(false); setShowDropRates(false); setShowInventoryFull(false);
     };
     window.addEventListener(OVERLAYS_CLOSE_EVENT, close);
