@@ -257,7 +257,9 @@ async function signAuthorization(message:string,address:string,walletName:string
       const {signed_payloads}=await wallet.signMessages({addresses:[account.address],payloads:[btoa(String.fromCharCode(...payload))]});
       if(signed_payloads.length!==1)throw new SeekerWalletError('invalid_withdrawal_signature');
       const signed=base64ToUint8Array(signed_payloads[0]);
-      if(signed.length!==payload.length+64 || payload.some((byte,index)=>signed[index]!==byte))throw new SeekerWalletError('invalid_withdrawal_signature');
+      // MWA returns the message with the 64-byte signature appended; some wallets (Phantom) return only the signature.
+      // The wallet service verifies the signature against the exact authorization text either way.
+      if(signed.length!==64 && (signed.length!==payload.length+64 || payload.some((byte,index)=>signed[index]!==byte)))throw new SeekerWalletError('invalid_withdrawal_signature');
       return btoa(String.fromCharCode(...signed.slice(-64)));
     });
   }
