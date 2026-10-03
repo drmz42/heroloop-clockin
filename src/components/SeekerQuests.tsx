@@ -5,6 +5,7 @@ import { playerSync } from '@/game/backend';
 import { groupDigits, groupNumber } from '@/game/numberFormat';
 import { GoldIcon } from './GoldIcon';
 import { SummonScrollArtwork } from './SummonScrollArtwork';
+import '@/theme/scene/seeker-panels.css';
 
 type MineSummary = { rounds_today: number; rounds_total: number; streak_days: number };
 const MINER_RANKS = [{ name: 'Bronze', rounds: 50 }, { name: 'Silver', rounds: 250 }, { name: 'Gold', rounds: 1000 }, { name: 'Diamond', rounds: 5000 }];
