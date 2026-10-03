@@ -6,6 +6,7 @@ import './platform/android.css';
 import { captureSignupAttribution } from './game/signupAttribution';
 import { applyUiTheme, resolveUiTheme } from './theme/uiTheme';
 import { applyPlatform, isAppShell } from './platform/platform';
+import { AppLoadingScreen } from './platform/AppLoadingScreen';
 
 captureSignupAttribution();
 const uiTheme = resolveUiTheme();
@@ -44,6 +45,6 @@ function RootScreen() {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Suspense fallback={null}><RootScreen /></Suspense>
+    <Suspense fallback={<AppLoadingScreen />}><RootScreen /></Suspense>
   </StrictMode>
 );

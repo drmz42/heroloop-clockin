@@ -1,0 +1,43 @@
+.hl-app-loading .l5-hero-copy {
+  padding-top: 0;
+  padding-bottom: 24px;
+}
+
+.hl-app-loading-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 56px;
+  margin-top: 24px;
+  padding: 0 20px;
+  color: var(--l5-brass-hi);
+  font-family: var(--l5-ui);
+  font-size: 14px;
+  letter-spacing: .08em;
+}
+
+.hl-app-loading-spinner {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border: 1px solid var(--l5-brass-lo);
+  border-top-color: var(--l5-brass-hi);
+  transform: rotate(-35deg);
+  border-radius: 50%;
+  animation: hl-app-loading-spin 1.2s linear infinite;
+}
+
+.hl-app-loading .hl-app-loading-retry {
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0 24px;
+}
+
+@keyframes hl-app-loading-spin {
+  to { transform: rotate(325deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hl-app-loading-spinner { animation: none; }
+}
