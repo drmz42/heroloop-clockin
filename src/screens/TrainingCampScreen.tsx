@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { isolatedHackathon } from '@/game/editionStorage';
 import { isAndroidLayout } from '@/platform/platform';
 import { useMemo, useState } from 'react';
@@ -137,10 +138,14 @@ export function TrainingCampScreen({ game }: { game: Game }) {
             ? setSkrOffer({ product: 'training_boost_buy', params: { boost: key }, title: `${multiplier * 100}% speed · ${hours}h`, cents: usdCents(cost) })
             : game.buyTrainingBoost(multiplier, hours)} className={`training-boost-button ${isActive ? 'training-boost-active' : ''}`}><span className="training-boost-main"><Dumbbell size={14} /><span><strong>{multiplier * 100}%</strong><small>{hours}h</small></span><em>{isolatedHackathon ? usdLabel(usdCents(cost)) : <><HeroTokenIcon size={9} /> {cost}</>}</em></span>{isActive && <span className="training-boost-status"><strong>ACTIVE</strong><time>{boostTime}</time></span>}{queuedCount > 0 && <span className="training-boost-queued">QUEUED ×{queuedCount}</span>}</button>;
         })}</div>
-        {isolatedHackathon && skrOffer && <div className="mt-3 rounded-lg border border-[#8c6231]/60 bg-black/30 p-3" role="group" aria-label="SKR training purchase">
-          <div className="flex items-start justify-between gap-2"><div className="min-w-0"><strong className="block text-xs text-[#f2d48a]">{skrOffer.title}</strong><span className="text-[11px] text-[#b8ad99]">≈ {skrLabel(skrOffer.cents)}</span></div><button type="button" className="training-icon-button" onClick={() => setSkrOffer(null)} aria-label="Close SKR purchase"><X size={11} /></button></div>
-          <SkrPurchaseButton product={skrOffer.product} params={skrOffer.params} label="Quote in SKR" onDelivered={(result) => { game.applySeekerPurchase(result); setSkrOffer(null); }} />
-        </div>}
+        {/* The offer opens as a dialog over the screen: inline under the boosts it rendered below the
+            fold on phones, so tapping a post's Unlock looked like nothing happened. */}
+        {isolatedHackathon && skrOffer && createPortal(<div className="training-skr-overlay fixed inset-0 z-[9999] grid place-items-center bg-black/75 p-3 backdrop-blur-[4px]" onMouseDown={(event) => { if (event.currentTarget === event.target) setSkrOffer(null); }}>
+          <section className="px-panel-raised w-full max-w-sm rounded-lg border border-[#8c6231] p-4" role="dialog" aria-modal="true" aria-label="SKR training purchase">
+            <div className="flex items-start justify-between gap-2"><div className="min-w-0"><div className="section-kicker">Training camp</div><strong className="mt-1 block text-base text-[#f2d48a]">{skrOffer.title}</strong><span className="text-xs text-[#b8ad99]">≈ {skrLabel(skrOffer.cents)}</span></div><button type="button" className="game-control grid h-9 w-9 shrink-0 place-items-center" onClick={() => setSkrOffer(null)} aria-label="Close SKR purchase" autoFocus><X size={14} /></button></div>
+            <SkrPurchaseButton product={skrOffer.product} params={skrOffer.params} label="Quote in SKR" onDelivered={(result) => { game.applySeekerPurchase(result); setSkrOffer(null); }} />
+          </section>
+        </div>, document.body)}
       </section>
       </div>
 

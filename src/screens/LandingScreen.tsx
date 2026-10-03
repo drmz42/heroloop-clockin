@@ -18,6 +18,7 @@ import {
   observeCompatibleSolanaWallets,
   solanaAuthEnabled,
 } from '@/game/solanaWalletSession';
+import '@/theme/premium/premium-onboarding.css';
 
 type GameApi = ReturnType<typeof useGame>;
 type StarterId = 'shepherd-common' | 'assassin-common' | 'knight-common' | 'druid-common' | 'archer-common';
@@ -479,29 +480,38 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
     }
   };
 
+  // Visual only (Founder 2026-10-03): forged dark-fantasy sign-in. Every handler, state
+  // transition and copy line above is unchanged; only markup and onboarding.css changed.
+  const stepTitles = [solanaAuthEnabled ? 'Verify wallet' : 'Guest account', 'First hero', 'Your name'];
   return (
-    <div className="hl-onboarding fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[#030308]/90 p-4 backdrop-blur-md">
-      <div className="landing-card relative my-auto w-full max-w-4xl overflow-hidden">
-        {!persistent && <button onClick={onClose} className="absolute right-4 top-4 z-10 p-2 text-slate-500 transition hover:text-white" aria-label="Close">
-          <X size={20} />
+    <div className="hl-onboarding onb-overlay fixed inset-0 z-50 grid place-items-center overflow-y-auto p-3 sm:p-4">
+      <div className="onb-card relative my-auto w-full max-w-4xl">
+        {!persistent && <button onClick={onClose} className="onb-close" aria-label="Close">
+          <X size={18} />
         </button>}
-        <div className="border-b border-white/10 px-6 py-5 sm:px-8">
-          <div className="text-[10px] uppercase tracking-[.25em] text-violet-300">{step === 1 ? (solanaAuthEnabled ? 'Verify wallet ownership' : 'Check guest account') : 'Create your account'}</div>
-          <div className="mt-3 flex items-center gap-2">
+        <div className="onb-head">
+          <div className="onb-kicker">{step === 1 ? (solanaAuthEnabled ? 'Verify wallet ownership' : 'Check guest account') : 'Create your account'}</div>
+          <ol className="onb-steps" aria-label={`Step ${step} of 3`}>
             {[1, 2, 3].map(n => (
-              <div key={n} className={`h-1.5 flex-1 ${n <= step ? 'bg-amber-300' : 'bg-white/10'}`} />
+              <li key={n} className={`onb-step ${n < step ? 'is-done' : ''} ${n === step ? 'is-active' : ''}`} aria-current={n === step ? 'step' : undefined}>
+                <span className="onb-step-gem"><span>{n < step ? <Check size={12} strokeWidth={3} /> : ['I', 'II', 'III'][n - 1]}</span></span>
+                <span className="onb-step-label">{stepTitles[n - 1]}</span>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
 
-        <div className="min-h-[470px] p-6 sm:p-8">
+        <div className="onb-body">
           {step === 1 && (
-            <div className="mx-auto max-w-xl py-5">
-              <div className="mx-auto grid h-14 w-14 place-items-center border border-violet-400/40 bg-violet-400/10 text-violet-300">{solanaAuthEnabled ? <Shield size={26} /> : <UserRound size={26} />}</div>
-              <h2 className="mt-6 text-center font-pixel text-sm text-white sm:text-lg">{solanaAuthEnabled ? 'CONNECT SOLANA WALLET' : 'CONTINUE AS GUEST'}</h2>
-              <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-slate-400">{solanaAuthEnabled ? (isNativeApp ? 'Choose any Solana wallet app — Phantom, Solflare, Backpack or Seed Vault —' : isAndroidLayout ? 'Connect your Solana wallet' : 'Connect Phantom') + ' and sign one free message to prove ownership—no transaction and no gas.' : 'The current beta uses a temporary server account. Existing guests enter directly; new guests continue to registration.'}</p>
+            <div className="mx-auto max-w-xl">
+              <div className="onb-crest" aria-hidden="true">
+                <img src="/assets/brand/heroloop-emblem.png" alt="" width={160} height={160} draggable={false} />
+                {solanaAuthEnabled ? <Shield size={18} className="onb-crest-icon" /> : <UserRound size={18} className="onb-crest-icon" />}
+              </div>
+              <h2 className="onb-title">{solanaAuthEnabled ? 'CONNECT SOLANA WALLET' : 'CONTINUE AS GUEST'}</h2>
+              <p className="onb-copy">{solanaAuthEnabled ? (isNativeApp ? 'Choose any Solana wallet app — Phantom, Solflare, Backpack or Seed Vault —' : isAndroidLayout ? 'Connect your Solana wallet' : 'Connect Phantom') + ' and sign one free message to prove ownership—no transaction and no gas.' : 'The current beta uses a temporary server account. Existing guests enter directly; new guests continue to registration.'}</p>
               {solanaAuthEnabled && legacyWalletMode && (
-                <div className="mx-auto mt-5 max-w-md border border-amber-300/25 bg-amber-300/[.06] p-4 text-xs leading-5 text-amber-100/80">
+                <div className="onb-note onb-note-amber">
                   {legacyWalletMode === 'link'
                     ? 'Existing Guest progress was found. A new wallet is linked to this Guest account; a wallet that already has a HeroLoop account signs in to that account instead, and this Guest stays separate. Nothing is copied between accounts.'
                     : 'Browser-only progress was found for this signed-in Guest. Import happens once into that exact server account before the verified wallet is linked.'}
@@ -513,36 +523,36 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
                   )}
                 </div>
               )}
-              <div className="mx-auto mt-7 w-fit border border-emerald-400/25 bg-emerald-400/[.06] px-4 py-2 text-[10px] font-bold uppercase tracking-[.14em] text-emerald-300"><Shield size={12} className="mr-1.5 inline" /> {solanaAuthEnabled ? 'Free ownership proof' : 'Server-saved guest progress'}</div>
-              <button onClick={solanaAuthEnabled ? connectWallet : continueAsGuest} disabled={connecting || (solanaAuthEnabled && wallets.length === 0)} className="landing-cta mx-auto mt-4 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em] disabled:cursor-not-allowed disabled:opacity-60">
+              <div className="onb-ribbon"><Shield size={12} aria-hidden="true" /> {solanaAuthEnabled ? 'Free ownership proof' : 'Server-saved guest progress'}</div>
+              <button onClick={solanaAuthEnabled ? connectWallet : continueAsGuest} disabled={connecting || (solanaAuthEnabled && wallets.length === 0)} className="onb-cta onb-cta-primary">
                 {solanaAuthEnabled ? <Shield size={19} /> : <UserRound size={19} />} {connecting ? 'Checking account…' : solanaAuthEnabled ? (selectedWallet === MOBILE_WALLET_ADAPTER_NAME ? 'Use Installed Wallet' : isAndroidLayout ? 'Connect wallet' : 'Connect Phantom') : 'Continue as Guest'}
               </button>
-              {connecting && signInStage && <p className="mx-auto mt-3 max-w-md text-center text-xs leading-5 text-slate-400" role="status">{SIGN_IN_STAGE_LABELS[signInStage]}</p>}
-              {signConfirm && <button type="button" onClick={() => { const confirm = signConfirm; setSignConfirm(null); confirm(); }} className="landing-cta mx-auto mt-3 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em]"><Shield size={19} /> Wallet connected · Sign in</button>}
-              {solanaAuthEnabled && canOpenInPhantom && <a href={phantomBrowseUrl()} className="landing-cta mx-auto mt-3 flex min-h-12 w-full max-w-md items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-[.13em]">Open in Phantom app</a>}
-              {solanaAuthEnabled && canOpenInPhantom && <p className="mx-auto mt-2 max-w-md text-center text-xs leading-5 text-slate-400">No wallet window? “Open in Phantom app” opens HeroLoop inside Phantom, where you sign in the same way. No Phantom yet? <a className="text-amber-300 underline underline-offset-4" href="https://play.google.com/store/apps/details?id=app.phantom" target="_blank" rel="noreferrer">Get it on Google Play</a>.</p>}
-              {solanaAuthEnabled && !canOpenInPhantom && wallets.length === 0 && <div className="mx-auto mt-4 max-w-md text-center text-xs text-slate-400">Phantom was not detected. <a className="text-amber-300 underline underline-offset-4" href="https://phantom.com/" target="_blank" rel="noreferrer">Get Phantom</a></div>}
-              {error && <div className="mt-5 border border-rose-400/30 bg-rose-400/10 p-3 text-center text-sm text-rose-300">{error}</div>}
-              <div className="mx-auto mt-6 flex max-w-md items-start gap-3 border border-emerald-400/20 bg-emerald-400/[.05] p-4 text-xs leading-5 text-emerald-200/70"><Shield size={16} className="mt-0.5 shrink-0" /><span>{solanaAuthEnabled ? 'HeroLoop never asks for a transaction signature during login. A different wallet cannot inherit this account or its saves.' : 'Your Guest ID is not a wallet address and cannot receive funds. Verified wallet sign-in is a separate future feature.'}</span></div>
+              {connecting && signInStage && <p className="onb-stage" role="status">{SIGN_IN_STAGE_LABELS[signInStage]}</p>}
+              {signConfirm && <button type="button" onClick={() => { const confirm = signConfirm; setSignConfirm(null); confirm(); }} className="onb-cta onb-cta-primary"><Shield size={19} /> Wallet connected · Sign in</button>}
+              {solanaAuthEnabled && canOpenInPhantom && <a href={phantomBrowseUrl()} className="onb-cta onb-cta-secondary">Open in Phantom app</a>}
+              {solanaAuthEnabled && canOpenInPhantom && <p className="onb-hint">No wallet window? “Open in Phantom app” opens HeroLoop inside Phantom, where you sign in the same way. No Phantom yet? <a href="https://play.google.com/store/apps/details?id=app.phantom" target="_blank" rel="noreferrer">Get it on Google Play</a>.</p>}
+              {solanaAuthEnabled && !canOpenInPhantom && wallets.length === 0 && <div className="onb-hint">Phantom was not detected. <a href="https://phantom.com/" target="_blank" rel="noreferrer">Get Phantom</a></div>}
+              {error && <div className="onb-error" role="alert">{error}</div>}
+              <div className="onb-note onb-note-safe"><Shield size={16} className="mt-0.5 shrink-0" aria-hidden="true" /><span>{solanaAuthEnabled ? 'HeroLoop never asks for a transaction signature during login. A different wallet cannot inherit this account or its saves.' : 'Your Guest ID is not a wallet address and cannot receive funds. Verified wallet sign-in is a separate future feature.'}</span></div>
             </div>
           )}
 
           {step === 2 && (
             <div>
-              <h2 className="font-pixel text-sm text-white sm:text-lg">CHOOSE YOUR FIRST HERO</h2>
-              <p className="mt-3 text-sm text-slate-400">Your starter defines the opening playstyle. You can summon every other class later.</p>
-              <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              <h2 className="onb-title onb-title-left">CHOOSE YOUR FIRST HERO</h2>
+              <p className="onb-copy onb-copy-left">Your starter defines the opening playstyle. You can summon every other class later.</p>
+              <div className="onb-heroes">
                 {heroCards.map(({ id, role, tagline, stat, hero, svg }) => {
                   const active = starter === id;
                   return (
-                    <button key={id} onClick={() => setStarter(id)} className={`relative grid h-full w-full min-w-0 grid-rows-[auto_28px_auto_1fr] overflow-hidden border p-4 text-left transition ${active ? 'border-amber-300 bg-amber-300/10 shadow-[0_0_30px_rgba(251,191,36,.12)]' : 'border-white/10 bg-white/[.025] hover:border-violet-400/50'}`}>
-                      {active && <span className="absolute right-3 top-3 grid h-6 w-6 place-items-center bg-amber-300 text-black"><Check size={14} strokeWidth={3} /></span>}
-                      <div className="relative mx-auto aspect-square w-full max-w-36 overflow-hidden bg-black/30">
+                    <button key={id} onClick={() => setStarter(id)} aria-pressed={active} className={`onb-hero ${active ? 'is-active' : ''}`}>
+                      {active && <span className="onb-hero-check"><Check size={14} strokeWidth={3} /></span>}
+                      <div className="onb-hero-art">
                         <img src={svg} alt={`${hero.name}, ${role}`} style={heroPortraitStyle(hero.id, hero.heroClass)} />
                       </div>
-                      <div className="mt-3 flex min-w-0 items-start text-[9px] font-bold uppercase tracking-[.12em] text-violet-300">{role}</div>
-                      <div className="mt-3 text-sm text-slate-300">{tagline}</div>
-                      <div className="mt-1 text-xs text-slate-500">{stat}</div>
+                      <div className="onb-hero-role">{role}</div>
+                      <div className="onb-hero-tagline">{tagline}</div>
+                      <div className="onb-hero-stat">{stat}</div>
                     </button>
                   );
                 })}
@@ -551,38 +561,39 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
           )}
 
           {step === 3 && (
-            <div className="mx-auto max-w-lg py-8">
-              <h2 className="font-pixel text-sm text-white sm:text-lg">CLAIM YOUR NAME</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-400">This is your permanent public identity in leaderboards, marketplace listings and guilds.</p>
-              <label className="mt-8 block text-[10px] font-bold uppercase tracking-[.2em] text-slate-500">Player name</label>
+            <div className="mx-auto max-w-lg py-4">
+              <h2 className="onb-title onb-title-left">CLAIM YOUR NAME</h2>
+              <p className="onb-copy onb-copy-left">This is your permanent public identity in leaderboards, marketplace listings and guilds.</p>
+              <label htmlFor="onb-player-name" className="onb-label">Player name</label>
               <input
+                id="onb-player-name"
                 autoFocus
                 value={username}
                 onChange={e => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 16))}
                 placeholder="e.g. VoidRunner"
-                className="mt-3 w-full border border-white/15 bg-black/40 px-5 py-4 text-lg text-white outline-none transition placeholder:text-slate-700 focus:border-amber-300"
+                className="onb-input"
               />
               <div className="mt-3 flex justify-between text-xs">
-                <span className={username.length > 0 && !validName ? 'text-rose-400' : 'text-slate-600'}>{blockedName ? 'Choose a respectful player name' : '3–16 letters, numbers or _'}</span>
-                <span className="text-slate-600">{username.length}/16</span>
+                <span className={username.length > 0 && !validName ? 'text-rose-400' : 'text-[#8a8070]'}>{blockedName ? 'Choose a respectful player name' : '3–16 letters, numbers or _'}</span>
+                <span className="text-[#8a8070]">{username.length}/16</span>
               </div>
-              {hasAttribution && <p className="mt-5 text-xs leading-5 text-slate-500">You arrived through a campaign, invite or promo link. We save that link label with your account only to see which campaigns bring players.</p>}
-              {error && <div className="mt-5 border border-rose-400/30 bg-rose-400/10 p-3 text-sm text-rose-300">{error}</div>}
+              {hasAttribution && <p className="onb-hint onb-hint-left">You arrived through a campaign, invite or promo link. We save that link label with your account only to see which campaigns bring players.</p>}
+              {error && <div className="onb-error" role="alert">{error}</div>}
             </div>
           )}
 
         </div>
 
-        <div className="flex items-center justify-between border-t border-white/10 bg-black/20 px-6 py-5 sm:px-8">
-{persistent && step === 1 ? <span /> : <button onClick={() => step === 1 ? onClose() : setStep(step - 1)} className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white">
+        <div className="onb-foot">
+          {persistent && step === 1 ? <span /> : <button onClick={() => step === 1 ? onClose() : setStep(step - 1)} className="onb-back">
             {step === 1 ? 'Cancel' : 'Back'}
           </button>}
           {step === 2 ? (
-            <button onClick={() => setStep(3)} className="landing-cta flex items-center gap-2 px-6 py-3 disabled:cursor-not-allowed disabled:opacity-30">
+            <button onClick={() => setStep(3)} className="onb-cta onb-cta-primary onb-cta-inline">
               Continue <ArrowRight size={15} />
             </button>
           ) : step === 3 ? (
-            <button onClick={finish} disabled={!validName || connecting} className="landing-cta flex items-center gap-2 px-6 py-3 disabled:cursor-not-allowed disabled:opacity-30">
+            <button onClick={finish} disabled={!validName || connecting} className="onb-cta onb-cta-primary onb-cta-inline">
               {connecting ? 'Creating…' : 'Create account'} <Gamepad2 size={16} />
             </button>
           ) : <span />}

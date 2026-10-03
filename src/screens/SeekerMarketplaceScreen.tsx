@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Clock3, List, Lock, PackageSearch, Search, ShieldCheck, ShoppingCart, Swords, Shield, Gem, PawPrint, Users } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
-import { SkrTokenIcon } from '@/components/SkrTokenIcon';
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { SkrUsd } from '@/components/SkrUsd';
 import { skrPrice, skrListingPriceCents, useSkrRate } from '@/game/skrPurchase';
-import { formatMinor, useWalletSnapshot } from '@/game/seekerWallet';
 import { ItemArtwork } from '@/components/ItemArtwork';
 import { ItemCompareStats } from '@/components/ItemActionPanel';
 import { HERO_MAP, RARITY_COLORS, RARITY_LABEL } from '@/game/heroes';
@@ -45,7 +43,6 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
   const screenRef = useRef<HTMLDivElement>(null);
   const detailRef = useRef<HTMLElement>(null);
   const rate = useSkrRate();
-  const wallet = useWalletSnapshot();
   const [tab, setTab] = useState<MarketTab>('browse'); const [query, setQuery] = useState(''); const [selectedId, setSelectedId] = useState<string | null>(null); const [price, setPrice] = useState(''); const [notice, setNotice] = useState('');
   const [market, setMarket] = useState<ServerMarketSnapshot | null>(null); const [marketBusy, setMarketBusy] = useState(false);
   const [category, setCategory] = useState<Category>('all'); const [rarity, setRarity] = useState<Rarity | 'all'>('all'); const [enchant, setEnchant] = useState(0); const [levelFilter, setLevelFilter] = useState<LevelFilter>('all'); const [comparisonHeroUid, setComparisonHeroUid] = useState(game.state.team[0] ?? game.state.ownedHeroes[0]?.uid ?? '');
@@ -93,7 +90,7 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
     } catch { flash('Cancellation failed. Refresh and try again.'); }
     finally { setMarketBusy(false); }
   };
-  return <div ref={screenRef} data-detail={Boolean(selected)} className="seeker-market premium-screen themed-screen themed-screen-market game-scrollbar h-full overflow-y-auto p-2"><div className="market-shell mx-auto flex min-h-full max-w-6xl flex-col overflow-hidden"><header className="market-header flex items-center justify-between gap-2 py-2 pl-3 pr-14"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-lg border border-[#a8762d] bg-black/25 text-[#efbd52]"><ShoppingCart size={20} /></span><div><div className="text-lg font-black text-[#f1e5d0]">MARKET</div><div className="text-[9px] text-[#92897b]">20 listings per seller</div></div></div><Balance icon={<SkrTokenIcon size={16} />} value={wallet ? `${formatMinor(wallet.balances.SKR, 'SKR', 6)} SKR` : '— SKR'} label="In-game balance" /></header>
+  return <div ref={screenRef} data-detail={Boolean(selected)} className="seeker-market premium-screen themed-screen themed-screen-market game-scrollbar h-full overflow-y-auto p-2"><div className="market-shell mx-auto flex min-h-full max-w-6xl flex-col overflow-hidden"><header className="market-header flex items-center justify-between gap-2 py-2 pl-3 pr-14"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-lg border border-[#a8762d] bg-black/25 text-[#efbd52]"><ShoppingCart size={20} /></span><div><div className="text-lg font-black text-[#f1e5d0]">MARKET</div><div className="text-[9px] text-[#92897b]">20 listings per seller</div></div></div></header>
   <p className="market-fee-copy px-3 py-1 text-[10px] leading-tight text-stone-300">Listing fee: {skrPrice(2, rate)}<SkrUsd cents={2} />. Non-refundable after listing, including cancellation. Sale fee: 10%; the seller receives 90% in SKR. Purchases arrive in Mailbox. The final SKR amount is shown before confirmation.</p>
   <nav aria-label="Market sections" className="market-tabs flex gap-1 overflow-x-auto px-4 pt-2">{TABS.map((item) => <button key={item.id} type="button" style={{ minHeight: 44 }} aria-pressed={tab === item.id} onClick={() => { setTab(item.id); setSelectedId(null); setPrice(''); }} className={`market-tab min-h-11 whitespace-nowrap ${tab === item.id ? 'market-tab-active' : ''}`}>{item.label}</button>)}</nav>
   {notice && <div className="mx-4 mt-2 rounded border border-emerald-700/50 bg-emerald-950/45 px-3 py-2 text-center text-xs text-emerald-200">{notice}</div>}
@@ -114,7 +111,6 @@ function Detail({ row, children }: { row: Listing; children: ReactNode }) { cons
 function Artwork({ row, compact = false }: { row: Listing; compact?: boolean }) { const cls = compact ? 'h-11 w-11' : 'h-36 w-36'; if (row.kind === 'hero') { const hero = HERO_MAP[row.sourceId]; return hero ? <span className={`${cls} grid shrink-0 place-items-center overflow-hidden rounded-lg`}><HeroPortrait heroId={hero.id} heroClass={hero.heroClass} rarity={hero.rarity} color={hero.color} size={compact ? 42 : 136} /></span> : null; } const item = ITEM_MAP[row.sourceId]; return item ? <span className={`${cls} block shrink-0 overflow-hidden rounded-lg bg-black/25`}><ItemArtwork itemId={item.id} name={item.name} fallback={item.icon} /></span> : null; }
 function Records({ title, rows, rate }: { title: string; rate: string | null; rows: { id: string; name: string; price: number; createdAt: number; action: 'bought' | 'sold'; rarity?: Rarity }[] }) { return <section className="p-4"><h3 className="mb-3 text-sm font-black text-[#e8dcc8]">{title}</h3><div className="space-y-1.5">{rows.map((row) => <div key={row.id} className="market-record flex flex-wrap items-center gap-2 rounded border border-[#44331d] p-3"><Clock3 size={13} className="text-[#8c806e]" /><span className={`rarity-title rarity-${row.rarity ?? 'common'} ml-2 flex-1 text-xs`} style={{ color: row.rarity ? RARITY_COLORS[row.rarity] : undefined }}>{row.name}</span><span className="text-[9px] uppercase text-[#8d8374]">{row.action}</span><time className="text-[10px] text-stone-400" dateTime={new Date(row.createdAt).toISOString()}>{new Date(row.createdAt).toLocaleString()}</time><span className="min-w-0 break-words text-xs font-black text-[#efff9f]">{skrPrice(row.price, rate)}<SkrUsd cents={row.price} /><small className="block font-normal text-stone-400">At current rate</small></span></div>)}{rows.length === 0 && <Empty text="No records yet" />}</div></section>; }
 function Empty({ text }: { text: string }) { return <div className="market-empty"><PackageSearch size={23} /><b>{text}</b></div>; }
-function Balance({ icon, value, label }: { icon: ReactNode; value: string; label: string }) { return <span className="stat-tile flex min-w-0 max-w-full items-center gap-2 px-3 py-1.5 text-[#e7b858]">{icon}<span className="min-w-0"><small className="block text-[7px] uppercase text-[#7f7669]">{label}</small><b className="block break-words text-xs text-[#eee3d2]">{value}</b></span></span>; }
 
 function marketError(code?: string): string {
   const messages: Record<string, string> = {

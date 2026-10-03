@@ -31,6 +31,7 @@ import { GoldIcon } from '@/components/GoldIcon';
 import { SeekerQuests } from '@/components/SeekerQuests';
 import { BossKeyIcon } from '@/components/BossKeyIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
+import { ClassGlyph } from '@/components/ClassGlyph';
 import { PartnerQuests } from '@/components/PartnerQuests';
 import { FantasyBagIcon } from '@/components/FantasyBagIcon';
 import { recommendedTeamPower } from '@/game/balance';
@@ -137,9 +138,6 @@ const EQUIPMENT_ERROR_LABELS: Record<string, string> = {
 
 const PRODUCT_CLASS_KEY: Record<HeroClass, string> = {
   shepherd: 'mage', assassin: 'assassin', knight: 'warrior', druid: 'druid', archer: 'crossbowman',
-};
-const CLASS_SHORT_LABEL: Record<HeroClass, string> = {
-  shepherd: 'MAGE', assassin: 'ASN', knight: 'WAR', druid: 'DRU', archer: 'XBOW',
 };
 
 function emptySlotArtworkId(slot: ItemSlot, heroClass: HeroClass): string {
@@ -310,6 +308,16 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     () => selectedHero ? equippedSetBonus(getEquippedItems(selectedHero, state.inventory)) : null,
     [selectedHero, state.inventory],
   );
+  // Largest group of equipped items sharing one rarity: progress toward the 8-slot set bonus.
+  const selectedSetProgress = useMemo(() => {
+    if (!selectedHero) return 0;
+    const counts = new Map<string, number>();
+    for (const item of getEquippedItems(selectedHero, state.inventory)) {
+      const rarity = ITEM_MAP[item.itemId]?.rarity;
+      if (rarity) counts.set(rarity, (counts.get(rarity) ?? 0) + 1);
+    }
+    return Math.max(0, ...counts.values());
+  }, [selectedHero, state.inventory]);
   const selectedEnchantResonance = useMemo(
     () => selectedHero ? equippedEnchantResonance(getEquippedItems(selectedHero, state.inventory)) : null,
     [selectedHero, state.inventory],
@@ -947,12 +955,12 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
 
         {selectedHero && selectedHeroBase ? (
           <div className="shrink-0 border-b border-[#4f412e] px-3 py-2.5" style={{ zIndex: 10 }}>
-            <div className="hl-gear-head mb-2 grid min-w-0 grid-cols-2 items-center gap-x-2 gap-y-2">
+            <div className="hl-gear-head mb-2 flex min-w-0 items-center gap-1.5 whitespace-nowrap">
                 <span className="section-kicker shrink-0">Equipped Gear</span>
-                <span className="min-w-0 truncate ui-text-small font-vt font-black" style={{ color: RARITY_COLORS[selectedHeroBase.rarity], textShadow: `0 0 8px ${RARITY_COLORS[selectedHeroBase.rarity]}55` }}>{RARITY_LABEL[selectedHeroBase.rarity]} {CLASS_LABEL[selectedHeroBase.heroClass]}</span>
-                <span className="group/set relative min-w-0">
-                  <button type="button" className={`game-control set-bonus-badge w-full rarity-${selectedSetBonus?.rarity ?? 'common'} ${selectedSetBonus ? 'set-bonus-active' : ''}`} aria-label="Set bonus details">
-                    <span>Set bonus</span><strong>{selectedSetBonus ? `+${selectedSetBonus.percent}%` : '—'}</strong>
+                <span className="min-w-0 flex-1 truncate ui-text-small font-vt font-black" style={{ color: RARITY_COLORS[selectedHeroBase.rarity], textShadow: `0 0 8px ${RARITY_COLORS[selectedHeroBase.rarity]}55` }}>{RARITY_LABEL[selectedHeroBase.rarity]} {CLASS_LABEL[selectedHeroBase.heroClass]}</span>
+                <span className="group/set relative shrink-0">
+                  <button type="button" className={`game-control set-bonus-badge rarity-${selectedSetBonus?.rarity ?? 'common'} ${selectedSetBonus ? 'set-bonus-active' : ''}`} aria-label={selectedSetBonus ? `Set bonus +${selectedSetBonus.percent}%, details` : `Set bonus ${selectedSetProgress} of 8 matching, details`}>
+                    <span>SET</span><strong>{selectedSetBonus ? `+${selectedSetBonus.percent}%` : `${selectedSetProgress}/8`}</strong>
                   </button>
                   <span className="set-bonus-tooltip pointer-events-none absolute right-0 top-full z-[70] mt-1 hidden w-80 max-w-[calc(100vw-2rem)] whitespace-normal break-words rounded-lg border border-[#6f5833] bg-[#10120f]/[.98] p-3 text-left ui-text-medium leading-5 text-[#bbb2a2] shadow-2xl group-hover/set:block group-focus-within/set:block">
                     Equip all 8 item slots with one rarity to increase every stat granted by those items.
@@ -966,7 +974,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     </span>
                   </span>
                 </span>
-                <button type="button" aria-label="Unequip all gear" onClick={async () => { if (!canUnequipAll) return; if (await game.unequipAll(selectedHero.uid)) { setSelectedItem(null); showToast('All gear unequipped'); } else showToast(equipmentFailure('Unequip')); }} disabled={!canUnequipAll} className="game-control flex min-h-11 items-center justify-center gap-1 justify-self-end px-2 ui-text-small font-bold leading-none" title={selectedEquippedCount === 0 ? 'No equipped items' : canUnequipAll ? 'Move all equipped items to Inventory' : 'Not enough Inventory space'}><PackageMinus size={10} aria-hidden="true" />Unequip</button>
+                <button type="button" aria-label="Unequip all gear" onClick={async () => { if (!canUnequipAll) return; if (await game.unequipAll(selectedHero.uid)) { setSelectedItem(null); showToast('All gear unequipped'); } else showToast(equipmentFailure('Unequip')); }} disabled={!canUnequipAll} className="game-control hl-gear-unequip flex shrink-0 items-center justify-center gap-1 px-2 ui-text-small font-bold leading-none" title={selectedEquippedCount === 0 ? 'No equipped items' : canUnequipAll ? 'Move all equipped items to Inventory' : 'Not enough Inventory space'}><PackageMinus size={10} aria-hidden="true" />Unequip</button>
             </div>
             <div className="grid w-full grid-cols-8 gap-1">
               {SLOTS.map(slot => {
@@ -991,8 +999,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                         <ItemArtwork itemId={emptySlotArtworkId(slot, selectedHeroBase.heroClass)} name="" fallback="" />
                       </span>
                     )}
-                    {ib && item!.enchantLevel > 0 && <div className={`absolute left-0 z-10 ui-text-small font-bold text-amber-400 font-vt leading-none px-0.5 ${ib?.heroClass ? 'top-[15px]' : 'top-0'}`}>+{item!.enchantLevel}</div>}
-                    {ib?.heroClass && <div className="item-class-badge absolute inset-x-0 top-0" title={`${CLASS_LABEL[ib.heroClass]} only`}>{CLASS_SHORT_LABEL[ib.heroClass]}</div>}
+                    {ib && item!.enchantLevel > 0 && <div className="absolute left-0 top-0 z-10 ui-text-small font-bold text-amber-400 font-vt leading-none px-0.5">+{item!.enchantLevel}</div>}
+                    {ib?.heroClass && <ClassGlyph heroClass={ib.heroClass} className="absolute right-0 top-0" />}
                     {ib && <div className="item-level-label absolute bottom-0 right-0 ui-text-medium font-bold font-vt px-1 leading-tight" style={{ background: ic, color: '#000' }}>{item!.level}</div>}
                   </button>
                   <div className="mt-1 min-w-0 truncate text-center ui-text-small font-semibold tracking-[-.03em] text-[#8a867c]" title={SLOT_LABEL[slot]}>{slotLabel}</div>
@@ -1028,8 +1036,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           </div>
           {inventoryTab === 'resources' ? <div className="min-w-0">
             <div className="grid min-w-0 grid-cols-8 gap-1 overflow-hidden">
-            <button type="button" aria-label={`Summon Scrolls: ${formatNum(state.summonScrolls)}`} aria-pressed={selectedResource === 'summon-scroll'} onClick={() => setSelectedResource((current) => current === 'summon-scroll' ? null : 'summon-scroll')} className={`item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-violet-400/55 ${selectedResource === 'summon-scroll' ? 'ring-2 ring-violet-300 ring-offset-1 ring-offset-black' : ''}`} title={`Summon Scrolls: ${formatNum(state.summonScrolls)}`}><SummonScrollArtwork size={48} /><span className="ui-text-small absolute bottom-0 right-0 min-w-4 rounded-tl bg-violet-400 px-0.5 text-center font-bold leading-4 text-black">{formatNum(state.summonScrolls)}</span></button>
-            <button type="button" aria-label={`Boss Keys: ${formatNum(state.bossKeys)}`} aria-pressed={selectedResource === 'boss-key'} onClick={() => setSelectedResource((current) => current === 'boss-key' ? null : 'boss-key')} className={`item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-amber-400/55 ${selectedResource === 'boss-key' ? 'ring-2 ring-amber-300 ring-offset-1 ring-offset-black' : ''}`} title={`Boss Keys: ${formatNum(state.bossKeys)}`}><BossKeyIcon size={48} /><span className="ui-text-small absolute bottom-0 right-0 min-w-4 rounded-tl bg-amber-400 px-0.5 text-center font-bold leading-4 text-black">{formatNum(state.bossKeys)}</span></button>
+            <button type="button" aria-label={`Summon Scrolls: ${formatNum(state.summonScrolls)}`} aria-pressed={selectedResource === 'summon-scroll'} onClick={() => setSelectedResource((current) => current === 'summon-scroll' ? null : 'summon-scroll')} className={`item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-violet-400/55 ${selectedResource === 'summon-scroll' ? 'ring-2 ring-violet-300 ring-offset-1 ring-offset-black' : ''}`} title={`Summon Scrolls: ${formatNum(state.summonScrolls)}`}><span className="resource-slot-art" aria-hidden="true"><SummonScrollArtwork size={48} /></span><span className="ui-text-small absolute bottom-0 right-0 z-10 min-w-4 rounded-tl bg-violet-400 px-0.5 text-center font-bold leading-4 text-black">{formatNum(state.summonScrolls)}</span></button>
+            <button type="button" aria-label={`Boss Keys: ${formatNum(state.bossKeys)}`} aria-pressed={selectedResource === 'boss-key'} onClick={() => setSelectedResource((current) => current === 'boss-key' ? null : 'boss-key')} className={`item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-amber-400/55 ${selectedResource === 'boss-key' ? 'ring-2 ring-amber-300 ring-offset-1 ring-offset-black' : ''}`} title={`Boss Keys: ${formatNum(state.bossKeys)}`}><span className="resource-slot-art" aria-hidden="true"><BossKeyIcon size={48} /></span><span className="ui-text-small absolute bottom-0 right-0 z-10 min-w-4 rounded-tl bg-amber-400 px-0.5 text-center font-bold leading-4 text-black">{formatNum(state.bossKeys)}</span></button>
             {visiblePotions.map((potion) => <button type="button" key={potion.tier} className="item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-emerald-500/50" title={`${potion.name}: ${state.potions[potion.tier]}`}><ItemArtwork itemId={`potion-${potion.tier}`} name={potion.name} fallback="Potion" /><span className="absolute bottom-0 right-0 min-w-4 rounded-tl bg-emerald-500 px-0.5 ui-text-medium font-bold leading-4 text-black">{state.potions[potion.tier]}</span></button>)}
             {Array.from({ length: GRID_SIZE - resourceSlotCount }, (_, index) => <div key={`resource-empty-${index}`} className="item-slot aspect-square min-w-0 w-full border" style={{ borderColor: 'rgba(128,119,100,0.11)', background: 'linear-gradient(145deg,#151612,#0c0e0d)' }} />)}
             </div>
@@ -1053,8 +1061,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                   {i >= bagOpenSlots && <LockIcon size={13} className="text-[#8f7652]" aria-hidden="true" />}
                   {item && <ItemArtwork itemId={item.itemId} name={ITEM_MAP[item.itemId]?.name ?? 'Item'} fallback={ITEM_MAP[item.itemId]?.icon ?? '◆'} className="leading-none" />}
                   {item?.locked && <LockIcon size={11} className="absolute bottom-0.5 left-0.5 z-10 text-amber-300" />}
-                  {item && item.enchantLevel > 0 && <div className={`absolute left-0 z-10 ui-text-small font-bold text-amber-400 font-vt leading-none px-0.5 ${itemBase?.heroClass ? 'top-[15px]' : 'top-0'}`}>+{item.enchantLevel}</div>}
-                  {itemBase?.heroClass && <div className="item-class-badge absolute inset-x-0 top-0" title={`${CLASS_LABEL[itemBase.heroClass]} only`}>{CLASS_SHORT_LABEL[itemBase.heroClass]}</div>}
+                  {item && item.enchantLevel > 0 && <div className="absolute left-0 top-0 z-10 ui-text-small font-bold text-amber-400 font-vt leading-none px-0.5">+{item.enchantLevel}</div>}
+                  {itemBase?.heroClass && <ClassGlyph heroClass={itemBase.heroClass} className="absolute right-0 top-0" />}
                   {item && <span className="item-level-label ui-text-small absolute bottom-0 right-0 min-w-4 rounded-tl bg-[#d9d0c0] px-0.5 text-center font-bold leading-4 text-black" title={`Item level ${item.level}`}>{item.level}</span>}
                 </button>
                 {gridIndex === selectedBagRowEnd && liveSelectedItem && selectedItemSource === 'bag' && <div className="col-span-8 rounded-lg border border-[#6e5837] bg-[#10120f] p-2 shadow-inner"><ItemActionPanel item={liveSelectedItem} game={game} equippedSlot={null} comparisonItem={comparisonItem} equipDisabledReason={selectedEquipReason} onEquip={async (slot) => { if (!selectedHero) return; if (await game.equipItem(selectedHero.uid, liveSelectedItem.uid, slot)) { setSelectedItem(null); showToast('Item equipped'); } else showToast(equipmentFailure('Equip')); }} onBeforeSell={async (selected) => { if (selected.serverOwned) return true; const selectedRarity = ITEM_MAP[selected.itemId]?.rarity; return selectedRarity === 'divine' || selectedRarity === 'celestial' ? tok.removeLimitedItem(selected.uid) : true; }} onClose={() => setSelectedItem(null)} /></div>}
