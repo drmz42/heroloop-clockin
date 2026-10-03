@@ -839,13 +839,8 @@ body:has(.has-game-progress) .fixed.inset-0 { top:calc(var(--game-progress-heigh
    per-class modifiers built from a template string are never purged. */
 .resource-slot-art { pointer-events:none;position:absolute;inset:2px 2px 12px;display:grid;place-items:center; }
 .resource-slot-art > :is(img, svg) { width:100%!important;height:100%!important;object-fit:contain; }
-.class-glyph { z-index:10;display:grid;width:21px;height:21px;place-items:center;border:1px solid var(--cg-ring);border-radius:0 0 0 6px;background:radial-gradient(circle at 50% 40%,var(--cg-core),#07080a 78%);box-shadow:0 0 6px var(--cg-halo),inset 0 0 4px rgba(0,0,0,.8);pointer-events:none; }
-.class-glyph svg { width:19px;height:19px;filter:drop-shadow(0 1px 0 rgba(0,0,0,.9)); }
-.class-glyph-knight { --cg-ring:#e0a94a;--cg-core:#4a2d12;--cg-halo:rgba(224,169,74,.45); }
-.class-glyph-shepherd { --cg-ring:#a77bff;--cg-core:#2c1656;--cg-halo:rgba(167,123,255,.6); }
-.class-glyph-assassin { --cg-ring:#d8414b;--cg-core:#3f0b10;--cg-halo:rgba(216,65,75,.5); }
-.class-glyph-druid { --cg-ring:#6fcf4a;--cg-core:#14361a;--cg-halo:rgba(111,207,74,.45); }
-.class-glyph-archer { --cg-ring:#4fc6cf;--cg-core:#0d3236;--cg-halo:rgba(79,198,207,.45); }
+.class-glyph { z-index:10;display:grid;width:12px;height:12px;margin:1px;place-items:center;pointer-events:none; }
+.class-glyph svg { width:12px;height:12px;filter:drop-shadow(0 0 1px #000) drop-shadow(0 1px 1px rgba(0,0,0,.9)); }
 .class-glyph-orb { animation:class-glyph-orb 2.4s ease-in-out infinite;transform-origin:12.3px 5.6px; }
 @keyframes class-glyph-orb { 50% { opacity:.55;transform:scale(.82); } }
 @media (prefers-reduced-motion: reduce) { .class-glyph-orb { animation:none; } }
