@@ -12,21 +12,30 @@ CREATE TABLE IF NOT EXISTS seeker_skr.withdrawals (
  CHECK((payout_signature IS NULL)=(payout_event IS NULL))
 );
 CREATE INDEX IF NOT EXISTS withdrawals_player ON seeker_skr.withdrawals(player_id,created_at DESC);
+-- Founder 2026-10-03: 5% withdrawal fee, kept from the requested amount; the player receives the rest.
+ALTER TABLE seeker_skr.withdrawals ADD COLUMN IF NOT EXISTS fee_minor numeric(30,0) NOT NULL DEFAULT 0;
+DO $$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conname='withdrawals_fee_check') THEN
+  ALTER TABLE seeker_skr.withdrawals ADD CONSTRAINT withdrawals_fee_check CHECK(fee_minor>=0 AND fee_minor<amount_minor);
+ END IF;
+END $$;
 CREATE OR REPLACE FUNCTION seeker_skr.withdrawal_json(w seeker_skr.withdrawals) RETURNS jsonb
 LANGUAGE sql STABLE SET search_path=pg_catalog,seeker_skr AS $$
  SELECT jsonb_build_object('request_id',w.id,'player_id',w.player_id,'asset',w.asset,'amount_minor',w.amount_minor::text,
+  'fee_minor',w.fee_minor::text,'payout_minor',(w.amount_minor-w.fee_minor)::text,
   'usd_cents',w.usd_cents,'destination',w.destination,'status',w.status,'created_at',w.created_at,'expires_at',w.expires_at,
   'signature',w.payout_signature,'reject_reason',w.reject_reason)
 $$;
 CREATE OR REPLACE FUNCTION seeker_skr.withdrawal_intent(p_player uuid,p_asset text,p_amount numeric,p_cents integer,p_destination text)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,seeker_skr AS $$
-DECLARE w seeker_skr.withdrawals;
+DECLARE w seeker_skr.withdrawals; v_fee numeric:=p_amount-floor(p_amount*95/100);
 BEGIN
  PERFORM pg_advisory_xact_lock(hashtextextended('withdraw:'||p_player::text,0));
+ IF p_amount-v_fee<1 THEN RAISE EXCEPTION 'withdrawal_amount_too_small'; END IF;
  IF (SELECT count(*) FROM seeker_skr.withdrawals WHERE player_id=p_player AND status='authorization' AND expires_at>clock_timestamp())>=3
   THEN RAISE EXCEPTION 'withdrawal_intent_limit'; END IF;
- INSERT INTO seeker_skr.withdrawals(player_id,asset,amount_minor,usd_cents,destination)
- VALUES(p_player,p_asset,p_amount,p_cents,p_destination) RETURNING * INTO w;
+ INSERT INTO seeker_skr.withdrawals(player_id,asset,amount_minor,fee_minor,usd_cents,destination)
+ VALUES(p_player,p_asset,p_amount,v_fee,p_cents,p_destination) RETURNING * INTO w;
  RETURN seeker_skr.withdrawal_json(w);
 END $$;
 CREATE OR REPLACE FUNCTION seeker_skr.withdrawal_get(p_player uuid,p_key uuid) RETURNS jsonb
@@ -87,7 +96,7 @@ BEGIN
 END $$;
 CREATE OR REPLACE FUNCTION seeker_skr.withdrawal_finalize(p_key uuid,p_signature text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,seeker_skr AS $$
-DECLARE w seeker_skr.withdrawals; v_reserve uuid; v_chain uuid; v_event uuid;
+DECLARE w seeker_skr.withdrawals; v_reserve uuid; v_chain uuid; v_event uuid; v_legs jsonb;
 BEGIN
  SELECT * INTO w FROM seeker_skr.withdrawals WHERE id=p_key FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'withdrawal_not_found'; END IF;
@@ -97,9 +106,13 @@ BEGIN
  END IF;
  IF w.status<>'paying' THEN RAISE EXCEPTION 'withdrawal_state_conflict'; END IF;
  v_reserve:=seeker_skr.reserve_account(w.player_id,w.asset);v_chain:=seeker_skr.system_account('chain',w.asset);
- v_event:=seeker_skr.post(md5('withdraw-finalize:'||p_key::text)::uuid,'withdraw_finalize',jsonb_build_array(
+ v_legs:=jsonb_build_array(
   jsonb_build_object('account_id',v_reserve,'delta_minor',(-w.amount_minor)::text),
-  jsonb_build_object('account_id',v_chain,'delta_minor',w.amount_minor::text)),p_signature);
+  jsonb_build_object('account_id',v_chain,'delta_minor',(w.amount_minor-w.fee_minor)::text));
+ IF w.fee_minor>0 THEN
+  v_legs:=v_legs||jsonb_build_array(jsonb_build_object('account_id',seeker_skr.system_account('fees',w.asset),'delta_minor',w.fee_minor::text));
+ END IF;
+ v_event:=seeker_skr.post(md5('withdraw-finalize:'||p_key::text)::uuid,'withdraw_finalize',v_legs,p_signature);
  UPDATE seeker_skr.withdrawals SET status='paid',payout_signature=p_signature,payout_event=v_event WHERE id=p_key RETURNING * INTO w;
  RETURN seeker_skr.withdrawal_json(w);
 END $$;

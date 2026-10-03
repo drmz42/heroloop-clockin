@@ -242,7 +242,7 @@ export function exactWalletAmount(minor: string, asset: WalletAsset): string {
 }
 export function loadSkrRate():Promise<{usd_micros_per_skr:string;observed_at:string}> { return command('wallet_rates'); }
 
-export type WithdrawalRow={ request_id:string;asset:WalletAsset;amount_minor:string;destination:string;
+export type WithdrawalRow={ request_id:string;asset:WalletAsset;amount_minor:string;fee_minor:string;payout_minor:string;destination:string;
   usd_cents:number;status:'authorization'|'pending'|'approval_required'|'paying'|'paid'|'rejected';created_at:string;expires_at:string;signature:string|null;reject_reason:string|null };
 export function loadWithdrawals():Promise<{withdrawals:WithdrawalRow[]}>{return command('wallet_withdrawals');}
 async function signAuthorization(message:string,address:string,walletName:string):Promise<string> {

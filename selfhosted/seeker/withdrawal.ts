@@ -1,14 +1,14 @@
 import { ADDRESS,base58Decode,type ChainConfig,type WalletAsset,TOKEN_PROGRAM,SYSTEM_PROGRAM } from './chain.ts';
-export type Withdrawal = { request_id:string;player_id:string;asset:WalletAsset;amount_minor:string;destination:string;expires_at:string;created_at:string };
+export type Withdrawal = { request_id:string;player_id:string;asset:WalletAsset;amount_minor:string;fee_minor:string;payout_minor:string;destination:string;expires_at:string;created_at:string };
 export const WITHDRAWAL_DOMAIN='staging2.heroloop.xyz';
 export const FOUNDER_WALLETS=new Set(['5vWcJZVsh1KTfp8bRMhGawoibYMfMfRu7ZoDdMWZjtWR','714yHZvDGqvtDHvmFZMufhECdXVfhPSjEPqFXndKbYwa']);
 export function authorizationMessage(w:Withdrawal):string {
   if(!ADDRESS.test(w.destination)||!['SKR','SOL'].includes(w.asset)||!/^[1-9][0-9]{0,19}$/.test(w.amount_minor)
     ||![w.request_id,w.player_id].every(v=>/^[0-9a-f-]{36}$/.test(v))||!Number.isFinite(Date.parse(w.expires_at))) throw new Error('invalid_withdrawal');
+  if(!/^[0-9]{1,20}$/.test(w.fee_minor)||!/^[1-9][0-9]{0,19}$/.test(w.payout_minor)||BigInt(w.fee_minor)+BigInt(w.payout_minor)!==BigInt(w.amount_minor)) throw new Error('invalid_withdrawal');
   const decimals=w.asset==='SKR'?6:9;
-  const digits=w.amount_minor.padStart(decimals+1,'0');
-  const display=`${digits.slice(0,-decimals)}.${digits.slice(-decimals)}`;
-  return `HeroLoop withdrawal authorization\nDomain: ${WITHDRAWAL_DOMAIN}\nAccount: ${w.player_id}\nAsset: ${w.asset}\nAmount: ${display} ${w.asset}\nAmount (atomic units): ${w.amount_minor}\nDestination: ${w.destination}\nRequest: ${w.request_id}\nExpires: ${w.expires_at}\n\nReserve this in-game balance for a manual payout. This signature sends no transaction.`;
+  const display=(minor:string)=>{const digits=minor.padStart(decimals+1,'0');return `${digits.slice(0,-decimals)}.${digits.slice(-decimals)}`;};
+  return `HeroLoop withdrawal authorization\nDomain: ${WITHDRAWAL_DOMAIN}\nAccount: ${w.player_id}\nAsset: ${w.asset}\nAmount: ${display(w.amount_minor)} ${w.asset}\nAmount (atomic units): ${w.amount_minor}\nFee (5%): ${display(w.fee_minor)} ${w.asset}\nYou receive: ${display(w.payout_minor)} ${w.asset}\nDestination: ${w.destination}\nRequest: ${w.request_id}\nExpires: ${w.expires_at}\n\nReserve this in-game balance for a manual payout. This signature sends no transaction.`;
 }
 export async function verifyAuthorization(w:Withdrawal,signature:string,now=Date.now()):Promise<boolean> {
   if(now>Date.parse(w.expires_at))return false;
@@ -32,10 +32,10 @@ export function verifyPayout(w:Withdrawal,config:ChainConfig,signature:string,tx
   const time=typeof tx.blockTime==='number'?tx.blockTime*1000:0;
   if(time<Date.parse(w.created_at))return 'payout_before_request';
   const instructions=Array.isArray(message.instructions)?message.instructions.filter(record):[];
-  const amount=BigInt(w.amount_minor);
+  const amount=BigInt(w.payout_minor);
   if(w.asset==='SOL') {
     const hit=instructions.some(i=>i.programId===SYSTEM_PROGRAM&&record(i.parsed)&&i.parsed.type==='transfer'&&record(i.parsed.info)
-      &&i.parsed.info.source===config.treasury&&i.parsed.info.destination===w.destination&&String(i.parsed.info.lamports)===w.amount_minor);
+      &&i.parsed.info.source===config.treasury&&i.parsed.info.destination===w.destination&&String(i.parsed.info.lamports)===w.payout_minor);
     const index=keys.findIndex(k=>k.pubkey===w.destination);
     if(!hit||index<1||!Array.isArray(meta.preBalances)||!Array.isArray(meta.postBalances))return 'payout_wrong_recipient';
     const before=meta.preBalances[index],after=meta.postBalances[index];

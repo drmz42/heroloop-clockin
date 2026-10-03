@@ -4,18 +4,18 @@ import {base58Encode,SYSTEM_PROGRAM,TOKEN_PROGRAM} from './chain.ts';
 async function fixture(){
  const key=await crypto.subtle.generateKey('Ed25519',true,['sign','verify']) as CryptoKeyPair;
  const address=base58Encode(new Uint8Array(await crypto.subtle.exportKey('raw',key.publicKey)));
- const w:Withdrawal={request_id:crypto.randomUUID(),player_id:crypto.randomUUID(),asset:'SKR',amount_minor:'1000000',destination:address,expires_at:new Date(Date.now()+600000).toISOString(),created_at:new Date(Date.now()-60000).toISOString()};
+ const w:Withdrawal={request_id:crypto.randomUUID(),player_id:crypto.randomUUID(),asset:'SKR',amount_minor:'1052632',fee_minor:'52632',payout_minor:'1000000',destination:address,expires_at:new Date(Date.now()+600000).toISOString(),created_at:new Date(Date.now()-60000).toISOString()};
  const signature=new Uint8Array(await crypto.subtle.sign('Ed25519',key.privateKey,new TextEncoder().encode(authorizationMessage(w))));
  return {w,signature:btoa(String.fromCharCode(...signature))};
 }
 Deno.test('withdrawal authorization binds amount, asset, account, request, recipient and expiry',async()=>{
  const {w,signature}=await fixture();assert(await verifyAuthorization(w,signature));
- for(const change of [{asset:'SOL' as const},{amount_minor:'1'},{destination:'11111111111111111111111111111111'},{player_id:crypto.randomUUID()},{request_id:crypto.randomUUID()}]) assert.equal(await verifyAuthorization({...w,...change},signature),false);
+ for(const change of [{asset:'SOL' as const},{amount_minor:'1052633',fee_minor:'52633'},{fee_minor:'0',payout_minor:'1052632'},{destination:'11111111111111111111111111111111'},{player_id:crypto.randomUUID()},{request_id:crypto.randomUUID()}]) assert.equal(await verifyAuthorization({...w,...change},signature),false);
  assert.equal(await verifyAuthorization(w,signature,Date.parse(w.expires_at)+1),false);
  assert.equal(await verifyAuthorization(w,'bad'),false);
 });
 Deno.test('manual SOL payout requires exact finalized sender, destination, amount and fresh transfer',async()=>{
- const {w}=await fixture();w.asset='SOL';w.amount_minor='1000000';
+ const {w}=await fixture();w.asset='SOL';w.amount_minor='1052632';w.fee_minor='52632';w.payout_minor='1000000';
  const treasury='11111111111111111111111111111111',signature='sig';
  const config={cluster:'mainnet' as const,treasury,skrMint:'mint'};
  const tx={blockTime:Math.floor(Date.now()/1000),transaction:{signatures:[signature],message:{accountKeys:[{pubkey:treasury,signer:true},{pubkey:w.destination,signer:false}],instructions:[{programId:SYSTEM_PROGRAM,parsed:{type:'transfer',info:{source:treasury,destination:w.destination,lamports:1000000}}}]}},meta:{err:null,preBalances:[2000000,0],postBalances:[995000,1000000]}};

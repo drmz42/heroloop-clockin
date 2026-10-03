@@ -26,6 +26,14 @@ BEGIN
  IF NOT failed THEN RAISE EXCEPTION 'possibly paid request released'; END IF;
  PERFORM seeker_skr.withdrawal_finalize((w->>'request_id')::uuid,sig);
  PERFORM seeker_skr.withdrawal_finalize((w->>'request_id')::uuid,sig);
+ IF w->>'fee_minor'<>'50000' OR w->>'payout_minor'<>'950000' THEN RAISE EXCEPTION 'withdrawal fee not 5%%: %',w; END IF;
+ RESET ROLE;
+ IF NOT EXISTS(SELECT 1 FROM seeker_skr.entries e JOIN seeker_skr.accounts a ON a.id=e.account_id JOIN seeker_skr.withdrawals x ON x.payout_event=e.event_id WHERE x.id=(w->>'request_id')::uuid
+  AND a.kind='fees' AND e.delta_minor=50000) THEN RAISE EXCEPTION 'withdrawal fee not credited'; END IF;
+ SET LOCAL ROLE seeker_wallet_runtime;
+ BEGIN PERFORM seeker_skr.withdrawal_intent(p,'SKR',1,1,repeat('1',32));failed:=false;
+ EXCEPTION WHEN raise_exception THEN failed:=SQLERRM='withdrawal_amount_too_small'; END;
+ IF NOT failed THEN RAISE EXCEPTION 'zero payout accepted'; END IF;
  w2:=seeker_skr.withdrawal_intent(p,'SKR',1000000,100,repeat('1',32));
  PERFORM seeker_skr.withdrawal_reserve(p,(w2->>'request_id')::uuid);
  PERFORM seeker_skr.withdrawal_review((w2->>'request_id')::uuid,'founder','begin_payout','');

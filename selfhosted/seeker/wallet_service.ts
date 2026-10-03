@@ -79,7 +79,7 @@ async function call(sql: string, args: unknown[]): Promise<Json> {
 function knownError(error: unknown): string | null {
   const message = error instanceof Error ? error.message : String(error ?? "");
   return ["deposit_intent_limit", "deposit_intent_not_found", "deposit_already_settled", "deposit_signature_used",
-    "skr_idempotency_conflict", "skr_insufficient_balance_or_overflow", "skr_quote_not_found", "skr_quote_expired", "skr_purchase_refunded", "skr_purchase_not_charged", "stale_skr_rate", "withdrawal_intent_limit", "withdrawal_not_found", "withdrawal_authorization_expired", "withdrawal_state_conflict", "withdrawal_may_be_paid", "withdrawal_rejection_reason_required"].find((code) => message.includes(code)) ?? null;
+    "skr_idempotency_conflict", "skr_insufficient_balance_or_overflow", "skr_quote_not_found", "skr_quote_expired", "skr_purchase_refunded", "skr_purchase_not_charged", "stale_skr_rate", "withdrawal_intent_limit", "withdrawal_not_found", "withdrawal_authorization_expired", "withdrawal_state_conflict", "withdrawal_may_be_paid", "withdrawal_rejection_reason_required", "withdrawal_amount_too_small"].find((code) => message.includes(code)) ?? null;
 }
 
 async function rpc(method: string, params: unknown[]): Promise<unknown> {
