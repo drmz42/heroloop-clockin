@@ -91,10 +91,10 @@ function ReferralField({ label, value, copied, onCopy, code = false }: { label: 
 
 function StatBox({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
   return (
-    <div className="stat-tile p-2.5 text-center">
-      <div className="flex items-center justify-center gap-1 text-px-bright mb-1">{icon}</div>
-      <div className="font-vt text-base font-bold text-px-text">{value}</div>
-      <div className="font-vt text-[9px] text-px-dim uppercase tracking-wider">{label}</div>
+    // One line per tier (Founder 2026-10-03): icon and label on the left, the count on the right.
+    <div className="stat-tile flex min-w-0 items-center justify-between gap-2 px-2.5 py-1.5">
+      <span className="flex min-w-0 items-center gap-1.5 text-px-bright">{icon}<span className="truncate font-vt text-[9px] uppercase tracking-wider text-px-dim">{label}</span></span>
+      <b className="font-vt text-base font-bold text-px-text">{value}</b>
     </div>
   );
 }

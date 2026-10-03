@@ -1,4 +1,5 @@
 import { isolatedHackathon } from '@/game/editionStorage';
+import { isAndroidLayout } from '@/platform/platform';
 import { useMemo, useState } from 'react';
 import { Axe, ChevronDown, Clock3, Crosshair, Dumbbell, Info, LockKeyhole, Shield, ShieldCheck, Sparkles, Swords, Target, UserRoundPlus, X } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
@@ -103,12 +104,14 @@ export function TrainingCampScreen({ game }: { game: Game }) {
             const base = hero ? HERO_MAP[hero.heroId] : null;
             const unlocked = index < state.trainingCamp.unlockedSlots;
             const isNextLocked = index === state.trainingCamp.unlockedSlots;
+            // Android shows two even rows of four (Founder 2026-10-03); posts 9-10 appear only once unlocked.
+            if (isAndroidLayout && index >= 8 && !unlocked && !uid) return null;
             const drill = base ? CLASS_DRILLS[base.heroClass] : null;
             const DrillIcon = drill?.Icon ?? Target;
             const selected = selectedSlot === index;
             return (
               <article key={index} className={`training-post ${unlocked ? 'training-post-open' : 'training-post-locked'} ${selected ? 'training-post-selected' : ''}`}>
-                <div className="training-post-head"><span>POST {String(index + 1).padStart(2, '0')}</span><span>{unlocked ? 'READY' : 'LOCKED'}</span></div>
+                <div className="training-post-head"><span>POST</span><span>{unlocked ? 'READY' : 'LOCKED'}</span></div>
                 {hero && base ? <>
                   <div className="training-apparatus"><DrillIcon size={24} /><span>{drill?.label}</span></div>
                   <div className="training-hero-stage"><HeroPortrait heroClass={base.heroClass} heroId={base.id} rarity={base.rarity} color={base.color} size={46} badge={hero.level} className="training-hero-portrait" /><span className="training-spark training-spark-a" /><span className="training-spark training-spark-b" /><span className="training-spark training-spark-c" /></div>

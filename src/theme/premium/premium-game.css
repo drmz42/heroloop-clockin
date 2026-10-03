@@ -325,7 +325,9 @@
 [data-hl-theme=premium] .item-act-stats--better { border-left-color: #3fbf6a; box-shadow: inset 3px 0 12px -6px rgba(63, 191, 106, .6); }
 [data-hl-theme=premium] .item-act-stats--worse { border-left-color: #d0453a; box-shadow: inset 3px 0 12px -6px rgba(208, 69, 58, .6); }
 [data-hl-theme=premium] .item-act-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 6px; }
-[data-hl-theme=premium] .item-act-grid > * { min-width: 0; }
+[data-hl-theme=premium] .item-act-grid--rings { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+[data-hl-theme=premium] .item-act-grid-upgrades { gap: 6px; }
+[data-hl-theme=premium] :is(.item-act-grid, .item-act-grid-upgrades) > * { min-width: 0; }
 [data-hl-theme=premium] .item-act { min-height: 50px; padding: 5px 12px; line-height: 1.2; text-transform: uppercase; letter-spacing: .02em; }
 [data-hl-theme=premium] .item-act > span + span { font-family: 'Inter', system-ui, sans-serif; letter-spacing: 0; color: #cbb893 !important; }
 [data-hl-theme=premium] .item-act-sheet { margin-top: 6px; }

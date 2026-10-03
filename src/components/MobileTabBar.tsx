@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Backpack, BookOpen, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, Pickaxe, ScrollText, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, UserPlus, X } from 'lucide-react';
+import { Backpack, BookOpen, Crosshair, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, Pickaxe, ScrollText, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, UserPlus, X } from 'lucide-react';
 import type { Tab } from './TopMenu';
 import { OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { setMobileSection, type MobileSection } from '@/platform/platform';
@@ -8,7 +8,8 @@ import { defaultUiTheme, setUiTheme } from '@/theme/uiTheme';
 // Android layout only (src/platform/platform.ts): the phone's primary navigation, two rows
 // (Founder 2026-10-02). Row 1: Battle, Quests and Bag switch the Play screen between its three
 // columns; Heroes, Summon and Market open their windows. Row 2: Training, Store, the upcoming
-// $ORE Mine (slightly highlighted), Ranks, Refer, and More with the footer links. Any item can
+// $ORE Mine and PvP (both "Soon", slightly highlighted), Ranks, and More with Refer and the
+// footer links (Founder 2026-10-03: Refer moved into More to make room for PvP). Any item can
 // carry a count badge on its icon (`badges`; Quests shows its ready rewards) or a red mark without a
 // number (`alerts`, e.g. a Store sale).
 export function MobileTabBar({
@@ -28,9 +29,11 @@ export function MobileTabBar({
   badges?: Partial<Record<MobileSection | Tab, number>>;
   alerts?: Partial<Record<MobileSection | Tab, boolean>>;
 }) {
-  const [mineOpen, setMineOpen] = useState(false);
+  const [soon, setSoon] = useState<'mine' | 'pvp' | null>(null);
+  const mineOpen = soon !== null;
+  const setMineOpen = (open: boolean) => { if (!open) setSoon(null); };
   useEffect(() => {
-    const close = (event: Event) => { if (!(event as CustomEvent<{ sheetToggle?: boolean }>).detail?.sheetToggle) setMineOpen(false); };
+    const close = (event: Event) => { if (!(event as CustomEvent<{ sheetToggle?: boolean }>).detail?.sheetToggle) setSoon(null); };
     window.addEventListener(OVERLAYS_CLOSE_EVENT, close);
     return () => window.removeEventListener(OVERLAYS_CLOSE_EVENT, close);
   }, []);
@@ -80,6 +83,7 @@ export function MobileTabBar({
               <button type="button" className="game-control hl-more-close" onClick={() => onMoreOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
             <div className="hl-more-links">
+              <button type="button" className="game-control" onClick={() => { onMoreOpen(false); onTab('referrals'); }}><UserPlus size={16} aria-hidden="true" /> Refer</button>
               <button type="button" className="game-control" onClick={() => { onMoreOpen(false); onGuides(); }}><BookOpen size={16} aria-hidden="true" /> Guides</button>
               <button type="button" className="game-control" onClick={() => { onMoreOpen(false); onCode(); }}><KeyRound size={16} aria-hidden="true" /> Code</button>
               <button type="button" className="game-control" onClick={() => { onMoreOpen(false); onSupport(); }}><MessageCircle size={16} aria-hidden="true" /> Support</button>
@@ -90,13 +94,15 @@ export function MobileTabBar({
         </div>
       )}
       {mineOpen && (
-        <div className="hl-more-sheet" role="dialog" aria-modal="true" aria-label="$ORE Mine" onMouseDown={(event) => { if (event.currentTarget === event.target) setMineOpen(false); }}>
+        <div className="hl-more-sheet" role="dialog" aria-modal="true" aria-label={soon === 'pvp' ? 'PvP' : '$ORE Mine'} onMouseDown={(event) => { if (event.currentTarget === event.target) setMineOpen(false); }}>
           <div className="hl-more-panel">
             <div className="hl-more-head">
-              <span className="section-kicker">Mine</span>
+              <span className="section-kicker">{soon === 'pvp' ? 'PvP' : 'Mine'}</span>
               <button type="button" className="game-control hl-more-close" onClick={() => setMineOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
-            <div className="hl-mine-soon"><Pickaxe size={34} aria-hidden="true" /><strong>Coming soon</strong><span>The $ORE Mine opens in a future update.</span></div>
+            {soon === 'pvp'
+              ? <div className="hl-mine-soon"><Crosshair size={34} aria-hidden="true" /><strong>Coming soon</strong><span>PvP arena battles open in a future update.</span></div>
+              : <div className="hl-mine-soon"><Pickaxe size={34} aria-hidden="true" /><strong>Coming soon</strong><span>The $ORE Mine opens in a future update.</span></div>}
           </div>
         </div>
       )}
@@ -109,12 +115,14 @@ export function MobileTabBar({
         {windowButton('market', 'Market', Store)}
         {windowButton('training', 'Training', Dumbbell)}
         {windowButton('shop', 'Store', ShoppingBag)}
-        <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${mineOpen ? 'is-active' : ''}`} aria-expanded={mineOpen} aria-label="$ORE Mine, coming soon" onClick={() => { onMoreOpen(false); setMineOpen(!mineOpen); }}>
+        <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'mine' ? 'is-active' : ''}`} aria-expanded={soon === 'mine'} aria-label="$ORE Mine, coming soon" onClick={() => { onMoreOpen(false); setSoon(soon === 'mine' ? null : 'mine'); }}>
           <i className="hl-tabbar-icon" aria-hidden="true"><Pickaxe size={20} /><b className="hl-mine-badge">Soon</b></i><span>Mine</span>
         </button>
+        <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'pvp' ? 'is-active' : ''}`} aria-expanded={soon === 'pvp'} aria-label="PvP, coming soon" onClick={() => { onMoreOpen(false); setSoon(soon === 'pvp' ? null : 'pvp'); }}>
+          <i className="hl-tabbar-icon" aria-hidden="true"><Crosshair size={20} /><b className="hl-mine-badge">Soon</b></i><span>PvP</span>
+        </button>
         {windowButton('leaderboard', 'Ranks', Trophy)}
-        {windowButton('referrals', 'Refer', UserPlus)}
-        <button type="button" className={`hl-tabbar-item ${moreOpen ? 'is-active' : ''}`} aria-expanded={moreOpen} onClick={() => { setMineOpen(false); onMoreOpen(!moreOpen); }}>
+        <button type="button" className={`hl-tabbar-item ${moreOpen || tab === 'referrals' ? 'is-active' : ''}`} aria-expanded={moreOpen} onClick={() => { setMineOpen(false); onMoreOpen(!moreOpen); }}>
           {icon(Menu, 0)}<span>More</span>
         </button>
       </nav>

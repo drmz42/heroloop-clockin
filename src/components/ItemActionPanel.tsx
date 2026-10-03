@@ -45,21 +45,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
   const enchantCostText = enchCost.gold > 0 ? `${formatNum(enchCost.gold)} Gold` : `${formatNum(enchCost.hero)} $HERO`;
   const usd = (hero: number) => `$${(hero * HERO_USD_QUOTE).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 })}`;
   const ringSlot = !equippedSlot && onEquip && (base.slot === 'ring1' || base.slot === 'ring2');
-  // Base stat and random lines of the same key are summed for the comparison.
-  const statTotals = (source: OwnedItem) => {
-    const totals = new Map<ItemStatKey, { key: ItemStatKey; value: number; isPercent: boolean }>();
-    for (const stat of enchantedStats([...itemBaseStats(source), ...source.stats], source.enchantLevel)) {
-      const current = totals.get(stat.key);
-      totals.set(stat.key, { key: stat.key, isPercent: stat.isPercent, value: (current?.value ?? 0) + stat.value });
-    }
-    return totals;
-  };
-  const candidateStats = statTotals(item);
-  const equippedStats = comparisonItem ? statTotals(comparisonItem) : new Map<ItemStatKey, { key: ItemStatKey; value: number; isPercent: boolean }>();
-  const comparisonKeys = [...new Set([...candidateStats.keys(), ...equippedStats.keys()])] as ItemStatKey[];
   const combatPower = displayItemPower(item);
-  const comparisonPower = comparisonItem ? displayItemPower(comparisonItem) : 0;
-  const powerDelta = comparisonItem ? combatPower - comparisonPower : 0;
 
   return (
     <div className="item-action-panel rounded-xl border p-2" style={{ '--item-rarity': rc } as CSSProperties}>
@@ -77,40 +63,14 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
         <button onClick={onClose} className="game-control grid h-7 w-7 shrink-0 place-items-center"><X size={13} /></button>
       </div>
 
-      {/* Stats: one row per stat — this item's value, then the change versus the item the selected hero wears */}
-      <div className={`item-act-stats mb-1.5 grid grid-cols-1 gap-y-0.5 rounded-md bg-black/20 px-2 py-1 ${powerDelta > 0 ? 'item-act-stats--better' : powerDelta < 0 ? 'item-act-stats--worse' : ''}`}>
-        <div className="item-act-power flex items-center justify-between ui-text-medium">
-          <span className="flex items-center gap-1.5 text-slate-400">Gear Power{comparisonItem && powerDelta !== 0 && <span className={`rounded px-1.5 ui-text-small font-black uppercase tracking-wide ${powerDelta > 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}>{powerDelta > 0 ? '▲ Better' : '▼ Worse'}</span>}</span>
-          <span className="font-bold text-[#f2cc80] tabular-nums">{formatNum(combatPower)}{comparisonItem && <CompareDelta delta={powerDelta} text={formatNum(Math.abs(powerDelta))} />}</span>
-        </div>
-        {comparisonKeys.map((key) => {
-          const candidate = candidateStats.get(key);
-          const equipped = equippedStats.get(key);
-          const delta = (candidate?.value ?? 0) - (equipped?.value ?? 0);
-          const isPercent = candidate?.isPercent ?? equipped?.isPercent ?? false;
-          return (
-            <div key={key} className={`item-stat-row item-act-stat -mx-1 flex items-center justify-between gap-2 px-1 ui-text-medium ${comparisonItem && delta > 0 ? 'bg-emerald-500/10' : comparisonItem && delta < 0 ? 'bg-rose-500/10' : ''}`}>
-              <span className="min-w-0 truncate text-slate-400">{STAT_LABEL[key]}</span>
-              <span className="shrink-0 font-bold tabular-nums text-emerald-300">
-                {candidate ? formatStatValue(candidate) : <span className="text-slate-500">—</span>}
-                {comparisonItem && <CompareDelta delta={delta} text={formatStatValue({ key, value: Math.abs(delta), isPercent }).replace(/^\+/, '')} />}
-              </span>
-            </div>
-          );
-        })}
-        {item.enchantLevel > 0 && <div className="ui-text-small text-amber-400/70">Includes +{enchantBonusPercent(item.enchantLevel)}% enchant bonus</div>}
-        {comparisonItem && (
-          <div className="item-act-compare-note mt-0.5 truncate border-t border-white/5 pt-1 ui-text-small text-[#8f887b]">
-            Compared with equipped: <span className="text-[#d8c59f]">{ITEM_MAP[comparisonItem.itemId]?.name ?? 'Equipped item'}{comparisonItem.enchantLevel > 0 ? ` +${comparisonItem.enchantLevel}` : ''}</span>
-          </div>
-        )}
-      </div>
+      <ItemCompareStats item={item} comparisonItem={comparisonItem} />
 
       {/* Actions */}
       <div className="space-y-1">
         {equipDisabledReason && <div className="rounded-md border border-amber-500/25 bg-amber-500/10 px-2 py-1 text-center ui-text-small font-bold text-amber-200">{equipDisabledReason}</div>}
 
-        <div className={`item-act-grid grid gap-1 ${ringSlot ? 'grid-cols-6' : 'grid-cols-5'}`}>
+        {/* Row 1: Equip, Lock, Sell; row 2: Enchant and Reroll at half width each so label and cost fit (Founder 2026-10-03). */}
+        <div className={`item-act-grid grid gap-1 ${ringSlot ? 'item-act-grid--rings grid-cols-4' : 'grid-cols-3'}`}>
           {equippedSlot ? (
             <button data-item-action="unequip" onClick={onUnequip} className="item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-sky-500/30 bg-sky-500/10 px-0.5 ui-text-small font-black text-sky-300 transition hover:bg-sky-500/20" title={`Unequip from ${SLOT_LABEL[equippedSlot]}`}>
               <span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><ArrowUp size={12} className="rotate-180" /><span>Unequip</span></span>
@@ -122,12 +82,8 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
             <button data-item-action="equip" disabled={Boolean(equipDisabledReason)} onClick={() => onEquip(base.slot)} className="item-act item-act--primary flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-0.5 ui-text-small font-black text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={equipDisabledReason || `Equip ${SLOT_LABEL[base.slot]}`}><span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><ArrowUp size={12} /><span>Equip</span></span></button>
           ) : <div />}
 
-          <button disabled={!canEnchant || game.itemUpgradeBusy} onClick={() => setShowEnchant(s => !s)} aria-expanded={showEnchant} className="item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 px-0.5 text-center ui-text-small font-black text-amber-300 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={canEnchant ? `Enchant +${item.enchantLevel + 1}: ${Math.round(enchChance * 100)}% chance, ${enchantCostText}` : `Maximum enchant +${MAX_ENCHANT_LEVEL}`}>
-            <span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><ArrowUp size={12} /><span>{canEnchant ? `Enchant +${item.enchantLevel + 1}` : `Max +${MAX_ENCHANT_LEVEL}`}</span></span>{canEnchant && <span className="ui-text-small font-bold text-amber-100/70">{Math.round(enchChance * 100)}% · {formatNum(enchCost.gold)} G</span>}
-          </button>
-
-          <button disabled={!rerollAffordable || game.itemUpgradeBusy} onClick={() => setShowReroll(s => !s)} aria-expanded={showReroll} className="item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 px-0.5 ui-text-small font-black text-cyan-300 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={isolatedHackathon ? 'Get an exact SKR quote for Reroll' : rerollAffordable ? `Reroll for ${rCost} $HERO` : `Need ${rCost - game.state.hero} more $HERO`}>
-            <span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><Dice5 size={12} /><span>Reroll</span></span><span className="flex items-center gap-0.5 ui-text-small font-bold text-cyan-100/70">{isolatedHackathon ? <>≈ {skrPrice(Math.round(rCost * HERO_USD_QUOTE * 100), skrRate)}<SkrUsd cents={Math.round(rCost * HERO_USD_QUOTE * 100)} /></> : <><HeroTokenIcon size={8} /> {usd(rCost)} · {formatNum(rCost)}</>}</span>
+          <button onClick={() => game.toggleItemLock(item.uid)} aria-pressed={item.locked} className={`item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border px-0.5 ui-text-small font-black ${item.locked ? 'border-amber-500/40 bg-amber-500/15 text-amber-200' : 'border-white/10 bg-slate-800 text-slate-300'}`} title={item.locked ? 'Unlock item' : 'Lock item'}>
+            <span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0">{item.locked ? <Lock size={12} /> : <Unlock size={12} className="text-slate-400" />}<span>{item.locked ? 'Unlock' : 'Lock'}</span></span>
           </button>
 
           <div className="relative min-w-0">
@@ -142,9 +98,14 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
               </div>
             </div>}
           </div>
+        </div>
+        <div className="item-act-grid-upgrades grid grid-cols-2 gap-1">
+          <button disabled={!canEnchant || game.itemUpgradeBusy} onClick={() => setShowEnchant(s => !s)} aria-expanded={showEnchant} className="item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 px-0.5 text-center ui-text-small font-black text-amber-300 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={canEnchant ? `Enchant +${item.enchantLevel + 1}: ${Math.round(enchChance * 100)}% chance, ${enchantCostText}` : `Maximum enchant +${MAX_ENCHANT_LEVEL}`}>
+            <span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><ArrowUp size={12} /><span>{canEnchant ? `Enchant +${item.enchantLevel + 1}` : `Max +${MAX_ENCHANT_LEVEL}`}</span></span>{canEnchant && <span className="ui-text-small font-bold text-amber-100/70">{Math.round(enchChance * 100)}% · {formatNum(enchCost.gold)} G</span>}
+          </button>
 
-          <button onClick={() => game.toggleItemLock(item.uid)} aria-pressed={item.locked} className={`item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border px-0.5 ui-text-small font-black ${item.locked ? 'border-amber-500/40 bg-amber-500/15 text-amber-200' : 'border-white/10 bg-slate-800 text-slate-300'}`} title={item.locked ? 'Unlock item' : 'Lock item'}>
-            <span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0">{item.locked ? <Lock size={12} /> : <Unlock size={12} className="text-slate-400" />}<span>{item.locked ? 'Unlock' : 'Lock'}</span></span>
+          <button disabled={!rerollAffordable || game.itemUpgradeBusy} onClick={() => setShowReroll(s => !s)} aria-expanded={showReroll} className="item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 px-0.5 ui-text-small font-black text-cyan-300 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={isolatedHackathon ? 'Get an exact SKR quote for Reroll' : rerollAffordable ? `Reroll for ${rCost} $HERO` : `Need ${rCost - game.state.hero} more $HERO`}>
+            <span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><Dice5 size={12} /><span>Reroll</span></span><span className="flex items-center gap-0.5 ui-text-small font-bold text-cyan-100/70">{isolatedHackathon ? <>≈ {skrPrice(Math.round(rCost * HERO_USD_QUOTE * 100), skrRate)}<SkrUsd cents={Math.round(rCost * HERO_USD_QUOTE * 100)} /></> : <><HeroTokenIcon size={8} /> {usd(rCost)} · {formatNum(rCost)}</>}</span>
           </button>
         </div>
 
@@ -187,6 +148,57 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
         ))}
       </div>
     </div>
+  );
+}
+
+// Stats with the ▲/▼ change versus an equipped item; also used by the Market buy view.
+export function ItemCompareStats({ item, comparisonItem }: { item: OwnedItem; comparisonItem?: OwnedItem | null }) {
+  // Base stat and random lines of the same key are summed for the comparison.
+  const statTotals = (source: OwnedItem) => {
+    const totals = new Map<ItemStatKey, { key: ItemStatKey; value: number; isPercent: boolean }>();
+    for (const stat of enchantedStats([...itemBaseStats(source), ...source.stats], source.enchantLevel)) {
+      const current = totals.get(stat.key);
+      totals.set(stat.key, { key: stat.key, isPercent: stat.isPercent, value: (current?.value ?? 0) + stat.value });
+    }
+    return totals;
+  };
+  const candidateStats = statTotals(item);
+  const equippedStats = comparisonItem ? statTotals(comparisonItem) : new Map<ItemStatKey, { key: ItemStatKey; value: number; isPercent: boolean }>();
+  const comparisonKeys = [...new Set([...candidateStats.keys(), ...equippedStats.keys()])] as ItemStatKey[];
+  const combatPower = displayItemPower(item);
+  const comparisonPower = comparisonItem ? displayItemPower(comparisonItem) : 0;
+  const powerDelta = comparisonItem ? combatPower - comparisonPower : 0;
+  return (
+    <>
+      {/* Stats: one row per stat — this item's value, then the change versus the item the selected hero wears */}
+      <div className={`item-act-stats mb-1.5 grid grid-cols-1 gap-y-0.5 rounded-md bg-black/20 px-2 py-1 ${powerDelta > 0 ? 'item-act-stats--better' : powerDelta < 0 ? 'item-act-stats--worse' : ''}`}>
+        <div className="item-act-power flex items-center justify-between ui-text-medium">
+          <span className="flex items-center gap-1.5 text-slate-400">Gear Power{comparisonItem && powerDelta !== 0 && <span className={`rounded px-1.5 ui-text-small font-black uppercase tracking-wide ${powerDelta > 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}>{powerDelta > 0 ? '▲ Better' : '▼ Worse'}</span>}</span>
+          <span className="font-bold text-[#f2cc80] tabular-nums">{formatNum(combatPower)}{comparisonItem && <CompareDelta delta={powerDelta} text={formatNum(Math.abs(powerDelta))} />}</span>
+        </div>
+        {comparisonKeys.map((key) => {
+          const candidate = candidateStats.get(key);
+          const equipped = equippedStats.get(key);
+          const delta = (candidate?.value ?? 0) - (equipped?.value ?? 0);
+          const isPercent = candidate?.isPercent ?? equipped?.isPercent ?? false;
+          return (
+            <div key={key} className={`item-stat-row item-act-stat -mx-1 flex items-center justify-between gap-2 px-1 ui-text-medium ${comparisonItem && delta > 0 ? 'bg-emerald-500/10' : comparisonItem && delta < 0 ? 'bg-rose-500/10' : ''}`}>
+              <span className="min-w-0 truncate text-slate-400">{STAT_LABEL[key]}</span>
+              <span className="shrink-0 font-bold tabular-nums text-emerald-300">
+                {candidate ? formatStatValue(candidate) : <span className="text-slate-500">—</span>}
+                {comparisonItem && <CompareDelta delta={delta} text={formatStatValue({ key, value: Math.abs(delta), isPercent }).replace(/^\+/, '')} />}
+              </span>
+            </div>
+          );
+        })}
+        {item.enchantLevel > 0 && <div className="ui-text-small text-amber-400/70">Includes +{enchantBonusPercent(item.enchantLevel)}% enchant bonus</div>}
+        {comparisonItem && (
+          <div className="item-act-compare-note mt-0.5 truncate border-t border-white/5 pt-1 ui-text-small text-[#8f887b]">
+            Compared with equipped: <span className="text-[#d8c59f]">{ITEM_MAP[comparisonItem.itemId]?.name ?? 'Equipped item'}{comparisonItem.enchantLevel > 0 ? ` +${comparisonItem.enchantLevel}` : ''}</span>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
