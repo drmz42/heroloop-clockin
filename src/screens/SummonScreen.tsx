@@ -223,8 +223,6 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
         </section>
         </>}
 
-        {/* Temporarily hide Seeker Pity presentation; counters and guarantees remain server-owned. */}
-        {!isolatedHackathon && <>
         <div className="summon-pity-head mb-1 flex w-full max-w-xl items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[.14em] text-[#9d8ca6]">Pity progress</span><button type="button" onClick={() => setShowPityInfo((value) => !value)} aria-expanded={showPityInfo} className="game-control flex h-7 items-center gap-1 px-2 text-[8px] font-black"><Info size={11} /> Pity info</button></div>
         <div className="mb-2 grid w-full max-w-xl grid-cols-3 gap-1 sm:grid-cols-5">
           {([
@@ -243,8 +241,6 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
         </div>
         {showPityInfo && <p className="mb-2 max-w-xl rounded-md border border-violet-500/20 bg-violet-950/20 px-3 py-2 text-[9px] leading-relaxed text-[#aaa0b4]"><strong className="text-violet-200">How Pity works:</strong> counters track misses for that rarity or higher. Guarantees are 150 / 500 / 2,000 / 5,000 / 20,000. Mythic+ gains 0.0015 percentage point per miss on rolls 251–499, taken from Common.</p>}
 
-        </>}
-
         <div className="flex w-full max-w-sm flex-col gap-2.5">
           {summonNotice && <div role="alert" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-red-700/65 bg-[linear-gradient(135deg,rgba(75,16,22,.92),rgba(20,8,12,.96))] px-3 py-2.5 text-left shadow-[inset_0_1px_rgba(255,255,255,.06),0_8px_22px_rgba(0,0,0,.35)]"><AlertTriangle size={17} className="shrink-0 text-red-300" /><span className="flex-1 text-[11px] font-bold text-red-100">{summonNotice}</span><button type="button" onClick={() => setSummonNotice('')} aria-label="Dismiss Summon message" className="rounded p-1 text-red-300 hover:bg-white/10"><X size={14} /></button></div>}
           <div className="summon-pay grid grid-cols-2 gap-1 rounded-lg border border-violet-500/25 bg-black/40 p-1" aria-label="Summon payment method">
@@ -256,7 +252,7 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
           {pendingQuote && <div className="rounded-lg border border-amber-500/40 bg-black/80 p-3 text-left" role="region" aria-label="Confirm SKR Summon">
             <p className="text-sm text-amber-100" title={`Exact payment: ${formatMinor(pendingQuote.quote.amount_minor, 'SKR', 6)} SKR`}>Summon ×{pendingQuote.count} · {formatAmountShort(pendingQuote.quote.amount_minor, 'SKR', 'up')} SKR</p>
             <p className="mt-1 text-[10px] text-slate-400">Server quote · ${(Number(pendingQuote.quote.usd_cents) / 100).toFixed(2)} · valid until {new Date(pendingQuote.quote.expires_at).toLocaleTimeString()}. No payment until you confirm.</p>
-            <div className="mt-2 grid grid-cols-2 gap-2"><button type="button" disabled={summoning !== null} onClick={() => void confirmSkrSummon()} style={{ minHeight: 44 }} className="game-control game-primary min-h-11 text-xs">{summoning ? 'Summoning…' : 'Pay SKR & summon'}</button><button type="button" disabled={summoning !== null} onClick={() => setPendingQuote(null)} style={{ minHeight: 44 }} className="game-control min-h-11 text-xs">Cancel</button></div>
+            <div className="mt-2 grid grid-cols-2 gap-2"><button type="button" disabled={summoning !== null} onClick={() => void confirmSkrSummon()} style={{ minHeight: 44 }} className="game-control min-h-11 text-xs">{summoning ? 'Summoning…' : 'Pay SKR & summon'}</button><button type="button" disabled={summoning !== null} onClick={() => setPendingQuote(null)} style={{ minHeight: 44 }} className="game-control min-h-11 text-xs">Cancel</button></div>
           </div>}
           <button type="button" onClick={() => void beginSummon(1)} disabled={!canSingle || summoning !== null || promoting || pendingQuote !== null} className="summon-cta summon-cta--1 flex h-[46px] items-center justify-between rounded-xl border border-purple-500/40 bg-gradient-to-r from-purple-600/30 to-blue-600/30 px-5 transition hover:from-purple-600/40 hover:to-blue-600/40 disabled:opacity-40">
             <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-purple-300" /> {!singleHasSpace ? 'Hero storage full' : !canPay(1) ? 'Need 1 Summon Scroll' : summoning === 1 ? 'Preparing…' : 'Summon x1'}</span>

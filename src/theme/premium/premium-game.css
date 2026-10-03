@@ -376,7 +376,8 @@
   filter: brightness(.75);
 }
 [data-hl-theme=premium] .summon-pay-option[aria-pressed=true] { filter: none; color: #fbeccb !important; border-image: var(--pm-crimson) 90 170 fill / 9px 13px / 0 3px stretch; }
-[data-hl-theme=premium] .summon-pay-option:last-child[aria-pressed=true] { border-image: var(--pm-bronze) 85 150 fill / 8px 12px / 0 3px stretch; color: #ffe7b0 !important; filter: brightness(1.15) drop-shadow(0 0 8px rgba(242, 204, 128, .35)); }
+[data-hl-theme=premium] .summon-pay-option:last-child[aria-pressed=true],
+html[data-hl-edition=seeker][data-hl-theme=premium] .summon-pay-option[aria-pressed=true] { border-image: var(--pm-bronze) 85 150 fill / 8px 12px / 0 3px stretch; color: #ffe7b0 !important; filter: brightness(1.15) drop-shadow(0 0 8px rgba(242, 204, 128, .35)); }
 
 /* Summon buttons: x1, x10 and x100 share the bronze frame */
 [data-hl-theme=premium] .summon-cta { font-family: var(--pm-display); }
@@ -453,4 +454,3 @@
 }
 [data-hl-theme=premium] .heroes-head :is(button, select):hover:not(:disabled) { filter: brightness(1.15); }
 [data-hl-theme=premium] .heroes-head svg { color: var(--pm-brass-hi) !important; }
-
