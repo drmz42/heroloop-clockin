@@ -58,17 +58,20 @@ export function formatMinor(minor: string, asset: WalletAsset, maxFraction = 4):
   return `${negative ? '-' : ''}${whole}${fraction ? `.${fraction}` : ''}`;
 }
 
-/** Player-facing amount with one decimal: prices round up (never shown below the charge), balances round down
- * (never shown above what the player holds). Exact amounts stay in formatMinor. */
+/** Display prices rounded up and balances rounded down to hundredths.
+ * Integer minor units keep rounding exact, including large balances. */
 export function formatAmountShort(minor: string, asset: WalletAsset, round: 'up' | 'down'): string {
   const decimals = ASSET_DECIMALS[asset];
-  const negative = minor.startsWith('-');
-  const value = BigInt(negative ? minor.slice(1) : minor);
-  const step = 10n ** BigInt(Math.max(0, decimals - 1));
-  const tenths = round === 'up' ? (value + step - 1n) / step : value / step;
-  const whole = (tenths / 10n).toLocaleString('en-US').replace(/,/g, '\u00a0');
-  const fraction = tenths % 10n;
-  return `${negative ? '-' : ''}${whole}${fraction ? `.${fraction}` : ''}`;
+  const value = BigInt(minor);
+  const step = 10n ** BigInt(decimals - 2);
+  let hundredths = value / step;
+  const remainder = value % step;
+  if (round === 'up' && remainder > 0n) hundredths += 1n;
+  if (round === 'down' && remainder < 0n) hundredths -= 1n;
+  const magnitude = hundredths < 0n ? -hundredths : hundredths;
+  const whole = (magnitude / 100n).toLocaleString('en-US').replace(/,/g, '\u00a0');
+  const fraction = (magnitude % 100n).toString().padStart(2, '0').replace(/0+$/, '');
+  return `${hundredths < 0n ? '-' : ''}${whole}${fraction ? `.${fraction}` : ''}`;
 }
 
 async function command<T>(action: string, payload: Record<string, unknown> = {}): Promise<T> {

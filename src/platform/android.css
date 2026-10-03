@@ -507,6 +507,7 @@ html[data-hl-platform='android'] .hl-battle-dock .pm-chest:disabled:not(#hl-a):n
 
 /* Set bonus tooltip spans the gear panel width instead of hanging off the badge's right edge (it ran off the left side). */
 html[data-hl-platform='android'] .hl-gear-head { position: relative; }
+html[data-hl-platform='android'] .hl-col-right .hl-gear-head .game-control { min-height: 44px; }
 html[data-hl-platform='android'] .hl-gear-head > .group\/set { position: static; }
 html[data-hl-platform='android'] .hl-gear-head .set-bonus-tooltip { left: 0; right: 0; width: auto; max-width: none; }
 
@@ -858,8 +859,8 @@ html[data-hl-platform='android'] .hl-topbar .game-progress-boost.hl-topbar-boost
 html[data-hl-platform='android'] .hl-battle-menu-toggle { background-color: rgba(17, 19, 15, .9); }
 html[data-hl-platform='android'] .hl-healing-status { right: 60px; max-width: calc(100% - 128px); }
 
-/* Bag: the class tag on class-only gear is a small corner mark, not a band across the artwork. */
-html[data-hl-platform='android'] .item-class-badge { max-width: 62%; padding: 0 2px; border-radius: 0 3px 0 3px; font-size: 7px; line-height: 9px; letter-spacing: 0; }
+/* Bag: readable class ribbons span narrow eight-column cells. */
+html[data-hl-platform='android'] .item-class-badge { max-width: 100%; padding: 2px 0; border-radius: 0; font-size: 9px; line-height: 1.2; letter-spacing: 0; }
 
 /* Shared Boss phase on a phone (Founder 2026-10-03): five heroes in a column overflowed the stage and the Boss
    portrait sank behind the Boss Hunt panel. The Boss HUD, cast bar and mechanic chips now run full width under

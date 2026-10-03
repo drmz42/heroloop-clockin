@@ -3,7 +3,7 @@ import { WalletAmount, WalletAssetPicker, type DisplayWalletAsset } from './Seek
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowDownToLine, Check, ExternalLink, Loader2, RefreshCw, ShieldCheck, AlertTriangle } from 'lucide-react';
 import {
-  commitSkrPurchase,boundWallet, deposit, loadExternalWallet, exactWalletAmount, ASSET_DECIMALS, formatAmountShort, formatMinor, refreshWallet, SeekerWalletError, useWalletSnapshot, waitForDeposit,
+  commitSkrPurchase,boundWallet, deposit, loadExternalWallet, exactWalletAmount, formatAmountShort, formatMinor, refreshWallet, SeekerWalletError, useWalletSnapshot, waitForDeposit,
   type WalletSnapshot,
 } from '@/game/seekerWallet';
 
@@ -129,7 +129,7 @@ export function SeekerDepositPanel() {
       <Balances snapshot={snapshot} />
       <WalletAssetPicker asset={asset} busy={busy} onChange={entry => { setAsset(entry); setAmount(''); setResult(null); }} />
       <WalletAmount id="seeker-deposit-amount" amount={amount} asset={asset} busy={busy} onChange={setAmount}
-        available={asset === 'ORE' ? 'ORE transfers are not available yet.' : `In your wallet: ${external?.external_balances ? formatMinor(external.external_balances[asset], asset, ASSET_DECIMALS[asset]) : balanceError ? 'Unavailable' : '—'} $${asset}`}
+        available={asset === 'ORE' ? 'ORE transfers are not available yet.' : `In your wallet: ${external?.external_balances ? formatAmountShort(external.external_balances[asset], asset, 'down') : balanceError ? 'Unavailable' : '—'} $${asset}`}
         onMax={asset !== 'ORE' && external?.max_deposit_balances ? () => void fillMax() : undefined} />
       <button type="button" disabled={!bound || !valid || busy || asset === 'ORE'} onClick={() => void submit()}
         className="game-control flex min-h-12 w-full items-center justify-center gap-2 px-4 py-3 font-black text-[#f6d283] disabled:opacity-45">

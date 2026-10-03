@@ -429,8 +429,8 @@
 [data-hl-theme=premium] :is(.game-shell) :is(.item-slot, .hero-portrait-rarity)::before { border-radius: 4px !important; }
 [data-hl-theme=premium] :is(.game-shell) :is(.item-slot, .hero-portrait-rarity, .premium-hero-card) img { border-radius: 4px; }
 [data-hl-theme=premium] :is(.game-shell) .pm-portrait-slot { border-image: none; border: 1px solid rgba(199, 158, 97, .35); background: radial-gradient(circle at 50% 40%, rgba(60, 45, 28, .7), rgba(8, 6, 5, .95) 75%); }
-/* Class tag on inventory items: small enough for any class name */
-[data-hl-theme=premium] .item-class-badge { max-width: 92%; padding: 0 2px; font-size: 7px !important; line-height: 9px; letter-spacing: 0; border-radius: 0 3px 0 3px !important; }
+/* Class ribbons keep readable short labels across narrow inventory cells. */
+[data-hl-theme=premium] .item-class-badge { max-width: 100%; padding: 2px 0; font-size: 9px !important; line-height: 1.2; letter-spacing: 0; border-radius: 0 !important; }
 
 /* Heroes toolbar: square forged sockets, labels left-aligned, filters included */
 [data-hl-theme=premium] .heroes-head :is(button, input, select):not(#pm-x):not(#pm-y) {

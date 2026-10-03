@@ -944,12 +944,12 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
 
         {selectedHero && selectedHeroBase ? (
           <div className="shrink-0 border-b border-[#4f412e] px-3 py-2.5" style={{ zIndex: 10 }}>
-            <div className="hl-gear-head mb-2 flex min-w-0 items-center gap-1 whitespace-nowrap">
+            <div className="hl-gear-head mb-2 grid min-w-0 grid-cols-2 items-center gap-x-2 gap-y-2">
                 <span className="section-kicker shrink-0">Equipped Gear</span>
                 <span className="min-w-0 truncate ui-text-small font-vt font-black" style={{ color: RARITY_COLORS[selectedHeroBase.rarity], textShadow: `0 0 8px ${RARITY_COLORS[selectedHeroBase.rarity]}55` }}>{RARITY_LABEL[selectedHeroBase.rarity]} {CLASS_LABEL[selectedHeroBase.heroClass]}</span>
-                <span className="group/set relative ml-auto shrink-0">
-                  <button type="button" className={`set-bonus-badge h-6 w-[62px] px-1 ui-text-small rarity-${selectedSetBonus?.rarity ?? 'common'} ${selectedSetBonus ? 'set-bonus-active' : ''}`} aria-label="Set bonus details">
-                    Set bonus {selectedSetBonus ? `+${selectedSetBonus.percent}%` : '—'}
+                <span className="group/set relative min-w-0">
+                  <button type="button" className={`game-control set-bonus-badge w-full rarity-${selectedSetBonus?.rarity ?? 'common'} ${selectedSetBonus ? 'set-bonus-active' : ''}`} aria-label="Set bonus details">
+                    <span>Set bonus</span><strong>{selectedSetBonus ? `+${selectedSetBonus.percent}%` : '—'}</strong>
                   </button>
                   <span className="set-bonus-tooltip pointer-events-none absolute right-0 top-full z-[70] mt-1 hidden w-80 max-w-[calc(100vw-2rem)] whitespace-normal break-words rounded-lg border border-[#6f5833] bg-[#10120f]/[.98] p-3 text-left ui-text-medium leading-5 text-[#bbb2a2] shadow-2xl group-hover/set:block group-focus-within/set:block">
                     Equip all 8 item slots with one rarity to increase every stat granted by those items.
@@ -963,7 +963,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     </span>
                   </span>
                 </span>
-                <button type="button" aria-label="Unequip All" onClick={async () => { if (!canUnequipAll) return; if (await game.unequipAll(selectedHero.uid)) { setSelectedItem(null); showToast('All gear unequipped'); } else showToast(equipmentFailure('Unequip')); }} disabled={!canUnequipAll} className="game-control flex h-6 w-[44px] shrink-0 items-center justify-center gap-0.5 px-0.5 ui-text-small font-bold leading-none" title={selectedEquippedCount === 0 ? 'No equipped items' : canUnequipAll ? 'Move all equipped items to Inventory' : 'Not enough Inventory space'}><PackageMinus size={10} aria-hidden="true" />All</button>
+                <button type="button" aria-label="Unequip all gear" onClick={async () => { if (!canUnequipAll) return; if (await game.unequipAll(selectedHero.uid)) { setSelectedItem(null); showToast('All gear unequipped'); } else showToast(equipmentFailure('Unequip')); }} disabled={!canUnequipAll} className="game-control flex min-h-11 items-center justify-center gap-1 justify-self-end px-2 ui-text-small font-bold leading-none" title={selectedEquippedCount === 0 ? 'No equipped items' : canUnequipAll ? 'Move all equipped items to Inventory' : 'Not enough Inventory space'}><PackageMinus size={10} aria-hidden="true" />Unequip</button>
             </div>
             <div className="grid w-full grid-cols-8 gap-1">
               {SLOTS.map(slot => {
@@ -988,8 +988,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                         <ItemArtwork itemId={emptySlotArtworkId(slot, selectedHeroBase.heroClass)} name="" fallback="" />
                       </span>
                     )}
-                    {ib && item!.enchantLevel > 0 && <div className="absolute top-0 left-0 ui-text-medium font-bold text-amber-400 font-vt leading-none px-0.5">+{item!.enchantLevel}</div>}
-                    {ib?.heroClass && <div className="item-class-badge absolute right-0 top-0" title={`${CLASS_LABEL[ib.heroClass]} only`}>{CLASS_SHORT_LABEL[ib.heroClass]}</div>}
+                    {ib && item!.enchantLevel > 0 && <div className={`absolute left-0 z-10 ui-text-small font-bold text-amber-400 font-vt leading-none px-0.5 ${ib?.heroClass ? 'top-[15px]' : 'top-0'}`}>+{item!.enchantLevel}</div>}
+                    {ib?.heroClass && <div className="item-class-badge absolute inset-x-0 top-0" title={`${CLASS_LABEL[ib.heroClass]} only`}>{CLASS_SHORT_LABEL[ib.heroClass]}</div>}
                     {ib && <div className="item-level-label absolute bottom-0 right-0 ui-text-medium font-bold font-vt px-1 leading-tight" style={{ background: ic, color: '#000' }}>{item!.level}</div>}
                   </button>
                   <div className="mt-1 min-w-0 truncate text-center ui-text-small font-semibold tracking-[-.03em] text-[#8a867c]" title={SLOT_LABEL[slot]}>{slotLabel}</div>
@@ -1050,8 +1050,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                   {i >= bagOpenSlots && <LockIcon size={13} className="text-[#8f7652]" aria-hidden="true" />}
                   {item && <ItemArtwork itemId={item.itemId} name={ITEM_MAP[item.itemId]?.name ?? 'Item'} fallback={ITEM_MAP[item.itemId]?.icon ?? '◆'} className="leading-none" />}
                   {item?.locked && <LockIcon size={11} className="absolute bottom-0.5 left-0.5 z-10 text-amber-300" />}
-                  {item && item.enchantLevel > 0 && <div className="absolute top-0 left-0 ui-text-medium font-bold text-amber-400 font-vt leading-none px-0.5">+{item.enchantLevel}</div>}
-                  {itemBase?.heroClass && <div className="item-class-badge absolute right-0 top-0" title={`${CLASS_LABEL[itemBase.heroClass]} only`}>{CLASS_SHORT_LABEL[itemBase.heroClass]}</div>}
+                  {item && item.enchantLevel > 0 && <div className={`absolute left-0 z-10 ui-text-small font-bold text-amber-400 font-vt leading-none px-0.5 ${itemBase?.heroClass ? 'top-[15px]' : 'top-0'}`}>+{item.enchantLevel}</div>}
+                  {itemBase?.heroClass && <div className="item-class-badge absolute inset-x-0 top-0" title={`${CLASS_LABEL[itemBase.heroClass]} only`}>{CLASS_SHORT_LABEL[itemBase.heroClass]}</div>}
                   {item && <span className="item-level-label ui-text-small absolute bottom-0 right-0 min-w-4 rounded-tl bg-[#d9d0c0] px-0.5 text-center font-bold leading-4 text-black" title={`Item level ${item.level}`}>{item.level}</span>}
                 </button>
                 {gridIndex === selectedBagRowEnd && liveSelectedItem && selectedItemSource === 'bag' && <div className="col-span-8 rounded-lg border border-[#6e5837] bg-[#10120f] p-2 shadow-inner"><ItemActionPanel item={liveSelectedItem} game={game} equippedSlot={null} comparisonItem={comparisonItem} equipDisabledReason={selectedEquipReason} onEquip={async (slot) => { if (!selectedHero) return; if (await game.equipItem(selectedHero.uid, liveSelectedItem.uid, slot)) { setSelectedItem(null); showToast('Item equipped'); } else showToast(equipmentFailure('Equip')); }} onBeforeSell={async (selected) => { if (selected.serverOwned) return true; const selectedRarity = ITEM_MAP[selected.itemId]?.rarity; return selectedRarity === 'divine' || selectedRarity === 'celestial' ? tok.removeLimitedItem(selected.uid) : true; }} onClose={() => setSelectedItem(null)} /></div>}
