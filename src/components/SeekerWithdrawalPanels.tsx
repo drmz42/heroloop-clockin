@@ -6,6 +6,8 @@ const withdrawalError=(error:unknown)=>{
   const code=error instanceof Error?error.message:'';
   return ({withdrawals_blocked:'Treasury reconciliation is blocked. Contact the Founder.',
     invalid_withdrawal_signature:'Your wallet signature could not be verified.',
+    wallet_rejected:'Withdrawal cancelled in the wallet. Nothing was reserved.',
+    wallet_timeout:'The wallet did not answer. Nothing was reserved; try again.',
     wallet_identity_required:'Reconnect the verified wallet linked to this account.',
     withdrawal_may_be_paid:'A payout may already have been sent. The balance stays reserved.',
     payout_not_finalized:'This payout is not finalized yet. Keep the reservation and retry.',

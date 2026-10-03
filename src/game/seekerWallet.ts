@@ -266,12 +266,24 @@ async function signAuthorization(message:string,address:string,walletName:string
   const feature=wallet?.features['solana:signMessage'] as {signMessage:(input:{account:WalletAccount;message:Uint8Array})=>Promise<readonly {signature:Uint8Array}[]>}|undefined;
   if(!account||!feature)throw new SeekerWalletError('wallet_account_mismatch');
   const [proof]=await feature.signMessage({account,message:payload});
+  if(!proof?.signature)throw new SeekerWalletError('wallet_rejected');
   return btoa(String.fromCharCode(...proof.signature));
 }
 export async function requestWithdrawal(asset:WalletAsset,amount:string):Promise<WithdrawalRow> {
   const bound=boundWallet();if(!bound)throw new SeekerWalletError('wallet_not_linked');
   const intent=await command<WithdrawalRow&{message:string}>('wallet_withdraw_intent',{asset,amount,destination:bound.address});
-  const signature=await signAuthorization(intent.message,bound.address,bound.walletName);
+  // A cancelled request may never settle in some wallets (MWA or in-app); release the form.
+  let timer:ReturnType<typeof setTimeout>|undefined;
+  let signature:string;
+  try {
+    signature=await Promise.race([
+      signAuthorization(intent.message,bound.address,bound.walletName),
+      new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new SeekerWalletError('wallet_timeout')),60_000);}),
+    ]);
+  } catch(error) {
+    if(error instanceof SeekerWalletError)throw error;
+    throw new SeekerWalletError(rejected(error)?'wallet_rejected':'invalid_withdrawal_signature');
+  } finally { clearTimeout(timer); }
   try{return await command('wallet_withdraw_confirm',{request_id:intent.request_id,signature});}
   finally{void refreshAfterChange().catch(()=>undefined);}
 }
