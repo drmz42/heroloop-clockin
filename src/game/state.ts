@@ -141,7 +141,7 @@ export function makeInitialState(): GameState {
     chests: [],
     bossKeys: 0,
     bossBattleActive: false,
-    battleAnimationMode: 'light',
+    battleAnimationMode: 'spectacular',
     chestsOpenedToday: 0,
     lastChestReset: now,
     currentLocation: 1,
@@ -376,7 +376,7 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
       chests: parsed.chests ?? [],
       bossKeys: parsed.bossKeys ?? 0,
       bossBattleActive: false,
-      battleAnimationMode: parsed.battleAnimationMode === 'spectacular' || parsed.battleAnimationMode === 'off' ? parsed.battleAnimationMode : 'light',
+      battleAnimationMode: parsed.battleAnimationMode === 'light' || parsed.battleAnimationMode === 'off' ? parsed.battleAnimationMode : 'spectacular',
       chestsOpenedToday: sameDay ? (parsed.chestsOpenedToday ?? 0) : 0,
       lastChestReset: sameDay ? (parsed.lastChestReset ?? now) : now,
       potions: {

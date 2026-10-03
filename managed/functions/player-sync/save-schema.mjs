@@ -225,7 +225,7 @@ function migrateVersionZero(state) {
   const timestamp = finite(state.lastSeen, 0, 8_640_000_000_000_000) ? state.lastSeen : 0;
   const defaults = {
     gold: 0, hero: 0, accountXp: 0, accountLevel: 1, heroCapacity: 500, bagSlots: [64, 0, 0, 0], ownedHeroes: [], team: [], inventory: [], chests: [],
-    bossKeys: 0, bossBattleActive: false, battleAnimationMode: "light", chestsOpenedToday: 0,
+    bossKeys: 0, bossBattleActive: false, battleAnimationMode: "spectacular", chestsOpenedToday: 0,
     lastChestReset: timestamp, currentLocation: 1, highestLocation: 1, lastSeen: timestamp,
     combatXpAt: timestamp, activeUntil: timestamp, totalGoldEarned: 0, totalTokensEarned: 0,
     tokensEarnedToday: 0, tokenDayKey: "1970-01-01", totalKills: 0, totalBossKills: 0, summons: 0,

@@ -25,7 +25,7 @@ export function buildRegisteredState(source, username, playerId, starterHeroId, 
   state.chests = [];
   state.bossKeys = 0;
   state.bossBattleActive = false;
-  state.battleAnimationMode = 'light';
+  state.battleAnimationMode = 'spectacular';
   state.chestsOpenedToday = 0;
   state.lastChestReset = now;
   state.currentLocation = 1;
