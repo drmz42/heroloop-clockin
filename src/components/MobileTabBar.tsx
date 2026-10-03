@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Backpack, BookOpen, Crosshair, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, Pickaxe, ScrollText, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, UserPlus, X } from 'lucide-react';
+import { Backpack, BookOpen, Crosshair, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, Palette, Pickaxe, ScrollText, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, UserPlus, X } from 'lucide-react';
 import type { Tab } from './TopMenu';
 import { OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { setMobileSection, type MobileSection } from '@/platform/platform';
 import { defaultUiTheme, setUiTheme } from '@/theme/uiTheme';
+import '@/theme/scene/sheets.css';
 
 // Android layout only (src/platform/platform.ts): the phone's primary navigation, two rows
 // (Founder 2026-10-02). Row 1: Battle, Quests and Bag switch the Play screen between its three
@@ -76,33 +77,47 @@ export function MobileTabBar({
   return (
     <>
       {moreOpen && (
-        <div className="hl-more-sheet" role="dialog" aria-modal="true" aria-label="More" onMouseDown={(event) => { if (event.currentTarget === event.target) onMoreOpen(false); }}>
-          <div className="hl-more-panel">
-            <div className="hl-more-head">
-              <span className="section-kicker">More</span>
-              <button type="button" className="game-control hl-more-close" onClick={() => onMoreOpen(false)} aria-label="Close"><X size={18} /></button>
+        <div className="hl-more-sheet mo-sheet" role="dialog" aria-modal="true" aria-label="More" onMouseDown={(event) => { if (event.currentTarget === event.target) onMoreOpen(false); }}>
+          <div className="mo-panel">
+            <div className="mo-head">
+              <span className="mo-title">More</span>
+              <button type="button" className="mo-close" onClick={() => onMoreOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
-            <div className="hl-more-links">
-              <button type="button" className="game-control" onClick={() => { onMoreOpen(false); onTab('referrals'); }}><UserPlus size={16} aria-hidden="true" /> Refer</button>
-              <button type="button" className="game-control" onClick={() => { onMoreOpen(false); onGuides(); }}><BookOpen size={16} aria-hidden="true" /> Guides</button>
-              <button type="button" className="game-control" onClick={() => { onMoreOpen(false); onCode(); }}><KeyRound size={16} aria-hidden="true" /> Code</button>
-              <button type="button" className="game-control" onClick={() => { onMoreOpen(false); onSupport(); }}><MessageCircle size={16} aria-hidden="true" /> Support</button>
-              {defaultUiTheme === 'premium' && <button type="button" className="game-control" onClick={() => setUiTheme(document.documentElement.dataset.hlTheme === 'premium' ? 'classic' : 'premium')}>{themeLabel}</button>}
-              <button type="button" className="game-control game-danger" onClick={() => { onMoreOpen(false); onLogout(); }}><LogOut size={16} aria-hidden="true" /> Logout</button>
+            <div className="hl-more-links mo-links">
+              <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onTab('referrals'); }}><i aria-hidden="true"><UserPlus size={19} /></i>Refer</button>
+              <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onGuides(); }}><i aria-hidden="true"><BookOpen size={19} /></i>Guides</button>
+              <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onCode(); }}><i aria-hidden="true"><KeyRound size={19} /></i>Code</button>
+              <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onSupport(); }}><i aria-hidden="true"><MessageCircle size={19} /></i>Support</button>
+              {defaultUiTheme === 'premium' && <button type="button" className="mo-link" onClick={() => setUiTheme(document.documentElement.dataset.hlTheme === 'premium' ? 'classic' : 'premium')}><i aria-hidden="true"><Palette size={19} /></i>{themeLabel}</button>}
+            </div>
+            <button type="button" className="mo-logout" onClick={() => { onMoreOpen(false); onLogout(); }}><LogOut size={16} aria-hidden="true" /> Logout</button>
+          </div>
+        </div>
+      )}
+      {soon === 'pvp' && (
+        <div className="hl-more-sheet mo-sheet" role="dialog" aria-modal="true" aria-label="PvP" onMouseDown={(event) => { if (event.currentTarget === event.target) setMineOpen(false); }}>
+          <div className="mo-panel mo-pvp">
+            <div className="mo-head">
+              <span className="mo-title">PvP</span>
+              <button type="button" className="mo-close" onClick={() => setMineOpen(false)} aria-label="Close"><X size={18} /></button>
+            </div>
+            <div className="mo-arena">
+              <span className="mo-medal" aria-hidden="true"><Swords size={36} /></span>
+              <span className="mo-kicker">Arena of Champions</span>
+              <strong>Coming soon</strong>
+              <span>PvP arena battles open in a future update.</span>
             </div>
           </div>
         </div>
       )}
-      {mineOpen && (
-        <div className="hl-more-sheet" role="dialog" aria-modal="true" aria-label={soon === 'pvp' ? 'PvP' : '$ORE Mine'} onMouseDown={(event) => { if (event.currentTarget === event.target) setMineOpen(false); }}>
+      {soon === 'mine' && (
+        <div className="hl-more-sheet" role="dialog" aria-modal="true" aria-label="$ORE Mine" onMouseDown={(event) => { if (event.currentTarget === event.target) setMineOpen(false); }}>
           <div className="hl-more-panel">
             <div className="hl-more-head">
-              <span className="section-kicker">{soon === 'pvp' ? 'PvP' : 'Mine'}</span>
+              <span className="section-kicker">Mine</span>
               <button type="button" className="game-control hl-more-close" onClick={() => setMineOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
-            {soon === 'pvp'
-              ? <div className="hl-mine-soon"><Crosshair size={34} aria-hidden="true" /><strong>Coming soon</strong><span>PvP arena battles open in a future update.</span></div>
-              : <div className="hl-mine-soon"><Pickaxe size={34} aria-hidden="true" /><strong>Coming soon</strong><span>The $ORE Mine opens in a future update.</span></div>}
+            <div className="hl-mine-soon"><Pickaxe size={34} aria-hidden="true" /><strong>Coming soon</strong><span>The $ORE Mine opens in a future update.</span></div>
           </div>
         </div>
       )}

@@ -1,0 +1,57 @@
+/* More and PvP sheets v2 (2026-10-03): stone panel, Cinzel title, round icon sockets and a crimson Logout
+   seal. The Mine sheet keeps its own markup (another track owns Mine). */
+.mo-panel {
+  position: relative;
+  width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  border-top: 1px solid rgba(242, 204, 128, .6);
+  padding: 12px 14px 16px;
+  background:
+    radial-gradient(ellipse at 50% 0, rgba(255, 170, 80, .14), transparent 55%),
+    linear-gradient(180deg, rgba(20, 15, 11, .96), rgba(6, 5, 4, .99)),
+    url('../premium/assets/panel-stone.webp') center / 260px;
+  box-shadow: 0 -1px 0 #000, 0 -18px 50px rgba(0, 0, 0, .75);
+  color: #ebdfca;
+}
+.mo-panel::before { content: ''; position: absolute; left: 50%; top: -5px; width: 9px; height: 9px; transform: translateX(-50%) rotate(45deg); background: linear-gradient(135deg, #f2cc80, #734d1f); box-shadow: 0 0 0 1px #000, 0 0 8px rgba(242, 204, 128, .55); }
+.mo-head { position: relative; display: flex; min-height: 44px; align-items: center; justify-content: center; margin-bottom: 12px; }
+.mo-title {
+  background: linear-gradient(180deg, #fff3d6 10%, #f2cc80 55%, #b9823c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font: 700 20px/1 'Cinzel', Georgia, serif;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .9));
+}
+.mo-close { position: absolute; right: 0; top: 0; display: grid; width: 44px; height: 44px; place-items: center; border: 0; border-radius: 50%; background: radial-gradient(circle at 50% 40%, rgba(60, 44, 26, .95), rgba(10, 8, 7, .98) 72%); box-shadow: 0 0 0 1px rgba(199, 158, 97, .6), 0 0 0 3px rgba(0, 0, 0, .6); color: #f2cc80; }
+.mo-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 6px; margin: 0; }
+.mo-link { display: flex; min-height: 76px; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px; border: 0; padding: 2px 0; background: none; color: #e8d9bb; font: 700 10px/1.15 'Cinzel', Georgia, serif; letter-spacing: .08em; text-transform: uppercase; -webkit-tap-highlight-color: transparent; }
+.mo-link > i { display: grid; width: 50px; height: 50px; place-items: center; border-radius: 50%; background: radial-gradient(circle at 50% 38%, #3a2a17, #0b0806 72%); box-shadow: 0 0 0 1.5px #8a6630, 0 0 0 4px rgba(0, 0, 0, .65), 0 0 0 5px rgba(242, 204, 128, .3), 0 0 14px rgba(242, 180, 80, .22); color: #f2cc80; font-style: normal; }
+.mo-link:active > i { transform: scale(.95); }
+.mo-link:focus-visible, .mo-close:focus-visible, .mo-logout:focus-visible { outline: 2px solid #fff0a2; outline-offset: 2px; }
+.mo-logout {
+  display: flex;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 14px;
+  border: 0 solid transparent;
+  border-width: 9px 13px;
+  border-image: url('../premium/assets/btn-crimson-9.webp') 90 170 fill / 9px 13px / 0 3px stretch;
+  background: none;
+  color: #fbeccb;
+  font: 700 12px/1 'Cinzel', Georgia, serif;
+  letter-spacing: .1em;
+  text-shadow: 0 1px 2px #000;
+  text-transform: uppercase;
+}
+.mo-arena { display: grid; justify-items: center; gap: 6px; padding: 4px 8px 10px; text-align: center; }
+.mo-medal { display: grid; width: 84px; height: 84px; place-items: center; margin-bottom: 4px; border-radius: 50%; background: radial-gradient(circle at 50% 38%, #4a1d14, #0b0606 72%); box-shadow: 0 0 0 2px #8a6630, 0 0 0 5px rgba(0, 0, 0, .7), 0 0 0 6px rgba(242, 204, 128, .35), 0 0 26px rgba(255, 90, 60, .35); color: #ffd38a; }
+.mo-kicker { color: #c79e61; font: 700 9px/1.2 'Cinzel', Georgia, serif; letter-spacing: .28em; text-transform: uppercase; }
+.mo-arena strong { color: #fff3d6; font: 700 20px/1.1 'Cinzel', Georgia, serif; letter-spacing: .06em; text-shadow: 0 0 14px rgba(255, 120, 90, .4), 0 2px 3px #000; }
+.mo-arena > span:last-child { max-width: 280px; color: rgba(235, 223, 202, .8); font: italic 14px/1.35 'EB Garamond', Georgia, serif; }
