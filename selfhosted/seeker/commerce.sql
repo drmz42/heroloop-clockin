@@ -98,7 +98,7 @@ BEGIN
   ELSIF p.context->>'action'='market_buy_listing' THEN
     IF (p.context->>'seller_id')::uuid=p_player THEN RAISE EXCEPTION 'market_self_purchase'; END IF;
     v_target:=seeker_skr.wallet_account((p.context->>'seller_id')::uuid,'SKR');
-    v_fee_amount:=p.amount_minor-floor(p.amount_minor*95/100);
+    v_fee_amount:=p.amount_minor-floor(p.amount_minor*90/100);
     v_fee:=seeker_skr.system_account('fees','SKR');
     v_legs:=v_legs||jsonb_build_array(jsonb_build_object('account_id',v_fee,'delta_minor',v_fee_amount::text));
   ELSE

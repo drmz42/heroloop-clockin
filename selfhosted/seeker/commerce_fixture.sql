@@ -13,7 +13,7 @@ BEGIN
  IF seeker_skr.wallet_snapshot(q)#>>'{balances,SKR}'<>'0' THEN RAISE EXCEPTION 'seller credited before delivery'; END IF;
  PERFORM seeker_skr.purchase_finish(p,k,true);
  PERFORM seeker_skr.purchase_finish(p,k,true);
- IF seeker_skr.wallet_snapshot(q)#>>'{balances,SKR}'<>'950000' THEN RAISE EXCEPTION 'seller split'; END IF;
+ IF seeker_skr.wallet_snapshot(q)#>>'{balances,SKR}'<>'900000' THEN RAISE EXCEPTION 'seller split'; END IF;
  BEGIN PERFORM seeker_skr.purchase_finish(p,k,false); failed:=false;
  EXCEPTION WHEN raise_exception THEN failed:=SQLERRM='skr_idempotency_conflict'; END;
  IF NOT failed THEN RAISE EXCEPTION 'paid purchase refunded'; END IF;
@@ -36,9 +36,17 @@ BEGIN
  BEGIN PERFORM seeker_skr.purchase_quote(p,gen_random_uuid(),' {"action":"store_buy_item"}',1,1000000,clock_timestamp()-interval '61 seconds'); failed:=false;
  EXCEPTION WHEN raise_exception THEN failed:=SQLERRM='stale_skr_rate'; END;
  IF NOT failed THEN RAISE EXCEPTION 'stale quote'; END IF;
+ -- One atomic SKR rounds the seller share down to zero; the remainder is the fee.
+ k2:=gen_random_uuid();
+ PERFORM seeker_skr.purchase_quote(p,k2,context,0.0001,1000000,clock_timestamp());
+ PERFORM seeker_skr.purchase_charge(p,k2);
+ PERFORM seeker_skr.purchase_finish(p,k2,true);
+ PERFORM seeker_skr.purchase_finish(p,k2,true);
+ IF seeker_skr.wallet_snapshot(p)#>>'{balances,SKR}'<>'499999' THEN RAISE EXCEPTION 'atomic buyer debit'; END IF;
+ IF seeker_skr.wallet_snapshot(q)#>>'{balances,SKR}'<>'900000' THEN RAISE EXCEPTION 'atomic seller rounding'; END IF;
 END $$;
 DO $$ BEGIN
  IF EXISTS(SELECT asset FROM seeker_skr.accounts GROUP BY asset HAVING sum(balance_minor)<>0) THEN RAISE EXCEPTION 'lost conservation'; END IF;
  IF (SELECT balance_minor FROM seeker_skr.accounts WHERE kind='commerce_escrow')<>0 THEN RAISE EXCEPTION 'escrow retained finished payment'; END IF;
- IF (SELECT balance_minor FROM seeker_skr.accounts WHERE kind='fees')<>60000 THEN RAISE EXCEPTION 'fee split'; END IF;
+ IF (SELECT balance_minor FROM seeker_skr.accounts WHERE kind='fees')<>110001 THEN RAISE EXCEPTION 'fee split'; END IF;
 END $$;
