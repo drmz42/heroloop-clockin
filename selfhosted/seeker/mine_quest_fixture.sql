@@ -32,6 +32,7 @@ BEGIN
  EXCEPTION WHEN raise_exception THEN IF SQLERRM<>'quest_incomplete' THEN RAISE; END IF; END;
  r:=heroloop_api.seeker_quest_claim(p,gen_random_uuid(),'mine-streak-3',s.revision);
  IF (r#>>'{reward,gold}')::bigint<>1500 THEN RAISE EXCEPTION 'mine streak %',r; END IF;
+ IF (SELECT scrolls FROM public.seeker_activity_quest_catalogue() WHERE id='mine-streak-7')<>1 THEN RAISE EXCEPTION 'streak-7 scrolls'; END IF;
  SELECT * INTO s FROM public.player_saves WHERE player_id=p;
  BEGIN PERFORM heroloop_api.seeker_quest_claim(p,gen_random_uuid(),'mine-rank-bronze',s.revision); RAISE EXCEPTION 'early rank';
  EXCEPTION WHEN raise_exception THEN IF SQLERRM<>'quest_incomplete' THEN RAISE; END IF; END;
