@@ -183,10 +183,10 @@ export function useTokenomics(power: number, accountLevel: number, username: str
     } catch { return null; }
   }, [fetchStatus]);
 
-  const summonBoss = useCallback(async (location: number) => {
+  const summonBoss = useCallback(async (location: number, onError?: (code: string) => void) => {
     if (!tokenomicsEnabled) return null;
     try {
-      const data = await playerSync<{ encounter_id: string; remaining_keys: number }>('summon_boss', { location, idempotency_key: crypto.randomUUID() });
+      const data = await playerSync<{ encounter_id: string; remaining_keys: number }>('summon_boss', { location, idempotency_key: crypto.randomUUID() }, onError);
       if (!data) return null;
       setStatus((prev) => prev ? { ...prev, boss_keys: Number(data.remaining_keys) } : prev);
       return data;
