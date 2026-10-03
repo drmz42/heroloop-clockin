@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { AlertTriangle, ChevronDown, Info, Sparkles, Target, X } from 'lucide-react';
-import { HERO_MAP, RARITY_COLORS, RARITY_GLOW, RARITY_INDEX, RARITY_LABEL, RARITY_WEIGHT } from '@/game/heroes';
+import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, RARITY_WEIGHT } from '@/game/heroes';
 import { formatNum } from '@/game/state';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import type { OwnedHero, Rarity } from '@/game/types';
@@ -11,76 +10,41 @@ import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 import { isolatedHackathon } from '@/game/editionStorage';
 import { SkrTokenIcon } from '@/components/SkrTokenIcon';
 import { SeekerPromoteAll } from '@/components/SeekerPromoteAll';
+import { SummonReveal } from '@/components/summon/SummonReveal';
 import { quoteSkrPurchase, formatAmountShort, formatMinor, type SkrPurchaseQuote } from '@/game/seekerWallet';
 import { useSkrRate, skrPrice, skrError } from '@/game/skrPurchase';
+import '@/components/summon/summon-v2.css';
 
-function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () => void }) {
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const [phase, setPhase] = useState<'charge' | 'ready' | 'revealing' | 'revealed'>(reducedMotion ? 'ready' : 'charge');
-  const order: Record<Rarity, number> = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4, mythic: 5, relic: 5, cosmic: 6, divine: 7, celestial: 8, cursed: 9, immortal: 10, god: 11 };
-  const displayHeroes = [...heroes].sort((a, b) => order[HERO_MAP[b.heroId]?.rarity ?? 'common'] - order[HERO_MAP[a.heroId]?.rarity ?? 'common']);
-  const best = HERO_MAP[displayHeroes[0]?.heroId]?.rarity ?? 'common';
-  const screenWow = order[best] >= order.rare;
-  const revealed = phase === 'revealing' || phase === 'revealed';
-  // Big batches (Founder 2026-10-03): 100 cards each running endless rays, sparks, pulses and 3D
-  // filter flips exhausted phone GPUs (blank cards, torn layers). Only the best few keep the full
-  // show; every other card gets a cheap fade and the overlay drops its blur and screen-wide rays.
-  const massSummon = heroes.length > 10;
-  const fxCards = massSummon ? 3 : 10;
+type Batch = 1 | 10 | 100;
 
-  useEffect(() => {
-    if (phase !== 'charge') return;
-    const timer = window.setTimeout(() => setPhase('ready'), 2100);
-    return () => window.clearTimeout(timer);
-  }, [phase]);
-
-  const reveal = () => {
-    if (reducedMotion) { setPhase('revealed'); return; }
-    setPhase('revealing');
-    window.setTimeout(() => setPhase('revealed'), 950);
-  };
-
-  // Portal to <body>: inside the Summon window the result sat under the top bar and the phone
-  // tab bar, which hid its buttons (Founder 2026-10-02).
-  return createPortal(
-    <div data-phase={phase} className={`hl-portal summon-result fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 p-4 anim-fade${massSummon ? ' summon-result-mass' : ' backdrop-blur'}${revealed && screenWow ? ' summon-rarity-burst' : ''}${phase === 'revealing' && !massSummon ? ' summon-rupture' : ''}`} style={{ '--summon-best': RARITY_COLORS[best] } as React.CSSProperties}>
-      {revealed && screenWow && !massSummon && <div className="summon-screen-rays" aria-hidden="true" />}
-      {phase === 'revealing' && <i className="summon-flash" aria-hidden="true" />}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(circle at 50% 50%, ${RARITY_COLORS[best]}26, transparent 62%)` }} />
-      {phase === 'charge' ? (
-        <div className="summon-ritual-charge relative z-10 grid place-items-center text-center">
-          <div className="summon-charge-orb"><Sparkles size={42} /></div>
-          <div className="mt-7 text-[10px] font-black uppercase tracking-[.38em] text-[#d9b9ff]">The Covenant Answers</div>
-          <div className="mt-2 text-xs text-[#8d8196]">Fate is gathering beyond the veil…</div>
-        </div>
-      ) : <div className="summon-result-body relative w-full max-w-4xl">
-        {revealed && <div className="summon-best-banner mb-3 text-center" style={{ color: RARITY_COLORS[best] }}><span>{RARITY_LABEL[best]}</span><strong>{displayHeroes.length === 1 ? HERO_MAP[displayHeroes[0].heroId]?.name : `Best of ${displayHeroes.length} summons`}</strong></div>}
-        <div className={`summon-result-grid no-scrollbar max-h-[72vh] overflow-y-auto rounded-xl ${heroes.length > 20 ? 'p-1' : ''}`}>
-        <div className={`mx-auto grid gap-3 ${displayHeroes.length === 1 ? 'w-[210px] grid-cols-1' : displayHeroes.length > 20 ? 'grid-cols-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8' : 'grid-cols-3 sm:grid-cols-5'}`}>
-          {displayHeroes.map((h, index) => {
-            const base = HERO_MAP[h.heroId]; if (!base) return null;
-            const rc = RARITY_COLORS[base.rarity]; const svg = heroPortraitSrc(base.id, base.heroClass, base.rarity, base.color);
-            const fullFx = index < fxCards;
-            const isWow = fullFx && RARITY_INDEX[base.rarity] >= RARITY_INDEX.rare;
-            return (
-              <div key={h.uid} className={`summon-result-card relative aspect-[3/4] rounded-xl flex flex-col items-center justify-center overflow-hidden border-2 transition ${revealed ? (fullFx ? 'summon-card-unseal' : 'summon-card-lite') : 'summon-card-sealed'} ${revealed && isWow ? 'summon-wow summon-rarity-card' : ''}`} style={{ borderColor: revealed ? rc : '#5b4770', background: revealed ? `radial-gradient(circle at 50% 30%, ${base.color}33, ${rc}18)` : 'linear-gradient(145deg,#23172f,#09070d 68%)', boxShadow: revealed ? (fullFx ? `0 0 24px ${RARITY_GLOW[base.rarity]}` : `0 0 8px ${RARITY_GLOW[base.rarity]}`) : 'inset 0 0 28px rgba(176,91,255,.18),0 0 12px rgba(115,65,150,.25)', '--summon-color': rc, '--reveal-delay': `${Math.min(index, 12) * 55}ms` } as React.CSSProperties}>
-                {revealed && isWow && <div className="summon-card-rays" aria-hidden="true" />}
-                {revealed && isWow && <i className="summon-card-shine" aria-hidden="true" />}
-                {revealed && isWow && Array.from({ length: 7 }, (_, spark) => <i key={spark} className="summon-spark" style={{ '--spark-index': spark } as React.CSSProperties} />)}
-                {revealed ? <div className="absolute inset-0"><img src={svg} alt="" className="h-full w-full object-cover" style={{ ...heroPortraitStyle(base.id, base.heroClass), transform: 'none' }} /><span className="absolute inset-x-0 bottom-0 px-1.5 pb-1 pt-4 bg-gradient-to-t from-black/80 to-transparent text-center"><span className="block text-[10px] font-bold leading-tight" style={{ color: rc }}>{base.name}</span><span className="block text-[7px] uppercase tracking-wide" style={{ color: rc + 'cc' }}>{RARITY_LABEL[base.rarity]}</span></span></div> : <div className="summon-seal-glyph relative"><Sparkles size={28} />{!massSummon && <div className="absolute inset-0 anim-pulse-ring rounded-full border border-violet-400/50" />}</div>}
-              </div>
-            );
-          })}
-        </div>
-        </div>
-        <div className="summon-result-actions mt-5 flex flex-col items-center gap-3">
-          {phase === 'ready' ? <button type="button" onClick={reveal} className="summon-break-seal px-7 py-2.5 rounded-full border text-sm font-black uppercase tracking-wider">Break the seal · Reveal {heroes.length}</button> : phase === 'revealing' ? <div className="text-[10px] font-black uppercase tracking-[.3em] text-white">Fate Unbound</div> : <button type="button" onClick={onClose} className="summon-continue px-6 py-2.5 rounded-full bg-slate-800 border border-white/20 text-slate-200 font-bold text-sm hover:bg-slate-700 transition">Continue</button>}
-        </div>
-      </div>
-      }
-      <button type="button" onClick={onClose} aria-label="Close summon results" className="summon-close absolute top-4 right-4 p-2 rounded-full bg-slate-800/80 border border-white/10"><X size={18} className="text-slate-400" /></button>
-    </div>,
-    document.body,
+// One altar per batch size. The flame is lit while that batch can be paid and stored.
+function Altar({ count, tone, title, cost, status, lit, busy, disabled, onClick }: {
+  count: Batch;
+  tone: 'violet' | 'gold' | 'crimson';
+  title: string;
+  cost: ReactNode;
+  status: string | null;
+  lit: boolean;
+  busy: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={`${title}${status ? ` · ${status}` : ''}`}
+      className={`sv-altar sv-altar--${tone}${lit ? ' is-lit' : ''}${busy ? ' is-busy' : ''}`}
+    >
+      <span className="sv-flame" aria-hidden="true"><i /><i /><i /></span>
+      <span className="sv-altar-bowl" aria-hidden="true" />
+      <span className="sv-altar-body">
+        <span className="sv-altar-count">×{count}</span>
+        <span className="sv-altar-title">{busy ? 'Summoning…' : title}</span>
+      </span>
+      <span className="sv-altar-cost">{status ?? cost}</span>
+    </button>
   );
 }
 
@@ -90,25 +54,30 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
 }) {
   const { state } = game;
   const [results, setResults] = useState<OwnedHero[] | null>(null);
+  const [resultBatch, setResultBatch] = useState<Batch>(1);
+  const [newHeroIds, setNewHeroIds] = useState<ReadonlySet<string>>(new Set());
   const [promotionNotice, setPromotionNotice] = useState('');
   const [promoting, setPromoting] = useState(false);
   const [summonNotice, setSummonNotice] = useState('');
-  const [summoning, setSummoning] = useState<1 | 10 | 100 | null>(null);
+  const [summoning, setSummoning] = useState<Batch | null>(null);
   const [focusRarity, setFocusRarity] = useState<Rarity>('common');
   const [focusSaving, setFocusSaving] = useState(false);
   const [showFocus, setShowFocus] = useState(false);
   const [showPityInfo, setShowPityInfo] = useState(false);
+  const [showRates, setShowRates] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'paid' | 'scroll' | 'skr'>(isolatedHackathon ? 'skr' : 'paid');
   const rate = useSkrRate(isolatedHackathon);
-  const [pendingQuote, setPendingQuote] = useState<{ quote: SkrPurchaseQuote; count: 1 | 10 | 100 } | null>(null);
-  const heroPriceLabel = (count: 1 | 10 | 100) => paymentMethod === 'skr' ? skrPrice(count * 2, rate) : `${formatNum(count * 20)} $HERO`;
+  const [pendingQuote, setPendingQuote] = useState<{ quote: SkrPurchaseQuote; count: Batch } | null>(null);
+  const quoteRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = state.battleAnimationMode === 'off'
+    || (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const heroPriceLabel = (count: Batch) => paymentMethod === 'skr' ? skrPrice(count * 2, rate) : `${formatNum(count * 20)} $HERO`;
   const singleHasSpace = state.ownedHeroes.length < state.heroCapacity;
   const tenHasSpace = state.ownedHeroes.length + 10 <= state.heroCapacity;
   const hundredHasSpace = state.ownedHeroes.length + 100 <= state.heroCapacity;
-  const canPay = (count: 1 | 10 | 100) => paymentMethod !== 'scroll' || state.summonScrolls >= count;
-  const canSingle = singleHasSpace && canPay(1);
-  const canTen = tenHasSpace && canPay(10);
-  const canHundred = hundredHasSpace && canPay(100);
+  const hasSpace = (count: Batch) => count === 1 ? singleHasSpace : count === 10 ? tenHasSpace : hundredHasSpace;
+  const canPay = (count: Batch) => paymentMethod !== 'scroll' || state.summonScrolls >= count;
+  const canSummon = (count: Batch) => hasSpace(count) && canPay(count);
   useEffect(() => {
     if (!game.summonError) return;
     if (isolatedHackathon && paymentMethod === 'skr') { setSummonNotice(game.summonError); return; }
@@ -130,15 +99,22 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
           : `Summon unavailable · No $HERO was spent · Code: ${safeCode || 'network_error'}`;
     setSummonNotice(message);
   }, [game.summonError, paymentMethod]);
-  const unavailableMessage = (count: 1 | 10 | 100) => setSummonNotice(
+  useEffect(() => { if (pendingQuote) quoteRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, [pendingQuote]);
+  const unavailableMessage = (count: Batch) => setSummonNotice(
     state.ownedHeroes.length + count > state.heroCapacity
       ? `Need ${count} free Hero ${count === 1 ? 'slot' : 'slots'}`
       : `Not enough Summon Scrolls · Need ${count - state.summonScrolls} more`,
   );
-  const beginSummon = async (count: 1 | 10 | 100) => {
+  const showResults = (heroes: OwnedHero[], count: Batch, ownedBefore: Set<string>) => {
+    setNewHeroIds(new Set(heroes.map((hero) => hero.heroId).filter((heroId) => !ownedBefore.has(heroId))));
+    setResultBatch(count);
+    setResults(heroes);
+  };
+  const beginSummon = async (count: Batch) => {
     if (summoning !== null) return;
     if (state.ownedHeroes.length + count > state.heroCapacity || !canPay(count)) { unavailableMessage(count); return; }
     setSummoning(count); setSummonNotice('');
+    const ownedBefore = new Set(state.ownedHeroes.map((hero) => hero.heroId));
     try {
       if (paymentMethod === 'skr') {
         setPendingQuote({ quote: await quoteSkrPurchase('hero_summon', { count }), count });
@@ -156,15 +132,16 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
         quoteId = quote.quote.quoteId;
       }
       const result = await game.summonHeroes(count, paymentMethod, quoteId);
-      if (result.length > 0) setResults(result);
+      if (result.length > 0) showResults(result, count, ownedBefore);
       else setSummonNotice('Summon is temporarily unavailable · Nothing was spent');
     } catch (error) { setSummonNotice(skrError(error)); } finally { setSummoning(null); }
   };
   const confirmSkrSummon = async () => {
     if (!pendingQuote || summoning !== null) return;
     setSummoning(pendingQuote.count); setSummonNotice('');
+    const ownedBefore = new Set(state.ownedHeroes.map((hero) => hero.heroId));
     const result = await game.summonHeroes(pendingQuote.count, 'skr', pendingQuote.quote.quote_id);
-    if (result.length) { setResults(result); setPendingQuote(null); }
+    if (result.length) { showResults(result, pendingQuote.count, ownedBefore); setPendingQuote(null); }
     else setSummonNotice('Payment could not finish. Retry the same payment or check Wallet history.');
     setSummoning(null);
   };
@@ -194,18 +171,105 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
     } finally { setFocusSaving(false); }
   };
 
+  const busy = summoning !== null || promoting || pendingQuote !== null;
+  const altarStatus = (count: Batch) => !hasSpace(count)
+    ? (count === 1 ? 'Hero storage full' : `Need ${count} free slots`)
+    : !canPay(count) ? `Need ${count - state.summonScrolls} more Scrolls` : null;
+  const altarCost = (count: Batch) => paymentMethod !== 'scroll'
+    ? <>{paymentMethod === 'skr' && <SkrTokenIcon size={12} />}{heroPriceLabel(count)}</>
+    : <><SummonScrollArtwork size={16} />{count} {count === 1 ? 'Scroll' : 'Scrolls'}</>;
+  const pity = ([
+    ['Legendary', game.summonPity.legendary, 150, 'legendary'],
+    ['Mythic', game.summonPity.mythic, 500, 'mythic'],
+    ['Cosmic', game.summonPity.cosmic, 2000, 'cosmic'],
+    ['Divine', game.summonPity.divine, 5000, 'divine'],
+    ['Celestial', game.summonPity.celestial, 20000, 'celestial'],
+  ] as const);
+  const again = results && {
+    label: <><Sparkles size={15} /> Summon ×{resultBatch} again</>,
+    disabled: busy || !canSummon(resultBatch),
+    onClick: () => { setResults(null); void beginSummon(resultBatch); },
+  };
+
   return (
-    <div className="summon-sanctum relative flex h-full flex-col overflow-y-auto bg-black bg-cover bg-center no-scrollbar" style={{ backgroundImage: "linear-gradient(rgba(3,3,5,.18),rgba(3,3,5,.72)),url('/assets/summon/ritual-sanctum-v1.webp')" }}>
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(163,74,255,.12),transparent_38%),linear-gradient(90deg,rgba(0,0,0,.55),transparent_30%,transparent_70%,rgba(0,0,0,.55))]" />
-      <div className="summon-layout relative mx-auto grid min-h-full w-full max-w-[1040px] flex-1 items-center gap-4 px-4 py-5">
-      <main className="flex min-w-0 flex-col items-center justify-center text-center">
-        <div className="summon-portal relative mb-3 grid h-24 w-24 shrink-0 place-items-center rounded-full"><i className="summon-rune-ring" /><i className="summon-rune-ring summon-rune-ring-inner" /><Sparkles size={34} className="relative z-10 text-[#f2c96e] drop-shadow-[0_0_14px_rgba(212,126,255,.9)]" />{Array.from({ length: 8 }, (_, index) => <i key={index} className="summon-portal-mote" style={{ '--mote-index': index } as React.CSSProperties} />)}</div>
-        <div className="summon-altar flex w-full max-w-2xl flex-col items-center rounded-xl border border-[#8c6231]/60 bg-[#08070a]/72 px-6 py-4 shadow-[0_16px_50px_rgba(0,0,0,.65),inset_0_1px_rgba(255,224,165,.08)] backdrop-blur-[2px]">
-        <div className="section-kicker">The Obsidian Covenant</div>
-        <h2 className="summon-title mb-1 mt-1 text-2xl font-black text-white"><span className="text-[#d7a9ff]">Hero</span> Summon</h2>
-        <p className="summon-lede text-slate-400 text-sm max-w-sm mb-1">{isolatedHackathon ? 'Summon heroes with SKR or Summon Scrolls. Every hero is unique.' : 'Summon heroes using $HERO tokens. All heroes are unique and tradeable.'}</p>
+    <div className={`sv-root${results ? ' sv-paused' : ''}${reducedMotion ? ' sv-still' : ''}`}>
+      <section className={`sv-temple${summoning !== null ? ' is-summoning' : ''}`} aria-label="Summoning temple">
+        <div className="sv-temple-art" aria-hidden="true" />
+        <div className="sv-temple-glow" aria-hidden="true" />
+        <svg className="sv-runes" viewBox="0 0 200 200" aria-hidden="true">
+          <circle cx="100" cy="100" r="92" className="sv-runes-outer" />
+          <circle cx="100" cy="100" r="80" className="sv-runes-inner" />
+        </svg>
+        <div className="sv-fog" aria-hidden="true"><i /><i /></div>
+        <div className="sv-embers" aria-hidden="true">{Array.from({ length: 9 }, (_, index) => <i key={index} style={{ '--i': index } as CSSProperties} />)}</div>
+
+        <header className="sv-temple-head">
+          <span className="sv-kicker">The Obsidian Covenant</span>
+          <h2 className="sv-title">Hero Summon</h2>
+          <p className="sv-lede">{isolatedHackathon ? 'Offer SKR or Summon Scrolls at an altar. Every hero is unique.' : 'Summon heroes using $HERO tokens. All heroes are unique and tradeable.'}</p>
+        </header>
+        <div className="sv-temple-chips">
+          <span className="sv-chip">{state.ownedHeroes.length}/{state.heroCapacity} heroes</span>
+          <button type="button" className="sv-chip sv-chip--button" onClick={() => setShowRates((value) => !value)} aria-expanded={showRates} aria-controls="sv-rates"><Info size={12} /> Rates</button>
+        </div>
+
+        <div className="sv-offering" role="group" aria-label="Summon payment method">
+          <span className="sv-offering-label">Offering</span>
+          {isolatedHackathon
+            ? <button type="button" onClick={() => { setPaymentMethod('skr'); setPendingQuote(null); }} aria-pressed={paymentMethod === 'skr'} disabled={summoning !== null} className="sv-offer"><SkrTokenIcon size={14} />SKR</button>
+            : <button type="button" onClick={() => setPaymentMethod('paid')} aria-pressed={paymentMethod === 'paid'} disabled={summoning !== null} className="sv-offer"><HeroTokenIcon size={14} />Test · $HERO</button>}
+          <button type="button" onClick={() => { setPaymentMethod('scroll'); setPendingQuote(null); }} aria-pressed={paymentMethod === 'scroll'} disabled={summoning !== null} className="sv-offer"><SummonScrollArtwork size={22} /> Scrolls · {formatNum(state.summonScrolls)}</button>
+        </div>
+
+        <div className="sv-altars" aria-label="Summon altars">
+          <Altar count={1} tone="violet" title="Summon" cost={altarCost(1)} status={altarStatus(1)} lit={canSummon(1)} busy={summoning === 1} disabled={!canSummon(1) || busy} onClick={() => void beginSummon(1)} />
+          <Altar count={10} tone="gold" title="Summon" cost={altarCost(10)} status={altarStatus(10)} lit={canSummon(10)} busy={summoning === 10} disabled={!canSummon(10) || busy} onClick={() => void beginSummon(10)} />
+          <Altar count={100} tone="crimson" title="Mass Summon" cost={altarCost(100)} status={altarStatus(100)} lit={canSummon(100)} busy={summoning === 100} disabled={!canSummon(100) || busy} onClick={() => void beginSummon(100)} />
+        </div>
+      </section>
+
+      <div className="sv-panel">
+        {summonNotice && <div role="alert" aria-live="polite" className="sv-notice"><AlertTriangle size={17} /><span>{summonNotice}</span><button type="button" onClick={() => setSummonNotice('')} aria-label="Dismiss Summon message"><X size={14} /></button></div>}
+
+
+        {pendingQuote && <div ref={quoteRef} className="sv-quote" role="region" aria-label="Confirm SKR Summon">
+          <p className="sv-quote-title" title={`Exact payment: ${formatMinor(pendingQuote.quote.amount_minor, 'SKR', 6)} SKR`}>Summon ×{pendingQuote.count} · {formatAmountShort(pendingQuote.quote.amount_minor, 'SKR', 'up')} SKR</p>
+          <p className="sv-quote-note">Server quote · ${(Number(pendingQuote.quote.usd_cents) / 100).toFixed(2)} · valid until {new Date(pendingQuote.quote.expires_at).toLocaleTimeString()}. No payment until you confirm.</p>
+          <div className="sv-quote-actions"><button type="button" disabled={summoning !== null} onClick={() => void confirmSkrSummon()} className="sv-btn sv-btn--primary">{summoning ? 'Summoning…' : 'Pay SKR & summon'}</button><button type="button" disabled={summoning !== null} onClick={() => setPendingQuote(null)} className="sv-btn sv-btn--ghost">Cancel</button></div>
+        </div>}
+
+        <section className="sv-shrine" aria-label="Pity progress">
+          <div className="sv-section-head"><span>Guarantee shrine</span><button type="button" onClick={() => setShowPityInfo((value) => !value)} aria-expanded={showPityInfo} className="sv-link"><Info size={12} /> Pity info</button></div>
+          <ol className="sv-pity">
+            {pity.map(([label, current, target, rarity]) => (
+              <li key={rarity} style={{ '--sv-color': RARITY_COLORS[rarity], '--sv-fill': `${Math.min(100, current / target * 100)}%` } as CSSProperties}>
+                <span className="sv-pity-gem" aria-hidden="true" />
+                <span className="sv-pity-label">{label}</span>
+                <span className="sv-pity-bar" aria-hidden="true"><i /></span>
+                <span className="sv-pity-count">{current}/{target}</span>
+                {rarity === 'mythic' && current >= 250 && <span className="sv-pity-soft">Soft pity</span>}
+              </li>
+            ))}
+          </ol>
+          {showPityInfo && <p className="sv-pity-info"><strong>How Pity works:</strong> counters track misses for that rarity or higher. Guarantees are 150 / 500 / 2,000 / 5,000 / 20,000. Mythic+ gains 0.0015 percentage point per miss on rolls 251–499, taken from Common.</p>}
+        </section>
+
+        {showRates && <section id="sv-rates" className="sv-rates" aria-label="Base summon rates">
+          <div className="sv-section-head"><span>Base summon rates</span><span className="sv-muted">{state.summons} summons</span></div>
+          <ul>
+            {rarities.map(r => { const unavailable = (r === 'divine' || r === 'celestial') && rarityCapacity[r] === false; return <li key={r} className={unavailable ? 'is-full' : ''} style={{ color: RARITY_COLORS[r] }}><span>{RARITY_LABEL[r]}{unavailable ? ' · Full' : ''}</span><b>{RARITY_WEIGHT[r]}%</b></li>; })}
+          </ul>
+        </section>}
+
+        <div className="sv-promote">
+          {isolatedHackathon
+            ? <SeekerPromoteAll game={game} />
+            : <button type="button" disabled={promoting || summoning !== null} onClick={() => void promoteAll()} className="game-control flex h-[46px] w-full items-center justify-center gap-1.5 px-3 text-[9px] font-black uppercase disabled:opacity-55"><Sparkles size={13} className="text-amber-300" /> {promoting ? 'Promoting heroes…' : 'Promote all heroes · Free space for Summon'}</button>}
+          {promotionNotice && <div role="status" className="sv-status"><span>{promotionNotice}</span><button type="button" onClick={() => setPromotionNotice('')} aria-label="Dismiss promotion result"><X size={13} /></button></div>}
+        </div>
+
         {!isolatedHackathon && <>
-        <section className="summon-focus mb-2 w-full max-w-xl rounded-lg border border-violet-500/30 bg-black/45 text-left">
+        <section className="summon-focus w-full rounded-lg border border-violet-500/30 bg-black/45 text-left">
           <button type="button" onClick={() => setShowFocus((value) => !value)} aria-expanded={showFocus} className="flex min-h-10 w-full items-center gap-2 px-3 py-2"><Target size={13} className="text-violet-300" /><span className="text-[10px] font-black uppercase tracking-wide text-violet-200">Ascension Focus</span><span className="min-w-0 flex-1 truncate text-right text-[9px] text-[#9b8ea2]">{selectedFocus ? HERO_MAP[selectedFocus]?.name ?? 'Selected' : 'Off'}</span><ChevronDown size={13} className={`text-[#87788e] transition-transform ${showFocus ? 'rotate-180' : ''}`} /></button>
           {showFocus && <div className="border-t border-violet-500/20 px-2.5 pb-2.5">
           <div className="mt-2 text-right text-[8px] font-bold uppercase text-emerald-300">Rarity chance unchanged</div>
@@ -222,73 +286,11 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
           <p className="mt-2 text-[8px] leading-relaxed text-[#8f8798]">The server locks one owned identity for this rarity when an x1/x10/x100 batch begins. Focus changes identity only, never rarity, Pity or batch size.</p>
           </div>}
         </section>
+        <p className="sv-muted sv-center">Earn $HERO by winning battles in locations. Balance: {formatNum(state.hero)} $HERO</p>
         </>}
-
-        <div className="summon-pity-head mb-1 flex w-full max-w-xl items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[.14em] text-[#9d8ca6]">Pity progress</span><button type="button" onClick={() => setShowPityInfo((value) => !value)} aria-expanded={showPityInfo} className="game-control flex h-7 items-center gap-1 px-2 text-[8px] font-black"><Info size={11} /> Pity info</button></div>
-        <div className="mb-2 grid w-full max-w-xl grid-cols-3 gap-1 sm:grid-cols-5">
-          {([
-            ['Legendary', game.summonPity.legendary, 150, 'legendary'],
-            ['Mythic', game.summonPity.mythic, 500, 'mythic'],
-            ['Cosmic', game.summonPity.cosmic, 2000, 'cosmic'],
-            ['Divine', game.summonPity.divine, 5000, 'divine'],
-            ['Celestial', game.summonPity.celestial, 20000, 'celestial'],
-          ] as const).map(([label, current, target, rarity]) => (
-            <div key={rarity} className="summon-pity-card rounded-md border bg-black/35 px-1.5 py-1 text-left" style={{ borderColor: RARITY_COLORS[rarity] + '55' }}>
-              <div className="grid min-w-0 gap-0.5 font-black uppercase" style={{ color: RARITY_COLORS[rarity] }}><span className="min-h-[16px] whitespace-normal text-[7px] leading-2">{label} Pity</span><span className="whitespace-nowrap text-right text-[7px] tabular-nums tracking-[-.04em]">{current}/{target}</span></div>
-              <div className="mt-1 h-1 overflow-hidden rounded-full bg-black/60"><div className="h-full rounded-full transition-[width]" style={{ width: `${Math.min(100, current / target * 100)}%`, backgroundColor: RARITY_COLORS[rarity] }} /></div>
-              {rarity === 'mythic' && current >= 250 && <div className="mt-1 text-[7px] font-bold uppercase text-red-300">Soft pity +0.0015 pp / miss</div>}
-            </div>
-          ))}
-        </div>
-        {showPityInfo && <p className="mb-2 max-w-xl rounded-md border border-violet-500/20 bg-violet-950/20 px-3 py-2 text-[9px] leading-relaxed text-[#aaa0b4]"><strong className="text-violet-200">How Pity works:</strong> counters track misses for that rarity or higher. Guarantees are 150 / 500 / 2,000 / 5,000 / 20,000. Mythic+ gains 0.0015 percentage point per miss on rolls 251–499, taken from Common.</p>}
-
-        <div className="flex w-full max-w-sm flex-col gap-2.5">
-          {summonNotice && <div role="alert" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-red-700/65 bg-[linear-gradient(135deg,rgba(75,16,22,.92),rgba(20,8,12,.96))] px-3 py-2.5 text-left shadow-[inset_0_1px_rgba(255,255,255,.06),0_8px_22px_rgba(0,0,0,.35)]"><AlertTriangle size={17} className="shrink-0 text-red-300" /><span className="flex-1 text-[11px] font-bold text-red-100">{summonNotice}</span><button type="button" onClick={() => setSummonNotice('')} aria-label="Dismiss Summon message" className="rounded p-1 text-red-300 hover:bg-white/10"><X size={14} /></button></div>}
-          <div className="summon-pay grid grid-cols-2 gap-1 rounded-lg border border-violet-500/25 bg-black/40 p-1" aria-label="Summon payment method">
-            {isolatedHackathon
-              ? <button type="button" onClick={() => { setPaymentMethod('skr'); setPendingQuote(null); }} aria-pressed={paymentMethod === 'skr'} disabled={summoning !== null} className={`summon-pay-option min-h-11 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'skr' ? 'bg-violet-800/65 text-violet-100' : 'text-slate-500'}`}><span className="inline-flex items-center justify-center gap-1"><SkrTokenIcon size={12} />SKR</span></button>
-              : <button type="button" onClick={() => setPaymentMethod('paid')} aria-pressed={paymentMethod === 'paid'} disabled={summoning !== null} className={`summon-pay-option min-h-11 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'paid' ? 'bg-violet-800/65 text-violet-100' : 'text-slate-500'}`}>Test · $HERO</button>}
-            <button type="button" onClick={() => { setPaymentMethod('scroll'); setPendingQuote(null); }} aria-pressed={paymentMethod === 'scroll'} disabled={summoning !== null} className={`summon-pay-option flex min-h-11 items-center justify-center gap-1 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'scroll' ? 'bg-amber-800/55 text-amber-100' : 'text-slate-500'}`}><SummonScrollArtwork size={25} /> Scrolls · {formatNum(state.summonScrolls)}</button>
-          </div>
-          {pendingQuote && <div className="rounded-lg border border-amber-500/40 bg-black/80 p-3 text-left" role="region" aria-label="Confirm SKR Summon">
-            <p className="text-sm text-amber-100" title={`Exact payment: ${formatMinor(pendingQuote.quote.amount_minor, 'SKR', 6)} SKR`}>Summon ×{pendingQuote.count} · {formatAmountShort(pendingQuote.quote.amount_minor, 'SKR', 'up')} SKR</p>
-            <p className="mt-1 text-[10px] text-slate-400">Server quote · ${(Number(pendingQuote.quote.usd_cents) / 100).toFixed(2)} · valid until {new Date(pendingQuote.quote.expires_at).toLocaleTimeString()}. No payment until you confirm.</p>
-            <div className="mt-2 grid grid-cols-2 gap-2"><button type="button" disabled={summoning !== null} onClick={() => void confirmSkrSummon()} style={{ minHeight: 44 }} className="game-control min-h-11 text-xs">{summoning ? 'Summoning…' : 'Pay SKR & summon'}</button><button type="button" disabled={summoning !== null} onClick={() => setPendingQuote(null)} style={{ minHeight: 44 }} className="game-control min-h-11 text-xs">Cancel</button></div>
-          </div>}
-          <button type="button" onClick={() => void beginSummon(1)} disabled={!canSingle || summoning !== null || promoting || pendingQuote !== null} className="summon-cta summon-cta--1 flex h-[46px] items-center justify-between rounded-xl border border-purple-500/40 bg-gradient-to-r from-purple-600/30 to-blue-600/30 px-5 transition hover:from-purple-600/40 hover:to-blue-600/40 disabled:opacity-40">
-            <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-purple-300" /> {!singleHasSpace ? 'Hero storage full' : !canPay(1) ? 'Need 1 Summon Scroll' : summoning === 1 ? 'Preparing…' : 'Summon x1'}</span>
-            <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod !== 'scroll' ? heroPriceLabel(1) : <><SummonScrollArtwork size={18} />1 Scroll</>}</span>
-          </button>
-          <button type="button" onClick={() => void beginSummon(10)} disabled={!canTen || summoning !== null || promoting || pendingQuote !== null} className="summon-cta summon-cta--10 flex h-[46px] items-center justify-between rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-600/30 to-purple-600/30 px-5 transition hover:from-amber-600/40 hover:to-purple-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(245,158,11,0.4)' } as React.CSSProperties}>
-            <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-amber-300" /> {!tenHasSpace ? 'Need 10 free slots' : !canPay(10) ? `Need ${10 - state.summonScrolls} more Scrolls` : summoning === 10 ? 'Preparing…' : 'Summon x10'}</span>
-            <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod !== 'scroll' ? heroPriceLabel(10) : <><SummonScrollArtwork size={18} />10 Scrolls</>}</span>
-          </button>
-          <button type="button" onClick={() => void beginSummon(100)} disabled={!canHundred || summoning !== null || promoting || pendingQuote !== null} className="summon-cta summon-cta--100 anim-glow flex h-[46px] items-center justify-between rounded-xl border border-fuchsia-500/40 bg-gradient-to-r from-fuchsia-600/30 to-cyan-600/30 px-5 transition hover:from-fuchsia-600/40 hover:to-cyan-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(217,70,239,0.4)' } as React.CSSProperties}>
-            <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-fuchsia-300" /> {!hundredHasSpace ? 'Need 100 free slots' : !canPay(100) ? `Need ${100 - state.summonScrolls} more Scrolls` : summoning === 100 ? 'Preparing…' : 'Summon x100'}</span>
-            <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod !== 'scroll' ? heroPriceLabel(100) : <><SummonScrollArtwork size={18} />100 Scrolls</>}</span>
-          </button>
-          {isolatedHackathon && <><div className="mt-2 h-px bg-gradient-to-r from-transparent via-[#8c6231]/65 to-transparent" /><SeekerPromoteAll game={game} /></>}
-          {!isolatedHackathon && <><div className="mt-2 h-px bg-gradient-to-r from-transparent via-[#8c6231]/65 to-transparent" />
-          <button type="button" disabled={promoting || summoning !== null} onClick={() => void promoteAll()} className="summon-promote game-control flex h-[46px] items-center justify-center gap-1.5 px-3 text-[9px] font-black uppercase disabled:opacity-55"><Sparkles size={13} className="text-amber-300" /> {promoting ? 'Promoting heroes…' : 'Promote all heroes · Free space for Summon'}</button></>}
-        </div>
-        {promotionNotice && <div role="status" className="mt-2 flex max-w-sm items-start gap-2 rounded border border-violet-500/50 bg-violet-950/55 px-3 py-2 text-[10px] font-bold text-violet-100"><span className="flex-1">{promotionNotice}</span><button type="button" onClick={() => setPromotionNotice('')} aria-label="Dismiss promotion result"><X size={13} /></button></div>}
-        {!isolatedHackathon && <p className="mt-4 text-[10px] text-[#7f7887]">Earn $HERO by winning battles in locations.</p>}
-        </div>
-      </main>
-      <aside className="summon-side-panel self-center rounded-xl border border-[#6b536f] bg-[#08070a]/88 p-3 text-left shadow-[0_18px_45px_rgba(0,0,0,.65),inset_0_1px_rgba(255,224,165,.06)] backdrop-blur-[2px]" aria-label="Summon account and rates">
-        <div className="section-kicker mb-2">Summon account</div>
-        <div className="summon-balance rounded-lg border border-cyan-500/25 bg-cyan-950/15 px-3 py-2.5">
-          <span className="flex items-center gap-1.5 text-sm font-black text-cyan-200">{isolatedHackathon ? <><SummonScrollArtwork size={18} /> {formatNum(state.summonScrolls)} Scrolls</> : <><HeroTokenIcon size={16} /> {formatNum(state.hero)} $HERO</>}</span>
-          <span className="mt-1 block text-[9px] font-medium text-slate-500">{state.summons} summons · {state.ownedHeroes.length}/{state.heroCapacity} heroes</span>
-        </div>
-        <div className="mb-1 mt-3 text-[9px] font-black uppercase tracking-[.14em] text-[#ad9ab5]">Base summon rates</div>
-        <div className="summon-rate-panel grid gap-1">
-          {rarities.map(r => { const unavailable = (r === 'divine' || r === 'celestial') && rarityCapacity[r] === false; return <span key={r} className={`summon-rate flex items-center justify-between rounded-md border px-2 py-1 text-[9px] font-semibold uppercase tracking-wide ${unavailable ? 'opacity-50' : ''}`} style={{ color: RARITY_COLORS[r], borderColor: RARITY_COLORS[r] + '55', background: RARITY_COLORS[r] + '11' }}><span>{RARITY_LABEL[r]}{unavailable ? ' · Full' : ''}</span><b className="tabular-nums">{RARITY_WEIGHT[r]}%</b></span>; })}
-        </div>
-        {!isolatedHackathon && <p className="mt-2 text-[8px] leading-3 text-[#786f7e]">Pity adjustments are shown in the main panel.</p>}
-      </aside>
       </div>
-      {results && <SummonResult heroes={results} onClose={() => setResults(null)} />}
+
+      {results && <SummonReveal heroes={results} newHeroIds={newHeroIds} reducedMotion={reducedMotion} onClose={() => setResults(null)} again={again ?? undefined} />}
     </div>
   );
 }
