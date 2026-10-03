@@ -73,6 +73,10 @@ export async function authHeaders(refresh = false): Promise<Record<string, strin
   } : null;
 }
 
+// Seconds from the latest 429 Retry-After header, for messages such as the Boss summon cooldown.
+let lastRetryAfter = 30;
+export const lastRetryAfterSeconds = () => lastRetryAfter;
+
 export async function playerSync<T>(
   action: string,
   payload: Record<string, unknown> = {},
@@ -110,6 +114,7 @@ export async function playerSync<T>(
           result?: Record<string, unknown>;
         };
         const code = detail.code ?? detail.error ?? `HTTP ${response.status}`;
+        if (response.status === 429) lastRetryAfter = Math.max(1, Number(response.headers.get('retry-after')) || 30);
         // A Staging kill switch paused this command before it touched state.
         const message = code === 'feature_paused' ? 'This feature is paused for maintenance. Please try again later.' : code;
         onError?.(message);

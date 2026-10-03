@@ -31,7 +31,7 @@ import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 import { PartnerQuests } from '@/components/PartnerQuests';
 import { FantasyBagIcon } from '@/components/FantasyBagIcon';
 import { recommendedTeamPower } from '@/game/balance';
-import { playerSync, authClient } from '@/game/backend';
+import { playerSync, authClient, lastRetryAfterSeconds } from '@/game/backend';
 import { groupNumber, groupDigits } from '@/game/numberFormat';
 
 const SAVE_KEY = editionStorageKey('afk-heroes-save-v7');
@@ -430,6 +430,15 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   // Every server refusal used to read "A Boss Key is required" even with keys in the bag; name the real cause.
   const handleSummonBoss = async () => {
     setBattleMenuOpen(false);
+    // One request at a time: the server allows 2 Boss summons per 5 minutes, and a second tap spent the allowance.
+    if (summonBusyRef.current) return;
+    summonBusyRef.current = true;
+    try { await summonBossOnce(); } finally { summonBusyRef.current = false; setSummonBusy(false); }
+  };
+  const summonBusyRef = useRef(false);
+  const [summonBusy, setSummonBusy] = useState(false);
+  const summonBossOnce = async () => {
+    setSummonBusy(true);
     let errorCode = '';
     const result = await tok.summonBoss(state.currentLocation, (code) => { errorCode = code; });
     if (!result) {
@@ -443,7 +452,12 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
         if (typeof refreshed?.state?.bossKeys === 'number') game.syncBossKeys(refreshed.state.bossKeys);
         showToast('A Boss Key is required'); return;
       }
-      showToast(errorCode === 'rate_limited' ? 'Too fast · try again in a few seconds' : `Boss summon failed · ${errorCode || 'try again'}`);
+      if (errorCode === 'rate_limited') {
+        const wait = lastRetryAfterSeconds();
+        showToast(`Boss summons are limited to 2 per 5 minutes · next in ${wait >= 60 ? `${Math.ceil(wait / 60)} min` : `${wait} s`}`);
+        return;
+      }
+      showToast(`Boss summon failed · ${errorCode || 'try again'}`);
       return;
     }
     game.syncBossKeys(result.remaining_keys);
@@ -535,6 +549,13 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     label: activeDungeon.room === 1 ? 'OUTER BASTION' : activeDungeon.room === 2 ? 'HALL OF THE CURSED GUARD' : activeDungeon.room === 3 ? 'CROSSROADS OF FATE' : 'THRONE OF THE ABYSS',
   }) : null, [activeDungeon]);
 
+  // Android encounter mode (Founder 2026-10-03): a Dungeon or Boss Hunt hides both bars and secondary panels so
+  // the fight fills the screen (android.css, html[data-hl-encounter]).
+  useEffect(() => {
+    if (!isAndroidLayout || !activeDungeon) return;
+    document.documentElement.dataset.hlEncounter = activeDungeon.type === 'boss_hunt' ? 'boss' : 'dungeon';
+    return () => { delete document.documentElement.dataset.hlEncounter; };
+  }, [activeDungeon?.type, Boolean(activeDungeon)]);
   const [battleActionsHost, setBattleActionsHost] = useState<HTMLElement | null>(null);
   useEffect(() => {
     if (isolatedHackathon && !isAndroidLayout) setBattleActionsHost(document.getElementById(BATTLE_ACTIONS_SLOT));
@@ -564,7 +585,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             </button>
             <button
               onClick={handleSummonBoss}
-              disabled={state.bossKeys < 1 || state.bossBattleActive}
+              disabled={summonBusy || state.bossKeys < 1 || state.bossBattleActive}
               className="pm-socket game-control flex min-h-11 items-center gap-1 px-2 py-0.5 ui-text-small font-bold"
             >
               <BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}
@@ -764,7 +785,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             {battleMenuOpen && <div role="dialog" aria-label="Battle menu" className="hl-battle-menu-panel pointer-events-auto min-h-0 w-64 max-w-[calc(100vw-24px)] overflow-y-auto overscroll-contain rounded-lg border border-[#80683f] bg-[#11130f]/97 p-2 shadow-2xl">
               {!activeDungeon && <div className="mb-2 grid grid-cols-2 gap-1.5 border-b border-[#80683f]/50 pb-2">
                 <button type="button" onClick={() => { setBattleMenuOpen(false); setShowDungeonInfo(true); }} className="pm-socket game-control flex min-h-11 items-center justify-center gap-1.5 px-2 ui-text-small font-bold text-[#d7c6ea]"><DoorOpen size={15} aria-hidden="true" /> DUNGEONS</button>
-                <button type="button" onClick={() => void handleSummonBoss()} disabled={state.bossKeys < 1 || state.bossBattleActive} className="pm-socket game-control flex min-h-11 items-center justify-center gap-1 px-2 ui-text-small font-bold disabled:opacity-50"><BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}</button>
+                <button type="button" onClick={() => void handleSummonBoss()} disabled={summonBusy || state.bossKeys < 1 || state.bossBattleActive} className="pm-socket game-control flex min-h-11 items-center justify-center gap-1 px-2 ui-text-small font-bold disabled:opacity-50"><BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}</button>
               </div>}
               {battleSettingsContent}
             </div>}
@@ -900,7 +921,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             <button onClick={() => scrollLocations(1)} className="game-control grid place-items-center" aria-label="Next locations"><ChevronRight size={20} /></button>
           </div>
           </div>
-        </div> : activeDungeon.type === 'boss_hunt' ? <div className="material-panel mt-1.5 shrink-0 p-3"><div className="flex items-center justify-between gap-3"><span className="section-kicker">Boss Hunt</span><span className="ui-text-small font-black uppercase tracking-widest text-violet-300">Server combat · reload-safe · potions disabled</span></div><div className="mt-2 grid grid-cols-2 gap-1.5"><div className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room_state?.kind === 'retinue' ? 'border-violet-400 bg-violet-950/40 text-violet-100' : 'border-emerald-700/60 bg-emerald-950/25 text-emerald-300'}`}>1. Retinue</div><div className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room_state?.kind === 'shared_boss' ? 'border-violet-400 bg-violet-950/40 text-violet-100' : 'border-white/10 bg-black/20 text-[#77706f]'}`}>2. Shared Boss</div></div></div> : <div className="material-panel mt-1.5 shrink-0 p-3"><div className="flex items-center justify-between gap-3"><span className="section-kicker">Cursed Citadel</span><span className="ui-text-small font-black uppercase tracking-widest text-violet-300">HP persists · potions disabled</span></div><div className="mt-2 grid grid-cols-4 gap-1.5">{['Guards', 'Elite', 'Crossroads', 'Boss'].map((label, index) => <div key={label} className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room === index + 1 ? 'border-violet-400 bg-violet-950/40 text-violet-100' : activeDungeon.room > index + 1 ? 'border-emerald-700/60 bg-emerald-950/25 text-emerald-300' : 'border-white/10 bg-black/20 text-[#77706f]'}`}>{index + 1}. {label}</div>)}</div></div>}
+        </div> : activeDungeon.type === 'boss_hunt' ? <div className="hl-encounter-strip material-panel mt-1.5 shrink-0 p-3"><div className="flex items-center justify-between gap-3"><span className="section-kicker">Boss Hunt</span><span className="ui-text-small font-black uppercase tracking-widest text-violet-300">Server combat · reload-safe · potions disabled</span></div><div className="mt-2 grid grid-cols-2 gap-1.5"><div className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room_state?.kind === 'retinue' ? 'border-violet-400 bg-violet-950/40 text-violet-100' : 'border-emerald-700/60 bg-emerald-950/25 text-emerald-300'}`}>1. Retinue</div><div className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room_state?.kind === 'shared_boss' ? 'border-violet-400 bg-violet-950/40 text-violet-100' : 'border-white/10 bg-black/20 text-[#77706f]'}`}>2. Shared Boss</div></div></div> : <div className="hl-encounter-strip material-panel mt-1.5 shrink-0 p-3"><div className="flex items-center justify-between gap-3"><span className="section-kicker">Cursed Citadel</span><span className="ui-text-small font-black uppercase tracking-widest text-violet-300">HP persists · potions disabled</span></div><div className="mt-2 grid grid-cols-4 gap-1.5">{['Guards', 'Elite', 'Crossroads', 'Boss'].map((label, index) => <div key={label} className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room === index + 1 ? 'border-violet-400 bg-violet-950/40 text-violet-100' : activeDungeon.room > index + 1 ? 'border-emerald-700/60 bg-emerald-950/25 text-emerald-300' : 'border-white/10 bg-black/20 text-[#77706f]'}`}>{index + 1}. {label}</div>)}</div></div>}
 
       </div>
 
@@ -1259,13 +1280,13 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
   })();
 
   return <aside className="dungeon-battle-panel" aria-label={checkpoint.type === 'boss_hunt' ? 'Boss Hunt controls' : 'Dungeon battle controls'}>
-    <div className="flex items-center justify-between ui-text-small font-black uppercase tracking-wide text-[#b7a9c0]"><span>{roomState?.modifier?.split('_').join(' ') ?? (roomState?.kind?.split('_').join(' ') || 'Ready')}</span><span className="flex items-center gap-1">{checkpoint.type === 'boss_hunt' ? <><BossKeyIcon size={16} /> 1 Boss Key spent</> : attempts ? `${attempts.remaining}/${attempts.max} attempts` : '— attempts'}</span></div>
-    <div className="grid w-full gap-2">
+    <div className="dungeon-panel-head flex items-center justify-between ui-text-small font-black uppercase tracking-wide text-[#b7a9c0]"><span>{roomState?.modifier?.split('_').join(' ') ?? (roomState?.kind?.split('_').join(' ') || 'Ready')}</span><span className="flex items-center gap-1">{checkpoint.type === 'boss_hunt' ? <><BossKeyIcon size={16} /> 1 Boss Key spent</> : attempts ? `${attempts.remaining}/${attempts.max} attempts` : '— attempts'}</span></div>
+    <div className="dungeon-panel-body grid w-full gap-2">
       {roomState?.status === 'cleared' && <div className="text-center ui-text-medium font-black uppercase tracking-wider text-emerald-300">Room cleared</div>}
       {roomState?.status === 'failed' && <div className="text-center ui-text-medium font-black uppercase tracking-wider text-rose-300">Formation defeated</div>}
       {busy && <div className="text-center ui-text-medium font-black uppercase tracking-wide text-violet-200">Battle in progress…</div>}
       {checkpoint.room === 3 && !roomState && <div className="grid grid-cols-2 gap-2"><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'recovery' })} className="game-control min-h-11 px-2 ui-text-small font-black text-emerald-300"><HeartPulse size={15} className="mx-auto mb-1" />Recovery · +25% HP</button><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'treasure' })} className="game-control min-h-11 px-2 ui-text-small font-black text-amber-300"><Gem size={15} className="mx-auto mb-1" />Treasure fight</button></div>}
-      {checkpoint.room === 4 && roomState?.boss && <div className="rounded-lg border border-amber-800/45 bg-amber-950/20 px-3 py-2 text-center ui-text-small font-bold text-amber-200">{roomState.boss.name} · {roomState.status === 'reward_locked' ? 'Defeated · Rewards locked' : roomState.kind === 'shared_boss' ? 'Vulnerable · Shared target' : roomState.status === 'boss_locked' ? 'Retinue defeated · Boss vulnerable' : 'Protected by Retinue'}</div>}
+      {checkpoint.room === 4 && roomState?.boss && <div className="dungeon-panel-boss-line rounded-lg border border-amber-800/45 bg-amber-950/20 px-3 py-2 text-center ui-text-small font-bold text-amber-200">{roomState.boss.name} · {roomState.status === 'reward_locked' ? 'Defeated · Rewards locked' : roomState.kind === 'shared_boss' ? 'Vulnerable · Shared target' : roomState.status === 'boss_locked' ? 'Retinue defeated · Boss vulnerable' : 'Protected by Retinue'}</div>}
       {roomState?.status === 'reward_locked' && <div className="grid gap-2" role="status" aria-label={checkpoint.type === 'boss_hunt' ? 'Verified Boss Hunt summary' : 'Verified Dungeon run summary'}>
         <div className="rounded-lg border border-emerald-700/45 bg-emerald-950/25 px-2 py-2">
           <div className="text-center ui-text-small font-black uppercase tracking-widest text-emerald-300">{checkpoint.type === 'boss_hunt' ? 'Victory verified' : 'Run verified'}</div>
@@ -1279,9 +1300,9 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
         {checkpoint.type === 'boss_hunt' ? <div className="dungeon-reward-preview"><span><Coins size={14} /> SERVER GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Claim is atomic, idempotent and server-owned</small></div> : <div className="dungeon-reward-preview"><span><SummonScrollArtwork size={18} /> {rewardCount(rewardPreview?.summon_scrolls)} SUMMON SCROLLS</span><span><Package size={14} /> {rewardCount(rewardPreview?.dungeon_chests)} DUNGEON CHEST</span><small>Server table {rewardPreview?.reward_table_version ?? 'unavailable'} · {rewardPreview?.reward_table_version === 'dungeon-reward-v3' && rewardCount(rewardPreview?.summon_scrolls) === 2 ? 'claim credits Scrolls once; Dungeon Chest is preview-only' : 'Scroll claim unavailable for this run'}</small></div>}
       </div>}
       {roomState?.status === 'cleared' && checkpoint.room < 4 && <div className="rounded border border-amber-700/35 bg-amber-950/20 px-2 py-1.5 text-center ui-text-small font-bold text-amber-200">Room reward preview · Gold + XP · settlement disabled in testing</div>}
-      {primary && <button type="button" disabled={busy} onClick={primary.action} className="game-control game-primary min-h-11 px-3 ui-text-medium font-black"><Skull size={17} className="mr-2 inline" />{primary.label}</button>}
+      {primary && <button type="button" disabled={busy} onClick={primary.action} className="dungeon-panel-primary game-control game-primary min-h-11 px-3 ui-text-medium font-black"><Skull size={17} className="mr-2 inline" />{primary.label}</button>}
       {error && <div role="alert" className="text-center ui-text-small font-bold text-rose-300">{error.split('_').join(' ')}</div>}
-      <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="game-control min-h-10 px-3 ui-text-medium font-bold text-rose-300">{confirmAbandon ? 'Confirm exit · no refund' : checkpoint.type === 'boss_hunt' ? 'Abandon Boss Hunt' : 'Exit Dungeon'}</button>
+      <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="dungeon-panel-abandon game-control min-h-10 px-3 ui-text-medium font-bold text-rose-300">{confirmAbandon ? 'Confirm exit · no refund' : checkpoint.type === 'boss_hunt' ? 'Abandon Boss Hunt' : 'Exit Dungeon'}</button>
     </div>
   </aside>;
 }
