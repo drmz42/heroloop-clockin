@@ -66,3 +66,27 @@ html[data-hl-edition='seeker'][data-hl-section='bag'] .game-main > .hl-col-right
   text-shadow: 0 0 12px rgba(242, 180, 80, .45), 0 2px 3px #000;
   text-transform: uppercase;
 }
+
+/* Battle (2026-10-03 v2): CSS-only dress of the unit plates, level tags and enemy frames. Combat,
+   motion classes and markup are unchanged (Arena.tsx). */
+html[data-hl-edition='seeker'] .arena-unit-info:not(#hl-b) {
+  border: 1px solid rgba(199, 158, 97, .45);
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(30, 22, 15, .94), rgba(8, 6, 5, .96)), url('../premium/assets/panel-stone.webp') center / 200px;
+  box-shadow: inset 0 1px 0 rgba(242, 204, 128, .14), 0 0 0 1px #000, 0 8px 16px rgba(0, 0, 0, .5);
+}
+html[data-hl-edition='seeker'] .arena-unit:has([data-combat-side='enemy']) .arena-unit-info:not(#hl-b) { border-color: rgba(190, 80, 70, .5); box-shadow: inset 0 1px 0 rgba(255, 140, 120, .12), 0 0 0 1px #000, 0 8px 16px rgba(0, 0, 0, .5); }
+html[data-hl-edition='seeker'] .arena-unit-name:not(#hl-b) { font-family: 'Cinzel', Georgia, serif; font-weight: 700; letter-spacing: .03em; text-shadow: 0 1px 2px #000; }
+html[data-hl-edition='seeker'] .arena-unit:has([data-combat-side='enemy']) .arena-unit-name:not(#hl-b) { color: #f5c1b4; }
+html[data-hl-edition='seeker'] .arena-unit-info .health-track:not(#hl-b) { border-radius: 2px; background: #0d0907; box-shadow: inset 0 0 0 1px rgba(199, 158, 97, .3); }
+html[data-hl-edition='seeker'] .arena-unit-info > div:last-child:not(#hl-b) { color: #cbbd9f; font-size: 10px; }
+html[data-hl-edition='seeker'] .battle-rank-plate:not(#hl-b) {
+  border-color: #c79e61;
+  background: linear-gradient(180deg, #3a2a17, #120c08);
+  box-shadow: 0 0 0 1px #000, 0 2px 6px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 220, 160, .2);
+  color: #f2cc80;
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+html[data-hl-edition='seeker'] .arena-portrait[data-combat-side='enemy']:not(#hl-b) { border-color: #7a3a2c !important; }
