@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
 import { bagItemCount, useGame } from '@/game/useGame';
 import { AndroidTopBar } from '@/components/AndroidTopBar';
 import { GameNavBar } from '@/components/GameNavBar';
-import { GameProgressBar } from '@/components/GameProgressBar';
+import { GameProgressBar, OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { isolatedHackathon } from '@/game/editionStorage';
 import { readyQuestCount, currentTutorialObjective } from '@/game/tutorialProgress';
 import { FooterBar } from '@/components/FooterBar';
@@ -458,6 +458,18 @@ function App() {
   const [showSupport, setShowSupport] = useState(false);
   const [showMail, setShowMail] = useState(false);
   const setCombatPresentationVisible = game.setCombatPresentationVisible;
+  // Founder 2026-10-03: a button in the top bar or tab bar first closes whatever is open (Commander, battle
+  // menu, More/Mine sheets, Wallet, Mail, Boost and other modals), so layers never stack and the chosen page
+  // or window opens alone. Runs in the capture phase, before the button's own handler opens its target.
+  const closeOverlaysFromBar = (event: ReactMouseEvent) => {
+    const target = event.target as Element;
+    if (!target.closest('button, a') || target.closest('.hl-more-sheet')) return;
+    // More and Mine toggle their own sheets (and close each other); closing them here as well reopened More.
+    const sheetToggle = Boolean(target.closest('[aria-expanded]'));
+    setShowBoost(false); setShowWallet(false); setShowPromoCode(false); setShowSupport(false); setShowMail(false);
+    if (!sheetToggle) setMoreOpen(false);
+    window.dispatchEvent(new CustomEvent(OVERLAYS_CLOSE_EVENT, { detail: { sheetToggle } }));
+  };
 
   useEffect(() => {
     setCombatPresentationVisible(accountGate === 'verified' && routePath !== '/wiki' && tab === 'main');
@@ -531,6 +543,7 @@ function App() {
 
   return (
     <div className={`game-shell ${isolatedHackathon || isAndroidLayout ? 'has-game-progress' : ''} game-motion-${game.state.battleAnimationMode} flex h-screen flex-col overflow-hidden bg-px-bg text-px-text`}>
+      <div className="contents" onClickCapture={closeOverlaysFromBar}>
       {isAndroidLayout ? (
         <AndroidTopBar
           power={game.teamPower()}
@@ -565,6 +578,7 @@ function App() {
         onWalletClick={() => setShowWallet(true)}
         onTokensClick={() => setShowBoost(true)}
       />}
+      </div>
 
       {tokenomics.status?.account_restriction && (
         <div role="status" data-account-restriction={tokenomics.status.account_restriction} className="border-b border-[#9a6a22] bg-[#2a1f0e] px-4 py-2 text-center text-xs leading-snug text-[#f0d9a8]">
@@ -609,6 +623,7 @@ function App() {
         )}
       </div>
 
+      <div className="contents" onClickCapture={closeOverlaysFromBar}>
       {isAndroidLayout ? (
         <MobileTabBar
           readyQuests={readyQuestCount(game.state)}
@@ -628,6 +643,7 @@ function App() {
       ) : (
         <FooterBar onLogout={() => void logout()} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} onSupportClick={() => setShowSupport(true)} />
       )}
+      </div>
 
       {game.offlineEarnings && (
         <OfflineModal

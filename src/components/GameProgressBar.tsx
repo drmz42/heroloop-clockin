@@ -6,6 +6,8 @@ import { groupNumber } from '@/game/numberFormat';
 
 // The phone top bar's Commander avatar opens the Commander sheet in MainScreen.
 export const COMMANDER_OPEN_EVENT = 'hl:commander-open';
+// Any top-bar or tab-bar button closes every open sheet, panel and modal before opening its own target.
+export const OVERLAYS_CLOSE_EVENT = 'hl:overlays-close';
 export const BATTLE_ACTIONS_SLOT = 'battle-entry-actions-slot';
 
 // Team Power with its transient gain/loss, shared by the web progress bar and the Android top bar.

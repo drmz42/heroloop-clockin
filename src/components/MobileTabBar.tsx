@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Backpack, BookOpen, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, Pickaxe, ScrollText, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, UserPlus, X } from 'lucide-react';
 import type { Tab } from './TopMenu';
+import { OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { setMobileSection, type MobileSection } from '@/platform/platform';
 import { defaultUiTheme, setUiTheme } from '@/theme/uiTheme';
 
@@ -28,6 +29,11 @@ export function MobileTabBar({
   alerts?: Partial<Record<MobileSection | Tab, boolean>>;
 }) {
   const [mineOpen, setMineOpen] = useState(false);
+  useEffect(() => {
+    const close = (event: Event) => { if (!(event as CustomEvent<{ sheetToggle?: boolean }>).detail?.sheetToggle) setMineOpen(false); };
+    window.addEventListener(OVERLAYS_CLOSE_EVENT, close);
+    return () => window.removeEventListener(OVERLAYS_CLOSE_EVENT, close);
+  }, []);
   useEffect(() => { setMobileSection(section); }, [section]);
   // While a window covers the Play screen, the screen underneath is not painted (android.css):
   // a phone WebView left the Bag grid showing through an unfinished Summon window.

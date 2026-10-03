@@ -6,7 +6,7 @@ import { tutorialProgress } from '@/game/tutorialProgress';
 import { Fragment, useCallback, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { isAndroidLayout } from '@/platform/platform';
-import { COMMANDER_OPEN_EVENT, BATTLE_ACTIONS_SLOT } from '@/components/GameProgressBar';
+import { COMMANDER_OPEN_EVENT, BATTLE_ACTIONS_SLOT, OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, DoorOpen, Menu, HeartPulse, Gem, Skull, BookOpen } from 'lucide-react';
 import { Arena, locationArtStyle } from '@/components/Arena';
 import { CombatErrorBoundary } from '@/components/CombatErrorBoundary';
@@ -544,6 +544,15 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     const open = () => setCommanderOpen((visible) => !visible);
     window.addEventListener(COMMANDER_OPEN_EVENT, open);
     return () => window.removeEventListener(COMMANDER_OPEN_EVENT, open);
+  }, []);
+  // A top-bar or tab-bar button closes this screen's sheets and panels (App.tsx closeOverlaysFromBar).
+  useEffect(() => {
+    const close = () => {
+      setCommanderOpen(false); setBattleMenuOpen(false); setShowBattleSettings(false); setShowDungeonInfo(false);
+      setShowAvatarPicker(false); setShowDropRates(false); setShowInventoryFull(false);
+    };
+    window.addEventListener(OVERLAYS_CLOSE_EVENT, close);
+    return () => window.removeEventListener(OVERLAYS_CLOSE_EVENT, close);
   }, []);
 
   // Commander panel: in the Quests column on desktop; on a phone it opens from the avatar in the
