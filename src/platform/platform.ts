@@ -47,6 +47,11 @@ const isAndroidDevice = typeof navigator !== 'undefined' && /android/i.test(navi
 // agent carries "HeroLoopApp". Wallets connect through Mobile Wallet Adapter with Android's
 // own wallet chooser; there is no browser and no Phantom in-app browser path.
 export const isNativeApp = typeof navigator !== 'undefined' && /HeroLoopApp\//.test(navigator.userAgent);
+// Founder 2026-10-03: the game is entered only through the native app. A browser sees the
+// landing with an inert Play button; local development and browser QA opt in with
+// VITE_WEB_GAME_ENTRY=true. This is an entry gate, not an access control: the server
+// still authenticates every request.
+export const webGameEntryAllowed = isNativeApp || import.meta.env.VITE_WEB_GAME_ENTRY === 'true';
 
 export function resolvePlatform(): Platform {
   if (!androidLayoutAvailable) return 'web';

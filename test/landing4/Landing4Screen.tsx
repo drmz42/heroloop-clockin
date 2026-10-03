@@ -4,6 +4,7 @@ import { isolatedHackathon } from '@/game/editionStorage';
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useGame } from "@/game/useGame";
 import { Onboarding } from "@/screens/LandingScreen";
+import { webGameEntryAllowed } from "@/platform/platform";
 
 const IMG = {
   warrior: "https://image.qwenlm.ai/public_source/9544dfa5-1389-46dc-8251-0b19cf331428/12d0a236b-ea80-464e-856f-68b5e921c507.png",
@@ -685,13 +686,13 @@ export default function App() {
   const toastTimer = useRef(0);
 
   useEffect(() => {
-    if (game.state.walletAddress) window.location.replace('/#game');
+    if (webGameEntryAllowed && game.state.walletAddress) window.location.replace('/#game');
   }, [game.state.walletAddress]);
 
   useReveal();
   useParallax();
 
-  const startPlaying = useCallback(() => setModal(true), []);
+  const startPlaying = useCallback(() => { if (webGameEntryAllowed) setModal(true); }, []);
 
   const showToast = useCallback((m) => {
     setToast(m);
@@ -720,7 +721,7 @@ export default function App() {
         <BattleSection />
         <RewardsSection onClaim={onClaim} />
         <RanksSection />
-        <FinalSection onPlay={() => setModal(true)} />
+        <FinalSection onPlay={startPlaying} />
       </main>
       {modal && <Onboarding game={game} onAccountReady={() => window.location.replace('/#game')} onClose={() => setModal(false)} />}
       <Toast msg={toast} />

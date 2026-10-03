@@ -5,7 +5,7 @@ import './theme/premium/premium-game.css';
 import './platform/android.css';
 import { captureSignupAttribution } from './game/signupAttribution';
 import { applyUiTheme, resolveUiTheme } from './theme/uiTheme';
-import { applyPlatform, isAppShell } from './platform/platform';
+import { applyPlatform, isAppShell, webGameEntryAllowed } from './platform/platform';
 import { AppLoadingScreen } from './platform/AppLoadingScreen';
 
 captureSignupAttribution();
@@ -35,8 +35,11 @@ function RootScreen() {
   }, []);
 
   // The Android app has no landing page: every entry goes to the game (sign-in first).
-  const gameRoute = isAppShell || window.location.hash === '#game' || window.location.pathname === '/wiki';
-  const Screen = window.location.pathname === '/' && !gameRoute
+  // Outside the app only the landing and the read-only wiki open; no route reaches the game.
+  const gameRoute = webGameEntryAllowed
+    ? isAppShell || window.location.hash === '#game' || window.location.pathname === '/wiki'
+    : window.location.pathname === '/wiki';
+  const Screen = (window.location.pathname === '/' || !webGameEntryAllowed) && !gameRoute
     ? (uiTheme === 'premium' ? PremiumLandingScreen : Landing4Screen)
     : GameScreen;
 
