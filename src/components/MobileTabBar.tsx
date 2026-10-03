@@ -8,9 +8,10 @@ import { defaultUiTheme, setUiTheme } from '@/theme/uiTheme';
 // (Founder 2026-10-02). Row 1: Battle, Quests and Bag switch the Play screen between its three
 // columns; Heroes, Summon and Market open their windows. Row 2: Training, Store, the upcoming
 // $ORE Mine (slightly highlighted), Ranks, Refer, and More with the footer links. Any item can
-// carry a count badge on its icon (`badges`); Quests shows its ready rewards.
+// carry a count badge on its icon (`badges`; Quests shows its ready rewards) or a red mark without a
+// number (`alerts`, e.g. a Store sale).
 export function MobileTabBar({
-  tab, section, moreOpen, onTab, onSection, onMoreOpen, onGuides, onCode, onSupport, onLogout, readyQuests = 0, badges = {},
+  tab, section, moreOpen, onTab, onSection, onMoreOpen, onGuides, onCode, onSupport, onLogout, readyQuests = 0, badges = {}, alerts = {},
 }: {
   tab: Tab;
   section: MobileSection;
@@ -24,6 +25,7 @@ export function MobileTabBar({
   onLogout: () => void;
   readyQuests?: number;
   badges?: Partial<Record<MobileSection | Tab, number>>;
+  alerts?: Partial<Record<MobileSection | Tab, boolean>>;
 }) {
   const [mineOpen, setMineOpen] = useState(false);
   useEffect(() => { setMobileSection(section); }, [section]);
@@ -35,10 +37,10 @@ export function MobileTabBar({
     return () => { delete document.documentElement.dataset.hlWindow; };
   }, [tab]);
   const countFor = (id: MobileSection | Tab) => (id === 'quests' ? readyQuests : badges[id] ?? 0);
-  const icon = (Icon: typeof Shield, count: number) => (
+  const icon = (Icon: typeof Shield, count: number, alert = false) => (
     <i className="hl-tabbar-icon" aria-hidden="true">
       <Icon size={20} />
-      {count > 0 && <b className="hl-tabbar-badge">{count > 99 ? '99+' : count}</b>}
+      {count > 0 ? <b className="hl-tabbar-badge">{count > 99 ? '99+' : count}</b> : alert && <b className="hl-tabbar-alert">!</b>}
     </i>
   );
   const sectionButton = (id: MobileSection, label: string, Icon: typeof Shield) => {
@@ -53,9 +55,10 @@ export function MobileTabBar({
   const windowButton = (id: Tab, label: string, Icon: typeof Shield) => {
     const active = tab === id && !moreOpen && !mineOpen;
     const count = countFor(id);
+    const alert = count === 0 && alerts[id] === true;
     return (
-      <button type="button" className={`hl-tabbar-item ${active ? 'is-active' : ''} ${count > 0 ? 'has-badge' : ''}`} aria-current={active ? 'page' : undefined} aria-label={count > 0 ? `${label}, ${count} new` : label} onClick={() => { onMoreOpen(false); setMineOpen(false); onTab(id); }}>
-        {icon(Icon, count)}<span>{label}</span>
+      <button type="button" className={`hl-tabbar-item ${active ? 'is-active' : ''} ${count > 0 || alert ? 'has-badge' : ''}`} aria-current={active ? 'page' : undefined} aria-label={count > 0 ? `${label}, ${count} new` : alert ? `${label}, new` : label} onClick={() => { onMoreOpen(false); setMineOpen(false); onTab(id); }}>
+        {icon(Icon, count, alert)}<span>{label}</span>
       </button>
     );
   };

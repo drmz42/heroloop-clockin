@@ -8,6 +8,7 @@ import { isolatedHackathon } from '@/game/editionStorage';
 import { readyQuestCount, currentTutorialObjective } from '@/game/tutorialProgress';
 import { FooterBar } from '@/components/FooterBar';
 import { MobileTabBar } from '@/components/MobileTabBar';
+import { markStoreNoticeSeen, storeNoticeUnseen } from '@/game/storeNotice';
 import { isAndroidLayout, isAppShell, type MobileSection } from '@/platform/platform';
 import { SupportTicketModal } from '@/components/SupportTicketModal';
 import { MailboxModal } from '@/components/MailboxModal';
@@ -406,6 +407,13 @@ function App() {
     return () => window.clearInterval(timer);
   }, [tokenomics.status?.my_hourly_share, game.state.walletAddress, game.state.boost.active, game.state.activeUntil, creditServerTokens]);
   const [tab, setTab] = useState<Tab>('main');
+  // Android tab bar: the Store mark stays until the Store is opened (src/game/storeNotice.ts).
+  const [storeNotice, setStoreNotice] = useState(storeNoticeUnseen);
+  useEffect(() => {
+    if (tab !== 'shop' || !storeNotice) return;
+    markStoreNoticeSeen();
+    setStoreNotice(storeNoticeUnseen());
+  }, [tab, storeNotice]);
   const [mobileSection, setMobileSection] = useState<MobileSection>('battle');
   const [moreOpen, setMoreOpen] = useState(false);
   // Android layout: a window or the More sheet takes one history entry, so the
@@ -604,6 +612,8 @@ function App() {
       {isAndroidLayout ? (
         <MobileTabBar
           readyQuests={readyQuestCount(game.state)}
+          badges={{ summon: game.state.summonScrolls }}
+          alerts={{ shop: storeNotice }}
           tab={tab}
           section={mobileSection}
           moreOpen={moreOpen}
