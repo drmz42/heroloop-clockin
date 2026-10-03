@@ -21,6 +21,11 @@ function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () =>
   const best = HERO_MAP[displayHeroes[0]?.heroId]?.rarity ?? 'common';
   const screenWow = order[best] >= order.rare;
   const revealed = phase === 'revealing' || phase === 'revealed';
+  // Big batches (Founder 2026-10-03): 100 cards each running endless rays, sparks, pulses and 3D
+  // filter flips exhausted phone GPUs (blank cards, torn layers). Only the best few keep the full
+  // show; every other card gets a cheap fade and the overlay drops its blur and screen-wide rays.
+  const massSummon = heroes.length > 10;
+  const fxCards = massSummon ? 3 : 10;
 
   useEffect(() => {
     if (phase !== 'charge') return;
@@ -37,8 +42,8 @@ function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () =>
   // Portal to <body>: inside the Summon window the result sat under the top bar and the phone
   // tab bar, which hid its buttons (Founder 2026-10-02).
   return createPortal(
-    <div data-phase={phase} className={`summon-result fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur p-4 anim-fade${revealed && screenWow ? ' summon-rarity-burst' : ''}${phase === 'revealing' ? ' summon-rupture' : ''}`} style={{ '--summon-best': RARITY_COLORS[best] } as React.CSSProperties}>
-      {revealed && screenWow && <div className="summon-screen-rays" aria-hidden="true" />}
+    <div data-phase={phase} className={`summon-result fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 p-4 anim-fade${massSummon ? ' summon-result-mass' : ' backdrop-blur'}${revealed && screenWow ? ' summon-rarity-burst' : ''}${phase === 'revealing' && !massSummon ? ' summon-rupture' : ''}`} style={{ '--summon-best': RARITY_COLORS[best] } as React.CSSProperties}>
+      {revealed && screenWow && !massSummon && <div className="summon-screen-rays" aria-hidden="true" />}
       {phase === 'revealing' && <i className="summon-flash" aria-hidden="true" />}
       <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(circle at 50% 50%, ${RARITY_COLORS[best]}26, transparent 62%)` }} />
       {phase === 'charge' ? (
@@ -54,13 +59,14 @@ function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () =>
           {displayHeroes.map((h, index) => {
             const base = HERO_MAP[h.heroId]; if (!base) return null;
             const rc = RARITY_COLORS[base.rarity]; const svg = heroPortraitSrc(base.id, base.heroClass, base.rarity, base.color);
-            const isWow = RARITY_INDEX[base.rarity] >= RARITY_INDEX.rare;
+            const fullFx = index < fxCards;
+            const isWow = fullFx && RARITY_INDEX[base.rarity] >= RARITY_INDEX.rare;
             return (
-              <div key={h.uid} className={`summon-result-card relative aspect-[3/4] rounded-xl flex flex-col items-center justify-center overflow-hidden border-2 transition ${revealed ? 'summon-card-unseal' : 'summon-card-sealed'} ${revealed && isWow ? 'summon-wow summon-rarity-card' : ''}`} style={{ borderColor: revealed ? rc : '#5b4770', background: revealed ? `radial-gradient(circle at 50% 30%, ${base.color}33, ${rc}18)` : 'linear-gradient(145deg,#23172f,#09070d 68%)', boxShadow: revealed ? `0 0 24px ${RARITY_GLOW[base.rarity]}` : 'inset 0 0 28px rgba(176,91,255,.18),0 0 12px rgba(115,65,150,.25)', '--summon-color': rc, '--reveal-delay': `${Math.min(index, 12) * 55}ms` } as React.CSSProperties}>
+              <div key={h.uid} className={`summon-result-card relative aspect-[3/4] rounded-xl flex flex-col items-center justify-center overflow-hidden border-2 transition ${revealed ? (fullFx ? 'summon-card-unseal' : 'summon-card-lite') : 'summon-card-sealed'} ${revealed && isWow ? 'summon-wow summon-rarity-card' : ''}`} style={{ borderColor: revealed ? rc : '#5b4770', background: revealed ? `radial-gradient(circle at 50% 30%, ${base.color}33, ${rc}18)` : 'linear-gradient(145deg,#23172f,#09070d 68%)', boxShadow: revealed ? (fullFx ? `0 0 24px ${RARITY_GLOW[base.rarity]}` : `0 0 8px ${RARITY_GLOW[base.rarity]}`) : 'inset 0 0 28px rgba(176,91,255,.18),0 0 12px rgba(115,65,150,.25)', '--summon-color': rc, '--reveal-delay': `${Math.min(index, 12) * 55}ms` } as React.CSSProperties}>
                 {revealed && isWow && <div className="summon-card-rays" aria-hidden="true" />}
                 {revealed && isWow && <i className="summon-card-shine" aria-hidden="true" />}
                 {revealed && isWow && Array.from({ length: 7 }, (_, spark) => <i key={spark} className="summon-spark" style={{ '--spark-index': spark } as React.CSSProperties} />)}
-                {revealed ? <div className="absolute inset-0"><img src={svg} alt="" className="h-full w-full object-cover" style={{ ...heroPortraitStyle(base.id, base.heroClass), transform: 'none' }} /><span className="absolute inset-x-0 bottom-0 px-1.5 pb-1 pt-4 bg-gradient-to-t from-black/80 to-transparent text-center"><span className="block text-[10px] font-bold leading-tight" style={{ color: rc }}>{base.name}</span><span className="block text-[7px] uppercase tracking-wide" style={{ color: rc + 'cc' }}>{RARITY_LABEL[base.rarity]}</span></span></div> : <div className="summon-seal-glyph relative"><Sparkles size={28} /><div className="absolute inset-0 anim-pulse-ring rounded-full border border-violet-400/50" /></div>}
+                {revealed ? <div className="absolute inset-0"><img src={svg} alt="" className="h-full w-full object-cover" style={{ ...heroPortraitStyle(base.id, base.heroClass), transform: 'none' }} /><span className="absolute inset-x-0 bottom-0 px-1.5 pb-1 pt-4 bg-gradient-to-t from-black/80 to-transparent text-center"><span className="block text-[10px] font-bold leading-tight" style={{ color: rc }}>{base.name}</span><span className="block text-[7px] uppercase tracking-wide" style={{ color: rc + 'cc' }}>{RARITY_LABEL[base.rarity]}</span></span></div> : <div className="summon-seal-glyph relative"><Sparkles size={28} />{!massSummon && <div className="absolute inset-0 anim-pulse-ring rounded-full border border-violet-400/50" />}</div>}
               </div>
             );
           })}
