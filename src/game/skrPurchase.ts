@@ -16,14 +16,27 @@ export function skrError(error: unknown): string {
     store_offer_expired:'The equipment offer expired. Refresh the Store.',
   } as Record<string,string>)[code]??'The purchase could not finish. Check Wallet history before trying again.';
 }
+// One shared 30 s rate poll for every price on screen (hero cards, item panels, Store, Market).
+let sharedRate: string | null = null;
+let rateTimer: ReturnType<typeof setInterval> | undefined;
+const rateListeners = new Set<(rate: string | null) => void>();
+function refreshSharedRate() {
+  void loadSkrRate().then(r => r.usd_micros_per_skr, () => null).then(rate => {
+    sharedRate = rate;
+    rateListeners.forEach(listener => listener(rate));
+  });
+}
 export function useSkrRate(enabled = true) {
-  const [rate,setRate]=useState<string|null>(null);
+  const [rate,setRate]=useState<string|null>(enabled ? sharedRate : null);
   useEffect(()=>{
     if (!enabled) return;
-    let active=true;
-    const refresh=()=>{void loadSkrRate().then(r=>{if(active)setRate(r.usd_micros_per_skr);}).catch(()=>{if(active)setRate(null);});};
-    refresh();const timer=setInterval(refresh,30_000);
-    return ()=>{active=false;clearInterval(timer);};
+    rateListeners.add(setRate);
+    setRate(sharedRate);
+    if (rateListeners.size === 1) { refreshSharedRate(); rateTimer = setInterval(refreshSharedRate, 30_000); }
+    return ()=>{
+      rateListeners.delete(setRate);
+      if (rateListeners.size === 0) { clearInterval(rateTimer); rateTimer = undefined; }
+    };
   },[enabled]);
   return rate;
 }

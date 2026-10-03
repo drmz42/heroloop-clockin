@@ -8,13 +8,8 @@ import { groupNumber } from '@/game/numberFormat';
 export const COMMANDER_OPEN_EVENT = 'hl:commander-open';
 export const BATTLE_ACTIONS_SLOT = 'battle-entry-actions-slot';
 
-export function GameProgressBar({ power, identity, commander, boost }: {
-  power: number; readyQuests: number; identity: string; onQuestsClick: () => void;
-  objective?: { label: string; progress: number; target: number } | null;
-  commander?: { heroId: string; level: number };
-  boost?: { active: boolean; onClick: () => void };
-}) {
-  const avatar = commander ? HERO_MAP[commander.heroId] : undefined;
+// Team Power with its transient gain/loss, shared by the web progress bar and the Android top bar.
+export function TeamPowerReadout({ power, identity }: { power: number; identity: string }) {
   const previous = useRef({ power, identity });
   const [delta, setDelta] = useState(0);
   useEffect(() => {
@@ -27,12 +22,22 @@ export function GameProgressBar({ power, identity, commander, boost }: {
   const format = (value: number) => value >= 1_000_000
     ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
     : groupNumber(Math.round(value));
+  return <div className="game-progress-power">
+    <Zap size={21} aria-hidden="true" />
+    <div><span className="game-progress-label">Team Power</span><strong title={groupNumber(Math.round(power))} data-team-power={Math.round(power)}>{format(power)}</strong></div>
+    <span role="status" className={`game-power-change ${delta > 0 ? 'is-gain' : 'is-loss'}`}>{delta !== 0 && `${delta > 0 ? '+' : '−'}${format(Math.abs(delta))}`}</span>
+  </div>;
+}
+
+export function GameProgressBar({ power, identity, commander, boost }: {
+  power: number; readyQuests: number; identity: string; onQuestsClick: () => void;
+  objective?: { label: string; progress: number; target: number } | null;
+  commander?: { heroId: string; level: number };
+  boost?: { active: boolean; onClick: () => void };
+}) {
+  const avatar = commander ? HERO_MAP[commander.heroId] : undefined;
   return <aside className="game-progress-bar" aria-label="Team progress">
-    <div className="game-progress-power">
-      <Zap size={21} aria-hidden="true" />
-      <div><span className="game-progress-label">Team Power</span><strong title={groupNumber(Math.round(power))} data-team-power={Math.round(power)}>{format(power)}</strong></div>
-      <span role="status" className={`game-power-change ${delta > 0 ? 'is-gain' : 'is-loss'}`}>{delta !== 0 && `${delta > 0 ? '+' : '−'}${format(Math.abs(delta))}`}</span>
-    </div>
+    <TeamPowerReadout power={power} identity={identity} />
     {commander && avatar && <button type="button" className="game-progress-commander" onClick={() => window.dispatchEvent(new Event(COMMANDER_OPEN_EVENT))} aria-label={`Commander, level ${commander.level}`}>
       <HeroPortrait heroId={avatar.id} heroClass={avatar.heroClass} rarity={avatar.rarity} color={avatar.color} size={40} />
       <b>{commander.level}</b>

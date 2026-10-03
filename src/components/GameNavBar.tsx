@@ -107,7 +107,7 @@ export function GameNavBar({
 }
 
 // Hackathon build: the server SKR ledger balance (deposits), not the legacy $HERO save field.
-function SkrBalance() {
+export function SkrBalance() {
   const snapshot = useWalletSnapshot();
   return <>{snapshot ? formatAmountShort(snapshot.balances.SKR, 'SKR', 'down') : '—'}</>;
 }

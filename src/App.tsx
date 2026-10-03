@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
 import { bagItemCount, useGame } from '@/game/useGame';
+import { AndroidTopBar } from '@/components/AndroidTopBar';
 import { GameNavBar } from '@/components/GameNavBar';
 import { GameProgressBar } from '@/components/GameProgressBar';
 import { isolatedHackathon } from '@/game/editionStorage';
@@ -521,10 +522,25 @@ function App() {
   }
 
   return (
-    <div className={`game-shell ${isolatedHackathon ? 'has-game-progress' : ''} game-motion-${game.state.battleAnimationMode} flex h-screen flex-col overflow-hidden bg-px-bg text-px-text`}>
-      {isolatedHackathon && <GameProgressBar power={game.teamPower()} readyQuests={readyQuestCount(game.state)} objective={currentTutorialObjective(game.state)} identity={game.state.walletAddress} onQuestsClick={openQuests} commander={isAndroidLayout ? { heroId: HERO_MAP[game.state.avatarHeroId] ? game.state.avatarHeroId : game.state.ownedHeroes[0]?.heroId ?? '', level: game.state.accountLevel } : undefined}  boost={isAndroidLayout ? { active: game.state.boost.active, onClick: () => setShowBoost(true) } : undefined} />}
+    <div className={`game-shell ${isolatedHackathon || isAndroidLayout ? 'has-game-progress' : ''} game-motion-${game.state.battleAnimationMode} flex h-screen flex-col overflow-hidden bg-px-bg text-px-text`}>
+      {isAndroidLayout ? (
+        <AndroidTopBar
+          power={game.teamPower()}
+          identity={game.state.walletAddress}
+          gold={game.state.gold}
+          commander={{ heroId: HERO_MAP[game.state.avatarHeroId] ? game.state.avatarHeroId : game.state.ownedHeroes[0]?.heroId ?? '', level: game.state.accountLevel }}
+          boostActive={game.state.boost.active}
+          walletAddress={linkedWalletAddress}
+          mailCount={game.mailCount}
+          onLogo={() => setTab('main')}
+          onTokens={() => setShowBoost(true)}
+          onBoost={() => setShowBoost(true)}
+          onWallet={() => setShowWallet(true)}
+          onMail={() => setShowMail(true)}
+        />
+      ) : isolatedHackathon && <GameProgressBar power={game.teamPower()} readyQuests={readyQuestCount(game.state)} objective={currentTutorialObjective(game.state)} identity={game.state.walletAddress} onQuestsClick={openQuests} />}
       {isAndroidLayout && <OfflineBar />}
-      <GameNavBar
+      {!isAndroidLayout && <GameNavBar
         tab={tab}
         onChange={(nextTab) => {
           if (nextTab === 'guides') {
@@ -540,7 +556,7 @@ function App() {
         walletAddress={linkedWalletAddress}
         onWalletClick={() => setShowWallet(true)}
         onTokensClick={() => setShowBoost(true)}
-      />
+      />}
 
       {tokenomics.status?.account_restriction && (
         <div role="status" data-account-restriction={tokenomics.status.account_restriction} className="border-b border-[#9a6a22] bg-[#2a1f0e] px-4 py-2 text-center text-xs leading-snug text-[#f0d9a8]">
