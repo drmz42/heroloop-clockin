@@ -251,7 +251,7 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
       <aside className="summon-side-panel self-center rounded-xl border border-[#6b536f] bg-[#08070a]/88 p-3 text-left shadow-[0_18px_45px_rgba(0,0,0,.65),inset_0_1px_rgba(255,224,165,.06)] backdrop-blur-[2px]" aria-label="Summon account and rates">
         <div className="section-kicker mb-2">Summon account</div>
         <div className="summon-balance rounded-lg border border-cyan-500/25 bg-cyan-950/15 px-3 py-2.5">
-          <span className="flex items-center gap-1.5 text-sm font-black text-cyan-200"><HeroTokenIcon size={16} /> {formatNum(state.hero)} $HERO</span>
+          <span className="flex items-center gap-1.5 text-sm font-black text-cyan-200">{isolatedHackathon ? <><SummonScrollArtwork size={18} /> {formatNum(state.summonScrolls)} Scrolls</> : <><HeroTokenIcon size={16} /> {formatNum(state.hero)} $HERO</>}</span>
           <span className="mt-1 block text-[9px] font-medium text-slate-500">{state.summons} summons · {state.ownedHeroes.length}/{state.heroCapacity} heroes</span>
         </div>
         <div className="mb-1 mt-3 text-[9px] font-black uppercase tracking-[.14em] text-[#ad9ab5]">Base summon rates</div>
