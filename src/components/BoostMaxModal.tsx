@@ -66,7 +66,7 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-3 backdrop-blur-[2px] anim-fade" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <div className="hl-portal fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-3 backdrop-blur-[2px] anim-fade" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div className="px-panel-raised relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl" role="dialog" aria-modal="true" aria-label="Rewards and Tokenomics">
         <header className="flex items-start justify-between gap-3 border-b border-[#5d4a2f] px-4 py-3">
           <div>

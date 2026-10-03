@@ -17,7 +17,7 @@ export function OfflineModal({
       <div className="offline-vault relative w-full max-w-[400px] overflow-visible rounded-xl p-4 text-center anim-slide-up" style={{ zIndex: 9999 }}>
         <span className="offline-coin-cloud offline-coin-cloud-left" aria-hidden="true">● ● ●</span>
         <span className="offline-coin-cloud offline-coin-cloud-right" aria-hidden="true">● ●</span>
-        <button onClick={onClose} className="absolute -top-2 -right-2 p-1.5 bg-px-panel border-2 border-px-border"><X size={16} className="text-px-text" /></button>
+        <button type="button" onClick={onClose} aria-label="Close" className="game-control absolute -top-2 -right-2 grid h-9 w-9 place-items-center"><X size={16} /></button>
 
         <h3 className="mb-1 font-pixel text-base text-gold-glow">WHILE YOU WERE AWAY</h3>
         <p className="mb-2 font-vt text-sm text-px-dim">

@@ -25,7 +25,7 @@ export function InventoryFullModal({ onClose }: { onClose: () => void }) {
   }, [onClose]);
 
   return createPortal(
-    <div className="fixed inset-0 z-[10030] grid place-items-center bg-black/75 p-4" onMouseDown={event => {
+    <div className="hl-portal fixed inset-0 z-[10030] grid place-items-center bg-black/75 p-4" onMouseDown={event => {
       if (event.target === event.currentTarget) onClose();
     }}>
       <section role="alertdialog" aria-modal="true" aria-labelledby="inventory-full-title" aria-describedby="inventory-full-description" className="material-panel w-full max-w-sm rounded-xl border border-[#80683f] p-5 text-center shadow-2xl">

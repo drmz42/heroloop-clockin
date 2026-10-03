@@ -18,7 +18,7 @@ export function ChestOpenModal({
   });
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 p-4 backdrop-blur-[5px] anim-fade">
+    <div className="hl-portal fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 p-4 backdrop-blur-[5px] anim-fade">
       <div className="relative flex max-h-[78vh] w-full max-w-xl flex-col overflow-hidden rounded-xl px-panel-raised p-4">
         {/* Header */}
         <div className="mb-3 text-center">
@@ -61,7 +61,7 @@ export function ChestOpenModal({
           </button>
         </div>
 
-        <button type="button" onClick={onClose} aria-label="Close and send items to bag" className="absolute right-1 top-1 grid h-11 w-11 place-items-center bg-px-panel border-2 border-px-border">
+        <button type="button" onClick={onClose} aria-label="Close and send items to bag" className="game-control absolute right-1 top-1 grid h-11 w-11 place-items-center">
           <X size={18} className="text-px-text" />
         </button>
       </div>

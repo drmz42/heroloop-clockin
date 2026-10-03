@@ -40,7 +40,7 @@ export function SkrBoostMaxModal({ onClose }: { onClose: () => void }) {
   const rate = useSkrRate();
   const tasks = skrBoostTasks(status, rate);
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-3 backdrop-blur-[2px]" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
+    <div className="hl-portal fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-3 backdrop-blur-[2px]" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
       <div ref={panel} className="px-panel-raised flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl" role="dialog" aria-modal="true" aria-labelledby="skr-boost-title">
         <header className="flex items-start justify-between gap-3 border-b border-[#5d4a2f] px-4 py-3">
           <div><div className="section-kicker">SKR rewards</div><h2 id="skr-boost-title" className="mt-1 flex items-center gap-2 text-2xl font-black text-[#f1d188]"><Crown size={22} /> Boost Max</h2></div>

@@ -704,7 +704,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     <div className="game-main flex h-full flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
       {/* ── LEFT COLUMN ── */}
       <div className="hl-col-left material-panel game-scrollbar order-2 flex w-full shrink-0 flex-col overflow-y-auto lg:order-none lg:w-60 xl:w-64">
-        {tutorialFinished && createPortal(<div className="dungeon-complete is-victory" style={{ position: 'fixed', zIndex: 9999 }} role="dialog" aria-modal="true" aria-label="Tutorial complete"><div className="dungeon-complete-crest"><Sparkles size={38} /><small>TUTORIAL · 10/10</small><strong>TUTORIAL COMPLETE</strong><p>Your team is built, geared and has beaten its first Boss.</p><div className="dungeon-reward-preview"><span><SummonScrollArtwork size={18} /> 1 SUMMON SCROLL</span><span><CheckCircle2 size={14} /> DAILY QUESTS NEXT</span><small>Final reward granted exactly once by the server</small></div><button type="button" autoFocus className="game-control game-primary" onClick={() => setTutorialFinished(false)}>CONTINUE</button></div></div>, document.body)}
+        {tutorialFinished && createPortal(<div className="hl-portal dungeon-complete is-victory" style={{ position: 'fixed', zIndex: 9999 }} role="dialog" aria-modal="true" aria-label="Tutorial complete"><div className="dungeon-complete-crest"><Sparkles size={38} /><small>TUTORIAL · 10/10</small><strong>TUTORIAL COMPLETE</strong><p>Your team is built, geared and has beaten its first Boss.</p><div className="dungeon-reward-preview"><span><SummonScrollArtwork size={18} /> 1 SUMMON SCROLL</span><span><CheckCircle2 size={14} /> DAILY QUESTS NEXT</span><small>Final reward granted exactly once by the server</small></div><button type="button" autoFocus className="game-control game-primary" onClick={() => setTutorialFinished(false)}>CONTINUE</button></div></div>, document.body)}
         {!isAndroidLayout && commanderPanel}
 
         <div id="game-quest-list" className="hl-quest-list flex-1 p-2">
@@ -839,7 +839,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           {!activeDungeon && <div className="hl-battle-footer normal-battle-footer relative z-30 flex shrink-0 flex-wrap items-end justify-between gap-3 px-3 pb-3">
             <TokenEarningsPanel status={tok.status} stale={tok.incomeStale} today={game.state.tokensEarnedToday} />
             <div className="hl-battle-dock ml-auto flex items-end gap-1.5">
-            {showDropRates && dropRatesPos && createPortal(<div role="dialog" aria-label="Chest drop rate" className="fixed z-[100] w-56 overflow-y-auto rounded-lg border border-[#80683f] bg-[#11130f]/98 p-2.5 shadow-2xl backdrop-blur-sm" style={{ right: dropRatesPos.right, bottom: dropRatesPos.bottom, maxHeight: dropRatesPos.maxHeight }}>
+            {showDropRates && dropRatesPos && createPortal(<div role="dialog" aria-label="Chest drop rate" className="hl-portal fixed z-[100] w-56 overflow-y-auto rounded-lg border border-[#80683f] bg-[#11130f]/98 p-2.5 shadow-2xl backdrop-blur-sm" style={{ right: dropRatesPos.right, bottom: dropRatesPos.bottom, maxHeight: dropRatesPos.maxHeight }}>
               <div className="flex items-center justify-between gap-2"><strong className="ui-text-small uppercase tracking-wider text-[#efd18a]">Chest drop rate</strong><button type="button" onClick={() => setShowDropRates(false)} aria-label="Close drop rates"><X size={13} /></button></div>
               <p className="mt-1 ui-text-small text-[#978f81]">Current Account Level {state.accountLevel}. Rates update with account level and global rarity availability.</p>
               <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">{chestRateRows.map(([rarity, weight]) => <Fragment key={rarity}><span className="ui-text-small font-bold" style={{ color: RARITY_COLORS[rarity as keyof typeof RARITY_COLORS] }}>{RARITY_LABEL[rarity as keyof typeof RARITY_LABEL]}</span><span className="text-right ui-text-small tabular-nums text-[#ddd4c4]">{(weight / chestWeightTotal * 100).toFixed(2).replace(/\.?0+$/, '')}%</span></Fragment>)}</div>
@@ -1114,7 +1114,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
         document.body,
       )}
       {isAndroidLayout && commanderOpen && createPortal(
-        <div className="hl-commander-sheet" role="dialog" aria-modal="true" aria-label="Commander" onClick={() => setCommanderOpen(false)}>
+        <div className="hl-portal hl-commander-sheet" role="dialog" aria-modal="true" aria-label="Commander" onClick={() => setCommanderOpen(false)}>
           <div className="hl-commander-sheet-panel material-panel" onClick={(event) => event.stopPropagation()}>
             {commanderPanel}
           </div>
@@ -1615,7 +1615,7 @@ function TokenEarningsPanel({ status, stale, today }: { status: TokenomicsStatus
     </>
   );
   const incomeDetails = (
-      <div id="battle-income-details" hidden={isolatedHackathon && !open} className={`hl-battle-income battle-income flex w-max flex-col items-stretch gap-2 font-vt ${isolatedHackathon ? 'battle-income-popover fixed overflow-y-auto' : ''}`} style={isolatedHackathon ? popoverPosition : undefined}>
+      <div id="battle-income-details" hidden={isolatedHackathon && !open} className={`${isolatedHackathon ? 'hl-portal ' : ''}hl-battle-income battle-income flex w-max flex-col items-stretch gap-2 font-vt ${isolatedHackathon ? 'battle-income-popover fixed overflow-y-auto' : ''}`} style={isolatedHackathon ? popoverPosition : undefined}>
       <div className={`${isolatedHackathon ? 'hl-skr-income' : 'hl-hero-only'} token-earnings-panel flex w-full flex-col gap-2 rounded-2xl border-2 border-[#b98a3c] bg-[#0d100d]/[.98] px-4 py-3 shadow-[0_0_34px_rgba(229,177,70,.4)]`}>
       <div className="flex items-center gap-2">
         <HeroTokenIcon size={22} />
@@ -1672,7 +1672,7 @@ function HealingIntroduction({ game }: { game: GameApi }) {
     firstButton.current?.focus();
     return () => { if (previous instanceof HTMLElement) previous.focus(); };
   }, []);
-  return createPortal(<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 p-4">
+  return createPortal(<div className="hl-portal fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 p-4">
     <section role="dialog" aria-modal="true" aria-labelledby="healing-intro-title" className="w-full max-w-md max-h-[88dvh] overflow-y-auto rounded-xl border border-[#80683f] bg-[#11130f] p-5 shadow-2xl" onKeyDown={event => {
       if (event.key === 'Escape') { event.preventDefault(); stockOnly(); }
       if (event.key === 'Tab') {

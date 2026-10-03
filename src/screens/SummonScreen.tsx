@@ -42,7 +42,7 @@ function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () =>
   // Portal to <body>: inside the Summon window the result sat under the top bar and the phone
   // tab bar, which hid its buttons (Founder 2026-10-02).
   return createPortal(
-    <div data-phase={phase} className={`summon-result fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 p-4 anim-fade${massSummon ? ' summon-result-mass' : ' backdrop-blur'}${revealed && screenWow ? ' summon-rarity-burst' : ''}${phase === 'revealing' && !massSummon ? ' summon-rupture' : ''}`} style={{ '--summon-best': RARITY_COLORS[best] } as React.CSSProperties}>
+    <div data-phase={phase} className={`hl-portal summon-result fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 p-4 anim-fade${massSummon ? ' summon-result-mass' : ' backdrop-blur'}${revealed && screenWow ? ' summon-rarity-burst' : ''}${phase === 'revealing' && !massSummon ? ' summon-rupture' : ''}`} style={{ '--summon-best': RARITY_COLORS[best] } as React.CSSProperties}>
       {revealed && screenWow && !massSummon && <div className="summon-screen-rays" aria-hidden="true" />}
       {phase === 'revealing' && <i className="summon-flash" aria-hidden="true" />}
       <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(circle at 50% 50%, ${RARITY_COLORS[best]}26, transparent 62%)` }} />
