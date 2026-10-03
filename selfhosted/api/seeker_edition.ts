@@ -5,6 +5,8 @@
 
 // Commands that exist only for $HERO (or for unlimited tester grants).
 export const SEEKER_REFUSED_ACTIONS: ReadonlySet<string> = new Set([
+  "ascension_focus_set",
+  "hero_summon_quote",
   "hero_ascend",
   "hero_promote_all",
   "hero_capacity_quote",

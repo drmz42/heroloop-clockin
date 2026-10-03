@@ -5,7 +5,7 @@ export type CommerceAdapters = {
   wallet: (path: string,body: Json) => Promise<Json>;
 };
 export const SKR_PRODUCTS: Record<string, readonly string[]> = {
-  hero_ascend:['target_uid'],hero_capacity_upgrade:['previous_capacity'],item_upgrade:['operation','item_uid','use_charm'],
+  hero_summon:['count'],hero_ascend:['target_uid'],hero_capacity_upgrade:['previous_capacity'],item_upgrade:['operation','item_uid','use_charm'],
   market_list_item: ['item_id','price'], market_buy_listing: ['listing_id'],
   store_buy_item: ['slot_index','refresh_at'], inventory_bag_buy:['bag','kind'], shop_bundle_buy: ['bundle'], reward_boost_buy: ['plan'],
   training_slot_unlock: ['unlocked_slots'], training_boost_buy: ['boost'],
@@ -27,5 +27,9 @@ export async function commitPurchase(a: CommerceAdapters,player: string,key: str
   const finished=await a.wallet('/wallet/purchase-finish',{
     player_id:player,quote_id:key,success:delivered.status==='delivered',
   });
+  if (delivered.status==='delivered' && finished.status==='committed') {
+    if (typeof finished.amount_minor!=='string' || !/^[1-9][0-9]*$/.test(finished.amount_minor)) throw new Error('invalid_skr_payment_receipt');
+    await a.game('SELECT heroloop_api.seeker_purchase_record_payment($1::uuid,$2::uuid,$3::numeric) AS result',[player,key,finished.amount_minor]);
+  }
   return { ...delivered,payment:finished };
 }

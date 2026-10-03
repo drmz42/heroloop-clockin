@@ -1,3 +1,5 @@
+import { isolatedHackathon } from '@/game/editionStorage';
+import { GoldIcon } from './GoldIcon';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckCircle2, Clock3, Coins, Download, ExternalLink, FlaskConical, Hourglass, Package, Sparkles, X } from 'lucide-react';
@@ -188,7 +190,7 @@ export function PartnerQuests({ claim, onOpenBoostMax, shareState, teamPower }: 
       <div className="space-y-1">
         {data.quests.map((quest) => {
           const missingLink = quest.requires && !data.links[quest.requires];
-          const rewards = Object.entries(quest.reward).filter(([, value]) => value > 0);
+          const rewards = Object.entries(quest.reward).filter(([key, value]) => value > 0 && (!isolatedHackathon || key !== 'hero'));
           const canSubmit = quest.status === 'started' || (quest.status === 'rejected' && quest.can_resubmit);
           return (
             <div key={quest.id} className="partner-quest-card px-2 py-1.5">
@@ -200,7 +202,7 @@ export function PartnerQuests({ claim, onOpenBoostMax, shareState, teamPower }: 
               <div className="ui-text-small mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[#f1d188]">
                 {rewards.map(([key, value]) => (
                   <span key={key} className="flex items-center gap-0.5" title={REWARD_LABEL[key] ?? key}>
-                    {REWARD_ICON[key] ?? <FlaskConical size={10} />}{formatNum(value)}{REWARD_ICON[key] ? '' : ` ${REWARD_LABEL[key] ?? key}`}
+                    {key === 'gold' ? <GoldIcon /> : REWARD_ICON[key] ?? <FlaskConical size={10} />}{formatNum(value)}{key === 'gold' ? ' Gold' : REWARD_ICON[key] ? '' : ` ${REWARD_LABEL[key] ?? key}`}
                   </span>
                 ))}
               </div>

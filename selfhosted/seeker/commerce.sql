@@ -45,7 +45,7 @@ BEGIN
     END IF;
     RETURN seeker_skr.purchase_json(p);
   END IF;
-  IF p_context->>'action' NOT IN ('market_list_item','market_buy_listing','store_buy_item','shop_bundle_buy','reward_boost_buy','inventory_bag_buy','hero_ascend','hero_capacity_upgrade','item_upgrade','training_slot_unlock','training_boost_buy')
+  IF p_context->>'action' NOT IN ('hero_summon','market_list_item','market_buy_listing','store_buy_item','shop_bundle_buy','reward_boost_buy','inventory_bag_buy','hero_ascend','hero_capacity_upgrade','item_upgrade','training_slot_unlock','training_boost_buy')
       OR p_cents IS NULL OR p_cents NOT BETWEEN 0.0001 AND 100000000 OR p_rate IS NULL OR p_rate<=0
       OR p_rate<>trunc(p_rate) OR p_observed IS NULL OR p_observed>clock_timestamp()
       OR p_observed<clock_timestamp()-interval '60 seconds' THEN RAISE EXCEPTION 'stale_skr_rate'; END IF;

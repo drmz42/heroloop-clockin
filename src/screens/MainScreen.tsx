@@ -27,6 +27,8 @@ import { ItemArtwork } from '@/components/ItemArtwork';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { AccountBonusPassives, RewardBoostTile } from '@/components/RewardBoost';
 import { ChestCollectIcon } from '@/components/ChestCollectIcon';
+import { GoldIcon } from '@/components/GoldIcon';
+import { SeekerQuests } from '@/components/SeekerQuests';
 import { BossKeyIcon } from '@/components/BossKeyIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 import { PartnerQuests } from '@/components/PartnerQuests';
@@ -723,6 +725,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1 px-2 py-1"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => void game.openTutorialChests(1)} className="game-control min-h-7 ui-text-small font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => void game.openTutorialChests(10)} className="game-control min-h-7 ui-text-small font-bold">Open 10</button></div></div>}
             </section>;
           })()}
+          {isolatedHackathon && <SeekerQuests claim={game.claimQuest} revision={state.summons} />}
           <div className="section-kicker mb-1">Daily Quests</div>
           <div className="space-y-1">
             {state.dailyQuests.map(q => {
@@ -732,7 +735,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                   <div className="flex items-center gap-1.5">
                     {q.claimed ? <CheckCircle2 size={11} className="shrink-0 text-emerald-400" /> : done ? <Circle size={11} className="shrink-0 fill-amber-400/30 text-amber-400" /> : <Circle size={11} className="shrink-0 text-slate-600" />}
                     <span className="ui-text-medium min-w-0 flex-1 truncate leading-tight text-px-text" title={groupDigits(q.label)}>{groupDigits(q.label)}</span>
-                    <span className="ui-text-small flex shrink-0 items-center gap-1 text-px-text"><Coins size={10} />{groupNumber(q.reward.gold)} <HeroTokenIcon size={10} />{q.reward.hero}</span>
+                    <span className="ui-text-small flex shrink-0 items-center gap-1 text-px-text"><GoldIcon size={12} />{groupNumber(q.reward.gold)} Gold {!isolatedHackathon && <><HeroTokenIcon size={10} />{q.reward.hero}</>}</span>
                   </div>
                   <div className="mt-1 flex items-center gap-1.5">
                     <div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
@@ -745,14 +748,14 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           </div>
           <div className="section-kicker mb-1 mt-2">Milestone Quests</div>
           <div className="space-y-1">
-            {state.milestoneQuests.map(q => {
+            {state.milestoneQuests.filter(q => !isolatedHackathon || !q.chain?.startsWith('token-')).map(q => {
               const done = q.progress >= q.target;
               return (
                 <div key={q.id} className={`quest-card px-2 py-1 ${done ? 'border-[#b48a43]' : ''}`}>
                   <div className="flex items-center gap-1.5">
                     {done ? <Circle size={11} className="shrink-0 fill-amber-400/30 text-amber-400" /> : <Circle size={11} className="shrink-0 text-slate-600" />}
                     <span className="ui-text-medium min-w-0 flex-1 truncate leading-tight text-px-text" title={groupDigits(q.label)}>{groupDigits(q.label)}</span>
-                    <span className="ui-text-small flex shrink-0 items-center gap-1 text-px-text">{q.reward.summonScrolls ? <><SummonScrollArtwork size={14} />{q.reward.summonScrolls}</> : <><Coins size={10} />{formatNum(q.reward.gold)} <HeroTokenIcon size={10} />{q.reward.hero}</>}</span>
+                    <span className="ui-text-small flex shrink-0 items-center gap-1 text-px-text">{q.reward.summonScrolls ? <><SummonScrollArtwork size={14} />{q.reward.summonScrolls}</> : <><GoldIcon size={12} />{formatNum(q.reward.gold)} Gold {!isolatedHackathon && <><HeroTokenIcon size={10} />{q.reward.hero}</>}</>}</span>
                   </div>
                   <div className="mt-1 flex items-center gap-1.5">
                     <div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#5a3d70,#bd78d5)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>

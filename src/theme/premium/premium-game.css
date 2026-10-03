@@ -199,7 +199,7 @@
 }
 
 /* Crimson seal: primary actions */
-[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-primary, .reward-cta, .item-act--primary, .summon-cta--10, .summon-break-seal):not(#pm-x):not(#pm-y) {
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding) :is(.game-primary, .reward-cta, .item-act--primary, .summon-break-seal):not(#pm-x):not(#pm-y) {
   border-style: solid;
   border-color: transparent;
   border-image: var(--pm-crimson) 90 170 fill / 9px 13px / 0 3px stretch;
@@ -376,12 +376,12 @@
 [data-hl-theme=premium] .summon-pay-option[aria-pressed=true] { filter: none; color: #fbeccb !important; border-image: var(--pm-crimson) 90 170 fill / 9px 13px / 0 3px stretch; }
 [data-hl-theme=premium] .summon-pay-option:last-child[aria-pressed=true] { border-image: var(--pm-bronze) 85 150 fill / 8px 12px / 0 3px stretch; color: #ffe7b0 !important; filter: brightness(1.15) drop-shadow(0 0 8px rgba(242, 204, 128, .35)); }
 
-/* Summon buttons: x1 bronze, x10 crimson seal, x100 bronze with arcane glow */
+/* Summon buttons: x1, x10 and x100 share the bronze frame */
 [data-hl-theme=premium] .summon-cta { font-family: var(--pm-display); }
 [data-hl-theme=premium] .summon-cta > span:first-child { color: var(--pm-ivory); letter-spacing: .08em; text-transform: uppercase; }
 [data-hl-theme=premium] .summon-cta > span:first-child svg { color: var(--pm-brass-hi) !important; }
 [data-hl-theme=premium] .summon-cta > span:last-child { color: var(--pm-brass-hi) !important; }
-[data-hl-theme=premium] .summon-cta--10 { --glow: rgba(179, 48, 28, .5) !important; }
+[data-hl-theme=premium] .summon-cta--10 { --glow: rgba(242, 204, 128, .35) !important; }
 [data-hl-theme=premium] :is(.game-shell, .hl-onboarding) .summon-cta--100:not(#pm-x):not(#pm-y) { background: radial-gradient(ellipse at center, rgba(160, 70, 200, .3), transparent 70%) !important; --glow: rgba(160, 70, 200, .4) !important; }
 [data-hl-theme=premium] .summon-promote { font-family: var(--pm-display); letter-spacing: .05em; }
 

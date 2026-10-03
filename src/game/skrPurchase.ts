@@ -5,6 +5,7 @@ export function skrError(error: unknown): string {
   const code=error instanceof SeekerWalletError ? error.code : String(error);
   return ({
     skr_insufficient_balance_or_overflow:'Not enough in-game SKR. Deposit SKR in Wallet.',
+    hero_capacity_exceeded:'Not enough free Hero slots. No heroes were summoned.',
     skr_quote_expired:'The quote expired. Check a new price before paying.',
     stale_skr_rate:'A fresh SKR rate is unavailable. Try again shortly.',
     skr_purchase_pending:'Payment is pending. Retry this payment from Wallet history.',

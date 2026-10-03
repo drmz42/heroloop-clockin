@@ -165,6 +165,7 @@ const commandActions = new Set([
   "wallet_withdraw_confirm",
   "wallet_founder_status",
   "wallet_withdraw_review",
+  "skr_quest_status",
   "skr_purchase_quote",
   "skr_purchase_commit",
   "wallet_deposit_intent",
@@ -928,7 +929,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       const requestedAction = String(parsed.value.action);
       const rateLimit = await consumeRateLimit(identity.playerId,
         requestedAction === "skr_boost_status" ? "status"
-          : ["skr_purchase_quote", "skr_purchase_commit"].includes(requestedAction) ? "status"
+          : ["skr_quest_status", "skr_purchase_quote", "skr_purchase_commit"].includes(requestedAction) ? "status"
           : Object.hasOwn(walletActions, requestedAction) ? "status"
           : requestedAction.startsWith("tester_credit_") ? "tester_credit_tokens" : requestedAction);
       if (!rateLimit.allowed) {
@@ -955,6 +956,15 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         return json(200,{ok:true,contract_version:1,request_id:requestId,result});
       } catch { return errorResponse(503,'wallet_unavailable',requestId); }
     }
+    if (parsed.value.action === 'skr_quest_status') {
+      if (edition !== 'seeker') return errorResponse(409, 'unavailable_in_standard_edition', requestId);
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const result = await databaseJson('SELECT heroloop_api.seeker_quest_status($1::uuid) AS result', [identity.playerId]);
+        return json(200, {ok:true, contract_version:1, request_id:requestId, result});
+      } catch { return errorResponse(503, 'quest_status_unavailable', requestId); }
+    }
     if (['skr_purchase_quote','skr_purchase_commit'].includes(String(parsed.value.action))) {
       if (edition!=='seeker' || !walletServiceUrl || walletServiceToken.length<32) return errorResponse(409,'unavailable_in_standard_edition',requestId);
       const quoting=parsed.value.action==='skr_purchase_quote';
@@ -980,7 +990,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
           'skr_insufficient_balance_or_overflow','skr_quote_not_found','skr_quote_expired','skr_purchase_refunded',
           'stale_skr_rate','account_restricted','market_listing_unavailable','market_self_purchase','item_not_found',
           'invalid_market_price','store_offer_expired','store_offer_sold','invalid_store_slot',
-          'skr_product_changed','target_not_found','maximum_stars','insufficient_duplicates','unsupported_rarity','hero_capacity_quote_stale','hero_capacity_exceeded','maximum_enchant','insufficient_gold','invalid_item_upgrade','bag_step_unavailable','invalid_shop_bundle_purchase','invalid_reward_boost_purchase']);
+          'skr_product_changed','target_not_found','maximum_stars','insufficient_duplicates','unsupported_rarity','hero_capacity_quote_stale','hero_capacity_exceeded','invalid_summon','maximum_enchant','insufficient_gold','invalid_item_upgrade','bag_step_unavailable','invalid_shop_bundle_purchase','invalid_reward_boost_purchase']);
         if(code) return errorResponse(409,code,requestId);
         return errorResponse(503,'skr_purchase_pending',requestId);
       }
@@ -1370,7 +1380,9 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       }
       try {
         const result = await retryDatabaseTimeoutOnce(() => databaseJson(
-          "SELECT heroloop_api.partner_quest_claim($1::uuid,$2::uuid,$3::bigint,$4::bigint) AS result",
+          edition === 'seeker'
+            ? "SELECT heroloop_api.seeker_partner_quest_claim($1::uuid,$2::uuid,$3::bigint,$4::bigint) AS result"
+            : "SELECT heroloop_api.partner_quest_claim($1::uuid,$2::uuid,$3::bigint,$4::bigint) AS result",
           [identity.playerId, requestKey, questId, revision],
         ));
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
@@ -1474,7 +1486,9 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       }
       try {
         const result = await databaseJson(
-          "SELECT heroloop_api.hero_summon($1::uuid, $2::uuid, $3::integer, $4::bigint, $5::text, $6::uuid) AS result",
+          edition === 'seeker'
+            ? "SELECT heroloop_api.seeker_scroll_summon($1::uuid, $2::uuid, $3::integer, $4::bigint, $5::text, $6::uuid) AS result"
+            : "SELECT heroloop_api.hero_summon($1::uuid, $2::uuid, $3::integer, $4::bigint, $5::text, $6::uuid) AS result",
           [identity.playerId, requestKey, count, expectedRevision, paymentMethod, quoteId],
         );
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
@@ -1770,7 +1784,9 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       }
       try {
         const result = await retryDatabaseTimeoutOnce(() => databaseJson(
-          "SELECT heroloop_api.quest_claim($1::uuid,$2::uuid,$3::text,$4::bigint) AS result",
+          edition === 'seeker'
+            ? "SELECT heroloop_api.seeker_quest_claim($1::uuid,$2::uuid,$3::text,$4::bigint) AS result"
+            : "SELECT heroloop_api.quest_claim($1::uuid,$2::uuid,$3::text,$4::bigint) AS result",
           [identity.playerId, requestKey, questId, revision],
         ));
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });

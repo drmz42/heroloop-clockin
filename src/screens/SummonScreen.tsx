@@ -10,6 +10,8 @@ import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 import { isolatedHackathon } from '@/game/editionStorage';
 import { SkrTokenIcon } from '@/components/SkrTokenIcon';
+import { quoteSkrPurchase, formatAmountShort, formatMinor, type SkrPurchaseQuote } from '@/game/seekerWallet';
+import { useSkrRate, skrPrice, skrError } from '@/game/skrPurchase';
 
 function SummonResult({ heroes, onClose }: { heroes: OwnedHero[]; onClose: () => void }) {
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -89,19 +91,20 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
   const [focusSaving, setFocusSaving] = useState(false);
   const [showFocus, setShowFocus] = useState(false);
   const [showPityInfo, setShowPityInfo] = useState(false);
-  // Seeker / Staging2: $HERO is gone and SKR payments are not connected yet (Founder 2026-10-02),
-  // so Scrolls are the only working method and the SKR option shows as coming soon.
-  const [paymentMethod, setPaymentMethod] = useState<'paid' | 'scroll'>(isolatedHackathon ? 'scroll' : 'paid');
-  const heroPriceLabel = (count: 1 | 10 | 100) => `${formatNum(count * 20)} $HERO`;
+  const [paymentMethod, setPaymentMethod] = useState<'paid' | 'scroll' | 'skr'>(isolatedHackathon ? 'skr' : 'paid');
+  const rate = useSkrRate(isolatedHackathon);
+  const [pendingQuote, setPendingQuote] = useState<{ quote: SkrPurchaseQuote; count: 1 | 10 | 100 } | null>(null);
+  const heroPriceLabel = (count: 1 | 10 | 100) => paymentMethod === 'skr' ? skrPrice(count * 2, rate) : `${formatNum(count * 20)} $HERO`;
   const singleHasSpace = state.ownedHeroes.length < state.heroCapacity;
   const tenHasSpace = state.ownedHeroes.length + 10 <= state.heroCapacity;
   const hundredHasSpace = state.ownedHeroes.length + 100 <= state.heroCapacity;
-  const canPay = (count: 1 | 10 | 100) => paymentMethod === 'paid' || state.summonScrolls >= count;
+  const canPay = (count: 1 | 10 | 100) => paymentMethod !== 'scroll' || state.summonScrolls >= count;
   const canSingle = singleHasSpace && canPay(1);
   const canTen = tenHasSpace && canPay(10);
   const canHundred = hundredHasSpace && canPay(100);
   useEffect(() => {
     if (!game.summonError) return;
+    if (isolatedHackathon && paymentMethod === 'skr') { setSummonNotice(game.summonError); return; }
     const safeCode = game.summonError.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
     const message = game.summonError.includes('insufficient_tokens')
       ? 'Not enough $HERO in the server balance'
@@ -119,7 +122,7 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
           ? 'Account save is not synchronized · Refresh the game'
           : `Summon unavailable · No $HERO was spent · Code: ${safeCode || 'network_error'}`;
     setSummonNotice(message);
-  }, [game.summonError]);
+  }, [game.summonError, paymentMethod]);
   const unavailableMessage = (count: 1 | 10 | 100) => setSummonNotice(
     state.ownedHeroes.length + count > state.heroCapacity
       ? `Need ${count} free Hero ${count === 1 ? 'slot' : 'slots'}`
@@ -130,6 +133,10 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
     if (state.ownedHeroes.length + count > state.heroCapacity || !canPay(count)) { unavailableMessage(count); return; }
     setSummoning(count); setSummonNotice('');
     try {
+      if (paymentMethod === 'skr') {
+        setPendingQuote({ quote: await quoteSkrPurchase('hero_summon', { count }), count });
+        return;
+      }
       let quoteId: string | null = null;
       if (paymentMethod === 'paid') {
         const quote = await game.quoteHeroSummon(count);
@@ -144,7 +151,15 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
       const result = await game.summonHeroes(count, paymentMethod, quoteId);
       if (result.length > 0) setResults(result);
       else setSummonNotice('Summon is temporarily unavailable · Nothing was spent');
-    } finally { setSummoning(null); }
+    } catch (error) { setSummonNotice(skrError(error)); } finally { setSummoning(null); }
+  };
+  const confirmSkrSummon = async () => {
+    if (!pendingQuote || summoning !== null) return;
+    setSummoning(pendingQuote.count); setSummonNotice('');
+    const result = await game.summonHeroes(pendingQuote.count, 'skr', pendingQuote.quote.quote_id);
+    if (result.length) { setResults(result); setPendingQuote(null); }
+    else setSummonNotice('Payment could not finish. Retry the same payment or check Wallet history.');
+    setSummoning(null);
   };
   const promoteAll = async () => {
     if (promoting) return;
@@ -181,7 +196,8 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
         <div className="summon-altar flex w-full max-w-2xl flex-col items-center rounded-xl border border-[#8c6231]/60 bg-[#08070a]/72 px-6 py-4 shadow-[0_16px_50px_rgba(0,0,0,.65),inset_0_1px_rgba(255,224,165,.08)] backdrop-blur-[2px]">
         <div className="section-kicker">The Obsidian Covenant</div>
         <h2 className="summon-title mb-1 mt-1 text-2xl font-black text-white"><span className="text-[#d7a9ff]">Hero</span> Summon</h2>
-        <p className="summon-lede text-slate-400 text-sm max-w-sm mb-1">{isolatedHackathon ? 'Summon heroes with Summon Scrolls. Every hero is unique.' : 'Summon heroes using $HERO tokens. All heroes are unique and tradeable.'}</p>
+        <p className="summon-lede text-slate-400 text-sm max-w-sm mb-1">{isolatedHackathon ? 'Summon heroes with SKR or Summon Scrolls. Every hero is unique.' : 'Summon heroes using $HERO tokens. All heroes are unique and tradeable.'}</p>
+        {!isolatedHackathon && <>
         <section className="summon-focus mb-2 w-full max-w-xl rounded-lg border border-violet-500/30 bg-black/45 text-left">
           <button type="button" onClick={() => setShowFocus((value) => !value)} aria-expanded={showFocus} className="flex min-h-10 w-full items-center gap-2 px-3 py-2"><Target size={13} className="text-violet-300" /><span className="text-[10px] font-black uppercase tracking-wide text-violet-200">Ascension Focus</span><span className="min-w-0 flex-1 truncate text-right text-[9px] text-[#9b8ea2]">{selectedFocus ? HERO_MAP[selectedFocus]?.name ?? 'Selected' : 'Off'}</span><ChevronDown size={13} className={`text-[#87788e] transition-transform ${showFocus ? 'rotate-180' : ''}`} /></button>
           {showFocus && <div className="border-t border-violet-500/20 px-2.5 pb-2.5">
@@ -199,6 +215,7 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
           <p className="mt-2 text-[8px] leading-relaxed text-[#8f8798]">The server locks one owned identity for this rarity when an x1/x10/x100 batch begins. Focus changes identity only, never rarity, Pity or batch size.</p>
           </div>}
         </section>
+        </>}
 
         {/* Temporarily hide Seeker Pity presentation; counters and guarantees remain server-owned. */}
         {!isolatedHackathon && <>
@@ -226,21 +243,26 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
           {summonNotice && <div role="alert" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-red-700/65 bg-[linear-gradient(135deg,rgba(75,16,22,.92),rgba(20,8,12,.96))] px-3 py-2.5 text-left shadow-[inset_0_1px_rgba(255,255,255,.06),0_8px_22px_rgba(0,0,0,.35)]"><AlertTriangle size={17} className="shrink-0 text-red-300" /><span className="flex-1 text-[11px] font-bold text-red-100">{summonNotice}</span><button type="button" onClick={() => setSummonNotice('')} aria-label="Dismiss Summon message" className="rounded p-1 text-red-300 hover:bg-white/10"><X size={14} /></button></div>}
           <div className="summon-pay grid grid-cols-2 gap-1 rounded-lg border border-violet-500/25 bg-black/40 p-1" aria-label="Summon payment method">
             {isolatedHackathon
-              ? <button type="button" disabled aria-disabled="true" className="summon-pay-option min-h-11 rounded-md px-2 text-[10px] font-black uppercase text-slate-500 opacity-60" title="SKR payments are coming soon"><span className="inline-flex items-center justify-center gap-1"><SkrTokenIcon size={12} />SKR · Soon</span></button>
+              ? <button type="button" onClick={() => { setPaymentMethod('skr'); setPendingQuote(null); }} aria-pressed={paymentMethod === 'skr'} disabled={summoning !== null} className={`summon-pay-option min-h-11 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'skr' ? 'bg-violet-800/65 text-violet-100' : 'text-slate-500'}`}><span className="inline-flex items-center justify-center gap-1"><SkrTokenIcon size={12} />SKR</span></button>
               : <button type="button" onClick={() => setPaymentMethod('paid')} aria-pressed={paymentMethod === 'paid'} disabled={summoning !== null} className={`summon-pay-option min-h-11 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'paid' ? 'bg-violet-800/65 text-violet-100' : 'text-slate-500'}`}>Test · $HERO</button>}
-            <button type="button" onClick={() => setPaymentMethod('scroll')} aria-pressed={paymentMethod === 'scroll'} disabled={summoning !== null} className={`summon-pay-option flex min-h-11 items-center justify-center gap-1 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'scroll' ? 'bg-amber-800/55 text-amber-100' : 'text-slate-500'}`}><SummonScrollArtwork size={25} /> Scrolls · {formatNum(state.summonScrolls)}</button>
+            <button type="button" onClick={() => { setPaymentMethod('scroll'); setPendingQuote(null); }} aria-pressed={paymentMethod === 'scroll'} disabled={summoning !== null} className={`summon-pay-option flex min-h-11 items-center justify-center gap-1 rounded-md px-2 text-[10px] font-black uppercase ${paymentMethod === 'scroll' ? 'bg-amber-800/55 text-amber-100' : 'text-slate-500'}`}><SummonScrollArtwork size={25} /> Scrolls · {formatNum(state.summonScrolls)}</button>
           </div>
-          <button type="button" onClick={() => void beginSummon(1)} disabled={!canSingle || summoning !== null || promoting} className="summon-cta summon-cta--1 flex h-[46px] items-center justify-between rounded-xl border border-purple-500/40 bg-gradient-to-r from-purple-600/30 to-blue-600/30 px-5 transition hover:from-purple-600/40 hover:to-blue-600/40 disabled:opacity-40">
+          {pendingQuote && <div className="rounded-lg border border-amber-500/40 bg-black/80 p-3 text-left" role="region" aria-label="Confirm SKR Summon">
+            <p className="text-sm text-amber-100" title={`Exact payment: ${formatMinor(pendingQuote.quote.amount_minor, 'SKR', 6)} SKR`}>Summon ×{pendingQuote.count} · {formatAmountShort(pendingQuote.quote.amount_minor, 'SKR', 'up')} SKR</p>
+            <p className="mt-1 text-[10px] text-slate-400">Server quote · ${(Number(pendingQuote.quote.usd_cents) / 100).toFixed(2)} · valid until {new Date(pendingQuote.quote.expires_at).toLocaleTimeString()}. No payment until you confirm.</p>
+            <div className="mt-2 grid grid-cols-2 gap-2"><button type="button" disabled={summoning !== null} onClick={() => void confirmSkrSummon()} style={{ minHeight: 44 }} className="game-control game-primary min-h-11 text-xs">{summoning ? 'Summoning…' : 'Pay SKR & summon'}</button><button type="button" disabled={summoning !== null} onClick={() => setPendingQuote(null)} style={{ minHeight: 44 }} className="game-control min-h-11 text-xs">Cancel</button></div>
+          </div>}
+          <button type="button" onClick={() => void beginSummon(1)} disabled={!canSingle || summoning !== null || promoting || pendingQuote !== null} className="summon-cta summon-cta--1 flex h-[46px] items-center justify-between rounded-xl border border-purple-500/40 bg-gradient-to-r from-purple-600/30 to-blue-600/30 px-5 transition hover:from-purple-600/40 hover:to-blue-600/40 disabled:opacity-40">
             <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-purple-300" /> {!singleHasSpace ? 'Hero storage full' : !canPay(1) ? 'Need 1 Summon Scroll' : summoning === 1 ? 'Preparing…' : 'Summon x1'}</span>
-            <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(1) : <><SummonScrollArtwork size={18} />1 Scroll</>}</span>
+            <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod !== 'scroll' ? heroPriceLabel(1) : <><SummonScrollArtwork size={18} />1 Scroll</>}</span>
           </button>
-          <button type="button" onClick={() => void beginSummon(10)} disabled={!canTen || summoning !== null || promoting} className="summon-cta summon-cta--10 anim-glow flex h-[46px] items-center justify-between rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-600/30 to-purple-600/30 px-5 transition hover:from-amber-600/40 hover:to-purple-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(245,158,11,0.4)' } as React.CSSProperties}>
+          <button type="button" onClick={() => void beginSummon(10)} disabled={!canTen || summoning !== null || promoting || pendingQuote !== null} className="summon-cta summon-cta--10 flex h-[46px] items-center justify-between rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-600/30 to-purple-600/30 px-5 transition hover:from-amber-600/40 hover:to-purple-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(245,158,11,0.4)' } as React.CSSProperties}>
             <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-amber-300" /> {!tenHasSpace ? 'Need 10 free slots' : !canPay(10) ? `Need ${10 - state.summonScrolls} more Scrolls` : summoning === 10 ? 'Preparing…' : 'Summon x10'}</span>
-            <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(10) : <><SummonScrollArtwork size={18} />10 Scrolls</>}</span>
+            <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod !== 'scroll' ? heroPriceLabel(10) : <><SummonScrollArtwork size={18} />10 Scrolls</>}</span>
           </button>
-          <button type="button" onClick={() => void beginSummon(100)} disabled={!canHundred || summoning !== null || promoting} className="summon-cta summon-cta--100 anim-glow flex h-[46px] items-center justify-between rounded-xl border border-fuchsia-500/40 bg-gradient-to-r from-fuchsia-600/30 to-cyan-600/30 px-5 transition hover:from-fuchsia-600/40 hover:to-cyan-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(217,70,239,0.4)' } as React.CSSProperties}>
+          <button type="button" onClick={() => void beginSummon(100)} disabled={!canHundred || summoning !== null || promoting || pendingQuote !== null} className="summon-cta summon-cta--100 anim-glow flex h-[46px] items-center justify-between rounded-xl border border-fuchsia-500/40 bg-gradient-to-r from-fuchsia-600/30 to-cyan-600/30 px-5 transition hover:from-fuchsia-600/40 hover:to-cyan-600/40 disabled:opacity-40" style={{ '--glow': 'rgba(217,70,239,0.4)' } as React.CSSProperties}>
             <span className="flex items-center gap-2 text-white font-bold text-sm"><Sparkles size={16} className="text-fuchsia-300" /> {!hundredHasSpace ? 'Need 100 free slots' : !canPay(100) ? `Need ${100 - state.summonScrolls} more Scrolls` : summoning === 100 ? 'Preparing…' : 'Summon x100'}</span>
-            <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod === 'paid' ? heroPriceLabel(100) : <><SummonScrollArtwork size={18} />100 Scrolls</>}</span>
+            <span className="flex items-center gap-1 text-sm font-bold text-cyan-300">{paymentMethod !== 'scroll' ? heroPriceLabel(100) : <><SummonScrollArtwork size={18} />100 Scrolls</>}</span>
           </button>
           {!isolatedHackathon && <><div className="mt-2 h-px bg-gradient-to-r from-transparent via-[#8c6231]/65 to-transparent" />
           <button type="button" disabled={promoting || summoning !== null} onClick={() => void promoteAll()} className="summon-promote game-control flex h-[46px] items-center justify-center gap-1.5 px-3 text-[9px] font-black uppercase disabled:opacity-55"><Sparkles size={13} className="text-amber-300" /> {promoting ? 'Promoting heroes…' : 'Promote all heroes · Free space for Summon'}</button></>}

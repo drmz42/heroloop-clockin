@@ -20,3 +20,19 @@ Deno.test('commerce: client cannot provide price, seller or posting legs',async(
  await assert.rejects(()=>quotePurchase(a,'player','key','shop_bundle_buy',{bundle:'scroll_1',usd_cents:1}),/invalid_skr_product/);
  await assert.rejects(()=>quotePurchase(a,'player','key','market_buy_listing',{listing_id:'id',seller_id:'attacker'}),/invalid_skr_product/);
 });
+
+Deno.test('commerce: only committed wallet receipts record quest progress; retry uses same key',async()=>{
+ const calls:unknown[]=[];
+ const a:CommerceAdapters={
+  game:async(sql,args)=>{calls.push([sql.includes('record_payment')?'receipt':'delivery',args]);return {status:'delivered',result:{heroes:[]}};},
+  wallet:async(path)=>({status:path.endsWith('finish')?'committed':'charged',amount_minor:'123000000'}),
+ };
+ await commitPurchase(a,'player','key');
+ assert.equal((calls[1] as unknown[])[0],'receipt');
+ assert.deepEqual((calls[1] as unknown[])[1],['player','key','123000000']);
+});
+Deno.test('commerce: SKR summon accepts count only',async()=>{
+ const a:CommerceAdapters={game:async()=>({context:{},usd_cents:20}),wallet:async()=>({status:'quoted'})};
+ assert.equal((await quotePurchase(a,'player','key','hero_summon',{count:10})).status,'quoted');
+ await assert.rejects(()=>quotePurchase(a,'player','key','hero_summon',{count:10,price:1}),/invalid_skr_product/);
+});

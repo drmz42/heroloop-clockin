@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { isolatedHackathon } from './editionStorage';
+import { commitSkrPurchase } from './seekerWallet';
+import { skrError } from './skrPurchase';
 import { automaticHealingConfig } from '../../managed/functions/player-sync/automatic-healing.mjs';
 import { flushSync } from 'react-dom';
 import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey } from '@/game/types';
@@ -2088,11 +2090,31 @@ export function useGame() {
 
   const summonHeroes = useCallback(async (
     count: 1 | 10 | 100,
-    paymentMethod: 'paid' | 'scroll',
+    paymentMethod: 'paid' | 'scroll' | 'skr',
     quoteId: string | null = null,
   ): Promise<OwnedHero[]> => {
     if (!tokenomicsEnabled || stateRef.current.ownedHeroes.length + count > stateRef.current.heroCapacity
       || (paymentMethod === 'scroll' && stateRef.current.summonScrolls < count)) return [];
+    if (paymentMethod === 'skr') {
+      if (!isolatedHackathon || !quoteId) return [];
+      setSummonError('');
+      try {
+        const purchase = await commitSkrPurchase(quoteId);
+        if (purchase.status !== 'delivered') { setSummonError(skrError(String(purchase.result.code ?? 'skr_purchase_refunded'))); return []; }
+        const heroes = purchase.result.heroes;
+        const refreshed = await playerSync<{ state: GameState; revision: number }>('game_state_load');
+        if (refreshed?.state && Number.isSafeInteger(refreshed.revision)) {
+          setServerRevisionHint(refreshed.revision); hydrateServerState(refreshed.state);
+        } else {
+          // The durable grant is already known; show it and recover the save on next sync.
+          setState(prev => {
+            const fresh = Array.isArray(heroes) ? (heroes as OwnedHero[]).filter(hero => !prev.ownedHeroes.some(owned => owned.uid === hero.uid)) : [];
+            return { ...prev, ownedHeroes: [...prev.ownedHeroes, ...fresh], summons: prev.summons + fresh.length };
+          });
+        }
+        return Array.isArray(heroes) ? heroes as OwnedHero[] : [];
+      } catch (error) { setSummonError(skrError(error)); return []; }
+    }
     const settled = await settleServerSummon(count, paymentMethod, quoteId);
     if (!settled) return [];
     setState((prev) => {
@@ -2111,7 +2133,7 @@ export function useGame() {
       };
     });
     return settled.heroes;
-  }, [settleServerSummon]);
+  }, [settleServerSummon, hydrateServerState]);
 
   const settleServerEquipment = useCallback(async (nextState: GameState): Promise<boolean> => {
     equipmentErrorRef.current = '';
