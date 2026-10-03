@@ -956,8 +956,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
         {selectedHero && selectedHeroBase ? (
           <div className="shrink-0 border-b border-[#4f412e] px-3 py-2.5" style={{ zIndex: 10 }}>
             <div className="hl-gear-head mb-2 flex min-w-0 items-center gap-1.5 whitespace-nowrap">
-                <span className="section-kicker shrink-0">Equipped Gear</span>
-                <span className="min-w-0 flex-1 truncate ui-text-small font-vt font-black" style={{ color: RARITY_COLORS[selectedHeroBase.rarity], textShadow: `0 0 8px ${RARITY_COLORS[selectedHeroBase.rarity]}55` }}>{RARITY_LABEL[selectedHeroBase.rarity]} {CLASS_LABEL[selectedHeroBase.heroClass]}</span>
+                <div className="hl-gear-identity flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+                  <span className="section-kicker leading-none">Equipped Gear</span>
+                  <span className="min-w-0 truncate ui-text-small font-vt font-black" title={`${RARITY_LABEL[selectedHeroBase.rarity]} ${CLASS_LABEL[selectedHeroBase.heroClass]}`} style={{ color: RARITY_COLORS[selectedHeroBase.rarity], textShadow: `0 0 8px ${RARITY_COLORS[selectedHeroBase.rarity]}55` }}>{RARITY_LABEL[selectedHeroBase.rarity]} {CLASS_LABEL[selectedHeroBase.heroClass]}</span>
+                </div>
                 <span className="group/set relative shrink-0">
                   <button type="button" className={`game-control set-bonus-badge rarity-${selectedSetBonus?.rarity ?? 'common'} ${selectedSetBonus ? 'set-bonus-active' : ''}`} aria-label={selectedSetBonus ? `Set bonus +${selectedSetBonus.percent}%, details` : `Set bonus ${selectedSetProgress} of 8 matching, details`}>
                     <span>SET</span><strong>{selectedSetBonus ? `+${selectedSetBonus.percent}%` : `${selectedSetProgress}/8`}</strong>
