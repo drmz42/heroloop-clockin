@@ -71,6 +71,16 @@ const walletActions: Record<string, string> = {
   mine_start: "/wallet/mine/start",
   mine_stop: "/wallet/mine/stop",
 };
+// Copies the player's verified Mine rounds into the game database for Mine quests.
+// Best effort: quest progress simply lags if the wallet service is unavailable.
+async function syncMineRounds(playerId: string): Promise<void> {
+  try {
+    const result=await privateWallet('/wallet/mine/rounds',{player_id:playerId});
+    if (Array.isArray(result.rounds) && result.rounds.length) {
+      await databaseJson('SELECT heroloop_api.seeker_mine_record($1::uuid,$2::jsonb) AS result',[playerId,JSON.stringify(result.rounds)]);
+    }
+  } catch { console.error('mine round sync failed'); }
+}
 async function privateWallet(path: string,body: JsonRecord): Promise<JsonRecord> {
   if (!walletServiceUrl || walletServiceToken.length<32) throw new Error('wallet_unavailable');
   const response=await fetch(walletServiceUrl+path,{
@@ -965,6 +975,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       const payloadError = validatePayloadFields(payload, []);
       if (payloadError) return errorResponse(400, payloadError, requestId);
       try {
+        if (walletServiceUrl) await syncMineRounds(identity.playerId);
         const result = await databaseJson('SELECT heroloop_api.seeker_quest_status($1::uuid) AS result', [identity.playerId]);
         return json(200, {ok:true, contract_version:1, request_id:requestId, result});
       } catch { return errorResponse(503, 'quest_status_unavailable', requestId); }
@@ -1802,6 +1813,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         return errorResponse(400, payloadError ?? "invalid_quest_claim", requestId);
       }
       try {
+        if (edition === 'seeker' && questId.startsWith('mine-') && walletServiceUrl) await syncMineRounds(identity.playerId);
         const result = await retryDatabaseTimeoutOnce(() => databaseJson(
           edition === 'seeker'
             ? "SELECT heroloop_api.seeker_quest_claim($1::uuid,$2::uuid,$3::text,$4::bigint) AS result"

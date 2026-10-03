@@ -142,9 +142,20 @@ BEGIN
   RETURN to_jsonb(c);
 END $$;
 
+-- Verified rounds (non-zero settled cost) for game quests; newest 500.
+CREATE OR REPLACE FUNCTION seeker_skr.mine_player_rounds(p_player uuid) RETURNS jsonb
+LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog,seeker_skr AS $$
+  SELECT jsonb_build_object('rounds',COALESCE(jsonb_agg(jsonb_build_object('id',x.id,'at',x.at)),'[]'::jsonb))
+  FROM (SELECT r.id,e.created_at AS at FROM seeker_skr.mining_rounds r
+    JOIN seeker_skr.events e ON e.id=r.settle_event
+    JOIN seeker_skr.mining_sessions s ON s.id=r.session_id
+    JOIN seeker_skr.accounts a ON a.id=s.source_account
+    WHERE a.player_id=p_player AND r.cost_minor>0 ORDER BY e.created_at DESC LIMIT 500) x
+$$;
+
 REVOKE ALL ON seeker_skr.mining_terms FROM PUBLIC,seeker_wallet_runtime;
 REVOKE ALL ON FUNCTION seeker_skr.mine_session_json(seeker_skr.mining_sessions) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION seeker_skr.mine_status(uuid),seeker_skr.mine_accept_terms(uuid,text),
+GRANT EXECUTE ON FUNCTION seeker_skr.mine_player_rounds(uuid),seeker_skr.mine_status(uuid),seeker_skr.mine_accept_terms(uuid,text),
   seeker_skr.mine_start(uuid,uuid,numeric,jsonb,text,text),seeker_skr.mine_stop(uuid,uuid),
   seeker_skr.mine_runner_work(),seeker_skr.mine_round_prepare(uuid,uuid,numeric,text),
   seeker_skr.mine_round_settle(uuid,numeric,text),seeker_skr.mine_runner_stop(uuid),

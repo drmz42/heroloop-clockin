@@ -60,6 +60,10 @@ BEGIN
   PERFORM seeker_skr.mine_stop(p,k);
   st:=seeker_skr.mine_session_close(k);
   IF st->>'released_minor'<>'16' OR st->>'credited_minor'<>'20' THEN RAISE EXCEPTION 'fixture_bad_close %',st; END IF;
+  IF jsonb_array_length(seeker_skr.mine_player_rounds(p)->'rounds')<>1
+    OR jsonb_array_length(seeker_skr.mine_player_rounds(other)->'rounds')<>0 THEN
+    RAISE EXCEPTION 'fixture_bad_player_rounds';
+  END IF;
   st:=seeker_skr.mine_status(p);
   -- 100 - 30 reserved + 16 released + 20 credited
   IF st->>'available_minor'<>'106' OR st->'session'->>'status'<>'closed' OR st->>'used_today_minor'<>'14' THEN

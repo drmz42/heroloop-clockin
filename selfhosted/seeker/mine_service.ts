@@ -48,6 +48,9 @@ export async function mineRoute(path: string, player: string, body: Json, master
   if (path === "/wallet/mine/status") {
     return reply(200, { ok: true, result: status(await call("SELECT seeker_skr.mine_status($1::uuid) AS result", [player])) });
   }
+  if (path === "/wallet/mine/rounds") {
+    return reply(200, { ok: true, result: await call("SELECT seeker_skr.mine_player_rounds($1::uuid) AS result", [player]) });
+  }
   if (path === "/wallet/mine/accept-terms") {
     if (body.version !== MINE_TERMS_VERSION) return reply(400, { ok: false, code: "invalid_mining_terms" });
     const result = await call("SELECT seeker_skr.mine_accept_terms($1::uuid,$2::text) AS result", [player, MINE_TERMS_VERSION]);

@@ -49,6 +49,6 @@ export const MINE_GUIDE: MineGuideSection[] = [
   },
   {
     title: 'Game rewards',
-    body: 'Playing rounds will also complete Mine quests, streaks and ranks that give in-game items. These never pay SOL, SKR or ORE.',
+    body: 'Verified rounds complete ORE Mine quests: 5 / 20 / 50 rounds a day, streaks of 3 and 7 days with 5+ rounds, and Miner ranks at 50 / 250 / 1,000 / 5,000 rounds. They pay Gold and Summon Scrolls only, never SOL, SKR or ORE.',
   },
 ];
