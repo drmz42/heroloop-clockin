@@ -7,7 +7,9 @@ DO $$ BEGIN
 END $$;
 ALTER TABLE seeker_skr.accounts DROP CONSTRAINT IF EXISTS accounts_kind_check;
 ALTER TABLE seeker_skr.accounts ADD CONSTRAINT accounts_kind_check CHECK
-  (kind IN ('player','withdrawal_reserve','fees','merchant','rewards','chain','commerce_escrow'));
+  -- Same full kind list in every installer file, so re-applying any of them stays valid.
+  (kind IN ('player','withdrawal_reserve','fees','merchant','rewards','chain','commerce_escrow',
+    'fee_reserve','mining_reserve'));
 
 CREATE TABLE IF NOT EXISTS seeker_skr.purchases (
   id uuid PRIMARY KEY,

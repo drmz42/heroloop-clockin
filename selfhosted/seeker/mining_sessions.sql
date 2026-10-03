@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS seeker_skr.mining_sessions (
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   reserve_event uuid NOT NULL REFERENCES seeker_skr.events(id),
   release_event uuid REFERENCES seeker_skr.events(id),
+  -- Custody wallet that deploys for this session (derived per player by the runner).
+  custody_address text CHECK (custody_address ~ '^[1-9A-HJ-NP-Za-km-z]{32,44}$'),
   CHECK (completed <= round_limit AND spent_minor <= reserved_minor),
   CHECK ((status = 'closed') = (released_minor IS NOT NULL)),
   CHECK (released_minor IS NULL OR spent_minor + released_minor = reserved_minor)
@@ -48,6 +50,9 @@ CREATE TABLE IF NOT EXISTS seeker_skr.mining_rounds (
   fee_minor numeric(30,0) CHECK (fee_minor >= 0),
   signature text UNIQUE CHECK (signature ~ '^[1-9A-HJ-NP-Za-km-z]{64,88}$'),
   settle_event uuid REFERENCES seeker_skr.events(id),
+  -- Recorded before submission so a restart can find the transaction and its ORE round.
+  ore_round_id numeric(20,0) CHECK (ore_round_id >= 0),
+  submitted_signature text UNIQUE CHECK (submitted_signature ~ '^[1-9A-HJ-NP-Za-km-z]{64,88}$'),
   UNIQUE (session_id, seq),
   CHECK ((status = 'settled') = (signature IS NOT NULL AND cost_minor IS NOT NULL AND fee_minor IS NOT NULL))
 );
@@ -60,7 +65,9 @@ CREATE TABLE IF NOT EXISTS seeker_skr.mining_credits (
   player_account uuid NOT NULL REFERENCES seeker_skr.accounts(id),
   amount_minor numeric(30,0) NOT NULL CHECK (amount_minor BETWEEN 1 AND 18446744073709551615),
   signature text NOT NULL UNIQUE CHECK (signature ~ '^[1-9A-HJ-NP-Za-km-z]{64,88}$'),
-  credit_event uuid NOT NULL REFERENCES seeker_skr.events(id)
+  credit_event uuid NOT NULL REFERENCES seeker_skr.events(id),
+  -- Optional attribution for display; the credit itself belongs to the player account.
+  session_id uuid REFERENCES seeker_skr.mining_sessions(id)
 );
 
 -- Policy must come from approved server configuration, never a player payload.

@@ -66,6 +66,10 @@ const walletActions: Record<string, string> = {
   wallet_withdraw_review: "/wallet/withdraw-review",
   wallet_deposit_intent: "/wallet/deposit-intent",
   wallet_deposit_confirm: "/wallet/deposit-confirm",
+  mine_status: "/wallet/mine/status",
+  mine_accept_terms: "/wallet/mine/accept-terms",
+  mine_start: "/wallet/mine/start",
+  mine_stop: "/wallet/mine/stop",
 };
 async function privateWallet(path: string,body: JsonRecord): Promise<JsonRecord> {
   if (!walletServiceUrl || walletServiceToken.length<32) throw new Error('wallet_unavailable');
@@ -1004,6 +1008,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         wallet_deposit_intent:['asset','amount','payer'],wallet_deposit_confirm:['intent_id','signature'],
         wallet_withdraw_intent:['asset','amount','destination'],wallet_withdraw_confirm:['request_id','signature'],
         wallet_founder_status:['founder_address'],wallet_withdraw_review:['founder_address','request_id','action','signature','reason'],
+        mine_status:[],mine_accept_terms:['version'],mine_start:['session_id','tier','rounds'],mine_stop:['session_id'],
       } as Record<string,string[]>)[action];
       const payloadError = validatePayloadFields(payload, allowed);
       if (payloadError) return errorResponse(400, payloadError, requestId);

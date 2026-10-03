@@ -318,3 +318,21 @@ export function reviewWithdrawal(request_id:string,action:'begin_payout'|'finali
  const bound=boundWallet();if(!bound)throw new SeekerWalletError('wallet_not_linked');
  return command('wallet_withdraw_review',{founder_address:bound.address,request_id,action,...(action==='finalize'?{signature:value}:action==='reject'?{reason:value}:{})});
 }
+
+// ORE Mine (server custody). The server derives budget, policy and custody wallet.
+export type MineRound = { seq: number; status: 'pending' | 'settled'; ore_round_id: string | null; cost_minor: string | null; signature: string | null };
+export type MineSession = {
+  id: string; status: 'active' | 'stopped' | 'closed'; reserved_minor: string; spent_minor: string; released_minor: string | null;
+  credited_minor: string; completed: number; round_limit: number; stake_minor: string; custody_address: string | null;
+  created_at: string; rounds: MineRound[];
+};
+export type MineStatus = {
+  enabled: boolean; float_address: string | null; terms_version: string; accepted_terms_version: string | null; tiers: string[]; max_rounds: number;
+  session_limit_minor: string; daily_limit_minor: string; available_minor: string | null; used_today_minor: string;
+  session: MineSession | null;
+};
+export const loadMineStatus = (): Promise<MineStatus> => command('mine_status');
+export const acceptMineTerms = (version: string): Promise<MineStatus> => command('mine_accept_terms', { version });
+export const startMine = (tier: string, rounds: number): Promise<MineSession> =>
+  command('mine_start', { session_id: crypto.randomUUID(), tier, rounds });
+export const stopMine = (sessionId: string): Promise<MineSession> => command('mine_stop', { session_id: sessionId });

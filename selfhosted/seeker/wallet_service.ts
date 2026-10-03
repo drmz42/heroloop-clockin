@@ -21,6 +21,7 @@ import { parsePrice, SOL_MINT, type PriceRate } from './pricing.ts';
 import { evaluateSkrBoost, type SkrBoostSnapshot } from './boost.ts';
 import { authorizationMessage,verifyAuthorization,verifyPayout,FOUNDER_WALLETS,type Withdrawal } from "./withdrawal.ts";
 import { SKR_ASSET } from './ledger.ts';
+import { mineCustodyLamports, mineRoute, parseMineMaster, startMineRunner } from './mine_service.ts';
 type Json = Record<string, unknown>;
 const env = (name: string) => Deno.env.get(name) ?? "";
 const serviceToken = env("WALLET_SERVICE_TOKEN");
@@ -40,6 +41,9 @@ const allowedPayers = new Set(env("WALLET_ALLOWED_PAYERS").split(",").map((v) =>
 if ([...allowedPayers].some((address) => !ADDRESS.test(address)) || allowedPayers.size === 0) {
   throw new Error("invalid wallet payer allowlist");
 }
+// Optional ORE Mine custody seed; absent means the Mine stays disabled.
+const mineMaster = parseMineMaster(env("MINE_MASTER_SEED"));
+if (env("MINE_MASTER_SEED") && !mineMaster) throw new Error("invalid mine configuration");
 const DEPOSIT_TTL_SECONDS = 600;
 const LIMITS: Record<WalletAsset, bigint> = {
   SKR: 10_000n * 10n ** 6n, // 10 000 SKR per deposit
@@ -79,7 +83,9 @@ async function call(sql: string, args: unknown[]): Promise<Json> {
 function knownError(error: unknown): string | null {
   const message = error instanceof Error ? error.message : String(error ?? "");
   return ["deposit_intent_limit", "deposit_intent_not_found", "deposit_already_settled", "deposit_signature_used",
-    "skr_idempotency_conflict", "skr_insufficient_balance_or_overflow", "skr_quote_not_found", "skr_quote_expired", "skr_purchase_refunded", "skr_purchase_not_charged", "stale_skr_rate", "withdrawal_intent_limit", "withdrawal_not_found", "withdrawal_authorization_expired", "withdrawal_state_conflict", "withdrawal_may_be_paid", "withdrawal_rejection_reason_required", "withdrawal_amount_too_small"].find((code) => message.includes(code)) ?? null;
+    "skr_idempotency_conflict", "skr_insufficient_balance_or_overflow", "skr_quote_not_found", "skr_quote_expired", "skr_purchase_refunded", "skr_purchase_not_charged", "stale_skr_rate", "withdrawal_intent_limit", "withdrawal_not_found", "withdrawal_authorization_expired", "withdrawal_state_conflict", "withdrawal_may_be_paid", "withdrawal_rejection_reason_required", "withdrawal_amount_too_small",
+    "mining_terms_required", "mining_session_pending", "mining_budget_exceeded", "mining_budget_below_round_cost",
+    "mining_session_not_found", "invalid_mining_policy"].find((code) => message.includes(code)) ?? null;
 }
 
 async function rpc(method: string, params: unknown[]): Promise<unknown> {
@@ -276,7 +282,8 @@ async function reconcile():Promise<Json> {
     if(!isRecord(info)||!isRecord(info.tokenAmount)||info.tokenAmount.decimals!==6||typeof info.tokenAmount.amount!=='string'||!/^\d+$/.test(info.tokenAmount.amount))throw new Error('rpc_balance');
     skr+=BigInt(info.tokenAmount.amount);
   }
-  const chain:Record<string,bigint>={ SKR:skr,SOL:BigInt(sol.value as number) };
+  // Mine float and custody wallets hold SOL owed to players too.
+  const chain:Record<string,bigint>={ SKR:skr,SOL:BigInt(sol.value as number)+await mineCustodyLamports(mineMaster,call,rpc) };
   const assets:Json={};let blocked=false;
   for(const asset of ['SKR','SOL']) {
     const row=isRecord(liabilities[asset])?liabilities[asset] as Json:{};
@@ -364,7 +371,8 @@ Deno.serve({ hostname: "0.0.0.0", port: 8090 }, async (request) => {
     if (url.pathname === "/wallet/snapshot") return await snapshot(body.player_id, body.address);
     if (url.pathname === "/wallet/deposit-intent") return await createIntent(body.player_id, body);
     if (url.pathname === "/wallet/deposit-confirm") return await confirm(body.player_id, body);
-    const response=await commerce(url.pathname,body.player_id,body)??await withdrawals(url.pathname,body.player_id,body);
+    const response=await mineRoute(url.pathname,body.player_id,body,mineMaster,call,rpc)
+      ??await commerce(url.pathname,body.player_id,body)??await withdrawals(url.pathname,body.player_id,body);
     if (response) return response;
     return json(404, { ok: false, code: "not_found" });
   } catch (error) {
@@ -375,3 +383,4 @@ Deno.serve({ hostname: "0.0.0.0", port: 8090 }, async (request) => {
     return json(503, { ok: false, code: message.startsWith("rpc_") ? "chain_unavailable" : "wallet_unavailable" });
   }
 });
+startMineRunner(mineMaster, call, rpc);
