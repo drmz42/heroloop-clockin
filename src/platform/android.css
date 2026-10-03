@@ -6,7 +6,7 @@
    primary touch targets and 36 px for dense in-battle controls. */
 
 html[data-hl-platform='android'] {
-  --hl-tabbar-h: calc(108px + env(safe-area-inset-bottom, 0px)); /* two rows of 54 px */
+  --hl-tabbar-h: calc(106px + env(safe-area-inset-bottom, 0px)); /* 56 px primary row + 48 px secondary row + rail */
   --hl-header-h: 52px;
   -webkit-tap-highlight-color: transparent;
 }
@@ -108,47 +108,119 @@ html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\],
 html[data-hl-platform='android'] .fixed.inset-0.z-\[100\] { padding: 8px; }
 html[data-hl-platform='android'] .game-primary { border-radius: 2px; }
 
-/* ── Bottom tab bar ── */
+/* ── Bottom tab bar (Founder 2026-10-03: premium but quiet) ──
+   One dark stone band under a brass rail: no button boxes, items are divided by fading brass
+   hairlines, the two rows by a centred rail. The active item lights its icon and carries a small
+   brass diamond; a count badge (ready Quests, or any `badges` entry) sits on the icon as a crimson gem. */
 .hl-tabbar { display: none; }
 html[data-hl-platform='android'] .hl-tabbar {
   position: relative;
   z-index: 60;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-rows: 56px 48px;
   flex-shrink: 0;
   height: var(--hl-tabbar-h);
-  padding: 0 2px env(safe-area-inset-bottom, 0px);
-  border-top: 1px solid #6b5327;
-  background: linear-gradient(180deg, #1a1712 0%, #0b0b09 100%);
-  box-shadow: 0 -10px 28px rgba(0, 0, 0, .55);
+  padding: 2px 4px env(safe-area-inset-bottom, 0px);
+  border: 0;
+  background:
+    linear-gradient(90deg, transparent 4%, rgba(199, 158, 97, .3) 50%, transparent 96%) center 58px / 100% 1px no-repeat,
+    radial-gradient(ellipse 70% 120% at 50% 0%, rgba(143, 31, 18, .14), transparent 70%),
+    linear-gradient(180deg, rgba(22, 18, 14, .9), rgba(6, 5, 4, .97)),
+    url('../theme/premium/assets/stone-tile.webp') center / 240px repeat,
+    #0b0908;
+  box-shadow: 0 -12px 30px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(0, 0, 0, .8);
+}
+/* The brass rail on top: bright in the middle, fading out at the edges. */
+html[data-hl-platform='android'] .hl-tabbar::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(115, 77, 31, .2), #c79e61 30%, #f2cc80 50%, #c79e61 70%, rgba(115, 77, 31, .2));
+  box-shadow: 0 1px 6px rgba(242, 204, 128, .25);
+  pointer-events: none;
 }
 .hl-tabbar-item {
+  position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   border: 0;
-  border-top: 2px solid transparent;
   background: transparent;
-  color: #9b907c;
-  font-size: 11px;
+  color: #8e8371;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: .04em;
+  letter-spacing: .08em;
   text-transform: uppercase;
+  transition: color .15s ease;
+}
+/* Fading brass hairline between neighbours (not after the last item of a row). */
+.hl-tabbar-item:not(:nth-child(6n))::after {
+  content: '';
+  position: absolute;
+  top: 22%;
+  right: 0;
+  bottom: 22%;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(199, 158, 97, .22), transparent);
 }
 .hl-tabbar-item span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hl-tabbar-item.is-active { color: #ffd36e; border-top-color: #e0a83c; background: radial-gradient(circle at 50% 0%, rgba(224, 168, 60, .18), transparent 70%); }
+.hl-tabbar-icon { position: relative; display: grid; place-items: center; font-style: normal; }
+.hl-tabbar-icon svg { stroke-width: 1.75; transition: transform .15s ease, filter .15s ease; }
+/* Second row: the same language, one step quieter. */
+html[data-hl-platform='android'] .hl-tabbar-item:nth-child(n + 7) { gap: 3px; font-size: 8.5px; }
+html[data-hl-platform='android'] .hl-tabbar-item:nth-child(n + 7) .hl-tabbar-icon svg { width: 18px; height: 18px; }
+.hl-tabbar-item.is-active { color: #f2cc80; }
+.hl-tabbar-item.is-active .hl-tabbar-icon svg { color: #ffd98a; transform: translateY(-1px); filter: drop-shadow(0 0 6px rgba(242, 204, 128, .55)); }
+/* Active marker: a brass diamond on the item's top edge with a soft glow below it. */
+.hl-tabbar-item.is-active::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: calc(50% - 4px);
+  z-index: 1;
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  border: 1px solid #f2cc80;
+  background: linear-gradient(135deg, #f2cc80, #8a5a22);
+  box-shadow: 0 0 8px rgba(242, 204, 128, .6);
+}
+.hl-tabbar-item.is-active { background: radial-gradient(ellipse 60% 70% at 50% 20%, rgba(242, 204, 128, .12), transparent 72%); }
 .hl-tabbar-item:focus-visible { outline: 2px solid #ffd36e; outline-offset: -3px; }
-html[data-hl-platform='android'] .hl-tabbar-item { font-size: 10px; letter-spacing: .02em; }
-/* Second row sits on a slightly darker band, so the two rows read as primary and secondary. */
-html[data-hl-platform='android'] .hl-tabbar-item:nth-child(n + 7) { background-color: rgba(0, 0, 0, .22); }
+/* Count badge: a small crimson gem on the icon. */
+.hl-tabbar-badge {
+  position: absolute;
+  top: -7px;
+  left: calc(100% - 7px);
+  display: grid;
+  min-width: 17px;
+  height: 17px;
+  place-items: center;
+  padding: 0 4px;
+  border: 1px solid #f2cc80;
+  border-radius: 9px;
+  background: radial-gradient(circle at 35% 30%, #ff7a5c, #b3261a 55%, #6d1109);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .7), 0 0 8px rgba(255, 90, 60, .55);
+  color: #fff6e6;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+  animation: hl-tabbar-badge-pulse 2.2s ease-in-out infinite;
+}
+@keyframes hl-tabbar-badge-pulse { 50% { box-shadow: 0 0 0 1px rgba(0, 0, 0, .7), 0 0 13px rgba(255, 110, 70, .9); } }
+.game-motion-off :is(.hl-tabbar-badge, .hl-tabbar-mine svg) { animation: none; }
+/* The ready-rewards item keeps the quiet bar: the badge carries the signal, not a glowing box. */
+html[data-hl-platform='android'] .hl-tabbar-item.has-badge { color: #e9c77a; }
 /* The upcoming $ORE Mine: a soft gold glow and a "Soon" tag, never louder than the active tab. */
-.hl-tabbar-mine { color: #e9c77a; background: radial-gradient(circle at 50% 45%, rgba(224, 168, 60, .2), transparent 68%) !important; }
-.hl-tabbar-mine svg { filter: drop-shadow(0 0 4px rgba(255, 196, 92, .55)); animation: hl-mine-glow 2.8s ease-in-out infinite; }
-.hl-mine-badge { position: absolute; top: 3px; right: 3px; padding: 0 3px; border-radius: 2px; background: #e0a83c; color: #24170b; font-size: 8px; line-height: 12px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+.hl-tabbar-mine { color: #d9b46a; }
+.hl-tabbar-mine svg { filter: drop-shadow(0 0 4px rgba(255, 196, 92, .5)); animation: hl-mine-glow 2.8s ease-in-out infinite; }
+.hl-mine-badge { position: absolute; top: -8px; left: calc(100% - 10px); padding: 0 3px; border: 1px solid rgba(36, 23, 11, .8); background: linear-gradient(180deg, #f2cc80, #c79e61); color: #24170b; font-size: 7px; line-height: 11px; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; }
 @keyframes hl-mine-glow { 50% { filter: drop-shadow(0 0 7px rgba(255, 196, 92, .85)); } }
 .hl-mine-soon { display: grid; justify-items: center; gap: 6px; padding: 18px 8px 10px; text-align: center; color: #e9c77a; }
 .hl-mine-soon strong { font-size: 16px; color: #f0e5cd; }
@@ -191,8 +263,8 @@ html[data-hl-platform='android'] .hl-tabbar-item:nth-child(n + 7) { background-c
 .hl-more-links button { display: flex; min-height: 44px; align-items: center; justify-content: center; gap: 6px; border-radius: 2px; font-size: 13px; font-weight: 700; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hl-tabbar-item { transition: none; }
-  .hl-tabbar-mine svg { animation: none; }
+  .hl-tabbar-item, .hl-tabbar-icon svg { transition: none; }
+  .hl-tabbar-mine svg, .hl-tabbar-badge { animation: none; }
 }
 
 /* Battle HUD fits 360 px: Dungeons shows its icon only (the label stays for screen readers). */
@@ -315,7 +387,6 @@ html[data-hl-platform='android'] .mobile-current-objective span { display:block;
 html[data-hl-platform='android'] .mobile-current-objective strong { display:block;font-size:13px;line-height:17px;color:#f0e5cd; }
 html[data-hl-platform='android'] .mobile-current-objective button { min-height:44px;min-width:64px;flex-shrink:0;padding:5px 9px;font-size:12px;font-weight:800; }
 html[data-hl-platform='android'] .hl-tabbar-item { position:relative; }
-.hl-quest-ready-badge { position:absolute;top:3px;right:5px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 3px;border-radius:50%;background:#ffd36e;color:#24170b;font-size:11px;line-height:18px; }
 html[data-hl-platform='android'] .hl-quest-list .quest-card { padding:10px; }
 html[data-hl-platform='android'] .hl-quest-list .quest-card button { min-height:44px; }
 html[data-hl-platform='android'] .hl-quest-list .quest-card .ui-text-medium { font-size:14px; }
@@ -664,3 +735,64 @@ html[data-hl-platform='android'] .hl-battle-hud-left:empty { display: none; }
 html[data-hl-platform='android'] .hl-locations .hl-battle-settings > button { height: auto; min-height: 44px; width: 44px; padding: 0; }
 /* Beside the settings button the Locations label stays on one line. */
 html[data-hl-platform='android'] .location-disclosure .section-kicker { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: .03em; }
+
+/* ── One page system for every menu item (Founder 2026-10-03) ──
+   The Bag is the reference: a page is open stone with sections divided by a thin brass rule, never a
+   frame inside the page. Page-level panels (the Hall of Champions header, the Market shell, Store and
+   Ranks headers, Training and Summon panels, the Quests column) lose their forged frame; cards and
+   tiles inside a page share one quiet card; buttons keep their plates. Web windows are unchanged. */
+html[data-hl-platform='android'] {
+  --hl-page-rule: rgba(199, 158, 97, .22);
+  --hl-card-line: rgba(199, 158, 97, .2);
+  --hl-card-surface: linear-gradient(180deg, rgba(30, 24, 17, .72), rgba(10, 8, 7, .84));
+}
+html[data-hl-platform='android'] :is(.game-window, .hl-col-left) :is(.material-panel, .market-shell, .merchant-surface, .training-yard, .training-section, .training-guide, .training-status-row, .summon-altar, .summon-side-panel, .reward-scene):not(.rank-podium):not(#hl-a):not(#hl-b),
+html[data-hl-platform='android'] .hl-col-left.material-panel:not(#hl-a):not(#hl-b) {
+  border: 0 !important;
+  border-image: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+html[data-hl-platform='android'] :is(.game-window, .hl-col-left) .material-panel:not(.rank-podium)::after { content: none; }
+/* Page sections are divided by the Bag's brass rule. */
+html[data-hl-platform='android'] .game-window :is(.themed-screen-heroes > header, .themed-screen-ranks > header, .themed-screen-ranks > section > .material-panel, .merchant-surface, .market-header, .market-fee-copy, .training-guide, .training-yard, .training-section, .training-camp-screen > header, .summon-side-panel):not(#hl-a):not(#hl-b) {
+  border-bottom: 1px solid var(--hl-page-rule) !important;
+}
+html[data-hl-platform='android'] .game-window .market-shell > :is(nav, section, main, footer) { border-color: var(--hl-page-rule) !important; }
+html[data-hl-platform='android'] .game-window :is(.themed-screen-heroes > header, .themed-screen-ranks > header) { margin: 0 !important; padding: 12px; }
+html[data-hl-platform='android'] .game-window .themed-screen-ranks { padding: 0 !important; }
+html[data-hl-platform='android'] .game-window .themed-screen-ranks > section { margin: 0; padding: 10px 12px 0; }
+html[data-hl-platform='android'] .game-window .rank-table:not(#hl-a):not(#hl-b) { margin-top: 0; }
+html[data-hl-platform='android'] .game-window :is(.seeker-market, .themed-screen-store) { padding: 0 !important; }
+html[data-hl-platform='android'] .game-window .merchant-surface { padding: 12px !important; }
+html[data-hl-platform='android'] .game-window .themed-screen-store > :not(header) { margin-inline: 12px; }
+html[data-hl-platform='android'] .game-window .training-camp-screen { padding: 0; }
+html[data-hl-platform='android'] .game-window .training-camp-screen > :is(header, aside, section, div) { margin-top: 0; padding: 12px; }
+html[data-hl-platform='android'] .game-window .training-main-grid { padding: 0 !important; }
+html[data-hl-platform='android'] .game-window .summon-layout { padding-inline: 12px; }
+html[data-hl-platform='android'] .game-window .summon-altar { padding-inline: 0 !important; }
+html[data-hl-platform='android'] .hl-col-left .hl-quest-list { padding: 10px 12px; }
+html[data-hl-platform='android'] .game-window .themed-screen-referrals > .mx-auto { padding: 12px; }
+html[data-hl-platform='android'] .game-window .themed-screen-referrals > .shrink-0 { padding-inline: 12px; border-color: var(--hl-page-rule); }
+
+/* One card inside a page. */
+html[data-hl-platform='android'] :is(.game-window, .hl-col-left) :is(.quest-card, .partner-quest-card, .stat-tile, .leader-row, .market-row, .shop-card, .shop-pack, .training-post, .training-slot, .training-roster-card, .training-status-metric, .rank-podium, .summon-balance, .summon-focus, .summon-pity-card, .intentional-empty, :is(div, section, aside, article).border:is([class*="bg-black"], [class*="bg-[#"], [class*="bg-[rgba"], [class*="bg-gradient"], [class*="bg-slate"], [class*="bg-cyan"], [class*="bg-amber"], [class*="bg-emerald"], [class*="bg-rose"], [class*="bg-red"], [class*="bg-[radial"])):not(.item-slot, .premium-hero-card, .hero-portrait-rarity, .summon-altar, .summon-side-panel, .market-shell, .training-guide, .training-section, .training-yard, .material-panel:not(.rank-podium)):not(#hl-a):not(#hl-b) {
+  border: 1px solid var(--hl-card-line) !important;
+  border-image: none !important;
+  border-radius: 0 !important;
+  background: var(--hl-card-surface) !important;
+  box-shadow: inset 0 1px 0 rgba(242, 204, 128, .06), 0 4px 12px rgba(0, 0, 0, .35) !important;
+}
+/* A finished quest and the selected training post keep their gold edge. */
+html[data-hl-platform='android'] .hl-col-left .quest-card[class*="border-["]:not(#hl-a):not(#hl-b),
+html[data-hl-platform='android'] .game-window :is(.training-post-selected, .training-slot-open):not(#hl-a):not(#hl-b) {
+  border-color: rgba(242, 204, 128, .62) !important;
+  box-shadow: inset 0 0 18px rgba(199, 158, 97, .14), 0 0 12px rgba(199, 158, 97, .22) !important;
+}
+/* Every page stands on the same stone as the Bag: no per-page scene behind the content. */
+html[data-hl-platform='android'] .game-window :is(.premium-screen, .themed-screen, .summon-sanctum, .training-camp-screen):not(#hl-a):not(#hl-b) { background: transparent !important; }
+html[data-hl-platform='android'] .game-window .summon-sanctum > .pointer-events-none:first-child { display: none; }
+html[data-hl-platform='android'] .game-window .rank-podium::before { content: none !important; }
+html[data-hl-platform='android'] .game-window :is(.market-tabs, .market-categories) { scrollbar-width: none; }
+html[data-hl-platform='android'] .game-window :is(.market-tabs, .market-categories)::-webkit-scrollbar { display: none; }

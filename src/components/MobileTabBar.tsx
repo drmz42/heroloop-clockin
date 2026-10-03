@@ -7,9 +7,10 @@ import { defaultUiTheme, setUiTheme } from '@/theme/uiTheme';
 // Android layout only (src/platform/platform.ts): the phone's primary navigation, two rows
 // (Founder 2026-10-02). Row 1: Battle, Quests and Bag switch the Play screen between its three
 // columns; Heroes, Summon and Market open their windows. Row 2: Training, Store, the upcoming
-// $ORE Mine (slightly highlighted), Ranks, Refer, and More with the footer links.
+// $ORE Mine (slightly highlighted), Ranks, Refer, and More with the footer links. Any item can
+// carry a count badge on its icon (`badges`); Quests shows its ready rewards.
 export function MobileTabBar({
-  tab, section, moreOpen, onTab, onSection, onMoreOpen, onGuides, onCode, onSupport, onLogout, readyQuests = 0,
+  tab, section, moreOpen, onTab, onSection, onMoreOpen, onGuides, onCode, onSupport, onLogout, readyQuests = 0, badges = {},
 }: {
   tab: Tab;
   section: MobileSection;
@@ -22,6 +23,7 @@ export function MobileTabBar({
   onSupport: () => void;
   onLogout: () => void;
   readyQuests?: number;
+  badges?: Partial<Record<MobileSection | Tab, number>>;
 }) {
   const [mineOpen, setMineOpen] = useState(false);
   useEffect(() => { setMobileSection(section); }, [section]);
@@ -32,20 +34,28 @@ export function MobileTabBar({
     else document.documentElement.dataset.hlWindow = tab;
     return () => { delete document.documentElement.dataset.hlWindow; };
   }, [tab]);
+  const countFor = (id: MobileSection | Tab) => (id === 'quests' ? readyQuests : badges[id] ?? 0);
+  const icon = (Icon: typeof Shield, count: number) => (
+    <i className="hl-tabbar-icon" aria-hidden="true">
+      <Icon size={20} />
+      {count > 0 && <b className="hl-tabbar-badge">{count > 99 ? '99+' : count}</b>}
+    </i>
+  );
   const sectionButton = (id: MobileSection, label: string, Icon: typeof Shield) => {
     const active = tab === 'main' && !moreOpen && !mineOpen && section === id;
+    const count = countFor(id);
     return (
-      <button type="button" className={`hl-tabbar-item ${active ? 'is-active' : ''} ${id === 'quests' && readyQuests > 0 ? 'quest-reward-ready' : ''}`} aria-current={active ? 'page' : undefined} aria-label={id === 'quests' && readyQuests > 0 ? `Quests, ${readyQuests} rewards ready` : label} onClick={() => { onMoreOpen(false); setMineOpen(false); onTab('main'); onSection(id); }}>
-        <Icon size={20} aria-hidden="true" /><span>{label}</span>
-        {id === 'quests' && readyQuests > 0 && <b className="hl-quest-ready-badge" aria-hidden="true">{readyQuests}</b>}
+      <button type="button" className={`hl-tabbar-item ${active ? 'is-active' : ''} ${count > 0 ? 'has-badge' : ''}`} aria-current={active ? 'page' : undefined} aria-label={count > 0 ? (id === 'quests' ? `Quests, ${count} rewards ready` : `${label}, ${count} new`) : label} onClick={() => { onMoreOpen(false); setMineOpen(false); onTab('main'); onSection(id); }}>
+        {icon(Icon, count)}<span>{label}</span>
       </button>
     );
   };
   const windowButton = (id: Tab, label: string, Icon: typeof Shield) => {
     const active = tab === id && !moreOpen && !mineOpen;
+    const count = countFor(id);
     return (
-      <button type="button" className={`hl-tabbar-item ${active ? 'is-active' : ''}`} aria-current={active ? 'page' : undefined} onClick={() => { onMoreOpen(false); setMineOpen(false); onTab(id); }}>
-        <Icon size={20} aria-hidden="true" /><span>{label}</span>
+      <button type="button" className={`hl-tabbar-item ${active ? 'is-active' : ''} ${count > 0 ? 'has-badge' : ''}`} aria-current={active ? 'page' : undefined} aria-label={count > 0 ? `${label}, ${count} new` : label} onClick={() => { onMoreOpen(false); setMineOpen(false); onTab(id); }}>
+        {icon(Icon, count)}<span>{label}</span>
       </button>
     );
   };
@@ -91,12 +101,12 @@ export function MobileTabBar({
         {windowButton('training', 'Training', Dumbbell)}
         {windowButton('shop', 'Store', ShoppingBag)}
         <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${mineOpen ? 'is-active' : ''}`} aria-expanded={mineOpen} aria-label="$ORE Mine, coming soon" onClick={() => { onMoreOpen(false); setMineOpen(!mineOpen); }}>
-          <Pickaxe size={20} aria-hidden="true" /><span>Mine</span><b className="hl-mine-badge" aria-hidden="true">Soon</b>
+          <i className="hl-tabbar-icon" aria-hidden="true"><Pickaxe size={20} /><b className="hl-mine-badge">Soon</b></i><span>Mine</span>
         </button>
         {windowButton('leaderboard', 'Ranks', Trophy)}
         {windowButton('referrals', 'Refer', UserPlus)}
         <button type="button" className={`hl-tabbar-item ${moreOpen ? 'is-active' : ''}`} aria-expanded={moreOpen} onClick={() => { setMineOpen(false); onMoreOpen(!moreOpen); }}>
-          <Menu size={20} aria-hidden="true" /><span>More</span>
+          {icon(Menu, 0)}<span>More</span>
         </button>
       </nav>
     </>
