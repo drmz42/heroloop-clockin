@@ -269,21 +269,41 @@ async function signAuthorization(message:string,address:string,walletName:string
   if(!proof?.signature)throw new SeekerWalletError('wallet_rejected');
   return btoa(String.fromCharCode(...proof.signature));
 }
-export async function requestWithdrawal(asset:WalletAsset,amount:string):Promise<WithdrawalRow> {
+export async function requestWithdrawal(asset:WalletAsset,amount:string,signal?:AbortSignal):Promise<WithdrawalRow> {
   const bound=boundWallet();if(!bound)throw new SeekerWalletError('wallet_not_linked');
   const intent=await command<WithdrawalRow&{message:string}>('wallet_withdraw_intent',{asset,amount,destination:bound.address});
-  // A cancelled request may never settle in some wallets (MWA or in-app); release the form.
-  let timer:ReturnType<typeof setTimeout>|undefined;
+  // A cancelled request may never settle in some wallets (MWA or in-app). Give the player
+  // time to read and sign (the authorization lives 10 minutes), allow a manual cancel, and
+  // once the game is visible again after the wallet app, wait briefly for its answer.
+  let cap:ReturnType<typeof setTimeout>|undefined;
+  let grace:ReturnType<typeof setTimeout>|undefined;
+  let onVisible:(()=>void)|undefined;
+  let onAbort:(()=>void)|undefined;
   let signature:string;
   try {
     signature=await Promise.race([
       signAuthorization(intent.message,bound.address,bound.walletName),
-      new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new SeekerWalletError('wallet_timeout')),60_000);}),
+      new Promise<never>((_,reject)=>{
+        const fail=(code:string)=>reject(new SeekerWalletError(code));
+        cap=setTimeout(()=>fail('wallet_timeout'),9*60_000);
+        let hidden=document.visibilityState==='hidden';
+        onVisible=()=>{
+          if(document.visibilityState==='hidden'){hidden=true;clearTimeout(grace);return;}
+          if(hidden){clearTimeout(grace);grace=setTimeout(()=>fail('wallet_timeout'),30_000);}
+        };
+        document.addEventListener('visibilitychange',onVisible);
+        onAbort=()=>fail('wallet_rejected');
+        signal?.addEventListener('abort',onAbort);
+      }),
     ]);
   } catch(error) {
     if(error instanceof SeekerWalletError)throw error;
     throw new SeekerWalletError(rejected(error)?'wallet_rejected':'invalid_withdrawal_signature');
-  } finally { clearTimeout(timer); }
+  } finally {
+    clearTimeout(cap);clearTimeout(grace);
+    if(onVisible)document.removeEventListener('visibilitychange',onVisible);
+    if(onAbort)signal?.removeEventListener('abort',onAbort);
+  }
   try{return await command('wallet_withdraw_confirm',{request_id:intent.request_id,signature});}
   finally{void refreshAfterChange().catch(()=>undefined);}
 }

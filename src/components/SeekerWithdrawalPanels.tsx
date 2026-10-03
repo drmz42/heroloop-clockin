@@ -1,5 +1,5 @@
 import { WalletAmount, WalletAssetPicker, type DisplayWalletAsset } from './SeekerWalletControls';
-import { useCallback,useEffect,useState } from 'react';
+import { useCallback,useEffect,useRef,useState } from 'react';
 import { boundWallet,formatMinor,exactWalletAmount,ASSET_DECIMALS,loadWalletRates,loadWithdrawals,loadFounderWallet,requestWithdrawal,reviewWithdrawal,useWalletSnapshot,type WithdrawalRow,type WalletRate,type Reconciliation } from '@/game/seekerWallet';
 import { skrError } from '@/game/skrPurchase';
 const withdrawalError=(error:unknown)=>{
@@ -7,7 +7,7 @@ const withdrawalError=(error:unknown)=>{
   return ({withdrawals_blocked:'Treasury reconciliation is blocked. Contact the Founder.',
     invalid_withdrawal_signature:'Your wallet signature could not be verified.',
     wallet_rejected:'Withdrawal cancelled in the wallet. Nothing was reserved.',
-    wallet_timeout:'The wallet did not answer. Nothing was reserved; try again.',
+    wallet_timeout:'The wallet did not return a signature. Nothing was reserved; try again.',
     wallet_identity_required:'Reconnect the verified wallet linked to this account.',
     withdrawal_may_be_paid:'A payout may already have been sent. The balance stays reserved.',
     payout_not_finalized:'This payout is not finalized yet. Keep the reservation and retry.',
@@ -48,7 +48,8 @@ export function SeekerWithdrawalPanel() {
     const receive = units * 95n / 100n;
     return [formatMinor((units - receive).toString(), asset, ASSET_DECIMALS[asset]), formatMinor(receive.toString(), asset, ASSET_DECIMALS[asset])];
   })();
-  async function submit(){if(asset==='ORE')return;setBusy(true);setMessage('');try{const r=await requestWithdrawal(asset,amount);setMessage(r.status==='approval_required'?'Balance reserved. This request needs Founder approval above the daily $20 limit.':'Balance reserved. Awaiting a manual Founder payout.');setAmount('');await refresh();}catch(error){setMessage(withdrawalError(error));}finally{setBusy(false);}}
+  const abortRef=useRef<AbortController|null>(null);
+  async function submit(){if(asset==='ORE')return;setBusy(true);setMessage('');const abort=new AbortController();abortRef.current=abort;try{const r=await requestWithdrawal(asset,amount,abort.signal);setMessage(r.status==='approval_required'?'Balance reserved. This request needs Founder approval above the daily $20 limit.':'Balance reserved. Awaiting a manual Founder payout.');setAmount('');await refresh();}catch(error){setMessage(withdrawalError(error));}finally{setBusy(false);}}
   return <div className="space-y-2.5">
     <p className="text-xs leading-5 text-stone-300">Withdraw to the verified wallet you signed in with. Your wallet signs an authorization; the Founder pays manually.</p>
     <WalletAssetPicker asset={asset} busy={busy} onChange={entry => { setAsset(entry); setAmount(''); setMessage(''); }} />
@@ -59,6 +60,7 @@ export function SeekerWithdrawalPanel() {
     {overLimit && <p role="status" className="text-[11px] text-amber-200">This withdrawal exceeds $20 and requires Founder approval.</p>}
     <p className="break-all text-xs text-stone-300">Destination: {boundWallet()?.address??'Link a wallet first'}</p>
     <button style={{minHeight:44}} className="game-control game-primary min-h-11 w-full text-xs font-bold" disabled={busy||!valid||!boundWallet()} onClick={()=>void submit()}>{busy?'Authorizing…':'Sign withdrawal request'}</button>
+    {busy&&<button type="button" style={{minHeight:44}} className="game-control min-h-11 w-full text-xs" onClick={()=>abortRef.current?.abort()}>Cancel withdrawal request</button>}
     {message&&<p role="status" className="text-xs leading-5 text-amber-200">{message}</p>}
     <h3 className="text-sm font-bold text-amber-100">Withdrawal history</h3>
     {rows.map(row=><div key={row.request_id} className="stat-tile space-y-1 p-3 text-xs"><p>{formatMinor(row.amount_minor,row.asset,row.asset==='SKR'?6:9)} {row.asset} · you receive {formatMinor(row.payout_minor,row.asset,row.asset==='SKR'?6:9)} · {row.status.replace(/_/g,' ')}</p><p className="text-stone-400">{new Date(row.created_at).toLocaleString()}</p>{row.signature&&<a className="block break-all text-lime-200" target="_blank" rel="noreferrer" href={`https://explorer.solana.com/tx/${row.signature}`}>View finalized payout</a>}{row.reject_reason&&<p>{row.reject_reason}</p>}</div>)}
