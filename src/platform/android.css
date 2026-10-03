@@ -711,7 +711,7 @@ html[data-hl-platform='android'] .game-progress-label { grid-column: 1 / -1; gri
 html[data-hl-platform='android'] .game-power-change { grid-column: 1 / -1; grid-row: 3; min-width: 0; contain: inline-size; font-size: 10px; line-height: 10px; text-align: center; white-space: nowrap; }
 /* The narrower desktop battle column uses the same single-row footer. */
 html[data-hl-edition='seeker'][data-hl-platform='web'] .battle-stage-normal { display: flex; flex-direction: column; }
-html[data-hl-edition='seeker'][data-hl-platform='web'] .battle-stage-normal > .h-full { flex: 1 1 auto; height: auto; min-height: 0; }
+html[data-hl-edition='seeker'][data-hl-platform='web'] .battle-stage-normal > .h-full { flex: 1 1 0; height: auto; min-height: 0; overflow: hidden; }
 html[data-hl-edition='seeker'][data-hl-platform='web'] .battle-stage-normal .arena-stage-inner { padding-bottom: 8px; }
 html[data-hl-edition='seeker'][data-hl-platform='web'] .normal-battle-footer { flex: none; flex-wrap: nowrap; gap: 6px; }
 html[data-hl-edition='seeker'][data-hl-platform='web'] .battle-income-chip { min-height: 36px; height: 36px; padding-inline: 6px; gap: 4px; font-size: 11px; }
