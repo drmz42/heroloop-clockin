@@ -225,3 +225,8 @@ html :has(> .rx-slot) {
 }
 html .item-slot:has(> .rx-slot) .item-enchant-label, html .mv-card:has(.rx-slot) .mv-card-plus { left: 8%; top: 8%; }
 html .item-slot:has(> .rx-slot) .item-level-label, html .mv-card:has(.rx-slot) .mv-card-lv, html .hero-portrait-rarity:has(> .rx-slot) .hero-level-badge { right: 8%; bottom: 8%; }
+/* Battle (Founder 2026-10-04: heroes exactly the size of enemies): the hero picture fills the same box as an
+   enemy portrait and the square frame wraps around it from outside instead of shrinking the picture. */
+html .arena-portrait:has(> .rx-slot):not(#rx-a):not(#rx-b) { overflow: visible !important; -webkit-mask: none !important; mask: none !important; }
+html .arena-portrait > .rx-slot { inset: -9.5%; overflow: visible; }
+html .arena-portrait:has(> .rx-slot) > .arena-portrait-impact-layer { overflow: hidden; border-radius: 3px; }
