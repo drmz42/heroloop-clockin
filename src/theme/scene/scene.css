@@ -686,7 +686,7 @@ html .hv-seat-hero .hero-portrait-rarity:has(> .rx):not(#rx-a):not(#rx-b) { box-
 .hv-detail-xp i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: linear-gradient(90deg, #166534, #4ade80); }
 .hv-detail-lv { color: #a39987; font-size: 9px; font-weight: 700; }
 .hv-detail-close { position: absolute !important; right: 8px; top: 8px; }
-.hv-detail > footer { border-top: 1px solid rgba(199, 158, 97, .25); background: rgba(0, 0, 0, .35); }
+.hv-detail .hero-detail-content > footer { border-top: 1px solid rgba(199, 158, 97, .25); background: rgba(0, 0, 0, .35); }
 
 /* Rarity frames v2 own the card edge (RarityFx): drop the flat colour outlines and keep badges above it. */
 .hv-card:has(.rx) { box-shadow: 0 6px 14px rgba(0, 0, 0, .5); }

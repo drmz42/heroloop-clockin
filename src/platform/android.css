@@ -449,13 +449,13 @@ html[data-hl-platform='android'] .summon-result[data-phase='ready'] .summon-resu
 html[data-hl-platform='android'] .summon-result .summon-close { top: calc(10px + env(safe-area-inset-top, 0px)); right: 10px; }
 
 /* Hero details on a phone (Founder 2026-10-02): the panel fits between the top bar and the tab
-   bar so Add to Team stays visible; skills and traits fold under one summary. */
+   bar; expanded skills push the actions down in the same scrollable content. */
 .hero-detail-panel:has(.hero-detail-more[open]) { height: 92dvh; }
 html[data-hl-platform='android'] .hero-detail-panel { max-height: 100%; }
 html[data-hl-platform='android'] .hero-detail-panel:has(.hero-detail-more[open]) { height: 100%; }
 html[data-hl-platform='android'] .hero-detail-panel > header { padding: 8px 10px; }
-html[data-hl-platform='android'] .hero-detail-panel > footer { padding: 8px 10px; }
-html[data-hl-platform='android'] .hero-detail-panel > footer button { min-height: 44px; }
+html[data-hl-platform='android'] .hero-detail-content > footer { padding: 8px 10px; }
+html[data-hl-platform='android'] .hero-detail-content > footer button { min-height: 44px; }
 .hero-detail-more { margin-top: 8px; }
 .hero-detail-more-summary { display: flex; min-height: 40px; cursor: pointer; align-items: center; justify-content: space-between; border: 1px solid #54442e; border-radius: 4px; padding: 0 10px; background: rgba(0, 0, 0, .25); color: #d6ad64; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; list-style: none; }
 .hero-detail-more-summary::-webkit-details-marker { display: none; }
