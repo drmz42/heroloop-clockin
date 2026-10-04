@@ -91,7 +91,7 @@ export function SeekerMinePanel() {
 
   return (
     <>
-      <p className="mn-lore">Beneath the old keep, twenty-five shafts still hum. Each turn of the glass one vein bursts open — stake SOL on the shafts you trust.</p>
+      <p className="mn-lore">Twenty-five shafts, one strike each round. Pick your shafts and stake SOL.</p>
 
       <div className="mn-hud">
         <div className="mn-hud-cell">
