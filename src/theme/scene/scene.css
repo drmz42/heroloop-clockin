@@ -312,7 +312,6 @@ button.sc-chip { cursor: pointer; }
 .hv-card-art img { width: 100%; height: 100%; object-fit: cover; }
 .hv-card-art::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 1.5px var(--hv-color), inset 0 -30px 24px -10px rgba(0, 0, 0, .9); pointer-events: none; }
 .hv-card.is-rare .hv-card-art::after { box-shadow: inset 0 0 0 1.5px var(--hv-color), inset 0 0 18px color-mix(in srgb, var(--hv-color) 45%, transparent), inset 0 -30px 24px -10px rgba(0, 0, 0, .9); }
-.hv-card.is-team { box-shadow: inset 0 0 0 2px #63e6ab, 0 0 0 1px #04180f, 0 0 16px rgba(52, 211, 153, .45); }
 .hv-card-lv { position: absolute; right: 3px; bottom: 3px; z-index: 2; border-radius: 2px; padding: 1px 4px; background: rgba(0, 0, 0, .8); box-shadow: 0 0 0 1px color-mix(in srgb, var(--hv-color) 60%, #000); color: #fff; font-size: 9px; font-weight: 900; }
 .hv-card-dead { position: absolute; inset: 0; z-index: 3; display: grid; place-content: center; background: rgba(0, 0, 0, .72); color: #fda4af; font-size: 11px; font-weight: 900; text-align: center; }
 .hv-card-badges { position: absolute; left: 3px; top: 3px; z-index: 2; display: grid; gap: 2px; justify-items: start; }
@@ -682,7 +681,6 @@ button.sc-chip { cursor: pointer; }
 /* Rarity frames v2 own the card edge (RarityFx): drop the flat colour outlines and keep badges above it. */
 .hv-card:has(.rx) { box-shadow: 0 6px 14px rgba(0, 0, 0, .5); }
 .hv-card:has(.rx) .hv-card-art::after { box-shadow: inset 0 -30px 24px -10px rgba(0, 0, 0, .9) !important; }
-.hv-card.is-team:has(.rx) { box-shadow: 0 0 0 2px #63e6ab, 0 0 16px rgba(52, 211, 153, .45); }
 .mv-card:has(.rx) { box-shadow: 0 6px 14px rgba(0, 0, 0, .5); }
 .mv-card:has(.rx) .mv-card-art::after { box-shadow: inset 0 -24px 20px -12px rgba(0, 0, 0, .9); }
 .mv-card[aria-pressed='true']:has(.rx) { box-shadow: 0 0 0 2px var(--sc-gold), 0 0 14px rgba(242, 204, 128, .4); }
@@ -700,5 +698,4 @@ button.sc-chip { cursor: pointer; }
 .hv-card:has(.rx-tcg) .hv-card-lock { right: 8%; top: 13%; }
 .hv-card:has(.rx-tcg) .tc-card-state { top: 40%; }
 .hv-card:has(.rx-tcg) { background: transparent; box-shadow: none; }
-.hv-card.is-team:has(.rx-tcg) .hv-card-art { box-shadow: 0 0 0 2px #63e6ab, 0 0 14px rgba(52, 211, 153, .5); }
 .hv-card:has(.rx-tcg) .hv-card-info { border-top: 0; background: none; padding-top: 3px; }
