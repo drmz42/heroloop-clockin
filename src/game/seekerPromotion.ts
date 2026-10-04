@@ -5,7 +5,7 @@
 import { HERO_MAP, RARITY_INDEX } from '@/game/heroes';
 import { teamPower } from '@/game/engine';
 import { MAX_HERO_STARS, starUpCost } from '@/game/state';
-import type { GameState, OwnedHero, Rarity } from '@/game/types';
+import type { GameState, Rarity } from '@/game/types';
 
 // Provisional Gold per star = base x next star; rebalanced later by rarity and star band.
 export const SEEKER_STAR_GOLD_BASE: Partial<Record<Rarity, number>> = {
@@ -28,26 +28,34 @@ export function planSeekerPromotion(state: PlanState, onlyUid?: string): SeekerP
   const heroes = state.ownedHeroes;
   const team = new Set(state.team);
   const training = new Set(state.trainingCamp.heroUids.filter((uid): uid is string => Boolean(uid)));
-  // One target per hero kind: the strongest copy that can still gain a star, best rarity first.
+  // One target per hero kind: the strongest affordable, eligible copy, best rarity first.
   const kinds = [...new Set(heroes.map((hero) => hero.heroId))].filter((heroId) => HERO_MAP[heroId]);
   const only = onlyUid ? heroes.find((hero) => hero.uid === onlyUid && HERO_MAP[hero.heroId] && hero.stars < MAX_HERO_STARS) : undefined;
-  const targets = onlyUid ? (only ? [only] : []) : kinds.flatMap((heroId) => {
-    const target = heroes.map((hero, index) => ({ hero, index }))
+  const targetGroups = onlyUid ? (only ? [[only]] : []) : kinds.map((heroId) => {
+    return heroes.map((hero, index) => ({ hero, index }))
       .filter(({ hero }) => hero.heroId === heroId && hero.stars < MAX_HERO_STARS)
       .map((entry) => ({ ...entry, power: teamPower([entry.hero], state.inventory) }))
-      .sort((a, b) => b.power - a.power || b.hero.level - a.hero.level || b.hero.stars - a.hero.stars || a.index - b.index)[0]?.hero;
-    return target ? [target] : [];
-  }).sort((a, b) => RARITY_INDEX[HERO_MAP[b.heroId].rarity] - RARITY_INDEX[HERO_MAP[a.heroId].rarity]);
+      .sort((a, b) => b.power - a.power || b.hero.level - a.hero.level || b.hero.stars - a.hero.stars || a.index - b.index)
+      .map(({ hero }) => hero);
+  }).filter((group) => group.length > 0)
+    .sort((a, b) => RARITY_INDEX[HERO_MAP[b[0].heroId].rarity] - RARITY_INDEX[HERO_MAP[a[0].heroId].rarity]);
 
-  const targetUids = new Set(targets.map((hero) => hero.uid));
   let budget = Math.max(0, Math.floor(state.gold));
   const steps: SeekerPromotionStep[] = [];
   let consumed = 0;
-  for (const target of targets) {
+  for (const group of targetGroups) {
     if (steps.length >= MAX_TARGETS) break;
+    const spareCopies = heroes.filter((hero) => hero.heroId === group[0].heroId && hero.stars === 0
+      && !hero.locked && !team.has(hero.uid) && !training.has(hero.uid));
+    const target = group.find((hero) => {
+      const rarity = HERO_MAP[hero.heroId].rarity;
+      const cost = seekerStarGoldCost(rarity, hero.stars + 1);
+      const copies = spareCopies.filter((copy) => copy.uid !== hero.uid).length;
+      return cost !== null && budget >= cost && copies >= starUpCost(hero.stars, rarity).dupes;
+    });
+    if (!target) continue;
     const rarity = HERO_MAP[target.heroId].rarity;
-    let copies = heroes.filter((hero: OwnedHero) => hero.heroId === target.heroId && !targetUids.has(hero.uid) && hero.stars === 0
-      && !hero.locked && !team.has(hero.uid) && !training.has(hero.uid)).length;
+    let copies = spareCopies.filter((hero) => hero.uid !== target.uid).length;
     let stars = Math.max(0, Math.min(MAX_HERO_STARS, Math.floor(target.stars)));
     const from = stars;
     let gold = 0;
