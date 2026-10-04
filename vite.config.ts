@@ -63,6 +63,11 @@ export default defineConfig(({ mode }) => ({
           .replaceAll('HERO...p7Xq9M', 'SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3')
           .replaceAll('$SKR rewards are currently simulated', 'SKR rewards are not available yet')
           .replaceAll('Earn $SKR by winning battles in locations.', 'SKR rewards are not available yet.')
+          .replaceAll('Unlock Earn Mode with a Founder Pack', 'Built for Solana Seeker')
+          .replaceAll('Unlock Earn Mode with a paid pack.', 'SKR rewards are not available yet.')
+          .replaceAll('Earn Mode Unlocked', 'SKR rewards unavailable')
+          .replaceAll('+2% Ordinary Earn Weight', 'SKR reward bonuses unavailable')
+          .replaceAll('+5% Ordinary Earn Weight', 'SKR reward bonuses unavailable')
           .replaceAll('Price is {usd(rCost)} · {formatNum(rCost)} $SKR and caps at 5×.', 'SKR reroll pricing is not available yet.'), map: null };
       },
     }] : []),
