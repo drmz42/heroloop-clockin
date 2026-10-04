@@ -35,11 +35,9 @@ function RootScreen() {
   }, []);
 
   // The Android app has no landing page: every entry goes to the game (sign-in first).
-  // Outside the app only the landing and the read-only wiki open; no route reaches the game.
-  const gameRoute = webGameEntryAllowed
-    ? isAppShell || window.location.hash === '#game' || window.location.pathname === '/wiki'
-    : window.location.pathname === '/wiki';
-  const Screen = (window.location.pathname === '/' || !webGameEntryAllowed) && !gameRoute
+  // While web entry is off, browsers (Android Chrome included) start on the landing, whose Play is inert.
+  const gameRoute = (isAppShell && webGameEntryAllowed) || window.location.hash === '#game' || window.location.pathname === '/wiki';
+  const Screen = window.location.pathname === '/' && !gameRoute
     ? (uiTheme === 'premium' ? PremiumLandingScreen : Landing4Screen)
     : GameScreen;
 
