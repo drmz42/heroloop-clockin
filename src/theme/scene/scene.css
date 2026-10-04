@@ -201,7 +201,7 @@ button.sc-chip { cursor: pointer; }
   inset: -16px;
   z-index: -1;
   border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(52, 211, 153, .24), rgba(52, 211, 153, .1) 50%, transparent 75%);
+  background: radial-gradient(ellipse, rgba(52, 211, 153, .44), rgba(52, 211, 153, .2) 50%, transparent 78%);
   filter: blur(7px);
   pointer-events: none;
 }
@@ -292,7 +292,7 @@ html .hv-seat-hero .hero-portrait-rarity:has(> .rx):not(#rx-a):not(#rx-b) { box-
   inset: -10px;
   z-index: -1;
   border-radius: 25%;
-  background: radial-gradient(ellipse, rgba(52, 211, 153, .22), rgba(52, 211, 153, .1) 55%, transparent 80%);
+  background: radial-gradient(ellipse, rgba(52, 211, 153, .5), rgba(52, 211, 153, .28) 60%, transparent 85%);
   filter: blur(7px);
   pointer-events: none;
 }
@@ -709,3 +709,6 @@ html .hv-seat-hero .hero-portrait-rarity:has(> .rx):not(#rx-a):not(#rx-b) { box-
 .hv-card:has(.rx-tcg) .tc-card-state { top: 40%; }
 .hv-card:has(.rx-tcg) { background: transparent; box-shadow: none; }
 .hv-card:has(.rx-tcg) .hv-card-info { border-top: 0; background: none; padding-top: 3px; }
+
+/* Keep the selected backdrop visible below the opaque portrait, without an edge stroke. */
+.hv-card.is-team:has(.rx-tcg) .hv-card-info { background: radial-gradient(ellipse at 50% 0%, rgba(52, 211, 153, .25), rgba(52, 211, 153, .08) 65%, transparent); }
