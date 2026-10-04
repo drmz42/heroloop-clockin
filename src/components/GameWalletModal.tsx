@@ -42,6 +42,7 @@ export function GameWalletModal({
   onPurchase?: (result:Record<string,unknown>)=>void;
 }) {
   const [tab, setTab] = useState<WalletTab>(walletAddress ? 'deposit' : 'account');
+  const [withdrawAsset,setWithdrawAsset]=useState<'SKR'|'SOL'|'ORE'>('SKR');
   const [copied, setCopied] = useState<'wallet' | 'id' | null>(null);
   const [identityAction, setIdentityAction] = useState<'unlink' | 'provider_revoke' | null>(null);
   const [identityError, setIdentityError] = useState('');
@@ -134,7 +135,7 @@ export function GameWalletModal({
         </div>
 
         <div id={`wallet-panel-${tab}`} role="tabpanel" aria-labelledby={`wallet-tab-${tab}`} className="game-scrollbar min-h-0 flex-1 space-y-2.5 overflow-y-auto p-3">
-          {tab === 'deposit' && isolatedHackathon && <SeekerDepositPanel />}
+          {tab === 'deposit' && isolatedHackathon && <SeekerDepositPanel onWithdrawOre={()=>{setWithdrawAsset('ORE');setTab('withdraw');}} />}
           {tab === 'history' && isolatedHackathon && <SeekerHistoryPanel onPurchase={onPurchase} />}
 
           {tab === 'deposit' && !isolatedHackathon && (
@@ -148,7 +149,7 @@ export function GameWalletModal({
             </>
           )}
 
-          {tab === 'withdraw' && isolatedHackathon && <SeekerWithdrawalPanel />}
+          {tab === 'withdraw' && isolatedHackathon && <SeekerWithdrawalPanel initialAsset={withdrawAsset} />}
           {tab === 'withdraw' && !isolatedHackathon && (
             <>
               <NotLive title="Withdrawals are not live yet">

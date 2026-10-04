@@ -55,7 +55,7 @@ function Balances({ snapshot }: { snapshot: WalletSnapshot | null }) {
   );
 }
 
-export function SeekerDepositPanel() {
+export function SeekerDepositPanel({onWithdrawOre}:{onWithdrawOre?:()=>void}={}) {
   const { snapshot, error, refresh } = useWalletState();
   const [asset, setAsset] = useState<DisplayWalletAsset>('SKR');
   const [amount, setAmount] = useState('');
@@ -129,7 +129,7 @@ export function SeekerDepositPanel() {
       <Balances snapshot={snapshot} />
       <WalletAssetPicker asset={asset} busy={busy} onChange={entry => { setAsset(entry); setAmount(''); setResult(null); }} />
       <WalletAmount id="seeker-deposit-amount" amount={amount} asset={asset} busy={busy} unavailable={asset==='ORE'} onChange={setAmount}
-        available={asset === 'ORE' ? 'ORE transfers are not available yet.' : `In your wallet: ${external?.external_balances ? formatAmountShort(external.external_balances[asset], asset, 'down') : balanceError ? 'Unavailable' : '—'} $${asset}`}
+        available={asset === 'ORE' ? 'ORE deposits are unavailable. Withdraw Mine rewards in the Withdraw tab.' : `In your wallet: ${external?.external_balances ? formatAmountShort(external.external_balances[asset], asset, 'down') : balanceError ? 'Unavailable' : '—'} $${asset}`}
         onMax={asset !== 'ORE' && external?.max_deposit_balances ? () => void fillMax() : undefined} />
       <button type="button" disabled={!bound || !valid || busy || asset === 'ORE'} onClick={() => void submit()}
         className="game-control flex min-h-12 w-full items-center justify-center gap-2 px-4 py-3 font-black text-[#f6d283] disabled:opacity-45">
@@ -137,6 +137,7 @@ export function SeekerDepositPanel() {
         {stage === 'prepare' ? 'Preparing transfer…' : stage === 'sign' ? 'Approve in your wallet…' : stage === 'confirm'
           ? 'Waiting for the network…' : `Deposit ${valid ? amount : ''} ${asset}`}
       </button>
+      {asset==='ORE'&&onWithdrawOre&&<button type="button" disabled={busy} onClick={onWithdrawOre} className="game-control game-primary min-h-11 w-full px-4 py-3 font-bold">Withdraw ORE</button>}
       {result && (
         <div role="status" className={`flex gap-2 rounded-xl border p-3 text-xs leading-5 ${result.ok ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-100' : 'border-rose-400/30 bg-rose-400/10 text-rose-100'}`}>
           {result.ok ? <Check size={16} className="mt-0.5 shrink-0" /> : <AlertTriangle size={16} className="mt-0.5 shrink-0" />}

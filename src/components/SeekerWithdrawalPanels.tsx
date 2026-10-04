@@ -24,9 +24,9 @@ const withdrawalError=(error:unknown)=>{
     invalid_amount:'Enter a positive amount with at most 6 SKR, 9 SOL or 11 ORE decimals.',
   } as Record<string,string>)[code]??skrError(error);
 };
-export function SeekerWithdrawalPanel() {
+export function SeekerWithdrawalPanel({initialAsset='SKR'}:{initialAsset?:DisplayWalletAsset}={}) {
   const wallet=useWalletSnapshot();
-  const [asset,setAsset]=useState<DisplayWalletAsset>('SKR');const [amount,setAmount]=useState('');
+  const [asset,setAsset]=useState<DisplayWalletAsset>(initialAsset);const [amount,setAmount]=useState('');
   const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');const [rows,setRows]=useState<WithdrawalRow[]>([]);
   const refresh=useCallback(()=>loadWithdrawals().then(r=>setRows(r.withdrawals)).catch(()=>setMessage('Withdrawal history is unavailable.')),[]);
   useEffect(()=>{void refresh();},[refresh]);
