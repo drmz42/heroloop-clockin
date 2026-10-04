@@ -203,6 +203,7 @@ button.sc-chip { cursor: pointer; }
   border-radius: 50%;
   background: radial-gradient(ellipse, rgba(52, 211, 153, .44), rgba(52, 211, 153, .2) 50%, transparent 78%);
   filter: blur(7px);
+  mask-image: linear-gradient(#000 55%, transparent calc(100% - 24px));
   pointer-events: none;
 }
 .hv-seat-hero .hero-portrait-rarity > .rx { display: none; }
@@ -286,14 +287,19 @@ html .hv-seat-hero .hero-portrait-rarity:has(> .rx):not(#rx-a):not(#rx-b) { box-
 @media (min-width: 400px) { .hv-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (min-width: 700px) { .hv-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 .hv-grid > li:has(.hv-card.is-team) { position: relative; isolation: isolate; }
+/* Limit selection light to the portrait's top and sides, fading before its footer. */
 .hv-grid > li:has(.hv-card.is-team)::before {
   content: '';
   position: absolute;
-  inset: -10px;
+  top: -10px;
+  right: -10px;
+  left: -10px;
+  aspect-ratio: 3 / 4;
   z-index: -1;
   border-radius: 25%;
   background: radial-gradient(ellipse, rgba(52, 211, 153, .5), rgba(52, 211, 153, .28) 60%, transparent 85%);
   filter: blur(7px);
+  mask-image: linear-gradient(#000 55%, transparent calc(100% - 28px));
   pointer-events: none;
 }
 .hv-card {
@@ -710,5 +716,3 @@ html .hv-seat-hero .hero-portrait-rarity:has(> .rx):not(#rx-a):not(#rx-b) { box-
 .hv-card:has(.rx-tcg) { background: transparent; box-shadow: none; }
 .hv-card:has(.rx-tcg) .hv-card-info { border-top: 0; background: none; padding-top: 3px; }
 
-/* Keep the selected backdrop visible below the opaque portrait, without an edge stroke. */
-.hv-card.is-team:has(.rx-tcg) .hv-card-info { background: radial-gradient(ellipse at 50% 0%, rgba(52, 211, 153, .25), rgba(52, 211, 153, .08) 65%, transparent); }
