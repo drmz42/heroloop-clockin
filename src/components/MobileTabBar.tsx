@@ -112,13 +112,13 @@ export function MobileTabBar({
         </div>
       )}
       {soon === 'mine' && (
-        <div className="hl-more-sheet" role="dialog" aria-modal="true" aria-label="$ORE Mine" onMouseDown={(event) => { if (event.currentTarget === event.target) setMineOpen(false); }}>
-          <div className="hl-more-panel">
-            <div className="hl-more-head">
-              <span className="section-kicker">$ORE Mine</span>
-              <button type="button" className="game-control hl-more-close" onClick={() => setMineOpen(false)} aria-label="Close"><X size={18} /></button>
+        <div className="hl-more-sheet mo-sheet" role="dialog" aria-modal="true" aria-label="$ORE Mine" onMouseDown={(event) => { if (event.currentTarget === event.target) setMineOpen(false); }}>
+          <div className="mo-panel">
+            <div className="mo-head">
+              <span className="mo-title">The Deep Vein</span>
+              <button type="button" className="mo-close" onClick={() => setMineOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
-            <div className="space-y-2.5"><SeekerMinePanel /></div>
+            <SeekerMinePanel />
           </div>
         </div>
       )}

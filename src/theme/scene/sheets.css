@@ -1,5 +1,5 @@
 /* More and PvP sheets v2 (2026-10-03): stone panel, Cinzel title, round icon sockets and a crimson Logout
-   seal. The Mine sheet keeps its own markup (another track owns Mine). */
+   seal. The Mine sheet reuses this panel; its board lives in mine.css. */
 .mo-panel {
   position: relative;
   width: 100%;

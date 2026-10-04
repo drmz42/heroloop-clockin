@@ -323,7 +323,7 @@ export function reviewWithdrawal(request_id:string,action:'begin_payout'|'finali
 export type MineRound = { seq: number; status: 'pending' | 'settled'; ore_round_id: string | null; cost_minor: string | null; signature: string | null };
 export type MineSession = {
   id: string; status: 'active' | 'stopped' | 'closed'; reserved_minor: string; spent_minor: string; released_minor: string | null;
-  credited_minor: string; completed: number; round_limit: number; stake_minor: string; custody_address: string | null;
+  credited_minor: string; completed: number; round_limit: number; stake_minor: string; square_mask: string | null; custody_address: string | null;
   created_at: string; rounds: MineRound[];
 };
 export type MineStatus = {
@@ -333,6 +333,11 @@ export type MineStatus = {
 };
 export const loadMineStatus = (): Promise<MineStatus> => command('mine_status');
 export const acceptMineTerms = (version: string): Promise<MineStatus> => command('mine_accept_terms', { version });
-export const startMine = (tier: string, rounds: number): Promise<MineSession> =>
-  command('mine_start', { session_id: crypto.randomUUID(), tier, rounds });
+export const startMine = (tier: string, rounds: number, squares: number[]): Promise<MineSession> =>
+  command('mine_start', { session_id: crypto.randomUUID(), tier, rounds, squares });
+export type MineBoard = {
+  round_id: string; ends_in_seconds: number | null; deployed_minor: string[]; miners: number[];
+  previous: { round_id: string; winning_square: number | null; winning_deployed_minor: string | null; total_deployed_minor: string } | null;
+};
+export const loadMineBoard = (): Promise<MineBoard> => command('mine_board');
 export const stopMine = (sessionId: string): Promise<MineSession> => command('mine_stop', { session_id: sessionId });

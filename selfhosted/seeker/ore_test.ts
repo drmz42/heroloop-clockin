@@ -3,7 +3,7 @@ import { base58Decode, base58Encode } from './chain.ts';
 import {
   checkpointInstruction, claimSolInstruction, compileMessage, decodeBoard, decodeMiner, deployInstruction,
   findProgramAddress, isOnCurve, ORE_BOARD, ORE_CONFIG, ORE_ENTROPY_PROGRAM, ORE_ENTROPY_VAR, ORE_PROGRAM,
-  ORE_TREASURY, OreError, serializeTransaction, squareMask, verifyOreReceipt,
+  ORE_TREASURY, OreError, serializeTransaction, squareMask, verifyOreReceipt, winningSquare,
 } from './ore.ts';
 
 const text = (s: string) => new TextEncoder().encode(s);
@@ -71,4 +71,12 @@ Deno.test('receipt verification binds signer, program set and balances', () => {
   foreign.transaction.message.accountKeys[1] = '11111111111111111111111111111111';
   assert.throws(() => verifyOreReceipt(foreign, sig, AUTHORITY), OreError);
   assert.throws(() => verifyOreReceipt(null, sig, AUTHORITY), OreError);
+});
+
+Deno.test('winning square follows the ORE xor-fold of the revealed hash', () => {
+  assert.equal(winningSquare(new Uint8Array(32)), null);
+  assert.equal(winningSquare(new Uint8Array(32).fill(255)), null);
+  const hash = new Uint8Array(32);
+  hash[0] = 30; // r1 = 30, others 0 -> 30 % 25
+  assert.equal(winningSquare(hash), 5);
 });

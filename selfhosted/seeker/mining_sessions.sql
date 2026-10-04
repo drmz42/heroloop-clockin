@@ -82,7 +82,13 @@ DECLARE s seeker_skr.mining_sessions; a seeker_skr.accounts; v_day date; v_used 
 BEGIN
   IF p_id IS NULL OR p_source IS NULL OR p_budget IS NULL OR p_policy IS NULL
     OR jsonb_typeof(p_policy)<>'object'
-    OR (SELECT count(*) FROM jsonb_object_keys(p_policy))<>7 THEN
+    OR (SELECT count(*) FROM jsonb_object_keys(p_policy)) NOT IN (7,8)
+    OR ((SELECT count(*) FROM jsonb_object_keys(p_policy))=8 AND NOT (p_policy ? 'square_mask')) THEN
+    RAISE EXCEPTION 'invalid_mining_policy';
+  END IF;
+  -- Optional chosen squares: a 25-bit mask (bit i = square i); absent means all 25.
+  IF p_policy ? 'square_mask' AND (jsonb_typeof(p_policy->'square_mask') IS DISTINCT FROM 'string'
+      OR (p_policy->>'square_mask') !~ '^[1-9][0-9]{0,7}$' OR (p_policy->>'square_mask')::bigint>33554431) THEN
     RAISE EXCEPTION 'invalid_mining_policy';
   END IF;
   FOREACH k IN ARRAY ARRAY['session_limit','daily_limit','stake_per_round','network_per_round',

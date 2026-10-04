@@ -1,0 +1,55 @@
+/* ORE Mine sheet (2026-10-04): the Deep Vein — 25 stone shafts on the same stone-panel
+   language as the More and PvP sheets. Tiles use the approved stone-tile art; text stays code-native. */
+.mn-lore { margin: -4px 0 10px; text-align: center; color: rgba(235, 223, 202, .82); font: italic 14px/1.35 'EB Garamond', Georgia, serif; }
+.mn-hud { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin-bottom: 8px; }
+.mn-hud-cell { display: grid; gap: 2px; min-width: 0; }
+.mn-hud-cell:last-child { text-align: right; }
+.mn-hud-label { color: #c79e61; font: 700 9px/1.2 'Cinzel', Georgia, serif; letter-spacing: .2em; text-transform: uppercase; }
+.mn-hud-value { overflow: hidden; color: #fff3d6; font: 700 13px/1.2 'Cinzel', Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
+.mn-glass {
+  display: grid; width: 58px; height: 58px; place-items: center; border-radius: 50%;
+  background: radial-gradient(circle at 50% 38%, #3a2a17, #0b0806 72%);
+  box-shadow: 0 0 0 1.5px #8a6630, 0 0 0 4px rgba(0, 0, 0, .65), 0 0 0 5px rgba(242, 204, 128, .35), 0 0 18px rgba(255, 170, 80, .25);
+  color: #fff3d6; font: 700 15px/1 'Cinzel', Georgia, serif;
+}
+.mn-glass small { display: block; margin-top: 2px; color: #c79e61; font-size: 8px; letter-spacing: .14em; }
+.mn-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 4px 0 10px; padding: 8px; border-radius: 4px;
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 150, 60, .12), transparent 60%), rgba(0, 0, 0, .55);
+  box-shadow: inset 0 0 0 1px rgba(138, 102, 48, .7), inset 0 0 24px rgba(0, 0, 0, .9); }
+.mn-tile {
+  position: relative; display: grid; aspect-ratio: 1; place-items: center; overflow: hidden; border: 0; border-radius: 4px; padding: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, .15), rgba(0, 0, 0, .55)), url('../premium/assets/stone-tile.webp') center / cover;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .9), inset 0 2px 0 rgba(255, 230, 180, .12), 0 2px 4px rgba(0, 0, 0, .8);
+  color: #d8c4a0; cursor: pointer; touch-action: manipulation;
+}
+.mn-tile:disabled { cursor: default; }
+.mn-tile:focus-visible { outline: 2px solid #fff0a2; outline-offset: 2px; }
+.mn-tile svg { width: 42%; height: 42%; color: rgba(150, 120, 80, .55); filter: drop-shadow(0 1px 1px #000); transition: color .2s, filter .2s; }
+.mn-tile-n { position: absolute; left: 4px; top: 3px; color: rgba(235, 223, 202, .55); font: 700 9px/1 'Cinzel', Georgia, serif; }
+.mn-tile-pot { position: absolute; inset: auto 2px 3px; overflow: hidden; color: rgba(255, 236, 200, .8); font: 700 9px/1 system-ui, sans-serif; text-align: center; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 2px #000; }
+.mn-tile.is-picked { box-shadow: inset 0 0 0 2px #f2cc80, inset 0 0 16px rgba(255, 180, 70, .55), 0 0 10px rgba(255, 170, 60, .45); }
+.mn-tile.is-picked svg { color: #ffd88a; filter: drop-shadow(0 0 6px rgba(255, 190, 90, .95)); }
+.mn-tile.is-strike::after { content: ''; position: absolute; inset: 0; border-radius: 4px; box-shadow: inset 0 0 0 2px #e05a3a, inset 0 0 18px rgba(224, 90, 58, .6); animation: mn-strike 1.6s ease-in-out infinite; pointer-events: none; }
+@keyframes mn-strike { 50% { opacity: .45; } }
+.game-motion-off .mn-tile.is-strike::after { animation: none; }
+@media (prefers-reduced-motion: reduce) { .mn-tile.is-strike::after { animation: none; } .mn-tile svg { transition: none; } }
+.mn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
+.mn-row-label { flex: 1 0 100%; color: #c79e61; font: 700 9px/1.2 'Cinzel', Georgia, serif; letter-spacing: .2em; text-transform: uppercase; }
+.mn-chip {
+  min-width: 44px; min-height: 40px; flex: 1 1 0; border: 0 solid transparent; border-width: 8px 12px;
+  border-image: url('../premium/assets/btn-bronze-9.webp') 85 150 fill / 8px 12px / 0 2px stretch;
+  background: none; color: rgba(251, 236, 203, .75); font: 700 12px/1 'Cinzel', Georgia, serif; letter-spacing: .04em; text-shadow: 0 1px 2px #000;
+}
+.mn-chip[aria-pressed='true'] { border-image-source: url('../premium/assets/btn-crimson-9.webp'); border-image-slice: 90 170 fill; color: #fff3d6; }
+.mn-chip:disabled { opacity: .4; }
+.mn-chip:focus-visible, .mn-start:focus-visible { outline: 2px solid #fff0a2; outline-offset: 2px; }
+.mn-sum { margin: 8px 0; text-align: center; color: rgba(235, 223, 202, .85); font: 14px/1.35 'EB Garamond', Georgia, serif; }
+.mn-sum b { color: #fff3d6; }
+.mn-start {
+  display: flex; width: 100%; min-height: 52px; align-items: center; justify-content: center; gap: 8px; border: 0 solid transparent; border-width: 10px 14px;
+  border-image: url('../premium/assets/btn-crimson-9.webp') 90 170 fill / 10px 14px / 0 3px stretch;
+  background: none; color: #fbeccb; font: 700 14px/1 'Cinzel', Georgia, serif; letter-spacing: .1em; text-shadow: 0 1px 2px #000; text-transform: uppercase;
+}
+.mn-start:disabled { filter: grayscale(.7); opacity: .55; }
+.mn-card { margin: 8px 0; padding: 10px 12px; border-radius: 4px; background: rgba(0, 0, 0, .45); box-shadow: inset 0 0 0 1px rgba(138, 102, 48, .55); font-size: 12px; }
+.mn-warn { margin: 8px 0; padding: 8px 10px; border-left: 2px solid #e05a3a; background: rgba(120, 30, 20, .25); color: #f3d6c8; font: italic 13px/1.35 'EB Garamond', Georgia, serif; }

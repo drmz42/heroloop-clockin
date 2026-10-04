@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { base58Decode } from './chain.ts';
 import { ORE_BOARD, ORE_PROGRAM, COMPUTE_BUDGET_PROGRAM, minerAddress } from './ore.ts';
-import { custodyDelta, custodyKey, deriveMineKey, floatKey, mineTick, minePolicy, transferInstruction } from './mine_runner.ts';
+import { custodyDelta, custodyKey, deriveMineKey, floatKey, mineTick, minePolicy, sessionSquares, transferInstruction } from './mine_runner.ts';
 
 const master = new Uint8Array(32).fill(7);
 const PLAYER = '10000000-0000-4000-8000-000000000001';
@@ -103,4 +103,13 @@ Deno.test('finalized pending round settles its exact cost; unfunded custody is f
   assert.equal(chain.sent.length, 1, 'one funding transfer');
   await mineTick({ master, rpc: chain.rpc, call });
   assert.equal(chain.sent.length, 1, 'funding is not repeated while in flight');
+});
+
+Deno.test('chosen squares set a mask and a per-square stake', () => {
+  const policy = minePolicy('0.1', [0, 6, 24])!;
+  assert.equal(policy.square_mask, String(1 + 64 + (1 << 24)));
+  assert.equal(policy.stake_per_round, '300000000');
+  assert.deepEqual(sessionSquares(policy), { squares: [0, 6, 24], perSquare: 100_000_000n });
+  assert.deepEqual(sessionSquares(minePolicy('0.01')!).squares.length, 25);
+  for (const bad of [[], [25], [1, 1], ['3'], 'x']) assert.equal(minePolicy('0.1', bad), null);
 });

@@ -31,6 +31,10 @@ BEGIN
     RAISE EXCEPTION 'fixture_started_without_terms';
   EXCEPTION WHEN OTHERS THEN IF SQLERRM<>'mining_terms_required' THEN RAISE; END IF; END;
   PERFORM seeker_skr.mine_accept_terms(p,'v1');
+  BEGIN
+    PERFORM seeker_skr.mine_start(p,k,30,pol||'{"square_mask":"33554432"}','v1',custody);
+    RAISE EXCEPTION 'fixture_accepted_wide_mask';
+  EXCEPTION WHEN OTHERS THEN IF SQLERRM<>'invalid_mining_policy' THEN RAISE; END IF; END;
   PERFORM seeker_skr.mine_start(p,k,30,pol,'v1',custody);
   PERFORM seeker_skr.mine_start(p,k,30,pol,'v1',custody);
   BEGIN

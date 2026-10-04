@@ -70,6 +70,7 @@ const walletActions: Record<string, string> = {
   mine_accept_terms: "/wallet/mine/accept-terms",
   mine_start: "/wallet/mine/start",
   mine_stop: "/wallet/mine/stop",
+  mine_board: "/wallet/mine/board",
 };
 // Copies the player's verified Mine rounds into the game database for Mine quests.
 // Best effort: quest progress simply lags if the wallet service is unavailable.
@@ -188,6 +189,7 @@ const commandActions = new Set([
   "mine_accept_terms",
   "mine_start",
   "mine_stop",
+  "mine_board",
   "promo_redeem",
   "player_report",
   "support_ticket_submit",
@@ -1023,7 +1025,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         wallet_deposit_intent:['asset','amount','payer'],wallet_deposit_confirm:['intent_id','signature'],
         wallet_withdraw_intent:['asset','amount','destination'],wallet_withdraw_confirm:['request_id','signature'],
         wallet_founder_status:['founder_address'],wallet_withdraw_review:['founder_address','request_id','action','signature','reason'],
-        mine_status:[],mine_accept_terms:['version'],mine_start:['session_id','tier','rounds'],mine_stop:['session_id'],
+        mine_status:[],mine_accept_terms:['version'],mine_start:['session_id','tier','rounds','squares'],mine_stop:['session_id'],mine_board:[],
       } as Record<string,string[]>)[action];
       const payloadError = validatePayloadFields(payload, allowed);
       if (payloadError) return errorResponse(400, payloadError, requestId);

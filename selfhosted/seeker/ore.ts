@@ -176,13 +176,13 @@ export function decodeBoard(data: Uint8Array): OreBoard {
   return { roundId: dv.getBigUint64(8, true), startSlot: dv.getBigUint64(16, true), endSlot: dv.getBigUint64(24, true) };
 }
 export type OreRound = {
-  id: bigint; deployed: bigint[]; slotHash: Uint8Array; expiresAt: bigint; totalVaulted: bigint;
+  id: bigint; deployed: bigint[]; count: bigint[]; slotHash: Uint8Array; expiresAt: bigint; totalVaulted: bigint;
   totalReturned: bigint; totalMiners: bigint;
 };
 export function decodeRound(data: Uint8Array): OreRound {
   const dv = view(data, ACCOUNT.round, 952);
   return {
-    id: dv.getBigUint64(8, true), deployed: u64s(dv, 16, 25), slotHash: data.slice(616, 648),
+    id: dv.getBigUint64(8, true), deployed: u64s(dv, 16, 25), count: u64s(dv, 416, 25), slotHash: data.slice(616, 648),
     expiresAt: dv.getBigUint64(648, true), totalVaulted: dv.getBigUint64(896, true),
     totalReturned: dv.getBigUint64(904, true), totalMiners: dv.getBigUint64(912, true),
   };
@@ -200,6 +200,14 @@ export function decodeMiner(data: Uint8Array): OreMiner {
     rewardsOre: dv.getBigUint64(704, true), lifetimeDeployed: dv.getBigUint64(736, true),
     lifetimeRewardsSol: dv.getBigUint64(744, true),
   };
+}
+
+// Winning square of a revealed round (Round::rng/winning_square in the ORE program); null until revealed.
+export function winningSquare(slotHash: Uint8Array): number | null {
+  if (slotHash.length !== 32 || slotHash.every((b) => b === 0) || slotHash.every((b) => b === 255)) return null;
+  const dv = new DataView(slotHash.buffer, slotHash.byteOffset, 32);
+  const r = dv.getBigUint64(0, true) ^ dv.getBigUint64(8, true) ^ dv.getBigUint64(16, true) ^ dv.getBigUint64(24, true);
+  return Number(r % 25n);
 }
 
 // ---- legacy transaction message ----

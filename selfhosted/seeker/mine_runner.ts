@@ -14,6 +14,13 @@ export const MINE_TERMS_VERSION = "2026-10-03";
 // Stake per round in lamports, spread evenly over all 25 squares.
 export const MINE_TIERS: Record<string, bigint> = { "0.01": 10_000_000n, "0.1": 100_000_000n, "1": 1_000_000_000n };
 const ALL_SQUARES = Array.from({ length: 25 }, (_, i) => i);
+// The session's chosen squares (policy.square_mask) and the stake on each; default all 25.
+export function sessionSquares(policy: Json): { squares: number[]; perSquare: bigint } {
+  const mask = policy.square_mask === undefined ? (1 << 25) - 1 : Number(policy.square_mask);
+  const squares = ALL_SQUARES.filter((i) => mask & (1 << i));
+  if (!squares.length) throw new Error("invalid_mining_policy");
+  return { squares, perSquare: BigInt(String(policy.stake_per_round)) / BigInt(squares.length) };
+}
 const NETWORK_PER_ROUND = 10_000n; // two signatures' worth of base fee headroom
 // First deploy creates the Miner account (~4.47M lamports rent + 10k checkpoint fee).
 const PROTOCOL_PER_ROUND = 4_500_000n;
@@ -21,14 +28,28 @@ export const MINE_LIMITS = { sessionLimit: 10_000_000_000n, dailyLimit: 25_000_0
 const TX_FEE = 5_000n;
 const COMPUTE_UNITS = 400_000;
 
-export function minePolicy(tier: string): Json | null {
+// Without squares the tier is the whole round's stake, spread over all 25 squares.
+// With chosen squares the tier is the stake on each chosen square.
+export function minePolicy(tier: string, squares?: unknown): Json | null {
   const stake = MINE_TIERS[tier];
   if (!stake) return null;
-  return {
+  let mask: number | null = null;
+  if (squares !== undefined) {
+    if (!Array.isArray(squares) || !squares.length || squares.length > 25) return null;
+    mask = 0;
+    for (const s of squares) {
+      if (!Number.isInteger(s) || s < 0 || s > 24 || mask & (1 << s)) return null;
+      mask |= 1 << s;
+    }
+  }
+  const policy: Json = {
     session_limit: MINE_LIMITS.sessionLimit.toString(), daily_limit: MINE_LIMITS.dailyLimit.toString(),
-    stake_per_round: stake.toString(), network_per_round: NETWORK_PER_ROUND.toString(),
+    stake_per_round: (mask === null ? stake : stake * BigInt((squares as number[]).length)).toString(),
+    network_per_round: NETWORK_PER_ROUND.toString(),
     protocol_per_round: PROTOCOL_PER_ROUND.toString(), max_rounds: String(MINE_LIMITS.maxRounds), fee_bps: "0",
   };
+  if (mask !== null) policy.square_mask = String(mask);
+  return policy;
 }
 
 // ---- keys ----
@@ -198,7 +219,6 @@ async function step(
   }
   const last = session.last_ore_round_id == null ? -1n : BigInt(String(session.last_ore_round_id));
   if (board.roundId <= last || slot < board.startSlot || slot + 8n >= board.endSlot) return;
-  const stake = BigInt(String((session.policy as Json).stake_per_round));
   const instructions: Instruction[] = [computeUnitLimitInstruction(COMPUTE_UNITS)];
   const miner = await accountData(deps, await minerAddress(key.address));
   if (miner) {
@@ -209,7 +229,8 @@ async function step(
       instructions.push(await checkpointInstruction(key.address, m.roundId));
     }
   }
-  instructions.push(await deployInstruction(key.address, board.roundId, stake / 25n, ALL_SQUARES));
+  const plan = sessionSquares(session.policy as Json);
+  instructions.push(await deployInstruction(key.address, board.roundId, plan.perSquare, plan.squares));
   const { signature, wire } = await signAndSend(deps, key, instructions);
   await deps.call("SELECT seeker_skr.mine_round_prepare($1::uuid,$2::uuid,$3::numeric,$4::text) AS result",
     [session.id, crypto.randomUUID(), board.roundId.toString(), signature]);
@@ -234,7 +255,7 @@ async function resolvePending(
     // Not seen yet in the same ORE round: re-sign with a fresh blockhash. A second
     // deploy to already deployed squares of this round is ignored by ORE.
     const instructions = [computeUnitLimitInstruction(COMPUTE_UNITS),
-      await deployInstruction(key.address, oreRound, BigInt(String((session.policy as Json).stake_per_round)) / 25n, ALL_SQUARES)];
+      await deployInstruction(key.address, oreRound, sessionSquares(session.policy as Json).perSquare, sessionSquares(session.policy as Json).squares)];
     const { signature: next, wire } = await signAndSend(deps, key, instructions);
     await deps.call("SELECT seeker_skr.mine_round_prepare($1::uuid,$2::uuid,$3::numeric,$4::text) AS result",
       [session.id, pending.id, oreRound.toString(), next]);
