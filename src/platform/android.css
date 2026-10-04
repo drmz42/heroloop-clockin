@@ -450,7 +450,9 @@ html[data-hl-platform='android'] .summon-result .summon-close { top: calc(10px +
 
 /* Hero details on a phone (Founder 2026-10-02): the panel fits between the top bar and the tab
    bar so Add to Team stays visible; skills and traits fold under one summary. */
+.hero-detail-panel:has(.hero-detail-more[open]) { height: 92dvh; }
 html[data-hl-platform='android'] .hero-detail-panel { max-height: 100%; }
+html[data-hl-platform='android'] .hero-detail-panel:has(.hero-detail-more[open]) { height: 100%; }
 html[data-hl-platform='android'] .hero-detail-panel > header { padding: 8px 10px; }
 html[data-hl-platform='android'] .hero-detail-panel > footer { padding: 8px 10px; }
 html[data-hl-platform='android'] .hero-detail-panel > footer button { min-height: 44px; }
