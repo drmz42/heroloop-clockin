@@ -4,7 +4,7 @@ import '@/theme/scene/rarity.css';
 
 // Rarity frames v3 (docs/game/rarities.md, Founder 2026-10-04: "real ornate borders, more detail"). Each
 // tier has its own forged frame art (public/assets/ui/rarity-frames, a card 3:4 and a slot 1:1 cut) whose
-// ornament grows with tier; code adds only light: Rare inner light, Legendary+ glint, Mythic+ aura and
+// ornament grows with tier; a matte keeps the picture inside the frame's opening; code adds only light: Rare inner light, Legendary+ glint, Mythic+ aura and
 // motes, Divine+ rays. Decorative only: drop inside a `position: relative; overflow: hidden` art box of
 // the matching aspect ratio.
 // Motion is transform/opacity only and stops under Reduced Motion, `.sc-still` and `.game-motion-off`.
@@ -17,6 +17,7 @@ export function RarityFx({ rarity, shape = 'card' }: { rarity: Rarity; shape?: '
   const motes = MOTES[rarity] ?? 0;
   const art = ART[rarity] ?? rarity;
   return <span className={`rx rx-${rarity} rx-${shape}`} data-tier={tier} aria-hidden="true">
+    <span className="rx-matte" />
     {tier >= 3 && <span className="rx-light" />}
     {tier >= 8 && <span className="rx-rays" />}
     {tier >= 6 && <span className="rx-aura" />}

@@ -1,21 +1,24 @@
 /* Rarity frames v3 — see RarityFx.tsx. The frame is per-tier art stretched to the box (card 3:4, slot 1:1);
    --rx is the tier light used by the code-side glow layers. */
-.rx { position: absolute; inset: 0; z-index: 2; overflow: hidden; border-radius: inherit; pointer-events: none; --rx: #9ca3af; --rx-band: 8%; }
+.rx { position: absolute; inset: 0; z-index: 2; overflow: hidden; border-radius: inherit; pointer-events: none; --rx: #9ca3af; --rx-it: 8%; --rx-ir: 10%; --rx-ib: 8%; --rx-il: 10%; }
+/* Matte: everything outside the frame's inner opening is dark, so the picture never shows under or
+   through the bars (Founder 2026-10-04: "the picture stays inside the frame"). */
+.rx > .rx-matte { inset: var(--rx-it) var(--rx-ir) var(--rx-ib) var(--rx-il); box-shadow: 0 0 0 400px #0b0807; }
 .rx > span { position: absolute; inset: 0; }
 .rx-frame { background: center / 100% 100% no-repeat; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .8)); }
 
 /* Rare+: static inner light just inside the frame band */
-.rx-light { inset: var(--rx-band) !important; box-shadow: inset 0 0 8px 0 color-mix(in srgb, var(--rx) 40%, transparent); }
+.rx-light { inset: var(--rx-it) var(--rx-ir) var(--rx-ib) var(--rx-il) !important; box-shadow: inset 0 0 8px 0 color-mix(in srgb, var(--rx) 40%, transparent); }
 
 /* Legendary+: a sheen crossing the card every ~10 s */
-.rx-glint { inset: var(--rx-band) !important; overflow: hidden; }
+.rx-glint { inset: var(--rx-it) var(--rx-ir) var(--rx-ib) var(--rx-il) !important; overflow: hidden; }
 .rx-glint::before { content: ''; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 38%; background: linear-gradient(100deg, transparent, color-mix(in srgb, #fff 60%, var(--rx)) 50%, transparent); opacity: .4; transform: translateX(0) skewX(-18deg); animation: rx-glint 10s ease-in-out infinite; }
 
 /* Mythic+: breathing light from the bottom edge */
-.rx-aura { inset: var(--rx-band) !important; background: radial-gradient(ellipse 85% 45% at 50% 100%, color-mix(in srgb, var(--rx) 50%, transparent), transparent 70%); opacity: .5; animation: rx-breathe 4.5s ease-in-out infinite; }
+.rx-aura { inset: var(--rx-it) var(--rx-ir) var(--rx-ib) var(--rx-il) !important; background: radial-gradient(ellipse 85% 45% at 50% 100%, color-mix(in srgb, var(--rx) 50%, transparent), transparent 70%); opacity: .5; animation: rx-breathe 4.5s ease-in-out infinite; }
 
 /* Divine+: fine light rays from the top */
-.rx-rays { inset: var(--rx-band) !important; background: repeating-conic-gradient(from 180deg at 50% -10%, color-mix(in srgb, var(--rx) 32%, transparent) 0deg 3deg, transparent 3deg 14deg); -webkit-mask: linear-gradient(180deg, #000, transparent 70%); mask: linear-gradient(180deg, #000, transparent 70%); opacity: .45; animation: rx-breathe 6s ease-in-out infinite; }
+.rx-rays { inset: var(--rx-it) var(--rx-ir) var(--rx-ib) var(--rx-il) !important; background: repeating-conic-gradient(from 180deg at 50% -10%, color-mix(in srgb, var(--rx) 32%, transparent) 0deg 3deg, transparent 3deg 14deg); -webkit-mask: linear-gradient(180deg, #000, transparent 70%); mask: linear-gradient(180deg, #000, transparent 70%); opacity: .45; animation: rx-breathe 6s ease-in-out infinite; }
 
 /* Motes: embers, stars, sparks, gold dust */
 .rx-motes i { position: absolute; bottom: 12%; left: calc(18% + var(--m) * 21%); width: 3px; height: 3px; border-radius: 50%; background: var(--rx-mote, var(--rx)); box-shadow: 0 0 5px 1px var(--rx-mote, var(--rx)); opacity: 0; animation: rx-rise 5.5s linear infinite; animation-delay: calc(var(--m) * -1.6s); }
@@ -99,8 +102,34 @@ html .market-detail-art:has(> .rx)::before, html .market-detail-art:has(> .rx)::
   -webkit-mask-composite: source-over, source-in; mask-composite: add, intersect;
 }
 /* Corner badges move inside the bars so the silhouette mask never cuts them */
-html .item-slot:has(> .rx) .item-enchant-label { left: 9%; top: 7%; }
-html .item-slot:has(> .rx) .item-level-label { right: 9%; bottom: 7%; border-radius: 2px; }
-html .item-slot:has(> .rx) > svg.absolute { left: 9%; bottom: 7%; }
-html .item-slot:has(> .rx) > .class-glyph, html .item-slot:has(> .rx) > [class*='right-0'][class*='top-0'] { right: 9%; top: 7%; }
-html .hero-portrait-rarity:has(> .rx) .hero-level-badge { right: 9%; bottom: 7%; border-radius: 2px; }
+html .item-slot:has(> .rx) .item-enchant-label { left: 13%; top: 12%; }
+html .item-slot:has(> .rx) .item-level-label { right: 13%; bottom: 12%; border-radius: 2px; }
+html .item-slot:has(> .rx) > svg.absolute { left: 13%; bottom: 12%; }
+html .item-slot:has(> .rx) > [class*='right-0'][class*='top-0'] { right: 13%; top: 12%; }
+html .hero-portrait-rarity:has(> .rx) .hero-level-badge { right: 13%; bottom: 12%; border-radius: 2px; }
+/* Inner opening per frame (generated from the art, 2026-10-04): the matte below hides the portrait under
+   and behind the bars, so the picture shows only inside the frame's opening. */
+.rx-celestial.rx-card { --rx-it: 8.70%; --rx-ib: 9.05%; --rx-il: 12.34%; --rx-ir: 12.34%; }
+.rx-celestial.rx-slot { --rx-it: 12.36%; --rx-ib: 12.76%; --rx-il: 11.48%; --rx-ir: 11.48%; }
+.rx-common.rx-card { --rx-it: 8.63%; --rx-ib: 8.63%; --rx-il: 11.23%; --rx-ir: 11.23%; }
+.rx-common.rx-slot { --rx-it: 13.80%; --rx-ib: 13.80%; --rx-il: 12.44%; --rx-ir: 12.44%; }
+.rx-cosmic.rx-card { --rx-it: 8.77%; --rx-ib: 8.77%; --rx-il: 12.34%; --rx-ir: 12.34%; }
+.rx-cosmic.rx-slot { --rx-it: 12.68%; --rx-ib: 12.60%; --rx-il: 12.36%; --rx-ir: 12.36%; }
+.rx-cursed.rx-card { --rx-it: 8.36%; --rx-ib: 11.46%; --rx-il: 11.42%; --rx-ir: 11.42%; }
+.rx-cursed.rx-slot { --rx-it: 12.68%; --rx-ib: 12.28%; --rx-il: 12.12%; --rx-ir: 12.12%; }
+.rx-divine.rx-card { --rx-it: 8.77%; --rx-ib: 9.53%; --rx-il: 12.15%; --rx-ir: 12.15%; }
+.rx-divine.rx-slot { --rx-it: 12.12%; --rx-ib: 12.44%; --rx-il: 12.44%; --rx-ir: 12.44%; }
+.rx-epic.rx-card { --rx-it: 8.84%; --rx-ib: 8.84%; --rx-il: 12.34%; --rx-ir: 12.34%; }
+.rx-epic.rx-slot { --rx-it: 12.76%; --rx-ib: 12.76%; --rx-il: 12.44%; --rx-ir: 12.44%; }
+.rx-god.rx-card { --rx-it: 7.87%; --rx-ib: 9.32%; --rx-il: 12.25%; --rx-ir: 12.25%; }
+.rx-god.rx-slot { --rx-it: 12.36%; --rx-ib: 12.36%; --rx-il: 11.64%; --rx-ir: 11.64%; }
+.rx-immortal.rx-card { --rx-it: 5.39%; --rx-ib: 10.22%; --rx-il: 12.34%; --rx-ir: 12.34%; }
+.rx-immortal.rx-slot { --rx-it: 13.16%; --rx-ib: 13.40%; --rx-il: 11.16%; --rx-ir: 11.16%; }
+.rx-legendary.rx-card { --rx-it: 8.77%; --rx-ib: 8.77%; --rx-il: 11.88%; --rx-ir: 11.88%; }
+.rx-legendary.rx-slot { --rx-it: 11.16%; --rx-ib: 11.16%; --rx-il: 11.24%; --rx-ir: 11.24%; }
+.rx-mythic.rx-card { --rx-it: 8.91%; --rx-ib: 8.91%; --rx-il: 12.43%; --rx-ir: 12.43%; }
+.rx-mythic.rx-slot { --rx-it: 12.76%; --rx-ib: 12.76%; --rx-il: 11.88%; --rx-ir: 11.88%; }
+.rx-rare.rx-card { --rx-it: 8.91%; --rx-ib: 8.91%; --rx-il: 12.71%; --rx-ir: 12.71%; }
+.rx-rare.rx-slot { --rx-it: 13.00%; --rx-ib: 13.00%; --rx-il: 12.36%; --rx-ir: 12.36%; }
+.rx-uncommon.rx-card { --rx-it: 8.91%; --rx-ib: 8.91%; --rx-il: 12.15%; --rx-ir: 12.15%; }
+.rx-uncommon.rx-slot { --rx-it: 12.44%; --rx-ib: 12.44%; --rx-il: 11.96%; --rx-ir: 11.96%; }
