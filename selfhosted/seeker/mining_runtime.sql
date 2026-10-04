@@ -18,7 +18,7 @@ CREATE OR REPLACE FUNCTION seeker_skr.mine_session_json(s seeker_skr.mining_sess
 LANGUAGE sql STABLE SET search_path=pg_catalog,seeker_skr AS $$
   SELECT jsonb_build_object('id',s.id,'status',s.status,'reserved_minor',s.reserved_minor::text,
     'spent_minor',s.spent_minor::text,'released_minor',s.released_minor::text,'completed',s.completed,
-    'round_limit',s.round_limit,'stake_minor',s.policy->>'stake_per_round','custody_address',s.custody_address,
+    'round_limit',s.round_limit,'stake_minor',s.policy->>'stake_per_round','square_mask',s.policy->>'square_mask','custody_address',s.custody_address,
     'created_at',s.created_at,
     'credited_minor',(SELECT COALESCE(sum(c.amount_minor),0)::text FROM seeker_skr.mining_credits c WHERE c.session_id=s.id),
     'rounds',(SELECT COALESCE(jsonb_agg(jsonb_build_object('seq',r.seq,'status',r.status,'ore_round_id',r.ore_round_id::text,

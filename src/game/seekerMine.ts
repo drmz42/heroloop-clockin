@@ -14,7 +14,7 @@ export const MINE_LIMITS = {
 } as const;
 
 export const MINE_LIMIT_ROWS: [string, string][] = [
-  ['Stake per round', `${MINE_STAKE_TIERS.join(' / ')} SOL`],
+  ['Stake per shaft', `${MINE_STAKE_TIERS.join(' / ')} SOL`],
   ['Rounds per session', `up to ${MINE_LIMITS.roundsPerSession}`],
   ['Session budget', `up to ${MINE_LIMITS.sessionSol} SOL`],
   ['Daily budget (UTC)', `up to ${MINE_LIMITS.dailySol} SOL`],
@@ -29,11 +29,11 @@ export interface MineGuideSection {
 export const MINE_GUIDE: MineGuideSection[] = [
   {
     title: 'How the Mine works',
-    body: 'The Mine plays rounds of ORE, a third-party game on Solana. Each round lasts about a minute and a half. Your stake is spread evenly across all 25 blocks of a 5×5 grid, and one block wins at random. You get back your share of the SOL on the winning block, minus the ORE protocol\'s 10% cut, and may also receive ORE. Because every block is covered, most rounds return part of the stake, but on average you get back less than you put in.',
+    body: 'The Deep Vein runs on ORE, a third-party game on Solana. Pick one or more of the 25 shafts and a stake for each. Every round (about a minute and a half) one shaft strikes at random. If you hold the winning shaft, you share all SOL staked on the other 24 shafts with the other miners there, in proportion to your stake, minus the ORE protocol\'s 10% cut, and you may also receive ORE. Stakes on the other shafts are lost. Covering more shafts strikes more often but pays less; on average you get back less than you put in.',
   },
   {
     title: 'What it costs',
-    body: `Choose ${MINE_STAKE_TIERS.slice(0, -1).join(', ')} or ${MINE_STAKE_TIERS[MINE_STAKE_TIERS.length - 1]} SOL per round, paid from your in-game SOL balance. Each round also uses a small Solana network cost. HeroLoop takes no fee from Mine rounds. You can stop at any time; unspent SOL returns to your balance when the session ends.`,
+    body: `Stake ${MINE_STAKE_TIERS.slice(0, -1).join(', ')} or ${MINE_STAKE_TIERS[MINE_STAKE_TIERS.length - 1]} SOL on each chosen shaft every round, paid from your in-game SOL balance. Each round also uses a small Solana network cost. HeroLoop takes no fee from Mine rounds. You can stop at any time; unspent SOL returns to your balance when the session ends.`,
   },
   {
     title: 'Limits',
