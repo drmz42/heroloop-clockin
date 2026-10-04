@@ -159,9 +159,40 @@ html :has(> .rx) { -webkit-mask-box-image: var(--rx-host-sil) var(--rx-host-sl) 
 .rx-tcg { container-type: size; }
 .rx-tcg > .rx-frame { border: 0; border-image: none; background: center / 100% 100% no-repeat; }
 .rx-tcg > .rx-banner { inset: var(--rx-bt) 17% var(--rx-bb); display: grid; place-items: center; padding: 0 2px; }
-.rx-tcg > .rx-banner b { display: -webkit-box; overflow: hidden; color: #f3e6c8; font: 700 clamp(7px, 7.2cqw, 22px)/1.05 'Cinzel', Georgia, serif; letter-spacing: .02em; text-align: center; text-shadow: 0 1px 2px #000, 0 0 6px rgba(0, 0, 0, .9); -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.rx-tcg > .rx-banner b { display: -webkit-box; overflow: hidden; color: #f3e6c8; font: 700 clamp(8px, 8.5cqw, 24px)/1.05 'Cinzel', Georgia, serif; letter-spacing: .02em; text-align: center; text-shadow: 0 1px 2px #000, 0 0 6px rgba(0, 0, 0, .9); -webkit-box-orient: vertical; -webkit-line-clamp: 1; letter-spacing: .06em; text-transform: uppercase; }
 html :has(> .rx-tcg) { -webkit-mask-box-image: none; -webkit-mask: var(--rx-host-tcg) center / 100% 100% no-repeat; mask: var(--rx-host-tcg) center / 100% 100% no-repeat; }
 /* Summon: names sit in the card banner like the collection cards */
 .sv-card-front:has(> .rx-tcg) { container-type: inline-size; }
-.sv-card-front:has(> .rx-tcg) .sv-card-plate b { color: #f3e6c8; font: 700 clamp(5px, 8.5cqw, 16px)/1.02 'Cinzel', Georgia, serif; letter-spacing: 0; text-shadow: 0 1px 2px #000; }
-.sv-spot-portrait:has(> .rx-tcg) ~ .sv-spot-name { display: none; }
+.sv-card-front:has(> .rx-tcg) .sv-card-plate b { color: #f3e6c8; font: 700 clamp(5px, 9cqw, 16px)/1.02 'Cinzel', Georgia, serif; letter-spacing: .05em; text-transform: uppercase; -webkit-line-clamp: 1; text-shadow: 0 1px 2px #000; }
+/* Ornate squares (slot boxes from 56 px): the ladder art without the banner, drawn whole like the card */
+.rx-sq { --rx-it: 0%; --rx-ir: 0%; --rx-ib: 0%; --rx-il: 0%; }
+.rx-sq > .rx-frame { border: 0; border-image: none; background: center / 100% 100% no-repeat; }
+:has(> .rx-common.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/common-sq-sil.webp'); }
+:has(> .rx-uncommon.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/uncommon-sq-sil.webp'); }
+:has(> .rx-rare.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/rare-sq-sil.webp'); }
+:has(> .rx-epic.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/epic-sq-sil.webp'); }
+:has(> .rx-legendary.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/legendary-sq-sil.webp'); }
+:has(> .rx-mythic.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/mythic-sq-sil.webp'); }
+:has(> .rx-cosmic.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/cosmic-sq-sil.webp'); }
+:has(> .rx-divine.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/divine-sq-sil.webp'); }
+:has(> .rx-celestial.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/celestial-sq-sil.webp'); }
+:has(> .rx-cursed.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/cursed-sq-sil.webp'); }
+:has(> .rx-immortal.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/immortal-sq-sil.webp'); }
+:has(> .rx-god.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/god-sq-sil.webp'); }
+html :has(> .rx-sq) { -webkit-mask-box-image: none; -webkit-mask: var(--rx-host-sq) center / 100% 100% no-repeat; mask: var(--rx-host-sq) center / 100% 100% no-repeat; }
+/* Ornate squares keep their ornament off the picture: the art is scaled into the frame's clear window
+   (measured from the art, 2026-10-04; Founder: the frame must not cover the hero). */
+:has(> .rx-common.rx-sq) { --rx-fit: 0.840; }
+:has(> .rx-uncommon.rx-sq) { --rx-fit: 0.836; }
+:has(> .rx-rare.rx-sq) { --rx-fit: 0.753; }
+:has(> .rx-epic.rx-sq) { --rx-fit: 0.757; }
+:has(> .rx-legendary.rx-sq) { --rx-fit: 0.757; }
+:has(> .rx-mythic.rx-sq) { --rx-fit: 0.638; }
+:has(> .rx-cosmic.rx-sq) { --rx-fit: 0.656; }
+:has(> .rx-divine.rx-sq) { --rx-fit: 0.613; }
+:has(> .rx-celestial.rx-sq) { --rx-fit: 0.580; }
+:has(> .rx-cursed.rx-sq) { --rx-fit: 0.606; }
+:has(> .rx-immortal.rx-sq) { --rx-fit: 0.627; }
+:has(> .rx-god.rx-sq) { --rx-fit: 0.595; }
+:has(> .rx-sq) > :is(img, .arena-portrait-impact-layer, .mv-card-img, span.relative.block) { scale: var(--rx-fit, 1); }
+:has(> .rx-sq) { background: radial-gradient(circle at 50% 40%, #241a12, #070505 75%) !important; }

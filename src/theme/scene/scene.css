@@ -691,8 +691,7 @@ button.sc-chip { cursor: pointer; }
 .mv-card:has(.rx) .mv-card-plus { left: 10%; top: 10%; }
 .mv-card:has(.rx) .mv-card-lv { right: 10%; bottom: 10%; }
 
-/* TCG hero cards: the name lives in the card banner, so the info row below keeps power, stars and copies */
-.hv-card:has(.rx-tcg) .hv-card-name { display: none; }
+/* TCG hero cards: the banner shows the short class; the full name stays in the info row below */
 .hv-card:has(.rx-tcg) .hv-card-art { border-radius: 4%/3%; }
 .hv-card:has(.rx-tcg) .hv-card-lv { right: 8%; bottom: auto; top: 6%; }
 .hv-card:has(.rx-tcg) .hv-card-badges { left: 7%; top: 6%; }

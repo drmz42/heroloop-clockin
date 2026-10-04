@@ -177,10 +177,10 @@ export function SummonReveal({ heroes, newHeroIds, reducedMotion, onClose, again
           <span className="sv-spot-portrait">
             <img src={heroPortraitSrc(spot.base.id, spot.base.heroClass, spot.base.rarity, spot.base.color)} alt="" decoding="async" style={{ ...heroPortraitStyle(spot.base.id, spot.base.heroClass), transform: 'none' }} />
             <i className="sv-spot-sheen" aria-hidden="true" />
-            <RarityFx rarity={spot.base.rarity} shape="tcg" label={spot.base.name} />
+            <RarityFx rarity={spot.base.rarity} shape="tcg" label={CLASS_LABEL[spot.base.heroClass]} />
           </span>
           <span className="sv-spot-name">{spot.base.name}</span>
-          <span className="sv-spot-meta">{CLASS_LABEL[spot.base.heroClass]}{spot.isNew ? <em>New hero</em> : null}</span>
+          <span className="sv-spot-meta">{spot.isNew ? <em>New hero</em> : null}</span>
           <span className="sv-spot-hint">{spotlights.length > 1 ? `${spotIndex + 1} / ${spotlights.length} · ` : ''}Tap to continue</span>
         </button>
       )}
@@ -215,8 +215,8 @@ export function SummonReveal({ heroes, newHeroIds, reducedMotion, onClose, again
                         <RarityFx rarity={pull.base.rarity} shape="tcg" />
                         {pull.tier >= 1 && <i className="sv-card-shine" aria-hidden="true" />}
                         {pull.isNew && <em className="sv-card-new">New</em>}
-                        <span className="sv-card-plate">
-                          <b>{pull.base.name}</b>
+                        <span className="sv-card-plate" title={pull.base.name}>
+                          <b>{CLASS_LABEL[pull.base.heroClass]}</b>
                           <small>{RARITY_LABEL[pull.base.rarity]}</small>
                         </span>
                       </div>

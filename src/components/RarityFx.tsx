@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type CSSProperties } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import type { Rarity } from '@/game/types';
 import '@/theme/scene/rarity.css';
 
@@ -13,11 +13,15 @@ const MOTES: Partial<Record<Rarity, number>> = { mythic: 3, cosmic: 4, relic: 4,
 const ART: Partial<Record<Rarity, Rarity>> = { relic: 'cosmic' };
 const CRESTS: Partial<Record<Rarity, ('top' | 'bottom')[]>> = { legendary: ['top'], mythic: ['top'], cosmic: ['top'], divine: ['top', 'bottom'], celestial: ['top', 'bottom'], cursed: ['top', 'bottom'], immortal: ['top', 'bottom'], god: ['top', 'bottom'] };
 const BW_RATIO = 0.12;
+// Square boxes from this width use the ornate ladder art (card frame without the banner); smaller ones keep the
+// thin 9-slice so the frame never swallows a small item (Founder 2026-10-04).
+const SQUARE_MIN = 56;
 
 // `tcg` is the collectible hero card (Founder 2026-10-04: heroes are summoned like cards): a thin card rim with a
 // rarity gem and a name banner, drawn whole on a fixed 3:4 box; `label` is written into the banner.
 export function RarityFx({ rarity, shape = 'card', label }: { rarity: Rarity; shape?: 'card' | 'slot' | 'tcg'; label?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
+  const [ornate, setOrnate] = useState(false);
   const tier = TIER[rarity] ?? 1;
   const motes = MOTES[rarity] ?? 0;
   const art = ART[rarity] ?? rarity;
@@ -25,22 +29,23 @@ export function RarityFx({ rarity, shape = 'card', label }: { rarity: Rarity; sh
     const host = ref.current?.parentElement;
     if (!host) return;
     if (shape === 'tcg') return;
-    const apply = () => { const width = host.clientWidth; if (width > 0) host.style.setProperty('--rx-bw', `${Math.max(4, Math.round(width * BW_RATIO))}px`); };
+    const apply = () => { const width = host.clientWidth; if (width > 0) { host.style.setProperty('--rx-bw', `${Math.max(4, Math.round(width * BW_RATIO))}px`); setOrnate(shape === 'slot' && width >= SQUARE_MIN); } };
     apply();
     if (typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(apply);
     observer.observe(host);
     return () => observer.disconnect();
   }, [shape]);
-  return <span ref={ref} className={`rx rx-${art} rx-${shape}`} data-tier={tier} aria-hidden="true">
+  const square = shape === 'slot' && ornate;
+  return <span ref={ref} className={`rx rx-${art} rx-${shape}${square ? ' rx-sq' : ''}`} data-tier={tier} aria-hidden="true">
     <span className="rx-matte" />
     {tier >= 3 && <span className="rx-light" />}
     {tier >= 8 && <span className="rx-rays" />}
     {tier >= 6 && <span className="rx-aura" />}
     {motes > 0 && <span className="rx-motes">{Array.from({ length: motes }, (_, i) => <i key={i} style={{ '--m': i } as CSSProperties} />)}</span>}
     {tier >= 5 && <span className="rx-glint" />}
-    <span className="rx-frame" style={shape === 'tcg' ? { backgroundImage: `url('/assets/ui/rarity-frames/${art}-tcg.webp')` } : undefined} />
+    <span className="rx-frame" style={shape === 'tcg' || square ? { backgroundImage: `url('/assets/ui/rarity-frames/${art}-${square ? 'sq' : 'tcg'}.webp')` } : undefined} />
     {shape === 'tcg' && label && <span className="rx-banner"><b>{label}</b></span>}
-    {shape !== 'tcg' && (CRESTS[art] ?? []).map((side) => <span key={side} className={`rx-crest rx-crest-${side}`} style={{ backgroundImage: `url('/assets/ui/rarity-frames/${art}-${shape}-crest-${side}.webp')` }} />)}
+    {shape !== 'tcg' && !square && (CRESTS[art] ?? []).map((side) => <span key={side} className={`rx-crest rx-crest-${side}`} style={{ backgroundImage: `url('/assets/ui/rarity-frames/${art}-${shape}-crest-${side}.webp')` }} />)}
   </span>;
 }
