@@ -5,7 +5,7 @@ import {
   acceptMineTerms, formatAmountShort, loadMineStatus, refreshWallet, SeekerWalletError, startMine, stopMine, type MineStatus,
 } from '@/game/seekerWallet';
 
-const ROUND_CHOICES = [5, 15, 30, 60] as const;
+const ROUND_CHOICES = [1, 5, 15, 30, 60] as const;
 const ERRORS: Record<string, string> = {
   mining_unavailable: 'The Mine is not open yet.',
   mining_capacity_reached: 'The Mine is full right now. Try a smaller session or later.',
@@ -133,7 +133,7 @@ export function SeekerMinePanel() {
           </fieldset>
           <fieldset className="stat-tile p-3">
             <legend className="float-left mb-2 w-full text-xs font-bold text-[#aaa397]">Rounds in this session</legend>
-            <div className="clear-both grid grid-cols-4 gap-2">
+            <div className="clear-both grid grid-cols-5 gap-2">
               {ROUND_CHOICES.map(count => (
                 <button key={count} type="button" aria-pressed={rounds === count} onClick={() => setRounds(count)}
                   disabled={Number(stake) * count > Number(MINE_LIMITS.sessionSol)}
@@ -182,7 +182,7 @@ export function SeekerMinePanel() {
       ) : !live && (
         <button type="button" disabled={busy} onClick={() => void act(() => startMine(stake, rounds))}
           className="game-control flex min-h-12 w-full items-center justify-center gap-2 px-4 py-3 font-black text-[#f6d283] disabled:opacity-45">
-          {busy ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />} Start {rounds} rounds × {stake} SOL
+          {busy ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />} Start {rounds} {rounds === 1 ? 'round' : 'rounds'} × {stake} SOL
         </button>
       )}
 
