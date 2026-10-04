@@ -120,6 +120,8 @@ export function SeekerMinePanel() {
         ))}
       </div>
 
+      <p className="mn-legend">◎ = SOL all miners have staked on that shaft this round. The winning shaft shares the SOL from the other 24.</p>
+
       {live ? (
         <div className="mn-card space-y-2">
           <div className="flex items-center justify-between font-bold text-[#f6d283]">
