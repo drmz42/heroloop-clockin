@@ -1509,12 +1509,15 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         return errorResponse(400, "invalid_summon", requestId);
       }
       try {
-        const result = await databaseJson(
+        const summon = () => databaseJson(
           edition === 'seeker'
             ? "SELECT heroloop_api.seeker_scroll_summon($1::uuid, $2::uuid, $3::integer, $4::bigint, $5::text, $6::uuid) AS result"
             : "SELECT heroloop_api.hero_summon($1::uuid, $2::uuid, $3::integer, $4::bigint, $5::text, $6::uuid) AS result",
           [identity.playerId, requestKey, count, expectedRevision, paymentMethod, quoteId],
         );
+        // A database timeout rolls the entire Scroll settlement back. Reuse
+        // the exact key/revision for one bounded retry on the isolated edition.
+        const result = await (edition === 'seeker' ? retryDatabaseTimeoutOnce(summon) : summon());
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
       } catch (error) {
         const code = databaseErrorCode(error, [

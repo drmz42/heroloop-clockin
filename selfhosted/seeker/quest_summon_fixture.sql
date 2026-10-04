@@ -1,12 +1,40 @@
 -- Disposable accounts only. No chain, real wallet or live payment is used.
 \set ON_ERROR_STOP 1
 DO $$
-DECLARE p uuid; k uuid; r jsonb; s public.player_saves; balance numeric; focus jsonb; before_count integer; total numeric;
+DECLARE p uuid; k uuid; r jsonb; s public.player_saves; balance numeric; focus jsonb; before_count integer; total numeric; scroll_balance bigint;
 BEGIN
  SELECT player_id INTO p FROM public.player_saves WHERE public.account_risk_level(player_id) NOT IN ('review','hold') ORDER BY player_id LIMIT 1;
  SELECT token_balance,ascension_focus INTO balance,focus FROM public.players WHERE player_id=p;
  -- An archived selection stays saved and cannot influence either Summon path.
  UPDATE public.players SET ascension_focus='{"common":"knight-common"}' WHERE player_id=p;
+ -- Scroll settlement and exact replay share the same atomic award/debit path.
+ PERFORM public.apply_resource_entries(p,gen_random_uuid(),'scroll_fixture',repeat('a',64),
+  '[{"resource_id":"summon_scroll","delta":"111","source_key":"promo_summon_scroll"}]',NULL);
+ scroll_balance:=(public.resource_snapshot(p)#>>'{balances,summon_scroll}')::bigint;
+ FOR before_count IN SELECT unnest(ARRAY[1,10,100]) LOOP
+  SELECT * INTO s FROM public.player_saves WHERE player_id=p;
+  k:=gen_random_uuid();
+  BEGIN
+   PERFORM heroloop_api.seeker_scroll_summon(p,k,before_count,s.revision,'scroll',NULL);
+   RAISE EXCEPTION USING ERRCODE='57014', MESSAGE='fixture statement timeout';
+  EXCEPTION WHEN query_canceled THEN NULL;
+  END;
+  IF (public.resource_snapshot(p)#>>'{balances,summon_scroll}')::bigint<>scroll_balance
+   OR (SELECT revision FROM public.player_saves WHERE player_id=p)<>s.revision
+   OR EXISTS(SELECT 1 FROM public.summon_events WHERE idempotency_key=k) THEN
+   RAISE EXCEPTION 'Cancelled Scroll transaction retained debit or award';
+  END IF;
+  r:=heroloop_api.seeker_scroll_summon(p,k,before_count,s.revision,'scroll',NULL);
+  scroll_balance:=scroll_balance-before_count;
+  IF jsonb_array_length(r->'heroes')<>before_count OR (r->>'scrolls_spent')::integer<>before_count
+   OR (r->>'summon_scrolls')::bigint<>scroll_balance OR (r->>'spent')::numeric<>0 THEN
+   RAISE EXCEPTION 'Scroll settlement mismatch';
+  END IF;
+  IF heroloop_api.seeker_scroll_summon(p,k,before_count,s.revision,'scroll',NULL)<>r
+   OR (public.resource_snapshot(p)#>>'{balances,summon_scroll}')::bigint<>scroll_balance THEN
+   RAISE EXCEPTION 'Scroll replay changed award or debit';
+  END IF;
+ END LOOP;
  FOR before_count IN SELECT unnest(ARRAY[1,10,100]) LOOP
   k:=gen_random_uuid();
   r:=heroloop_api.seeker_purchase_prepare(p,k,'hero_summon',jsonb_build_object('count',before_count));
