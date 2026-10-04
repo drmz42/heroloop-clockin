@@ -1,57 +1,40 @@
-/* Rarity frames v2 — see RarityFx.tsx. --rx is the rarity light, --rx-metal the CSS filter that turns the
-   bronze frame art into that tier's metal (static filter, never animated). */
-.rx { position: absolute; inset: 0; z-index: 2; overflow: hidden; border-radius: inherit; pointer-events: none; --rx: #9ca3af; --rx-metal: grayscale(1) brightness(.72); --rx-fw: 20px; }
-.rx-compact { --rx-fw: 17px; }
+/* Rarity frames v3 — see RarityFx.tsx. The frame is per-tier art stretched to the box (card 3:4, slot 1:1);
+   --rx is the tier light used by the code-side glow layers. */
+.rx { position: absolute; inset: 0; z-index: 2; overflow: hidden; border-radius: inherit; pointer-events: none; --rx: #9ca3af; --rx-band: 8%; }
 .rx > span { position: absolute; inset: 0; }
+.rx-frame { background: center / 100% 100% no-repeat; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .8)); }
 
-/* The forged frame, re-metalled per tier */
-.rx-frame { border: var(--rx-fw) solid transparent; border-image: url('../premium/assets/frame-9.webp') 200 / var(--rx-fw) / 0 stretch; filter: var(--rx-metal) drop-shadow(0 0 2px rgba(0, 0, 0, .9)); }
-
-/* Rare+: static inner light inside the frame */
-.rx-light { inset: calc(var(--rx-fw) * .45) !important; box-shadow: inset 0 0 10px 0 color-mix(in srgb, var(--rx) 45%, transparent); }
-
-/* Epic+: a cut gem on each corner plate */
-.rx-gems i { position: absolute; width: 8px; height: 8px; border-radius: 1px; transform: rotate(45deg); background: radial-gradient(circle at 35% 30%, #fff 0 12%, var(--rx) 40%, color-mix(in srgb, var(--rx) 45%, #000) 100%); box-shadow: 0 0 0 1px rgba(0, 0, 0, .85), 0 0 6px var(--rx); }
-.rx-gems i:nth-child(1) { left: calc(var(--rx-fw) * .5 - 4px); top: calc(var(--rx-fw) * .5 - 4px); }
-.rx-gems i:nth-child(2) { right: calc(var(--rx-fw) * .5 - 4px); top: calc(var(--rx-fw) * .5 - 4px); }
-.rx-gems i:nth-child(3) { left: calc(var(--rx-fw) * .5 - 4px); bottom: calc(var(--rx-fw) * .5 - 4px); }
-.rx-gems i:nth-child(4) { right: calc(var(--rx-fw) * .5 - 4px); bottom: calc(var(--rx-fw) * .5 - 4px); }
-.rx-compact .rx-gems i { width: 5px; height: 5px; }
-
-/* Legendary+: crest on the top edge (Divine+ also on the bottom) */
-.rx-crest { inset: 0 auto auto 50% !important; width: 46%; max-width: 74px; aspect-ratio: 180 / 110; background: url('../premium/assets/frame-ornament.webp') center / contain no-repeat; filter: var(--rx-metal) drop-shadow(0 1px 2px rgba(0, 0, 0, .9)) drop-shadow(0 0 4px color-mix(in srgb, var(--rx) 60%, transparent)); transform: translate(-50%, -38%); }
-.rx-crest-low { inset: auto auto 0 50% !important; transform: translate(-50%, 38%) rotate(180deg); }
-.rx-compact .rx-crest { width: 40%; }
+/* Rare+: static inner light just inside the frame band */
+.rx-light { inset: var(--rx-band) !important; box-shadow: inset 0 0 12px 0 color-mix(in srgb, var(--rx) 45%, transparent); }
 
 /* Legendary+: a sheen crossing the card every ~10 s */
-.rx-glint { overflow: hidden; }
-.rx-glint::before { content: ''; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 38%; background: linear-gradient(100deg, transparent, color-mix(in srgb, #fff 60%, var(--rx)) 50%, transparent); opacity: .45; transform: translateX(0) skewX(-18deg); animation: rx-glint 10s ease-in-out infinite; }
+.rx-glint { inset: var(--rx-band) !important; overflow: hidden; }
+.rx-glint::before { content: ''; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 38%; background: linear-gradient(100deg, transparent, color-mix(in srgb, #fff 60%, var(--rx)) 50%, transparent); opacity: .4; transform: translateX(0) skewX(-18deg); animation: rx-glint 10s ease-in-out infinite; }
 
 /* Mythic+: breathing light from the bottom edge */
-.rx-aura { background: radial-gradient(ellipse 85% 45% at 50% 100%, color-mix(in srgb, var(--rx) 50%, transparent), transparent 70%); opacity: .5; animation: rx-breathe 4.5s ease-in-out infinite; }
+.rx-aura { inset: var(--rx-band) !important; background: radial-gradient(ellipse 85% 45% at 50% 100%, color-mix(in srgb, var(--rx) 50%, transparent), transparent 70%); opacity: .5; animation: rx-breathe 4.5s ease-in-out infinite; }
 
 /* Divine+: fine light rays from the top */
-.rx-rays { background: repeating-conic-gradient(from 180deg at 50% -10%, color-mix(in srgb, var(--rx) 32%, transparent) 0deg 3deg, transparent 3deg 14deg); -webkit-mask: linear-gradient(180deg, #000, transparent 70%); mask: linear-gradient(180deg, #000, transparent 70%); opacity: .45; animation: rx-breathe 6s ease-in-out infinite; }
+.rx-rays { inset: var(--rx-band) !important; background: repeating-conic-gradient(from 180deg at 50% -10%, color-mix(in srgb, var(--rx) 32%, transparent) 0deg 3deg, transparent 3deg 14deg); -webkit-mask: linear-gradient(180deg, #000, transparent 70%); mask: linear-gradient(180deg, #000, transparent 70%); opacity: .45; animation: rx-breathe 6s ease-in-out infinite; }
 
 /* Motes: embers, stars, sparks, gold dust */
 .rx-motes i { position: absolute; bottom: 12%; left: calc(18% + var(--m) * 21%); width: 3px; height: 3px; border-radius: 50%; background: var(--rx-mote, var(--rx)); box-shadow: 0 0 5px 1px var(--rx-mote, var(--rx)); opacity: 0; animation: rx-rise 5.5s linear infinite; animation-delay: calc(var(--m) * -1.6s); }
 :is(.rx-cosmic, .rx-relic, .rx-celestial) .rx-motes i { bottom: auto; top: calc(16% + var(--m) * 18%); width: 2px; height: 2px; animation: rx-twinkle 3.2s ease-in-out infinite; animation-delay: calc(var(--m) * -.8s); }
 
 /* Tier metals and lights (rarities.md) */
-.rx-common    { --rx: #9ca3af; --rx-metal: grayscale(1) brightness(.85) contrast(1.1); }
-.rx-uncommon  { --rx: #4ade80; --rx-metal: grayscale(1) sepia(1) hue-rotate(70deg) saturate(1.6) brightness(.85); }
-.rx-rare      { --rx: #3b82f6; --rx-metal: grayscale(1) sepia(1) hue-rotate(175deg) saturate(2.4) brightness(.9); }
-.rx-epic      { --rx: #b46cff; --rx-metal: grayscale(1) sepia(1) hue-rotate(225deg) saturate(2.2) brightness(.95); }
-.rx-legendary { --rx: #ffbf4a; --rx-metal: sepia(.35) saturate(1.8) brightness(1.35) contrast(1.05); }
-.rx-mythic    { --rx: #ff4d3d; --rx-metal: grayscale(1) sepia(1) hue-rotate(-28deg) saturate(3.2) brightness(.95); --rx-mote: #ffb066; }
-.rx-cosmic, .rx-relic { --rx: #55e6d0; --rx-metal: grayscale(1) sepia(1) hue-rotate(125deg) saturate(2.4) brightness(1.1); --rx-mote: #e3fffa; }
-.rx-divine    { --rx: #ffcf6e; --rx2: #f08fd8; --rx-metal: sepia(.5) hue-rotate(-18deg) saturate(1.7) brightness(1.4); --rx-mote: #ffe6b5; }
-.rx-celestial { --rx: #d9fbff; --rx-metal: grayscale(1) sepia(.35) hue-rotate(140deg) saturate(1.6) brightness(1.75); --rx-mote: #ffffff; }
-.rx-cursed    { --rx: #e0193f; --rx-metal: grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3) brightness(.6) contrast(1.3); --rx-mote: #ff3355; }
-.rx-immortal  { --rx: #a78bfa; --rx-metal: grayscale(1) brightness(1.55) contrast(1.15); --rx-mote: #cdbbff; }
-.rx-god       { --rx: #fff0b8; --rx-metal: sepia(.25) saturate(1.3) brightness(1.75) contrast(1.05); --rx-mote: #ffe28a; }
-.rx-divine .rx-gems i { background: radial-gradient(circle at 35% 30%, #fff 0 12%, var(--rx2) 40%, #5a1f50 100%); box-shadow: 0 0 0 1px #000, 0 0 6px var(--rx2); }
-.rx-cursed .rx-light { box-shadow: inset 0 0 16px 2px rgba(224, 25, 63, .5), inset 0 0 0 1px rgba(0, 0, 0, .8); }
+.rx-common    { --rx: #9ca3af; }
+.rx-uncommon  { --rx: #4ade80; }
+.rx-rare      { --rx: #3b82f6; }
+.rx-epic      { --rx: #b46cff; }
+.rx-legendary { --rx: #ffbf4a; }
+.rx-mythic    { --rx: #ff4d3d; --rx-mote: #ffb066; }
+.rx-cosmic, .rx-relic { --rx: #55e6d0; --rx-mote: #e3fffa; }
+.rx-divine    { --rx: #ffcf6e; --rx2: #f08fd8; --rx-mote: #ffe6b5; }
+.rx-celestial { --rx: #d9fbff; --rx-mote: #ffffff; }
+.rx-cursed    { --rx: #e0193f; --rx-mote: #ff3355; }
+.rx-immortal  { --rx: #a78bfa; --rx-mote: #cdbbff; }
+.rx-god       { --rx: #fff0b8; --rx-mote: #ffe28a; }
+.rx-cursed .rx-light { box-shadow: inset 0 0 16px 2px rgba(224, 25, 63, .5); }
 
 @keyframes rx-glint { 0%, 78% { transform: translateX(0) skewX(-18deg); } 100% { transform: translateX(420%) skewX(-18deg); } }
 @keyframes rx-breathe { 0%, 100% { opacity: .32; } 50% { opacity: .68; } }
