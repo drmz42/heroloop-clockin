@@ -69,7 +69,7 @@ function HeroGridCard({ base, hero, game, onSelect }: { base: HeroBase; hero: Ow
   const power = stats ? Math.round(stats.atk + stats.hp / 10 + stats.def * 2) : 0;
   return (
     <li>
-      <button type="button" onClick={onSelect} aria-label={`${base.name}, ${RARITY_LABEL[base.rarity]}, level ${hero.level}`} className={`hv-card${RARITY_INDEX[base.rarity] >= RARITY_INDEX.rare ? ' is-rare' : ''}${isInTeam ? ' is-team' : ''}`} style={{ '--hv-color': rc } as React.CSSProperties}>
+      <button type="button" onClick={onSelect} aria-label={`${base.name}, ${RARITY_LABEL[base.rarity]}, level ${hero.level}${isTraining ? ", unavailable: Training Camp" : ""}`} className={`hv-card${RARITY_INDEX[base.rarity] >= RARITY_INDEX.rare ? ' is-rare' : ''}${isInTeam ? ' is-team' : ''}`} style={{ '--hv-color': rc } as React.CSSProperties}>
         <span className="hv-card-art">
           <img src={heroPortraitSrc(base.id, base.heroClass, base.rarity, base.color)} alt="" loading="lazy" decoding="async" style={{ ...heroPortraitStyle(base.id, base.heroClass), transform: 'none' }} />
           <RarityFx rarity={base.rarity} shape="tcg" label={CLASS_LABEL[base.heroClass]} />
