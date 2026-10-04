@@ -196,3 +196,8 @@ html :has(> .rx-sq) { -webkit-mask-box-image: none; -webkit-mask: var(--rx-host-
 :has(> .rx-god.rx-sq) { --rx-fit: 0.595; }
 :has(> .rx-sq) > :is(img, .arena-portrait-impact-layer, .mv-card-img, span.relative.block) { scale: var(--rx-fit, 1); }
 :has(> .rx-sq) { background: radial-gradient(circle at 50% 40%, #241a12, #070505 75%) !important; }
+/* Thin square frames: no dark matte or silhouette mask (Founder 2026-10-04: "something black around"); the
+   picture runs under the bars and the frame simply sits on top. */
+.rx-slot > .rx-matte, .rx-card > .rx-matte { display: none; }
+html :has(> .rx-slot), html :has(> .rx-card) { -webkit-mask-box-image: none !important; -webkit-mask: none !important; mask: none !important; }
+html :is(.item-slot, .hero-portrait-rarity, .arena-portrait):has(> .rx-slot):not(#rx-a):not(#rx-b) { box-shadow: none !important; background: transparent !important; }
