@@ -13,9 +13,9 @@ const MOTES: Partial<Record<Rarity, number>> = { mythic: 3, cosmic: 4, relic: 4,
 const ART: Partial<Record<Rarity, Rarity>> = { relic: 'cosmic' };
 const CRESTS: Partial<Record<Rarity, ('top' | 'bottom')[]>> = { legendary: ['top'], mythic: ['top'], cosmic: ['top'], divine: ['top', 'bottom'], celestial: ['top', 'bottom'], cursed: ['top', 'bottom'], immortal: ['top', 'bottom'], god: ['top', 'bottom'] };
 const BW_RATIO = 0.12;
-// Square boxes from this width use the ornate ladder art (card frame without the banner); smaller ones keep the
-// thin 9-slice so the frame never swallows a small item (Founder 2026-10-04).
-const SQUARE_MIN = 56;
+// Ornate square frames (ladder art without the banner) are switched off: the Founder rejected them in battle
+// (2026-10-04), so every square box keeps the thin 9-slice. Set a width here to turn them back on.
+const SQUARE_MIN = Number.POSITIVE_INFINITY;
 
 // `tcg` is the collectible hero card (Founder 2026-10-04: heroes are summoned like cards): a thin card rim with a
 // rarity gem and a name banner, drawn whole on a fixed 3:4 box; `label` is written into the banner.
