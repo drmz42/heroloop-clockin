@@ -58,6 +58,7 @@ const walletServiceUrl = Deno.env.get("WALLET_SERVICE_URL") ?? "";
 const walletServiceToken = Deno.env.get("WALLET_SERVICE_TOKEN") ?? "";
 const walletActions: Record<string, string> = {
   wallet_snapshot: "/wallet/snapshot",
+  wallet_skr_account: "/wallet/skr-account",
   wallet_rates: "/wallet/rates",
   wallet_withdrawals: "/wallet/withdrawals",
   wallet_withdraw_intent: "/wallet/withdraw-intent",
@@ -174,6 +175,7 @@ const commandActions = new Set([
   "set_boost_max_active",
   "skr_boost_status",
   "wallet_snapshot",
+  "wallet_skr_account",
   "wallet_rates",
   "wallet_withdrawals",
   "wallet_withdraw_intent",
@@ -1021,7 +1023,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         return errorResponse(409, "unavailable_in_standard_edition", requestId);
       }
       const action = String(parsed.value.action);
-      const allowed = ({wallet_snapshot:['address'],wallet_rates:[],wallet_withdrawals:[],
+      const allowed = ({wallet_skr_account:['address'],wallet_snapshot:['address'],wallet_rates:[],wallet_withdrawals:[],
         wallet_deposit_intent:['asset','amount','payer'],wallet_deposit_confirm:['intent_id','signature'],
         wallet_withdraw_intent:['asset','amount','destination'],wallet_withdraw_confirm:['request_id','signature'],
         wallet_founder_status:['founder_address'],wallet_withdraw_review:['founder_address','request_id','action','signature','reason'],
@@ -1029,8 +1031,8 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       } as Record<string,string[]>)[action];
       const payloadError = validatePayloadFields(payload, allowed);
       if (payloadError) return errorResponse(400, payloadError, requestId);
-      if ((['wallet_withdraw_intent','wallet_founder_status','wallet_withdraw_review'].includes(action) || (action==='wallet_snapshot' && payload.address!==undefined))) {
-        const address=action==='wallet_snapshot'?payload.address:action==='wallet_withdraw_intent'?payload.destination:payload.founder_address;
+      if ((['wallet_skr_account','wallet_withdraw_intent','wallet_founder_status','wallet_withdraw_review'].includes(action) || (action==='wallet_snapshot' && payload.address!==undefined))) {
+        const address=['wallet_snapshot','wallet_skr_account'].includes(action)?payload.address:action==='wallet_withdraw_intent'?payload.destination:payload.founder_address;
         if(typeof address!=='string')return errorResponse(400,'invalid_wallet_address',requestId);
         const proof=await databaseJson('SELECT heroloop_api.seeker_wallet_identity($1::uuid,$2::text) AS result',[identity.playerId,address]);
         if(proof.verified!==true)return errorResponse(403,'wallet_identity_required',requestId);

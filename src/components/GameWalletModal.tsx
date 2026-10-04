@@ -11,7 +11,7 @@ import { shortWalletAddress } from '@/components/walletAddress';
 import { solanaAuthEnabled, unlinkSolanaIdentity } from '@/game/solanaWalletSession';
 import { SeekerDepositPanel, SeekerHistoryPanel } from '@/components/SeekerWalletPanels';
 
-import { SeekerWithdrawalPanel,SeekerFounderPanel } from '@/components/SeekerWithdrawalPanels';
+import { SeekerWithdrawalPanel } from '@/components/SeekerWithdrawalPanels';
 
 type WalletTab = 'deposit' | 'withdraw' | 'history' | 'account';
 
@@ -192,7 +192,6 @@ export function GameWalletModal({
                 {solanaAuthEnabled ? 'This internal account ID is not your public wallet address. HeroLoop login signatures never move funds or cost gas.' : 'Guest ID is not a Solana address and cannot receive funds. The displayed `$HERO` balance is the current in-game testing balance.'}
               </div>
 
-              {isolatedHackathon && <SeekerFounderPanel />}
               {solanaAuthEnabled && (
                 <div className="space-y-3 border-t border-white/10 pt-4">
                   <div className="flex gap-3 text-xs leading-5 text-slate-400">

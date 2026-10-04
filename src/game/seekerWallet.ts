@@ -341,3 +341,25 @@ export type MineBoard = {
 };
 export const loadMineBoard = (): Promise<MineBoard> => command('mine_board');
 export const stopMine = (sessionId: string): Promise<MineSession> => command('mine_stop', { session_id: sessionId });
+
+export type SkrAccountStatus = {ready:boolean;owner:string;chain:WalletChain;rent_lamports?:string;network_fee_lamports?:string;required_lamports?:string;balance_lamports?:string;funded?:boolean;transaction?:string};
+export async function loadSkrAccount():Promise<SkrAccountStatus>{
+ const bound=boundWallet();if(!bound)throw new SeekerWalletError('wallet_identity_required');
+ return command('wallet_skr_account',{address:bound.address});
+}
+export async function createPersonalSkrAccount():Promise<SkrAccountStatus>{
+ const bound=boundWallet();if(!bound)throw new SeekerWalletError('wallet_identity_required');
+ const status=await loadSkrAccount();
+ if(status.owner!==bound.address||boundWallet()?.address!==bound.address)throw new SeekerWalletError('wallet_account_mismatch');
+ if(status.ready)return status;
+ if(!status.funded||!status.transaction)throw new SeekerWalletError('insufficient_account_sol');
+ try {await signAndSend(status.transaction,status.chain,bound.address,bound.walletName);}catch(error){
+  if(error instanceof SeekerWalletError)throw error;
+  throw new SeekerWalletError(rejected(error)?'wallet_rejected':'wallet_send_failed');
+ }
+ for(let attempt=0;attempt<15;attempt++){
+  await new Promise(resolve=>setTimeout(resolve,4000));
+  const current=await loadSkrAccount();if(current.ready)return current;
+ }
+ throw new SeekerWalletError('account_creation_pending');
+}

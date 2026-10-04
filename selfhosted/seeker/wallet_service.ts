@@ -3,6 +3,7 @@
 // backend network by the game API, which authenticates the player and forwards
 // the verified player id with a shared service token. Holds no signing key:
 // deposits are verified read-only against Solana RPC.
+import { hasSkrAccount, prepareSkrAccount } from "./recipient_account.ts";
 import { externalBalances } from "./wallet_display.ts";
 import { Pool } from "@db/postgres";
 import {
@@ -292,6 +293,10 @@ async function reconcile():Promise<Json> {
   return {assets,withdrawals_blocked:blocked,checked_at:new Date().toISOString()};
 }
 async function withdrawals(path:string,player:string,body:Json):Promise<Response|null> {
+  if(path==='/wallet/skr-account') {
+    if(typeof body.address!=='string'||!ADDRESS.test(body.address)||body.address===config.payoutTreasury)return json(400,{ok:false,code:'invalid_wallet_address'});
+    return json(200,{ok:true,result:await prepareSkrAccount(body.address,config,rpc)});
+  }
   if(path==='/wallet/reconcile')return json(200,{ok:true,result:await reconcile()});
   if(path==='/wallet/withdrawals') {
     const result=await call('SELECT seeker_skr.withdrawal_list($1::uuid,false) AS result',[player]);
@@ -300,6 +305,7 @@ async function withdrawals(path:string,player:string,body:Json):Promise<Response
   if(path==='/wallet/withdraw-intent') {
     const asset=body.asset==='SKR'||body.asset==='SOL'?body.asset:null;
     if(!asset||typeof body.destination!=='string'||!ADDRESS.test(body.destination)||(body.destination===config.treasury||body.destination===config.payoutTreasury))return json(400,{ok:false,code:'invalid_withdrawal'});
+    if(asset==='SKR'&&!await hasSkrAccount(body.destination,config.skrMint,rpc))return json(409,{ok:false,code:'recipient_skr_account_required'});
     const amount=parseAmount(body.amount,asset);
     if(amount===null||amount>18446744073709551615n)return json(400,{ok:false,code:'invalid_amount'});
     const report=await reconcile();
@@ -322,6 +328,7 @@ async function withdrawals(path:string,player:string,body:Json):Promise<Response
     const w=await call('SELECT seeker_skr.withdrawal_get($1::uuid,$2::uuid) AS result',[player,body.request_id]);
     if(w.status!=='authorization')return json(200,{ok:true,result:w});
     if(!await verifyAuthorization(w as unknown as Withdrawal,body.signature))return json(403,{ok:false,code:'invalid_withdrawal_signature'});
+    if(w.asset==='SKR'&&!await hasSkrAccount(String(w.destination),config.skrMint,rpc))return json(409,{ok:false,code:'recipient_skr_account_required'});
     if((await reconcile()).withdrawals_blocked)return json(409,{ok:false,code:'withdrawals_blocked'});
     const result=await call('SELECT seeker_skr.withdrawal_reserve($1::uuid,$2::uuid) AS result',[player,body.request_id]);
     return json(200,{ok:true,result});
@@ -342,6 +349,7 @@ async function withdrawals(path:string,player:string,body:Json):Promise<Response
     const result=await call('SELECT seeker_skr.withdrawal_finalize($1::uuid,$2::text) AS result',[body.request_id,body.signature]);
     return json(200,{ok:true,result});
   }
+  if(body.action==='begin_payout'&&w.asset==='SKR'&&!await hasSkrAccount(String(w.destination),config.skrMint,rpc))return json(409,{ok:false,code:'recipient_skr_account_required'});
   if(body.action==='begin_payout'&&(await reconcile()).withdrawals_blocked)return json(409,{ok:false,code:'withdrawals_blocked'});
   if(!['begin_payout','reject'].includes(String(body.action)))return json(400,{ok:false,code:'invalid_withdrawal_review'});
   const result=await call('SELECT seeker_skr.withdrawal_review($1::uuid,$2::text,$3::text,$4::text) AS result',

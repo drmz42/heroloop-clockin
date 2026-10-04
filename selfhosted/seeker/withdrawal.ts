@@ -8,7 +8,7 @@ export function authorizationMessage(w:Withdrawal):string {
   if(!/^[0-9]{1,20}$/.test(w.fee_minor)||!/^[1-9][0-9]{0,19}$/.test(w.payout_minor)||BigInt(w.fee_minor)+BigInt(w.payout_minor)!==BigInt(w.amount_minor)) throw new Error('invalid_withdrawal');
   const decimals=w.asset==='SKR'?6:9;
   const display=(minor:string)=>{const digits=minor.padStart(decimals+1,'0');return `${digits.slice(0,-decimals)}.${digits.slice(-decimals)}`;};
-  return `HeroLoop withdrawal authorization\nDomain: ${WITHDRAWAL_DOMAIN}\nAccount: ${w.player_id}\nAsset: ${w.asset}\nAmount: ${display(w.amount_minor)} ${w.asset}\nAmount (atomic units): ${w.amount_minor}\nFee (5%): ${display(w.fee_minor)} ${w.asset}\nYou receive: ${display(w.payout_minor)} ${w.asset}\nDestination: ${w.destination}\nRequest: ${w.request_id}\nExpires: ${w.expires_at}\n\nReserve this in-game balance for a manual payout. This signature sends no transaction.`;
+  return `HeroLoop Seeker withdrawal request\nDomain: ${WITHDRAWAL_DOMAIN}\nAccount: ${w.player_id}\nAsset: ${w.asset}\nAmount: ${display(w.amount_minor)} ${w.asset}\nAmount (atomic units): ${w.amount_minor}\nFee (5%): ${display(w.fee_minor)} ${w.asset}\nYou receive: ${display(w.payout_minor)} ${w.asset}\nDestination: ${w.destination}\nRequest: ${w.request_id}\nExpires: ${w.expires_at}\n\nI authorize reserving the amount above from my in-game balance. After admin approval, the project automatically sends the stated net amount to my linked wallet and keeps the 5% withdrawal fee. Signing this message does not move funds on chain or charge a network fee.`;
 }
 export async function verifyAuthorization(w:Withdrawal,signature:string,now=Date.now()):Promise<boolean> {
   if(now>Date.parse(w.expires_at))return false;

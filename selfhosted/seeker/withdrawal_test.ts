@@ -14,7 +14,7 @@ Deno.test('withdrawal authorization binds amount, asset, account, request, recip
  assert.equal(await verifyAuthorization(w,signature,Date.parse(w.expires_at)+1),false);
  assert.equal(await verifyAuthorization(w,'bad'),false);
 });
-Deno.test('manual SOL payout requires exact finalized sender, destination, amount and fresh transfer',async()=>{
+Deno.test('SOL payout requires exact finalized sender, destination, amount and fresh transfer',async()=>{
  const {w}=await fixture();w.asset='SOL';w.amount_minor='1052632';w.fee_minor='52632';w.payout_minor='1000000';
  const treasury='11111111111111111111111111111111',signature='sig';
  const config={cluster:'mainnet' as const,treasury,skrMint:'mint'};
@@ -26,7 +26,7 @@ Deno.test('manual SOL payout requires exact finalized sender, destination, amoun
  tx.meta.err={} as never;assert.equal(verifyPayout(w,config,signature,tx),'payout_not_finalized');
 });
 
-Deno.test('manual SKR payout binds classic mint, treasury debit, recipient credit and signature',async()=>{
+Deno.test('SKR payout binds classic mint, treasury debit, recipient credit and signature',async()=>{
  const {w}=await fixture();const treasury='11111111111111111111111111111111',signature='skr-sig',mint='mint';
  const balance=(accountIndex:number,owner:string,amount:string)=>({accountIndex,owner,mint,uiTokenAmount:{amount,decimals:6}});
  const tx={blockTime:Math.floor(Date.now()/1000),transaction:{signatures:[signature],message:{accountKeys:[{pubkey:treasury,signer:true},{pubkey:'source',signer:false},{pubkey:'recipient-ata',signer:false}],instructions:[{programId:TOKEN_PROGRAM,parsed:{type:'transferChecked',info:{source:'source',destination:'recipient-ata',authority:treasury,mint,tokenAmount:{amount:'1000000',decimals:6}}}}]}},meta:{err:null,preTokenBalances:[balance(1,treasury,'2000000'),balance(2,w.destination,'0')],postTokenBalances:[balance(1,treasury,'1000000'),balance(2,w.destination,'1000000')]}};
@@ -59,4 +59,14 @@ Deno.test('separate SKR payout binds payout debit rather than deposit treasury d
  assert.equal(verifyPayout(w,{...config,payoutTreasury:'deposit'},signature,tx),'payout_wrong_sender');
  tx.meta.preTokenBalances[0].owner='deposit';
  assert.equal(verifyPayout(w,config,signature,tx),'payout_wrong_amount');
+});
+
+Deno.test('hackathon authorization explains the running automatic payout and exact fee', async()=>{
+ const {w}=await fixture(); const message=authorizationMessage(w);
+ assert(message.startsWith('HeroLoop Seeker withdrawal request\n'));
+ assert(message.includes('Fee (5%): 0.052632 SKR'));
+ assert(message.includes('You receive: 1.000000 SKR'));
+ assert(message.includes('After admin approval, the project automatically sends'));
+ assert(message.includes('does not move funds on chain or charge a network fee'));
+ assert(!message.includes('manual payout'));
 });

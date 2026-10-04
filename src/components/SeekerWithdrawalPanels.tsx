@@ -1,10 +1,13 @@
 import { WalletAmount, WalletAssetPicker, type DisplayWalletAsset } from './SeekerWalletControls';
 import { useCallback,useEffect,useRef,useState } from 'react';
-import { boundWallet,formatMinor,exactWalletAmount,ASSET_DECIMALS,loadWalletRates,loadWithdrawals,loadFounderWallet,requestWithdrawal,reviewWithdrawal,useWalletSnapshot,type WithdrawalRow,type WalletRate,type Reconciliation } from '@/game/seekerWallet';
+import { loadSkrAccount,createPersonalSkrAccount,type SkrAccountStatus,boundWallet,formatMinor,exactWalletAmount,ASSET_DECIMALS,loadWalletRates,loadWithdrawals,requestWithdrawal,useWalletSnapshot,type WithdrawalRow,type WalletRate } from '@/game/seekerWallet';
 import { skrError } from '@/game/skrPurchase';
 const withdrawalError=(error:unknown)=>{
   const code=error instanceof Error?error.message:'';
   return ({withdrawals_blocked:'Withdrawals are temporarily unavailable. Please try again later.',
+    recipient_skr_account_required:'Create your SKR account below before withdrawing.',
+    insufficient_account_sol:'Add SOL to your personal wallet to create the SKR account.',
+    account_creation_pending:'Account creation is still confirming. Check again before retrying.',
     invalid_withdrawal_signature:'Your wallet signature could not be verified.',
     wallet_rejected:'Withdrawal cancelled in the wallet. Nothing was reserved.',
     wallet_timeout:'The wallet did not return a signature. Nothing was reserved; try again.',
@@ -25,6 +28,17 @@ export function SeekerWithdrawalPanel() {
   const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');const [rows,setRows]=useState<WithdrawalRow[]>([]);
   const refresh=useCallback(()=>loadWithdrawals().then(r=>setRows(r.withdrawals)).catch(()=>setMessage('Withdrawal history is unavailable.')),[]);
   useEffect(()=>{void refresh();},[refresh]);
+  const linkedAddress=boundWallet()?.address;
+  const [account,setAccount]=useState<SkrAccountStatus|null>(null);
+  const [accountError,setAccountError]=useState(false);
+  const checkAccount=useCallback(async()=>{try{const status=await loadSkrAccount();setAccount(status);setAccountError(false);}catch{setAccount(null);setAccountError(true);}},[]);
+  const accountReady=account?.ready===true&&account.owner===linkedAddress;
+  useEffect(()=>{if(asset!=='SKR')return;setAccount(null);let stopped=false;
+    const check=()=>loadSkrAccount().then(status=>{if(!stopped){setAccount(status);setAccountError(false);}}).catch(()=>{if(!stopped){setAccount(null);setAccountError(true);}});
+    void check();const timer=setInterval(()=>{if(document.visibilityState==='visible')void check();},30000);
+    return()=>{stopped=true;clearInterval(timer);};
+  },[asset,linkedAddress]);
+  async function createAccount(){setBusy(true);setMessage('Confirm account creation in your wallet. Your personal wallet pays the SOL cost.');try{setAccount(await createPersonalSkrAccount());setMessage('Your SKR account is ready. You can now request a withdrawal.');}catch(error){setMessage(error instanceof Error&&error.message==='wallet_rejected'?'Account creation cancelled in your wallet.':withdrawalError(error));await checkAccount();}finally{setBusy(false);}}
   const [rates, setRates] = useState<Record<'SKR' | 'SOL', WalletRate> | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -49,9 +63,9 @@ export function SeekerWithdrawalPanel() {
     return [formatMinor((units - receive).toString(), asset, ASSET_DECIMALS[asset]), formatMinor(receive.toString(), asset, ASSET_DECIMALS[asset])];
   })();
   const abortRef=useRef<AbortController|null>(null);
-  async function submit(){if(asset==='ORE')return;setBusy(true);setMessage('');const abort=new AbortController();abortRef.current=abort;try{await requestWithdrawal(asset,amount,abort.signal);setMessage('Withdrawal requested. Awaiting approval.');setAmount('');await refresh();}catch(error){setMessage(withdrawalError(error));}finally{setBusy(false);}}
+  async function submit(){if(asset==='ORE')return;setBusy(true);setMessage('');const abort=new AbortController();abortRef.current=abort;try{await requestWithdrawal(asset,amount,abort.signal);setMessage('Withdrawal requested. Awaiting approval.');setAmount('');await refresh();}catch(error){setMessage(withdrawalError(error));}finally{abortRef.current=null;setBusy(false);}}
   return <div className="space-y-2.5">
-    <p className="text-xs leading-5 text-stone-300">Withdraw to your linked wallet. Approve the request in your wallet, then wait for it to be reviewed and paid.</p>
+    <p className="text-xs leading-5 text-stone-300">Withdraw to your linked wallet. Sign the request in your wallet. After admin approval, your payout is sent automatically.</p>
     <WalletAssetPicker asset={asset} busy={busy} onChange={entry => { setAsset(entry); setAmount(''); setMessage(''); }} />
     <WalletAmount id="seeker-withdraw-amount" amount={amount} asset={asset} busy={busy} onChange={setAmount}
       available={asset === 'ORE' ? 'ORE transfers are not available yet.' : `Available to withdraw: ${wallet ? formatMinor(wallet.balances[asset], asset, ASSET_DECIMALS[asset]) : '—'} $${asset}`}
@@ -59,32 +73,19 @@ export function SeekerWithdrawalPanel() {
     {feePreview && <p className="text-[11px] text-stone-300">Withdrawal fee 5%: {feePreview} ${asset} · you receive {receivePreview} ${asset}</p>}
     {overLimit && <p role="status" className="text-[11px] text-amber-200">Withdrawals above $20 require additional review.</p>}
     <p className="break-all text-xs text-stone-300">Destination: {boundWallet()?.address??'Link a wallet first'}</p>
-    <button style={{minHeight:44}} className="game-control game-primary min-h-11 w-full text-xs font-bold" disabled={busy||!valid||!boundWallet()} onClick={()=>void submit()}>{busy?'Authorizing…':'Sign withdrawal request'}</button>
-    {busy&&<button type="button" style={{minHeight:44}} className="game-control min-h-11 w-full text-xs" onClick={()=>abortRef.current?.abort()}>Cancel withdrawal request</button>}
+    {asset==='SKR'&&!accountReady&&<div className="stat-tile space-y-2 p-3 text-xs" role="status">
+      <p className="font-bold text-amber-100">{accountError?'Unable to check your SKR account':account?'Create your SKR account':'Checking your SKR account…'}</p>
+      {account&&!account.ready&&<><p className="leading-5 text-stone-300">Your wallet has no SKR account. Creating it costs {formatMinor(account.rent_lamports??'0','SOL',9)} SOL plus a network fee of {formatMinor(account.network_fee_lamports??'0','SOL',9)} SOL. Your personal wallet pays; your in-game balance is unchanged.</p>
+        <p className="text-amber-200">Total: {formatMinor(account.required_lamports??'0','SOL',9)} SOL. Your wallet may add a priority fee.</p>
+        {!account.funded&&<p className="text-amber-200">Add at least {formatMinor((BigInt(account.required_lamports??'0')-BigInt(account.balance_lamports??'0')).toString(),'SOL',9)} SOL to your linked wallet first.</p>}
+        <button type="button" style={{minHeight:44}} className="game-control game-primary w-full text-xs font-bold" disabled={busy||!account.funded} onClick={()=>void createAccount()}>{busy?'Waiting for your wallet…':'Create SKR account'}</button></>}
+      <button type="button" style={{minHeight:44}} className="game-control w-full text-xs" disabled={busy} onClick={()=>void checkAccount()}>Check again</button>
+    </div>}
+    <button style={{minHeight:44}} className="game-control game-primary min-h-11 w-full text-xs font-bold" disabled={busy||!valid||!boundWallet()||(asset==='SKR'&&!accountReady)} onClick={()=>void submit()}>{busy?'Waiting for your wallet…':'Sign withdrawal request'}</button>
+    {busy&&abortRef.current&&<button type="button" style={{minHeight:44}} className="game-control min-h-11 w-full text-xs" onClick={()=>abortRef.current?.abort()}>Cancel withdrawal request</button>}
     {message&&<p role="status" className="text-xs leading-5 text-amber-200">{message}</p>}
     <h3 className="text-sm font-bold text-amber-100">Withdrawal history</h3>
     {rows.map(row=><div key={row.request_id} className="stat-tile space-y-1 p-3 text-xs"><p>{formatMinor(row.amount_minor,row.asset,row.asset==='SKR'?6:9)} {row.asset} · you receive {formatMinor(row.payout_minor,row.asset,row.asset==='SKR'?6:9)} · {row.status.replace(/_/g,' ')}</p><p className="text-stone-400">{new Date(row.created_at).toLocaleString()}</p>{row.signature&&<a className="block break-all text-lime-200" target="_blank" rel="noreferrer" href={`https://explorer.solana.com/tx/${row.signature}`}>View finalized payout</a>}{row.reject_reason&&<p>{row.reject_reason}</p>}</div>)}
     <button style={{minHeight:44}} className="game-control min-h-11 w-full text-xs" onClick={()=>void refresh()}>Refresh withdrawals</button>
   </div>;
-}
-export function SeekerFounderPanel() {
-  const [rows,setRows]=useState<WithdrawalRow[]>([]);const [report,setReport]=useState<Reconciliation|null>(null);
-  const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');
-  const refresh=useCallback(async()=>{try{const data=await loadFounderWallet();setRows(data.withdrawals);setReport(data.reconciliation);}catch{/* Server enforces Founder identity; other players see no panel. */}},[]);
-  useEffect(()=>{void refresh();},[refresh]);
-  async function review(row:WithdrawalRow,action:'begin_payout'|'finalize'|'reject') {
-    const value=action==='finalize'?window.prompt('Paste the transaction signature of the payout already sent.'):action==='reject'?window.prompt('Reason for rejecting this request before any payout was sent:'):'';
-    if(value===null)return;
-    if(action==='begin_payout'&&!window.confirm(`Approve and start one manual payout of ${formatMinor(row.payout_minor,row.asset,row.asset==='SKR'?6:9)} ${row.asset} (request ${formatMinor(row.amount_minor,row.asset,row.asset==='SKR'?6:9)}, 5% fee kept) to ${row.destination}?${row.status==='approval_required'?' This exceeds the normal $20 daily limit.':''} The balance stays reserved until the transaction finalizes.`))return;
-    setBusy(true);setMessage('');try{await reviewWithdrawal(row.request_id,action,value);await refresh();}catch(error){setMessage(withdrawalError(error));}finally{setBusy(false);}
-  }
-  if(!report)return null;
-  return <section className="space-y-3 border-t border-amber-700/40 pt-4"><h3 className="text-lg font-bold text-amber-100">Staging2 payout control</h3>
-    <p className="text-xs text-amber-200">{report.withdrawals_blocked?'Treasury shortfall: new withdrawals blocked.':'Treasury reconciliation passed.'}</p>
-    {(['SKR','SOL'] as const).map(asset=><p key={asset} className="break-words text-xs text-stone-300">{asset}: on chain {formatMinor(report.assets[asset].on_chain_minor,asset,9)} · accounted {formatMinor(report.assets[asset].accounted_minor,asset,9)}</p>)}
-    {rows.filter(r=>['pending','approval_required','paying'].includes(r.status)).map(row=><article key={row.request_id} className="stat-tile space-y-2 p-3 text-xs"><p className="font-bold text-amber-200">Send {formatMinor(row.payout_minor,row.asset,row.asset==='SKR'?6:9)} {row.asset} · request {formatMinor(row.amount_minor,row.asset,row.asset==='SKR'?6:9)} · {row.status.replace(/_/g,' ')}</p><code className="block break-all">{row.destination}</code><button style={{minHeight:44}} className="game-control min-h-11 w-full" onClick={()=>void navigator.clipboard.writeText(`${formatMinor(row.payout_minor,row.asset,row.asset==='SKR'?6:9).replace(/,/g,'')}`)}>Copy exact amount</button><button style={{minHeight:44}} className="game-control min-h-11 w-full" onClick={()=>void navigator.clipboard.writeText(row.destination)}>Copy destination</button>
-      {row.status==='paying'?<><p className="text-amber-200">Payout started. Send once, then paste its signature. Keep funds reserved on timeout.</p><button style={{minHeight:44}} disabled={busy} className="game-control game-primary min-h-11 w-full" onClick={()=>void review(row,'finalize')}>Verify sent payout</button></>:<><button style={{minHeight:44}} disabled={busy||report.withdrawals_blocked} className="game-control game-primary min-h-11 w-full" onClick={()=>void review(row,'begin_payout')}>Approve · begin manual payout</button><button style={{minHeight:44}} disabled={busy} className="game-control min-h-11 w-full" onClick={()=>void review(row,'reject')}>Reject before payout</button></>}
-    </article>)}
-    {message&&<p role="status" className="text-xs text-amber-200">{message}</p>}<button style={{minHeight:44}} className="game-control min-h-11 w-full text-xs" onClick={()=>void refresh()}>Refresh reconciliation</button>
-  </section>;
 }
