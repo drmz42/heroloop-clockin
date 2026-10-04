@@ -63,7 +63,7 @@ function PromotionCeremony({ promotions, goldSpent, freed, onClose }: { promotio
           <h2 id="promo-ceremony-title">Heroes ascended</h2>
           <p>+{totalStars}★ across {promotions.length} {promotions.length === 1 ? 'hero' : 'heroes'}</p>
         </header>
-        <ol className="promo-ceremony-list">
+        <ol className="promo-ceremony-list" tabIndex={0} aria-label="Promoted heroes">
           {promotions.map((entry, index) => {
             const hero = HERO_MAP[entry.heroId];
             if (!hero) return null;
