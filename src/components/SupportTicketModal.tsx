@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, MessageCircle, X } from 'lucide-react';
+import { GameSelect } from '@/components/GameSelect';
 import { playerSync } from '@/game/backend';
 
 const TOPICS = [
@@ -91,13 +92,9 @@ export function SupportTicketModal({ onClose }: { onClose: () => void }) {
           {sent && <p role="status" className="mt-3 flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-950/30 p-3 text-xs text-emerald-200"><CheckCircle2 size={16} /> Ticket created. You can check its status below.</p>}
           <form className="mt-4 grid gap-3" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
             <label className="text-xs font-bold text-[#f0dfbb]" htmlFor="support-topic">Game problem</label>
-            <select id="support-topic" value={topic} onChange={(event) => setTopic(event.target.value as typeof topic)} className="game-control min-h-11 w-full bg-[#15130f] px-3 text-sm text-[#f4e6c7]">
-              {TOPICS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-            </select>
+            <GameSelect id="support-topic" ariaLabel="Game problem" value={topic} onChange={setTopic} options={TOPICS.map((item) => ({ value: item.value, label: item.label }))} className="game-control min-h-11 w-full bg-[#15130f] px-3 text-sm text-[#f4e6c7]" />
             <label className="text-xs font-bold text-[#f0dfbb]" htmlFor="support-priority">Priority</label>
-            <select id="support-priority" value={priority} onChange={(event) => { const selected = Number(event.target.value); setPriority(selected); setConfirmCritical(selected === 5); }} className="game-control min-h-11 w-full bg-[#15130f] px-3 text-sm text-[#f4e6c7]">
-              {PRIORITIES.map((label, index) => <option key={label} value={index + 1}>{label}</option>)}
-            </select>
+            <GameSelect id="support-priority" ariaLabel="Priority" value={priority} onChange={(selected) => { setPriority(selected); setConfirmCritical(selected === 5); }} options={PRIORITIES.map((label, index) => ({ value: index + 1, label }))} className="game-control min-h-11 w-full bg-[#15130f] px-3 text-sm text-[#f4e6c7]" />
             <label className="text-xs font-bold text-[#f0dfbb]" htmlFor="support-details">What happened?</label>
             <textarea id="support-details" value={body} onChange={(event) => { setBody(event.target.value); setSent(false); setError(''); }} minLength={10} maxLength={2000} rows={4} required className="game-control w-full resize-y bg-[#15130f] px-3 py-2 text-sm text-[#f4e6c7]" placeholder="What were you doing, what did you expect, and what happened instead?" />
             <div className="text-right text-[10px] text-[#a79a82]">{body.length}/2000</div>

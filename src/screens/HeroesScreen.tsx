@@ -6,6 +6,7 @@ import { SkrUsd } from '@/components/SkrUsd';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Star, Lock, Unlock, Trash2, Search, X, Sparkles, Users, Swords, Shield, AlertTriangle, UserPlus, Gem, ChevronsUp, Zap } from 'lucide-react';
+import { GameSelect } from '@/components/GameSelect';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import '@/theme/scene/scene.css';
@@ -394,6 +395,5 @@ export function HeroesScreen({ game }: { game: GameApi }) {
 
 const SORT_ICONS = { rarity: Gem, stars: Star, power: Zap, level: ChevronsUp } as const;
 
-// A small icon follows each filter name (Founder 2026-10-03); the native select stays on top, transparent,
-// so tapping still opens the platform picker.
-function Filter({ value, onChange, label, icon: Icon, options }: { value: string; onChange: (value: string) => void; label: string; icon: typeof Star; options: string[] }) { const text = value === 'all' ? label : value; return <label className={`hv-filter sc-chip${value === 'all' ? '' : ' is-set'}`}><span className="sr-only">{label}</span><span aria-hidden="true">{text}</span><Icon size={10} aria-hidden="true" /><select value={value} onChange={(event) => onChange(event.target.value)} style={{ colorScheme: 'dark' }}>{options.map((option) => <option key={option} value={option} style={{ backgroundColor: '#171915', color: '#d1c8b9' }}>{option === 'all' ? `All ${label}` : option}</option>)}</select></label>; }
+// A small icon follows each filter name (Founder 2026-10-03); tapping opens the themed list, not the platform picker.
+function Filter({ value, onChange, label, icon: Icon, options }: { value: string; onChange: (value: string) => void; label: string; icon: typeof Star; options: string[] }) { const text = value === 'all' ? label : value; return <GameSelect ariaLabel={label} value={value} onChange={onChange} options={options.map((option) => ({ value: option, label: option === 'all' ? `All ${label}` : option }))} className={`hv-filter sc-chip${value === 'all' ? '' : ' is-set'}`}><span aria-hidden="true">{text}</span><Icon size={10} aria-hidden="true" /></GameSelect>; }

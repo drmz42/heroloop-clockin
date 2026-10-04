@@ -95,3 +95,32 @@ html[data-hl-edition='seeker'] .arena-unit-name:not(#hl-b) { display: -webkit-bo
 
 /* Commander sheet: the avatar fills its tile; no gold hairline (Founder 2026-10-03). */
 html[data-hl-edition='seeker'] .commander-avatar:not(#hl-b) { border: 0 !important; box-shadow: 0 0 0 1px #000, 0 8px 18px rgba(0, 0, 0, .55), inset 0 -24px 18px -12px rgba(0, 0, 0, .8) !important; }
+
+/* Quest Challenge (2026-10-04): lifetime quest bar with a server prize at every 10%. */
+.seeker-challenge { order: -1; }
+html[data-hl-edition='seeker'] .hl-quest-list .seeker-challenge:not(#hl-q) {
+  background: radial-gradient(ellipse at 50% 0, rgba(255, 170, 70, .16), transparent 70%), linear-gradient(180deg, rgba(34, 24, 14, .97), rgba(8, 6, 5, .98));
+  box-shadow: 0 0 0 1px rgba(199, 158, 97, .5), 0 6px 14px rgba(0, 0, 0, .45);
+}
+.seeker-challenge-count { color: #a39987; font: 700 12px/1 system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+.seeker-challenge-count b { color: #f2cc80; font: 700 18px/1 'Cinzel', Georgia, serif; }
+.seeker-challenge-track { position: relative; height: 10px; border-radius: 5px; background: #120d0b; box-shadow: inset 0 0 0 1px rgba(199, 158, 97, .35), inset 0 2px 4px rgba(0, 0, 0, .7); }
+.seeker-challenge-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #6b4718, #d9a24a 70%, #ffe1a0); box-shadow: 0 0 8px rgba(242, 180, 80, .45); transition: width .4s ease; }
+.seeker-challenge-notch { position: absolute; top: 50%; width: 8px; height: 8px; border: 1px solid #6f5a3a; background: #1a130d; transform: translate(-50%, -50%) rotate(45deg); }
+.seeker-challenge-notch:last-child { width: 11px; height: 11px; transform: translate(-80%, -50%) rotate(45deg); }
+.seeker-challenge-notch.is-ready { border-color: #ffe1a0; background: #f2cc80; box-shadow: 0 0 8px rgba(255, 200, 100, .9); animation: seeker-challenge-pulse 1.4s ease-in-out infinite; }
+.seeker-challenge-notch.is-claimed { border-color: #c79e61; background: #75521e; }
+.seeker-challenge-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 0; list-style: none; }
+.seeker-challenge-step { display: flex; width: 100%; min-height: 44px; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 1px solid rgba(199, 158, 97, .22); border-radius: 2px; padding: 3px 2px; background: rgba(6, 5, 4, .7); color: #8d8474; font: 700 10px/1.1 system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+.seeker-challenge-step small { color: #a39987; font: 800 9px/1 system-ui, sans-serif; letter-spacing: .04em; }
+.seeker-challenge-step.is-ready { border-color: #f2cc80; background: radial-gradient(ellipse at 50% 0, rgba(255, 190, 90, .35), rgba(60, 30, 12, .95)); color: #fbeccb; cursor: pointer; box-shadow: 0 0 10px rgba(242, 180, 80, .45); }
+.seeker-challenge-step.is-ready small { color: #ffe1a0; }
+.seeker-challenge-step.is-ready:disabled { cursor: default; filter: grayscale(.6) brightness(.7); }
+.seeker-challenge-step.is-claimed { opacity: .5; }
+.seeker-challenge-step.is-claimed small { color: #34d399; }
+li:last-child > .seeker-challenge-step:not(.is-claimed) { border-color: rgba(242, 204, 128, .55); }
+@keyframes seeker-challenge-pulse { 50% { box-shadow: 0 0 2px rgba(255, 200, 100, .4); } }
+@media (prefers-reduced-motion: reduce) {
+  .seeker-challenge-notch.is-ready { animation: none; }
+  .seeker-challenge-fill { transition: none; }
+}

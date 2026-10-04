@@ -986,7 +986,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       if (payloadError) return errorResponse(400, payloadError, requestId);
       try {
         if (walletServiceUrl) await syncMineRounds(identity.playerId);
-        const result = await databaseJson('SELECT heroloop_api.seeker_quest_status($1::uuid) AS result', [identity.playerId]);
+        const result = await databaseJson("SELECT heroloop_api.seeker_quest_status($1::uuid)||jsonb_build_object('challenge',heroloop_api.seeker_challenge_status($1::uuid)) AS result", [identity.playerId]);
         return json(200, {ok:true, contract_version:1, request_id:requestId, result});
       } catch { return errorResponse(503, 'quest_status_unavailable', requestId); }
     }

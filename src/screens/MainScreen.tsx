@@ -30,7 +30,8 @@ import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { AccountBonusPassives, RewardBoostTile } from '@/components/RewardBoost';
 import { ChestCollectIcon } from '@/components/ChestCollectIcon';
 import { GoldIcon } from '@/components/GoldIcon';
-import { SeekerQuests } from '@/components/SeekerQuests';
+import { SeekerQuestChallenge, SeekerQuests } from '@/components/SeekerQuests';
+import { useSeekerQuests } from '@/game/useSeekerQuests';
 import { BossKeyIcon } from '@/components/BossKeyIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 import { ClassGlyph } from '@/components/ClassGlyph';
@@ -174,6 +175,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const [inventoryTab, setInventoryTab] = useState<1 | 2 | 3 | 4 | 'resources'>(1);
   const [bagQuote, setBagQuote] = useState<Awaited<ReturnType<GameApi['quoteInventoryBag']>>>(null);
   const bagSkrRate = useSkrRate(isolatedHackathon && Boolean(bagQuote));
+  // Summons and claimed lifetime milestones move the Seeker quest counters and the challenge bar.
+  const seekerQuestBoard = useSeekerQuests(isolatedHackathon, game.claimQuest, `${state.summons}:${state.milestoneQuests.map((quest) => quest.id).join()}`);
   const [bagPurchaseConfirm, setBagPurchaseConfirm] = useState(false);
   const [bagPurchaseBusy, setBagPurchaseBusy] = useState(false);
   const bagSlotsKey = state.bagSlots.join(',');
@@ -711,6 +714,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
         {!isAndroidLayout && commanderPanel}
 
         <div id="game-quest-list" className="hl-quest-list flex-1 p-2">
+          {isolatedHackathon && <SeekerQuestChallenge board={seekerQuestBoard} />}
           <PartnerQuests claim={game.claimPartnerQuest} onOpenBoostMax={onBoostClick} shareState={state} teamPower={power} />
           {!state.tutorial.questCompleted && (() => {
             const ordinal = Math.max(1, Math.min(10, state.tutorial.questOrdinal));
@@ -736,7 +740,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1 px-2 py-1"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => void game.openTutorialChests(1)} className="game-control min-h-7 ui-text-small font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => void game.openTutorialChests(10)} className="game-control min-h-7 ui-text-small font-bold">Open 10</button></div></div>}
             </section>;
           })()}
-          {isolatedHackathon && <SeekerQuests claim={game.claimQuest} revision={state.summons} />}
+          {isolatedHackathon && <SeekerQuests board={seekerQuestBoard} />}
           <div className="section-kicker mb-1">Daily Quests</div>
           <div className="space-y-1">
             {state.dailyQuests.map(q => {
