@@ -24,7 +24,6 @@ export function heroPortraitSrc(heroId: string, heroClass: HeroClass, rarity: Ra
 export function heroPortraitStyle(heroId: string | undefined, heroClass: HeroClass): Record<string, string> | undefined {
   if (!heroId || !/^(shepherd|assassin|knight|druid|archer)-/.test(heroId)) return undefined;
   void heroClass;
-  const isWarrior = heroId.startsWith('knight-');
   return {
     position: 'absolute',
     inset: '0',
@@ -33,7 +32,6 @@ export function heroPortraitStyle(heroId: string | undefined, heroClass: HeroCla
     objectFit: 'cover',
     // Hero art is 349x887; a high crop keeps the head clear of the frame's top rim in square and card boxes.
     objectPosition: '50% 18%',
-    ...(isWarrior ? { transform: 'scale(0.94)' } : {}),
   };
 }
 
