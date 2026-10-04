@@ -66,9 +66,10 @@ html .market-detail-art:has(> .rx):not(#rx-a):not(#rx-b) { border-color: transpa
 html .market-detail-art:has(> .rx)::before, html .market-detail-art:has(> .rx)::after { display: none !important; }
 /* Summon reveal: the frame replaces the flat tier outline; the name plate sits inside the frame */
 .sv-card-front:has(> .rx) { box-shadow: none !important; }
-.sv-card-front:has(> .rx) .sv-card-plate { inset: auto 6% 4.5%; }
+.sv-card-front:has(> .rx-tcg) .sv-card-plate { inset: auto 16% 3% 16%; z-index: 4; height: 11.5%; align-content: center; padding: 0; background: none; }
+.sv-card-front:has(> .rx-tcg) .sv-card-plate small { display: none; }
 .sv-card-front:has(> .rx) .sv-card-new { z-index: 4; }
-.sv-spot-portrait:has(> .rx) { border: 0 !important; box-shadow: 0 0 36px color-mix(in srgb, var(--sv-color) 60%, transparent), 0 12px 30px rgba(0, 0, 0, .7) !important; }
+.sv-spot-portrait:has(> .rx) { background: none !important; border: 0 !important; box-shadow: 0 0 36px color-mix(in srgb, var(--sv-color) 60%, transparent), 0 12px 30px rgba(0, 0, 0, .7) !important; }
 /* Corner badges sit inside the frame opening */
 html .item-slot:has(> .rx) .item-enchant-label { left: 9%; top: 9%; }
 html .item-slot:has(> .rx) .item-level-label { right: 9%; bottom: 9%; border-radius: 2px; }
@@ -128,3 +129,38 @@ html :has(> .rx) { -webkit-mask-box-image: var(--rx-host-sil) var(--rx-host-sl) 
 .rx-rare.rx-slot { --rx-sl: 92; --rx-ot: 0.5416; --rx-ob: 0.5416; --rx-ol: 0.5150; --rx-or: 0.5150; --rx-9: url('/assets/ui/rarity-frames/rare-slot-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/rare-slot-sil.webp'); }
 .rx-uncommon.rx-card { --rx-sl: 108; --rx-ot: 0.4949; --rx-ob: 0.4949; --rx-ol: 0.5064; --rx-or: 0.5064; --rx-9: url('/assets/ui/rarity-frames/uncommon-card-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/uncommon-card-sil.webp'); }
 .rx-uncommon.rx-slot { --rx-sl: 92; --rx-ot: 0.5183; --rx-ob: 0.5183; --rx-ol: 0.4984; --rx-or: 0.4984; --rx-9: url('/assets/ui/rarity-frames/uncommon-slot-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/uncommon-slot-sil.webp'); }
+/* TCG hero cards (2026-10-04, Founder: heroes are summoned like cards). Geometry generated from the art. */
+.rx-celestial.rx-tcg { --rx-it: 4.49%; --rx-ir: 2.76%; --rx-il: 2.76%; --rx-ib: 2.00%; --rx-bt: 85.57%; --rx-bb: 2.00%; }
+:has(> .rx-celestial.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/celestial-tcg-sil.webp'); }
+.rx-common.rx-tcg { --rx-it: 4.42%; --rx-ir: 2.67%; --rx-il: 2.67%; --rx-ib: 2.49%; --rx-bt: 85.15%; --rx-bb: 2.49%; }
+:has(> .rx-common.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/common-tcg-sil.webp'); }
+.rx-cosmic.rx-tcg { --rx-it: 4.63%; --rx-ir: 2.95%; --rx-il: 2.95%; --rx-ib: 1.93%; --rx-bt: 85.43%; --rx-bb: 1.93%; }
+:has(> .rx-cosmic.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/cosmic-tcg-sil.webp'); }
+.rx-cursed.rx-tcg { --rx-it: 4.56%; --rx-ir: 2.95%; --rx-il: 2.95%; --rx-ib: 1.80%; --rx-bt: 85.22%; --rx-bb: 1.80%; }
+:has(> .rx-cursed.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/cursed-tcg-sil.webp'); }
+.rx-divine.rx-tcg { --rx-it: 4.63%; --rx-ir: 3.22%; --rx-il: 3.22%; --rx-ib: 2.00%; --rx-bt: 85.22%; --rx-bb: 2.00%; }
+:has(> .rx-divine.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/divine-tcg-sil.webp'); }
+.rx-epic.rx-tcg { --rx-it: 4.63%; --rx-ir: 3.04%; --rx-il: 3.04%; --rx-ib: 2.07%; --rx-bt: 85.29%; --rx-bb: 2.07%; }
+:has(> .rx-epic.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/epic-tcg-sil.webp'); }
+.rx-god.rx-tcg { --rx-it: 4.49%; --rx-ir: 2.67%; --rx-il: 2.67%; --rx-ib: 2.00%; --rx-bt: 85.64%; --rx-bb: 2.00%; }
+:has(> .rx-god.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/god-tcg-sil.webp'); }
+.rx-immortal.rx-tcg { --rx-it: 4.49%; --rx-ir: 3.13%; --rx-il: 3.13%; --rx-ib: 1.73%; --rx-bt: 85.15%; --rx-bb: 1.73%; }
+:has(> .rx-immortal.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/immortal-tcg-sil.webp'); }
+.rx-legendary.rx-tcg { --rx-it: 4.49%; --rx-ir: 2.95%; --rx-il: 2.95%; --rx-ib: 1.93%; --rx-bt: 85.43%; --rx-bb: 1.93%; }
+:has(> .rx-legendary.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/legendary-tcg-sil.webp'); }
+.rx-mythic.rx-tcg { --rx-it: 4.49%; --rx-ir: 2.85%; --rx-il: 2.85%; --rx-ib: 2.21%; --rx-bt: 85.36%; --rx-bb: 2.21%; }
+:has(> .rx-mythic.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/mythic-tcg-sil.webp'); }
+.rx-rare.rx-tcg { --rx-it: 4.70%; --rx-ir: 2.95%; --rx-il: 2.95%; --rx-ib: 1.93%; --rx-bt: 85.43%; --rx-bb: 1.93%; }
+:has(> .rx-rare.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/rare-tcg-sil.webp'); }
+.rx-uncommon.rx-tcg { --rx-it: 4.49%; --rx-ir: 2.95%; --rx-il: 2.95%; --rx-ib: 1.93%; --rx-bt: 85.22%; --rx-bb: 1.93%; }
+:has(> .rx-uncommon.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/uncommon-tcg-sil.webp'); }
+/* TCG card: the whole frame image on the fixed 3:4 box (no 9-slice), rounded silhouette, name in the banner */
+.rx-tcg { container-type: size; }
+.rx-tcg > .rx-frame { border: 0; border-image: none; background: center / 100% 100% no-repeat; }
+.rx-tcg > .rx-banner { inset: var(--rx-bt) 17% var(--rx-bb); display: grid; place-items: center; padding: 0 2px; }
+.rx-tcg > .rx-banner b { display: -webkit-box; overflow: hidden; color: #f3e6c8; font: 700 clamp(7px, 7.2cqw, 22px)/1.05 'Cinzel', Georgia, serif; letter-spacing: .02em; text-align: center; text-shadow: 0 1px 2px #000, 0 0 6px rgba(0, 0, 0, .9); -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+html :has(> .rx-tcg) { -webkit-mask-box-image: none; -webkit-mask: var(--rx-host-tcg) center / 100% 100% no-repeat; mask: var(--rx-host-tcg) center / 100% 100% no-repeat; }
+/* Summon: names sit in the card banner like the collection cards */
+.sv-card-front:has(> .rx-tcg) { container-type: inline-size; }
+.sv-card-front:has(> .rx-tcg) .sv-card-plate b { color: #f3e6c8; font: 700 clamp(5px, 8.5cqw, 16px)/1.02 'Cinzel', Georgia, serif; letter-spacing: 0; text-shadow: 0 1px 2px #000; }
+.sv-spot-portrait:has(> .rx-tcg) ~ .sv-spot-name { display: none; }
