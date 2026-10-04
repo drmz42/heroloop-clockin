@@ -511,6 +511,8 @@ export function useGame() {
 
   const spawnBattle = useCallback(async (locationId: number, teamUids: string[], forceBoss?: boolean) => {
     const st = stateRef.current;
+    // An empty Seeker formation waits for a hero instead of starting a server wave.
+    if (teamUids.length === 0) return;
     const now = Date.now();
     const serverNormalCombat = tokenomicsEnabled && !forceBoss && !st.bossBattleActive;
     // The server snapshots its saved formation at wave start. Wait for the
@@ -1613,8 +1615,9 @@ export function useGame() {
 
   // Seeker Promote All: duplicates + the Gold total the player saw (src/game/seekerPromotion.ts).
   const seekerPromoteAll = useCallback(async (plan: SeekerPromotionPlan): Promise<
-    { ok: true; promotions: SeekerPromotionStep[]; goldSpent: number } | { ok: false; error: string }> => {
+    { ok: true; promotions: (SeekerPromotionStep & { powerBefore: number; powerAfter: number })[]; goldSpent: number } | { ok: false; error: string }> => {
     if (!tokenomicsEnabled || plan.targets.length === 0) return { ok: false, error: 'nothing_to_promote' };
+    const before = stateRef.current;
     let failure = 'ascension_failed';
     const result = await playerSync<{
       owned_heroes: OwnedHero[];
@@ -1641,6 +1644,8 @@ export function useGame() {
       goldSpent: Math.max(0, Math.floor(Number(result.gold_spent) || 0)),
       promotions: result.promotions.map((entry) => ({
         uid: entry.target_uid, heroId: entry.hero_id, from: entry.from_stars, to: entry.to_stars, gold: entry.gold,
+        powerBefore: teamPower(before.ownedHeroes.filter((hero) => hero.uid === entry.target_uid), before.inventory),
+        powerAfter: teamPower(heroes.filter((hero) => hero.uid === entry.target_uid), before.inventory),
       })),
     };
   }, []);
@@ -2189,10 +2194,12 @@ export function useGame() {
   const toggleTeamMember = useCallback(async (uid: string): Promise<'added' | 'removed' | 'inventory-full' | 'blocked'> => {
     const st = stateRef.current;
     const hero = st.ownedHeroes.find((h) => h.uid === uid);
-    if (!hero || st.trainingCamp.heroUids.includes(uid) || (hero.respawnAt && hero.respawnAt > Date.now())) return 'blocked';
+    if (!hero || st.trainingCamp.heroUids.includes(uid)) return 'blocked';
+    // Seeker may bench a fallen hero; its respawn timestamp stays on the owned hero.
+    if (hero.respawnAt && hero.respawnAt > Date.now() && (!isolatedHackathon || !st.team.includes(uid))) return 'blocked';
     let newTeam: string[];
     if (st.team.includes(uid)) {
-      if (st.team.length <= 1) return 'blocked';
+      if (!isolatedHackathon && st.team.length <= 1) return 'blocked';
       const equippedCount = Object.values(hero.equipped).filter(Boolean).length;
       if (bagItemCount(st) + equippedCount > inventoryCapacity(st)) return 'inventory-full';
       newTeam = st.team.filter((t) => t !== uid);
