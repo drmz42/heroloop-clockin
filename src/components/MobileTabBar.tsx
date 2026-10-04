@@ -5,11 +5,12 @@ import { OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { setMobileSection, type MobileSection } from '@/platform/platform';
 import { defaultUiTheme, setUiTheme } from '@/theme/uiTheme';
 import '@/theme/scene/sheets.css';
+import { SeekerMinePanel } from '@/components/SeekerMinePanel';
 
 // Android layout only (src/platform/platform.ts): the phone's primary navigation, two rows
 // (Founder 2026-10-02). Row 1: Battle, Quests and Bag switch the Play screen between its three
 // columns; Heroes, Summon and Market open their windows. Row 2: Training, Store, the upcoming
-// $ORE Mine and PvP (both "Soon", slightly highlighted), Ranks, and More with Refer and the
+// $ORE Mine (its own sheet) and PvP ("Soon"), both slightly highlighted, Ranks, and More with Refer and the
 // footer links (Founder 2026-10-03: Refer moved into More to make room for PvP). Any item can
 // carry a count badge on its icon (`badges`; Quests shows its ready rewards) or a red mark without a
 // number (`alerts`, e.g. a Store sale).
@@ -114,10 +115,10 @@ export function MobileTabBar({
         <div className="hl-more-sheet" role="dialog" aria-modal="true" aria-label="$ORE Mine" onMouseDown={(event) => { if (event.currentTarget === event.target) setMineOpen(false); }}>
           <div className="hl-more-panel">
             <div className="hl-more-head">
-              <span className="section-kicker">Mine</span>
+              <span className="section-kicker">$ORE Mine</span>
               <button type="button" className="game-control hl-more-close" onClick={() => setMineOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
-            <div className="hl-mine-soon"><Pickaxe size={34} aria-hidden="true" /><strong>Coming soon</strong><span>The $ORE Mine opens in a future update.</span></div>
+            <div className="space-y-2.5"><SeekerMinePanel /></div>
           </div>
         </div>
       )}
@@ -130,8 +131,8 @@ export function MobileTabBar({
         {windowButton('market', 'Market', Store)}
         {windowButton('training', 'Training', Dumbbell)}
         {windowButton('shop', 'Store', ShoppingBag)}
-        <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'mine' ? 'is-active' : ''}`} aria-expanded={soon === 'mine'} aria-label="$ORE Mine, coming soon" onClick={() => { onMoreOpen(false); setSoon(soon === 'mine' ? null : 'mine'); }}>
-          <i className="hl-tabbar-icon" aria-hidden="true"><Pickaxe size={20} /><b className="hl-mine-badge">Soon</b></i><span>Mine</span>
+        <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'mine' ? 'is-active' : ''}`} aria-expanded={soon === 'mine'} aria-label="$ORE Mine" onClick={() => { onMoreOpen(false); setSoon(soon === 'mine' ? null : 'mine'); }}>
+          <i className="hl-tabbar-icon" aria-hidden="true"><Pickaxe size={20} /></i><span>Mine</span>
         </button>
         <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'pvp' ? 'is-active' : ''}`} aria-expanded={soon === 'pvp'} aria-label="PvP, coming soon" onClick={() => { onMoreOpen(false); setSoon(soon === 'pvp' ? null : 'pvp'); }}>
           <i className="hl-tabbar-icon" aria-hidden="true"><Crosshair size={20} /><b className="hl-mine-badge">Soon</b></i><span>PvP</span>

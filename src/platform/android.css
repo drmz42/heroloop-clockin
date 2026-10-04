@@ -241,9 +241,6 @@ html[data-hl-platform='android'] .hl-tabbar-item.has-badge { color: #e9c77a; }
 .hl-tabbar-mine svg { filter: drop-shadow(0 0 4px rgba(255, 196, 92, .5)); animation: hl-mine-glow 2.8s ease-in-out infinite; }
 .hl-mine-badge { position: absolute; top: -8px; left: calc(100% - 10px); padding: 0 3px; border: 1px solid rgba(36, 23, 11, .8); background: linear-gradient(180deg, #f2cc80, #c79e61); color: #24170b; font-size: 7px; line-height: 11px; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; }
 @keyframes hl-mine-glow { 50% { filter: drop-shadow(0 0 7px rgba(255, 196, 92, .85)); } }
-.hl-mine-soon { display: grid; justify-items: center; gap: 6px; padding: 18px 8px 10px; text-align: center; color: #e9c77a; }
-.hl-mine-soon strong { font-size: 16px; color: #f0e5cd; }
-.hl-mine-soon span { font-size: 13px; color: #9b907c; }
 
 /* ── More sheet ── */
 .hl-more-sheet {

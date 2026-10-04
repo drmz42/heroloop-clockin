@@ -3,24 +3,21 @@ import { useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Check, Copy, History, Lock, Pickaxe, ShieldCheck, UserRound, Wallet, X,
+  AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Check, Copy, History, Lock, ShieldCheck, UserRound, Wallet, X,
 } from 'lucide-react';
 import { formatNum } from '@/game/state';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { shortWalletAddress } from '@/components/walletAddress';
 import { solanaAuthEnabled, unlinkSolanaIdentity } from '@/game/solanaWalletSession';
 import { SeekerDepositPanel, SeekerHistoryPanel } from '@/components/SeekerWalletPanels';
-import { SeekerMinePanel } from '@/components/SeekerMinePanel';
 
 import { SeekerWithdrawalPanel,SeekerFounderPanel } from '@/components/SeekerWithdrawalPanels';
 
-type WalletTab = 'deposit' | 'withdraw' | 'mine' | 'history' | 'account';
+type WalletTab = 'deposit' | 'withdraw' | 'history' | 'account';
 
 const TABS: { id: WalletTab; label: string; icon: typeof Wallet }[] = [
   { id: 'deposit', label: 'Deposit', icon: ArrowDownToLine },
   { id: 'withdraw', label: 'Withdraw', icon: ArrowUpFromLine },
-  // The ORE Mine preview exists only in the Android/Seeker edition.
-  ...(isolatedHackathon ? [{ id: 'mine' as const, label: 'Mine', icon: Pickaxe }] : []),
   { id: 'history', label: 'History', icon: History },
   { id: 'account', label: 'Account', icon: UserRound },
 ];
@@ -114,7 +111,7 @@ export function GameWalletModal({
           </div>
         </header>
 
-        <div role="tablist" aria-label="Wallet sections" onKeyDown={onTabKey} className={`grid ${TABS.length === 5 ? 'grid-cols-5' : 'grid-cols-4'} border-b border-[#5d4a2f] bg-black/20`}>
+        <div role="tablist" aria-label="Wallet sections" onKeyDown={onTabKey} className="grid grid-cols-4 border-b border-[#5d4a2f] bg-black/20">
           {TABS.map((entry) => {
             const Icon = entry.icon;
             const active = tab === entry.id;
@@ -128,7 +125,7 @@ export function GameWalletModal({
                 aria-controls={`wallet-panel-${entry.id}`}
                 tabIndex={active ? 0 : -1}
                 onClick={() => setTab(entry.id)}
-                className={`flex min-h-11 flex-col items-center justify-center gap-0.5 border-b-2 px-1 py-1.5 text-[11px] font-bold ${TABS.length === 5 ? 'sm:text-xs' : 'sm:flex-row sm:gap-1.5 sm:text-xs'} ${active ? 'border-[#e0a83c] text-[#f6d283]' : 'border-transparent text-[#8f887b] hover:text-[#d9d1c0]'}`}
+                className={`flex min-h-11 flex-col items-center justify-center gap-0.5 border-b-2 px-1 py-1.5 text-[11px] font-bold sm:flex-row sm:gap-1.5 sm:text-xs ${active ? 'border-[#e0a83c] text-[#f6d283]' : 'border-transparent text-[#8f887b] hover:text-[#d9d1c0]'}`}
               >
                 <Icon size={15} aria-hidden="true" /> {entry.label}
               </button>
@@ -139,7 +136,6 @@ export function GameWalletModal({
         <div id={`wallet-panel-${tab}`} role="tabpanel" aria-labelledby={`wallet-tab-${tab}`} className="game-scrollbar min-h-0 flex-1 space-y-2.5 overflow-y-auto p-3">
           {tab === 'deposit' && isolatedHackathon && <SeekerDepositPanel />}
           {tab === 'history' && isolatedHackathon && <SeekerHistoryPanel onPurchase={onPurchase} />}
-          {tab === 'mine' && isolatedHackathon && <SeekerMinePanel />}
 
           {tab === 'deposit' && !isolatedHackathon && (
             <>
