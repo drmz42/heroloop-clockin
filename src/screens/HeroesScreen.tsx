@@ -334,7 +334,7 @@ export function HeroesScreen({ game }: { game: GameApi }) {
             return (
               <div key={slot} className="hv-seat" style={color ? { '--hv-color': color } as React.CSSProperties : undefined}>
                 {hero && base
-                  ? <span className="hv-seat-hero"><HeroPortrait heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={76} active badge={hero.level} respawn={respawnCountdowns[hero.uid] ?? 0} onClick={() => openHero(hero)} /></span>
+                  ? <span className="hv-seat-hero"><HeroPortrait heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={76} badge={hero.level} respawn={respawnCountdowns[hero.uid] ?? 0} onClick={() => openHero(hero)} /></span>
                   : <span className="hv-seat-empty" aria-label="Empty team slot"><Shield size={26} /></span>}
                 <span className="hv-plinth">{hero && base ? <><b>{base.name}</b><small>{CLASS_LABEL[base.heroClass]}</small></> : <><b>Empty</b><small>Choose a hero</small></>}</span>
               </div>
