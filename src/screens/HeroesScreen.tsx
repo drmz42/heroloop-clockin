@@ -60,6 +60,7 @@ function HeroStars({ stars, size }: { stars: number; size: number }) {
 function HeroGridCard({ base, hero, game, onSelect }: { base: HeroBase; hero: OwnedHero; game: GameApi; onSelect: () => void }) {
   const rc = RARITY_COLORS[base.rarity];
   const isInTeam = game.state.team.includes(hero.uid);
+  const isTraining = game.state.trainingCamp.heroUids.includes(hero.uid);
   const respawn = game.respawnCountdowns[hero.uid] ?? 0;
   const dupes = game.state.ownedHeroes.filter((candidate) => candidate.heroId === hero.heroId && candidate.uid !== hero.uid && candidate.stars === 0 && !candidate.locked && !game.state.team.includes(candidate.uid) && !game.state.trainingCamp.heroUids.includes(candidate.uid)).length;
   const starCost = starUpCost(hero.stars, base.rarity);
@@ -75,6 +76,7 @@ function HeroGridCard({ base, hero, game, onSelect }: { base: HeroBase; hero: Ow
           <span className="hv-card-lv">Lv {hero.level}</span>
           {respawn > 0 && <span className="hv-card-dead">Fallen<br />{respawn}s</span>}
           <span className="hv-card-badges">
+            {isTraining && <StateBadge label="Unavailable" tone="red" />}
             {hero.isNew && <StateBadge label="New" tone="gold" />}
             {isInTeam && <StateBadge label="Selected" tone="green" />}
             {upgradeable && <StateBadge label="Upgrade" tone="purple" />}
@@ -91,7 +93,7 @@ function HeroGridCard({ base, hero, game, onSelect }: { base: HeroBase; hero: Ow
   );
 }
 
-function StateBadge({ label, tone }: { label: string; tone: 'gold' | 'green' | 'purple' }) {
+function StateBadge({ label, tone }: { label: string; tone: 'gold' | 'green' | 'purple' | 'red' }) {
   return <span className={`hv-badge hv-badge--${tone}`}>{label}</span>;
 }
 
@@ -162,6 +164,7 @@ function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameA
           <div className="hv-detail-copy">
             <span className="hv-detail-rarity">{RARITY_LABEL[base.rarity]} · {CLASS_LABEL[base.heroClass]}</span>
             <h3 className="hv-detail-name">{base.name}</h3>
+            {game.state.trainingCamp.heroUids.includes(hero.uid) && <span className="hv-training-unavailable" role="status">Unavailable · Training Camp</span>}
             <div className="hv-detail-power"><b>{formatNum(power)}</b><span>Power</span></div>
             <div className="hv-detail-stars"><HeroStars stars={hero.stars} size={12} /><span>{hero.stars}/{MAX_HERO_STARS}</span></div>
             <div className="hv-detail-xp"><i style={{ width: `${Math.min(100, hero.xp / xpNeed * 100)}%` }} /></div>
