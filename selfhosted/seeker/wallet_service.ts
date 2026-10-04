@@ -33,6 +33,9 @@ const config: ChainConfig & {payoutTreasury:string} = {
   treasury: env("WALLET_TREASURY"),
   payoutTreasury: env("WALLET_PAYOUT_TREASURY") || env("WALLET_TREASURY"),
 };
+// Former deposit addresses still holding player funds; reconciliation keeps counting them.
+const legacyTreasuries = env("WALLET_LEGACY_TREASURIES").split(",").map((v) => v.trim()).filter(Boolean);
+if (legacyTreasuries.some((address) => !ADDRESS.test(address))) throw new Error("invalid legacy treasury configuration");
 if (serviceToken.length < 32 || !/^https:\/\//.test(rpcUrl)
   || config.skrMint!==SKR_ASSET.mint || !ADDRESS.test(config.treasury) || !ADDRESS.test(config.payoutTreasury)) {
   throw new Error("invalid wallet service configuration");
@@ -274,7 +277,7 @@ async function commerce(path: string,player: string,body: Json): Promise<Respons
 
 async function reconcile():Promise<Json> {
   const liabilities=await call('SELECT seeker_skr.liabilities() AS result',[]);
-  const owners = new Set([config.treasury, config.payoutTreasury]);
+  const owners = new Set([config.treasury, config.payoutTreasury, ...legacyTreasuries]);
   const chain: Record<string,bigint> = await custodyBalances(owners, config.skrMint, rpc);
   // Deduplicate against customer and payout custody, including Mine session wallets.
   chain.SOL += await mineCustodyLamports(mineMaster, call, rpc, owners);
