@@ -6,7 +6,7 @@ const owner='11111111111111111111111111111111';
 const config={cluster:'mainnet' as const,skrMint:SKR_ASSET.mint,treasury:base58Encode(new Uint8Array(32).fill(2))};
 function fixture(){
  let exists=false,state='initialized',balance=3000000;const calls:string[]=[];
- const rpc=async(method:string,_params:unknown[])=>{calls.push(method);switch(method){
+ const rpc=async(method:string)=>{calls.push(method);switch(method){
  case 'getAccountInfo':return {value:exists?{owner:TOKEN_PROGRAM,data:{parsed:{info:{owner,mint:config.skrMint,state,tokenAmount:{decimals:6}}}}}:null};
  case 'getLatestBlockhash':return {value:{blockhash:base58Encode(new Uint8Array(32).fill(3))}};
  case 'getMinimumBalanceForRentExemption':return 2039280;
