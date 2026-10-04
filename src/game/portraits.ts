@@ -32,7 +32,7 @@ export function heroPortraitStyle(heroId: string | undefined, heroClass: HeroCla
     height: '100%',
     objectFit: 'cover',
     // Hero art is 349x887; a high crop keeps the head clear of the frame's top rim in square and card boxes.
-    objectPosition: '50% 9%',
+    objectPosition: '50% 18%',
     ...(isWarrior ? { transform: 'scale(0.94)' } : {}),
   };
 }
