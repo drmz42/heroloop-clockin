@@ -22,3 +22,25 @@ export async function custodyBalances(owners:Iterable<string>,mint:string,rpc:Rp
   }
   return total;
 }
+
+// Exact finalized classic-token custody for the pinned ORE asset.
+export async function tokenCustodyBalance(owners:Iterable<string>,mint:string,decimals:number,rpc:Rpc):Promise<bigint>{
+ let total=0n;
+ for(const owner of new Set(owners)){
+  const response=await rpc('getTokenAccountsByOwner',[owner,{mint},{encoding:'jsonParsed',commitment:'finalized'}]);
+  if(!record(response)||!Array.isArray(response.value))throw new Error('rpc_balance');
+  const seen=new Set<string>();
+  for(const row of response.value){
+   const account=record(row)&&record(row.account)?row.account:null;
+   const parsed=account&&record(account.data)&&record(account.data.parsed)?account.data.parsed:null;
+   const info=parsed&&record(parsed.info)?parsed.info:null;
+   const amount=info&&record(info.tokenAmount)?info.tokenAmount:null;
+   if(!record(row)||typeof row.pubkey!=='string'||seen.has(row.pubkey)||account?.owner!==TOKEN_PROGRAM
+    ||!info||info.owner!==owner||info.mint!==mint||info.state!=='initialized'||!amount||amount.decimals!==decimals
+    ||typeof amount.amount!=='string'||!/^(0|[1-9][0-9]{0,19})$/.test(amount.amount)
+    ||BigInt(amount.amount)>18446744073709551615n)throw new Error('rpc_balance');
+   seen.add(row.pubkey);total+=BigInt(amount.amount);
+  }
+ }
+ return total;
+}

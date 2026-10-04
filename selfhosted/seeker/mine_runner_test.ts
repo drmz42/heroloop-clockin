@@ -54,7 +54,7 @@ function fakeChain(options: { custody: bigint; signatureStatus?: unknown; tx?: u
     }
     if (method === 'getSlot') return 1_100;
     if (method === 'getBalance') return { value: Number(options.custody) };
-    if (method === 'getLatestBlockhash') return { value: { blockhash: ORE_BOARD } };
+    if (method === 'getLatestBlockhash') return { value: { blockhash: ORE_BOARD, lastValidBlockHeight: 1200 } };
     if (method === 'sendTransaction') { sent.push(String(params[0])); return 'sig'; }
     if (method === 'getSignatureStatuses') return { value: [options.signatureStatus ?? null] };
     if (method === 'getTransaction') return options.tx ?? null;
@@ -84,25 +84,36 @@ Deno.test('tick persists the round before sending exactly one deploy', async () 
 Deno.test('finalized pending round settles its exact cost; unfunded custody is funded once', async () => {
   const key = await custodyKey(master, PLAYER);
   const calls: [string, unknown[]][] = [];
+  let funding:Record<string,unknown>={};
   const base = { id: 'aaaaaaaa-0000-4000-8000-000000000002', player_id: PLAYER, status: 'active', policy: minePolicy('0.01'),
     custody_address: key.address, reserved_minor: '100000000', spent_minor: '0', completed: 0, round_limit: 6,
     round_cost_minor: '14510000', last_ore_round_id: '49' };
   const tx = { meta: { err: null, preBalances: [100_000_000, 0], postBalances: [85_505_000, 0] },
     transaction: { signatures: ['P'], message: { accountKeys: [key.address, ORE_PROGRAM], instructions: [{ programIdIndex: 1 }] } } };
   const chain = fakeChain({ custody: 0n, signatureStatus: { confirmationStatus: 'finalized' }, tx });
+  const originalRpc=chain.rpc;
   const call = async (sql: string, args: unknown[]) => {
     calls.push([sql, args]);
+    if(sql.includes('mine_action_prepare')){funding={id:args[0],signature:args[4],wire:args[5],last_valid_height:args[6],status:'signed'};return funding;}
+    if(sql.includes('mine_action_get'))return funding;
     return sql.includes('mine_runner_work') ? { sessions: [
       { ...base, pending: { id: 'bbbbbbbb-0000-4000-8000-000000000001', ore_round_id: '49', submitted_signature: 'P' } },
       { ...base, id: 'aaaaaaaa-0000-4000-8000-000000000003', pending: null },
     ] } : {};
   };
-  await mineTick({ master, rpc: chain.rpc, call });
+  const fundingRpc=async(method:string,params:unknown[])=>{
+    if(method==='getTransaction'&&params[0]===funding.signature)return null;
+    if(method==='getSignatureStatuses'&&(params[0] as unknown[])[0]===funding.signature)return {value:[null]};
+    if(method==='getBlockHeight')return 1000;
+    if(method==='sendTransaction'){chain.sent.push(String(params[0]));return funding.signature;}
+    return originalRpc(method,params);
+  };
+  await mineTick({ master, rpc: fundingRpc, call });
   const settle = calls.find(([sql]) => sql.includes('mine_round_settle'));
   assert.deepEqual(settle![1].slice(1), ['14495000', 'P']);
   assert.equal(chain.sent.length, 1, 'one funding transfer');
-  await mineTick({ master, rpc: chain.rpc, call });
-  assert.equal(chain.sent.length, 1, 'funding is not repeated while in flight');
+  await mineTick({ master, rpc: async(method,params)=>method==='getSignatureStatuses'&&(params[0] as unknown[])[0]===funding.signature?{value:[{confirmationStatus:'confirmed'}]}:fundingRpc(method,params), call });
+  assert.equal(chain.sent.length, 1, 'funding reuses its pending signature');
 });
 
 Deno.test('chosen squares set a mask and a per-square stake', () => {
@@ -112,4 +123,47 @@ Deno.test('chosen squares set a mask and a per-square stake', () => {
   assert.deepEqual(sessionSquares(policy), { squares: [0, 6, 24], perSquare: 100_000_000n });
   assert.deepEqual(sessionSquares(minePolicy('0.01')!).squares.length, 25);
   for (const bad of [[], [25], [1, 1], ['3'], 'x']) assert.equal(minePolicy('0.1', bad), null);
+});
+
+Deno.test('Mine start retains the global exposure gate and requires ORE activation', async () => {
+  const {mineRoute,MINE_MAX_IN_FLIGHT}=await import('./mine_service.ts');
+  const {MINE_TERMS_VERSION}=await import('./mine_runner.ts');
+  const calls:string[]=[];
+  const call=async(sql:string)=>{calls.push(sql);return {sessions:[{reserved_minor:MINE_MAX_IN_FLIGHT.toString(),spent_minor:'0'}]};};
+  const body={tier:'0.01',rounds:1,session_id:'aaaaaaaa-0000-4000-8000-000000000001'};
+  const rpc=async()=>{throw new Error('capacity must refuse before RPC or mutation');};
+  const unavailable=await mineRoute('/wallet/mine/start',PLAYER,body,master,call,rpc,false);
+  assert.equal(unavailable?.status,409);assert.equal(calls.length,0);
+  const full=await mineRoute('/wallet/mine/start',PLAYER,body,master,call,rpc,true);
+  assert.equal((await full!.json()).code,'mining_capacity_reached');
+  assert.equal(calls.length,1);assert.ok(calls[0].includes('mine_runner_work'));
+  const oldTerms=await mineRoute('/wallet/mine/accept-terms',PLAYER,{version:'2026-10-03'},master,call,rpc,true);
+  assert.equal(oldTerms?.status,400);
+  let acceptedVersion:unknown;
+  const newTerms=await mineRoute('/wallet/mine/accept-terms',PLAYER,{version:MINE_TERMS_VERSION},master,async(_sql,args)=>{acceptedVersion=args[1];return {};},rpc,true);
+  assert.equal(newTerms?.status,200);assert.equal(acceptedVersion,MINE_TERMS_VERSION);
+});
+
+Deno.test('pending deploys reuse stored bytes and require actual expiry before releasing reserve', async () => {
+  const key=await custodyKey(master,PLAYER);
+  for(const [oreRound,height,known,expectedSends,expectedSettle] of [
+    [50,1100,false,1,false],[48,1100,false,0,false],[48,1201,false,0,true],[50,1201,false,0,false],[48,1201,true,0,false],
+  ] as const){
+    const chain=fakeChain({custody:0n,signatureStatus:known?{confirmationStatus:'confirmed'}:null});
+    const calls:[string,unknown[]][]=[];
+    const session={id:'aaaaaaaa-0000-4000-8000-000000000009',player_id:PLAYER,custody_address:key.address,
+      pending:{id:'bbbbbbbb-0000-4000-8000-000000000009',ore_round_id:String(oreRound),submitted_signature:'saved-signature',submitted_wire:'saved-wire',last_valid_height:'1200'}};
+    const rpc=async(method:string,params:unknown[])=>{
+      if(method==='getLatestBlockhash')throw new Error('pending deploy must never be resigned');
+      if(method==='getBlockHeight')return height;
+      return chain.rpc(method,params);
+    };
+    const errors:string[]=[];
+    await mineTick({master,rpc,call:async(sql,args)=>{calls.push([sql,args]);return sql.includes('mine_runner_work')?{sessions:[session]}:{};},log:(_event,details)=>{errors.push(String(details?.error));}});
+    assert.deepEqual(errors,[]);assert.equal(chain.sent.length,expectedSends);
+    if(expectedSends)assert.equal(chain.sent[0],'saved-wire');
+    const settled=calls.find(([sql])=>sql.includes('mine_round_settle'));
+    assert.equal(!!settled,expectedSettle);
+    if(settled)assert.deepEqual(settled[1].slice(1),['0','saved-signature']);
+  }
 });

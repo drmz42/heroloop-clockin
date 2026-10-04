@@ -41,7 +41,7 @@ export const MINE_GUIDE: MineGuideSection[] = [
   },
   {
     title: 'Winnings',
-    body: 'Returned SOL is claimed when your session ends and added to your in-game SOL balance once confirmed on-chain. ORE prizes are kept for you and appear when ORE support is enabled.',
+    body: 'Returned SOL and net ORE prizes are claimed when your session ends and added to your in-game balances after Solana finalizes them. You can request withdrawal to your linked wallet; the existing 5% withdrawal fee applies and an admin must approve the payout. If your wallet has no ORE token account, you create it with your own SOL before requesting ORE withdrawal.',
   },
   {
     title: 'Risks — please read',
@@ -54,8 +54,8 @@ export const MINE_GUIDE: MineGuideSection[] = [
 ];
 
 // The Mine tutorial opens once per device (a convenience; storage may be unavailable).
-// v2: the corrected payout slides re-open the tutorial for everyone.
-const SEEN_KEY = 'heroloop-seeker:v2:mine-tutorial-seen';
+// v3: the completed reward and withdrawal flow reopens the tutorial.
+const SEEN_KEY = 'heroloop-seeker:v3:mine-tutorial-seen';
 export function tutorialSeen(): boolean {
   try { return localStorage.getItem(SEEN_KEY) === '1'; } catch { return true; }
 }

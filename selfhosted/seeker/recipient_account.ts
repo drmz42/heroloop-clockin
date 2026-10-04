@@ -10,25 +10,25 @@ const integer=(v:unknown)=>{if(!Number.isSafeInteger(v)||Number(v)<0)throw new E
 export async function skrAccountAddress(owner:string,mint:string):Promise<string>{
  return findProgramAddress([key(owner),key(TOKEN_PROGRAM),key(mint)],ASSOCIATED_PROGRAM);
 }
-export async function hasSkrAccount(owner:string,mint:string,rpc:Rpc):Promise<boolean>{
+export async function hasSkrAccount(owner:string,mint:string,rpc:Rpc,decimals=6):Promise<boolean>{
  const address=await skrAccountAddress(owner,mint);
  const reply=await rpc('getAccountInfo',[address,{encoding:'jsonParsed',commitment:'finalized'}]);
  if(!record(reply)||!('value' in reply))throw new Error('rpc_invalid_recipient_account');
  if(reply.value===null)return false;
  const account=reply.value;
  const info=record(account)&&record(account.data)&&record(account.data.parsed)?account.data.parsed.info:null;
- if(!record(account)||account.owner!==TOKEN_PROGRAM||!record(info)||info.owner!==owner||info.mint!==mint||info.state!=='initialized'||!record(info.tokenAmount)||info.tokenAmount.decimals!==6)throw new Error('rpc_invalid_recipient_account');
+ if(!record(account)||account.owner!==TOKEN_PROGRAM||!record(info)||info.owner!==owner||info.mint!==mint||info.state!=='initialized'||!record(info.tokenAmount)||info.tokenAmount.decimals!==decimals)throw new Error('rpc_invalid_recipient_account');
  return true;
 }
-export async function prepareSkrAccount(owner:string,config:ChainConfig,rpc:Rpc){
+export async function prepareSkrAccount(owner:string,config:ChainConfig,rpc:Rpc,mint=config.skrMint,decimals=6){
  if(!ADDRESS.test(owner)||owner===config.treasury)throw new Error('invalid_wallet_address');
- if(await hasSkrAccount(owner,config.skrMint,rpc))return {ready:true,owner,chain:config};
- const address=await skrAccountAddress(owner,config.skrMint);
+ if(await hasSkrAccount(owner,mint,rpc,decimals))return {ready:true,owner,chain:config};
+ const address=await skrAccountAddress(owner,mint);
  const latest=await rpc('getLatestBlockhash',[{commitment:'finalized'}]);
  if(!record(latest)||!record(latest.value)||typeof latest.value.blockhash!=='string')throw new Error('rpc_invalid_blockhash');
  // Payer/owner is the authenticated linked wallet. CreateIdempotent has one
  // signer, two writable accounts, and no project-owned account or transfer.
- const accounts=[owner,address,config.skrMint,SYSTEM_PROGRAM,TOKEN_PROGRAM,ASSOCIATED_PROGRAM];
+ const accounts=[owner,address,mint,SYSTEM_PROGRAM,TOKEN_PROGRAM,ASSOCIATED_PROGRAM];
  const message=Uint8Array.from([1,0,4,6,...accounts.flatMap(a=>[...key(a)]),...key(latest.value.blockhash),1,5,6,0,1,0,2,3,4,1,1]);
  const encoded=btoa(String.fromCharCode(...message));
  const [rentReply,feeReply,balanceReply]=await Promise.all([

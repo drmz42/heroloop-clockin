@@ -60,23 +60,23 @@ async function lamports(rpc: Rpc, address: string): Promise<bigint> {
   return BigInt(result.value as number);
 }
 
-// SOL held in Mine custody (float + custody wallets of unclosed sessions); reconciliation adds it.
+// SOL held in Mine custody (float + every historical custody wallet); reconciliation adds it.
 export async function mineCustodyLamports(master: Uint8Array | null, call: Call, rpc: Rpc, excluded: ReadonlySet<string> = new Set()): Promise<bigint> {
   if (!master) return 0n;
   const owners = new Set<string>([(await floatKey(master)).address]);
   let total = 0n;
-  const work = await call("SELECT seeker_skr.mine_runner_work() AS result", []);
-  for (const session of (Array.isArray(work.sessions) ? work.sessions : []) as Json[]) {
-    if (typeof session.custody_address === "string") owners.add(session.custody_address);
+  const work = await call("SELECT seeker_skr.mine_custody_owners() AS result", []);
+  for (const owner of (Array.isArray(work.owners) ? work.owners : [])) {
+    if (typeof owner === "string") owners.add(owner);
   }
   for (const owner of owners) if (!excluded.has(owner)) total += await lamports(rpc, owner);
   return total;
 }
 
-export async function mineRoute(path: string, player: string, body: Json, master: Uint8Array | null, call: Call, rpc: Rpc):
+export async function mineRoute(path: string, player: string, body: Json, master: Uint8Array | null, call: Call, rpc: Rpc, oreEnabled=false):
   Promise<Response | null> {
   if (!path.startsWith("/wallet/mine/")) return null;
-  const config = { enabled: master !== null, terms_version: MINE_TERMS_VERSION,
+  const config = { enabled: master !== null && oreEnabled, terms_version: MINE_TERMS_VERSION,
     float_address: master ? (await floatKey(master)).address : null, tiers: Object.keys(MINE_TIERS),
     max_rounds: MINE_LIMITS.maxRounds, session_limit_minor: MINE_LIMITS.sessionLimit.toString(),
     daily_limit_minor: MINE_LIMITS.dailyLimit.toString() };
@@ -99,7 +99,7 @@ export async function mineRoute(path: string, player: string, body: Json, master
     return reply(200, { ok: true, result: await call("SELECT seeker_skr.mine_stop($1::uuid,$2::uuid) AS result", [player, body.session_id]) });
   }
   if (path === "/wallet/mine/start") {
-    if (!master) return reply(409, { ok: false, code: "mining_unavailable" });
+    if (!master || !oreEnabled) return reply(409, { ok: false, code: "mining_unavailable" });
     const policy = minePolicy(String(body.tier ?? ""), body.squares);
     const rounds = Number(body.rounds);
     if (!policy || !Number.isInteger(rounds) || rounds < 1 || rounds > MINE_LIMITS.maxRounds
@@ -124,9 +124,9 @@ export async function mineRoute(path: string, player: string, body: Json, master
 }
 
 // Single non-overlapping loop inside the wallet service.
-export function startMineRunner(master: Uint8Array | null, call: Call, rpc: Rpc): void {
+export function startMineRunner(master: Uint8Array | null, call: Call, rpc: Rpc, oreEnabled=false): void {
   if (!master) return;
-  const deps: MineDeps = { master, call, rpc, log: (event, detail) => console.error(event, JSON.stringify(detail ?? {})) };
+  const deps: MineDeps = { master, call, rpc, oreEnabled, log: (event, detail) => console.error(event, JSON.stringify(detail ?? {})) };
   let running = false;
   setInterval(async () => {
     if (running) return;

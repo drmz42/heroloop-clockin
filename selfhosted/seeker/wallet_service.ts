@@ -1,13 +1,15 @@
 // Private Seeker wallet service (docs/game/seeker-skr-payments.md). The only
 // process that connects to the seeker_skr database. Reachable on the hackathon
 // backend network by the game API, which authenticates the player and forwards
-// the verified player id with a shared service token. Holds no signing key:
-// deposits are verified read-only against Solana RPC.
+// the verified player id with a shared service token. Optional Mine custody
+// signing uses the root-provided master; deposits are verified against Solana RPC.
 import { hasSkrAccount, prepareSkrAccount } from "./recipient_account.ts";
 import { externalBalances } from "./wallet_display.ts";
 import { Pool } from "@db/postgres";
 import {
   ADDRESS,
+  ASSET_DECIMALS,
+  ORE_TOKEN_MINT,
   buildDepositTransaction,
   type ChainConfig,
   type DepositIntent,
@@ -23,7 +25,10 @@ import { evaluateSkrBoost, type SkrBoostSnapshot } from './boost.ts';
 import { authorizationMessage,verifyAuthorization,verifyPayout,FOUNDER_WALLETS,type Withdrawal } from "./withdrawal.ts";
 import { SKR_ASSET } from './ledger.ts';
 import { mineCustodyLamports, mineRoute, parseMineMaster, startMineRunner } from './mine_service.ts';
-import { custodyBalances } from './payout_custody.ts';
+import { custodyKey,floatKey } from './mine_runner.ts';
+import {actionId} from './mine_actions.ts';
+import {prepareOrePayout} from './ore_payout.ts';
+import { custodyBalances,tokenCustodyBalance } from './payout_custody.ts';
 type Json = Record<string, unknown>;
 const env = (name: string) => Deno.env.get(name) ?? "";
 const serviceToken = env("WALLET_SERVICE_TOKEN");
@@ -48,14 +53,16 @@ if ([...allowedPayers].some((address) => !ADDRESS.test(address)) || allowedPayer
   throw new Error("invalid wallet payer allowlist");
 }
 // Optional ORE Mine custody seed; absent means the Mine stays disabled.
+const oreEnabled=env('WALLET_ORE_ENABLED')==='true';
 const mineMaster = parseMineMaster(env("MINE_MASTER_SEED"));
 if (env("MINE_MASTER_SEED") && !mineMaster) throw new Error("invalid mine configuration");
 const DEPOSIT_TTL_SECONDS = 600;
 const LIMITS: Record<WalletAsset, bigint> = {
   SKR: 10_000n * 10n ** 6n, // 10 000 SKR per deposit
-  SOL: 2n * 10n ** 9n, // 2 SOL per deposit
+  SOL: 2n * 10n ** 9n,
+  ORE: 0n, // 2 SOL per deposit
 };
-const MINIMUMS: Record<WalletAsset, bigint> = { SKR: 10_000n, SOL: 1_000_000n }; // 0.01 SKR, 0.001 SOL
+const MINIMUMS: Record<WalletAsset, bigint> = { SKR: 10_000n, SOL: 1_000_000n, ORE: 1n }; // 0.01 SKR, 0.001 SOL
 
 const pool = new Pool({
   applicationName: "heroloop-seeker-wallet",
@@ -116,7 +123,7 @@ function constantTimeEqual(a: string, b: string): boolean {
 }
 
 function publicConfig(): Json {
-  return { cluster: config.cluster, skr_mint: config.skrMint, treasury: config.treasury, decimals: { SKR: 6, SOL: 9 } };
+  return { cluster: config.cluster, skr_mint: config.skrMint, treasury: config.treasury, decimals: ASSET_DECIMALS, ore_mint: ORE_TOKEN_MINT, ore_enabled: oreEnabled };
 }
 
 async function snapshot(player: string, address?: unknown): Promise<Response> {
@@ -231,10 +238,11 @@ async function rates(): Promise<Record<string, PriceRate>> {
   if (prices && Date.now()-Date.parse(prices[SKR_ASSET.mint].observed_at)<15_000) return prices;
   priceRequest ??= (async () => {
     const observed = Date.now();
-    const response = await fetch(`https://api.jup.ag/price/v3?ids=${SKR_ASSET.mint},${SOL_MINT}`,{ signal:AbortSignal.timeout(5000) });
+    const response = await fetch(`https://api.jup.ag/price/v3?ids=${SKR_ASSET.mint},${SOL_MINT}${oreEnabled?","+ORE_TOKEN_MINT:""}`,{ signal:AbortSignal.timeout(5000) });
     if (!response.ok) throw new Error('stale_skr_rate');
     const body=await response.json();
-    const result={ [SKR_ASSET.mint]:parsePrice(body,SKR_ASSET.mint,observed), [SOL_MINT]:parsePrice(body,SOL_MINT,observed) };
+    const result:Record<string,PriceRate>={ [SKR_ASSET.mint]:parsePrice(body,SKR_ASSET.mint,observed), [SOL_MINT]:parsePrice(body,SOL_MINT,observed) };
+    if(oreEnabled){try{result[ORE_TOKEN_MINT]=parsePrice(body,ORE_TOKEN_MINT,observed);}catch{/* ORE quotes fail closed without blocking SKR/SOL. */}}
     prices=result;
     return result;
   })().finally(()=>{priceRequest=null;});
@@ -244,7 +252,7 @@ async function commerce(path: string,player: string,body: Json): Promise<Respons
   if (path==='/wallet/rates') {
     const prices = await rates();
     const price = prices[SKR_ASSET.mint];
-    return json(200,{ok:true,result:{ ...price, asset_rates: { SKR: price, SOL: prices[SOL_MINT] } }});
+    return json(200,{ok:true,result:{ ...price, asset_rates: { SKR: price, SOL: prices[SOL_MINT], ...(oreEnabled?{ORE:prices[ORE_TOKEN_MINT]}:{}) } }});
   }
   if (path==='/wallet/boost') {
     const data=await call('SELECT seeker_skr.boost_snapshot($1::uuid) AS result',[player]);
@@ -282,8 +290,11 @@ async function reconcile():Promise<Json> {
   const chain: Record<string,bigint> = await custodyBalances(owners, config.skrMint, rpc);
   // Deduplicate against customer and payout custody, including Mine session wallets.
   chain.SOL += await mineCustodyLamports(mineMaster, call, rpc, owners);
+  const custody=await call('SELECT seeker_skr.mine_custody_owners() AS result',[]);
+  const allOwners=new Set([...owners,...(Array.isArray(custody.owners)?custody.owners.filter((v):v is string=>typeof v==='string'):[])]);
+  chain.ORE=await tokenCustodyBalance(allOwners,ORE_TOKEN_MINT,11,rpc);
   const assets:Json={};let blocked=false;
-  for(const asset of ['SKR','SOL']) {
+  for(const asset of ['SKR','SOL','ORE']) {
     const row=isRecord(liabilities[asset])?liabilities[asset] as Json:{};
     const accounted=BigInt(String(row.accounted_minor??'0'));
     const shortfall=chain[asset]<accounted||row.cache_consistent===false;
@@ -295,7 +306,7 @@ async function reconcile():Promise<Json> {
 async function withdrawals(path:string,player:string,body:Json):Promise<Response|null> {
   if(path==='/wallet/skr-account') {
     if(typeof body.address!=='string'||!ADDRESS.test(body.address)||body.address===config.payoutTreasury)return json(400,{ok:false,code:'invalid_wallet_address'});
-    return json(200,{ok:true,result:await prepareSkrAccount(body.address,config,rpc)});
+    return json(200,{ok:true,result:await prepareSkrAccount(body.address,config,rpc,body.asset==='ORE'?ORE_TOKEN_MINT:config.skrMint,body.asset==='ORE'?11:6)});
   }
   if(path==='/wallet/reconcile')return json(200,{ok:true,result:await reconcile()});
   if(path==='/wallet/withdrawals') {
@@ -303,15 +314,17 @@ async function withdrawals(path:string,player:string,body:Json):Promise<Response
     return json(200,{ok:true,result});
   }
   if(path==='/wallet/withdraw-intent') {
-    const asset=body.asset==='SKR'||body.asset==='SOL'?body.asset:null;
+    const asset=body.asset==='SKR'||body.asset==='SOL'||body.asset==='ORE'?body.asset:null;
+    if(asset==='ORE'&&!oreEnabled)return json(409,{ok:false,code:'ore_activation_required'});
     if(!asset||typeof body.destination!=='string'||!ADDRESS.test(body.destination)||(body.destination===config.treasury||body.destination===config.payoutTreasury))return json(400,{ok:false,code:'invalid_withdrawal'});
-    if(asset==='SKR'&&!await hasSkrAccount(body.destination,config.skrMint,rpc))return json(409,{ok:false,code:'recipient_skr_account_required'});
+    if(asset!=='SOL'&&!await hasSkrAccount(body.destination,asset==='ORE'?ORE_TOKEN_MINT:config.skrMint,rpc,ASSET_DECIMALS[asset]))return json(409,{ok:false,code:asset==='ORE'?'recipient_ore_account_required':'recipient_skr_account_required'});
     const amount=parseAmount(body.amount,asset);
     if(amount===null||amount>18446744073709551615n)return json(400,{ok:false,code:'invalid_amount'});
     const report=await reconcile();
     if(report.withdrawals_blocked)return json(409,{ok:false,code:'withdrawals_blocked'});
-    const rate=(await rates())[asset==='SKR'?SKR_ASSET.mint:SOL_MINT];
-    const denominator=10n**BigInt(asset==='SKR'?6:9)*10_000n;
+    const rate=(await rates())[asset==='SKR'?SKR_ASSET.mint:asset==='ORE'?ORE_TOKEN_MINT:SOL_MINT];
+    if(!rate)throw new Error('stale_skr_rate');
+    const denominator=10n**BigInt(ASSET_DECIMALS[asset])*10_000n;
     const n=amount*BigInt(rate.usd_micros_per_skr);
     const cents=(n+denominator-1n)/denominator;
     if(cents>100000000n)return json(400,{ok:false,code:'invalid_amount'});
@@ -328,7 +341,8 @@ async function withdrawals(path:string,player:string,body:Json):Promise<Response
     const w=await call('SELECT seeker_skr.withdrawal_get($1::uuid,$2::uuid) AS result',[player,body.request_id]);
     if(w.status!=='authorization')return json(200,{ok:true,result:w});
     if(!await verifyAuthorization(w as unknown as Withdrawal,body.signature))return json(403,{ok:false,code:'invalid_withdrawal_signature'});
-    if(w.asset==='SKR'&&!await hasSkrAccount(String(w.destination),config.skrMint,rpc))return json(409,{ok:false,code:'recipient_skr_account_required'});
+    if(w.asset==='ORE'&&!oreEnabled)return json(409,{ok:false,code:'ore_activation_required'});
+    if(w.asset!=='SOL'&&!await hasSkrAccount(String(w.destination),w.asset==='ORE'?ORE_TOKEN_MINT:config.skrMint,rpc,w.asset==='ORE'?11:6))return json(409,{ok:false,code:w.asset==='ORE'?'recipient_ore_account_required':'recipient_skr_account_required'});
     if((await reconcile()).withdrawals_blocked)return json(409,{ok:false,code:'withdrawals_blocked'});
     const result=await call('SELECT seeker_skr.withdrawal_reserve($1::uuid,$2::uuid) AS result',[player,body.request_id]);
     return json(200,{ok:true,result});
@@ -344,12 +358,23 @@ async function withdrawals(path:string,player:string,body:Json):Promise<Response
   if(body.action==='finalize') {
     if(typeof body.signature!=='string'||!SIGNATURE.test(body.signature))return json(400,{ok:false,code:'invalid_signature'});
     const tx=await rpc('getTransaction',[body.signature,{encoding:'jsonParsed',commitment:'finalized',maxSupportedTransactionVersion:0}]);
-    const refusal=verifyPayout(w as unknown as Withdrawal,config,body.signature,tx);
+    let payoutConfig:ChainConfig & {payoutTreasury:string;tokenAuthority?:string}=config;
+    if(w.asset==='ORE'){
+      if(!mineMaster)return json(409,{ok:false,code:'ore_activation_required'});
+      const a=await call('SELECT seeker_skr.mine_action_get($1::uuid) AS result',[await actionId(`payout:${body.request_id}`)]);
+      if(a.signature!==body.signature)return json(409,{ok:false,code:'payout_wrong_sender'});
+      payoutConfig={...config,payoutTreasury:(await floatKey(mineMaster)).address,tokenAuthority:(await custodyKey(mineMaster,String(w.player_id))).address};
+    }
+    const refusal=verifyPayout(w as unknown as Withdrawal,payoutConfig,body.signature,tx);
     if(refusal)return json(409,{ok:false,code:refusal});
-    const result=await call('SELECT seeker_skr.withdrawal_finalize($1::uuid,$2::text) AS result',[body.request_id,body.signature]);
+    const result=w.asset==='ORE'
+      ? await call('SELECT seeker_skr.mine_ore_payout_finalize($1::uuid,$2::text,$3::numeric) AS result',
+        [body.request_id,body.signature,String(-((tx as {meta:{fee:number}}).meta.fee))])
+      : await call('SELECT seeker_skr.withdrawal_finalize($1::uuid,$2::text) AS result',[body.request_id,body.signature]);
     return json(200,{ok:true,result});
   }
-  if(body.action==='begin_payout'&&w.asset==='SKR'&&!await hasSkrAccount(String(w.destination),config.skrMint,rpc))return json(409,{ok:false,code:'recipient_skr_account_required'});
+  if(body.action==='begin_payout'&&w.asset==='ORE'&&!oreEnabled)return json(409,{ok:false,code:'ore_activation_required'});
+  if(body.action==='begin_payout'&&w.asset!=='SOL'&&!await hasSkrAccount(String(w.destination),w.asset==='ORE'?ORE_TOKEN_MINT:config.skrMint,rpc,w.asset==='ORE'?11:6))return json(409,{ok:false,code:w.asset==='ORE'?'recipient_ore_account_required':'recipient_skr_account_required'});
   if(body.action==='begin_payout'&&(await reconcile()).withdrawals_blocked)return json(409,{ok:false,code:'withdrawals_blocked'});
   if(!['begin_payout','reject'].includes(String(body.action)))return json(400,{ok:false,code:'invalid_withdrawal_review'});
   const result=await call('SELECT seeker_skr.withdrawal_review($1::uuid,$2::text,$3::text,$4::text) AS result',
@@ -377,7 +402,13 @@ Deno.serve({ hostname: "0.0.0.0", port: 8090 }, async (request) => {
     if (url.pathname === "/wallet/snapshot") return await snapshot(body.player_id, body.address);
     if (url.pathname === "/wallet/deposit-intent") return await createIntent(body.player_id, body);
     if (url.pathname === "/wallet/deposit-confirm") return await confirm(body.player_id, body);
-    const response=await mineRoute(url.pathname,body.player_id,body,mineMaster,call,rpc)
+    if(url.pathname==='/wallet/ore-payout-sign'){
+      if(!oreEnabled||!mineMaster)return json(409,{ok:false,code:'ore_activation_required'});
+      if(typeof body.request_id!=='string'||!uuid.test(body.request_id))return json(400,{ok:false,code:'invalid_withdrawal'});
+      if((await reconcile()).withdrawals_blocked)return json(409,{ok:false,code:'withdrawals_blocked'});
+      return json(200,{ok:true,result:await prepareOrePayout({master:mineMaster,call,rpc},body.request_id)});
+    }
+    const response=await mineRoute(url.pathname,body.player_id,body,mineMaster,call,rpc,oreEnabled)
       ??await commerce(url.pathname,body.player_id,body)??await withdrawals(url.pathname,body.player_id,body);
     if (response) return response;
     return json(404, { ok: false, code: "not_found" });
@@ -389,4 +420,4 @@ Deno.serve({ hostname: "0.0.0.0", port: 8090 }, async (request) => {
     return json(503, { ok: false, code: message.startsWith("rpc_") ? "chain_unavailable" : "wallet_unavailable" });
   }
 });
-startMineRunner(mineMaster, call, rpc);
+startMineRunner(mineMaster, call, rpc, oreEnabled);

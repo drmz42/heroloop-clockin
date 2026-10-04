@@ -8,10 +8,10 @@ import { compatibleSolanaWallets } from './solanaWalletRegistry';
 import { nativeMwaSession, readWalletBinding } from './solanaWalletSession';
 import { mobileWalletAppIdentity } from '@/platform/platform';
 
-export type WalletAsset = 'SKR' | 'SOL';
-export const ASSET_DECIMALS: Record<WalletAsset, number> = { SKR: 6, SOL: 9 };
+export type WalletAsset = 'SKR' | 'SOL' | 'ORE';
+export const ASSET_DECIMALS: Record<WalletAsset, number> = { SKR: 6, SOL: 9, ORE: 11 };
 
-export type WalletChain = { cluster: 'mainnet'; skr_mint: string; treasury: string };
+export type WalletChain = { cluster: 'mainnet'; skr_mint: string; treasury: string; ore_enabled?: boolean; ore_mint?: string };
 export type WalletHistoryRow = { event_id: string; kind: string; asset: WalletAsset; delta_minor: string; signature: string | null; at: string };
 export type WalletSnapshot = {
   balances: Record<WalletAsset, string>;
@@ -238,7 +238,7 @@ export function loadExternalWallet(): Promise<WalletSnapshot> {
 }
 export function loadWalletRates(): Promise<WalletRate & {asset_rates: Record<WalletAsset, WalletRate>}> { return command('wallet_rates'); }
 export function exactWalletAmount(minor: string, asset: WalletAsset): string {
-  return formatMinor(minor, asset, ASSET_DECIMALS[asset]).replace(/,/g, '');
+  return formatMinor(minor, asset, ASSET_DECIMALS[asset]).replace(/[\s,]/g, '');
 }
 export function loadSkrRate():Promise<{usd_micros_per_skr:string;observed_at:string}> { return command('wallet_rates'); }
 
@@ -323,7 +323,7 @@ export function reviewWithdrawal(request_id:string,action:'begin_payout'|'finali
 export type MineRound = { seq: number; status: 'pending' | 'settled'; ore_round_id: string | null; cost_minor: string | null; signature: string | null };
 export type MineSession = {
   id: string; status: 'active' | 'stopped' | 'closed'; reserved_minor: string; spent_minor: string; released_minor: string | null;
-  credited_minor: string; completed: number; round_limit: number; stake_minor: string; square_mask: string | null; custody_address: string | null;
+  credited_minor: string; credited_ore_minor?: string; completed: number; round_limit: number; stake_minor: string; square_mask: string | null; custody_address: string | null;
   created_at: string; rounds: MineRound[];
 };
 export type MineStatus = {
@@ -343,13 +343,13 @@ export const loadMineBoard = (): Promise<MineBoard> => command('mine_board');
 export const stopMine = (sessionId: string): Promise<MineSession> => command('mine_stop', { session_id: sessionId });
 
 export type SkrAccountStatus = {ready:boolean;owner:string;chain:WalletChain;rent_lamports?:string;network_fee_lamports?:string;required_lamports?:string;balance_lamports?:string;funded?:boolean;transaction?:string};
-export async function loadSkrAccount():Promise<SkrAccountStatus>{
+export async function loadSkrAccount(asset:'SKR'|'ORE'='SKR'):Promise<SkrAccountStatus>{
  const bound=boundWallet();if(!bound)throw new SeekerWalletError('wallet_identity_required');
- return command('wallet_skr_account',{address:bound.address});
+ return command('wallet_skr_account',{address:bound.address,asset});
 }
-export async function createPersonalSkrAccount():Promise<SkrAccountStatus>{
+export async function createPersonalSkrAccount(asset:'SKR'|'ORE'='SKR'):Promise<SkrAccountStatus>{
  const bound=boundWallet();if(!bound)throw new SeekerWalletError('wallet_identity_required');
- const status=await loadSkrAccount();
+ const status=await loadSkrAccount(asset);
  if(status.owner!==bound.address||boundWallet()?.address!==bound.address)throw new SeekerWalletError('wallet_account_mismatch');
  if(status.ready)return status;
  if(!status.funded||!status.transaction)throw new SeekerWalletError('insufficient_account_sol');
@@ -359,7 +359,7 @@ export async function createPersonalSkrAccount():Promise<SkrAccountStatus>{
  }
  for(let attempt=0;attempt<15;attempt++){
   await new Promise(resolve=>setTimeout(resolve,4000));
-  const current=await loadSkrAccount();if(current.ready)return current;
+  const current=await loadSkrAccount(asset);if(current.ready)return current;
  }
  throw new SeekerWalletError('account_creation_pending');
 }

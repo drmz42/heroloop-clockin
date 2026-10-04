@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'r
 import { BookOpen, ChevronDown, Gem, HelpCircle, Loader2, Pickaxe, Square, X } from 'lucide-react';
 import { markTutorialSeen, MINE_GUIDE, MINE_LIMIT_ROWS, MINE_LIMITS, MINE_STAKE_TIERS, tutorialSeen, type MineStakeTier } from '@/game/seekerMine';
 import {
-  acceptMineTerms, formatAmountShort, loadMineBoard, loadMineStatus, refreshWallet, SeekerWalletError, startMine, stopMine,
+  acceptMineTerms, formatAmountShort, formatMinor, loadMineBoard, loadMineStatus, refreshWallet, SeekerWalletError, startMine, stopMine,
   type MineBoard, type MineStatus,
 } from '@/game/seekerWallet';
 import { MineQuests, MineTutorial } from '@/components/SeekerMineExtras';
@@ -155,7 +155,8 @@ export function SeekerMinePanel({ onClose, claimQuest, still = false }: {
               <dl className="mn-dl">
                 <dt>Stake per round</dt><dd>{sol(live.stake_minor)}</dd>
                 <dt>Spent</dt><dd>{sol(live.spent_minor)}</dd>
-                <dt>Won back</dt><dd style={{ color: '#9fe3b8' }}>{sol(live.credited_minor)}</dd>
+                <dt>SOL returned</dt><dd style={{ color: '#9fe3b8' }}>{sol(live.credited_minor)}</dd>
+                <dt>ORE received</dt><dd>{formatMinor(live.credited_ore_minor??'0','ORE',11)} ORE</dd>
               </dl>
               {live.status === 'active' && (
                 <button type="button" className="sc-plate mn-strike-btn" disabled={busy} onClick={() => void act(() => stopMine(live.id))}>

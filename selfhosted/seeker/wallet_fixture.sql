@@ -45,11 +45,11 @@ BEGIN
   PERFORM seeker_skr.deposit_settle(p,(i2->>'intent_id')::uuid,sig2);
 
   r := seeker_skr.wallet_snapshot(p);
-  IF r->'balances' <> '{"SKR":"1500000","SOL":"250000000"}'::jsonb THEN RAISE EXCEPTION 'balances %', r->'balances'; END IF;
+  IF r->'balances' <> '{"SKR":"1500000","SOL":"250000000","ORE":"0"}'::jsonb THEN RAISE EXCEPTION 'balances %', r->'balances'; END IF;
   IF jsonb_array_length(r->'history') <> 2 OR jsonb_array_length(r->'pending_deposits') <> 1 THEN
     RAISE EXCEPTION 'snapshot shape %', r;
   END IF;
-  IF seeker_skr.wallet_snapshot(q)->'balances' <> '{"SKR":"0","SOL":"0"}'::jsonb THEN RAISE EXCEPTION 'empty snapshot'; END IF;
+  IF seeker_skr.wallet_snapshot(q)->'balances' <> '{"SKR":"0","SOL":"0","ORE":"0"}'::jsonb THEN RAISE EXCEPTION 'empty snapshot'; END IF;
 END $$;
 
 -- Owner-level checks: conservation per asset and no mixed-asset event.

@@ -1025,7 +1025,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         return errorResponse(409, "unavailable_in_standard_edition", requestId);
       }
       const action = String(parsed.value.action);
-      const allowed = ({wallet_skr_account:['address'],wallet_snapshot:['address'],wallet_rates:[],wallet_withdrawals:[],
+      const allowed = ({wallet_skr_account:['address','asset'],wallet_snapshot:['address'],wallet_rates:[],wallet_withdrawals:[],
         wallet_deposit_intent:['asset','amount','payer'],wallet_deposit_confirm:['intent_id','signature'],
         wallet_withdraw_intent:['asset','amount','destination'],wallet_withdraw_confirm:['request_id','signature'],
         wallet_founder_status:['founder_address'],wallet_withdraw_review:['founder_address','request_id','action','signature','reason'],

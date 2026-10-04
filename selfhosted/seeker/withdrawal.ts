@@ -1,12 +1,12 @@
-import { ADDRESS,base58Decode,type ChainConfig,type WalletAsset,TOKEN_PROGRAM,SYSTEM_PROGRAM } from './chain.ts';
+import { ADDRESS,ASSET_DECIMALS,ORE_TOKEN_MINT,base58Decode,type ChainConfig,type WalletAsset,TOKEN_PROGRAM,SYSTEM_PROGRAM } from './chain.ts';
 export type Withdrawal = { request_id:string;player_id:string;asset:WalletAsset;amount_minor:string;fee_minor:string;payout_minor:string;destination:string;expires_at:string;created_at:string };
 export const WITHDRAWAL_DOMAIN='staging2.heroloop.xyz';
 export const FOUNDER_WALLETS=new Set(['5vWcJZVsh1KTfp8bRMhGawoibYMfMfRu7ZoDdMWZjtWR','714yHZvDGqvtDHvmFZMufhECdXVfhPSjEPqFXndKbYwa']);
 export function authorizationMessage(w:Withdrawal):string {
-  if(!ADDRESS.test(w.destination)||!['SKR','SOL'].includes(w.asset)||!/^[1-9][0-9]{0,19}$/.test(w.amount_minor)
+  if(!ADDRESS.test(w.destination)||!['SKR','SOL','ORE'].includes(w.asset)||!/^[1-9][0-9]{0,19}$/.test(w.amount_minor)
     ||![w.request_id,w.player_id].every(v=>/^[0-9a-f-]{36}$/.test(v))||!Number.isFinite(Date.parse(w.expires_at))) throw new Error('invalid_withdrawal');
   if(!/^[0-9]{1,20}$/.test(w.fee_minor)||!/^[1-9][0-9]{0,19}$/.test(w.payout_minor)||BigInt(w.fee_minor)+BigInt(w.payout_minor)!==BigInt(w.amount_minor)) throw new Error('invalid_withdrawal');
-  const decimals=w.asset==='SKR'?6:9;
+  const decimals=ASSET_DECIMALS[w.asset];
   const display=(minor:string)=>{const digits=minor.padStart(decimals+1,'0');return `${digits.slice(0,-decimals)}.${digits.slice(-decimals)}`;};
   return `HeroLoop Seeker withdrawal request\nDomain: ${WITHDRAWAL_DOMAIN}\nAccount: ${w.player_id}\nAsset: ${w.asset}\nAmount: ${display(w.amount_minor)} ${w.asset}\nAmount (atomic units): ${w.amount_minor}\nFee (5%): ${display(w.fee_minor)} ${w.asset}\nYou receive: ${display(w.payout_minor)} ${w.asset}\nDestination: ${w.destination}\nRequest: ${w.request_id}\nExpires: ${w.expires_at}\n\nI authorize reserving the amount above from my in-game balance. After admin approval, the project automatically sends the stated net amount to my linked wallet and keeps the 5% withdrawal fee. Signing this message does not move funds on chain or charge a network fee.`;
 }
@@ -23,7 +23,7 @@ const record=(v:unknown):v is Record<string,unknown>=>typeof v==='object'&&v!==n
 // The RPC caller requests finalized commitment by the exact supplied signature.
 // Require one direct transfer instruction as well as exact balance deltas; a
 // pre-request payment or a third-party inflow cannot discharge this liability.
-export function verifyPayout(w:Withdrawal,config:ChainConfig & {payoutTreasury?:string},signature:string,tx:unknown):string|null {
+export function verifyPayout(w:Withdrawal,config:ChainConfig & {payoutTreasury?:string;tokenAuthority?:string},signature:string,tx:unknown):string|null {
   const sender=config.payoutTreasury??config.treasury;
   if(!record(tx)||!record(tx.meta)||!record(tx.transaction)||tx.meta.err!==null)return 'payout_not_finalized';
   const transaction=tx.transaction,meta=tx.meta,message=transaction.message;
@@ -43,21 +43,27 @@ export function verifyPayout(w:Withdrawal,config:ChainConfig & {payoutTreasury?:
     if(!Number.isSafeInteger(before)||!Number.isSafeInteger(after)||BigInt(after as number)-BigInt(before as number)!==amount)return 'payout_wrong_amount';
     return null;
   }
+  const mint=w.asset==='ORE'?ORE_TOKEN_MINT:config.skrMint;
+  const authority=config.tokenAuthority??sender;
+  const decimals=ASSET_DECIMALS[w.asset];
+  if(w.asset==='ORE'&&(!Number.isSafeInteger(meta.fee)||Number(meta.fee)<0))return 'payout_unreadable';
+  if(w.asset==='ORE'&&(instructions.length!==1||keys.filter(k=>k.signer===true).length!==2||!keys.some(k=>k.pubkey===authority&&k.signer===true)))return 'payout_wrong_sender';
   const total=(balances:unknown,owner:string)=>{
     if(!Array.isArray(balances))return 0n;
     let result=0n;
-    for(const b of balances){if(!record(b)||b.owner!==owner||b.mint!==config.skrMint)continue;
-      if(!record(b.uiTokenAmount)||b.uiTokenAmount.decimals!==6||typeof b.uiTokenAmount.amount!=='string'||!/^\d+$/.test(b.uiTokenAmount.amount))throw new Error('payout_wrong_mint');
+    for(const b of balances){if(!record(b)||b.owner!==owner||b.mint!==mint)continue;
+      if((w.asset==='ORE'&&b.programId!==TOKEN_PROGRAM)||!record(b.uiTokenAmount)||b.uiTokenAmount.decimals!==decimals||typeof b.uiTokenAmount.amount!=='string'||!/^\d+$/.test(b.uiTokenAmount.amount))throw new Error('payout_wrong_mint');
       result+=BigInt(b.uiTokenAmount.amount);
     }return result;
   };
   const destinationAccounts=new Set((Array.isArray(meta.postTokenBalances)?meta.postTokenBalances:[]).filter(record)
-    .filter(b=>b.owner===w.destination&&b.mint===config.skrMint).map(b=>keys[Number(b.accountIndex)]?.pubkey));
+    .filter(b=>b.owner===w.destination&&b.mint===mint).map(b=>keys[Number(b.accountIndex)]?.pubkey));
   const hit=instructions.some(i=>i.programId===TOKEN_PROGRAM&&record(i.parsed)&&['transfer','transferChecked'].includes(String(i.parsed.type))
-    &&record(i.parsed.info)&&i.parsed.info.authority===sender&&destinationAccounts.has(i.parsed.info.destination));
+    &&record(i.parsed.info)&&i.parsed.info.authority===authority&&destinationAccounts.has(i.parsed.info.destination)
+    &&(w.asset!=='ORE'||(i.parsed.type==='transferChecked'&&i.parsed.info.mint===mint&&record(i.parsed.info.tokenAmount)&&i.parsed.info.tokenAmount.amount===w.payout_minor&&i.parsed.info.tokenAmount.decimals===11)));
   if(!hit)return 'payout_wrong_recipient';
   try {
     return total(meta.postTokenBalances,w.destination)-total(meta.preTokenBalances,w.destination)===amount
-      &&total(meta.preTokenBalances,sender)-total(meta.postTokenBalances,sender)===amount?null:'payout_wrong_amount';
+      &&total(meta.preTokenBalances,authority)-total(meta.postTokenBalances,authority)===amount?null:'payout_wrong_amount';
   }catch{return 'payout_wrong_mint';}
 }

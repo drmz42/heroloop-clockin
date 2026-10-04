@@ -240,13 +240,13 @@ function shortVec(n: number): number[] {
     if (!v) return out;
   }
 }
-// Single-signer legacy message: the fee payer is the only signer.
-export function compileMessage(feePayer: string, instructions: Instruction[], recentBlockhash: string): Uint8Array {
+// Legacy message with the fee payer first; extra authorities must be explicitly allowed.
+export function compileMessage(feePayer: string, instructions: Instruction[], recentBlockhash: string, additionalSigners: readonly string[] = []): Uint8Array {
   const keys = new Map<string, { signer: boolean; writable: boolean }>();
   keys.set(feePayer, { signer: true, writable: true });
   for (const ix of instructions) {
     for (const a of ix.accounts) {
-      if (a.signer && a.address !== feePayer) fail("unsupported_extra_signer");
+      if (a.signer && a.address !== feePayer && !additionalSigners.includes(a.address)) fail("unsupported_extra_signer");
       const k = keys.get(a.address) ?? { signer: false, writable: false };
       keys.set(a.address, { signer: k.signer || a.signer, writable: k.writable || a.writable });
     }
@@ -259,7 +259,7 @@ export function compileMessage(feePayer: string, instructions: Instruction[], re
   const index = new Map(ordered.map(([address], i) => [address, i]));
   const readonlySigned = ordered.filter(([, k]) => k.signer && !k.writable).length;
   const readonlyUnsigned = ordered.filter(([, k]) => !k.signer && !k.writable).length;
-  const bytes: number[] = [1, readonlySigned, readonlyUnsigned, ...shortVec(ordered.length)];
+  const bytes: number[] = [ordered.filter(([, k]) => k.signer).length, readonlySigned, readonlyUnsigned, ...shortVec(ordered.length)];
   for (const [address] of ordered) bytes.push(...pubkey(address));
   bytes.push(...pubkey(recentBlockhash), ...shortVec(instructions.length));
   for (const ix of instructions) {

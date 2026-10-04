@@ -21,9 +21,9 @@ Deno.test('malformed or unavailable payout chain evidence never returns a partia
   return method==='getBalance'?{value:100}:{value:[token('deposit','1000')]};
  }),/rpc_unavailable/);
 });
-Deno.test('Mine reconciliation deduplicates float and session wallets against payout custody',async()=>{
+Deno.test('Mine reconciliation retains closed custody and deduplicates float and custody wallets against payout custody',async()=>{
  const master=new Uint8Array(32).fill(7),reads:string[]=[];
- const call=async()=>({sessions:[{custody_address:'payout'},{custody_address:'session'},{custody_address:'session'}]});
+ const call=async()=>({owners:['payout','session','session']});
  const rpc=async(_method:string,params:unknown[])=>{reads.push(String(params[0]));return {value:10};};
  assert.equal(await mineCustodyLamports(master,call,rpc,new Set(['payout'])),20n);
  assert.equal(reads.filter(a=>a==='payout').length,0);

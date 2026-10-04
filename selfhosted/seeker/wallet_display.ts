@@ -1,7 +1,7 @@
 // Read-only balances for display/MAX; transfer limits and settlement stay server-owned.
 import type { WalletAsset } from './chain.ts';
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object';
-export function externalBalances(sol: unknown, tokens: unknown, limits: Record<WalletAsset, bigint>) {
+export function externalBalances(sol: unknown, tokens: unknown, limits: Pick<Record<WalletAsset, bigint>, "SKR" | "SOL">) {
   if (!record(sol) || !Number.isSafeInteger(sol.value) || Number(sol.value) < 0
     || !record(tokens) || !Array.isArray(tokens.value)) throw new Error('rpc_balance');
   let total = 0n, largest = 0n;

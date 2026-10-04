@@ -2,15 +2,16 @@
 // funds a per-player custody wallet from the Mine float, deploys each ORE round,
 // verifies finalized receipts, records outcomes through mining_runtime.sql, claims
 // winnings and sweeps the custody wallet back. All I/O is injected for tests.
+import {actionId,prepareAction,resolveAction,finishAction} from "./mine_actions.ts";
 import { base58Decode, base58Encode } from "./chain.ts";
 import {
-  checkpointInstruction, claimSolInstruction, compileMessage, computeUnitLimitInstruction, decodeBoard, decodeMiner,
+  checkpointInstruction, claimSolInstruction, claimOreInstruction, verifyOreClaimReceipt, compileMessage, computeUnitLimitInstruction, decodeBoard, decodeMiner,
   decodeRound, deployInstruction, type Instruction, minerAddress, ORE_BOARD, ORE_PROGRAM, COMPUTE_BUDGET_PROGRAM,
   roundAddress, serializeTransaction, SYSTEM_PROGRAM,
 } from "./ore.ts";
 
 type Json = Record<string, unknown>;
-export const MINE_TERMS_VERSION = "2026-10-03";
+export const MINE_TERMS_VERSION = "2026-10-04-withdrawals";
 // Stake per round in lamports, spread evenly over all 25 squares.
 export const MINE_TIERS: Record<string, bigint> = { "0.01": 10_000_000n, "0.1": 100_000_000n, "1": 1_000_000_000n };
 const ALL_SQUARES = Array.from({ length: 25 }, (_, i) => i);
@@ -92,23 +93,12 @@ export type MineDeps = {
   rpc: (method: string, params: unknown[]) => Promise<unknown>;
   call: (sql: string, args: unknown[]) => Promise<Json>;
   master: Uint8Array;
+  oreEnabled?: boolean;
   log?: (event: string, detail?: Json) => void;
 };
-// Custody-internal actions (funding, checkpoint, claim, sweep) wait for their previous
-// submission instead of repeating it every tick. Process-local; a restart may repeat
-// one harmless action (ORE checkpoints are idempotent, transfers fail without funds).
-const inflight = new Map<string, number>();
-const ACTION_COOLDOWN_MS = 45_000;
-function claimAction(session: string, action: string): boolean {
-  const key = `${session}:${action}`, now = Date.now();
-  if ((inflight.get(key) ?? 0) > now) return false;
-  inflight.set(key, now + ACTION_COOLDOWN_MS);
-  return true;
-}
 const isRecord = (v: unknown): v is Json => typeof v === "object" && v !== null && !Array.isArray(v);
 const b64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 const toB64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
-
 async function accountData(deps: MineDeps, address: string): Promise<Uint8Array | null> {
   const result = await deps.rpc("getAccountInfo", [address, { encoding: "base64", commitment: "confirmed" }]);
   if (!isRecord(result)) throw new Error("rpc_account");
@@ -122,12 +112,12 @@ async function balance(deps: MineDeps, address: string): Promise<bigint> {
   if (!isRecord(result) || !Number.isSafeInteger(result.value)) throw new Error("rpc_balance");
   return BigInt(result.value as number);
 }
-async function signAndSend(deps: MineDeps, key: MineKey, instructions: Instruction[]): Promise<{ signature: string; wire: string }> {
+async function signAndSend(deps: MineDeps, key: MineKey, instructions: Instruction[]): Promise<{ signature: string; wire: string; height: string }> {
   const latest = await deps.rpc("getLatestBlockhash", [{ commitment: "confirmed" }]);
-  if (!isRecord(latest) || !isRecord(latest.value) || typeof latest.value.blockhash !== "string") throw new Error("rpc_blockhash");
+  if (!isRecord(latest) || !isRecord(latest.value) || typeof latest.value.blockhash !== "string" || !Number.isSafeInteger(latest.value.lastValidBlockHeight)) throw new Error("rpc_blockhash");
   const message = compileMessage(key.address, instructions, latest.value.blockhash);
   const signature = await key.sign(message);
-  return { signature: base58Encode(signature), wire: toB64(serializeTransaction(signature, message)) };
+  return { signature: base58Encode(signature), wire: toB64(serializeTransaction(signature, message)), height: String(latest.value.lastValidBlockHeight) };
 }
 async function submit(deps: MineDeps, wire: string) {
   await deps.rpc("sendTransaction", [wire, { encoding: "base64", skipPreflight: false, preflightCommitment: "confirmed", maxRetries: 3 }]);
@@ -211,11 +201,17 @@ async function step(
   const held = await balance(deps, key.address);
   const needed = reserved - spent;
   if (held < roundCost) {
-    if (!claimAction(String(session.id), "fund")) return;
-    const { signature, wire } = await signAndSend(deps, float, [transferInstruction(float.address, key.address, needed - held)]);
-    await submit(deps, wire);
-    deps.log?.("mine_funding_sent", { session: String(session.id), signature });
+    const a=await prepareAction(deps,await actionId(`${session.id}:fund`),String(session.id),null,'fund',float,
+      [transferInstruction(float.address,key.address,needed-held)]);
+    if(a.status==='confirmed')throw new Error('mine_custody_shortfall');
+    const tx=await resolveAction(deps,a);
+    if(tx)await finishAction(deps,a,null,null);
     return;
+  }
+  const funding=await deps.call('SELECT seeker_skr.mine_action_get($1::uuid) AS result',[await actionId(`${session.id}:fund`)]);
+  if(funding.signature&&funding.status!=='confirmed'){
+    const tx=await resolveAction(deps,funding);if(!tx)return;
+    await finishAction(deps,funding,null,null);
   }
   const last = session.last_ore_round_id == null ? -1n : BigInt(String(session.last_ore_round_id));
   if (board.roundId <= last || slot < board.startSlot || slot + 8n >= board.endSlot) return;
@@ -231,10 +227,10 @@ async function step(
   }
   const plan = sessionSquares(session.policy as Json);
   instructions.push(await deployInstruction(key.address, board.roundId, plan.perSquare, plan.squares));
-  const { signature, wire } = await signAndSend(deps, key, instructions);
-  await deps.call("SELECT seeker_skr.mine_round_prepare($1::uuid,$2::uuid,$3::numeric,$4::text) AS result",
-    [session.id, crypto.randomUUID(), board.roundId.toString(), signature]);
-  await submit(deps, wire);
+  const { signature, wire, height } = await signAndSend(deps, key, instructions);
+  const prepared=await deps.call("SELECT seeker_skr.mine_round_prepare($1::uuid,$2::uuid,$3::numeric,$4::text,$5::text,$6::numeric) AS result",
+    [session.id, crypto.randomUUID(), board.roundId.toString(), signature, wire, height]);
+  await submit(deps, String(prepared.submitted_wire??wire));
 }
 
 async function resolvePending(
@@ -251,58 +247,85 @@ async function resolvePending(
     return;
   }
   if (outcome.status === "pending") return;
-  if (board.roundId === oreRound) {
-    // Not seen yet in the same ORE round: re-sign with a fresh blockhash. A second
-    // deploy to already deployed squares of this round is ignored by ORE.
-    const instructions = [computeUnitLimitInstruction(COMPUTE_UNITS),
-      await deployInstruction(key.address, oreRound, sessionSquares(session.policy as Json).perSquare, sessionSquares(session.policy as Json).squares)];
-    const { signature: next, wire } = await signAndSend(deps, key, instructions);
-    await deps.call("SELECT seeker_skr.mine_round_prepare($1::uuid,$2::uuid,$3::numeric,$4::text) AS result",
-      [session.id, pending.id, oreRound.toString(), next]);
-    await submit(deps, wire);
+  if(typeof pending.submitted_wire!=='string'||typeof pending.last_valid_height!=='string')throw new Error('mine_action_review_required');
+  const height=await deps.rpc('getBlockHeight',[{commitment:'finalized'}]);
+  if(!Number.isSafeInteger(height))throw new Error('rpc_blockheight');
+  if(BigInt(Number(height))<=BigInt(pending.last_valid_height)){
+    if(board.roundId===oreRound)await submit(deps,pending.submitted_wire);
     return;
   }
-  // Two rounds later the last signed blockhash has expired: it can no longer land.
-  if (board.roundId >= oreRound + 2n) {
-    await deps.call("SELECT seeker_skr.mine_round_settle($1::uuid,$2::numeric,$3::text) AS result", [pending.id, "0", signature]);
-  }
+  // Both chain finality and actual blockhash expiry are required. Never infer
+  // expiry solely from ORE round count, and never sign a second deploy.
+  if(board.roundId>=oreRound+2n)await deps.call("SELECT seeker_skr.mine_round_settle($1::uuid,$2::numeric,$3::text) AS result",
+    [pending.id,'0',signature]);
 }
 
-async function finish(
+// All finish actions persist their exact signed bytes before broadcast.
+export async function finish(
   deps: MineDeps, session: Json, key: MineKey, float: MineKey, board: ReturnType<typeof decodeBoard>,
 ): Promise<void> {
-  const minerBytes = await accountData(deps, await minerAddress(key.address));
-  if (minerBytes) {
-    const miner = decodeMiner(minerBytes);
-    // The last round must end and reveal before its checkpoint counts.
-    if (miner.checkpointId !== miner.roundId) {
-      if (board.roundId <= miner.roundId || !(await roundRevealed(deps, miner.roundId))) return;
-      if (!claimAction(String(session.id), "checkpoint")) return;
-      const { wire } = await signAndSend(deps, key, [await checkpointInstruction(key.address, miner.roundId)]);
-      await submit(deps, wire);
-      return;
+  const run = async (kind:string,payer:MineKey,ixs:Instruction[],creditOre=false):Promise<boolean> => {
+    const a=await prepareAction(deps,await actionId(`${session.id}:${kind}`),String(session.id),null,kind,payer,ixs);
+    if(a.status==='confirmed')return true;
+    const tx=await resolveAction(deps,a);
+    if(!tx)return false;
+    if(creditOre){
+      const receipt=await verifyOreClaimReceipt(tx,String(a.signature),key.address);
+      await finishAction(deps,a,receipt.amountMinor,receipt.lamportDelta);
+    }else{
+      const delta=kind==='ore_gas'?null:custodyDelta(tx,String(a.signature),payer.address);
+      if(kind==='sol_claim'&&delta!==null&&delta>0n){
+        await deps.call('SELECT seeker_skr.mine_credit($1::uuid,$2::uuid,$3::numeric,$4::text) AS result',
+          [await claimUuid(String(a.signature)),session.id,delta.toString(),a.signature]);
+      }
+      await finishAction(deps,a,null,delta);
     }
-    if (miner.rewardsSol > TX_FEE) {
-      if (!claimAction(String(session.id), "claim")) return;
-      const { signature, wire } = await signAndSend(deps, key, [await claimSolInstruction(key.address)]);
-      await submit(deps, wire);
-      deps.log?.("mine_claim_sent", { session: String(session.id), signature });
-      return;
+    return true;
+  };
+  // Resolve existing actions BEFORE reading miner counters. A successful claim
+  // may have zeroed them just before a crash, while its ledger credit is absent.
+  for(const kind of ['checkpoint','sol_claim','ore_gas','ore_claim','sweep']){
+    const a=await deps.call('SELECT seeker_skr.mine_action_get($1::uuid) AS result',[await actionId(`${session.id}:${kind}`)]);
+    if(a.signature&&a.status!=='confirmed'){
+      const tx=await resolveAction(deps,a);
+      if(!tx)return;
+      if(kind==='ore_claim'){
+        const receipt=await verifyOreClaimReceipt(tx,String(a.signature),key.address);
+        await finishAction(deps,a,receipt.amountMinor,receipt.lamportDelta);
+      }else{
+        const delta=kind==='ore_gas'?null:custodyDelta(tx,String(a.signature),key.address);
+        if(kind==='sol_claim'&&delta!==null&&delta>0n)await deps.call('SELECT seeker_skr.mine_credit($1::uuid,$2::uuid,$3::numeric,$4::text) AS result',
+          [await claimUuid(String(a.signature)),session.id,delta.toString(),a.signature]);
+        await finishAction(deps,a,null,delta);
+      }
     }
   }
-  // Every custody transaction must be finalized before claims are credited and the
-  // session closes; otherwise a claim still settling could be missed.
-  if (!(await custodySettled(deps, key.address))) return;
-  await creditClaims(deps, session, key);
-  // Sweep everything back to the float; the ledger already returns the unspent budget.
-  const held = await balance(deps, key.address);
-  if (held > TX_FEE) {
-    if (!claimAction(String(session.id), "sweep")) return;
-    const { wire } = await signAndSend(deps, key, [transferInstruction(key.address, float.address, held - TX_FEE)]);
-    await submit(deps, wire);
-    return;
+  const minerBytes=await accountData(deps,await minerAddress(key.address));
+  if(minerBytes){
+    const miner=decodeMiner(minerBytes);
+    if(miner.authority!==key.address)throw new Error("mine_custody_mismatch");
+    if(miner.checkpointId!==miner.roundId){
+      if(board.roundId<=miner.roundId||!(await roundRevealed(deps,miner.roundId)))return;
+      await run('checkpoint',key,[await checkpointInstruction(key.address,miner.roundId)]);return;
+    }
+    if(miner.rewardsSol>TX_FEE){await run('sol_claim',key,[await claimSolInstruction(key.address)]);return;}
+    if(miner.rewardsOre+miner.refinedOre>0n){
+      // Do not silently close and strand ORE when activation has not been approved.
+      if(!deps.oreEnabled)throw new Error('ore_activation_required');
+      const held=await balance(deps,key.address);
+      if(held<3_000_000n){
+        const funded=await deps.call('SELECT seeker_skr.mine_action_get($1::uuid) AS result',[await actionId(`${session.id}:ore_gas`)]);
+        if(funded.status==='confirmed')throw new Error('mine_ore_gas_shortfall');
+        await run('ore_gas',float,[transferInstruction(float.address,key.address,3_000_000n-held)]);return;
+      }
+      await run('ore_claim',key,[computeUnitLimitInstruction(COMPUTE_UNITS),await claimOreInstruction(key.address)],true);return;
+    }
   }
-  await deps.call("SELECT seeker_skr.mine_session_close($1::uuid) AS result", [session.id]);
+  if(!(await custodySettled(deps,key.address)))return;
+  await creditClaims(deps,session,key);
+  const held=await balance(deps,key.address);
+  if(held>TX_FEE){await run('sweep',key,[transferInstruction(key.address,float.address,held-TX_FEE)]);return;}
+  await deps.call('SELECT seeker_skr.mine_session_close($1::uuid) AS result',[session.id]);
 }
 
 async function roundRevealed(deps: MineDeps, roundId: bigint): Promise<boolean> {

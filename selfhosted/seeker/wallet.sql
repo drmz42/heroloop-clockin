@@ -78,7 +78,7 @@ CREATE OR REPLACE FUNCTION seeker_skr.wallet_snapshot(p_player uuid) RETURNS jso
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog,seeker_skr AS $$
   SELECT jsonb_build_object(
     'balances', (SELECT jsonb_object_agg(x.asset, COALESCE(a.balance_minor,0)::text)
-      FROM (VALUES ('SKR'),('SOL')) x(asset)
+      FROM (VALUES ('SKR'),('SOL'),('ORE')) x(asset)
       LEFT JOIN seeker_skr.accounts a ON a.player_id=p_player AND a.kind='player' AND a.asset=x.asset),
     'pending_deposits', COALESCE((SELECT jsonb_agg(jsonb_build_object('intent_id',i.id,'asset',i.asset,
         'amount_minor',i.amount_minor::text,'expires_at',i.expires_at) ORDER BY i.created_at DESC)

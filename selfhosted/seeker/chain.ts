@@ -2,7 +2,7 @@
 // the caller fetches `getTransaction` (jsonParsed, finalized) and passes it in.
 // Amounts are integer minimal units (BigInt); a float never decides an amount.
 
-export type WalletAsset = "SKR" | "SOL";
+export type WalletAsset = "SKR" | "SOL" | "ORE";
 
 export type ChainConfig = {
   cluster: "mainnet";
@@ -22,6 +22,8 @@ export type DepositIntent = {
 
 export const SKR_DECIMALS = 6;
 export const SOL_DECIMALS = 9;
+export const ORE_TOKEN_MINT = "oreoU2P8bN6jkk3jbaiVxYnG1dCXcYxwhwyK9jSybcp";
+export const ASSET_DECIMALS: Record<WalletAsset, number> = {SKR: 6, SOL: 9, ORE: 11};
 export const ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 export const SIGNATURE = /^[1-9A-HJ-NP-Za-km-z]{64,88}$/;
 const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -67,7 +69,7 @@ export function newReference(): string {
 
 /** Parses a positive decimal amount ("1.5") into minimal units, refusing excess precision. */
 export function parseAmount(value: unknown, asset: WalletAsset): bigint | null {
-  const decimals = asset === "SKR" ? SKR_DECIMALS : SOL_DECIMALS;
+  const decimals = ASSET_DECIMALS[asset];
   if (typeof value !== "string" || !/^\d{1,12}(\.\d+)?$/.test(value)) return null;
   const [whole, fraction = ""] = value.split(".");
   if (fraction.length > decimals) return null;

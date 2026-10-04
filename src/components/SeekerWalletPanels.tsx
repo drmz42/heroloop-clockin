@@ -43,11 +43,11 @@ function useWalletState() {
 function Balances({ snapshot }: { snapshot: WalletSnapshot | null }) {
   return (
     <div className="grid grid-cols-2 gap-2">
-      {(['SKR', 'SOL'] as const).map((asset) => (
-        <div key={asset} className="stat-tile p-2.5">
+      {(['SKR', 'SOL', 'ORE'] as const).map((asset) => (
+        <div key={asset} className={`stat-tile min-w-0 p-2.5 ${asset==='ORE'?'col-span-2':''}`}>
           <div className="text-[10px] font-bold uppercase tracking-wider text-[#8f887b]">In-game {asset}</div>
-          <div className="mt-1 flex items-center gap-1.5 text-lg font-black tabular-nums text-[#f1d188]">
-            {asset === 'SKR' && <SkrTokenIcon size={18} />}{snapshot ? formatAmountShort(snapshot.balances[asset], asset, 'down') : '—'}
+          <div className="mt-1 flex min-w-0 break-all items-center gap-1.5 text-lg font-black tabular-nums text-[#f1d188]">
+            {asset === 'SKR' && <SkrTokenIcon size={18} />}{snapshot ? asset==='ORE'?formatMinor(snapshot.balances.ORE??'0','ORE',11):formatAmountShort(snapshot.balances[asset], asset, 'down') : '—'}
           </div>
         </div>
       ))}
@@ -128,7 +128,7 @@ export function SeekerDepositPanel() {
     <>
       <Balances snapshot={snapshot} />
       <WalletAssetPicker asset={asset} busy={busy} onChange={entry => { setAsset(entry); setAmount(''); setResult(null); }} />
-      <WalletAmount id="seeker-deposit-amount" amount={amount} asset={asset} busy={busy} onChange={setAmount}
+      <WalletAmount id="seeker-deposit-amount" amount={amount} asset={asset} busy={busy} unavailable={asset==='ORE'} onChange={setAmount}
         available={asset === 'ORE' ? 'ORE transfers are not available yet.' : `In your wallet: ${external?.external_balances ? formatAmountShort(external.external_balances[asset], asset, 'down') : balanceError ? 'Unavailable' : '—'} $${asset}`}
         onMax={asset !== 'ORE' && external?.max_deposit_balances ? () => void fillMax() : undefined} />
       <button type="button" disabled={!bound || !valid || busy || asset === 'ORE'} onClick={() => void submit()}
