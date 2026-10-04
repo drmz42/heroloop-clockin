@@ -3,7 +3,7 @@
 // finalized-receipt verification. No RPC, key storage or ledger writes here;
 // callers own I/O and must record outcomes through mining_sessions.sql.
 // Source pinned: github.com/regolith-labs/ore@48c203bd75db3cc45105ec29d8f8db719e5a2263.
-import { base58Decode, base58Encode } from "./chain.ts";
+import { base58Decode, base58Encode, TOKEN_PROGRAM } from "./chain.ts";
 
 export const ORE_PROGRAM = "oreV3EG1i9BEgiAJ8b177Z2S2rMarzak4NMv1kULvWv";
 export const ORE_MINT = "oreoU2P8bN6jkk3jbaiVxYnG1dCXcYxwhwyK9jSybcp";
@@ -14,11 +14,13 @@ export const ORE_ENTROPY_PROGRAM = "3jSkUuYBoJzQPMEzTvkDFXCZUBksPamrVhrnHR9igu2X
 export const ORE_ENTROPY_VAR = "BWCaDY96Xe4WkFq1M7UiCCRcChsJ3p51L5KrGzhxgm2E";
 export const SYSTEM_PROGRAM = "11111111111111111111111111111111";
 export const COMPUTE_BUDGET_PROGRAM = "ComputeBudget111111111111111111111111111111";
+export const ORE_ASSOCIATED_TOKEN_PROGRAM = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
+export const ORE_DECIMALS = 11;
 // Paid once into the miner account by the protocol; refunded to whoever checkpoints.
 export const ORE_CHECKPOINT_FEE = 10_000n;
 const U64_MAX = 18_446_744_073_709_551_615n;
 
-const IX = { checkpoint: 2, claimSol: 3, deploy: 6 } as const;
+const IX = { checkpoint: 2, claimSol: 3, claimOre: 4, deploy: 6 } as const;
 const ACCOUNT = { board: 105, miner: 103, round: 109 } as const;
 
 export class OreError extends Error {
@@ -101,6 +103,8 @@ export const minerAddress = (authority: string) => findProgramAddress([text("min
 export const automationAddress = (authority: string) =>
   findProgramAddress([text("automation"), pubkey(authority)], ORE_PROGRAM);
 export const roundAddress = (roundId: bigint) => findProgramAddress([text("round"), u64le(roundId)], ORE_PROGRAM);
+export const oreTokenAddress = (owner: string) =>
+  findProgramAddress([pubkey(owner), pubkey(TOKEN_PROGRAM), pubkey(ORE_MINT)], ORE_ASSOCIATED_TOKEN_PROGRAM);
 
 // ---- instructions ----
 export type AccountMeta = { address: string; signer: boolean; writable: boolean };
@@ -153,6 +157,20 @@ export async function claimSolInstruction(authority: string): Promise<Instructio
     program: ORE_PROGRAM,
     accounts: [w(authority, true), w(ORE_BOARD), w(await minerAddress(authority)), r(SYSTEM_PROGRAM), r(ORE_PROGRAM)],
     data: Uint8Array.of(IX.claimSol),
+  };
+}
+// ORE's SDK requires the miner authority's canonical classic-token ATA. The
+// protocol creates it at that authority's SOL expense if it does not yet exist.
+export async function claimOreInstruction(authority: string, basisPoints = 10_000n): Promise<Instruction> {
+  if (basisPoints < 1n || basisPoints > 10_000n) fail("invalid_ore_claim_fraction");
+  return {
+    program: ORE_PROGRAM,
+    accounts: [
+      w(authority, true), w(ORE_BOARD), w(await minerAddress(authority)), w(ORE_MINT),
+      w(await oreTokenAddress(authority)), w(ORE_TREASURY), w(await oreTokenAddress(ORE_TREASURY)),
+      r(SYSTEM_PROGRAM), r(TOKEN_PROGRAM), r(ORE_ASSOCIATED_TOKEN_PROGRAM), r(ORE_PROGRAM),
+    ],
+    data: Uint8Array.of(IX.claimOre, ...u64le(basisPoints)),
   };
 }
 export function computeUnitLimitInstruction(units: number): Instruction {
@@ -262,10 +280,13 @@ export function serializeTransaction(signature: Uint8Array, message: Uint8Array)
 export type OreReceipt = { signature: string; slot: number; lamportDelta: bigint; fee: bigint };
 type RawTx = {
   slot?: number;
-  meta?: { err?: unknown; fee?: number; preBalances?: number[]; postBalances?: number[] } | null;
+  meta?: { err?: unknown; fee?: number; preBalances?: number[]; postBalances?: number[];
+    preTokenBalances?: TokenBalance[]; postTokenBalances?: TokenBalance[] } | null;
   transaction?: { signatures?: string[]; message?: { accountKeys?: string[]; header?: { numRequiredSignatures?: number };
-    instructions?: { programIdIndex: number }[] } };
+    instructions?: { programIdIndex: number; accounts?: number[]; data?: string }[] } };
 };
+type TokenBalance = { accountIndex: number; mint: string; owner: string; programId: string;
+  uiTokenAmount: { amount: string; decimals: number } };
 export function verifyOreReceipt(tx: RawTx | null, signature: string, authority: string): OreReceipt {
   if (!tx?.meta || tx.meta.err !== null || !tx.transaction?.message) fail("ore_tx_not_successful");
   const message = tx!.transaction!.message!;
@@ -280,4 +301,61 @@ export function verifyOreReceipt(tx: RawTx | null, signature: string, authority:
   const pre = tx!.meta!.preBalances?.[0], post = tx!.meta!.postBalances?.[0], fee = tx!.meta!.fee;
   if (!Number.isSafeInteger(pre) || !Number.isSafeInteger(post) || !Number.isSafeInteger(fee)) fail("ore_tx_balances");
   return { signature, slot: tx!.slot ?? 0, lamportDelta: BigInt(post!) - BigInt(pre!), fee: BigInt(fee!) };
+}
+
+export type OreClaimReceipt = OreReceipt & { amountMinor: bigint; recipient: string; treasuryTokenAccount: string };
+// Caller MUST fetch this receipt at finalized commitment. No signing, RPC or
+// ledger write occurs here. Credit only the actual token delta, after ORE's
+// refining fee, never the pre-claim rewards_ore counter or a UI token amount.
+export async function verifyOreClaimReceipt(
+  tx: RawTx | null, signature: string, authority: string, basisPoints = 10_000n,
+): Promise<OreClaimReceipt> {
+  const receipt = verifyOreReceipt(tx, signature, authority);
+  if (!Number.isSafeInteger(receipt.slot) || receipt.slot < 0 || receipt.fee < 0n) fail("ore_claim_invalid_receipt");
+  const message = tx!.transaction!.message!, keys = message.accountKeys ?? [];
+  if (tx!.transaction!.signatures?.length !== 1 || new Set(keys).size !== keys.length) fail("ore_claim_wrong_accounts");
+  const expected = await claimOreInstruction(authority, basisPoints);
+  const instructions = message.instructions ?? [];
+  if (instructions.length < 1 || instructions.length > 3) fail("ore_claim_wrong_instruction");
+  for (const [i, ix] of instructions.entries()) {
+    if (!Number.isInteger(ix.programIdIndex) || ix.programIdIndex < 0 || ix.programIdIndex >= keys.length
+      || typeof ix.data !== "string") fail("ore_claim_wrong_instruction");
+    let bytes: Uint8Array;
+    try { bytes = base58Decode(ix.data!); } catch { return fail("ore_claim_wrong_instruction"); }
+    if (i < instructions.length - 1) {
+      if (keys[ix.programIdIndex] !== COMPUTE_BUDGET_PROGRAM || ix.accounts?.length !== 0
+        || !((bytes[0] === 2 && bytes.length === 5) || (bytes[0] === 3 && bytes.length === 9))) {
+        fail("ore_claim_wrong_instruction");
+      }
+      continue;
+    }
+    if (keys[ix.programIdIndex] !== ORE_PROGRAM || bytes.length !== expected.data.length
+      || bytes.some((b, j) => b !== expected.data[j]) || ix.accounts?.length !== expected.accounts.length
+      || expected.accounts.some((a, j) => {
+        const index = ix.accounts![j];
+        return !Number.isInteger(index) || index < 0 || keys[index] !== a.address;
+      })) fail("ore_claim_wrong_instruction");
+  }
+  const recipient = expected.accounts[4].address, treasuryTokenAccount = expected.accounts[6].address;
+  const recipientIndex = keys.indexOf(recipient), treasuryIndex = keys.indexOf(treasuryTokenAccount);
+  const tokenAmount = (balances: TokenBalance[] | undefined, index: number, owner: string, allowMissing = false): bigint => {
+    if (!Array.isArray(balances)) return fail("ore_claim_missing_token_balances");
+    const rows = balances.filter((b) => b?.accountIndex === index);
+    if (!rows.length && allowMissing) return 0n;
+    const b = rows[0];
+    if (rows.length !== 1 || b.mint !== ORE_MINT || b.owner !== owner || b.programId !== TOKEN_PROGRAM
+      || b.uiTokenAmount?.decimals !== ORE_DECIMALS || typeof b.uiTokenAmount.amount !== "string"
+      || !/^(0|[1-9][0-9]{0,19})$/.test(b.uiTokenAmount.amount)) return fail("ore_claim_wrong_token_balance");
+    const amount = BigInt(b.uiTokenAmount.amount);
+    return amount <= U64_MAX ? amount : fail("ore_claim_wrong_token_balance");
+  };
+  // A missing pre-token balance is zero only when this transaction created the ATA.
+  const before = tokenAmount(tx!.meta!.preTokenBalances, recipientIndex, authority,
+    tx!.meta!.preBalances?.[recipientIndex] === 0);
+  const after = tokenAmount(tx!.meta!.postTokenBalances, recipientIndex, authority);
+  const treasuryBefore = tokenAmount(tx!.meta!.preTokenBalances, treasuryIndex, ORE_TREASURY);
+  const treasuryAfter = tokenAmount(tx!.meta!.postTokenBalances, treasuryIndex, ORE_TREASURY);
+  const amountMinor = after - before;
+  if (amountMinor <= 0n || treasuryBefore - treasuryAfter !== amountMinor) fail("ore_claim_amount_mismatch");
+  return { ...receipt, amountMinor, recipient, treasuryTokenAccount };
 }
