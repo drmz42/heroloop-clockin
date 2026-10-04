@@ -331,6 +331,8 @@ html .hv-seat-hero .hero-portrait-rarity:has(> .rx):not(#rx-a):not(#rx-b) { box-
 .hv-card-lv { position: absolute; right: 3px; bottom: 3px; z-index: 2; border-radius: 2px; padding: 1px 4px; background: rgba(0, 0, 0, .8); box-shadow: 0 0 0 1px color-mix(in srgb, var(--hv-color) 60%, #000); color: #fff; font-size: 9px; font-weight: 900; }
 .hv-card-dead { position: absolute; inset: 0; z-index: 3; display: grid; place-content: center; background: rgba(0, 0, 0, .72); color: #fda4af; font-size: 11px; font-weight: 900; text-align: center; }
 .hv-card-badges { position: absolute; left: 3px; top: 3px; z-index: 2; display: grid; gap: 2px; justify-items: start; }
+.hv-card-status { position: absolute; left: 50%; top: 65%; z-index: 3; display: grid; gap: 2px; justify-items: center; max-width: calc(100% - 12px); transform: translate(-50%, -50%); pointer-events: none; }
+.hv-card-status .hv-badge { max-width: 100%; text-align: center; }
 .hv-badge { border-radius: 2px; padding: 1px 4px; font-size: 7px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .hv-badge--gold { background: linear-gradient(180deg, #ffe7a6, #d79a2c); color: #2a1604; }
 .hv-badge--red { background: #991b1b; color: #fff1f2; border: 1px solid #f87171; }

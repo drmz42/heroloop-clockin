@@ -75,10 +75,12 @@ function HeroGridCard({ base, hero, game, onSelect }: { base: HeroBase; hero: Ow
           <RarityFx rarity={base.rarity} shape="tcg" label={CLASS_LABEL[base.heroClass]} />
           <span className="hv-card-lv">Lv {hero.level}</span>
           {respawn > 0 && <span className="hv-card-dead">Fallen<br />{respawn}s</span>}
-          <span className="hv-card-badges">
+          <span className="hv-card-status">
             {isTraining && <StateBadge label="Unavailable" tone="red" />}
-            {hero.isNew && <StateBadge label="New" tone="gold" />}
             {isInTeam && <StateBadge label="Selected" tone="green" />}
+          </span>
+          <span className="hv-card-badges">
+            {hero.isNew && <StateBadge label="New" tone="gold" />}
             {upgradeable && <StateBadge label="Upgrade" tone="purple" />}
           </span>
           {hero.locked && <Lock size={12} className="hv-card-lock" />}
