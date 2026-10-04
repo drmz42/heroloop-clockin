@@ -677,3 +677,16 @@ button.sc-chip { cursor: pointer; }
 .hv-detail-lv { color: #a39987; font-size: 9px; font-weight: 700; }
 .hv-detail-close { position: absolute !important; right: 8px; top: 8px; }
 .hv-detail > footer { border-top: 1px solid rgba(199, 158, 97, .25); background: rgba(0, 0, 0, .35); }
+
+/* Rarity frames v2 own the card edge (RarityFx): drop the flat colour outlines and keep badges above it. */
+.hv-card:has(.rx) { box-shadow: 0 6px 14px rgba(0, 0, 0, .5); }
+.hv-card:has(.rx) .hv-card-art::after { box-shadow: inset 0 -30px 24px -10px rgba(0, 0, 0, .9) !important; }
+.hv-card.is-team:has(.rx) { box-shadow: 0 0 0 2px #63e6ab, 0 0 16px rgba(52, 211, 153, .45); }
+.mv-card:has(.rx) { box-shadow: 0 6px 14px rgba(0, 0, 0, .5); }
+.mv-card:has(.rx) .mv-card-art::after { box-shadow: inset 0 -24px 20px -12px rgba(0, 0, 0, .9); }
+.mv-card[aria-pressed='true']:has(.rx) { box-shadow: 0 0 0 2px var(--sc-gold), 0 0 14px rgba(242, 204, 128, .4); }
+:is(.hv-card-lv, .hv-card-badges, .hv-card-lock, .hv-card-dead, .tc-card-state, .mv-card-plus, .mv-card-lv) { z-index: 3; }
+.hv-card-lv { right: 6px; bottom: 6px; }
+.hv-card-badges { left: 6px; top: 14px; }
+.mv-card-plus { left: 6px; top: 12px; }
+.mv-card-lv { right: 6px; bottom: 6px; }

@@ -9,6 +9,7 @@ import { Star, Lock, Unlock, Trash2, Search, X, Sparkles, Users, Swords, Shield,
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import '@/theme/scene/scene.css';
+import { RarityFx } from '@/components/RarityFx';
 import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, RARITY_INDEX, CLASS_LABEL } from '@/game/heroes';
 import { formatNum, starUpCost, heroXpForLevel, heroCapacityUpgradeCost, MAX_HERO_CAPACITY, MAX_HERO_STARS } from '@/game/state';
 import { heroStats, getEquippedItems, teamPower as calculateTeamPower } from '@/game/engine';
@@ -69,6 +70,7 @@ function HeroGridCard({ base, hero, game, onSelect }: { base: HeroBase; hero: Ow
       <button type="button" onClick={onSelect} aria-label={`${base.name}, ${RARITY_LABEL[base.rarity]}, level ${hero.level}`} className={`hv-card${RARITY_INDEX[base.rarity] >= RARITY_INDEX.rare ? ' is-rare' : ''}${isInTeam ? ' is-team' : ''}`} style={{ '--hv-color': rc } as React.CSSProperties}>
         <span className="hv-card-art">
           <img src={heroPortraitSrc(base.id, base.heroClass, base.rarity, base.color)} alt="" loading="lazy" decoding="async" style={{ ...heroPortraitStyle(base.id, base.heroClass), transform: 'none' }} />
+          <RarityFx rarity={base.rarity} />
           <span className="hv-card-lv">Lv {hero.level}</span>
           {respawn > 0 && <span className="hv-card-dead">Fallen<br />{respawn}s</span>}
           <span className="hv-card-badges">
