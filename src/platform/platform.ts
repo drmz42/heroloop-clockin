@@ -47,10 +47,10 @@ const isAndroidDevice = typeof navigator !== 'undefined' && /android/i.test(navi
 // agent carries "HeroLoopApp". Wallets connect through Mobile Wallet Adapter with Android's
 // own wallet chooser; there is no browser and no Phantom in-app browser path.
 export const isNativeApp = typeof navigator !== 'undefined' && /HeroLoopApp\//.test(navigator.userAgent);
-// Founder 2026-10-04: outside the native app the landing's Play buttons are inert; the
-// site itself stays open. VITE_WEB_GAME_ENTRY=true restores browser Play (and local
-// development/browser QA). Not access control: the server authenticates every request.
-export const webGameEntryAllowed = isNativeApp || import.meta.env.VITE_WEB_GAME_ENTRY === 'true';
+// Browser Play switch. Founder 2026-10-04: browser Play stays on for Staging2 (only the public
+// heroloop.xyz website has Play disabled). VITE_WEB_GAME_ENTRY=false turns it off: outside the
+// native app the landing's Play becomes inert. Not access control: the server authenticates every request.
+export const webGameEntryAllowed = isNativeApp || import.meta.env.VITE_WEB_GAME_ENTRY !== 'false';
 
 export function resolvePlatform(): Platform {
   if (!androidLayoutAvailable) return 'web';
