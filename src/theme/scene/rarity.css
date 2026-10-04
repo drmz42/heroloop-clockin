@@ -228,7 +228,8 @@ html .item-slot:has(> .rx-slot) .item-level-label, html .mv-card:has(.rx-slot) .
 /* Battle (Founder 2026-10-04: heroes exactly the size of enemies): the hero picture fills the same box as an
    enemy portrait and the square frame wraps around it from outside instead of shrinking the picture. */
 html .arena-portrait:has(> .rx-slot):not(#rx-a):not(#rx-b) { overflow: visible !important; -webkit-mask: none !important; mask: none !important; }
-html .arena-portrait > .rx-slot { inset: -9.5%; overflow: visible; }
+/* -6.5%: the rim's inner edge (6.84% of the frame) overlaps the picture by about 1 px, so no gap shows. */
+html .arena-portrait > .rx-slot { inset: -6.5%; overflow: visible; }
 html .arena-portrait:has(> .rx-slot) > .arena-portrait-impact-layer { overflow: hidden; border-radius: 3px; }
 /* Thin square frames (2026-10-04): glint, aura and rays follow the shared rim opening (inner edge at 6.84% of
    the frame on every side) instead of the old per-tier 9-slice ratios, which left them skewed. */
