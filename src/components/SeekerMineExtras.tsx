@@ -19,13 +19,14 @@ function MiniBoard({ picked = [], strike, flow }: { picked?: number[]; strike?: 
 }
 const SLIDES = [
   { title: 'Pick your shafts', body: 'Tap one or more of the 25 shafts and choose a stake for each: 0.01, 0.1 or 1 SOL.', art: <MiniBoard picked={[6, 12, 18]} /> },
-  { title: 'One shaft strikes', body: 'Every round (about a minute and a half) one shaft strikes at random. Stakes on the other 24 flow into it.', art: <MiniBoard picked={[6, 12, 18]} strike={STRIKE} flow /> },
-  { title: 'Share the haul', body: 'If you hold the strike, you share all that SOL with its other miners, by stake. Fewer rivals on a shaft means a bigger share. More shafts strike more often but pay less.', art: (
+  { title: 'One shaft strikes', body: 'Every round (about a minute and a half) one shaft strikes at random. Miners on it share the round’s ORE prize — about 1 ORE — by stake.', art: <MiniBoard picked={[6, 12, 18]} strike={STRIKE} /> },
+  { title: 'What comes back', body: 'Win or lose, most SOL returns after every round. The difference is the ORE protocol’s cut.', art: (
     <div className="mn-share" aria-hidden="true">
-      <span className="mn-share-bar"><i style={{ width: '62%' }} /></span><span>Your share</span>
-      <span className="mn-share-bar is-rival"><i style={{ width: '38%' }} /></span><span>Other miners</span>
+      <span className="mn-share-bar"><i style={{ width: '99%' }} /></span><span>99% + ORE<br />winning shaft</span>
+      <span className="mn-share-bar is-rival"><i style={{ width: '89%' }} /></span><span>89%<br />other shafts</span>
     </div>
   ) },
+  { title: 'Play the vein', body: 'Fewer rivals on a shaft means a bigger share of its ORE. Each verified round also counts for Mine quests: Gold, Scrolls and Miner ranks.', art: <MiniBoard picked={[2, 9, 21]} strike={9} /> },
 ];
 export function MineTutorial({ onClose }: { onClose: () => void }) {
   const [index, setIndex] = useState(0);

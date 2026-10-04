@@ -143,7 +143,7 @@ export function SeekerMinePanel({ onClose, claimQuest, still = false }: {
                 </button>
               ))}
             </div>
-            <p className="mn-legend">◎ SOL all miners staked on a shaft this round<i className="is-picked" />yours<i className="is-strike" />last strike</p>
+            <p className="mn-legend">◎ SOL all miners staked on a shaft this round<i className="is-picked" />yours<i className="is-strike" />last strike<br />After each round ~99% of the stake returns on the winning shaft (plus ORE), ~89% on the others.</p>
           </section>
 
           {live ? (

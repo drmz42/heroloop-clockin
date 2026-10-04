@@ -90,7 +90,7 @@
 .mn-mini-tile.is-strike { box-shadow: inset 0 0 0 2px #e05a3a, 0 0 12px rgba(224, 90, 58, .8); }
 .mn-mini-tile.is-flow svg { animation: mn-flow 1.4s ease-in-out infinite; }
 @keyframes mn-flow { 50% { opacity: .25; transform: scale(.7); } }
-.mn-share { display: grid; width: 220px; grid-template-columns: 1fr auto; align-items: center; gap: 8px 10px; margin: 6px auto; color: var(--sc-muted); font-size: 11px; text-align: left; }
+.mn-share { display: grid; width: 240px; grid-template-columns: 1fr auto; align-items: center; gap: 8px 10px; margin: 6px auto; color: var(--sc-muted); font-size: 11px; text-align: left; }
 .mn-share-bar { height: 12px; overflow: hidden; border-radius: 2px; background: #120d0b; box-shadow: inset 0 0 0 1px rgba(199, 158, 97, .35); }
 .mn-share-bar > i { display: block; height: 100%; background: linear-gradient(90deg, #75521e, var(--sc-gold)); }
 .mn-share-bar.is-rival > i { background: linear-gradient(90deg, #3d2a4d, #8a6fb0); }

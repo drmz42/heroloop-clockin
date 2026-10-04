@@ -29,7 +29,7 @@ export interface MineGuideSection {
 export const MINE_GUIDE: MineGuideSection[] = [
   {
     title: 'How the Mine works',
-    body: 'The Deep Vein runs on ORE, a third-party game on Solana. Pick one or more of the 25 shafts and a stake for each. Every round (about a minute and a half) one shaft strikes at random. If you hold the winning shaft, you share all SOL staked on the other 24 shafts with the other miners there, in proportion to your stake, minus the ORE protocol\'s 10% cut, and you may also receive ORE. Stakes on the other shafts are lost. Covering more shafts strikes more often but pays less; on average you get back less than you put in.',
+    body: 'The Deep Vein runs on ORE, a third-party game on Solana. Pick one or more of the 25 shafts and a stake for each. Every round (about a minute and a half) one shaft strikes at random. After each round most of your SOL comes back: about 99% of your stake on the winning shaft and about 89% on every other shaft. The rest (1% on every shaft, plus 10% on the shafts that did not strike) is the ORE protocol\'s cut. Miners on the winning shaft share the round\'s ORE prize (about 1 ORE) by stake, and sometimes a Motherlode jackpot. Fewer rivals on a shaft means a bigger share of its prize.',
   },
   {
     title: 'What it costs',
@@ -41,7 +41,7 @@ export const MINE_GUIDE: MineGuideSection[] = [
   },
   {
     title: 'Winnings',
-    body: 'SOL winnings are added to your in-game SOL balance after they are confirmed on-chain. ORE rewards appear when ORE support is enabled.',
+    body: 'Returned SOL is claimed when your session ends and added to your in-game SOL balance once confirmed on-chain. ORE prizes are kept for you and appear when ORE support is enabled.',
   },
   {
     title: 'Risks — please read',
@@ -54,7 +54,8 @@ export const MINE_GUIDE: MineGuideSection[] = [
 ];
 
 // The Mine tutorial opens once per device (a convenience; storage may be unavailable).
-const SEEN_KEY = 'heroloop-seeker:v1:mine-tutorial-seen';
+// v2: the corrected payout slides re-open the tutorial for everyone.
+const SEEN_KEY = 'heroloop-seeker:v2:mine-tutorial-seen';
 export function tutorialSeen(): boolean {
   try { return localStorage.getItem(SEEN_KEY) === '1'; } catch { return true; }
 }
