@@ -629,6 +629,8 @@ function App() {
         <MobileTabBar
           readyQuests={readyQuestCount(game.state)}
           badges={{ summon: game.state.summonScrolls }}
+          claimQuest={game.claimQuest}
+          motionOff={game.state.battleAnimationMode === 'off'}
           alerts={{ shop: storeNotice }}
           tab={tab}
           section={mobileSection}

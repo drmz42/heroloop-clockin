@@ -1,57 +1,103 @@
-/* ORE Mine sheet (2026-10-04): the Deep Vein — 25 stone shafts on the same stone-panel
-   language as the More and PvP sheets. Tiles use the approved stone-tile art; text stays code-native. */
-.mn-lore { margin: -4px 0 10px; text-align: center; color: rgba(235, 223, 202, .82); font: italic 14px/1.35 'EB Garamond', Georgia, serif; }
-.mn-hud { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin-bottom: 8px; }
-.mn-hud-cell { display: grid; gap: 2px; min-width: 0; }
-.mn-hud-cell:last-child { text-align: right; }
-.mn-hud-label { color: #c79e61; font: 700 9px/1.2 'Cinzel', Georgia, serif; letter-spacing: .2em; text-transform: uppercase; }
-.mn-hud-value { overflow: hidden; color: #fff3d6; font: 700 13px/1.2 'Cinzel', Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
+/* ORE Mine: the Deep Vein (2026-10-04 v2). A full scene screen on the shared scene kit
+   (scene.css: stage, plates, panels) like Training and Store; only the board, plaques,
+   steps, tutorial and quest rows are Mine-specific. Motion stops with the kit's rules. */
+.mn-sheet { align-items: stretch; background: #070505; }
+.mn-window { position: relative; display: flex; width: 100%; height: 100%; flex-direction: column; }
+.mn-window > .mn-close { position: absolute; right: 8px; top: 8px; z-index: 5; }
+.mn-stage { --sc-art: url('/assets/screens/offline-vault-v1.webp'); --sc-glow-y: 78%; --sc-glow-color: rgba(190, 120, 255, .2); min-height: 230px; padding-bottom: 12px; }
+.mn-plaques { position: relative; z-index: 1; display: grid; width: 100%; max-width: 420px; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin-top: auto; padding-top: 16px; }
+.mn-plaque { display: grid; min-width: 0; justify-items: center; gap: 2px; border: 0 solid transparent; border-width: 7px 11px; border-image: var(--sc-plate) 85 150 fill / 7px 11px / 0 2px stretch; padding: 2px 0; text-align: center; text-shadow: 0 1px 2px #000; }
+.mn-plaque strong { overflow: hidden; max-width: 100%; color: #fff0cf; font: 700 12px/1.1 var(--sc-display); text-overflow: ellipsis; white-space: nowrap; }
+.mn-plaque small { color: #cbb994; font-size: 8px; letter-spacing: .12em; text-transform: uppercase; }
 .mn-glass {
-  display: grid; width: 58px; height: 58px; place-items: center; border-radius: 50%;
+  display: grid; width: 64px; height: 64px; place-items: center; border-radius: 50%;
   background: radial-gradient(circle at 50% 38%, #3a2a17, #0b0806 72%);
-  box-shadow: 0 0 0 1.5px #8a6630, 0 0 0 4px rgba(0, 0, 0, .65), 0 0 0 5px rgba(242, 204, 128, .35), 0 0 18px rgba(255, 170, 80, .25);
-  color: #fff3d6; font: 700 15px/1 'Cinzel', Georgia, serif;
+  box-shadow: 0 0 0 1.5px #8a6630, 0 0 0 4px rgba(0, 0, 0, .65), 0 0 0 5px rgba(242, 204, 128, .35), 0 0 22px rgba(255, 170, 80, .35);
 }
-.mn-glass > span { display: grid; justify-items: center; text-align: center; font-variant-numeric: tabular-nums; }
-.mn-glass small { display: block; margin-top: 2px; color: #c79e61; font-size: 8px; letter-spacing: .14em; }
-.mn-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 4px 0 10px; padding: 8px; border-radius: 4px;
-  background: radial-gradient(ellipse at 50% 30%, rgba(255, 150, 60, .12), transparent 60%), rgba(0, 0, 0, .55);
+.mn-glass > span { display: grid; justify-items: center; color: #fff3d6; font: 700 18px/1 var(--sc-display); font-variant-numeric: tabular-nums; text-align: center; }
+.mn-glass small { margin-top: 3px; color: var(--sc-brass); font-size: 8px; letter-spacing: .18em; }
+
+/* Steps: what to do, in order */
+.mn-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.mn-step { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--sc-muted); font: 700 10px/1.15 var(--sc-display); letter-spacing: .06em; text-transform: uppercase; }
+.mn-step b { display: grid; width: 24px; height: 24px; flex: none; place-items: center; border-radius: 50%; background: radial-gradient(circle at 50% 38%, #3a2a17, #0b0806 72%); box-shadow: 0 0 0 1px #8a6630; color: var(--sc-brass); font-size: 11px; }
+.mn-step.is-now { color: #fff0cf; }
+.mn-step.is-now b { box-shadow: 0 0 0 1.5px var(--sc-gold), 0 0 10px rgba(242, 180, 80, .6); color: #fff0cf; }
+.mn-step.is-done b { background: radial-gradient(circle at 50% 38%, #5b3a14, #1a0f06 72%); color: var(--sc-gold); }
+
+/* The board */
+.mn-hint { margin: 0 0 8px; text-align: center; color: #fff0cf; font: 700 12px/1.2 var(--sc-display); letter-spacing: .08em; text-shadow: 0 0 10px rgba(242, 180, 80, .5); animation: mn-hint 2.2s ease-in-out infinite; }
+@keyframes mn-hint { 50% { opacity: .55; } }
+.mn-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding: 8px; border-radius: 3px;
+  background: radial-gradient(ellipse at 50% 30%, rgba(190, 120, 255, .1), transparent 60%), rgba(0, 0, 0, .6);
   box-shadow: inset 0 0 0 1px rgba(138, 102, 48, .7), inset 0 0 24px rgba(0, 0, 0, .9); }
 .mn-tile {
-  position: relative; display: grid; aspect-ratio: 1; place-items: center; overflow: hidden; border: 0; border-radius: 4px; padding: 0;
+  position: relative; display: grid; aspect-ratio: 1; place-items: center; overflow: hidden; border: 0; border-radius: 3px; padding: 0;
   background: linear-gradient(180deg, rgba(0, 0, 0, .15), rgba(0, 0, 0, .55)), url('../premium/assets/stone-tile.webp') center / cover;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .9), inset 0 2px 0 rgba(255, 230, 180, .12), 0 2px 4px rgba(0, 0, 0, .8);
-  color: #d8c4a0; cursor: pointer; touch-action: manipulation;
+  color: #d8c4a0; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
 .mn-tile:disabled { cursor: default; }
-.mn-tile:focus-visible { outline: 2px solid #fff0a2; outline-offset: 2px; }
-.mn-tile svg { width: 42%; height: 42%; color: rgba(150, 120, 80, .55); filter: drop-shadow(0 1px 1px #000); transition: color .2s, filter .2s; }
-.mn-tile-n { position: absolute; left: 4px; top: 3px; color: rgba(235, 223, 202, .55); font: 700 9px/1 'Cinzel', Georgia, serif; }
-.mn-tile-pot { position: absolute; inset: auto 2px 3px; overflow: hidden; color: rgba(255, 236, 200, .8); font: 700 9px/1 system-ui, sans-serif; text-align: center; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 2px #000; }
-.mn-tile.is-picked { box-shadow: inset 0 0 0 2px #f2cc80, inset 0 0 16px rgba(255, 180, 70, .55), 0 0 10px rgba(255, 170, 60, .45); }
+.mn-tile:focus-visible { outline: 2px solid var(--sc-gold); outline-offset: 2px; }
+.mn-tile svg { width: 40%; height: 40%; color: rgba(170, 130, 210, .45); filter: drop-shadow(0 1px 1px #000); transition: color .2s, filter .2s; }
+.mn-tile-n { position: absolute; left: 4px; top: 3px; color: rgba(235, 223, 202, .55); font: 700 9px/1 var(--sc-display); }
+.mn-tile-pot { position: absolute; inset: auto 2px 3px; overflow: hidden; color: rgba(255, 236, 200, .82); font: 700 9px/1 system-ui, sans-serif; text-align: center; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 2px #000; }
+.mn-tile.is-picked { box-shadow: inset 0 0 0 2px var(--sc-gold), inset 0 0 16px rgba(255, 180, 70, .55), 0 0 10px rgba(255, 170, 60, .45); }
 .mn-tile.is-picked svg { color: #ffd88a; filter: drop-shadow(0 0 6px rgba(255, 190, 90, .95)); }
-.mn-tile.is-strike::after { content: ''; position: absolute; inset: 0; border-radius: 4px; box-shadow: inset 0 0 0 2px #e05a3a, inset 0 0 18px rgba(224, 90, 58, .6); animation: mn-strike 1.6s ease-in-out infinite; pointer-events: none; }
+.mn-tile.is-strike::after { content: ''; position: absolute; inset: 0; border-radius: 3px; box-shadow: inset 0 0 0 2px #e05a3a, inset 0 0 18px rgba(224, 90, 58, .6); animation: mn-strike 1.6s ease-in-out infinite; pointer-events: none; }
 @keyframes mn-strike { 50% { opacity: .45; } }
-.game-motion-off .mn-tile.is-strike::after { animation: none; }
-@media (prefers-reduced-motion: reduce) { .mn-tile.is-strike::after { animation: none; } .mn-tile svg { transition: none; } }
-.mn-legend { margin: -4px 0 8px; text-align: center; color: rgba(235, 223, 202, .6); font-size: 11px; line-height: 1.35; }
-.mn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
-.mn-row-label { flex: 1 0 100%; color: #c79e61; font: 700 9px/1.2 'Cinzel', Georgia, serif; letter-spacing: .2em; text-transform: uppercase; }
-.mn-chip {
-  min-width: 44px; min-height: 40px; flex: 1 1 0; border: 0 solid transparent; border-width: 8px 12px;
-  border-image: url('../premium/assets/btn-bronze-9.webp') 85 150 fill / 8px 12px / 0 2px stretch;
-  background: none; color: rgba(251, 236, 203, .75); font: 700 12px/1 'Cinzel', Georgia, serif; letter-spacing: .04em; text-shadow: 0 1px 2px #000;
-}
-.mn-chip[aria-pressed='true'] { border-image-source: url('../premium/assets/btn-crimson-9.webp'); border-image-slice: 90 170 fill; color: #fff3d6; }
-.mn-chip:disabled { opacity: .4; }
-.mn-chip:focus-visible, .mn-start:focus-visible { outline: 2px solid #fff0a2; outline-offset: 2px; }
-.mn-sum { margin: 8px 0; text-align: center; color: rgba(235, 223, 202, .85); font: 14px/1.35 'EB Garamond', Georgia, serif; }
+.mn-legend { margin: 8px 0 0; color: var(--sc-muted); font-size: 10px; line-height: 1.4; text-align: center; }
+.mn-legend i { display: inline-block; width: 9px; height: 9px; margin: 0 3px -1px 6px; border-radius: 2px; }
+.mn-legend i.is-picked { box-shadow: inset 0 0 0 2px var(--sc-gold); }
+.mn-legend i.is-strike { box-shadow: inset 0 0 0 2px #e05a3a; }
+
+/* Controls */
+.mn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 10px; }
+.mn-row > .sc-chip { flex: 1 1 0; min-width: 44px; min-height: 40px; font-size: 11px; }
+.mn-label { flex: 1 0 100%; color: var(--sc-brass); font: 700 9px/1.2 var(--sc-display); letter-spacing: .2em; text-transform: uppercase; }
+.mn-sum { margin: 2px 0 10px; text-align: center; color: rgba(235, 223, 202, .88); font: 14px/1.35 'EB Garamond', Georgia, serif; }
 .mn-sum b { color: #fff3d6; }
-.mn-start {
-  display: flex; width: 100%; min-height: 52px; align-items: center; justify-content: center; gap: 8px; border: 0 solid transparent; border-width: 10px 14px;
-  border-image: url('../premium/assets/btn-crimson-9.webp') 90 170 fill / 10px 14px / 0 3px stretch;
-  background: none; color: #fbeccb; font: 700 14px/1 'Cinzel', Georgia, serif; letter-spacing: .1em; text-shadow: 0 1px 2px #000; text-transform: uppercase;
-}
-.mn-start:disabled { filter: grayscale(.7); opacity: .55; }
-.mn-card { margin: 8px 0; padding: 10px 12px; border-radius: 4px; background: rgba(0, 0, 0, .45); box-shadow: inset 0 0 0 1px rgba(138, 102, 48, .55); font-size: 12px; }
-.mn-warn { margin: 8px 0; padding: 8px 10px; border-left: 2px solid #e05a3a; background: rgba(120, 30, 20, .25); color: #f3d6c8; font: italic 13px/1.35 'EB Garamond', Georgia, serif; }
+.mn-strike-btn { width: 100%; min-height: 54px; font-size: 14px; letter-spacing: .12em; }
+.mn-warn { margin: 0; border-left: 2px solid #e05a3a; padding: 6px 10px; background: rgba(120, 30, 20, .22); color: #f3d6c8; font: italic 13px/1.35 'EB Garamond', Georgia, serif; }
+.mn-progress { height: 6px; overflow: hidden; border-radius: 3px; background: #120d0b; box-shadow: inset 0 0 0 1px rgba(199, 158, 97, .28); }
+.mn-progress > i { display: block; height: 100%; background: linear-gradient(90deg, #75521e, var(--sc-gold)); }
+.mn-dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 8px 0; font-size: 12px; }
+.mn-dl dt { color: var(--sc-muted); }
+.mn-dl dd { margin: 0; color: var(--sc-ivory); font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Quests */
+.mn-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+.mn-stats > span { display: grid; justify-items: center; gap: 2px; border: 0 solid transparent; border-width: 7px 11px; border-image: var(--sc-plate) 85 150 fill / 7px 11px / 0 2px stretch; color: #cbb994; font-size: 8px; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
+.mn-stats b { color: #fff0cf; font: 700 13px/1.1 var(--sc-display); letter-spacing: 0; text-transform: none; }
+.mn-quest { display: flex; align-items: center; gap: 8px; min-height: 44px; border-bottom: 1px solid rgba(199, 158, 97, .18); font-size: 12px; }
+.mn-quest:last-child { border-bottom: 0; }
+.mn-quest small { display: block; color: var(--sc-brass); font-size: 10px; }
+
+/* Tutorial */
+.mn-tutorial { position: absolute; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px; background: rgba(4, 3, 2, .82); }
+.mn-tutorial-card { position: relative; width: 100%; max-width: 360px; text-align: center; }
+/* The card borrows the kit's variables (.sc-root) but not its full-height scroller layout. */
+.mn-tutorial-card.sc-root { display: block; height: auto; overflow: visible; padding: 18px 14px 14px;
+  background: linear-gradient(180deg, rgba(22, 16, 12, .96), rgba(7, 5, 4, .98)), var(--sc-stone) center / 260px; }
+.mn-tutorial-card > .mn-close { position: absolute; right: 6px; top: 6px; }
+.mn-tutorial-title { margin: 6px 0 10px; background: linear-gradient(180deg, #fff3d6 10%, var(--sc-gold) 55%, #b9823c 100%); -webkit-background-clip: text; background-clip: text; color: transparent; font: 700 20px/1.1 var(--sc-display); letter-spacing: .08em; text-transform: uppercase; }
+.mn-tutorial-body { min-height: 72px; margin: 10px 0 8px; color: rgba(235, 223, 202, .9); font: 15px/1.4 'EB Garamond', Georgia, serif; }
+.mn-mini { display: grid; width: 180px; grid-template-columns: repeat(5, 1fr); gap: 3px; margin: 0 auto; padding: 5px; background: rgba(0, 0, 0, .6); box-shadow: inset 0 0 0 1px rgba(138, 102, 48, .7); }
+.mn-mini-tile { display: grid; aspect-ratio: 1; place-items: center; border-radius: 2px; background: linear-gradient(180deg, rgba(0, 0, 0, .1), rgba(0, 0, 0, .5)), url('../premium/assets/stone-tile.webp') center / cover; }
+.mn-mini-tile svg { width: 50%; height: 50%; color: rgba(170, 130, 210, .45); }
+.mn-mini-tile.is-picked { box-shadow: inset 0 0 0 1.5px var(--sc-gold), 0 0 6px rgba(255, 170, 60, .5); }
+.mn-mini-tile.is-picked svg { color: #ffd88a; }
+.mn-mini-tile.is-strike { box-shadow: inset 0 0 0 2px #e05a3a, 0 0 12px rgba(224, 90, 58, .8); }
+.mn-mini-tile.is-flow svg { animation: mn-flow 1.4s ease-in-out infinite; }
+@keyframes mn-flow { 50% { opacity: .25; transform: scale(.7); } }
+.mn-share { display: grid; width: 220px; grid-template-columns: 1fr auto; align-items: center; gap: 8px 10px; margin: 6px auto; color: var(--sc-muted); font-size: 11px; text-align: left; }
+.mn-share-bar { height: 12px; overflow: hidden; border-radius: 2px; background: #120d0b; box-shadow: inset 0 0 0 1px rgba(199, 158, 97, .35); }
+.mn-share-bar > i { display: block; height: 100%; background: linear-gradient(90deg, #75521e, var(--sc-gold)); }
+.mn-share-bar.is-rival > i { background: linear-gradient(90deg, #3d2a4d, #8a6fb0); }
+.mn-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 10px; }
+.mn-dots i { width: 7px; height: 7px; transform: rotate(45deg); background: #3a2a17; box-shadow: 0 0 0 1px #8a6630; }
+.mn-dots i.is-on { background: var(--sc-gold); }
+.mn-tutorial .mn-row > :is(.sc-chip, .sc-seal, .sc-plate) { flex: 1 1 0; }
+
+@media (prefers-reduced-motion: reduce) { .mn-tile.is-strike::after, .mn-hint, .mn-mini-tile.is-flow svg { animation: none; } .mn-tile svg { transition: none; } }
+.game-motion-off .mn-tile.is-strike::after, .game-motion-off .mn-hint, .game-motion-off .mn-mini-tile.is-flow svg { animation: none; }

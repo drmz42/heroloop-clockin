@@ -52,3 +52,12 @@ export const MINE_GUIDE: MineGuideSection[] = [
     body: 'Verified rounds complete ORE Mine quests: 5 / 20 / 50 rounds a day, streaks of 3 and 7 days with 5+ rounds, and Miner ranks at 50 / 250 / 1,000 / 5,000 rounds. They pay Gold and Summon Scrolls only, never SOL, SKR or ORE.',
   },
 ];
+
+// The Mine tutorial opens once per device (a convenience; storage may be unavailable).
+const SEEN_KEY = 'heroloop-seeker:v1:mine-tutorial-seen';
+export function tutorialSeen(): boolean {
+  try { return localStorage.getItem(SEEN_KEY) === '1'; } catch { return true; }
+}
+export function markTutorialSeen() {
+  try { localStorage.setItem(SEEN_KEY, '1'); } catch { /* per-device convenience only */ }
+}

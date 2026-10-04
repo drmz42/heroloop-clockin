@@ -15,6 +15,7 @@ import { SeekerMinePanel } from '@/components/SeekerMinePanel';
 // number (`alerts`, e.g. a Store sale).
 export function MobileTabBar({
   tab, section, moreOpen, onTab, onSection, onMoreOpen, onGuides, onCode, onSupport, onLogout, readyQuests = 0, badges = {}, alerts = {},
+  claimQuest, motionOff = false,
 }: {
   tab: Tab;
   section: MobileSection;
@@ -29,6 +30,9 @@ export function MobileTabBar({
   readyQuests?: number;
   badges?: Partial<Record<MobileSection | Tab, number>>;
   alerts?: Partial<Record<MobileSection | Tab, boolean>>;
+  /** Mine quests claim through the same server settlement as the Quest Board. */
+  claimQuest?: (id: string) => Promise<boolean>;
+  motionOff?: boolean;
 }) {
   const [soon, setSoon] = useState<'mine' | 'pvp' | null>(null);
   const mineOpen = soon !== null;
@@ -109,14 +113,8 @@ export function MobileTabBar({
         </div>
       )}
       {soon === 'mine' && (
-        <div className="hl-more-sheet mo-sheet" role="dialog" aria-modal="true" aria-label="$ORE Mine" onMouseDown={(event) => { if (event.currentTarget === event.target) setMineOpen(false); }}>
-          <div className="mo-panel">
-            <div className="mo-head">
-              <span className="mo-title">The Deep Vein</span>
-              <button type="button" className="mo-close" onClick={() => setMineOpen(false)} aria-label="Close"><X size={18} /></button>
-            </div>
-            <SeekerMinePanel />
-          </div>
+        <div className="hl-more-sheet mn-sheet" role="dialog" aria-modal="true" aria-label="$ORE Mine">
+          <SeekerMinePanel onClose={() => setMineOpen(false)} claimQuest={claimQuest} still={motionOff} />
         </div>
       )}
       <nav className="hl-tabbar" aria-label="Game navigation">
