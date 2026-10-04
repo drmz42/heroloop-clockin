@@ -950,7 +950,9 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
     try {
       const requestedAction = String(parsed.value.action);
       const rateLimit = await consumeRateLimit(identity.playerId,
-        requestedAction === "skr_boost_status" ? "status"
+        edition === "seeker" && requestedAction === "hero_summon" && payload.payment_method === "scroll"
+          ? "seeker_scroll_summon"
+          : requestedAction === "skr_boost_status" ? "status"
           : ["skr_quest_status", "skr_purchase_quote", "skr_purchase_commit"].includes(requestedAction) ? "status"
           : Object.hasOwn(walletActions, requestedAction) ? "status"
           : requestedAction.startsWith("tester_credit_") ? "tester_credit_tokens" : requestedAction);

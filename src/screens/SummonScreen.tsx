@@ -7,6 +7,7 @@ import type { OwnedHero, Rarity } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
+import { lastRetryAfterSeconds } from '@/game/backend';
 import { isolatedHackathon } from '@/game/editionStorage';
 import { SkrTokenIcon } from '@/components/SkrTokenIcon';
 import { SeekerPromoteAll } from '@/components/SeekerPromoteAll';
@@ -34,6 +35,7 @@ function Altar({ count, tone, title, cost, status, lit, busy, disabled, onClick 
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-busy={busy}
       aria-label={`${title}${status ? ` · ${status}` : ''}`}
       className={`sv-altar sv-altar--${tone}${lit ? ' is-lit' : ''}${busy ? ' is-busy' : ''}`}
     >
@@ -60,6 +62,8 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
   const [promoting, setPromoting] = useState(false);
   const [summonNotice, setSummonNotice] = useState('');
   const [summoning, setSummoning] = useState<Batch | null>(null);
+  const summonInFlight = useRef(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [focusRarity, setFocusRarity] = useState<Rarity>('common');
   const [focusSaving, setFocusSaving] = useState(false);
   const [showFocus, setShowFocus] = useState(false);
@@ -80,6 +84,10 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
   const canSummon = (count: Batch) => hasSpace(count) && canPay(count);
   useEffect(() => {
     if (!game.summonError) return;
+    if (game.summonError === 'rate_limited') {
+      setSummonNotice('Summon limit reached · Please wait before trying again');
+      return;
+    }
     if (isolatedHackathon && paymentMethod === 'skr') { setSummonNotice(game.summonError); return; }
     const safeCode = game.summonError.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
     const message = game.summonError.includes('insufficient_tokens')
@@ -99,6 +107,14 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
           : `Summon unavailable · No $HERO was spent · Code: ${safeCode || 'network_error'}`;
     setSummonNotice(message);
   }, [game.summonError, paymentMethod]);
+  useEffect(() => {
+    if (game.summonError === 'rate_limited') setCooldownSeconds(Math.min(300, Math.ceil(lastRetryAfterSeconds())));
+  }, [game.summonError]);
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return;
+    const timer = window.setTimeout(() => setCooldownSeconds(value => Math.max(0, value - 1)), 1000);
+    return () => window.clearTimeout(timer);
+  }, [cooldownSeconds]);
   useEffect(() => { if (pendingQuote) quoteRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, [pendingQuote]);
   const unavailableMessage = (count: Batch) => setSummonNotice(
     state.ownedHeroes.length + count > state.heroCapacity
@@ -111,8 +127,9 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
     setResults(heroes);
   };
   const beginSummon = async (count: Batch) => {
-    if (summoning !== null) return;
+    if (summonInFlight.current || cooldownSeconds > 0) return;
     if (state.ownedHeroes.length + count > state.heroCapacity || !canPay(count)) { unavailableMessage(count); return; }
+    summonInFlight.current = true;
     setSummoning(count); setSummonNotice('');
     const ownedBefore = new Set(state.ownedHeroes.map((hero) => hero.heroId));
     try {
@@ -133,17 +150,20 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
       }
       const result = await game.summonHeroes(count, paymentMethod, quoteId);
       if (result.length > 0) showResults(result, count, ownedBefore);
-      else setSummonNotice('Summon is temporarily unavailable · Nothing was spent');
-    } catch (error) { setSummonNotice(skrError(error)); } finally { setSummoning(null); }
+      else setSummonNotice('Summon could not finish · Refresh to check your heroes before trying again');
+    } catch (error) { setSummonNotice(skrError(error)); } finally { summonInFlight.current = false; setSummoning(null); }
   };
   const confirmSkrSummon = async () => {
-    if (!pendingQuote || summoning !== null) return;
+    if (!pendingQuote || summonInFlight.current || cooldownSeconds > 0) return;
+    summonInFlight.current = true;
     setSummoning(pendingQuote.count); setSummonNotice('');
     const ownedBefore = new Set(state.ownedHeroes.map((hero) => hero.heroId));
-    const result = await game.summonHeroes(pendingQuote.count, 'skr', pendingQuote.quote.quote_id);
-    if (result.length) { showResults(result, pendingQuote.count, ownedBefore); setPendingQuote(null); }
-    else setSummonNotice('Payment could not finish. Retry the same payment or check Wallet history.');
-    setSummoning(null);
+    try {
+      const result = await game.summonHeroes(pendingQuote.count, 'skr', pendingQuote.quote.quote_id);
+      if (result.length) { showResults(result, pendingQuote.count, ownedBefore); setPendingQuote(null); }
+      else setSummonNotice('Payment could not finish. Retry the same payment or check Wallet history.');
+    } catch (error) { setSummonNotice(skrError(error)); }
+    finally { summonInFlight.current = false; setSummoning(null); }
   };
   const promoteAll = async () => {
     if (promoting) return;
@@ -171,8 +191,8 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
     } finally { setFocusSaving(false); }
   };
 
-  const busy = summoning !== null || promoting || pendingQuote !== null;
-  const altarStatus = (count: Batch) => !hasSpace(count)
+  const busy = summoning !== null || promoting || pendingQuote !== null || cooldownSeconds > 0;
+  const altarStatus = (count: Batch) => cooldownSeconds > 0 ? `Ready in ${cooldownSeconds}s` : !hasSpace(count)
     ? (count === 1 ? 'Hero storage full' : `Need ${count} free slots`)
     : !canPay(count) ? `Need ${count - state.summonScrolls} more Scrolls` : null;
   const altarCost = (count: Batch) => paymentMethod !== 'scroll'
@@ -193,7 +213,12 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
 
   return (
     <div className={`sv-root${results ? ' sv-paused' : ''}${reducedMotion ? ' sv-still' : ''}`}>
-      <section className={`sv-temple${summoning !== null ? ' is-summoning' : ''}`} aria-label="Summoning temple">
+      <section className={`sv-temple${summoning !== null ? ' is-summoning' : ''}`} aria-label="Summoning temple" aria-busy={summoning !== null}>
+        {summoning !== null && <div className="sv-pending" role="status" aria-live="polite">
+          <span className="sv-pending-orb" aria-hidden="true"><Sparkles size={36} /></span>
+          <strong>{paymentMethod === 'skr' && !pendingQuote ? 'Preparing your offering…' : `Summoning ×${summoning}…`}</strong>
+          <span>{paymentMethod === 'skr' && !pendingQuote ? 'Getting the price · No payment yet' : 'The portal is opening · Waiting for your heroes'}</span>
+        </div>}
         <div className="sv-temple-art" aria-hidden="true" />
         <div className="sv-temple-glow" aria-hidden="true" />
         <svg className="sv-runes" viewBox="0 0 200 200" aria-hidden="true">
@@ -235,7 +260,7 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
         {pendingQuote && <div ref={quoteRef} className="sv-quote" role="region" aria-label="Confirm SKR Summon">
           <p className="sv-quote-title" title={`Exact payment: ${formatMinor(pendingQuote.quote.amount_minor, 'SKR', 6)} SKR`}>Summon ×{pendingQuote.count} · {formatAmountShort(pendingQuote.quote.amount_minor, 'SKR', 'up')} SKR</p>
           <p className="sv-quote-note">Server quote · ${(Number(pendingQuote.quote.usd_cents) / 100).toFixed(2)} · valid until {new Date(pendingQuote.quote.expires_at).toLocaleTimeString()}. No payment until you confirm.</p>
-          <div className="sv-quote-actions"><button type="button" disabled={summoning !== null} onClick={() => void confirmSkrSummon()} className="sv-btn sv-btn--primary">{summoning ? 'Summoning…' : 'Pay SKR & summon'}</button><button type="button" disabled={summoning !== null} onClick={() => setPendingQuote(null)} className="sv-btn sv-btn--ghost">Cancel</button></div>
+          <div className="sv-quote-actions"><button type="button" disabled={summoning !== null || cooldownSeconds > 0} onClick={() => void confirmSkrSummon()} className="sv-btn sv-btn--primary">{summoning ? 'Summoning…' : 'Pay SKR & summon'}</button><button type="button" disabled={summoning !== null} onClick={() => setPendingQuote(null)} className="sv-btn sv-btn--ghost">Cancel</button></div>
         </div>}
 
         <section className="sv-shrine" aria-label="Pity progress">

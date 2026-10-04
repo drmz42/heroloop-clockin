@@ -803,3 +803,26 @@
 @keyframes sv-hint { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
 @keyframes sv-flip { 0% { transform: rotateY(180deg) scale(.86); } 100% { transform: rotateY(0) scale(1); } }
 @keyframes sv-card-fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* A visible ritual begins before the server returns an award. */
+.sv-pending {
+  position: absolute; inset: 0; z-index: 10;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 24px; text-align: center;
+  background: rgba(7, 5, 5, .92); color: var(--sv-ivory);
+}
+.sv-pending strong { font-size: 20px; color: var(--sv-gold); }
+.sv-pending > span:last-child { font-size: 14px; max-width: 28ch; }
+.sv-pending-orb {
+  position: relative; display: grid; place-items: center;
+  width: 88px; height: 88px; border-radius: 50%; color: var(--sv-gold);
+  background: radial-gradient(circle, rgba(199,158,97,.35), transparent 70%);
+}
+.sv-pending-orb::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  border: 2px solid rgba(199,158,97,.4); border-top-color: var(--sv-gold);
+  animation: sv-spin 1.5s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sv-pending-orb::before { animation: none; }
+}
