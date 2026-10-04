@@ -199,5 +199,29 @@ html :has(> .rx-sq) { -webkit-mask-box-image: none; -webkit-mask: var(--rx-host-
 /* Thin square frames: no dark matte or silhouette mask (Founder 2026-10-04: "something black around"); the
    picture runs under the bars and the frame simply sits on top. */
 .rx-slot > .rx-matte, .rx-card > .rx-matte { display: none; }
-html :has(> .rx-slot), html :has(> .rx-card) { -webkit-mask-box-image: none !important; -webkit-mask: none !important; mask: none !important; }
+html :has(> .rx-card) { -webkit-mask-box-image: none !important; -webkit-mask: none !important; mask: none !important; }
 html :is(.item-slot, .hero-portrait-rarity, .arena-portrait):has(> .rx-slot):not(#rx-a):not(#rx-b) { box-shadow: none !important; background: transparent !important; }
+/* Square ladder frames (2026-10-04): drawn whole on any square box, ornament only in the corners */
+.rx-slot > .rx-frame { border: 0 !important; border-image: none !important; background: center / 100% 100% no-repeat; }
+/* All square frames share one rim rectangle (outer edge at 4.69% of the box, Founder 2026-10-04: identical sizes).
+   The picture is clipped to that rectangle; corner ornaments outside it stay visible through the frame's alpha. */
+:has(> .rx-common.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/common-sq.webp'); }
+:has(> .rx-uncommon.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/uncommon-sq.webp'); }
+:has(> .rx-rare.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/rare-sq.webp'); }
+:has(> .rx-epic.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/epic-sq.webp'); }
+:has(> .rx-legendary.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/legendary-sq.webp'); }
+:has(> .rx-mythic.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/mythic-sq.webp'); }
+:has(> .rx-cosmic.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/cosmic-sq.webp'); }
+:has(> .rx-divine.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/divine-sq.webp'); }
+:has(> .rx-celestial.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/celestial-sq.webp'); }
+:has(> .rx-cursed.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/cursed-sq.webp'); }
+:has(> .rx-immortal.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/immortal-sq.webp'); }
+:has(> .rx-god.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/god-sq.webp'); }
+html :has(> .rx-slot) {
+  -webkit-mask-box-image: none !important;
+  -webkit-mask: var(--rx-sqm) center / 100% 100% no-repeat, linear-gradient(#000 0 0) center / 90.62% 90.62% no-repeat !important;
+  mask: var(--rx-sqm) center / 100% 100% no-repeat, linear-gradient(#000 0 0) center / 90.62% 90.62% no-repeat !important;
+  -webkit-mask-composite: source-over; mask-composite: add;
+}
+html .item-slot:has(> .rx-slot) .item-enchant-label, html .mv-card:has(.rx-slot) .mv-card-plus { left: 8%; top: 8%; }
+html .item-slot:has(> .rx-slot) .item-level-label, html .mv-card:has(.rx-slot) .mv-card-lv, html .hero-portrait-rarity:has(> .rx-slot) .hero-level-badge { right: 8%; bottom: 8%; }

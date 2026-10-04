@@ -13,8 +13,8 @@ const MOTES: Partial<Record<Rarity, number>> = { mythic: 3, cosmic: 4, relic: 4,
 const ART: Partial<Record<Rarity, Rarity>> = { relic: 'cosmic' };
 const CRESTS: Partial<Record<Rarity, ('top' | 'bottom')[]>> = { legendary: ['top'], mythic: ['top'], cosmic: ['top'], divine: ['top', 'bottom'], celestial: ['top', 'bottom'], cursed: ['top', 'bottom'], immortal: ['top', 'bottom'], god: ['top', 'bottom'] };
 const BW_RATIO = 0.12;
-// Ornate square frames (ladder art without the banner) are switched off: the Founder rejected them in battle
-// (2026-10-04), so every square box keeps the thin 9-slice. Set a width here to turn them back on.
+// Square boxes draw the square ladder art whole (`<tier>-sq.webp`: ornament in the corners only, Founder-approved
+// 2026-10-04). The older corner-scaled variant stays off; set a width here to turn it back on.
 const SQUARE_MIN = Number.POSITIVE_INFINITY;
 
 // `tcg` is the collectible hero card (Founder 2026-10-04: heroes are summoned like cards): a thin card rim with a
@@ -44,8 +44,8 @@ export function RarityFx({ rarity, shape = 'card', label }: { rarity: Rarity; sh
     {tier >= 6 && <span className="rx-aura" />}
     {motes > 0 && <span className="rx-motes">{Array.from({ length: motes }, (_, i) => <i key={i} style={{ '--m': i } as CSSProperties} />)}</span>}
     {tier >= 5 && <span className="rx-glint" />}
-    <span className="rx-frame" style={shape === 'tcg' || square ? { backgroundImage: `url('/assets/ui/rarity-frames/${art}-${square ? 'sq' : 'tcg'}.webp')` } : undefined} />
+    <span className="rx-frame" style={shape === 'tcg' || shape === 'slot' ? { backgroundImage: `url('/assets/ui/rarity-frames/${art}-${shape === 'tcg' ? 'tcg' : 'sq'}.webp')` } : undefined} />
     {shape === 'tcg' && label && <span className="rx-banner"><b>{label}</b></span>}
-    {shape !== 'tcg' && !square && (CRESTS[art] ?? []).map((side) => <span key={side} className={`rx-crest rx-crest-${side}`} style={{ backgroundImage: `url('/assets/ui/rarity-frames/${art}-${shape}-crest-${side}.webp')` }} />)}
+    {shape === 'card' && (CRESTS[art] ?? []).map((side) => <span key={side} className={`rx-crest rx-crest-${side}`} style={{ backgroundImage: `url('/assets/ui/rarity-frames/${art}-${shape}-crest-${side}.webp')` }} />)}
   </span>;
 }
