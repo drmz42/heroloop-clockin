@@ -1,4 +1,5 @@
 import { isolatedHackathon } from '@/game/editionStorage';
+import { RarityFx } from '@/components/RarityFx';
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { SkrUsd } from '@/components/SkrUsd';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
@@ -53,6 +54,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
       <div className="item-act-head mb-1.5 flex items-start gap-2">
         <div className={`item-slot rarity-${base.rarity} relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden border text-xl`} style={{ borderColor: `${rc}99` }}>
           <ItemArtwork itemId={base.id} name={base.name} fallback={base.icon} className="leading-none" />
+          <RarityFx rarity={base.rarity} shape="slot" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-bold ui-text-medium" style={{ color: rc }}>{base.name} {item.enchantLevel > 0 && <span className="text-amber-400">+{item.enchantLevel}</span>}</div>

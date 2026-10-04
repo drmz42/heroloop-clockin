@@ -5,7 +5,7 @@
 .rx-frame { background: center / 100% 100% no-repeat; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .8)); }
 
 /* Rare+: static inner light just inside the frame band */
-.rx-light { inset: var(--rx-band) !important; box-shadow: inset 0 0 12px 0 color-mix(in srgb, var(--rx) 45%, transparent); }
+.rx-light { inset: var(--rx-band) !important; box-shadow: inset 0 0 8px 0 color-mix(in srgb, var(--rx) 40%, transparent); }
 
 /* Legendary+: a sheen crossing the card every ~10 s */
 .rx-glint { inset: var(--rx-band) !important; overflow: hidden; }
@@ -37,7 +37,7 @@
 .rx-cursed .rx-light { box-shadow: inset 0 0 16px 2px rgba(224, 25, 63, .5); }
 
 @keyframes rx-glint { 0%, 78% { transform: translateX(0) skewX(-18deg); } 100% { transform: translateX(420%) skewX(-18deg); } }
-@keyframes rx-breathe { 0%, 100% { opacity: .32; } 50% { opacity: .68; } }
+@keyframes rx-breathe { 0%, 100% { opacity: .18; } 50% { opacity: .42; } }
 @keyframes rx-rise { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: .9; } 100% { opacity: 0; transform: translateY(-80px); } }
 @keyframes rx-twinkle { 0%, 100% { opacity: 0; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.25); } }
 
@@ -48,3 +48,59 @@
   .rx :is(span, i), .rx-glint::before { animation: none !important; }
   .rx-motes, .rx-glint { display: none; }
 }
+
+/* Wherever a forged frame is present it owns the edge: the older flat rarity border, glow and sheen are
+   switched off (index.css / premium-game.css), and badges stay above the frame. */
+html :is(.item-slot, .hero-portrait-rarity, .arena-portrait):has(> .rx):not(#rx-a):not(#rx-b) { border-color: transparent !important; border-image: none !important; border-radius: 3px !important; box-shadow: 0 4px 10px rgba(0, 0, 0, .5) !important; }
+html :is(.item-slot, .hero-portrait-rarity, .arena-portrait):has(> .rx):not(#rx-a):not(#rx-b)::before,
+html :is(.item-slot, .hero-portrait-rarity, .arena-portrait):has(> .rx):not(#rx-a):not(#rx-b)::after { display: none !important; }
+html .hero-portrait-rarity:has(> .rx) > :not(.rx, img) { z-index: 3; }
+html .item-slot:has(> .rx) .item-level-label { z-index: 3; }
+html .market-detail-art:has(> .rx):not(#rx-a):not(#rx-b) { border-color: transparent !important; box-shadow: 0 8px 18px rgba(0, 0, 0, .55) !important; border-radius: 3px; }
+html .market-detail-art:has(> .rx)::before, html .market-detail-art:has(> .rx)::after { display: none !important; }
+/* Summon reveal: the frame replaces the flat tier outline; the name plate sits inside the frame */
+.sv-card-front:has(> .rx) { box-shadow: none !important; }
+.sv-card-front:has(> .rx) .sv-card-plate { inset: auto 6% 4.5%; }
+.sv-card-front:has(> .rx) .sv-card-new { z-index: 4; }
+.sv-spot-portrait:has(> .rx) { border: 0 !important; box-shadow: 0 0 36px color-mix(in srgb, var(--sv-color) 60%, transparent), 0 12px 30px rgba(0, 0, 0, .7) !important; }
+/* Silhouette masks (generated from the frame art, 2026-10-04): a framed box shows only the frame metal plus
+   everything inside the bars' outer edge, so no square backing shows around the spiked corners. */
+:has(> .rx-celestial.rx-card) { --rx-mask: url('/assets/ui/rarity-frames/celestial-card.webp'); --rx-t: 3.80%; --rx-b: 3.94%; --rx-l: 5.06%; --rx-r: 5.06%; }
+:has(> .rx-celestial.rx-slot) { --rx-mask: url('/assets/ui/rarity-frames/celestial-slot.webp'); --rx-t: 7.26%; --rx-b: 7.42%; --rx-l: 5.42%; --rx-r: 5.42%; }
+:has(> .rx-common.rx-card) { --rx-mask: url('/assets/ui/rarity-frames/common-card.webp'); --rx-t: 3.80%; --rx-b: 3.80%; --rx-l: 4.42%; --rx-r: 4.42%; }
+:has(> .rx-common.rx-slot) { --rx-mask: url('/assets/ui/rarity-frames/common-slot.webp'); --rx-t: 5.50%; --rx-b: 5.50%; --rx-l: 4.55%; --rx-r: 4.55%; }
+:has(> .rx-cosmic.rx-card) { --rx-mask: url('/assets/ui/rarity-frames/cosmic-card.webp'); --rx-t: 3.73%; --rx-b: 3.73%; --rx-l: 4.97%; --rx-r: 4.97%; }
+:has(> .rx-cosmic.rx-slot) { --rx-mask: url('/assets/ui/rarity-frames/cosmic-slot.webp'); --rx-t: 6.46%; --rx-b: 6.46%; --rx-l: 5.02%; --rx-r: 5.02%; }
+:has(> .rx-cursed.rx-card) { --rx-mask: url('/assets/ui/rarity-frames/cursed-card.webp'); --rx-t: 3.66%; --rx-b: 6.28%; --rx-l: 4.70%; --rx-r: 4.70%; }
+:has(> .rx-cursed.rx-slot) { --rx-mask: url('/assets/ui/rarity-frames/cursed-slot.webp'); --rx-t: 7.81%; --rx-b: 7.18%; --rx-l: 6.54%; --rx-r: 6.54%; }
+:has(> .rx-divine.rx-card) { --rx-mask: url('/assets/ui/rarity-frames/divine-card.webp'); --rx-t: 4.14%; --rx-b: 4.42%; --rx-l: 4.79%; --rx-r: 4.79%; }
+:has(> .rx-divine.rx-slot) { --rx-mask: url('/assets/ui/rarity-frames/divine-slot.webp'); --rx-t: 5.58%; --rx-b: 5.66%; --rx-l: 5.34%; --rx-r: 5.34%; }
+:has(> .rx-epic.rx-card) { --rx-mask: url('/assets/ui/rarity-frames/epic-card.webp'); --rx-t: 3.73%; --rx-b: 3.73%; --rx-l: 4.88%; --rx-r: 4.88%; }
+:has(> .rx-epic.rx-slot) { --rx-mask: url('/assets/ui/rarity-frames/epic-slot.webp'); --rx-t: 5.58%; --rx-b: 5.58%; --rx-l: 5.02%; --rx-r: 5.02%; }
+:has(> .rx-god.rx-card) { --rx-mask: url('/assets/ui/rarity-frames/god-card.webp'); --rx-t: 3.31%; --rx-b: 4.35%; --rx-l: 4.88%; --rx-r: 4.88%; }
+:has(> .rx-god.rx-slot) { --rx-mask: url('/assets/ui/rarity-frames/god-slot.webp'); --rx-t: 5.98%; --rx-b: 6.22%; --rx-l: 5.50%; --rx-r: 5.50%; }
+:has(> .rx-immortal.rx-card) { --rx-mask: url('/assets/ui/rarity-frames/immortal-card.webp'); --rx-t: 1.38%; --rx-b: 4.97%; --rx-l: 4.88%; --rx-r: 4.88%; }
+:has(> .rx-immortal.rx-slot) { --rx-mask: url('/assets/ui/rarity-frames/immortal-slot.webp'); --rx-t: 6.30%; --rx-b: 6.38%; --rx-l: 3.75%; --rx-r: 3.75%; }
+:has(> .rx-legendary.rx-card) { --rx-mask: url('/assets/ui/rarity-frames/legendary-card.webp'); --rx-t: 3.38%; --rx-b: 3.38%; --rx-l: 4.42%; --rx-r: 4.42%; }
+:has(> .rx-legendary.rx-slot) { --rx-mask: url('/assets/ui/rarity-frames/legendary-slot.webp'); --rx-t: 5.26%; --rx-b: 5.26%; --rx-l: 4.55%; --rx-r: 4.55%; }
+:has(> .rx-mythic.rx-card) { --rx-mask: url('/assets/ui/rarity-frames/mythic-card.webp'); --rx-t: 3.66%; --rx-b: 3.66%; --rx-l: 4.97%; --rx-r: 4.97%; }
+:has(> .rx-mythic.rx-slot) { --rx-mask: url('/assets/ui/rarity-frames/mythic-slot.webp'); --rx-t: 6.30%; --rx-b: 6.30%; --rx-l: 5.02%; --rx-r: 5.02%; }
+:has(> .rx-rare.rx-card) { --rx-mask: url('/assets/ui/rarity-frames/rare-card.webp'); --rx-t: 3.59%; --rx-b: 3.59%; --rx-l: 5.06%; --rx-r: 5.06%; }
+:has(> .rx-rare.rx-slot) { --rx-mask: url('/assets/ui/rarity-frames/rare-slot.webp'); --rx-t: 5.90%; --rx-b: 5.90%; --rx-l: 5.34%; --rx-r: 5.34%; }
+:has(> .rx-uncommon.rx-card) { --rx-mask: url('/assets/ui/rarity-frames/uncommon-card.webp'); --rx-t: 3.66%; --rx-b: 3.66%; --rx-l: 4.79%; --rx-r: 4.79%; }
+:has(> .rx-uncommon.rx-slot) { --rx-mask: url('/assets/ui/rarity-frames/uncommon-slot.webp'); --rx-t: 5.10%; --rx-b: 5.10%; --rx-l: 4.78%; --rx-r: 4.78%; }
+:has(> .rx) {
+  --rx-h: linear-gradient(90deg, transparent var(--rx-l), #000 var(--rx-l), #000 calc(100% - var(--rx-r)), transparent calc(100% - var(--rx-r)));
+  --rx-v: linear-gradient(180deg, transparent var(--rx-t), #000 var(--rx-t), #000 calc(100% - var(--rx-b)), transparent calc(100% - var(--rx-b)));
+  -webkit-mask-image: var(--rx-mask), var(--rx-h), var(--rx-v);
+  mask-image: var(--rx-mask), var(--rx-h), var(--rx-v);
+  -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-composite: source-over, source-in; mask-composite: add, intersect;
+}
+/* Corner badges move inside the bars so the silhouette mask never cuts them */
+html .item-slot:has(> .rx) .item-enchant-label { left: 9%; top: 7%; }
+html .item-slot:has(> .rx) .item-level-label { right: 9%; bottom: 7%; border-radius: 2px; }
+html .item-slot:has(> .rx) > svg.absolute { left: 9%; bottom: 7%; }
+html .item-slot:has(> .rx) > .class-glyph, html .item-slot:has(> .rx) > [class*='right-0'][class*='top-0'] { right: 9%; top: 7%; }
+html .hero-portrait-rarity:has(> .rx) .hero-level-badge { right: 9%; bottom: 7%; border-radius: 2px; }

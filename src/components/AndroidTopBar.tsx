@@ -8,6 +8,7 @@ import { shortWalletAddress } from '@/components/walletAddress';
 import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { groupNumber } from '@/game/numberFormat';
 import '@/theme/scene/topbar.css';
+import { RarityFx } from '@/components/RarityFx';
 
 // Android top bar, two rows (Founder 2026-10-03, restyled v2 the same day): a stone resource ledger with
 // the emblem, Gold, SKR and Team Power; then Commander, Boost Max, wallet and Mailbox as one row of plates.
@@ -42,6 +43,7 @@ export function AndroidTopBar({ power, identity, gold, commander, boostActive, w
     <div className="tb-row tb-actions">
       {avatar && <button type="button" className="tb-commander" style={{ '--tb-rarity': RARITY_COLORS[avatar.rarity] } as CSSProperties} onClick={() => window.dispatchEvent(new Event(COMMANDER_OPEN_EVENT))} aria-label={`Commander, level ${commander.level}`}>
         <img src={heroPortraitSrc(avatar.id, avatar.heroClass, avatar.rarity, avatar.color)} alt="" style={{ ...heroPortraitStyle(avatar.id, avatar.heroClass), transform: 'none' }} />
+        <RarityFx rarity={avatar.rarity} shape="slot" />
         <b>{commander.level}</b>
       </button>}
       <button type="button" className={`tb-plate tb-boost${boostActive ? ' is-active' : ''}`} onClick={onBoost} aria-label={boostActive ? 'Boost Max active' : 'Open Boost Max'}>

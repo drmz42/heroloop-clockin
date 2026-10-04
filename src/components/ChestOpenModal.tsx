@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom';
+import { RarityFx } from '@/components/RarityFx';
 import { Package, X } from 'lucide-react';
 import { ITEM_MAP, SLOT_LABEL, displayItemPower } from '@/game/items';
 import { RARITY_COLORS, RARITY_LABEL, RARITY_INDEX } from '@/game/heroes';
@@ -42,6 +43,7 @@ export function ChestOpenModal({
               >
                 <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-white/[.06] bg-black/25">
                   <ItemArtwork itemId={base.id} name={base.name} fallback={base.icon} className="text-2xl" />
+                  <RarityFx rarity={base.rarity} shape="slot" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-vt text-sm font-bold leading-tight" style={{ color: rc }}>{base.name}</div>

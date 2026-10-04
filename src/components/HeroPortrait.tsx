@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import type { HeroClass, Rarity } from '@/game/types';
 import { buildHeroSvg, heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { RARITY_COLORS, RARITY_GLOW } from '@/game/heroes';
+import { RarityFx } from '@/components/RarityFx';
 
 interface HeroPortraitProps {
   heroClass: HeroClass;
@@ -31,11 +32,13 @@ export function HeroPortrait({
   const fallbackSrc = useMemo(() => buildHeroSvg(heroClass, rarity, color), [heroClass, rarity, color]);
 
   const isDead = respawn !== undefined && respawn > 0;
+  // Forged rarity frame (RarityFx) from 40 px up; smaller portraits keep the plain rarity border.
+  const framed = size >= 40;
   const portraitClassName = `hero-portrait-rarity rarity-${rarity} relative shrink-0 flex items-center justify-center rounded-xl overflow-hidden transition-transform active:scale-95 select-none ${className}`;
   const portraitStyle = {
     width: size, height: size,
-    border: `2px solid ${active ? rc : rc + '66'}`,
-    boxShadow: active ? `0 0 16px ${glow}, inset 0 0 12px ${glow}` : `0 0 6px ${rc}44`,
+    border: framed ? 0 : `2px solid ${active ? rc : rc + '66'}`,
+    boxShadow: framed ? (active ? `0 0 14px ${glow}` : 'none') : active ? `0 0 16px ${glow}, inset 0 0 12px ${glow}` : `0 0 6px ${rc}44`,
     background: `radial-gradient(circle at 50% 30%, ${color}22, #0a0a14)`,
   };
 
@@ -52,6 +55,8 @@ export function HeroPortrait({
         style={imgError ? undefined : heroPortraitStyle(heroId, heroClass)}
         onError={() => setImgError(true)}
       />
+
+      {framed && <RarityFx rarity={rarity} shape="slot" />}
 
       {/* dead overlay */}
       {isDead && (

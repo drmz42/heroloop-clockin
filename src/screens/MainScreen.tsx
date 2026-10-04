@@ -13,6 +13,7 @@ import { Arena, locationArtStyle } from '@/components/Arena';
 import { CombatErrorBoundary } from '@/components/CombatErrorBoundary';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
+import { RarityFx } from '@/components/RarityFx';
 import { ItemActionPanel } from '@/components/ItemActionPanel';
 import { buildLocation, canMineTokens, equippedEnchantResonance, equippedSetBonus, getEquippedItems, heroStats, locationUnlockLevel, locationLevelRange, LOCATION_RANGES, SET_BONUS_PERCENT, teamPower as calculateHeroPower } from '@/game/engine';
 import { ENCHANT_RESONANCE_PERCENT } from '@/game/enchant';
@@ -613,6 +614,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     <div className="commander-profile stat-tile mb-3 grid grid-cols-[112px_minmax(0,1fr)] items-center gap-3 p-3">
       <button type="button" onClick={() => setShowAvatarPicker(true)} className="commander-avatar relative h-28 w-28 shrink-0 overflow-hidden rounded-lg bg-black/30" aria-label="Change account avatar">
         {avatarBase && <img src={heroPortraitSrc(avatarBase.id, avatarBase.heroClass, avatarBase.rarity, avatarBase.color)} alt="" className="h-full w-full object-cover" style={{ ...heroPortraitStyle(avatarBase.id, avatarBase.heroClass), transform: 'none' }} />}
+        {avatarBase && <RarityFx rarity={avatarBase.rarity} shape="slot" />}
       </button>
       <div className="min-w-0 space-y-2">
         <RewardBoostTile bonus={game.accountBonus} onOpenShop={() => { setCommanderOpen(false); onRewardBoostClick(); }} />
@@ -995,6 +997,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     title={ib ? `${ib.name} +${item!.enchantLevel}` : `Empty ${SLOT_LABEL[slot]}`}
                     aria-label={ib ? `${ib.name}, ${slotLabel}, enchant level ${item!.enchantLevel}` : `Empty ${SLOT_LABEL[slot]}`}
                   >
+                    {ib && <RarityFx rarity={ib.rarity} shape="slot" />}
                     {ib ? (
                       <ItemArtwork itemId={ib.id} name={ib.name} fallback={ib.icon} />
                     ) : (
@@ -1063,8 +1066,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                 >
                   {i >= bagOpenSlots && <LockIcon size={13} className="text-[#8f7652]" aria-hidden="true" />}
                   {item && <ItemArtwork itemId={item.itemId} name={ITEM_MAP[item.itemId]?.name ?? 'Item'} fallback={ITEM_MAP[item.itemId]?.icon ?? '◆'} className="leading-none" />}
+                  {item && rarity && <RarityFx rarity={rarity} shape="slot" />}
                   {item?.locked && <LockIcon size={11} className="absolute bottom-0.5 left-0.5 z-10 text-amber-300" />}
-                  {item && item.enchantLevel > 0 && <div className="absolute left-0 top-0 z-10 ui-text-small font-bold text-amber-400 font-vt leading-none px-0.5">+{item.enchantLevel}</div>}
+                  {item && item.enchantLevel > 0 && <div className="item-enchant-label absolute left-0 top-0 z-10 ui-text-small font-bold text-amber-400 font-vt leading-none px-0.5">+{item.enchantLevel}</div>}
                   {itemBase?.heroClass && <ClassGlyph heroClass={itemBase.heroClass} className="absolute right-0 top-0" />}
                   {item && <span className="item-level-label ui-text-small absolute bottom-0 right-0 min-w-4 rounded-tl bg-[#d9d0c0] px-0.5 text-center font-bold leading-4 text-black" title={`Item level ${item.level}`}>{item.level}</span>}
                 </button>

@@ -3,6 +3,7 @@ import type { CombatUnit, FloatingNumber, GameState, OwnedHero, OwnedItem } from
 import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { enemyArtSrc } from '@/game/art';
+import { RarityFx } from '@/components/RarityFx';
 import { Crosshair, Shield, Skull, Star, Swords, DoorOpen, Flame, Timer, Users } from 'lucide-react';
 import { locationLevelRange } from '@/game/engine';
 import { groupNumber } from '@/game/numberFormat';
@@ -189,6 +190,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
               {Boolean(unit.shield) && <i title="Barrier">◆</i>}{Boolean(unit.curseRemainingMs) && <i title="Curse">☾</i>}{unit.enraged && <i title="Enraged">🔥</i>}{unit.summoned && <i title="Summoned">✦</i>}
             </span>}
           </div>
+          {heroData && HERO_MAP[heroData.heroId] && <RarityFx rarity={HERO_MAP[heroData.heroId].rarity} shape="slot" />}
         </div>
         </div>
         </div>
