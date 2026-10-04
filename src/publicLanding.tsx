@@ -4,9 +4,8 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import PremiumLandingView from './theme/premium/PremiumLandingView';
 
-const playUrl = 'https://staging2.heroloop.xyz/#game';
-function play() { window.location.assign(playUrl); }
+// Founder 2026-10-04: Play is disabled on the public website and leads nowhere, so no test
+// host name ships in this bundle. To restore, give play() a destination again.
+function play() { /* disabled */ }
 document.documentElement.dataset.hlTheme = 'premium';
-// Old bookmarks must enter the test game rather than initialize a Production game.
-if (window.location.hash === '#game') window.location.replace(playUrl);
-else createRoot(document.getElementById('root')!).render(<StrictMode><PremiumLandingView onPlay={play} /></StrictMode>);
+createRoot(document.getElementById('root')!).render(<StrictMode><PremiumLandingView onPlay={play} /></StrictMode>);
