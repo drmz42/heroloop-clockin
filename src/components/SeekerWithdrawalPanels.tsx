@@ -4,7 +4,7 @@ import { boundWallet,formatMinor,exactWalletAmount,ASSET_DECIMALS,loadWalletRate
 import { skrError } from '@/game/skrPurchase';
 const withdrawalError=(error:unknown)=>{
   const code=error instanceof Error?error.message:'';
-  return ({withdrawals_blocked:'Treasury reconciliation is blocked. Contact the Founder.',
+  return ({withdrawals_blocked:'Withdrawals are temporarily unavailable. Please try again later.',
     invalid_withdrawal_signature:'Your wallet signature could not be verified.',
     wallet_rejected:'Withdrawal cancelled in the wallet. Nothing was reserved.',
     wallet_timeout:'The wallet did not return a signature. Nothing was reserved; try again.',
@@ -49,15 +49,15 @@ export function SeekerWithdrawalPanel() {
     return [formatMinor((units - receive).toString(), asset, ASSET_DECIMALS[asset]), formatMinor(receive.toString(), asset, ASSET_DECIMALS[asset])];
   })();
   const abortRef=useRef<AbortController|null>(null);
-  async function submit(){if(asset==='ORE')return;setBusy(true);setMessage('');const abort=new AbortController();abortRef.current=abort;try{const r=await requestWithdrawal(asset,amount,abort.signal);setMessage(r.status==='approval_required'?'Balance reserved. This request needs Founder approval above the daily $20 limit.':'Balance reserved. Awaiting a manual Founder payout.');setAmount('');await refresh();}catch(error){setMessage(withdrawalError(error));}finally{setBusy(false);}}
+  async function submit(){if(asset==='ORE')return;setBusy(true);setMessage('');const abort=new AbortController();abortRef.current=abort;try{await requestWithdrawal(asset,amount,abort.signal);setMessage('Withdrawal requested. Awaiting approval.');setAmount('');await refresh();}catch(error){setMessage(withdrawalError(error));}finally{setBusy(false);}}
   return <div className="space-y-2.5">
-    <p className="text-xs leading-5 text-stone-300">Withdraw to the verified wallet you signed in with. Your wallet signs an authorization; the Founder pays manually.</p>
+    <p className="text-xs leading-5 text-stone-300">Withdraw to your linked wallet. Approve the request in your wallet, then wait for it to be reviewed and paid.</p>
     <WalletAssetPicker asset={asset} busy={busy} onChange={entry => { setAsset(entry); setAmount(''); setMessage(''); }} />
     <WalletAmount id="seeker-withdraw-amount" amount={amount} asset={asset} busy={busy} onChange={setAmount}
       available={asset === 'ORE' ? 'ORE transfers are not available yet.' : `Available to withdraw: ${wallet ? formatMinor(wallet.balances[asset], asset, ASSET_DECIMALS[asset]) : '—'} $${asset}`}
       onMax={asset !== 'ORE' && wallet ? () => setAmount(exactWalletAmount(wallet.balances[asset], asset)) : undefined} />
     {feePreview && <p className="text-[11px] text-stone-300">Withdrawal fee 5%: {feePreview} ${asset} · you receive {receivePreview} ${asset}</p>}
-    {overLimit && <p role="status" className="text-[11px] text-amber-200">This withdrawal exceeds $20 and requires Founder approval.</p>}
+    {overLimit && <p role="status" className="text-[11px] text-amber-200">Withdrawals above $20 require additional review.</p>}
     <p className="break-all text-xs text-stone-300">Destination: {boundWallet()?.address??'Link a wallet first'}</p>
     <button style={{minHeight:44}} className="game-control game-primary min-h-11 w-full text-xs font-bold" disabled={busy||!valid||!boundWallet()} onClick={()=>void submit()}>{busy?'Authorizing…':'Sign withdrawal request'}</button>
     {busy&&<button type="button" style={{minHeight:44}} className="game-control min-h-11 w-full text-xs" onClick={()=>abortRef.current?.abort()}>Cancel withdrawal request</button>}
