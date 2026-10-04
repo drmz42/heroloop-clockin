@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Backpack, BookOpen, Crosshair, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, Palette, Pickaxe, ScrollText, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, UserPlus, X } from 'lucide-react';
+import { Backpack, BookOpen, Crosshair, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, Pickaxe, ScrollText, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, UserPlus, X } from 'lucide-react';
 import type { Tab } from './TopMenu';
 import { OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { setMobileSection, type MobileSection } from '@/platform/platform';
-import { defaultUiTheme, setUiTheme } from '@/theme/uiTheme';
 import '@/theme/scene/sheets.css';
 import { SeekerMinePanel } from '@/components/SeekerMinePanel';
 
@@ -73,7 +72,6 @@ export function MobileTabBar({
       </button>
     );
   };
-  const [themeLabel] = useState(() => document.documentElement.dataset.hlTheme === 'premium' ? 'Classic UI' : 'Premium UI');
 
   return (
     <>
@@ -89,7 +87,6 @@ export function MobileTabBar({
               <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onGuides(); }}><i aria-hidden="true"><BookOpen size={19} /></i>Guides</button>
               <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onCode(); }}><i aria-hidden="true"><KeyRound size={19} /></i>Code</button>
               <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onSupport(); }}><i aria-hidden="true"><MessageCircle size={19} /></i>Support</button>
-              {defaultUiTheme === 'premium' && <button type="button" className="mo-link" onClick={() => setUiTheme(document.documentElement.dataset.hlTheme === 'premium' ? 'classic' : 'premium')}><i aria-hidden="true"><Palette size={19} /></i>{themeLabel}</button>}
             </div>
             <button type="button" className="mo-logout" onClick={() => { onMoreOpen(false); onLogout(); }}><LogOut size={16} aria-hidden="true" /> Logout</button>
           </div>

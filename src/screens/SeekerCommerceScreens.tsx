@@ -1,5 +1,6 @@
 import { useEffect, type CSSProperties } from 'react';
-import { FlaskConical, Rocket } from 'lucide-react';
+import { Rocket } from 'lucide-react';
+import { PotionIcon } from '@/components/PotionIcon';
 import { BossKeyIcon } from '@/components/BossKeyIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 import type { GameApi } from '@/game/useGame';
@@ -11,7 +12,7 @@ import '@/theme/scene/scene.css';
 function BundleArt({resource}:{resource:string}) {
   if(resource==='summon_scroll')return <SummonScrollArtwork size={52}/>;
   if(resource==='boss_key')return <BossKeyIcon size={48}/>;
-  return <FlaskConical size={40} className="st-potion" aria-hidden="true"/>;
+  return <PotionIcon size={52}/>;
 }
 export function SeekerShopScreen({game}:{game:GameApi}) {
   const rate=useSkrRate();
