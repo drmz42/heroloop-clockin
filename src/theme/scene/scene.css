@@ -190,8 +190,33 @@ button.sc-chip { cursor: pointer; }
 .hv-hall { --sc-art: url('/assets/screens/heroes-hall-v1.webp'); --sc-glow-y: 70%; min-height: 360px; padding-bottom: 10px; }
 .hv-hall .sc-stage-art { background-position: 50% 40%; }
 .hv-head-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; }
-.hv-head-row .skr-purchase-button,
-.hv-head-row > button { min-height: 40px; }
+.hv-head-row > div { margin-top: 0; max-width: 100%; }
+.hv-head-row > .sc-chip,
+.heroes-head .hv-head-row button.game-control:not(#pm-x):not(#pm-y),
+.hv-head-row > button.sc-seal {
+  box-sizing: border-box;
+  display: inline-flex;
+  min-height: 34px !important;
+  width: auto;
+  border: 7px solid transparent;
+  border-left-width: 11px;
+  border-right-width: 11px;
+  border-image: var(--sc-plate) 85 150 fill / 7px 11px / 0 2px stretch;
+  padding: 0 4px;
+  background: none !important;
+  color: #f1dfb8 !important;
+  box-shadow: none;
+  font: 800 10px/1 system-ui, sans-serif;
+  letter-spacing: .04em;
+  text-align: center;
+  text-transform: uppercase;
+  justify-content: center;
+}
+@media (pointer: coarse) {
+  .hv-head-row > .sc-chip,
+  .heroes-head .hv-head-row button.game-control:not(#pm-x):not(#pm-y),
+  .hv-head-row > button.sc-seal { min-height: 44px !important; }
+}
 .hv-team { position: relative; z-index: 1; display: grid; width: 100%; max-width: 420px; grid-template-columns: repeat(3, 1fr); align-items: end; gap: 10px; margin-top: auto; padding-top: 18px; }
 .hv-seat { display: flex; min-width: 0; flex-direction: column; align-items: center; }
 .hv-seat-hero { position: relative; isolation: isolate; display: grid; place-items: center; }
