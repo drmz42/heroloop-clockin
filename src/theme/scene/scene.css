@@ -473,12 +473,13 @@ button.sc-chip { cursor: pointer; }
   text-align: center;
 }
 .st-art { display: grid; width: 72px; height: 72px; place-items: center; border-radius: 50%; background: radial-gradient(circle at 50% 40%, rgba(70, 52, 30, .9), rgba(10, 8, 7, .95) 72%); box-shadow: 0 0 0 1px rgba(199, 158, 97, .55), 0 0 0 4px rgba(0, 0, 0, .6), 0 0 18px rgba(242, 180, 80, .22); }
-.st-potion { color: #6ee7b7; filter: drop-shadow(0 0 6px rgba(110, 231, 183, .5)); }
 .st-card--boost .st-art { color: var(--sc-gold); }
 .st-card h4 { margin: 0; color: var(--sc-ivory); font-size: 11px; font-weight: 700; text-transform: capitalize; }
 .st-card h4 b { color: var(--sc-gold); font: 700 15px/1 var(--sc-display); }
 .st-price { margin: 0; color: #f5d48c; font-size: 11px; font-weight: 800; overflow-wrap: anywhere; }
 .st-card > :last-child { width: 100%; }
+.st-card--boost .skr-usd { display: block; margin-left: 0; margin-top: 4px; }
+.st-card--boost > :last-child > button { height: auto; white-space: normal; overflow-wrap: anywhere; padding: 8px 6px; }
 
 /* ── Training: Ironkeep War Camp ────────────────────────────── */
 .tc-camp { --sc-art: url('/assets/screens/training-camp-v1.webp'); --sc-glow-y: 75%; min-height: 250px; padding-bottom: 12px; }
