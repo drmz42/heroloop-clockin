@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {prepareOrePayout} from './ore_payout.ts';
+import {prepareOrePayout,prepareMineSolPayout} from './ore_payout.ts';
 import {custodyKey,floatKey,type MineDeps} from './mine_runner.ts';
 import {parseAmount,TOKEN_PROGRAM,base58Decode} from './chain.ts';
 import {ORE_MINT,ORE_BOARD,oreTokenAddress} from './ore.ts';
@@ -57,4 +57,25 @@ Deno.test('ORE finalized payout binds float, custody signer, exact mint, precisi
   (v:typeof tx)=>{v.transaction.message.accountKeys[1].signer=false;},
   (v:typeof tx)=>{v.transaction.message.instructions[0].parsed.info.tokenAmount.amount='94';},
  ]){const wrong=structuredClone(tx);mutate(wrong);assert.notEqual(verifyPayout(w,config,'signature',wrong),null);}
+});
+
+Deno.test('SOL float payouts preserve open reservations and signed liabilities and reuse bytes',async()=>{
+ const destination=(await custodyKey(master,'recipient')).address;let available=100000;let held='0';let signed:Record<string,unknown>={};
+ const deps:MineDeps={master,call:async(sql,args)=>{
+  if(sql.includes('withdrawal_admin_get'))return {asset:'SOL',status:'paying',destination,payout_minor:'20000'};
+  if(sql.includes('mine_runner_work'))return {sol_payout_pending_minor:held,sessions:[{reserved_minor:'70000',spent_minor:'0'}]};
+  if(sql.includes('mine_action_prepare'))signed={kind:'sol_payout',status:'signed',wire:args[5],signature:args[4],last_valid_height:args[6]};
+  return signed;
+ },rpc:async(method)=>{
+  if(method==='getBalance')return {value:available};
+  if(method==='getLatestBlockhash')return {value:{blockhash:ORE_BOARD,lastValidBlockHeight:1000}};
+  throw Error('no broadcast allowed');
+ }};
+ held='10000';await assert.rejects(prepareMineSolPayout(deps,request),/mine_sol_liquidity_unavailable/);
+ held='0';available=94000;await assert.rejects(prepareMineSolPayout(deps,request),/mine_sol_liquidity_unavailable/);
+ available=100000;const a=await prepareMineSolPayout(deps,request);
+ const wire=Uint8Array.from(atob(String(a.transaction)),c=>c.charCodeAt(0));assert.equal(wire[0],1);
+ const key=await floatKey(master);const pub=await crypto.subtle.importKey('raw',base58Decode(key.address).slice().buffer,{name:'Ed25519'},false,['verify']);
+ assert.equal(await crypto.subtle.verify('Ed25519',pub,wire.slice(1,65),wire.slice(65)),true);
+ available=0;held='100000';assert.deepEqual(await prepareMineSolPayout(deps,request),a);
 });

@@ -70,6 +70,24 @@ BEGIN
  PERFORM seeker_skr.mine_stop(p,s);
  PERFORM seeker_skr.mine_session_close(s);
 END $$;
+DO $$
+DECLARE p uuid:='88000000-0000-4000-8000-000000000001'; w jsonb; req uuid;
+ k uuid:='8b000000-0000-4000-8000-000000000003';
+BEGIN
+ w:=seeker_skr.withdrawal_intent(p,'SOL',10,100,repeat('M',32));req:=(w->>'request_id')::uuid;
+ PERFORM seeker_skr.withdrawal_reserve(p,req);
+ PERFORM seeker_skr.withdrawal_review(req,repeat('N',32),'begin_payout','');
+ PERFORM seeker_skr.mine_action_prepare(k,NULL,req,'sol_payout',('Z'||repeat('W',63)),repeat('A',100),1000);
+ IF seeker_skr.mine_runner_work()->>'sol_payout_pending_minor'<>'5009' THEN RAISE EXCEPTION 'fixture_lost_signed_sol_reserve'; END IF;
+ BEGIN
+  PERFORM seeker_skr.mine_custody_payout_finalize(req,repeat('Q',64),-5000);
+  RAISE EXCEPTION 'fixture_changed_sol_signature';
+ EXCEPTION WHEN OTHERS THEN IF SQLERRM<>'withdrawal_state_conflict' THEN RAISE; END IF; END;
+ PERFORM seeker_skr.mine_custody_payout_finalize(req,('Z'||repeat('W',63)),-5000);
+ PERFORM seeker_skr.mine_custody_payout_finalize(req,('Z'||repeat('W',63)),-5000);
+ IF seeker_skr.mine_action_get(k)->>'status'<>'confirmed' OR seeker_skr.mine_runner_work()->>'sol_payout_pending_minor'<>'0' THEN
+  RAISE EXCEPTION 'fixture_sol_payout_not_atomic'; END IF;
+END $$;
 RESET ROLE;
 DO $$ BEGIN
  IF (SELECT count(*) FROM seeker_skr.ore_credits)<>1 THEN RAISE EXCEPTION 'fixture_duplicate_ore_credit'; END IF;

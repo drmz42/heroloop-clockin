@@ -27,7 +27,7 @@ import { SKR_ASSET } from './ledger.ts';
 import { mineCustodyLamports, mineRoute, parseMineMaster, startMineRunner } from './mine_service.ts';
 import { custodyKey,floatKey } from './mine_runner.ts';
 import {actionId} from './mine_actions.ts';
-import {prepareOrePayout} from './ore_payout.ts';
+import {prepareOrePayout,prepareMineSolPayout} from './ore_payout.ts';
 import { custodyBalances,tokenCustodyBalance } from './payout_custody.ts';
 type Json = Record<string, unknown>;
 const env = (name: string) => Deno.env.get(name) ?? "";
@@ -359,16 +359,18 @@ async function withdrawals(path:string,player:string,body:Json):Promise<Response
     if(typeof body.signature!=='string'||!SIGNATURE.test(body.signature))return json(400,{ok:false,code:'invalid_signature'});
     const tx=await rpc('getTransaction',[body.signature,{encoding:'jsonParsed',commitment:'finalized',maxSupportedTransactionVersion:0}]);
     let payoutConfig:ChainConfig & {payoutTreasury:string;tokenAuthority?:string}=config;
-    if(w.asset==='ORE'){
+    let custodyPayout=false;
+    if(w.asset==='ORE'||(w.asset==='SOL'&&mineMaster)){
       if(!mineMaster)return json(409,{ok:false,code:'ore_activation_required'});
       const a=await call('SELECT seeker_skr.mine_action_get($1::uuid) AS result',[await actionId(`payout:${body.request_id}`)]);
-      if(a.signature!==body.signature)return json(409,{ok:false,code:'payout_wrong_sender'});
-      payoutConfig={...config,payoutTreasury:(await floatKey(mineMaster)).address,tokenAuthority:(await custodyKey(mineMaster,String(w.player_id))).address};
+      if(a.signature!==body.signature){if(w.asset==='ORE'||a.signature)return json(409,{ok:false,code:'payout_wrong_sender'});}
+      else {custodyPayout=true;payoutConfig={...config,payoutTreasury:(await floatKey(mineMaster)).address,...(w.asset==='ORE'?{tokenAuthority:(await custodyKey(mineMaster,String(w.player_id))).address}:{})};}
     }
     const refusal=verifyPayout(w as unknown as Withdrawal,payoutConfig,body.signature,tx);
     if(refusal)return json(409,{ok:false,code:refusal});
-    const result=w.asset==='ORE'
-      ? await call('SELECT seeker_skr.mine_ore_payout_finalize($1::uuid,$2::text,$3::numeric) AS result',
+    if(custodyPayout&&(!isRecord(tx)||!isRecord(tx.meta)||!Number.isSafeInteger(tx.meta.fee)||Number(tx.meta.fee)<0))return json(409,{ok:false,code:'payout_unreadable'});
+    const result=custodyPayout
+      ? await call('SELECT seeker_skr.mine_custody_payout_finalize($1::uuid,$2::text,$3::numeric) AS result',
         [body.request_id,body.signature,String(-((tx as {meta:{fee:number}}).meta.fee))])
       : await call('SELECT seeker_skr.withdrawal_finalize($1::uuid,$2::text) AS result',[body.request_id,body.signature]);
     return json(200,{ok:true,result});
@@ -402,18 +404,18 @@ Deno.serve({ hostname: "0.0.0.0", port: 8090 }, async (request) => {
     if (url.pathname === "/wallet/snapshot") return await snapshot(body.player_id, body.address);
     if (url.pathname === "/wallet/deposit-intent") return await createIntent(body.player_id, body);
     if (url.pathname === "/wallet/deposit-confirm") return await confirm(body.player_id, body);
-    if(url.pathname==='/wallet/ore-payout-sign'){
+    if(url.pathname==='/wallet/ore-payout-sign'||url.pathname==='/wallet/sol-payout-sign'){
       if(!oreEnabled||!mineMaster)return json(409,{ok:false,code:'ore_activation_required'});
       if(typeof body.request_id!=='string'||!uuid.test(body.request_id))return json(400,{ok:false,code:'invalid_withdrawal'});
       if((await reconcile()).withdrawals_blocked)return json(409,{ok:false,code:'withdrawals_blocked'});
-      return json(200,{ok:true,result:await prepareOrePayout({master:mineMaster,call,rpc},body.request_id)});
+      return json(200,{ok:true,result:await (url.pathname==='/wallet/sol-payout-sign'?prepareMineSolPayout:prepareOrePayout)({master:mineMaster,call,rpc},body.request_id)});
     }
     const response=await mineRoute(url.pathname,body.player_id,body,mineMaster,call,rpc,oreEnabled)
       ??await commerce(url.pathname,body.player_id,body)??await withdrawals(url.pathname,body.player_id,body);
     if (response) return response;
     return json(404, { ok: false, code: "not_found" });
   } catch (error) {
-    const code = knownError(error);
+    const code = error instanceof Error&&error.message==='mine_sol_liquidity_unavailable'?error.message:knownError(error);
     if (code) return json(409, { ok: false, code });
     const message = error instanceof Error ? error.message : "";
     console.error("wallet service failure", message.startsWith("rpc_") ? message : "database_or_internal");

@@ -2,7 +2,7 @@
 // fee; both authorities sign. Only an approved, reserved request can be signed.
 import {ORE_TOKEN_MINT,TOKEN_PROGRAM} from './chain.ts';
 import {oreTokenAddress,ORE_DECIMALS,type Instruction} from './ore.ts';
-import {custodyKey,floatKey,type MineDeps} from './mine_runner.ts';
+import {custodyKey,floatKey,transferInstruction,type MineDeps} from './mine_runner.ts';
 import {actionId,prepareAction} from './mine_actions.ts';
 import {tokenCustodyBalance} from './payout_custody.ts';
 import {hasSkrAccount} from './recipient_account.ts';
@@ -24,5 +24,31 @@ export async function prepareOrePayout(deps:MineDeps,request:string):Promise<Jso
   data:Uint8Array.from([12,...Array.from({length:8},(_,i)=>Number(amount>>BigInt(i*8)&255n)),ORE_DECIMALS])};
  const a=await prepareAction(deps,await actionId(`payout:${request}`),null,request,'ore_payout',float,[ix],custody);
  if(a.status==='attention')throw new Error('mine_action_review_required');
+ return {transaction:a.wire,signature:a.signature,last_valid_height:Number(a.last_valid_height)};
+}
+
+// Prefer returned Mine SOL over a separately funded treasury. Preserve enough
+// float liquidity for every open reservation before signing a withdrawal.
+export async function prepareMineSolPayout(deps:MineDeps,request:string):Promise<Json>{
+ const w=await deps.call('SELECT seeker_skr.withdrawal_admin_get($1::uuid) AS result',[request]);
+ if(w.asset!=='SOL'||w.status!=='paying'||typeof w.destination!=='string'
+  ||typeof w.payout_minor!=='string'||!/^[1-9][0-9]{0,19}$/.test(w.payout_minor))throw new Error('withdrawal_state_conflict');
+ const id=await actionId(`payout:${request}`);
+ const stored=await deps.call('SELECT seeker_skr.mine_action_get($1::uuid) AS result',[id]);
+ if(stored.signature){
+  if(stored.kind!=='sol_payout'||stored.status==='attention')throw new Error('mine_action_review_required');
+  return {transaction:stored.wire,signature:stored.signature,last_valid_height:Number(stored.last_valid_height)};
+ }
+ const float=await floatKey(deps.master);
+ if(w.destination===float.address)throw new Error('invalid_wallet_address');
+ const amount=BigInt(w.payout_minor);
+ if(amount>18446744073709551615n)throw new Error('invalid_amount');
+ const work=await deps.call('SELECT seeker_skr.mine_runner_work() AS result',[]);
+ let reserved=BigInt(String(work.sol_payout_pending_minor??'0'));
+ for(const row of Array.isArray(work.sessions)?work.sessions as Json[]:[])reserved+=BigInt(String(row.reserved_minor))-BigInt(String(row.spent_minor));
+ const balance=await deps.rpc('getBalance',[float.address,{commitment:'finalized'}]) as {value:unknown};
+ if(!balance||!Number.isSafeInteger(balance.value)||Number(balance.value)<0)throw new Error('rpc_balance');
+ if(BigInt(Number(balance.value))<amount+reserved+5000n)throw new Error('mine_sol_liquidity_unavailable');
+ const a=await prepareAction(deps,id,null,request,'sol_payout',float,[transferInstruction(float.address,w.destination,amount)]);
  return {transaction:a.wire,signature:a.signature,last_valid_height:Number(a.last_valid_height)};
 }
