@@ -68,7 +68,6 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
   const [focusSaving, setFocusSaving] = useState(false);
   const [showFocus, setShowFocus] = useState(false);
   const [showPityInfo, setShowPityInfo] = useState(false);
-  const [showRates, setShowRates] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'paid' | 'scroll' | 'skr'>(isolatedHackathon ? 'skr' : 'paid');
   const rate = useSkrRate(isolatedHackathon);
   const [pendingQuote, setPendingQuote] = useState<{ quote: SkrPurchaseQuote; count: Batch } | null>(null);
@@ -235,7 +234,6 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
         </header>
         <div className="sv-temple-chips">
           <span className="sv-chip">{state.ownedHeroes.length}/{state.heroCapacity} heroes</span>
-          <button type="button" className="sv-chip sv-chip--button" onClick={() => setShowRates((value) => !value)} aria-expanded={showRates} aria-controls="sv-rates"><Info size={12} /> Rates</button>
         </div>
 
         <div className="sv-offering" role="group" aria-label="Summon payment method">
@@ -279,12 +277,13 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
           {showPityInfo && <p className="sv-pity-info"><strong>How Pity works:</strong> counters track misses for that rarity or higher. Guarantees are 150 / 500 / 2,000 / 5,000 / 20,000. Mythic+ gains 0.0015 percentage point per miss on rolls 251–499, taken from Common.</p>}
         </section>
 
-        {showRates && <section id="sv-rates" className="sv-rates" aria-label="Base summon rates">
-          <div className="sv-section-head"><span>Base summon rates</span><span className="sv-muted">{state.summons} summons</span></div>
+        <section id="sv-rates" className="sv-rates" aria-labelledby="sv-rates-title">
+          <div className="sv-section-head"><h3 id="sv-rates-title">Summon chances</h3><span className="sv-muted">{formatNum(state.summons)} summons</span></div>
           <ul>
-            {rarities.map(r => { const unavailable = (r === 'divine' || r === 'celestial') && rarityCapacity[r] === false; return <li key={r} className={unavailable ? 'is-full' : ''} style={{ color: RARITY_COLORS[r] }}><span>{RARITY_LABEL[r]}{unavailable ? ' · Full' : ''}</span><b>{RARITY_WEIGHT[r]}%</b></li>; })}
+            {rarities.map(r => { const unavailable = (r === 'divine' || r === 'celestial') && rarityCapacity[r] === false; return <li key={r} className={unavailable ? 'is-full' : ''} style={{ '--sv-color': RARITY_COLORS[r] } as CSSProperties}><span className="sv-rate-name"><i aria-hidden="true" />{RARITY_LABEL[r]}{unavailable && <small>Full</small>}</span><b>{RARITY_WEIGHT[r]}%</b></li>; })}
           </ul>
-        </section>}
+          <p className="sv-rates-note">Base chances before Pity. Guarantees are shown above.</p>
+        </section>
 
         <div className="sv-promote">
           {isolatedHackathon
