@@ -107,7 +107,7 @@ function dungeonEnemyUid(room: number, roomState: DungeonCheckpoint['room_state'
 type DungeonRoomState = NonNullable<DungeonCheckpoint['room_state']>;
 type DungeonPlaybackFrame = { heroes: DungeonUnitState[]; enemies: DungeonUnitState[]; pulses: Array<Omit<FloatingNumber, 'id' | 'born'>> };
 type PlaybackFighter = {
-  side: 'hero' | 'enemy'; index: number; uid: string; lane: number; boss: boolean; offset: number;
+  side: 'hero' | 'enemy'; index: number; uid: string; lane: number; boss: boolean; strikes: Set<number>;
   unit: DungeonUnitState; startHp: number; spawn: number; death: number;
 };
 
@@ -117,11 +117,25 @@ type PlaybackFighter = {
 // the Arena plays the lunge. The last frame always equals the server result.
 function planDungeonPlayback(room: number, start: DungeonRoomState, final: DungeonRoomState, frames: number): DungeonPlaybackFrame[] {
   const period = 3;
+  // Personal cooldowns: a fighter swings about every third frame, faster or slower with its speed and a stable
+  // per-fighter variation, from its own starting phase, so the party never strikes in lockstep.
+  const seed = (key: string, salt: number) => {
+    let hash = 2166136261 ^ salt;
+    for (let i = 0; i < key.length; i += 1) hash = Math.imul(hash ^ key.charCodeAt(i), 16777619);
+    return ((hash >>> 0) % 1000) / 1000;
+  };
+  const strikeFrames = (key: string, speed: number | undefined, from: number) => {
+    const cooldown = period * (100 / Math.max(50, Math.min(200, Number(speed) || 100))) * (0.8 + seed(key, 1) * 0.45);
+    const result = new Set<number>();
+    for (let time = from + 0.5 + seed(key, 2) * cooldown; time <= frames; time += cooldown) result.add(Math.max(from + 1, Math.ceil(time)));
+    return result;
+  };
   const bossFight = start.kind === 'shared_boss';
   const heroes: PlaybackFighter[] = (final.heroes ?? []).map((unit, index) => {
     const before = (start.heroes ?? []).find((candidate) => candidate.uid === unit.uid) ?? start.heroes?.[index];
     return {
-      side: 'hero', index, uid: unit.uid ?? `dungeon-hero-${index}`, lane: Number(unit.position ?? index), boss: false, offset: index % period,
+      side: 'hero', index, uid: unit.uid ?? `dungeon-hero-${index}`, lane: Number(unit.position ?? index), boss: false,
+      strikes: strikeFrames(unit.uid ?? `hero-${index}`, unit.speed, 0),
       unit, startHp: Number(before?.current_hp ?? unit.current_hp), spawn: before && !before.alive ? frames + 1 : 0, death: frames + 1,
     };
   });
@@ -130,11 +144,17 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
     const summonWave = !before && bossFight ? (String(unit.unit_id ?? '').startsWith('necromancer-summon-2') ? 0.6 : 0.3) : 0;
     return {
       side: 'enemy', index, uid: dungeonEnemyUid(room, final, unit, index), lane: Number(unit.lane ?? index),
-      boss: String(unit.unit_id ?? '').startsWith('shared-boss-'), offset: (index + 1) % period,
+      boss: String(unit.unit_id ?? '').startsWith('shared-boss-'), strikes: new Set<number>(),
       unit, startHp: Number(before?.current_hp ?? unit.max_hp), spawn: Math.round(frames * summonWave), death: before && !before.alive ? 0 : frames + 1,
     };
   });
   // Fighters who fall in this fight go down one after another instead of all on the last frame.
+  for (const fighter of enemies) {
+    // The Boss keeps the fixed beat its cast bars are drawn on; guards and summons get personal cooldowns.
+    fighter.strikes = fighter.boss
+      ? new Set(Array.from({ length: frames }, (_, frame) => frame + 1).filter((frame) => (frame + 1) % period === 0))
+      : strikeFrames(String(fighter.unit.unit_id ?? fighter.uid), fighter.unit.speed, fighter.spawn);
+  }
   // When the other side is wiped out, this side's losses land before that final kill.
   for (const [side, foes] of [[heroes, enemies], [enemies, heroes]] as const) {
     const falling = side.filter((fighter) => !fighter.unit.alive && fighter.death > frames && fighter.spawn <= frames);
@@ -156,7 +176,7 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
   const hits = new Map<PlaybackFighter, Hit[]>();
   for (let frame = 1; frame <= frames; frame += 1) {
     for (const attacker of [...heroes, ...enemies]) {
-      if (!canAct(attacker, frame) || (frame + attacker.offset) % period !== 0) continue;
+      if (!canAct(attacker, frame) || !attacker.strikes.has(frame)) continue;
       const target = chooseTarget(attacker, frame);
       if (target) hits.set(target, [...(hits.get(target) ?? []), { frame, source: attacker }]);
     }
@@ -960,7 +980,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               </div>
             </div>
           )}
-          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={(next) => void handleDungeonChange(next)} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0) => !won ? setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls }) : showToast(activeDungeon.type === 'boss_hunt' ? `Boss defeated · +${formatNum(gold)} Gold · 1 Boss Chest` : `Dungeon complete · +${scrolls} Summon Scrolls`)} />}
+          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={(next) => void handleDungeonChange(next)} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls })} />}
           {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Server reward result:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Granted together exactly once by the server</small></> : <><span><SummonScrollArtwork size={18} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST PREVIEW</span><small>{dungeonCompletion.scrolls === 2 ? 'Scrolls granted exactly once by the server; Dungeon Chest is not yet granted' : 'No Scrolls granted for this run; Dungeon Chest is not yet granted'}</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
           {!activeDungeon && import.meta.env.MODE === 'staging' && <TestControls game={game} />}
           {!activeDungeon && <div className="hl-battle-footer normal-battle-footer relative z-30 flex shrink-0 flex-wrap items-end justify-between gap-3 px-3 pb-3">
@@ -1321,8 +1341,7 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
     let pulseId = Date.now() * 32;
     for (let frame = 1; frame <= totalFrames; frame += 1) {
       const { heroes: nextHeroes, enemies: nextEnemies, pulses } = playback[frame - 1];
-      const born = performance.now();
-      onCombatPulse(pulses.map((pulse) => ({ ...pulse, id: pulseId++, born })));
+      const frameStarted = performance.now();
       onChange({
         ...resolved,
         room_state: {
@@ -1333,7 +1352,15 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
           playback_tick: frame,
         },
       });
-      if (frame < totalFrames) await new Promise<void>((resolve) => setTimeout(resolve, frameDuration));
+      // Hits that share a frame land one after another inside it rather than as one simultaneous volley.
+      const shown: FloatingNumber[] = [];
+      for (let order = 0; order < pulses.length; order += 1) {
+        if (order > 0) await new Promise<void>((resolve) => setTimeout(resolve, (frameDuration * 0.7) / pulses.length));
+        shown.push({ ...pulses[order], id: pulseId++, born: performance.now() });
+        onCombatPulse([...shown]);
+      }
+      const rest = frameDuration - (performance.now() - frameStarted);
+      if (frame < totalFrames && rest > 0) await new Promise<void>((resolve) => setTimeout(resolve, rest));
     }
     onCombatPulse([]);
     if (result.status && result.status !== 'active') {
@@ -1342,13 +1369,19 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
       onChange(null);
       return;
     }
-    if (startState.kind === 'retinue' && finalState.status === 'cleared') {
+    // A cleared Retinue reveals the Boss, and a killed Boss is verified at once (Founder 2026-10-05: no separate
+    // Verify Victory step), so the panel goes straight to the Claim.
+    if ((startState.kind === 'retinue' || bossFight) && finalState.status === 'cleared') {
       await new Promise<void>((resolve) => setTimeout(resolve, 900));
       const revealed = await requestAction('dungeon_room_complete', {
         encounter_id: resolved.encounter_id,
         expected_revision: resolved.revision,
       });
-      if (revealed) onChange(checkpointFromResult(resolved, revealed));
+      if (revealed?.status && revealed.status !== 'active') {
+        if (revealed.state) onHydrate(revealed.state);
+        onComplete(revealed.status === 'completed', Number(revealed.gold) || 0, Number(revealed.scrolls_awarded) || 0);
+        onChange(null);
+      } else if (revealed) onChange(checkpointFromResult(resolved, revealed));
     }
   };
 
