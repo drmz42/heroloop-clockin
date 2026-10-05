@@ -327,7 +327,7 @@ export type MineSession = {
   created_at: string; rounds: MineRound[];
 };
 export type MineStatus = {
-  enabled: boolean; float_address: string | null; terms_version: string; accepted_terms_version: string | null; tiers: string[]; max_rounds: number;
+  enabled: boolean; wallet_mode?: 'shared_project' | 'legacy_custody'; float_address: string | null; terms_version: string; accepted_terms_version: string | null; tiers: string[]; max_rounds: number;
   session_limit_minor: string; daily_limit_minor: string; available_minor: string | null; used_today_minor: string;
   session: MineSession | null;
 };
