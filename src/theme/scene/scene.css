@@ -187,7 +187,7 @@ button.sc-chip { cursor: pointer; }
 .sc-flame i:nth-child(2) { width: 46%; height: 100%; background: radial-gradient(ellipse at 50% 85%, #fff, #ffe2a0 35%, #ff9c2e 60%, transparent 75%); animation-duration: 1.05s; animation-delay: -.3s; }
 
 /* ── Heroes: Hall of Champions ───────────────────────────────── */
-.hv-hall { --sc-art: url('/assets/screens/heroes-hall-v1.webp'); --sc-glow-y: 70%; min-height: 360px; padding-bottom: 10px; }
+.hv-hall { --sc-art: url('/assets/screens/heroes-hall-v2.webp'); --sc-glow-y: 70%; min-height: 360px; padding-bottom: 10px; }
 .hv-hall .sc-stage-art { background-position: 50% 40%; }
 .hv-head-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; }
 .hv-head-row .skr-purchase-button,
@@ -733,3 +733,10 @@ html .hv-seat-hero .hero-portrait-rarity:has(> .rx):not(#rx-a):not(#rx-b) { box-
    the dark socket). A plain forged square keeps the X centred. */
 html .hv-detail .hv-detail-close.sc-socket:not(#hl-a) { display: grid; width: 40px; height: 40px; min-width: 40px; min-height: 40px; place-items: center; box-sizing: border-box; border: 1px solid rgba(199, 158, 97, .7); border-image: none; border-radius: 3px; padding: 0; background: radial-gradient(circle at 50% 35%, #3a2b1b, #0c0907 80%); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 220, 160, .18), 0 2px 6px rgba(0, 0, 0, .6); }
 html .hv-detail .hv-detail-close.sc-socket::after { content: ''; position: absolute; inset: -4px; }
+
+/* Founder 2026-10-05: forged stone pedestals replace the flat trapezoid plates (art: upload/heroes-podium-20261005);
+   name and class sit on the pedestal's front plaque. */
+html .hv-plinth:not(#hl-a) { display: grid; min-height: 0; aspect-ratio: 8 / 3; align-content: center; margin-top: 4px; padding: 13% 16% 4%; clip-path: none; background: url('/assets/screens/heroes-pedestal-v1.webp') center / 100% 100% no-repeat; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .7)); }
+html .hv-plinth:not(#hl-a)::after { display: none; }
+html .hv-plinth:not(#hl-a) b { font-size: 9px; text-shadow: 0 1px 2px #000; }
+html .hv-plinth:not(#hl-a) small { margin-top: 1px; font-size: 7px; }
