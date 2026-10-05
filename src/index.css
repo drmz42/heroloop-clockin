@@ -720,9 +720,19 @@ html { scroll-behavior: smooth; }
 .dungeon-throne-portrait { position:relative;z-index:2;display:block;line-height:0; }
 .boss-frame { position:absolute;z-index:6;inset:-9%;pointer-events:none;background:url('/assets/ui/boss/boss-frame-v1.webp') center / 100% 100% no-repeat;filter:drop-shadow(0 6px 10px rgba(0,0,0,.7)); }
 .dungeon-shared-boss .arena-portrait { border-color:transparent!important;border-radius:2px!important;background:#08070a; }
-.dungeon-shared-boss .arena-portrait img { transform:translateY(10%) scale(1.08);transform-origin:50% 100%; }
+/* The art starts under the crest (padding on the image keeps object-fit inside the lower window), and the frame
+   replaces each Boss's coloured inner rim, which showed as a stripe across the head. */
+/* Founder 2026-10-05: no golden halo on a Boss; it reads as menace instead: a deep shadow, a dark crimson heartbeat
+   behind the frame and fresh blood on the frame (boss-blood-v1 shares the frame's geometry). */
+.dungeon-shared-stage .dungeon-shared-boss .arena-portrait.combatant-card { box-shadow:0 22px 60px rgba(0,0,0,.8),0 0 34px 12px rgba(96,0,8,.55)!important;filter:none!important;animation:boss-heartbeat 1.7s ease-in-out infinite; }
+.boss-frame::after { content:'';position:absolute;inset:0;background:url('/assets/ui/boss/boss-blood-v1.webp') center / 100% 100% no-repeat; }
+.dungeon-throne-portrait img { box-shadow:0 18px 45px rgba(0,0,0,.72),0 0 30px 8px rgba(70,0,6,.45)!important; }
+@keyframes boss-heartbeat { 0%,40%,100% { box-shadow:0 22px 60px rgba(0,0,0,.8),0 0 50px 22px rgba(90,0,8,.5); } 12% { box-shadow:0 22px 60px rgba(0,0,0,.8),0 0 70px 34px rgba(150,8,16,.7); } 26% { box-shadow:0 22px 60px rgba(0,0,0,.8),0 0 60px 26px rgba(120,4,12,.6); } }
+:is(.arena-mode-off, .game-motion-off) .dungeon-shared-boss .arena-portrait { animation:none!important; }
+@media (prefers-reduced-motion:reduce) { .dungeon-shared-boss .arena-portrait { animation:none!important; } }
+.dungeon-shared-boss .arena-portrait img,.dungeon-throne-portrait img { box-sizing:border-box;padding-top:12%;background:#08070a;object-position:50% 0%!important;transform:none!important; }
 .dungeon-throne-portrait + .dungeon-throne-state { margin-top:18px; }
-.dungeon-throne-portrait img { border:0!important;border-radius:2px!important;object-position:center 0%!important; }
+.dungeon-throne-portrait img { border:0!important;border-radius:2px!important; }
 .dungeon-shared-boss .battle-rank-plate { top:auto;bottom:-24px;z-index:8; }
 .dungeon-throne-haze { position:absolute;z-index:1;inset:15% -25% -8%;background:radial-gradient(ellipse,rgba(92,54,128,.3),transparent 68%);filter:blur(8px); }
 .dungeon-throne-state { position:relative;z-index:3;display:flex;align-items:center;gap:5px;margin-top:-10px;padding:4px 8px;border:1px solid #876f45;border-radius:5px;background:#100d0de8;font-size:var(--ui-text-small);font-weight:900;letter-spacing:.08em; }
