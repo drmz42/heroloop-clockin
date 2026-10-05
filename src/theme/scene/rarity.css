@@ -79,56 +79,56 @@ html .hero-portrait-rarity:has(> .rx) .hero-level-badge { right: 9%; bottom: 9%;
 /* Silhouette: the box shows only the frame metal and its interior (9-slice mask from the same art) */
 html :has(> .rx) { -webkit-mask-box-image: var(--rx-host-sil) var(--rx-host-sl) fill / var(--rx-bw) stretch; }
 /* Host silhouette inputs per frame (generated) */
-:has(> .rx-celestial.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/celestial-card-sil.webp'); --rx-host-sl: 108; }
-:has(> .rx-celestial.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/celestial-slot-sil.webp'); --rx-host-sl: 92; }
-:has(> .rx-common.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/common-card-sil.webp'); --rx-host-sl: 108; }
-:has(> .rx-common.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/common-slot-sil.webp'); --rx-host-sl: 92; }
-:has(> .rx-cosmic.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/cosmic-card-sil.webp'); --rx-host-sl: 108; }
-:has(> .rx-cosmic.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/cosmic-slot-sil.webp'); --rx-host-sl: 92; }
-:has(> .rx-cursed.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/cursed-card-sil.webp'); --rx-host-sl: 108; }
-:has(> .rx-cursed.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/cursed-slot-sil.webp'); --rx-host-sl: 92; }
-:has(> .rx-divine.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/divine-card-sil.webp'); --rx-host-sl: 108; }
-:has(> .rx-divine.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/divine-slot-sil.webp'); --rx-host-sl: 92; }
-:has(> .rx-epic.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/epic-card-sil.webp'); --rx-host-sl: 108; }
-:has(> .rx-epic.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/epic-slot-sil.webp'); --rx-host-sl: 92; }
-:has(> .rx-god.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/god-card-sil.webp'); --rx-host-sl: 108; }
-:has(> .rx-god.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/god-slot-sil.webp'); --rx-host-sl: 92; }
-:has(> .rx-immortal.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/immortal-card-sil.webp'); --rx-host-sl: 108; }
-:has(> .rx-immortal.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/immortal-slot-sil.webp'); --rx-host-sl: 92; }
-:has(> .rx-legendary.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/legendary-card-sil.webp'); --rx-host-sl: 108; }
-:has(> .rx-legendary.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/legendary-slot-sil.webp'); --rx-host-sl: 92; }
-:has(> .rx-mythic.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/mythic-card-sil.webp'); --rx-host-sl: 108; }
-:has(> .rx-mythic.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/mythic-slot-sil.webp'); --rx-host-sl: 92; }
-:has(> .rx-rare.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/rare-card-sil.webp'); --rx-host-sl: 108; }
-:has(> .rx-rare.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/rare-slot-sil.webp'); --rx-host-sl: 92; }
-:has(> .rx-uncommon.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/uncommon-card-sil.webp'); --rx-host-sl: 108; }
-:has(> .rx-uncommon.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/uncommon-slot-sil.webp'); --rx-host-sl: 92; }
+:has(> .rx-celestial.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/celestial-card-sil.webp?v=20261005'); --rx-host-sl: 108; }
+:has(> .rx-celestial.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/celestial-slot-sil.webp?v=20261005'); --rx-host-sl: 92; }
+:has(> .rx-common.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/common-card-sil.webp?v=20261005'); --rx-host-sl: 108; }
+:has(> .rx-common.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/common-slot-sil.webp?v=20261005'); --rx-host-sl: 92; }
+:has(> .rx-cosmic.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/cosmic-card-sil.webp?v=20261005'); --rx-host-sl: 108; }
+:has(> .rx-cosmic.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/cosmic-slot-sil.webp?v=20261005'); --rx-host-sl: 92; }
+:has(> .rx-cursed.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/cursed-card-sil.webp?v=20261005'); --rx-host-sl: 108; }
+:has(> .rx-cursed.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/cursed-slot-sil.webp?v=20261005'); --rx-host-sl: 92; }
+:has(> .rx-divine.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/divine-card-sil.webp?v=20261005'); --rx-host-sl: 108; }
+:has(> .rx-divine.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/divine-slot-sil.webp?v=20261005'); --rx-host-sl: 92; }
+:has(> .rx-epic.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/epic-card-sil.webp?v=20261005'); --rx-host-sl: 108; }
+:has(> .rx-epic.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/epic-slot-sil.webp?v=20261005'); --rx-host-sl: 92; }
+:has(> .rx-god.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/god-card-sil.webp?v=20261005'); --rx-host-sl: 108; }
+:has(> .rx-god.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/god-slot-sil.webp?v=20261005'); --rx-host-sl: 92; }
+:has(> .rx-immortal.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/immortal-card-sil.webp?v=20261005'); --rx-host-sl: 108; }
+:has(> .rx-immortal.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/immortal-slot-sil.webp?v=20261005'); --rx-host-sl: 92; }
+:has(> .rx-legendary.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/legendary-card-sil.webp?v=20261005'); --rx-host-sl: 108; }
+:has(> .rx-legendary.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/legendary-slot-sil.webp?v=20261005'); --rx-host-sl: 92; }
+:has(> .rx-mythic.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/mythic-card-sil.webp?v=20261005'); --rx-host-sl: 108; }
+:has(> .rx-mythic.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/mythic-slot-sil.webp?v=20261005'); --rx-host-sl: 92; }
+:has(> .rx-rare.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/rare-card-sil.webp?v=20261005'); --rx-host-sl: 108; }
+:has(> .rx-rare.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/rare-slot-sil.webp?v=20261005'); --rx-host-sl: 92; }
+:has(> .rx-uncommon.rx-card) { --rx-host-sil: url('/assets/ui/rarity-frames/uncommon-card-sil.webp?v=20261005'); --rx-host-sl: 108; }
+:has(> .rx-uncommon.rx-slot) { --rx-host-sil: url('/assets/ui/rarity-frames/uncommon-slot-sil.webp?v=20261005'); --rx-host-sl: 92; }
 /* 9-slice geometry (generated 2026-10-04 from the frame art). Ratios are relative to the corner slice,
    so the frame scales with --rx-bw (set from the box width by RarityFx). */
-.rx-celestial.rx-card { --rx-sl: 108; --rx-ot: 0.4834; --rx-ob: 0.5026; --rx-ol: 0.5141; --rx-or: 0.5141; --rx-9: url('/assets/ui/rarity-frames/celestial-card-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/celestial-card-sil.webp'); --rx-ctw: 1.7112; --rx-cth: 0.6791; --rx-ctd: 0.0000; --rx-ctx: 0.0000; --rx-cbw: 1.7112; --rx-cbh: 0.6791; --rx-cbd: 0.0153; --rx-cbx: 0.0000; }
-.rx-celestial.rx-slot { --rx-sl: 92; --rx-ot: 0.5150; --rx-ob: 0.5316; --rx-ol: 0.4785; --rx-or: 0.4785; --rx-9: url('/assets/ui/rarity-frames/celestial-slot-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/celestial-slot-sil.webp'); --rx-ctw: 1.7012; --rx-cth: 0.5615; --rx-ctd: 0.0797; --rx-ctx: 0.0000; --rx-cbw: 1.7012; --rx-cbh: 0.5815; --rx-cbd: 0.0864; --rx-cbx: 0.0000; }
-.rx-common.rx-card { --rx-sl: 108; --rx-ot: 0.4796; --rx-ob: 0.4796; --rx-ol: 0.4681; --rx-or: 0.4681; --rx-9: url('/assets/ui/rarity-frames/common-card-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/common-card-sil.webp'); }
-.rx-common.rx-slot { --rx-sl: 92; --rx-ot: 0.5748; --rx-ob: 0.5748; --rx-ol: 0.5183; --rx-or: 0.5183; --rx-9: url('/assets/ui/rarity-frames/common-slot-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/common-slot-sil.webp'); }
-.rx-cosmic.rx-card { --rx-sl: 108; --rx-ot: 0.4873; --rx-ob: 0.4873; --rx-ol: 0.5141; --rx-or: 0.5141; --rx-9: url('/assets/ui/rarity-frames/cosmic-card-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/cosmic-card-sil.webp'); --rx-ctw: 1.7112; --rx-cth: 0.6254; --rx-ctd: 0.0000; --rx-ctx: 0.0000; }
-.rx-cosmic.rx-slot { --rx-sl: 92; --rx-ot: 0.5283; --rx-ob: 0.5250; --rx-ol: 0.5150; --rx-or: 0.5150; --rx-9: url('/assets/ui/rarity-frames/cosmic-slot-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/cosmic-slot-sil.webp'); --rx-ctw: 1.7012; --rx-cth: 0.5416; --rx-ctd: 0.1030; --rx-ctx: 0.0000; }
-.rx-cursed.rx-card { --rx-sl: 108; --rx-ot: 0.4642; --rx-ob: 0.6369; --rx-ol: 0.4758; --rx-or: 0.4758; --rx-9: url('/assets/ui/rarity-frames/cursed-card-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/cursed-card-sil.webp'); --rx-ctw: 1.7112; --rx-cth: 0.6906; --rx-ctd: 0.0000; --rx-ctx: 0.0000; --rx-cbw: 1.7112; --rx-cbh: 0.9055; --rx-cbd: 0.0000; --rx-cbx: 0.0000; }
-.rx-cursed.rx-slot { --rx-sl: 92; --rx-ot: 0.5283; --rx-ob: 0.5117; --rx-ol: 0.5051; --rx-or: 0.5051; --rx-9: url('/assets/ui/rarity-frames/cursed-slot-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/cursed-slot-sil.webp'); --rx-ctw: 1.7012; --rx-cth: 0.5881; --rx-ctd: 0.0233; --rx-ctx: 0.0000; --rx-cbw: 1.7012; --rx-cbh: 0.6114; --rx-cbd: 0.0266; --rx-cbx: 0.0000; }
-.rx-divine.rx-card { --rx-sl: 108; --rx-ot: 0.4873; --rx-ob: 0.5295; --rx-ol: 0.5064; --rx-or: 0.5064; --rx-9: url('/assets/ui/rarity-frames/divine-card-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/divine-card-sil.webp'); --rx-ctw: 1.7112; --rx-cth: 0.7405; --rx-ctd: 0.0000; --rx-ctx: 0.0000; --rx-cbw: 1.7112; --rx-cbh: 0.6100; --rx-cbd: 0.0460; --rx-cbx: 0.0000; }
-.rx-divine.rx-slot { --rx-sl: 92; --rx-ot: 0.5051; --rx-ob: 0.5183; --rx-ol: 0.5183; --rx-or: 0.5183; --rx-9: url('/assets/ui/rarity-frames/divine-slot-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/divine-slot-sil.webp'); --rx-ctw: 1.7012; --rx-cth: 0.6645; --rx-ctd: 0.0000; --rx-ctx: 0.0000; --rx-cbw: 1.7012; --rx-cbh: 0.5948; --rx-cbd: 0.0465; --rx-cbx: 0.0000; }
-.rx-epic.rx-card { --rx-sl: 108; --rx-ot: 0.4911; --rx-ob: 0.4911; --rx-ol: 0.5141; --rx-or: 0.5141; --rx-9: url('/assets/ui/rarity-frames/epic-card-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/epic-card-sil.webp'); }
-.rx-epic.rx-slot { --rx-sl: 92; --rx-ot: 0.5316; --rx-ob: 0.5316; --rx-ol: 0.5183; --rx-or: 0.5183; --rx-9: url('/assets/ui/rarity-frames/epic-slot-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/epic-slot-sil.webp'); }
-.rx-god.rx-card { --rx-sl: 108; --rx-ot: 0.4374; --rx-ob: 0.5180; --rx-ol: 0.5103; --rx-or: 0.5103; --rx-9: url('/assets/ui/rarity-frames/god-card-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/god-card-sil.webp'); --rx-ctw: 1.7112; --rx-cth: 0.6944; --rx-ctd: 0.0000; --rx-ctx: 0.0000; --rx-cbw: 1.7112; --rx-cbh: 0.7520; --rx-cbd: 0.0000; --rx-cbx: 0.0000; }
-.rx-god.rx-slot { --rx-sl: 92; --rx-ot: 0.5150; --rx-ob: 0.5150; --rx-ol: 0.4851; --rx-or: 0.4851; --rx-9: url('/assets/ui/rarity-frames/god-slot-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/god-slot-sil.webp'); --rx-ctw: 1.7012; --rx-cth: 0.7243; --rx-ctd: 0.0066; --rx-ctx: 0.0000; --rx-cbw: 1.7012; --rx-cbh: 0.7343; --rx-cbd: 0.0066; --rx-cbx: 0.0000; }
-.rx-immortal.rx-card { --rx-sl: 108; --rx-ot: 0.2993; --rx-ob: 0.5678; --rx-ol: 0.5141; --rx-or: 0.5141; --rx-9: url('/assets/ui/rarity-frames/immortal-card-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/immortal-card-sil.webp'); --rx-ctw: 1.7112; --rx-cth: 0.7789; --rx-ctd: 0.0000; --rx-ctx: 0.0000; --rx-cbw: 1.7112; --rx-cbh: 0.8287; --rx-cbd: 0.0000; --rx-cbx: 0.0000; }
-.rx-immortal.rx-slot { --rx-sl: 92; --rx-ot: 0.5482; --rx-ob: 0.5582; --rx-ol: 0.4652; --rx-or: 0.4652; --rx-9: url('/assets/ui/rarity-frames/immortal-slot-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/immortal-slot-sil.webp'); --rx-ctw: 1.7012; --rx-cth: 0.6911; --rx-ctd: 0.0000; --rx-ctx: 0.0000; --rx-cbw: 1.7012; --rx-cbh: 0.7476; --rx-cbd: 0.0000; --rx-cbx: 0.0000; }
-.rx-legendary.rx-card { --rx-sl: 108; --rx-ot: 0.4873; --rx-ob: 0.4873; --rx-ol: 0.4949; --rx-or: 0.4949; --rx-9: url('/assets/ui/rarity-frames/legendary-card-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/legendary-card-sil.webp'); --rx-ctw: 1.7112; --rx-cth: 0.5909; --rx-ctd: 0.0000; --rx-ctx: 0.0000; }
-.rx-legendary.rx-slot { --rx-sl: 92; --rx-ot: 0.4652; --rx-ob: 0.4652; --rx-ol: 0.4685; --rx-or: 0.4685; --rx-9: url('/assets/ui/rarity-frames/legendary-slot-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/legendary-slot-sil.webp'); --rx-ctw: 1.7012; --rx-cth: 0.6346; --rx-ctd: 0.0000; --rx-ctx: 0.0000; }
-.rx-mythic.rx-card { --rx-sl: 108; --rx-ot: 0.4949; --rx-ob: 0.4949; --rx-ol: 0.5180; --rx-or: 0.5180; --rx-9: url('/assets/ui/rarity-frames/mythic-card-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/mythic-card-sil.webp'); --rx-ctw: 1.7112; --rx-cth: 0.6215; --rx-ctd: 0.0000; --rx-ctx: 0.0000; }
-.rx-mythic.rx-slot { --rx-sl: 92; --rx-ot: 0.5316; --rx-ob: 0.5316; --rx-ol: 0.4951; --rx-or: 0.4951; --rx-9: url('/assets/ui/rarity-frames/mythic-slot-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/mythic-slot-sil.webp'); --rx-ctw: 1.7012; --rx-cth: 0.6346; --rx-ctd: 0.0365; --rx-ctx: 0.0000; }
-.rx-rare.rx-card { --rx-sl: 108; --rx-ot: 0.4949; --rx-ob: 0.4949; --rx-ol: 0.5295; --rx-or: 0.5295; --rx-9: url('/assets/ui/rarity-frames/rare-card-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/rare-card-sil.webp'); }
-.rx-rare.rx-slot { --rx-sl: 92; --rx-ot: 0.5416; --rx-ob: 0.5416; --rx-ol: 0.5150; --rx-or: 0.5150; --rx-9: url('/assets/ui/rarity-frames/rare-slot-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/rare-slot-sil.webp'); }
-.rx-uncommon.rx-card { --rx-sl: 108; --rx-ot: 0.4949; --rx-ob: 0.4949; --rx-ol: 0.5064; --rx-or: 0.5064; --rx-9: url('/assets/ui/rarity-frames/uncommon-card-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/uncommon-card-sil.webp'); }
-.rx-uncommon.rx-slot { --rx-sl: 92; --rx-ot: 0.5183; --rx-ob: 0.5183; --rx-ol: 0.4984; --rx-or: 0.4984; --rx-9: url('/assets/ui/rarity-frames/uncommon-slot-9.webp'); --rx-sil: url('/assets/ui/rarity-frames/uncommon-slot-sil.webp'); }
+.rx-celestial.rx-card { --rx-sl: 108; --rx-ot: 0.4834; --rx-ob: 0.5026; --rx-ol: 0.5141; --rx-or: 0.5141; --rx-9: url('/assets/ui/rarity-frames/celestial-card-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/celestial-card-sil.webp?v=20261005'); --rx-ctw: 1.7112; --rx-cth: 0.6791; --rx-ctd: 0.0000; --rx-ctx: 0.0000; --rx-cbw: 1.7112; --rx-cbh: 0.6791; --rx-cbd: 0.0153; --rx-cbx: 0.0000; }
+.rx-celestial.rx-slot { --rx-sl: 92; --rx-ot: 0.5150; --rx-ob: 0.5316; --rx-ol: 0.4785; --rx-or: 0.4785; --rx-9: url('/assets/ui/rarity-frames/celestial-slot-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/celestial-slot-sil.webp?v=20261005'); --rx-ctw: 1.7012; --rx-cth: 0.5615; --rx-ctd: 0.0797; --rx-ctx: 0.0000; --rx-cbw: 1.7012; --rx-cbh: 0.5815; --rx-cbd: 0.0864; --rx-cbx: 0.0000; }
+.rx-common.rx-card { --rx-sl: 108; --rx-ot: 0.4796; --rx-ob: 0.4796; --rx-ol: 0.4681; --rx-or: 0.4681; --rx-9: url('/assets/ui/rarity-frames/common-card-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/common-card-sil.webp?v=20261005'); }
+.rx-common.rx-slot { --rx-sl: 92; --rx-ot: 0.5748; --rx-ob: 0.5748; --rx-ol: 0.5183; --rx-or: 0.5183; --rx-9: url('/assets/ui/rarity-frames/common-slot-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/common-slot-sil.webp?v=20261005'); }
+.rx-cosmic.rx-card { --rx-sl: 108; --rx-ot: 0.4873; --rx-ob: 0.4873; --rx-ol: 0.5141; --rx-or: 0.5141; --rx-9: url('/assets/ui/rarity-frames/cosmic-card-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/cosmic-card-sil.webp?v=20261005'); --rx-ctw: 1.7112; --rx-cth: 0.6254; --rx-ctd: 0.0000; --rx-ctx: 0.0000; }
+.rx-cosmic.rx-slot { --rx-sl: 92; --rx-ot: 0.5283; --rx-ob: 0.5250; --rx-ol: 0.5150; --rx-or: 0.5150; --rx-9: url('/assets/ui/rarity-frames/cosmic-slot-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/cosmic-slot-sil.webp?v=20261005'); --rx-ctw: 1.7012; --rx-cth: 0.5416; --rx-ctd: 0.1030; --rx-ctx: 0.0000; }
+.rx-cursed.rx-card { --rx-sl: 108; --rx-ot: 0.4642; --rx-ob: 0.6369; --rx-ol: 0.4758; --rx-or: 0.4758; --rx-9: url('/assets/ui/rarity-frames/cursed-card-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/cursed-card-sil.webp?v=20261005'); --rx-ctw: 1.7112; --rx-cth: 0.6906; --rx-ctd: 0.0000; --rx-ctx: 0.0000; --rx-cbw: 1.7112; --rx-cbh: 0.9055; --rx-cbd: 0.0000; --rx-cbx: 0.0000; }
+.rx-cursed.rx-slot { --rx-sl: 92; --rx-ot: 0.5283; --rx-ob: 0.5117; --rx-ol: 0.5051; --rx-or: 0.5051; --rx-9: url('/assets/ui/rarity-frames/cursed-slot-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/cursed-slot-sil.webp?v=20261005'); --rx-ctw: 1.7012; --rx-cth: 0.5881; --rx-ctd: 0.0233; --rx-ctx: 0.0000; --rx-cbw: 1.7012; --rx-cbh: 0.6114; --rx-cbd: 0.0266; --rx-cbx: 0.0000; }
+.rx-divine.rx-card { --rx-sl: 108; --rx-ot: 0.4873; --rx-ob: 0.5295; --rx-ol: 0.5064; --rx-or: 0.5064; --rx-9: url('/assets/ui/rarity-frames/divine-card-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/divine-card-sil.webp?v=20261005'); --rx-ctw: 1.7112; --rx-cth: 0.7405; --rx-ctd: 0.0000; --rx-ctx: 0.0000; --rx-cbw: 1.7112; --rx-cbh: 0.6100; --rx-cbd: 0.0460; --rx-cbx: 0.0000; }
+.rx-divine.rx-slot { --rx-sl: 92; --rx-ot: 0.5051; --rx-ob: 0.5183; --rx-ol: 0.5183; --rx-or: 0.5183; --rx-9: url('/assets/ui/rarity-frames/divine-slot-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/divine-slot-sil.webp?v=20261005'); --rx-ctw: 1.7012; --rx-cth: 0.6645; --rx-ctd: 0.0000; --rx-ctx: 0.0000; --rx-cbw: 1.7012; --rx-cbh: 0.5948; --rx-cbd: 0.0465; --rx-cbx: 0.0000; }
+.rx-epic.rx-card { --rx-sl: 108; --rx-ot: 0.4911; --rx-ob: 0.4911; --rx-ol: 0.5141; --rx-or: 0.5141; --rx-9: url('/assets/ui/rarity-frames/epic-card-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/epic-card-sil.webp?v=20261005'); }
+.rx-epic.rx-slot { --rx-sl: 92; --rx-ot: 0.5316; --rx-ob: 0.5316; --rx-ol: 0.5183; --rx-or: 0.5183; --rx-9: url('/assets/ui/rarity-frames/epic-slot-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/epic-slot-sil.webp?v=20261005'); }
+.rx-god.rx-card { --rx-sl: 108; --rx-ot: 0.4374; --rx-ob: 0.5180; --rx-ol: 0.5103; --rx-or: 0.5103; --rx-9: url('/assets/ui/rarity-frames/god-card-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/god-card-sil.webp?v=20261005'); --rx-ctw: 1.7112; --rx-cth: 0.6944; --rx-ctd: 0.0000; --rx-ctx: 0.0000; --rx-cbw: 1.7112; --rx-cbh: 0.7520; --rx-cbd: 0.0000; --rx-cbx: 0.0000; }
+.rx-god.rx-slot { --rx-sl: 92; --rx-ot: 0.5150; --rx-ob: 0.5150; --rx-ol: 0.4851; --rx-or: 0.4851; --rx-9: url('/assets/ui/rarity-frames/god-slot-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/god-slot-sil.webp?v=20261005'); --rx-ctw: 1.7012; --rx-cth: 0.7243; --rx-ctd: 0.0066; --rx-ctx: 0.0000; --rx-cbw: 1.7012; --rx-cbh: 0.7343; --rx-cbd: 0.0066; --rx-cbx: 0.0000; }
+.rx-immortal.rx-card { --rx-sl: 108; --rx-ot: 0.2993; --rx-ob: 0.5678; --rx-ol: 0.5141; --rx-or: 0.5141; --rx-9: url('/assets/ui/rarity-frames/immortal-card-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/immortal-card-sil.webp?v=20261005'); --rx-ctw: 1.7112; --rx-cth: 0.7789; --rx-ctd: 0.0000; --rx-ctx: 0.0000; --rx-cbw: 1.7112; --rx-cbh: 0.8287; --rx-cbd: 0.0000; --rx-cbx: 0.0000; }
+.rx-immortal.rx-slot { --rx-sl: 92; --rx-ot: 0.5482; --rx-ob: 0.5582; --rx-ol: 0.4652; --rx-or: 0.4652; --rx-9: url('/assets/ui/rarity-frames/immortal-slot-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/immortal-slot-sil.webp?v=20261005'); --rx-ctw: 1.7012; --rx-cth: 0.6911; --rx-ctd: 0.0000; --rx-ctx: 0.0000; --rx-cbw: 1.7012; --rx-cbh: 0.7476; --rx-cbd: 0.0000; --rx-cbx: 0.0000; }
+.rx-legendary.rx-card { --rx-sl: 108; --rx-ot: 0.4873; --rx-ob: 0.4873; --rx-ol: 0.4949; --rx-or: 0.4949; --rx-9: url('/assets/ui/rarity-frames/legendary-card-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/legendary-card-sil.webp?v=20261005'); --rx-ctw: 1.7112; --rx-cth: 0.5909; --rx-ctd: 0.0000; --rx-ctx: 0.0000; }
+.rx-legendary.rx-slot { --rx-sl: 92; --rx-ot: 0.4652; --rx-ob: 0.4652; --rx-ol: 0.4685; --rx-or: 0.4685; --rx-9: url('/assets/ui/rarity-frames/legendary-slot-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/legendary-slot-sil.webp?v=20261005'); --rx-ctw: 1.7012; --rx-cth: 0.6346; --rx-ctd: 0.0000; --rx-ctx: 0.0000; }
+.rx-mythic.rx-card { --rx-sl: 108; --rx-ot: 0.4949; --rx-ob: 0.4949; --rx-ol: 0.5180; --rx-or: 0.5180; --rx-9: url('/assets/ui/rarity-frames/mythic-card-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/mythic-card-sil.webp?v=20261005'); --rx-ctw: 1.7112; --rx-cth: 0.6215; --rx-ctd: 0.0000; --rx-ctx: 0.0000; }
+.rx-mythic.rx-slot { --rx-sl: 92; --rx-ot: 0.5316; --rx-ob: 0.5316; --rx-ol: 0.4951; --rx-or: 0.4951; --rx-9: url('/assets/ui/rarity-frames/mythic-slot-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/mythic-slot-sil.webp?v=20261005'); --rx-ctw: 1.7012; --rx-cth: 0.6346; --rx-ctd: 0.0365; --rx-ctx: 0.0000; }
+.rx-rare.rx-card { --rx-sl: 108; --rx-ot: 0.4949; --rx-ob: 0.4949; --rx-ol: 0.5295; --rx-or: 0.5295; --rx-9: url('/assets/ui/rarity-frames/rare-card-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/rare-card-sil.webp?v=20261005'); }
+.rx-rare.rx-slot { --rx-sl: 92; --rx-ot: 0.5416; --rx-ob: 0.5416; --rx-ol: 0.5150; --rx-or: 0.5150; --rx-9: url('/assets/ui/rarity-frames/rare-slot-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/rare-slot-sil.webp?v=20261005'); }
+.rx-uncommon.rx-card { --rx-sl: 108; --rx-ot: 0.4949; --rx-ob: 0.4949; --rx-ol: 0.5064; --rx-or: 0.5064; --rx-9: url('/assets/ui/rarity-frames/uncommon-card-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/uncommon-card-sil.webp?v=20261005'); }
+.rx-uncommon.rx-slot { --rx-sl: 92; --rx-ot: 0.5183; --rx-ob: 0.5183; --rx-ol: 0.4984; --rx-or: 0.4984; --rx-9: url('/assets/ui/rarity-frames/uncommon-slot-9.webp?v=20261005'); --rx-sil: url('/assets/ui/rarity-frames/uncommon-slot-sil.webp?v=20261005'); }
 /* TCG hero cards (2026-10-04, Founder: heroes are summoned like cards; detail grows with tier, most after
    Mythic). The frame covers the art edge itself; banner geometry is generated from the art. */
 .rx-common.rx-tcg { --rx-it: 0%; --rx-ir: 0%; --rx-il: 0%; --rx-ib: 0%; --rx-bt: 84.26%; --rx-bb: 2.84%; }
@@ -143,18 +143,18 @@ html :has(> .rx) { -webkit-mask-box-image: var(--rx-host-sil) var(--rx-host-sl) 
 .rx-cursed.rx-tcg { --rx-it: 0%; --rx-ir: 0%; --rx-il: 0%; --rx-ib: 0%; --rx-bt: 77.84%; --rx-bb: 8.72%; }
 .rx-immortal.rx-tcg { --rx-it: 0%; --rx-ir: 0%; --rx-il: 0%; --rx-ib: 0%; --rx-bt: 77.70%; --rx-bb: 7.77%; }
 .rx-god.rx-tcg { --rx-it: 0%; --rx-ir: 0%; --rx-il: 0%; --rx-ib: 0%; --rx-bt: 81.55%; --rx-bb: 4.32%; }
-:has(> .rx-celestial.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/celestial-tcg-sil.webp'); }
-:has(> .rx-common.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/common-tcg-sil.webp'); }
-:has(> .rx-cosmic.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/cosmic-tcg-sil.webp'); }
-:has(> .rx-cursed.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/cursed-tcg-sil.webp'); }
-:has(> .rx-divine.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/divine-tcg-sil.webp'); }
-:has(> .rx-epic.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/epic-tcg-sil.webp'); }
-:has(> .rx-god.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/god-tcg-sil.webp'); }
-:has(> .rx-immortal.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/immortal-tcg-sil.webp'); }
-:has(> .rx-legendary.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/legendary-tcg-sil.webp'); }
-:has(> .rx-mythic.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/mythic-tcg-sil.webp'); }
-:has(> .rx-rare.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/rare-tcg-sil.webp'); }
-:has(> .rx-uncommon.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/uncommon-tcg-sil.webp'); }
+:has(> .rx-celestial.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/celestial-tcg-sil.webp?v=20261005'); }
+:has(> .rx-common.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/common-tcg-sil.webp?v=20261005'); }
+:has(> .rx-cosmic.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/cosmic-tcg-sil.webp?v=20261005'); }
+:has(> .rx-cursed.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/cursed-tcg-sil.webp?v=20261005'); }
+:has(> .rx-divine.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/divine-tcg-sil.webp?v=20261005'); }
+:has(> .rx-epic.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/epic-tcg-sil.webp?v=20261005'); }
+:has(> .rx-god.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/god-tcg-sil.webp?v=20261005'); }
+:has(> .rx-immortal.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/immortal-tcg-sil.webp?v=20261005'); }
+:has(> .rx-legendary.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/legendary-tcg-sil.webp?v=20261005'); }
+:has(> .rx-mythic.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/mythic-tcg-sil.webp?v=20261005'); }
+:has(> .rx-rare.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/rare-tcg-sil.webp?v=20261005'); }
+:has(> .rx-uncommon.rx-tcg) { --rx-host-tcg: url('/assets/ui/rarity-frames/uncommon-tcg-sil.webp?v=20261005'); }
 /* TCG card: the whole frame image on the fixed 3:4 box (no 9-slice), rounded silhouette, name in the banner */
 .rx-tcg { container-type: size; }
 .rx-tcg > .rx-frame { border: 0; border-image: none; background: center / 100% 100% no-repeat; }
@@ -167,18 +167,18 @@ html :has(> .rx-tcg) { -webkit-mask-box-image: none; -webkit-mask: var(--rx-host
 /* Ornate squares (slot boxes from 56 px): the ladder art without the banner, drawn whole like the card */
 .rx-sq { --rx-it: 0%; --rx-ir: 0%; --rx-ib: 0%; --rx-il: 0%; }
 .rx-sq > .rx-frame { border: 0; border-image: none; background: center / 100% 100% no-repeat; }
-:has(> .rx-common.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/common-sq-sil.webp'); }
-:has(> .rx-uncommon.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/uncommon-sq-sil.webp'); }
-:has(> .rx-rare.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/rare-sq-sil.webp'); }
-:has(> .rx-epic.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/epic-sq-sil.webp'); }
-:has(> .rx-legendary.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/legendary-sq-sil.webp'); }
-:has(> .rx-mythic.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/mythic-sq-sil.webp'); }
-:has(> .rx-cosmic.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/cosmic-sq-sil.webp'); }
-:has(> .rx-divine.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/divine-sq-sil.webp'); }
-:has(> .rx-celestial.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/celestial-sq-sil.webp'); }
-:has(> .rx-cursed.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/cursed-sq-sil.webp'); }
-:has(> .rx-immortal.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/immortal-sq-sil.webp'); }
-:has(> .rx-god.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/god-sq-sil.webp'); }
+:has(> .rx-common.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/common-sq-sil.webp?v=20261005'); }
+:has(> .rx-uncommon.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/uncommon-sq-sil.webp?v=20261005'); }
+:has(> .rx-rare.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/rare-sq-sil.webp?v=20261005'); }
+:has(> .rx-epic.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/epic-sq-sil.webp?v=20261005'); }
+:has(> .rx-legendary.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/legendary-sq-sil.webp?v=20261005'); }
+:has(> .rx-mythic.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/mythic-sq-sil.webp?v=20261005'); }
+:has(> .rx-cosmic.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/cosmic-sq-sil.webp?v=20261005'); }
+:has(> .rx-divine.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/divine-sq-sil.webp?v=20261005'); }
+:has(> .rx-celestial.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/celestial-sq-sil.webp?v=20261005'); }
+:has(> .rx-cursed.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/cursed-sq-sil.webp?v=20261005'); }
+:has(> .rx-immortal.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/immortal-sq-sil.webp?v=20261005'); }
+:has(> .rx-god.rx-sq) { --rx-host-sq: url('/assets/ui/rarity-frames/god-sq-sil.webp?v=20261005'); }
 html :has(> .rx-sq) { -webkit-mask-box-image: none; -webkit-mask: var(--rx-host-sq) center / 100% 100% no-repeat; mask: var(--rx-host-sq) center / 100% 100% no-repeat; }
 /* Ornate squares keep their ornament off the picture: the art is scaled into the frame's clear window
    (measured from the art, 2026-10-04; Founder: the frame must not cover the hero). */
@@ -205,18 +205,18 @@ html :is(.item-slot, .hero-portrait-rarity, .arena-portrait):has(> .rx-slot):not
 .rx-slot > .rx-frame { border: 0 !important; border-image: none !important; background: center / 100% 100% no-repeat; }
 /* All square frames share one rim rectangle (outer edge at 4.69% of the box, Founder 2026-10-04: identical sizes).
    The picture is clipped to that rectangle; corner ornaments outside it stay visible through the frame's alpha. */
-:has(> .rx-common.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/common-sq.webp'); }
-:has(> .rx-uncommon.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/uncommon-sq.webp'); }
-:has(> .rx-rare.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/rare-sq.webp'); }
-:has(> .rx-epic.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/epic-sq.webp'); }
-:has(> .rx-legendary.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/legendary-sq.webp'); }
-:has(> .rx-mythic.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/mythic-sq.webp'); }
-:has(> .rx-cosmic.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/cosmic-sq.webp'); }
-:has(> .rx-divine.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/divine-sq.webp'); }
-:has(> .rx-celestial.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/celestial-sq.webp'); }
-:has(> .rx-cursed.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/cursed-sq.webp'); }
-:has(> .rx-immortal.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/immortal-sq.webp'); }
-:has(> .rx-god.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/god-sq.webp'); }
+:has(> .rx-common.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/common-sq.webp?v=20261005'); }
+:has(> .rx-uncommon.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/uncommon-sq.webp?v=20261005'); }
+:has(> .rx-rare.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/rare-sq.webp?v=20261005'); }
+:has(> .rx-epic.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/epic-sq.webp?v=20261005'); }
+:has(> .rx-legendary.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/legendary-sq.webp?v=20261005'); }
+:has(> .rx-mythic.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/mythic-sq.webp?v=20261005'); }
+:has(> .rx-cosmic.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/cosmic-sq.webp?v=20261005'); }
+:has(> .rx-divine.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/divine-sq.webp?v=20261005'); }
+:has(> .rx-celestial.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/celestial-sq.webp?v=20261005'); }
+:has(> .rx-cursed.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/cursed-sq.webp?v=20261005'); }
+:has(> .rx-immortal.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/immortal-sq.webp?v=20261005'); }
+:has(> .rx-god.rx-slot) { --rx-sqm: url('/assets/ui/rarity-frames/god-sq.webp?v=20261005'); }
 html :has(> .rx-slot) {
   -webkit-mask-box-image: none !important;
   -webkit-mask: var(--rx-sqm) center / 100% 100% no-repeat, linear-gradient(#000 0 0) center / 90.62% 90.62% no-repeat !important;
