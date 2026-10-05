@@ -1,6 +1,5 @@
 import { isolatedHackathon } from '@/game/editionStorage';
 import { SeekerPromoteAll } from '@/components/SeekerPromoteAll';
-import { seekerStarGoldCost } from '@/game/seekerPromotion';
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { SkrUsd } from '@/components/SkrUsd';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
@@ -88,7 +87,7 @@ function HeroGridCard({ base, hero, game, onSelect }: { base: HeroBase; hero: Ow
         <span className="hv-card-info">
           <span className="hv-card-name">{base.name}</span>
           <span className="hv-card-row"><span>{formatNum(power)} PWR</span><HeroStars stars={hero.stars} size={7} /></span>
-          {hero.stars < MAX_HERO_STARS && dupes > 0 && <span className="hv-card-copies">{dupes}/{starCost.dupes} copies · {isolatedHackathon ? `${formatNum(seekerStarGoldCost(base.rarity, hero.stars + 1) ?? 0)} Gold` : formatNum(starCost.hero)+' $HERO'}</span>}
+          {hero.stars < MAX_HERO_STARS && dupes > 0 && <span className="hv-card-copies">{dupes}/{starCost.dupes} copies{!isolatedHackathon && <> · {formatNum(starCost.hero)} $HERO</>}</span>}
         </span>
       </button>
     </li>
