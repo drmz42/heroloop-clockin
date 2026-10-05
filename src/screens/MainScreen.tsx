@@ -1534,6 +1534,7 @@ function DungeonPreviewModal({ onStatus, onClose, onGuidesClick }: { accountLeve
     if (!status) return { label: 'Loading Dungeon…', disabled: true, action: () => undefined };
     if (status.active_encounter?.type === 'boss_hunt') return { label: 'Boss Hunt is active', disabled: true, action: () => undefined };
     if (!active) return {
+      // Temporary (Founder 2026-10-05): any Account Level may enter; the Level 30 copy stays.
       label: `Enter Depth ${depth} · Uses 1 Attempt`,
       disabled: status.attempts_remaining < 1,
       action: () => runAction('dungeon_start', { depth }),
@@ -1558,7 +1559,7 @@ function DungeonPreviewModal({ onStatus, onClose, onGuidesClick }: { accountLeve
       <section role="dialog" aria-modal="true" aria-labelledby="dungeon-preview-title" className="dungeon-gate-modal game-scrollbar max-h-[96vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-[#76569b] p-3 shadow-[0_28px_100px_rgba(0,0,0,.85),0_0_38px_rgba(118,86,155,.18)]">
         <header className="dungeon-gate-header flex items-start gap-3">
           <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[#8965ad] bg-[#281d33] text-[#d8b4fe] shadow-[inset_0_1px_rgba(255,255,255,.08),0_0_18px_rgba(168,85,247,.15)]"><DoorOpen size={23} /></div>
-          <div className="min-w-0 flex-1"><div className="section-kicker">Live testing</div><div className="mt-1 flex flex-wrap items-center gap-2"><h2 id="dungeon-preview-title" className="font-vt ui-text-large font-black text-[#f0e5ce]">Dungeons</h2><span className="rounded-full border border-emerald-700/60 bg-emerald-950/35 px-2 py-0.5 ui-text-small font-black uppercase tracking-wider text-emerald-300">Server active</span></div><p className="mt-1 ui-text-medium leading-5 text-[#aca1b2]">Any Account Level · persistent HP · 100 Attempts each week · only the first 3 entries can earn Boss Scrolls.</p></div>
+          <div className="min-w-0 flex-1"><div className="section-kicker">Live testing</div><div className="mt-1 flex flex-wrap items-center gap-2"><h2 id="dungeon-preview-title" className="font-vt ui-text-large font-black text-[#f0e5ce]">Dungeons</h2><span className="rounded-full border border-emerald-700/60 bg-emerald-950/35 px-2 py-0.5 ui-text-small font-black uppercase tracking-wider text-emerald-300">Server active</span></div><p className="mt-1 ui-text-medium leading-5 text-[#aca1b2]">Level 30+ testing · persistent HP · 100 Attempts each week · only the first 3 entries can earn Boss Scrolls.</p></div>
           <aside className="dungeon-gate-quick"><span>Weekly attempts</span><b>{status ? `${status.attempts_remaining} / ${status.attempts_max}` : 'Loading…'}</b>{active && <small>Depth {active.depth} · Room {active.room} of 4</small>}</aside>
           <button type="button" autoFocus onClick={onClose} className="game-control grid h-9 w-9 shrink-0 place-items-center" aria-label="Close Dungeons information"><X size={15} /></button>
         </header>
@@ -1574,7 +1575,7 @@ function DungeonPreviewModal({ onStatus, onClose, onGuidesClick }: { accountLeve
           </ol>
         </div>
 
-        <div className="mt-2 border-t border-[#4d3c57]/70 pt-2 ui-text-small leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Rules:</b> Any Account Level · all Depths open · persistent HP/deaths · formation locked · potions disabled · first 3 weekly entries can earn 2 final-Boss Scrolls; other Dungeon rewards are preview-only.</p><span className="sr-only">All four rooms, Retinue and shared Boss combat are server-authoritative. Only eligible final Boss claims mint two Summon Scrolls; other Dungeon rewards remain previews.</span>{error && <p role="alert" className="mt-1 font-bold text-rose-300">{error.split('_').join(' ')}</p>}</div>
+        <div className="mt-2 border-t border-[#4d3c57]/70 pt-2 ui-text-small leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Rules:</b> Level 30+ · all Depths open · persistent HP/deaths · formation locked · potions disabled · first 3 weekly entries can earn 2 final-Boss Scrolls; other Dungeon rewards are preview-only.</p><span className="sr-only">All four rooms, Retinue and shared Boss combat are server-authoritative. Only eligible final Boss claims mint two Summon Scrolls; other Dungeon rewards remain previews.</span>{error && <p role="alert" className="mt-1 font-bold text-rose-300">{error.split('_').join(' ')}</p>}</div>
 
         <footer className="dungeon-gate-actions mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <button type="button" onClick={onGuidesClick} className="game-control flex min-h-9 items-center justify-center gap-2 px-3 py-1.5 ui-text-small font-black"><BookOpen size={14} /> Dungeon guide</button>
