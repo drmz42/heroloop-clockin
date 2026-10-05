@@ -330,6 +330,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const [showZoomTip, setShowZoomTip] = useState(true);
   const [showHeroDetails, setShowHeroDetails] = useState(false);
   const [showDungeonInfo, setShowDungeonInfo] = useState(false);
+  // Runs entered in this session play through on their own; a run restored on load waits for one press.
+  const dungeonAutoRun = useRef(false);
   const [activeDungeon, setActiveDungeon] = useState<DungeonCheckpoint | null>(null);
   const [dungeonFloaters, setDungeonFloaters] = useState<FloatingNumber[]>([]);
   const [dungeonCompletion, setDungeonCompletion] = useState<{ won: boolean; depth: number; kind: 'dungeon' | 'boss_hunt'; gold: number; scrolls: number } | null>(null);
@@ -412,6 +414,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const enterDungeonArena = (status: DungeonStatus) => {
     const encounter = status.active_encounter && 'room' in status.active_encounter ? status.active_encounter : null;
     setDungeonAttempts({ remaining: status.attempts_remaining, max: status.attempts_max });
+    dungeonAutoRun.current = Boolean(encounter);
     setActiveDungeon(encounter);
     if (encounter) setShowDungeonInfo(false);
   };
@@ -422,6 +425,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const handleDungeonChange = async (next: DungeonCheckpoint | null) => {
     const endedBossHunt = next === null && activeDungeon?.type === 'boss_hunt';
     const keysBefore = state.bossKeys;
+    if (next && !activeDungeon) dungeonAutoRun.current = true;
     setActiveDungeon(next);
     if (!endedBossHunt) return;
     const refreshed = await playerSync<{ revision: number; state?: { bossKeys?: number } }>('game_state_load');
@@ -980,7 +984,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               </div>
             </div>
           )}
-          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} onChange={(next) => void handleDungeonChange(next)} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls })} />}
+          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} autoRun={dungeonAutoRun.current} onChange={(next) => void handleDungeonChange(next)} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls })} />}
           {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Server reward result:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Granted together exactly once by the server</small></> : <><span><SummonScrollArtwork size={18} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST PREVIEW</span><small>{dungeonCompletion.scrolls === 2 ? 'Scrolls granted exactly once by the server; Dungeon Chest is not yet granted' : 'No Scrolls granted for this run; Dungeon Chest is not yet granted'}</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
           {!activeDungeon && import.meta.env.MODE === 'staging' && <TestControls game={game} />}
           {!activeDungeon && <div className="hl-battle-footer normal-battle-footer relative z-30 flex shrink-0 flex-wrap items-end justify-between gap-3 px-3 pb-3">
@@ -1277,8 +1281,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   );
 }
 
-function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onCombatPulse, onHydrate, onComplete }: {
+function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAttempts, onCombatPulse, onHydrate, onComplete }: {
   checkpoint: DungeonCheckpoint;
+  autoRun: boolean;
   attempts: { remaining: number; max: number } | null;
   onChange: (checkpoint: DungeonCheckpoint | null) => void;
   onAttempts: (attempts: { remaining: number; max: number } | null) => void;
@@ -1433,6 +1438,28 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
     };
   })();
 
+  // Founder 2026-10-05: fewer presses. Once the player is in the run, rooms start, clear and advance on their
+  // own; only the Room 3 path choice, a defeat and the reward Claim wait for a press. A run restored on app
+  // load waits for one press first.
+  const [engaged, setEngaged] = useState(autoRun);
+  const autoStep = roomState?.status === 'reward_locked' || roomState?.status === 'failed' || roomState?.status === 'resolving' ? null
+    : !roomState ? (checkpoint.room === 3 ? null : 'start')
+      : roomState.status === 'ready' ? 'start'
+        : roomState.status === 'cleared' || roomState.status === 'boss_locked' ? 'advance' : null;
+  const autoKey = autoStep ? `${checkpoint.encounter_id}:${checkpoint.revision}:${autoStep}` : '';
+  const lastAutoKey = useRef('');
+  useEffect(() => {
+    if (!engaged || !autoKey || busy || error || lastAutoKey.current === autoKey) return undefined;
+    const timer = window.setTimeout(() => {
+      lastAutoKey.current = autoKey;
+      if (autoStep === 'start') void startBattle();
+      else void runAction('dungeon_room_complete', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision });
+    }, autoStep === 'start' ? 500 : 1100);
+    return () => window.clearTimeout(timer);
+    // The key carries the encounter revision and step; the handlers read that same checkpoint.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engaged, autoKey, busy, error]);
+
   return <aside className="dungeon-battle-panel" aria-label={checkpoint.type === 'boss_hunt' ? 'Boss Hunt controls' : 'Dungeon battle controls'}>
     <div className="dungeon-panel-head flex items-center justify-between ui-text-small font-black uppercase tracking-wide text-[#b7a9c0]"><span>{roomState?.modifier?.split('_').join(' ') ?? (roomState?.kind?.split('_').join(' ') || 'Ready')}</span><span className="flex items-center gap-1">{checkpoint.type === 'boss_hunt' ? <><BossKeyIcon size={16} /> 1 Boss Key spent</> : attempts ? `${attempts.remaining}/${attempts.max} attempts` : '— attempts'}</span></div>
     <div className="dungeon-panel-body grid w-full gap-2">
@@ -1443,7 +1470,7 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
       {checkpoint.room === 4 && roomState?.boss && <div className="dungeon-panel-boss-line rounded-lg border border-amber-800/45 bg-amber-950/20 px-3 py-2 text-center ui-text-small font-bold text-amber-200">{roomState.boss.name} · {roomState.status === 'reward_locked' ? 'Defeated · Rewards locked' : roomState.kind === 'shared_boss' ? 'Vulnerable · Shared target' : roomState.status === 'boss_locked' ? 'Retinue defeated · Boss vulnerable' : 'Protected by Retinue'}</div>}
       {/* Founder 2026-10-05: a won run goes straight to Claim; the run summary covered the party. */}
       {roomState?.status === 'cleared' && checkpoint.room < 4 && <div className="rounded border border-amber-700/35 bg-amber-950/20 px-2 py-1.5 text-center ui-text-small font-bold text-amber-200">Room reward preview · Gold + XP · settlement disabled in testing</div>}
-      {primary && <button type="button" disabled={busy} onClick={primary.action} className="dungeon-panel-primary game-control game-primary min-h-11 px-3 ui-text-medium font-black"><Skull size={17} className="mr-2 inline" />{primary.label}</button>}
+      {primary && <button type="button" disabled={busy} onClick={() => { setEngaged(true); void primary.action(); }} className="dungeon-panel-primary game-control game-primary min-h-11 px-3 ui-text-medium font-black"><Skull size={17} className="mr-2 inline" />{primary.label}</button>}
       {error && <div role="alert" className="text-center ui-text-small font-bold text-rose-300">{error.split('_').join(' ')}</div>}
       <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="dungeon-panel-abandon game-control min-h-10 px-3 ui-text-medium font-bold text-rose-300">{confirmAbandon ? 'Confirm exit · no refund' : checkpoint.type === 'boss_hunt' ? 'Abandon Boss Hunt' : 'Exit Dungeon'}</button>
     </div>
