@@ -7,6 +7,21 @@ import {claimOreInstruction,ORE_MINT,ORE_TREASURY,ORE_PROGRAM} from './ore.ts';
 import {base58Encode,TOKEN_PROGRAM} from './chain.ts';
 import {actionId} from './mine_actions.ts';
 const master=new Uint8Array(32).fill(9);
+Deno.test('shared project authority produces a valid single-signature payout',async()=>{
+ const key=await floatKey(master);let saved:Record<string,unknown>={};
+ const deps:MineDeps={master,call:async(sql,args)=>{
+  if(sql.includes('mine_action_prepare'))saved={wire:args[5],signature:args[4]};
+  return saved;
+ },rpc:async(method)=>{
+  if(method==='getLatestBlockhash')return {value:{blockhash:ORE_BOARD,lastValidBlockHeight:100}};
+  if(method==='getFeeForMessage')return {value:5000};
+  if(method==='getBalance')return {value:85000000};
+  throw new Error(method);
+ }};
+ await prepareAction(deps,'id',null,'request','ore_payout',key,[transferInstruction(key.address,ORE_BOARD,1n)],key);
+ const wire=Uint8Array.from(atob(String(saved.wire)),c=>c.charCodeAt(0));
+ assert.equal(wire[0],1);assert.equal(wire[65],1);
+});
 Deno.test('durable action stores before send and reuses committed bytes after restart',async()=>{
  let saved:Record<string,unknown>={};const sent:unknown[]=[];let signed=0;
  const key=await custodyKey(master,'fixture');

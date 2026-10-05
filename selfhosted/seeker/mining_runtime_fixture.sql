@@ -37,6 +37,11 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN IF SQLERRM<>'invalid_mining_policy' THEN RAISE; END IF; END;
   PERFORM seeker_skr.mine_start(p,k,30,pol,'v1',custody);
   PERFORM seeker_skr.mine_start(p,k,30,pol,'v1',custody);
+  PERFORM seeker_skr.mine_accept_terms(other,'v1');
+  BEGIN
+    PERFORM seeker_skr.mine_start(other,'89000000-0000-4000-8000-000000000099',30,pol,'v1',custody);
+    RAISE EXCEPTION 'fixture_shared_wallet_allowed_second_owner';
+  EXCEPTION WHEN OTHERS THEN IF SQLERRM<>'mining_shared_wallet_busy' THEN RAISE; END IF; END;
   BEGIN
     PERFORM seeker_skr.mine_start(p,k,30,pol,'v1',repeat('D',32));
     RAISE EXCEPTION 'fixture_changed_custody';

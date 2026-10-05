@@ -48,7 +48,7 @@ export async function prepareMineSolPayout(deps:MineDeps,request:string):Promise
  for(const row of Array.isArray(work.sessions)?work.sessions as Json[]:[])reserved+=BigInt(String(row.reserved_minor))-BigInt(String(row.spent_minor));
  const balance=await deps.rpc('getBalance',[float.address,{commitment:'finalized'}]) as {value:unknown};
  if(!balance||!Number.isSafeInteger(balance.value)||Number(balance.value)<0)throw new Error('rpc_balance');
- if(BigInt(Number(balance.value))<amount+reserved+5000n)throw new Error('mine_sol_liquidity_unavailable');
+ if(BigInt(Number(balance.value))<amount+reserved+5000n)throw new Error(deps.master.length===64?'mine_project_liquidity_unavailable':'mine_sol_liquidity_unavailable');
  const a=await prepareAction(deps,id,null,request,'sol_payout',float,[transferInstruction(float.address,w.destination,amount)]);
  return {transaction:a.wire,signature:a.signature,last_valid_height:Number(a.last_valid_height)};
 }

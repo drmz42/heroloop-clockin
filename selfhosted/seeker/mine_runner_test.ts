@@ -1,12 +1,62 @@
 import assert from 'node:assert/strict';
 import { base58Decode } from './chain.ts';
 import { ORE_BOARD, ORE_PROGRAM, COMPUTE_BUDGET_PROGRAM, minerAddress } from './ore.ts';
-import { custodyDelta, custodyKey, deriveMineKey, floatKey, mineTick, minePolicy, sessionSquares, transferInstruction } from './mine_runner.ts';
+import { custodyDelta, custodyKey, deriveMineKey, floatKey, finish, mineTick, minePolicy, sessionSquares, transferInstruction } from './mine_runner.ts';
 
 const master = new Uint8Array(32).fill(7);
 const PLAYER = '10000000-0000-4000-8000-000000000001';
 const ab = (bytes: Uint8Array): ArrayBuffer => bytes.slice().buffer as ArrayBuffer;
 const b64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
+
+async function sharedMaster():Promise<Uint8Array>{
+  const pair=await crypto.subtle.generateKey({name:'Ed25519'},true,['sign','verify']) as CryptoKeyPair;
+  const secret=new Uint8Array(await crypto.subtle.exportKey('pkcs8',pair.privateKey)).slice(-32);
+  const publicKey=new Uint8Array(await crypto.subtle.exportKey('raw',pair.publicKey));
+  return Uint8Array.from([...secret,...publicKey]);
+}
+Deno.test('shared hackathon mode uses exactly one existing signer for every player',async()=>{
+ const m=await sharedMaster(),a=await custodyKey(m,PLAYER),b=await custodyKey(m,'other'),project=await floatKey(m);
+ assert.equal(a.address,b.address);assert.equal(a.address,project.address);
+ assert.deepEqual(base58Decode(a.address),m.slice(32));
+ const message=new TextEncoder().encode('shared-project-mine');
+ const publicKey=await crypto.subtle.importKey('raw',ab(m.slice(32)),{name:'Ed25519'},false,['verify']);
+ assert.equal(await crypto.subtle.verify('Ed25519',publicKey,ab(await a.sign(message)),ab(message)),true);
+ const {parseMineMaster}=await import('./mine_service.ts');
+ const encoded=b64(m).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
+ assert.deepEqual(parseMineMaster(encoded),m);
+ const bad=m.slice();bad[63]^=1;
+ await assert.rejects(floatKey(bad),/invalid_mine_project_keypair/);
+});
+Deno.test('shared session closes without self-transfer or scanning another player claims',async()=>{
+ const m=await sharedMaster(),key=await floatKey(m);const calls:string[]=[];
+ await finish({master:m,oreEnabled:true,call:async(sql)=>{calls.push(sql);return {};},rpc:async(method)=>{
+  if(method==='getAccountInfo')return {value:null};
+  if(method==='getSignaturesForAddress')return [];
+  if(method==='getBalance')return {value:85000000};
+  throw new Error(`unexpected shared wallet action ${method}`);
+ }},{id:'session'},key,key,{} as never);
+ assert.equal(calls.filter(sql=>sql.includes('mine_session_close')).length,1);
+ assert.equal(calls.some(sql=>sql.includes('mine_credit(')||sql.includes('mine_action_prepare')),false);
+});
+Deno.test('shared start distinguishes a busy miner from missing project liquidity before reservation',async()=>{
+ const m=await sharedMaster();const {mineRoute}=await import('./mine_service.ts');
+ const body={tier:'0.01',rounds:1,squares:[0],session_id:'aaaaaaaa-0000-4000-8000-000000000001'};
+ let sessions:Record<string,unknown>[]=[];let saved:unknown[]=[];let balance=0;
+ const call=async(sql:string,args:unknown[])=>{
+  if(sql.includes('mine_runner_work'))return {sessions};
+  saved=args;return {};
+ };
+ const rpc=async()=>({value:balance});
+ const poor=await mineRoute('/wallet/mine/start',PLAYER,body,m,call,rpc,true);
+ assert.equal((await poor!.json()).code,'mining_project_liquidity_unavailable');assert.deepEqual(saved,[]);
+ sessions=[{reserved_minor:'100',spent_minor:'0'}];balance=85000000;
+ const busy=await mineRoute('/wallet/mine/start',PLAYER,body,m,call,rpc,true);
+ assert.equal((await busy!.json()).code,'mining_shared_wallet_busy');assert.deepEqual(saved,[]);
+ sessions=[];
+ const started=await mineRoute('/wallet/mine/start',PLAYER,body,m,call,rpc,true);
+ assert.equal(started?.status,200);assert.equal(saved[5],(await floatKey(m)).address);
+ assert.equal(JSON.parse(String(saved[3])).stake_per_round,'10000000');
+});
 
 Deno.test('custody keys are deterministic, distinct per player and sign verifiably', async () => {
   const a = await custodyKey(master, PLAYER), b = await custodyKey(master, PLAYER);

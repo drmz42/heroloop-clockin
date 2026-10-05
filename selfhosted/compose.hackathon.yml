@@ -33,7 +33,7 @@ services:
       - /tmp:rw,noexec,nosuid,size=16m
     networks:
       - backend
-    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=PGHOST,PGPORT,PGUSER,PGPASSWORD,WALLET_SERVICE_TOKEN,SOLANA_RPC_URL,SKR_MINT,WALLET_TREASURY,WALLET_PAYOUT_TREASURY,WALLET_LEGACY_TREASURIES,WALLET_ALLOWED_PAYERS,WALLET_ORE_ENABLED,MINE_MASTER_SEED", "--allow-net=0.0.0.0:8090,postgres:5432,${SOLANA_RPC_HOST:-api.mainnet-beta.solana.com}:443,api.jup.ag:443", "/app/seeker/wallet_service.ts"]
+    command: ["run", "--config=/app/deno.json", "--cached-only", "--allow-env=PGHOST,PGPORT,PGUSER,PGPASSWORD,WALLET_SERVICE_TOKEN,SOLANA_RPC_URL,SKR_MINT,WALLET_TREASURY,WALLET_PAYOUT_TREASURY,WALLET_LEGACY_TREASURIES,WALLET_ALLOWED_PAYERS,WALLET_ORE_ENABLED,MINE_MASTER_SEED,MINE_PROJECT_KEYPAIR", "--allow-net=0.0.0.0:8090,postgres:5432,${SOLANA_RPC_HOST:-api.mainnet-beta.solana.com}:443,api.jup.ag:443", "/app/seeker/wallet_service.ts"]
     environment:
       PGHOST: postgres
       PGPORT: "5432"
@@ -54,6 +54,7 @@ services:
       # ORE financial activation remains an explicit Founder decision.
       WALLET_ORE_ENABLED: ${WALLET_ORE_ENABLED:-false}
       MINE_MASTER_SEED: ${MINE_MASTER_SEED:-}
+      MINE_PROJECT_KEYPAIR: ${MINE_PROJECT_KEYPAIR:-}
     volumes:
       - ./seeker:/app/seeker:ro
       - ./api/skr_boost.ts:/app/api/skr_boost.ts:ro

@@ -54,8 +54,11 @@ if ([...allowedPayers].some((address) => !ADDRESS.test(address)) || allowedPayer
 }
 // Optional ORE Mine custody seed; absent means the Mine stays disabled.
 const oreEnabled=env('WALLET_ORE_ENABLED')==='true';
-const mineMaster = parseMineMaster(env("MINE_MASTER_SEED"));
-if (env("MINE_MASTER_SEED") && !mineMaster) throw new Error("invalid mine configuration");
+const mineKeyConfiguration = env('MINE_PROJECT_KEYPAIR') || env('MINE_MASTER_SEED');
+const mineMaster = parseMineMaster(mineKeyConfiguration);
+if (mineKeyConfiguration && !mineMaster) throw new Error("invalid mine configuration");
+if(env('MINE_PROJECT_KEYPAIR')&&(!mineMaster||mineMaster.length!==64
+  ||(await floatKey(mineMaster)).address!==config.treasury||config.payoutTreasury!==config.treasury))throw new Error('mine_project_wallet_mismatch');
 const DEPOSIT_TTL_SECONDS = 600;
 const LIMITS: Record<WalletAsset, bigint> = {
   SKR: 10_000n * 10n ** 6n, // 10 000 SKR per deposit
@@ -97,7 +100,7 @@ function knownError(error: unknown): string | null {
   const message = error instanceof Error ? error.message : String(error ?? "");
   return ["deposit_intent_limit", "deposit_intent_not_found", "deposit_already_settled", "deposit_signature_used",
     "skr_idempotency_conflict", "skr_insufficient_balance_or_overflow", "skr_quote_not_found", "skr_quote_expired", "skr_purchase_refunded", "skr_purchase_not_charged", "stale_skr_rate", "withdrawal_intent_limit", "withdrawal_not_found", "withdrawal_authorization_expired", "withdrawal_state_conflict", "withdrawal_may_be_paid", "withdrawal_rejection_reason_required", "withdrawal_amount_too_small",
-    "mining_terms_required", "mining_session_pending", "mining_budget_exceeded", "mining_budget_below_round_cost",
+    "mining_terms_required", "mining_session_pending", "mining_shared_wallet_busy", "mine_project_liquidity_unavailable", "mining_budget_exceeded", "mining_budget_below_round_cost",
     "mining_session_not_found", "invalid_mining_policy"].find((code) => message.includes(code)) ?? null;
 }
 

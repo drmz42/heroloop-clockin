@@ -13,6 +13,7 @@ export async function prepareAction(deps:MineDeps,id:string,session:string|null,
  payer:MineKey,instructions:Instruction[],authority?:MineKey):Promise<Json>{
  const existing=await deps.call('SELECT seeker_skr.mine_action_get($1::uuid) AS result',[id]);
  if(existing.signature)return existing;
+ if(authority?.address===payer.address)authority=undefined;
  const reply=await deps.rpc('getLatestBlockhash',[{commitment:'finalized'}]);
  if(!record(reply)||!record(reply.value)||typeof reply.value.blockhash!=='string'
   ||!Number.isSafeInteger(reply.value.lastValidBlockHeight))throw new Error('rpc_blockhash');

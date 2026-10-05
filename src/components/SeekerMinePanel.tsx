@@ -14,6 +14,8 @@ const SQUARES = Array.from({ length: 25 }, (_, i) => i);
 const ERRORS: Record<string, string> = {
   mining_unavailable: 'The Mine is not open yet.',
   mining_capacity_reached: 'The Mine is full right now. Try a smaller session or later.',
+  mining_shared_wallet_busy: 'Another Mine session is settling. Try again after it finishes.',
+  mining_project_liquidity_unavailable: 'The project wallet cannot cover this session and its network fees. Try a smaller session or later.',
   mining_terms_required: 'Accept the Guide & Terms first.',
   mining_session_pending: 'You already have a session running.',
   mining_budget_exceeded: 'This session is above your session or daily limit.',
@@ -234,7 +236,7 @@ export function SeekerMinePanel({ onClose, claimQuest, still = false }: {
                   {MINE_LIMIT_ROWS.map(([label, value]) => <div key={label} className="contents"><dt>{label}</dt><dd>{value}</dd></div>)}
                   {status && <div className="contents"><dt>Used today</dt><dd>{sol(status.used_today_minor)}</dd></div>}
                 </dl>
-                {status?.float_address && <p className="sc-muted break-all">Mine wallet (public): {status.float_address}</p>}
+                {status?.float_address && <p className="sc-muted break-all">Project wallet (public): {status.float_address}</p>}
               </div>
             )}
           </section>

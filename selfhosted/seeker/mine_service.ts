@@ -45,9 +45,9 @@ export async function mineBoard(rpc: Rpc): Promise<Json> {
 }
 
 export function parseMineMaster(value: string): Uint8Array | null {
-  if (!/^[A-Za-z0-9_-]{43}$/.test(value)) return null;
-  const bytes = Uint8Array.from(atob(value.replace(/-/g, "+").replace(/_/g, "/") + "="), (c) => c.charCodeAt(0));
-  return bytes.length === 32 ? bytes : null;
+  if (!/^(?:[A-Za-z0-9_-]{43}|[A-Za-z0-9_-]{86})$/.test(value)) return null;
+  const bytes = Uint8Array.from(atob(value.replace(/-/g, "+").replace(/_/g, "/") + '='.repeat((4-value.length%4)%4)), (c) => c.charCodeAt(0));
+  return bytes.length === 32 || bytes.length === 64 ? bytes : null;
 }
 
 const isRecord = (v: unknown): v is Json => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -77,6 +77,7 @@ export async function mineRoute(path: string, player: string, body: Json, master
   Promise<Response | null> {
   if (!path.startsWith("/wallet/mine/")) return null;
   const config = { enabled: master !== null && oreEnabled, terms_version: MINE_TERMS_VERSION,
+    wallet_mode: master?.length === 64 ? 'shared_project' : 'legacy_custody',
     float_address: master ? (await floatKey(master)).address : null, tiers: Object.keys(MINE_TIERS),
     max_rounds: MINE_LIMITS.maxRounds, session_limit_minor: MINE_LIMITS.sessionLimit.toString(),
     daily_limit_minor: MINE_LIMITS.dailyLimit.toString() };
@@ -114,7 +115,9 @@ export async function mineRoute(path: string, player: string, body: Json, master
       exposure += BigInt(String(s.reserved_minor)) - BigInt(String(s.spent_minor));
     }
     if (exposure + budget > MINE_MAX_IN_FLIGHT) return reply(409, { ok: false, code: "mining_capacity_reached" });
-    if (await lamports(rpc, (await floatKey(master)).address) < budget) return reply(409, { ok: false, code: "mining_capacity_reached" });
+    if(master.length===64&&exposure>0n)return reply(409,{ok:false,code:'mining_shared_wallet_busy'});
+    const pendingPayouts=BigInt(String(work.sol_payout_pending_minor??'0'));
+    if (await lamports(rpc, (await floatKey(master)).address) < budget+exposure+pendingPayouts+3_000_000n) return reply(409, { ok: false, code: "mining_project_liquidity_unavailable" });
     const custody = (await custodyKey(master, player)).address;
     const result = await call("SELECT seeker_skr.mine_start($1::uuid,$2::uuid,$3::numeric,$4::jsonb,$5::text,$6::text) AS result",
       [player, body.session_id, budget.toString(), JSON.stringify(policy), MINE_TERMS_VERSION, custody]);

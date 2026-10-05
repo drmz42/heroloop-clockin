@@ -61,6 +61,13 @@ BEGIN
     RAISE EXCEPTION 'mining_terms_required';
   END IF;
   IF p_custody IS NULL OR p_custody !~ '^[1-9A-HJ-NP-Za-km-z]{32,44}$' THEN RAISE EXCEPTION 'invalid_mining_custody'; END IF;
+  -- A shared protocol Miner has one owner session until all its claims settle.
+  -- Serialize across players in SQL, including concurrent start requests.
+  PERFORM pg_advisory_xact_lock(hashtextextended('mine-custody:'||p_custody,0));
+  IF EXISTS (SELECT 1 FROM seeker_skr.mining_sessions
+      WHERE custody_address=p_custody AND status<>'closed' AND id<>p_session) THEN
+    RAISE EXCEPTION 'mining_shared_wallet_busy';
+  END IF;
   s:=seeker_skr.mining_session_open(p_session,seeker_skr.wallet_account(p_player,'SOL'),p_budget,p_policy);
   IF s.custody_address IS NULL THEN
     UPDATE seeker_skr.mining_sessions SET custody_address=p_custody WHERE id=s.id RETURNING * INTO s;

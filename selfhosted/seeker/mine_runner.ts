@@ -59,15 +59,21 @@ export type MineKey = { address: string; sign: (message: Uint8Array) => Promise<
 const ab = (bytes: Uint8Array): ArrayBuffer => bytes.slice().buffer as ArrayBuffer;
 const PKCS8_ED25519 = Uint8Array.from([0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x04, 0x22, 0x04, 0x20]);
 export async function deriveMineKey(master: Uint8Array, label: string): Promise<MineKey> {
-  if (master.length !== 32) throw new Error("invalid_mine_master");
-  const hmac = await crypto.subtle.importKey("raw", ab(master), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const seed = new Uint8Array(await crypto.subtle.sign("HMAC", hmac, new TextEncoder().encode(`heroloop-mine:${label}`)));
+  if (master.length !== 32 && master.length !== 64) throw new Error("invalid_mine_master");
+  // The approved hackathon mode uses the existing project's keypair directly.
+  // Legacy 32-byte masters retain their original per-player derivation.
+  let seed = master.slice(0, 32);
+  if (master.length === 32) {
+    const hmac = await crypto.subtle.importKey("raw", ab(master), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    seed = new Uint8Array(await crypto.subtle.sign("HMAC", hmac, new TextEncoder().encode(`heroloop-mine:${label}`)));
+  }
   const pkcs8 = new Uint8Array(48);
   pkcs8.set(PKCS8_ED25519);
   pkcs8.set(seed, 16);
   const key = await crypto.subtle.importKey("pkcs8", ab(pkcs8), { name: "Ed25519" }, true, ["sign"]);
   const jwk = await crypto.subtle.exportKey("jwk", key);
   const pub = Uint8Array.from(atob(String(jwk.x).replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+  if (master.length === 64 && !pub.every((byte, index) => byte === master[index + 32])) throw new Error("invalid_mine_project_keypair");
   return {
     address: base58Encode(pub),
     sign: async (message) => new Uint8Array(await crypto.subtle.sign("Ed25519", key, ab(message))),
@@ -200,7 +206,8 @@ async function step(
   // Fund the custody wallet once with the unspent budget (custody-internal transfer).
   const held = await balance(deps, key.address);
   const needed = reserved - spent;
-  if (held < roundCost) {
+  if (key.address === float.address && held < roundCost) throw new Error('mine_project_liquidity_unavailable');
+  if (key.address !== float.address && held < roundCost) {
     const a=await prepareAction(deps,await actionId(`${session.id}:fund`),String(session.id),null,'fund',float,
       [transferInstruction(float.address,key.address,needed-held)]);
     if(a.status==='confirmed')throw new Error('mine_custody_shortfall');
@@ -219,6 +226,8 @@ async function step(
   const miner = await accountData(deps, await minerAddress(key.address));
   if (miner) {
     const m = decodeMiner(miner);
+    // One shared Miner must never be deployed twice in the same protocol round.
+    if (key.address === float.address && m.roundId === board.roundId) return;
     if (m.checkpointId !== m.roundId) {
       // Deploy requires the previous round checkpointed, which needs its revealed entropy.
       if (!(await roundRevealed(deps, m.roundId))) return;
@@ -308,12 +317,13 @@ export async function finish(
       if(board.roundId<=miner.roundId||!(await roundRevealed(deps,miner.roundId)))return;
       await run('checkpoint',key,[await checkpointInstruction(key.address,miner.roundId)]);return;
     }
-    if(miner.rewardsSol>TX_FEE){await run('sol_claim',key,[await claimSolInstruction(key.address)]);return;}
+    if(miner.rewardsSol>0n){await run('sol_claim',key,[await claimSolInstruction(key.address)]);return;}
     if(miner.rewardsOre+miner.refinedOre>0n){
       // Do not silently close and strand ORE when activation has not been approved.
       if(!deps.oreEnabled)throw new Error('ore_activation_required');
       const held=await balance(deps,key.address);
       if(held<3_000_000n){
+        if(key.address===float.address)throw new Error('mine_project_liquidity_unavailable');
         const funded=await deps.call('SELECT seeker_skr.mine_action_get($1::uuid) AS result',[await actionId(`${session.id}:ore_gas`)]);
         if(funded.status==='confirmed')throw new Error('mine_ore_gas_shortfall');
         await run('ore_gas',float,[transferInstruction(float.address,key.address,3_000_000n-held)]);return;
@@ -322,9 +332,11 @@ export async function finish(
     }
   }
   if(!(await custodySettled(deps,key.address)))return;
-  await creditClaims(deps,session,key);
+  // Shared-wallet receipts belong only to their persisted session action;
+  // scanning its history would attribute earlier players' claims to this session.
+  if(key.address!==float.address)await creditClaims(deps,session,key);
   const held=await balance(deps,key.address);
-  if(held>TX_FEE){await run('sweep',key,[transferInstruction(key.address,float.address,held-TX_FEE)]);return;}
+  if(key.address!==float.address&&held>TX_FEE){await run('sweep',key,[transferInstruction(key.address,float.address,held-TX_FEE)]);return;}
   await deps.call('SELECT seeker_skr.mine_session_close($1::uuid) AS result',[session.id]);
 }
 
