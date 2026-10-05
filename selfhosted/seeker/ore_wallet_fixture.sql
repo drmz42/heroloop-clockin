@@ -95,3 +95,39 @@ DO $$ BEGIN
   OR EXISTS(SELECT event_id FROM seeker_skr.entries GROUP BY event_id HAVING sum(delta_minor)<>0) THEN
   RAISE EXCEPTION 'fixture_ore_conservation'; END IF;
 END $$;
+
+-- Auto-return checkpoints credit SOL atomically; exact replay repairs old receipts.
+SET ROLE seeker_wallet_runtime;
+DO $$
+DECLARE p uuid:='88000000-0000-4000-8000-000000000001';
+ s uuid:='89000000-0000-4000-8000-000000000001';
+ k uuid:='8b000000-0000-4000-8000-000000000010'; before numeric;
+BEGIN
+ before:=(seeker_skr.wallet_snapshot(p)->'balances'->>'SOL')::numeric;
+ PERFORM seeker_skr.mine_action_prepare(k,s,NULL,'checkpoint',('V'||repeat('Y',63)),repeat('A',100),123);
+ PERFORM seeker_skr.mine_action_finish(k,'confirmed',NULL,17);
+ PERFORM seeker_skr.mine_action_finish(k,'confirmed',NULL,17);
+ IF (seeker_skr.wallet_snapshot(p)->'balances'->>'SOL')::numeric<>before+17 THEN
+  RAISE EXCEPTION 'fixture_checkpoint_return_lost_or_doubled'; END IF;
+ BEGIN
+  PERFORM seeker_skr.mine_action_finish(k,'confirmed',NULL,18);
+  RAISE EXCEPTION 'fixture_checkpoint_receipt_changed';
+ EXCEPTION WHEN OTHERS THEN IF SQLERRM<>'skr_idempotency_conflict' THEN RAISE; END IF; END;
+ PERFORM seeker_skr.mine_action_prepare('8b000000-0000-4000-8000-000000000011',
+  '89000000-0000-4000-8000-000000000002',NULL,'checkpoint',('X'||repeat('Y',63)),repeat('A',100),123);
+END $$;
+RESET ROLE;
+-- Simulate a pre-fix confirmation after a crash, with a verified stored SOL delta.
+UPDATE seeker_skr.mine_actions SET status='confirmed',sol_delta=19
+ WHERE id='8b000000-0000-4000-8000-000000000011';
+SET ROLE seeker_wallet_runtime;
+DO $$
+DECLARE p uuid:='88000000-0000-4000-8000-000000000001'; before numeric;
+BEGIN
+ before:=(seeker_skr.wallet_snapshot(p)->'balances'->>'SOL')::numeric;
+ PERFORM seeker_skr.mine_action_finish('8b000000-0000-4000-8000-000000000011','confirmed',NULL,19);
+ PERFORM seeker_skr.mine_action_finish('8b000000-0000-4000-8000-000000000011','confirmed',NULL,19);
+ IF (seeker_skr.wallet_snapshot(p)->'balances'->>'SOL')::numeric<>before+19 THEN
+  RAISE EXCEPTION 'fixture_checkpoint_backfill_lost_or_doubled'; END IF;
+END $$;
+RESET ROLE;

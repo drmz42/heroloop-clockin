@@ -120,9 +120,17 @@ BEGIN
  IF a.status='confirmed' THEN
   IF p_status<>'confirmed' OR a.amount_minor IS DISTINCT FROM p_amount OR a.sol_delta IS DISTINCT FROM p_sol
    THEN RAISE EXCEPTION 'skr_idempotency_conflict'; END IF;
+  -- ORE auto_return pays SOL during checkpoint, without a claim_sol action.
+  -- Replaying the exact persisted receipt also repairs pre-fix confirmations.
+  IF a.kind='checkpoint' AND a.sol_delta>0 THEN
+   PERFORM seeker_skr.mine_credit(a.id,a.session_id,a.sol_delta,a.signature);
+  END IF;
   RETURN seeker_skr.mine_action_get(p_id);
  END IF;
  IF a.status='attention' OR p_status NOT IN ('confirmed','attention') THEN RAISE EXCEPTION 'mine_action_review_required'; END IF;
+ IF p_status='confirmed' AND a.kind='checkpoint' AND p_sol>0 THEN
+  PERFORM seeker_skr.mine_credit(a.id,a.session_id,p_sol,a.signature);
+ END IF;
  IF p_status='confirmed' AND a.kind='ore_claim' THEN
   IF p_amount IS NULL OR p_amount<1 OR trunc(p_amount)<>p_amount OR p_amount>18446744073709551615
    THEN RAISE EXCEPTION 'invalid_ore_credit'; END IF;
