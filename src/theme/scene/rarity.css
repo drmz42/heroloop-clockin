@@ -34,9 +34,9 @@
 .rx-epic      { --rx: #b46cff; }
 .rx-legendary { --rx: #ffbf4a; }
 .rx-mythic    { --rx: #ff4d3d; --rx-mote: #ffb066; }
-.rx-cosmic, .rx-relic { --rx: #55e6d0; --rx-mote: #e3fffa; }
-.rx-divine    { --rx: #e07bff; --rx2: #ffcf6e; --rx-mote: #ffe6b5; }
-.rx-celestial { --rx: #8fd0ff; --rx-mote: #f0fbff; }
+.rx-cosmic, .rx-relic { --rx: #c8f560; --rx-mote: #f1ffd0; }
+.rx-divine    { --rx: #ff7ad9; --rx2: #ffcf6e; --rx-mote: #ffd6f2; }
+.rx-celestial { --rx: #4fe3f0; --rx-mote: #e6fdff; }
 .rx-cursed    { --rx: #e0193f; --rx-mote: #ff3355; }
 .rx-immortal  { --rx: #a78bfa; --rx-mote: #cdbbff; }
 .rx-god       { --rx: #fff0b8; --rx-mote: #ffe28a; }
@@ -242,3 +242,8 @@ html .arena-portrait:has(> .rx-slot) > .arena-portrait-impact-layer { overflow: 
 .rx-slot[data-tier='1'] > .rx-frame { filter: brightness(1.15) drop-shadow(0 1px 2px rgba(0, 0, 0, .8)); }
 .rx-slot:is([data-tier='5'], [data-tier='6'], [data-tier='7'], [data-tier='8'], [data-tier='9']) > .rx-frame { filter: brightness(1.3) saturate(1.5) drop-shadow(0 0 1.5px var(--rx)) drop-shadow(0 0 5px color-mix(in srgb, var(--rx) 70%, transparent)); }
 .rx-slot > .rx-rays { display: none; }
+/* Founder 2026-10-05: Divine pink, Celestial cyan, Cosmic lime (as the Market item names). The square art is
+   tinted towards those colours so metal and light agree. */
+.rx-slot.rx-cosmic > .rx-frame { filter: hue-rotate(-90deg) brightness(1.35) saturate(1.6) drop-shadow(0 0 1.5px var(--rx)) drop-shadow(0 0 5px color-mix(in srgb, var(--rx) 70%, transparent)); }
+.rx-slot.rx-divine > .rx-frame { filter: hue-rotate(-35deg) brightness(1.45) saturate(1.5) drop-shadow(0 0 1.5px var(--rx)) drop-shadow(0 0 5px color-mix(in srgb, var(--rx) 70%, transparent)); }
+.rx-slot.rx-celestial > .rx-frame { filter: hue-rotate(-35deg) brightness(1.4) saturate(1.7) drop-shadow(0 0 1.5px var(--rx)) drop-shadow(0 0 5px color-mix(in srgb, var(--rx) 70%, transparent)); }
