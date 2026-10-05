@@ -1009,7 +1009,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                         <ItemArtwork itemId={emptySlotArtworkId(slot, selectedHeroBase.heroClass)} name="" fallback="" />
                       </span>
                     )}
-                    {ib && item!.enchantLevel > 0 && <div className="absolute left-0 top-0 z-10 ui-text-small font-bold text-amber-400 font-vt leading-none px-0.5">+{item!.enchantLevel}</div>}
+                    {ib && item!.enchantLevel > 0 && <div className="item-enchant-label absolute left-0 top-0 z-10 ui-text-small font-bold text-amber-400 font-vt leading-none px-0.5">+{item!.enchantLevel}</div>}
                     {ib?.heroClass && <ClassGlyph heroClass={ib.heroClass} className="absolute right-0 top-0" />}
                     {ib && <div className="item-level-label absolute bottom-0 right-0 ui-text-small font-bold font-vt px-0.5 leading-none" style={{ background: ic, color: '#000' }}>{item!.level}</div>}
                   </button>
@@ -1072,7 +1072,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                   {item && <ItemArtwork itemId={item.itemId} name={ITEM_MAP[item.itemId]?.name ?? 'Item'} fallback={ITEM_MAP[item.itemId]?.icon ?? '◆'} className="leading-none" />}
                   {item && rarity && <RarityFx rarity={rarity} shape="slot" />}
                   {item?.locked && <LockIcon size={11} className="absolute bottom-0.5 left-0.5 z-10 text-amber-300" />}
-                  {item && item.enchantLevel > 0 && <div className="item-enchant-label absolute left-0 top-0 z-10 ui-text-small font-bold text-amber-400 font-vt leading-none px-0.5">+{item.enchantLevel}</div>}
+                  {item && item.enchantLevel > 0 && <div className="item-enchant-label absolute left-0 top-0 z-10 ui-text-small font-bold text-amber-400 font-vt leading-3 px-px">+{item.enchantLevel}</div>}
                   {itemBase?.heroClass && <ClassGlyph heroClass={itemBase.heroClass} className="absolute right-0 top-0" />}
                   {item && <span className="item-level-label ui-text-small absolute bottom-0 right-0 min-w-3 rounded-tl bg-[#d9d0c0] px-px text-center font-bold leading-3 text-black" title={`Item level ${item.level}`}>{item.level}</span>}
                 </button>

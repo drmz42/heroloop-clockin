@@ -75,6 +75,8 @@ html .item-slot:has(> .rx) .item-enchant-label { left: 9%; top: 9%; }
 html .item-slot:has(> .rx) .item-level-label { right: 9%; bottom: 9%; border-radius: 2px; }
 html .item-slot:has(> .rx) > svg.absolute { left: 9%; bottom: 9%; }
 html .item-slot:has(> .rx) > [class*='right-0'][class*='top-0'] { right: 9%; top: 9%; }
+/* Class-only glyph sits closer to the right edge than the other corner badges (Founder 2026-10-05). */
+html .item-slot:has(> .rx) > .class-glyph[class*='right-0'][class*='top-0'] { right: 6%; margin-right: 0; }
 html .hero-portrait-rarity:has(> .rx) .hero-level-badge { right: 9%; bottom: 9%; border-radius: 2px; }
 /* Silhouette: the box shows only the frame metal and its interior (9-slice mask from the same art) */
 html :has(> .rx) { -webkit-mask-box-image: var(--rx-host-sil) var(--rx-host-sl) fill / var(--rx-bw) stretch; }

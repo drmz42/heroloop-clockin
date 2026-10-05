@@ -657,6 +657,7 @@ html[data-hl-platform='android'] .hl-locations { margin-top: 3px; padding: 2px 4
 html[data-hl-platform='android'] .location-disclosure { padding-block: 2px; }
 html[data-hl-platform='android'] .location-disclosure .section-kicker > .block { display: inline; margin-left: 4px; font-size: 9px !important; }
 html[data-hl-platform='android'] .item-slot .item-level-label { font-size: 7.5px !important; line-height: 9px !important; padding-inline: 1px !important; min-width: 9px !important; }
+html[data-hl-platform='android'] .item-slot .item-enchant-label { font-size: 7.5px !important; line-height: 9px !important; padding-inline: 1px !important; }
 html[data-hl-platform='android'] .seeker-market .market-header { flex-wrap: nowrap; padding-left: 8px; }
 html[data-hl-platform='android'] .seeker-market .market-header > div { gap: 6px; min-width: 0; }
 html[data-hl-platform='android'] .seeker-market .market-header > div > span { width: 28px; height: 28px; flex-shrink: 0; }
