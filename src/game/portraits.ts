@@ -21,6 +21,12 @@ export function heroPortraitSrc(heroId: string, heroClass: HeroClass, rarity: Ra
   return HERO_ART[heroId] ?? classFallback[heroClass] ?? buildHeroSvg(heroClass, rarity, color);
 }
 
+// Small displays (avatars, cards) load a 320px WebP copy of the v4 art: ~30 KB instead of ~600 KB per hero.
+export function heroThumbSrc(heroId: string, heroClass: HeroClass, rarity: Rarity, color: string): string {
+  const src = heroPortraitSrc(heroId, heroClass, rarity, color);
+  return src.startsWith('/assets/heroes/v4/') ? src.replace('/assets/heroes/v4/', '/assets/heroes/v4/thumb/').replace(/\.png$/, '.webp') : src;
+}
+
 export function heroPortraitStyle(heroId: string | undefined, heroClass: HeroClass): Record<string, string> | undefined {
   if (!heroId || !/^(shepherd|assassin|knight|druid|archer)-/.test(heroId)) return undefined;
   void heroClass;

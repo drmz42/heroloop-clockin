@@ -108,7 +108,7 @@ function RankCard({ rank, player, isMe, onReport }: { rank: number; player: Lead
   return <article className={`rank-card ${rank <= 3 ? `rank-card-top rank-card-top-${rank}` : ''} ${isMe ? 'rank-card-me' : ''}`}>
     <div className="rank-card-head">
       <span className="rank-card-rank">#{rank}</span>
-      {avatar ? <span className="rank-avatar"><HeroPortrait heroId={avatar.id} heroClass={avatar.heroClass} rarity={avatar.rarity} color={avatar.color} size={44} /></span> : <span className="rank-avatar rank-avatar-initials">{player.username.slice(0, 2).toUpperCase()}</span>}
+      {avatar ? <span className="rank-avatar"><HeroPortrait heroId={avatar.id} heroClass={avatar.heroClass} rarity={avatar.rarity} color={avatar.color} size={48} /></span> : <span className="rank-avatar rank-avatar-initials">{player.username.slice(0, 2).toUpperCase()}</span>}
       <span className="rank-card-id">
         <b className={isMe ? 'text-[#f2ca72]' : 'text-[#ece4d4]'}>{player.username}</b>
         <span>Lv {player.account_level}{player.online && <i className="not-italic text-emerald-400"> · ● online</i>}</span>

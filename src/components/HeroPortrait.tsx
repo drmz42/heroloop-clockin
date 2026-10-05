@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { HeroClass, Rarity } from '@/game/types';
-import { buildHeroSvg, heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
+import { buildHeroSvg, heroPortraitSrc, heroThumbSrc, heroPortraitStyle } from '@/game/portraits';
 import { RARITY_COLORS, RARITY_GLOW } from '@/game/heroes';
 import { RarityFx } from '@/components/RarityFx';
 
@@ -26,8 +26,8 @@ export function HeroPortrait({
   const glow = RARITY_GLOW[rarity];
 
   const svgSrc = useMemo(
-    () => heroId ? heroPortraitSrc(heroId, heroClass, rarity, color) : buildHeroSvg(heroClass, rarity, color),
-    [heroId, heroClass, rarity, color]
+    () => heroId ? (size <= 110 ? heroThumbSrc : heroPortraitSrc)(heroId, heroClass, rarity, color) : buildHeroSvg(heroClass, rarity, color),
+    [heroId, heroClass, rarity, color, size]
   );
   const fallbackSrc = useMemo(() => buildHeroSvg(heroClass, rarity, color), [heroClass, rarity, color]);
 

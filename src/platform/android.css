@@ -958,6 +958,8 @@ html[data-hl-platform='android'] .rank-card-head { display: flex; min-width: 0; 
 html[data-hl-platform='android'] .rank-card-rank { width: 34px; flex: none; text-align: center; font-size: 15px; font-weight: 900; color: #918a7e; font-variant-numeric: tabular-nums; }
 html[data-hl-platform='android'] .rank-card-top .rank-card-rank { color: #ebc36c; }
 html[data-hl-platform='android'] .themed-screen-ranks .rank-card .rank-avatar { width: 48px; height: 48px; border-radius: 6px; overflow: hidden; }
+/* Founder 2026-10-05: the avatar fills the old gold frame's footprint and the frame itself is gone. */
+html[data-hl-platform='android'] .themed-screen-ranks .rank-card .rank-avatar:not(.rank-avatar-initials) { border: 0; background: none; box-shadow: none; }
 html[data-hl-platform='android'] .rank-avatar-initials { font-size: 13px; font-weight: 900; color: #e4ddcf; }
 html[data-hl-platform='android'] .rank-card-id { display: grid; min-width: 0; flex: 1; gap: 1px; }
 html[data-hl-platform='android'] .rank-card-id > b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; line-height: 18px; }

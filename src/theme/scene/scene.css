@@ -199,23 +199,13 @@ button.sc-chip { cursor: pointer; }
 .hv-head-row > div > p { margin-top: 0; font-size: 10px; }
 .hv-team { position: relative; z-index: 1; display: grid; width: 100%; max-width: 420px; grid-template-columns: repeat(3, 1fr); align-items: end; gap: 10px; margin-top: auto; padding-top: 18px; }
 .hv-seat { display: flex; min-width: 0; flex-direction: column; align-items: center; }
-.hv-seat-hero { position: relative; isolation: isolate; display: grid; place-items: center; }
-.hv-seat-hero::before {
-  content: '';
-  position: absolute;
-  inset: -16px;
-  z-index: -1;
-  border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(52, 211, 153, .44), rgba(52, 211, 153, .2) 50%, transparent 78%);
-  filter: blur(7px);
-  mask-image: linear-gradient(#000 55%, transparent calc(100% - 24px));
-  pointer-events: none;
-}
-html .hv-seat-hero .hero-portrait-rarity:has(> .rx):not(#rx-a):not(#rx-b) { box-shadow: none !important; }
+/* Founder 2026-10-05: team seats show the same framed TCG card as the collection, without the green halo. */
+.hv-seat-card { width: 80%; max-width: 104px; }
 .hv-seat-empty {
   display: grid;
-  width: 76px;
-  height: 76px;
+  width: 80%;
+  max-width: 104px;
+  aspect-ratio: 3 / 4;
   place-items: center;
   border: 1px dashed rgba(199, 158, 97, .55);
   border-radius: 10px;

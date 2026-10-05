@@ -6,8 +6,7 @@ import { skrPrice, useSkrRate } from '@/game/skrPurchase';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Star, Lock, Unlock, Trash2, Search, X, Sparkles, Users, Swords, Shield, AlertTriangle, UserPlus, Gem, ChevronsUp, Zap } from 'lucide-react';
 import { GameSelect } from '@/components/GameSelect';
-import { HeroPortrait } from '@/components/HeroPortrait';
-import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
+import { heroPortraitSrc, heroThumbSrc, heroPortraitStyle } from '@/game/portraits';
 import '@/theme/scene/scene.css';
 import { RarityFx } from '@/components/RarityFx';
 import { HERO_MAP, RARITY_COLORS, RARITY_LABEL, RARITY_INDEX, CLASS_LABEL } from '@/game/heroes';
@@ -70,7 +69,7 @@ function HeroGridCard({ base, hero, game, onSelect }: { base: HeroBase; hero: Ow
     <li>
       <button type="button" onClick={onSelect} aria-label={`${base.name}, ${RARITY_LABEL[base.rarity]}, level ${hero.level}${isTraining ? ", unavailable: Training Camp" : ""}`} className={`hv-card${RARITY_INDEX[base.rarity] >= RARITY_INDEX.rare ? ' is-rare' : ''}${isInTeam ? ' is-team' : ''}`} style={{ '--hv-color': rc } as React.CSSProperties}>
         <span className="hv-card-art">
-          <img src={heroPortraitSrc(base.id, base.heroClass, base.rarity, base.color)} alt="" loading="lazy" decoding="async" style={{ ...heroPortraitStyle(base.id, base.heroClass), transform: 'none' }} />
+          <img src={heroThumbSrc(base.id, base.heroClass, base.rarity, base.color)} alt="" loading="lazy" decoding="async" style={{ ...heroPortraitStyle(base.id, base.heroClass), transform: 'none' }} />
           <RarityFx rarity={base.rarity} shape="tcg" label={CLASS_LABEL[base.heroClass]} />
           <span className="hv-card-lv">Lv {hero.level}</span>
           {respawn > 0 && <span className="hv-card-dead">Fallen<br />{respawn}s</span>}
@@ -337,7 +336,14 @@ export function HeroesScreen({ game }: { game: GameApi }) {
             return (
               <div key={slot} className="hv-seat" style={color ? { '--hv-color': color } as React.CSSProperties : undefined}>
                 {hero && base
-                  ? <span className="hv-seat-hero"><HeroPortrait heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={76} badge={hero.level} respawn={respawnCountdowns[hero.uid] ?? 0} onClick={() => openHero(hero)} /></span>
+                  ? <button type="button" className="hv-card hv-seat-card" onClick={() => openHero(hero)} aria-label={`${base.name}, ${RARITY_LABEL[base.rarity]}, level ${hero.level}`}>
+                      <span className="hv-card-art">
+                        <img src={heroThumbSrc(base.id, base.heroClass, base.rarity, base.color)} alt="" decoding="async" style={{ ...heroPortraitStyle(base.id, base.heroClass), transform: 'none' }} />
+                        <RarityFx rarity={base.rarity} shape="tcg" label={CLASS_LABEL[base.heroClass]} />
+                        <span className="hv-card-lv">Lv {hero.level}</span>
+                        {(respawnCountdowns[hero.uid] ?? 0) > 0 && <span className="hv-card-dead">Fallen<br />{respawnCountdowns[hero.uid]}s</span>}
+                      </span>
+                    </button>
                   : <span className="hv-seat-empty" aria-label="Empty team slot"><Shield size={26} /></span>}
                 <span className="hv-plinth">{hero && base ? <><b>{base.name}</b><small>{CLASS_LABEL[base.heroClass]}</small></> : <><b>Empty</b><small>Choose a hero</small></>}</span>
               </div>
