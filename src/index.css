@@ -554,6 +554,15 @@ html { scroll-behavior: smooth; }
 .anim-attack-hero-b  { animation:unit-attack-hero-b  .35s ease-out; }
 .anim-attack-enemy-b { animation:unit-attack-enemy-b .35s ease-out; }
 .anim-hit          { animation:unit-hit    .2s ease-out; }
+/* Boss phase: the Boss stands above the party, so heroes strike upward and the Boss strikes down. */
+@keyframes unit-attack-up { 0%{transform:translateY(0)}40%{transform:translateY(-22px) scale(1.08)}100%{transform:translateY(0)} }
+@keyframes unit-attack-up-b { 0%{transform:translateY(0)}40%{transform:translateY(-22px) scale(1.08)}100%{transform:translateY(0)} }
+@keyframes unit-attack-down { 0%{transform:translateY(0)}40%{transform:translateY(22px) scale(1.06)}100%{transform:translateY(0)} }
+@keyframes unit-attack-down-b { 0%{transform:translateY(0)}40%{transform:translateY(22px) scale(1.06)}100%{transform:translateY(0)} }
+.dungeon-boss-phase-shared .anim-attack-hero { animation-name:unit-attack-up; }
+.dungeon-boss-phase-shared .anim-attack-hero-b { animation-name:unit-attack-up-b; }
+.dungeon-boss-phase-shared .dungeon-shared-stage .anim-attack-enemy { animation-name:unit-attack-down; }
+.dungeon-boss-phase-shared .dungeon-shared-stage .anim-attack-enemy-b { animation-name:unit-attack-down-b; }
 .anim-die          { animation:unit-die    .5s ease-in forwards; }
 .anim-float        { animation:float-up   1.5s ease-out both; }
 .crit-floater      { z-index:30; }

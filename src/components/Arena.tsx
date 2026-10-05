@@ -215,6 +215,8 @@ export function locationArtStyle(locationId: number): React.CSSProperties {
 function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode, dungeonPanelOpen, locationId, dungeonBossScene, dungeonRoom }: ArenaProps) {
   const heroes = units.filter((u) => u.side === 'hero');
   const enemies = units.filter((u) => u.side === 'enemy');
+  // Dungeon playback lets a fighter strike any living opponent, not only its lane partner.
+  const dungeonFight = Boolean(dungeonRoom || dungeonBossScene);
   const sharedBossActive = enemies.some((unit) => unit.uid.endsWith('-dungeon-shared') && unit.alive);
   const sharedBossUnit = dungeonBossScene?.phase === 'shared' ? enemies.find((unit) => unit.uid.endsWith('-dungeon-shared')) : undefined;
   const sharedBoss = sharedBossUnit?.alive ? sharedBossUnit : undefined;
@@ -281,12 +283,12 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
         <div className="arena-roster flex min-w-0 flex-col items-end justify-center gap-2">
           {heroes.map((u, lane) => {
             const heroData = ownedHeroes?.find((h) => h.uid === u.uid);
-            return <UnitView key={u.uid} unit={u} floaters={floaters} side="hero" heroData={heroData} respawnSeconds={respawnCountdowns?.[u.uid]} opponentAlive={sharedBossActive || Boolean(laneEnemies[lane]?.alive)} animationMode={animationMode} targeted={dungeonBossScene?.targetUid === u.uid} />;
+            return <UnitView key={u.uid} unit={u} floaters={floaters} side="hero" heroData={heroData} respawnSeconds={respawnCountdowns?.[u.uid]} opponentAlive={sharedBossActive || Boolean(laneEnemies[lane]?.alive) || (dungeonFight && laneEnemies.some((enemy) => enemy.alive))} animationMode={animationMode} targeted={dungeonBossScene?.targetUid === u.uid} />;
           })}
           {heroes.length === 0 && <div className="intentional-empty p-4 ui-text-medium">Assemble a team to fight</div>}
         </div>
         <div className="arena-roster flex min-w-0 flex-col items-start justify-center gap-2">
-          {laneEnemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive)} animationMode={animationMode} rank={enemyRank(u, locationId, dungeonRoom?.depth)} />)}
+          {laneEnemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive) || (dungeonFight && heroes.some((hero) => hero.alive))} animationMode={animationMode} rank={enemyRank(u, locationId, dungeonRoom?.depth)} />)}
           {laneEnemies.length === 0 && !sharedBoss && <div className="intentional-empty p-4 ui-text-medium">Enemies defeated</div>}
         </div>
       </div>

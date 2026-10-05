@@ -93,7 +93,7 @@ type DungeonCheckpoint = {
 };
 type DungeonUnitState = {
   uid?: string; unit_id?: string; position?: number; lane?: number; current_hp: number; max_hp: number; alive: boolean;
-  atk?: number; def?: number; speed?: number; attack_speed_bonus?: number;
+  atk?: number; def?: number; speed?: number; attack_speed_bonus?: number; heavy_damage_taken?: number;
 };
 
 // The Arena unit uid for a server enemy; combat playback pulses must target and attribute the same uids.
@@ -102,6 +102,120 @@ function dungeonEnemyUid(room: number, roomState: DungeonCheckpoint['room_state'
   if (sharedBossPhase && String(unit.unit_id ?? '').startsWith('shared-boss-')) return `${DUNGEON_BOSS_ART[roomState?.boss?.boss_id ?? ''] ?? 'boss-lich'}-dungeon-shared`;
   if (sharedBossPhase && String(unit.unit_id ?? '').startsWith('necromancer-summon-')) return `e${position}-skeleton`;
   return `e${position}-${room === 2 ? 'boss-ogre' : room === 3 ? 'skeleton' : room === 4 ? 'goblin' : 'orc'}`;
+}
+
+type DungeonRoomState = NonNullable<DungeonCheckpoint['room_state']>;
+type DungeonPlaybackFrame = { heroes: DungeonUnitState[]; enemies: DungeonUnitState[]; pulses: Array<Omit<FloatingNumber, 'id' | 'born'>> };
+type PlaybackFighter = {
+  side: 'hero' | 'enemy'; index: number; uid: string; lane: number; boss: boolean; offset: number;
+  unit: DungeonUnitState; startHp: number; spawn: number; death: number;
+};
+
+// The server resolves a Dungeon room in one call and returns only the end state, so playback stages it: each
+// fighter strikes on its own beat (every third frame, staggered), deaths are spread through the fight, and each
+// target's authoritative HP loss is split over the hits it actually receives. Every hit names its attacker so
+// the Arena plays the lunge. The last frame always equals the server result.
+function planDungeonPlayback(room: number, start: DungeonRoomState, final: DungeonRoomState, frames: number): DungeonPlaybackFrame[] {
+  const period = 3;
+  const bossFight = start.kind === 'shared_boss';
+  const heroes: PlaybackFighter[] = (final.heroes ?? []).map((unit, index) => {
+    const before = (start.heroes ?? []).find((candidate) => candidate.uid === unit.uid) ?? start.heroes?.[index];
+    return {
+      side: 'hero', index, uid: unit.uid ?? `dungeon-hero-${index}`, lane: Number(unit.position ?? index), boss: false, offset: index % period,
+      unit, startHp: Number(before?.current_hp ?? unit.current_hp), spawn: before && !before.alive ? frames + 1 : 0, death: frames + 1,
+    };
+  });
+  const enemies: PlaybackFighter[] = (final.enemies ?? []).map((unit, index) => {
+    const before = (start.enemies ?? []).find((candidate) => candidate.unit_id === unit.unit_id);
+    const summonWave = !before && bossFight ? (String(unit.unit_id ?? '').startsWith('necromancer-summon-2') ? 0.6 : 0.3) : 0;
+    return {
+      side: 'enemy', index, uid: dungeonEnemyUid(room, final, unit, index), lane: Number(unit.lane ?? index),
+      boss: String(unit.unit_id ?? '').startsWith('shared-boss-'), offset: (index + 1) % period,
+      unit, startHp: Number(before?.current_hp ?? unit.max_hp), spawn: Math.round(frames * summonWave), death: before && !before.alive ? 0 : frames + 1,
+    };
+  });
+  // Fighters who fall in this fight go down one after another instead of all on the last frame.
+  // When the other side is wiped out, this side's losses land before that final kill.
+  for (const [side, foes] of [[heroes, enemies], [enemies, heroes]] as const) {
+    const falling = side.filter((fighter) => !fighter.unit.alive && fighter.death > frames && fighter.spawn <= frames);
+    const last = foes.some((foe) => foe.unit.alive) ? frames : frames - period;
+    falling.forEach((fighter, order) => {
+      const earliest = Math.max(fighter.spawn + period, Math.round(frames * 0.4));
+      fighter.death = Math.min(frames, Math.max(earliest, Math.round(earliest + (last - earliest) * (order + 1) / falling.length)));
+    });
+  }
+  const canAct = (fighter: PlaybackFighter, frame: number) => frame > fighter.spawn && frame < fighter.death;
+  const canBeHit = (fighter: PlaybackFighter, frame: number) => frame > fighter.spawn && frame <= fighter.death;
+  const chooseTarget = (attacker: PlaybackFighter, frame: number) => {
+    const foes = (attacker.side === 'hero' ? enemies : heroes).filter((foe) => canBeHit(foe, frame));
+    const guards = foes.filter((foe) => !foe.boss);
+    return guards.find((foe) => foe.lane === attacker.lane) ?? guards[0] ?? foes.find((foe) => foe.lane === attacker.lane) ?? foes[0];
+  };
+
+  type Hit = { frame: number; source?: PlaybackFighter; heavy?: boolean };
+  const hits = new Map<PlaybackFighter, Hit[]>();
+  for (let frame = 1; frame <= frames; frame += 1) {
+    for (const attacker of [...heroes, ...enemies]) {
+      if (!canAct(attacker, frame) || (frame + attacker.offset) % period !== 0) continue;
+      const target = chooseTarget(attacker, frame);
+      if (target) hits.set(target, [...(hits.get(target) ?? []), { frame, source: attacker }]);
+    }
+  }
+
+  const changes = new Map<PlaybackFighter, Array<{ frame: number; value: number; heal: boolean; crit: boolean; source?: PlaybackFighter }>>();
+  const boss = enemies.find((fighter) => fighter.boss);
+  for (const fighter of [...heroes, ...enemies]) {
+    if (fighter.spawn > frames) continue;
+    const net = Math.round(fighter.startHp - Number(fighter.unit.current_hp));
+    const list: Array<{ frame: number; value: number; heal: boolean; crit: boolean; source?: PlaybackFighter }> = [];
+    if (net < 0) {
+      // Healing (Druid growth, Recovery) arrives in a few soft pulses.
+      const beats = [0.25, 0.5, 0.75, 1].map((share) => Math.max(fighter.spawn + 1, Math.round(frames * share)));
+      beats.forEach((frame, order) => list.push({ frame, value: Math.floor(-net / 4) + (order < -net % 4 ? 1 : 0), heal: true, crit: false }));
+    } else if (net > 0) {
+      let damage = net;
+      const lastFrame = Math.min(frames, fighter.death);
+      let received = (hits.get(fighter) ?? []).filter((hit) => hit.frame <= lastFrame);
+      const heavy = bossFight && boss && fighter.side === 'hero' && fighter.unit.uid === final.heavy_target_uid
+        ? Math.min(damage, Math.max(0, Math.round(Number(fighter.unit.heavy_damage_taken ?? 0)))) : 0;
+      if (heavy > 0) {
+        damage -= heavy;
+        list.push({ frame: Math.min(15, lastFrame), value: heavy, heal: false, crit: true, source: boss });
+      }
+      if (received.length === 0 || (fighter.death <= frames && !received.some((hit) => hit.frame === fighter.death))) {
+        // A target the staged duel never reached still shows its loss, and a falling fighter takes the last blow.
+        const foe = (fighter.side === 'hero' ? enemies : heroes).find((candidate) => canAct(candidate, lastFrame)) ?? (fighter.side === 'hero' ? boss : undefined);
+        received = [...received, { frame: lastFrame, source: foe }];
+      }
+      received.forEach((hit, order) => {
+        const value = Math.floor(damage / received.length) + (order < damage % received.length ? 1 : 0);
+        if (value > 0) list.push({ frame: hit.frame, value, heal: false, crit: hit.source?.side === 'hero' && order % 5 === 4, source: hit.source });
+      });
+    }
+    changes.set(fighter, list);
+  }
+
+  const timeline: DungeonPlaybackFrame[] = [];
+  const spent = new Map<PlaybackFighter, number>();
+  for (let frame = 1; frame <= frames; frame += 1) {
+    const pulses: DungeonPlaybackFrame['pulses'] = [];
+    const snapshot = (fighter: PlaybackFighter): DungeonUnitState => {
+      for (const change of changes.get(fighter) ?? []) {
+        if (change.frame !== frame) continue;
+        spent.set(fighter, (spent.get(fighter) ?? 0) + (change.heal ? -change.value : change.value));
+        pulses.push({ sourceUid: change.source?.uid, targetUid: fighter.uid, value: change.value, crit: change.crit, heal: change.heal });
+      }
+      if (frame === frames) return fighter.unit;
+      const hp = Math.max(0, Math.min(Number(fighter.unit.max_hp), Math.round(fighter.startHp - (spent.get(fighter) ?? 0))));
+      return { ...fighter.unit, current_hp: hp, alive: frame < fighter.death && hp > 0 };
+    };
+    timeline.push({
+      heroes: heroes.map(snapshot),
+      enemies: enemies.filter((fighter) => frame > fighter.spawn || frame === frames).map(snapshot),
+      pulses,
+    });
+  }
+  return timeline;
 }
 type DungeonStatus = {
   attempts_remaining: number; attempts_max: number; next_reset_at: string; account_level: number;
@@ -1198,72 +1312,27 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
     const startState = ready.room_state;
     const finalState = resolved.room_state;
     if (!startState || !finalState) { onChange(resolved); return; }
-    const interpolate = (startUnits: DungeonUnitState[] = [], finalUnits: DungeonUnitState[] = [], progress: number) => finalUnits.map((unit, index) => {
-      const identity = unit.uid ?? unit.unit_id;
-      const start = startUnits.find((candidate) => (candidate.uid ?? candidate.unit_id) === identity) ?? startUnits[index] ?? unit;
-      const hp = Math.round(Number(start.current_hp) + (Number(unit.current_hp) - Number(start.current_hp)) * progress);
-      return { ...unit, current_hp: hp, alive: progress >= 1 ? unit.alive : hp > 0 };
-    });
     const bossFight = startState.kind === 'shared_boss';
-    const frames = 18;
-    const presentationFrames = bossFight ? 36 : 24;
-    const totalFrames = bossFight ? presentationFrames : frames;
+    // Boss frames stay at 36: the cast bars read playback ticks 3-6 and 9-15 (Heavy Strike lands on 15).
+    const totalFrames = bossFight ? 36 : 24;
     const authoritativeDuration = Math.max(totalFrames * 220, Number(finalState.elapsed_ms ?? totalFrames * 450));
     const frameDuration = authoritativeDuration / totalFrames;
-    let previousHeroes = startState.heroes ?? [];
-    let previousEnemies = startState.enemies ?? [];
+    const playback = planDungeonPlayback(resolved.room, startState, finalState, totalFrames);
+    let pulseId = Date.now() * 32;
     for (let frame = 1; frame <= totalFrames; frame += 1) {
-      const beat = bossFight ? Math.ceil(frame / 3) : frame;
-      const totalBeats = bossFight ? 12 : totalFrames;
-      const progress = beat / totalBeats;
-      const nextHeroes = interpolate(startState.heroes, finalState.heroes, progress);
-      const nextEnemies = interpolate(startState.enemies, finalState.enemies, progress);
+      const { heroes: nextHeroes, enemies: nextEnemies, pulses } = playback[frame - 1];
       const born = performance.now();
-      const pulses: FloatingNumber[] = [];
-      // Every damage pulse names its attacker so the Arena plays the lunge (it animates outgoing events only).
-      // Shared Boss damage is split across the living party, so every hero strikes; other damage comes from
-      // the lane opponent, or the Boss in its phase.
-      let pulseId = Date.now() * 32;
-      const heroUid = (unit: DungeonUnitState, index: number) => unit.uid ?? `dungeon-hero-${index}`;
-      const livingHeroes = previousHeroes.map((unit, index) => ({ unit, index })).filter(({ unit }) => unit.alive);
-      const livingEnemies = previousEnemies.map((unit, index) => ({ unit, index })).filter(({ unit }) => unit.alive);
-      const bossEnemy = bossFight ? livingEnemies.find(({ unit }) => String(unit.unit_id ?? '').startsWith('shared-boss-')) : undefined;
-      const changes = [
-        ...nextHeroes.map((unit, index) => ({ unit, index, enemy: false, uid: heroUid(unit, index) })),
-        ...nextEnemies.map((unit, index) => ({ unit, index, enemy: true, uid: dungeonEnemyUid(resolved.room, finalState, unit, index) })),
-      ];
-      changes.forEach(({ unit, index, enemy, uid: targetUid }, order) => {
-        const identity = unit.uid ?? unit.unit_id;
-        const prior = (enemy ? previousEnemies : previousHeroes).find((candidate, candidateIndex) => (identity ? (candidate.uid ?? candidate.unit_id) === identity : candidateIndex === index));
-        const delta = prior ? Math.round(Number(prior.current_hp) - Number(unit.current_hp)) : 0;
-        if (delta === 0) return;
-        const crit = delta > 0 && (beat + order) % 5 === 0;
-        if (delta < 0) { pulses.push({ id: pulseId++, targetUid, value: -delta, crit: false, heal: true, born }); return; }
-        if (enemy && bossFight && livingHeroes.length > 0) {
-          livingHeroes.forEach(({ unit: hero, index: heroIndex }, share) => {
-            const value = Math.floor(delta / livingHeroes.length) + (share < delta % livingHeroes.length ? 1 : 0);
-            if (value > 0) pulses.push({ id: pulseId++, sourceUid: heroUid(hero, heroIndex), targetUid, value, crit, heal: false, born });
-          });
-          return;
-        }
-        const attackers = enemy ? livingHeroes : livingEnemies;
-        const attacker = enemy ? (attackers.find(({ index: lane }) => lane === index) ?? attackers[0])
-          : (bossEnemy ?? attackers.find(({ index: lane }) => lane === index) ?? attackers[0]);
-        const sourceUid = attacker ? (enemy ? heroUid(attacker.unit, attacker.index) : dungeonEnemyUid(resolved.room, finalState, attacker.unit, attacker.index)) : undefined;
-        pulses.push({ id: pulseId++, sourceUid, targetUid, value: delta, crit, heal: false, born });
-      });
-      onCombatPulse(pulses);
+      onCombatPulse(pulses.map((pulse) => ({ ...pulse, id: pulseId++, born })));
       onChange({
         ...resolved,
         room_state: {
           ...finalState,
-          status: progress < 1 ? 'resolving' : finalState.status,
+          status: frame < totalFrames ? 'resolving' : finalState.status,
           heroes: nextHeroes,
           enemies: nextEnemies,
           playback_tick: frame,
         },
       });
-      previousHeroes = nextHeroes; previousEnemies = nextEnemies;
       if (frame < totalFrames) await new Promise<void>((resolve) => setTimeout(resolve, frameDuration));
     }
     onCombatPulse([]);
