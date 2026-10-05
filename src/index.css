@@ -709,11 +709,21 @@ html { scroll-behavior: smooth; }
   position:absolute;z-index:4;right:230px;top:53%;display:grid;width:min(175px,27%);justify-items:center;
   transform:translateY(-50%) scale(.82);transform-origin:center;color:#e7d4aa;text-align:center;pointer-events:none;
 }
-.dungeon-throne-boss img,.dungeon-throne-boss>svg {
+.dungeon-throne-boss img,.dungeon-throne-portrait>svg {
   position:relative;z-index:2;width:clamp(92px,13vw,154px);height:clamp(92px,13vw,154px);object-fit:cover;object-position:center 22%;
   border:2px solid rgba(135,102,61,.65);border-radius:18px 18px 8px 8px;filter:saturate(.58) brightness(.67);
   box-shadow:0 18px 45px rgba(0,0,0,.72),0 0 30px rgba(110,72,150,.16);
 }
+/* Boss frame (Founder 2026-10-05: "skulls, something mighty"): forged iron and bone, horned skull crest, corner skulls.
+   Its rim sits on the portrait edge (inner edge at 7.6% of the art) and the ornaments reach outward; the Boss art
+   drops a little so the crest never covers its face. */
+.dungeon-throne-portrait { position:relative;z-index:2;display:block;line-height:0; }
+.boss-frame { position:absolute;z-index:6;inset:-9%;pointer-events:none;background:url('/assets/ui/boss/boss-frame-v1.webp') center / 100% 100% no-repeat;filter:drop-shadow(0 6px 10px rgba(0,0,0,.7)); }
+.dungeon-shared-boss .arena-portrait { border-color:transparent!important;border-radius:2px!important;background:#08070a; }
+.dungeon-shared-boss .arena-portrait img { transform:translateY(10%) scale(1.08);transform-origin:50% 100%; }
+.dungeon-throne-portrait + .dungeon-throne-state { margin-top:18px; }
+.dungeon-throne-portrait img { border:0!important;border-radius:2px!important;object-position:center 0%!important; }
+.dungeon-shared-boss .battle-rank-plate { top:auto;bottom:-24px;z-index:8; }
 .dungeon-throne-haze { position:absolute;z-index:1;inset:15% -25% -8%;background:radial-gradient(ellipse,rgba(92,54,128,.3),transparent 68%);filter:blur(8px); }
 .dungeon-throne-state { position:relative;z-index:3;display:flex;align-items:center;gap:5px;margin-top:-10px;padding:4px 8px;border:1px solid #876f45;border-radius:5px;background:#100d0de8;font-size:var(--ui-text-small);font-weight:900;letter-spacing:.08em; }
 .dungeon-throne-boss strong { position:relative;z-index:3;margin-top:3px;font-family:var(--font-vt);font-size:var(--ui-text-medium);text-shadow:0 2px 4px #000; }

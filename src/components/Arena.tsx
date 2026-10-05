@@ -192,6 +192,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
           </div>
           {heroData && HERO_MAP[heroData.heroId] && <RarityFx rarity={HERO_MAP[heroData.heroId].rarity} shape="slot" />}
         </div>
+        {dungeonBoss && <span className="boss-frame" aria-hidden="true" />}
         </div>
         </div>
       </div>
@@ -240,7 +241,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
       {dungeonRoom && !dungeonBossScene && <div className="dungeon-room-title"><DoorOpen size={14} /><span>DEPTH {dungeonRoom.depth} · ROOM {dungeonRoom.room}/4</span><strong>{dungeonRoom.label}</strong></div>}
       {dungeonBossScene?.phase === 'retinue' && <div className="dungeon-throne-boss" aria-label={`${dungeonBossScene.bossName}, protected behind the Retinue`}>
         <div className="dungeon-throne-haze" />
-        {bossArt ? <img src={bossArt} alt="" /> : <Skull aria-hidden="true" />}
+        <span className="dungeon-throne-portrait">{bossArt ? <img src={bossArt} alt="" /> : <Skull aria-hidden="true" />}<span className="boss-frame" aria-hidden="true" /></span>
         <div className="dungeon-throne-state"><Shield size={12} /> PROTECTED BY RETINUE</div>
         <strong>{dungeonBossScene.bossName}</strong>
       </div>}
