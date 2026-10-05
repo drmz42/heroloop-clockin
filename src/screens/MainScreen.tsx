@@ -95,6 +95,14 @@ type DungeonUnitState = {
   uid?: string; unit_id?: string; position?: number; lane?: number; current_hp: number; max_hp: number; alive: boolean;
   atk?: number; def?: number; speed?: number; attack_speed_bonus?: number;
 };
+
+// The Arena unit uid for a server enemy; combat playback pulses must target and attribute the same uids.
+function dungeonEnemyUid(room: number, roomState: DungeonCheckpoint['room_state'], unit: DungeonUnitState, position: number): string {
+  const sharedBossPhase = roomState?.kind === 'shared_boss';
+  if (sharedBossPhase && String(unit.unit_id ?? '').startsWith('shared-boss-')) return `${DUNGEON_BOSS_ART[roomState?.boss?.boss_id ?? ''] ?? 'boss-lich'}-dungeon-shared`;
+  if (sharedBossPhase && String(unit.unit_id ?? '').startsWith('necromancer-summon-')) return `e${position}-skeleton`;
+  return `e${position}-${room === 2 ? 'boss-ogre' : room === 3 ? 'skeleton' : room === 4 ? 'goblin' : 'orc'}`;
+}
 type DungeonStatus = {
   attempts_remaining: number; attempts_max: number; next_reset_at: string; account_level: number;
   unlocks: { depth_1: boolean; depth_2: boolean; depth_3: boolean };
@@ -510,9 +518,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
       const isSharedBoss = sharedBossPhase && String(unit.unit_id ?? '').startsWith('shared-boss-');
       const isSummon = sharedBossPhase && String(unit.unit_id ?? '').startsWith('necromancer-summon-');
       return ({
-      uid: isSharedBoss
-        ? `${DUNGEON_BOSS_ART[activeDungeon.room_state?.boss?.boss_id ?? ''] ?? 'boss-lich'}-dungeon-shared`
-        : isSummon ? `e${position}-skeleton` : `e${position}-${activeDungeon.room === 2 ? 'boss-ogre' : activeDungeon.room === 3 ? 'skeleton' : activeDungeon.room === 4 ? 'goblin' : 'orc'}`,
+      uid: dungeonEnemyUid(activeDungeon.room, activeDungeon.room_state, unit, position),
       name: isSharedBoss ? (activeDungeon.room_state?.boss?.name ?? 'Dungeon Boss') : isSummon ? 'Raised Guard' : activeDungeon.room === 2 ? 'Elite Guard' : activeDungeon.room === 3 ? 'Treasure Guard' : activeDungeon.room === 4 ? 'Retinue Guard' : 'Citadel Guard',
       side: 'enemy', hp: Number(unit.current_hp), maxHp: Number(unit.max_hp), atk: Number(unit.atk ?? 0),
       def: Number(unit.def ?? 0), speed: Number(unit.speed ?? 100), combatSpeed: 1, critChance: 0.06,
@@ -1214,13 +1220,37 @@ function DungeonBattleControls({ checkpoint, attempts, onChange, onAttempts, onC
       const nextEnemies = interpolate(startState.enemies, finalState.enemies, progress);
       const born = performance.now();
       const pulses: FloatingNumber[] = [];
-      [...nextHeroes, ...nextEnemies].forEach((unit, index) => {
-        const identity = unit.uid ?? unit.unit_id ?? `unit-${index}`;
-        const prior = [...previousHeroes, ...previousEnemies].find((candidate) => (candidate.uid ?? candidate.unit_id) === identity);
+      // Every damage pulse names its attacker so the Arena plays the lunge (it animates outgoing events only).
+      // Shared Boss damage is split across the living party, so every hero strikes; other damage comes from
+      // the lane opponent, or the Boss in its phase.
+      let pulseId = Date.now() * 32;
+      const heroUid = (unit: DungeonUnitState, index: number) => unit.uid ?? `dungeon-hero-${index}`;
+      const livingHeroes = previousHeroes.map((unit, index) => ({ unit, index })).filter(({ unit }) => unit.alive);
+      const livingEnemies = previousEnemies.map((unit, index) => ({ unit, index })).filter(({ unit }) => unit.alive);
+      const bossEnemy = bossFight ? livingEnemies.find(({ unit }) => String(unit.unit_id ?? '').startsWith('shared-boss-')) : undefined;
+      const changes = [
+        ...nextHeroes.map((unit, index) => ({ unit, index, enemy: false, uid: heroUid(unit, index) })),
+        ...nextEnemies.map((unit, index) => ({ unit, index, enemy: true, uid: dungeonEnemyUid(resolved.room, finalState, unit, index) })),
+      ];
+      changes.forEach(({ unit, index, enemy, uid: targetUid }, order) => {
+        const identity = unit.uid ?? unit.unit_id;
+        const prior = (enemy ? previousEnemies : previousHeroes).find((candidate, candidateIndex) => (identity ? (candidate.uid ?? candidate.unit_id) === identity : candidateIndex === index));
         const delta = prior ? Math.round(Number(prior.current_hp) - Number(unit.current_hp)) : 0;
-        const enemy = nextEnemies.includes(unit);
-        const targetUid = bossFight && enemy ? `${DUNGEON_BOSS_ART[startState.boss?.boss_id ?? ''] ?? 'boss-lich'}-dungeon-shared` : identity;
-        if (delta !== 0) pulses.push({ id: Date.now() + index, targetUid, value: Math.abs(delta), crit: delta > 0 && (beat + index) % 5 === 0, heal: delta < 0, born });
+        if (delta === 0) return;
+        const crit = delta > 0 && (beat + order) % 5 === 0;
+        if (delta < 0) { pulses.push({ id: pulseId++, targetUid, value: -delta, crit: false, heal: true, born }); return; }
+        if (enemy && bossFight && livingHeroes.length > 0) {
+          livingHeroes.forEach(({ unit: hero, index: heroIndex }, share) => {
+            const value = Math.floor(delta / livingHeroes.length) + (share < delta % livingHeroes.length ? 1 : 0);
+            if (value > 0) pulses.push({ id: pulseId++, sourceUid: heroUid(hero, heroIndex), targetUid, value, crit, heal: false, born });
+          });
+          return;
+        }
+        const attackers = enemy ? livingHeroes : livingEnemies;
+        const attacker = enemy ? (attackers.find(({ index: lane }) => lane === index) ?? attackers[0])
+          : (bossEnemy ?? attackers.find(({ index: lane }) => lane === index) ?? attackers[0]);
+        const sourceUid = attacker ? (enemy ? heroUid(attacker.unit, attacker.index) : dungeonEnemyUid(resolved.room, finalState, attacker.unit, attacker.index)) : undefined;
+        pulses.push({ id: pulseId++, sourceUid, targetUid, value: delta, crit, heal: false, born });
       });
       onCombatPulse(pulses);
       onChange({

@@ -76,6 +76,11 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   const [slash, setSlash] = useState(false);
   const [heal, setHeal] = useState(false);
   const [artFailed, setArtFailed] = useState(false);
+  // Dungeon playback ids are timestamps and normal combat ids count from zero; a fighter that survives the switch
+  // must not ignore the new sequence (the gap only appears on that switch, never between pruned floaters).
+  const latestFloaterId = floaters.reduce((latest, f) => Math.max(latest, f.id), 0);
+  if (lastOutgoing.current - latestFloaterId > 1e9) lastOutgoing.current = 0;
+  if (lastIncoming.current - latestFloaterId > 1e9) lastIncoming.current = 0;
   const myFloaters = floaters.filter((f) => f.targetUid === unit.uid);
   const outgoingEvent = [...floaters].reverse().find((event) => event.sourceUid === unit.uid && event.id > lastOutgoing.current);
   const incomingEvent = [...myFloaters].reverse().find((event) => event.id > lastIncoming.current);
