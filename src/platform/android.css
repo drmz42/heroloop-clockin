@@ -894,6 +894,10 @@ html[data-hl-platform='android'][data-hl-encounter] .dungeon-panel-body { displa
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-panel-body > * { flex: 1 1 100%; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-panel-body > .dungeon-panel-primary { flex: 1 1 0; min-height: 48px; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-panel-body > .dungeon-panel-abandon { flex: 0 1 auto; min-height: 48px; max-width: 46%; padding: 0 10px; font-size: 11px; line-height: 1.15; }
+/* Founder 2026-10-05: a status line ("Battle in progress", "Room cleared") on its own row grew the panel over the
+   party. It now takes the primary slot beside Abandon, and gives way when a primary action is shown. */
+html[data-hl-platform='android'][data-hl-encounter] .dungeon-panel-body > .dungeon-panel-status { display: grid; flex: 1 1 0; min-height: 48px; place-items: center; line-height: 1.15; }
+html[data-hl-platform='android'][data-hl-encounter] .dungeon-panel-body:has(> .dungeon-panel-primary) > .dungeon-panel-status { display: none; }
 
 /* Boss Hunt, Shared Boss phase: Boss HP and abilities on top, a large Boss in the middle, the whole party in one
    row above the panel. The Boss Hunt label leaves; the burger stays at the top right beside the HP bar. */
@@ -908,20 +912,26 @@ html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .dungeon-status-row { flex-wrap: wrap; justify-content: center; overflow: visible; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .dungeon-status-row span { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared :is(.dungeon-boss-hud, .dungeon-cast-bar, .dungeon-status-row) { max-width: calc(100vw - 16px); }
-html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .dungeon-shared-stage { bottom: calc(var(--hl-boss-panel) + var(--hl-hero-size) + 46px); }
+html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .dungeon-shared-stage { bottom: calc(var(--hl-boss-panel) + var(--hl-hero-size) + 84px); }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .dungeon-shared-stage > .dungeon-shared-boss { align-self: center; margin-top: 18px; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .dungeon-shared-stage .arena-portrait { width: clamp(140px, 42vw, 190px) !important; height: clamp(140px, 42vw, 190px) !important; border-radius: 18px; }
-html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .arena-lanes { top: auto; bottom: calc(var(--hl-boss-panel) + 10px); left: 8px; right: 8px; align-items: flex-end; }
+html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .arena-lanes { top: auto; bottom: calc(var(--hl-boss-panel) + 48px); left: 8px; right: 8px; align-items: flex-end; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .arena-lanes > .arena-roster:first-child { display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: center; align-items: flex-end; gap: 6px; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .arena-lanes .arena-portrait,
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .arena-lanes .arena-unit-info { width: var(--hl-hero-size) !important; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .arena-lanes .arena-portrait { height: var(--hl-hero-size) !important; }
-/* Other encounter rooms and the Retinue phase: fighters stand just above the slim panel; the protected Boss
-   waits large and dimmed at the top; the route strip under the room label is dropped. */
+/* The Seeker name plate rule outranked the hidden name, so it showed clipped under the HP bar. */
+html[data-hl-platform='android'] .dungeon-boss-phase-shared .arena-lanes .arena-unit-info > .arena-unit-name:not(#hl-b) { display: none; }
+/* Other encounter rooms and the Retinue phase: fighters stand well above the slim panel (Founder 2026-10-05: they
+   sat too low); the protected Boss waits large and dimmed at the top; the route strip under the room label is dropped. */
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-route { display: none; }
-html[data-hl-platform='android'][data-hl-encounter] .arena-stage-inner.dungeon-panel-open:not(.dungeon-boss-phase-shared) { justify-content: flex-end; padding: 64px 10px 84px; }
+html[data-hl-platform='android'][data-hl-encounter] .arena-stage-inner.dungeon-panel-open:not(.dungeon-boss-phase-shared) { justify-content: flex-end; padding: 64px 10px calc(84px + 9dvh); }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-retinue .dungeon-throne-boss { top: 64px; right: auto; left: 50%; width: 180px; transform: translateX(-50%); }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-retinue .dungeon-throne-boss img { width: clamp(120px, 38vw, 160px); height: clamp(120px, 38vw, 160px); }
+/* Phase banners stay on one line; the Retinue one covers the protected Boss's label instead of the raised party. */
+html[data-hl-platform='android'][data-hl-encounter] .dungeon-phase-banner { max-width: calc(100vw - 16px); white-space: nowrap; font-size: 13px; letter-spacing: .06em; }
+html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-retinue .dungeon-phase-banner { top: calc(64px + clamp(120px, 38vw, 160px) + 30px); }
+html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-retinue:has(> .dungeon-phase-banner) .dungeon-throne-boss > :is(.dungeon-throne-state, strong) { visibility: hidden; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .arena-lanes .dungeon-target-label { top: -32px; }
 
 /* Selecting Market equipment opens its form in place of the mobile inventory grid. */
