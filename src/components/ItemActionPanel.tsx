@@ -3,7 +3,7 @@ import { RarityFx } from '@/components/RarityFx';
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { SkrUsd } from '@/components/SkrUsd';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ArrowUp, Dice5, ShieldCheck, Trash2, Lock, Unlock, X, Coins } from 'lucide-react';
 import { HERO_USD_QUOTE, ITEM_MAP, SLOT_LABEL, displayItemPower, enchantedStats, itemBaseStats, formatStatValue, STAT_LABEL, sellValue, enchantSuccessChance, enchantCost, enchantCharmCost, rerollCost } from '@/game/items';
 import { CLASS_LABEL, RARITY_COLORS, RARITY_LABEL } from '@/game/heroes';
@@ -31,6 +31,13 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
   const [showReroll, setShowReroll] = useState(false);
   const [showSellConfirm, setShowSellConfirm] = useState(false);
   const skrRate = useSkrRate(isolatedHackathon);
+  const enchantSheetRef = useRef<HTMLDivElement>(null);
+  // Bring the opened Enchant choices into view instead of leaving them below the fold (Founder 2026-10-05).
+  useEffect(() => {
+    if (!showEnchant) return;
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    enchantSheetRef.current?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'nearest' });
+  }, [showEnchant]);
   const base = ITEM_MAP[item.itemId];
   if (!base) return null;
   const rc = RARITY_COLORS[base.rarity];
@@ -112,7 +119,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
         </div>
 
         {showEnchant && canEnchant && (
-          <div className="item-act-sheet rounded-lg bg-black/30 p-2 space-y-1.5">
+          <div ref={enchantSheetRef} className="item-act-sheet item-act-sheet--reveal rounded-lg bg-black/30 p-2 space-y-1.5">
             <div className="ui-text-small text-slate-400">Ordinary success: <span className={enchChance >= 1 ? 'text-emerald-300' : 'text-amber-300'}>{Math.round(enchChance * 100)}%</span> {enchChance < 1 && <span className="font-bold text-rose-300">· Failure destroys the item ({Math.round((1 - enchChance) * 100)}%)</span>}</div>
             <button
               onClick={() => { void game.enchantItem(item.uid, false); setShowEnchant(false); }}
