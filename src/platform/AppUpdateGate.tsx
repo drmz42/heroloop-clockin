@@ -46,7 +46,8 @@ export function AppUpdateGate() {
   }, []);
 
   if (!latest) return null;
-  const host = window.location.host;
+  // Older APKs open staging2.heroloop.xyz; the public download link is always on heroloop.xyz.
+  const host = window.location.hostname.endsWith('heroloop.xyz') ? 'heroloop.xyz' : window.location.host;
   const path = `/download/${latest.fileName}`;
   // The WebView cannot download files itself; an intent link hands the APK to the browser.
   const intentUrl = `intent://${host}${path}#Intent;scheme=https;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(`https://${host}${path}`)};end`;
