@@ -121,7 +121,7 @@ export function applyPlatform() {
 export const MOBILE_WALLET_ADAPTER_NAME = 'Mobile Wallet Adapter';
 
 export function mobileWalletAppIdentity() {
-  return { name: 'HeroLoop', uri: window.location.origin, icon: 'assets/brand/app-icon-192.png' };
+  return { name: 'HeroLoop', uri: window.location.origin, icon: 'assets/brand/app-icon-emblem-192.png' };
 }
 
 function registerMobileWalletAdapter() {
