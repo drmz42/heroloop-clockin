@@ -5,6 +5,7 @@ import { OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { setMobileSection, type MobileSection } from '@/platform/platform';
 import '@/theme/scene/sheets.css';
 import { SeekerMinePanel } from '@/components/SeekerMinePanel';
+import { buildVersionLabel } from '@/platform/buildInfo';
 
 // Android layout only (src/platform/platform.ts): the phone's primary navigation, two rows
 // (Founder 2026-10-02). Row 1: Battle, Quests and Bag switch the Play screen between its three
@@ -93,6 +94,7 @@ export function MobileTabBar({
               <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onSupport(); }}><i aria-hidden="true"><MessageCircle size={19} /></i>Support</button>
             </div>
             <button type="button" className="mo-logout" onClick={() => { onMoreOpen(false); onLogout(); }}><LogOut size={16} aria-hidden="true" /> Logout</button>
+            <p className="mo-version" aria-label={`Version: ${buildVersionLabel}`}>{buildVersionLabel}</p>
           </div>
         </div>
       )}

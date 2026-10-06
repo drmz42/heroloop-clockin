@@ -32,6 +32,7 @@
 .mo-link > i { display: grid; width: 50px; height: 50px; place-items: center; border-radius: 50%; background: radial-gradient(circle at 50% 38%, #3a2a17, #0b0806 72%); box-shadow: 0 0 0 1.5px #8a6630, 0 0 0 4px rgba(0, 0, 0, .65), 0 0 0 5px rgba(242, 204, 128, .3), 0 0 14px rgba(242, 180, 80, .22); color: #f2cc80; font-style: normal; }
 .mo-link:active > i { transform: scale(.95); }
 .mo-link:focus-visible, .mo-close:focus-visible, .mo-logout:focus-visible { outline: 2px solid #fff0a2; outline-offset: 2px; }
+.mo-version { margin: 10px 0 0; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: rgba(214, 196, 160, .55); }
 .mo-logout {
   display: flex;
   width: 100%;
