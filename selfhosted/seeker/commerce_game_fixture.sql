@@ -18,6 +18,17 @@ BEGIN
  IF r->>'status'<>'delivered' THEN RAISE EXCEPTION 'listing refused %',r; END IF;
  listing:=(r#>>'{result,listing,id}')::uuid;
  IF NOT EXISTS(SELECT 1 FROM public.player_items WHERE id=item AND player_id=p) THEN RAISE EXCEPTION 'escrow ownership changed'; END IF;
+ -- Escrow guards reject the stale save and item mutation while the listing is active.
+ BEGIN
+  PERFORM heroloop_api.game_state_save_commit(p,(SELECT revision FROM public.player_saves WHERE player_id=p),
+    jsonb_set((SELECT state FROM public.player_saves WHERE player_id=p),'{inventory}',jsonb_build_array(jsonb_build_object('uid',item))));
+  RAISE EXCEPTION 'escrow save accepted';
+ EXCEPTION WHEN raise_exception THEN IF SQLERRM<>'item_in_market_escrow' THEN RAISE; END IF; END;
+ BEGIN
+  PERFORM public.settle_item_mutation(p,gen_random_uuid(),'sell',ARRAY[item],NULL);
+  RAISE EXCEPTION 'escrow sale accepted';
+ EXCEPTION WHEN raise_exception THEN IF SQLERRM<>'item_in_market_escrow' THEN RAISE; END IF; END;
+
  PERFORM heroloop_api.seeker_purchase_deliver(p,k);
  IF (SELECT count(*) FROM public.market_item_listings WHERE item_id=item)<>1 THEN RAISE EXCEPTION 'listing replay duplicated'; END IF;
  PERFORM heroloop_api.seeker_purchase_prepare(q,'72000000-0000-4000-8000-000000000001','market_buy_listing',jsonb_build_object('listing_id',listing));
@@ -112,3 +123,49 @@ BEGIN
  SELECT jsonb_object_agg(player_id,token_balance) INTO after_balances FROM public.players WHERE player_id=ANY(v_players);
  IF after_balances<>balances THEN RAISE EXCEPTION 'commerce changed HERO balances'; END IF;
 END $$;
+
+-- Security cases run in a rolled-back transaction on disposable registered accounts.
+BEGIN;
+DO $$
+DECLARE p uuid; r jsonb; state jsonb; camp jsonb; key uuid:=gen_random_uuid(); ms bigint;
+BEGIN
+ SELECT player_id INTO p FROM public.player_saves ORDER BY player_id LIMIT 1;
+ DELETE FROM heroloop_api.account_auth_subjects WHERE auth_subject=p;
+ INSERT INTO heroloop_api.heroloop_accounts(account_id,state) VALUES(p,'active') ON CONFLICT(account_id) DO UPDATE SET state='active';
+ IF heroloop_api.resolve_authenticated_account(p)->>'authenticated'<>'true' THEN RAISE EXCEPTION 'active fallback refused'; END IF;
+ FOR r IN SELECT to_jsonb(value) FROM unnest(ARRAY['recovery_locked','deletion_pending']) value LOOP
+  UPDATE heroloop_api.heroloop_accounts SET state=r#>>'{}' WHERE account_id=p;
+  IF heroloop_api.resolve_authenticated_account(p)->>'authenticated'<>'false' THEN RAISE EXCEPTION 'inactive fallback authenticated'; END IF;
+ END LOOP;
+ IF heroloop_api.resolve_authenticated_account(gen_random_uuid())->>'authenticated'<>'true' THEN RAISE EXCEPTION 'unregistered fallback refused'; END IF;
+ UPDATE heroloop_api.heroloop_accounts SET state='active' WHERE account_id=p;
+ INSERT INTO public.account_risk_levels(player_id,level,set_by) VALUES(p,'review','system') ON CONFLICT(player_id) DO UPDATE SET level='review';
+ FOR r IN SELECT to_jsonb(value) FROM unnest(ARRAY['review','hold']) value LOOP
+  UPDATE public.account_risk_levels SET level=r#>>'{}' WHERE player_id=p;
+  BEGIN
+   PERFORM heroloop_api.assert_wallet_withdrawal_allowed(p);
+   RAISE EXCEPTION 'restricted withdrawal allowed';
+  EXCEPTION WHEN raise_exception THEN IF SQLERRM<>'account_restricted' THEN RAISE; END IF; END;
+ END LOOP;
+ DELETE FROM public.account_risk_levels WHERE player_id=p;
+ DELETE FROM public.seeker_commerce_requests WHERE player_id=p AND action='training_boost_buy' AND status='prepared';
+ SELECT player_saves.state INTO state FROM public.player_saves WHERE player_id=p;
+ ms:=floor(extract(epoch FROM clock_timestamp())*1000)::bigint;
+ camp:=(state->'trainingCamp')||jsonb_build_object('lastTick',ms,'activeBoostKey','2x-1h','boostMultiplier',2,'boostEndsAt',ms+86400000,
+  'boostQueue',(SELECT jsonb_agg(jsonb_build_object('key','2x-1h','multiplier',2,'durationMs',3600000)) FROM generate_series(1,99)));
+ UPDATE public.player_saves SET state=jsonb_set(player_saves.state,'{trainingCamp}',camp) WHERE player_id=p;
+ PERFORM heroloop_api.seeker_purchase_prepare(p,key,'training_boost_buy','{"boost":"4x-1h"}');
+ camp:=jsonb_set(camp,'{boostQueue}',camp->'boostQueue'||jsonb_build_array(jsonb_build_object('key','2x-1h','multiplier',2,'durationMs',3600000)));
+ UPDATE public.player_saves SET state=jsonb_set(player_saves.state,'{trainingCamp}',camp) WHERE player_id=p;
+ BEGIN
+  PERFORM heroloop_api.seeker_purchase_prepare(p,gen_random_uuid(),'training_boost_buy','{"boost":"4x-1h"}');
+  RAISE EXCEPTION 'full training queue quoted';
+ EXCEPTION WHEN raise_exception THEN IF SQLERRM<>'training_boost_queue_full' THEN RAISE; END IF; END;
+ BEGIN
+  PERFORM heroloop_api.seeker_purchase_assert_payable(p,key);
+  RAISE EXCEPTION 'full training queue charge allowed';
+ EXCEPTION WHEN raise_exception THEN IF SQLERRM<>'training_boost_queue_full' THEN RAISE; END IF; END;
+ r:=heroloop_api.seeker_purchase_deliver(p,key);
+ IF r->>'status'<>'rejected' OR r#>>'{result,code}'<>'training_boost_queue_full' THEN RAISE EXCEPTION 'full training queue not definitively rejected: %',r; END IF;
+END $$;
+ROLLBACK;

@@ -43,3 +43,28 @@ BEGIN
 END $$;
 DO $$ BEGIN IF EXISTS(SELECT asset FROM seeker_skr.accounts GROUP BY asset HAVING sum(balance_minor)<>0)
  THEN RAISE EXCEPTION 'withdrawal asset conservation'; END IF; END $$;
+
+BEGIN;
+-- Deletion must fail closed for balances, deposits and unsettled withdrawals.
+DO $$
+DECLARE p uuid:='70000000-0000-4000-8000-000000000099'; d jsonb; w jsonb;
+BEGIN
+ IF seeker_skr.account_deletion_status(p)->>'can_delete'<>'true' THEN RAISE EXCEPTION 'empty wallet deletion blocked'; END IF;
+ d:=seeker_skr.deposit_intent_create(p,'SKR',100,repeat('1',32),'Ref9999999999999999999999999999999999999999','devnet',600);
+ IF seeker_skr.account_deletion_status(p)->>'can_delete'<>'false' THEN RAISE EXCEPTION 'pending deposit deletion allowed'; END IF;
+ UPDATE seeker_skr.deposit_intents SET expires_at=clock_timestamp()-interval '1 second' WHERE id=(d->>'intent_id')::uuid;
+ IF seeker_skr.account_deletion_status(p)->>'can_delete'<>'false' THEN RAISE EXCEPTION 'unsettled expired deposit deletion allowed'; END IF;
+ DELETE FROM seeker_skr.deposit_intents WHERE id=(d->>'intent_id')::uuid;
+ w:=seeker_skr.withdrawal_intent(p,'SKR',100,1,repeat('1',32));
+ IF seeker_skr.account_deletion_status(p)->>'can_delete'<>'false' THEN RAISE EXCEPTION 'open withdrawal deletion allowed'; END IF;
+ UPDATE seeker_skr.withdrawals SET status='rejected',reject_reason='fixture' WHERE id=(w->>'request_id')::uuid;
+ IF seeker_skr.account_deletion_status(p)->>'can_delete'<>'true' THEN RAISE EXCEPTION 'settled empty wallet deletion blocked'; END IF;
+ PERFORM seeker_skr.wallet_account(p,'SOL');
+ UPDATE seeker_skr.accounts SET balance_minor=1 WHERE player_id=p AND kind='player' AND asset='SOL';
+ IF seeker_skr.account_deletion_status(p)->>'can_delete'<>'false' THEN RAISE EXCEPTION 'SOL balance deletion allowed'; END IF;
+ UPDATE seeker_skr.accounts SET balance_minor=0 WHERE player_id=p;
+ PERFORM seeker_skr.reserve_account(p,'SKR');
+ UPDATE seeker_skr.accounts SET balance_minor=1 WHERE player_id=p AND kind='withdrawal_reserve' AND asset='SKR';
+ IF seeker_skr.account_deletion_status(p)->>'can_delete'<>'false' THEN RAISE EXCEPTION 'reserve balance deletion allowed'; END IF;
+END $$;
+ROLLBACK;

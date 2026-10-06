@@ -134,3 +134,17 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,seeker_skr AS $$
 $$;
 REVOKE ALL ON FUNCTION seeker_skr.withdrawal_admin_get(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION seeker_skr.withdrawal_admin_get(uuid) TO seeker_wallet_runtime;
+
+-- Read-only deletion guard includes reserves and every supported wallet asset.
+-- An expired intent can still settle a transfer finalized within its time window.
+CREATE OR REPLACE FUNCTION seeker_skr.account_deletion_status(p_player uuid) RETURNS jsonb
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,seeker_skr AS $$
+ SELECT jsonb_build_object('can_delete',
+  NOT EXISTS(SELECT 1 FROM seeker_skr.accounts WHERE player_id=p_player AND balance_minor<>0)
+  AND NOT EXISTS(SELECT 1 FROM seeker_skr.deposit_intents WHERE player_id=p_player
+    AND settled_event IS NULL)
+  AND NOT EXISTS(SELECT 1 FROM seeker_skr.withdrawals WHERE player_id=p_player
+    AND status NOT IN ('paid','rejected') AND (status<>'authorization' OR expires_at>clock_timestamp())))
+$$;
+REVOKE ALL ON FUNCTION seeker_skr.account_deletion_status(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION seeker_skr.account_deletion_status(uuid) TO seeker_wallet_runtime;

@@ -374,8 +374,9 @@ export function mergeSaveState(
   const ledger = recordArray(context.items);
   const ledgerIds = new Set(ledger.map((row) => String(row.id ?? "")));
   const ledgerById = new Map(ledger.map((row) => [String(row.id ?? ""), row]));
-  const currentInventory = recordArray(current.inventory);
-  const requestedInventory = recordArray(requested.inventory);
+  const escrowIds = new Set(ledger.filter((row) => row.active_escrow === true).map((row) => String(row.id)));
+  const currentInventory = recordArray(current.inventory).filter((item) => !escrowIds.has(String(item.uid ?? "")));
+  const requestedInventory = recordArray(requested.inventory).filter((item) => !escrowIds.has(String(item.uid ?? "")));
   if (requestedInventory.some((item) => item.serverOwned === true && !ledgerIds.has(String(item.uid ?? "")))) {
     return { code: "item_registry_incomplete", status: 409 };
   }
@@ -413,6 +414,11 @@ export function mergeSaveState(
     savedInventoryIds,
     ledgerIds,
   );
+  requested.ownedHeroes = recordArray(requested.ownedHeroes).map((hero) => ({
+    ...hero,
+    equipped: Object.fromEntries(Object.entries(isRecord(hero.equipped) ? hero.equipped : {})
+      .filter(([, uid]) => !escrowIds.has(String(uid)))),
+  }));
   if (recordArray(requested.ownedHeroes).length === 0) return { code: "invalid_owned_heroes", status: 400 };
   const unequippedCount = (state: JsonRecord): number => {
     const equipped = new Set(recordArray(state.ownedHeroes).flatMap((hero) =>

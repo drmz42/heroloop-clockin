@@ -19,6 +19,7 @@ export async function quotePurchase(a: CommerceAdapters,player: string,key: stri
   return await a.wallet('/wallet/purchase-quote',{ player_id:player,request_id:key,...prepared });
 }
 export async function commitPurchase(a: CommerceAdapters,player: string,key: string): Promise<Json> {
+  await a.game('SELECT heroloop_api.seeker_purchase_assert_payable($1::uuid,$2::uuid) AS result',[player,key]);
   const payment=await a.wallet('/wallet/purchase-charge',{ player_id:player,quote_id:key });
   if (payment.status==='refunded') throw new Error('skr_purchase_refunded');
   // This SQL persists the delivered/rejected receipt atomically with the grant.

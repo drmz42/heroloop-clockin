@@ -381,6 +381,7 @@ function idempotencyKey(envelope: JsonRecord): string | null {
 
 function databaseErrorCode(error: unknown, allowed: readonly string[]): string | null {
   const message = error instanceof Error ? error.message : String(error ?? "");
+  if (message.includes("item_in_market_escrow")) return "item_in_market_escrow";
   if (message.includes("account_restricted")) return "account_restricted";
   return allowed.find((code) => message.includes(code)) ?? null;
 }
@@ -1015,7 +1016,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
           'skr_insufficient_balance_or_overflow','skr_quote_not_found','skr_quote_expired','skr_purchase_refunded',
           'stale_skr_rate','account_restricted','market_listing_unavailable','market_self_purchase','item_not_found',
           'invalid_market_price','store_offer_expired','store_offer_sold','invalid_store_slot',
-          'skr_product_changed','target_not_found','maximum_stars','insufficient_duplicates','unsupported_rarity','hero_capacity_quote_stale','hero_capacity_exceeded','invalid_summon','maximum_enchant','insufficient_gold','invalid_item_upgrade','bag_step_unavailable','invalid_shop_bundle_purchase','invalid_reward_boost_purchase']);
+          'skr_product_changed','target_not_found','maximum_stars','insufficient_duplicates','unsupported_rarity','hero_capacity_quote_stale','hero_capacity_exceeded','invalid_summon','maximum_enchant','insufficient_gold','invalid_item_upgrade','bag_step_unavailable','invalid_shop_bundle_purchase','invalid_reward_boost_purchase','training_boost_queue_full','item_in_market_escrow']);
         if(code) return errorResponse(409,code,requestId);
         return errorResponse(503,'skr_purchase_pending',requestId);
       }
@@ -1040,6 +1041,9 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         if(proof.verified!==true)return errorResponse(403,'wallet_identity_required',requestId);
       }
       try {
+        if (action==='wallet_withdraw_intent' || action==='wallet_withdraw_confirm') {
+          await databaseJson('SELECT heroloop_api.assert_wallet_withdrawal_allowed($1::uuid) AS result',[identity.playerId]);
+        }
         if(action==='wallet_withdraw_confirm') {
           const intent=await privateWallet('/wallet/withdraw-get',{player_id:identity.playerId,request_id:payload.request_id});
           const proof=await databaseJson('SELECT heroloop_api.seeker_wallet_identity($1::uuid,$2::text) AS result',[identity.playerId,intent.destination]);
@@ -1058,7 +1062,8 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         }
         const code = typeof body.code === "string" && /^[a-z_]{3,48}$/.test(body.code) ? body.code : "wallet_unavailable";
         return errorResponse(response.status >= 500 ? 503 : [400, 403, 404].includes(response.status) ? response.status : 409, code, requestId);
-      } catch {
+      } catch (error) {
+        if (databaseErrorCode(error, ["account_restricted"]) === "account_restricted") return errorResponse(403, "account_restricted", requestId);
         console.error("wallet service adapter failed", { requestId });
         return errorResponse(503, "wallet_unavailable", requestId);
       }
@@ -1112,6 +1117,14 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
     if (parsed.value.action === "account_delete") {
       const payloadError = validatePayloadFields(payload, []);
       if (payloadError) return errorResponse(400, payloadError, requestId);
+      if (edition === "seeker") {
+        try {
+          const wallet = await privateWallet('/wallet/deletion-status', { player_id: identity.playerId });
+          if (wallet.can_delete !== true) return errorResponse(409, "account_has_wallet_funds", requestId);
+        } catch {
+          return errorResponse(409, "account_has_wallet_funds", requestId);
+        }
+      }
       try {
         const result = await databaseJson(
           "SELECT heroloop_api.account_delete($1::uuid) AS result",
@@ -1871,7 +1884,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         );
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
       } catch (error) {
-        const code = databaseErrorCode(error, ["item_not_found", "item_locked", "item_state_mismatch", "idempotency_conflict"]);
+        const code = databaseErrorCode(error, ["item_in_market_escrow", "item_not_found", "item_locked", "item_state_mismatch", "idempotency_conflict"]);
         if (code) return errorResponse(409, code, requestId);
         return errorResponse(400, "item_mutation_failed", requestId);
       }
@@ -2486,7 +2499,8 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
           result.migrated_items = migratedItems;
         }
         return json(200, { ok: true, contract_version: 1, request_id: requestId, revision, result });
-      } catch {
+      } catch (error) {
+        if (databaseErrorCode(error, ["item_in_market_escrow"]) === "item_in_market_escrow") return errorResponse(409, "item_in_market_escrow", requestId);
         console.error("game_state_save database adapter failed", { requestId });
         return errorResponse(503, "state_unavailable", requestId);
       }

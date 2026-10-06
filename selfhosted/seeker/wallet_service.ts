@@ -320,9 +320,12 @@ async function withdrawals(path:string,player:string,body:Json):Promise<Response
     const asset=body.asset==='SKR'||body.asset==='SOL'||body.asset==='ORE'?body.asset:null;
     if(asset==='ORE'&&!oreEnabled)return json(409,{ok:false,code:'ore_activation_required'});
     if(!asset||typeof body.destination!=='string'||!ADDRESS.test(body.destination)||(body.destination===config.treasury||body.destination===config.payoutTreasury))return json(400,{ok:false,code:'invalid_withdrawal'});
-    if(asset!=='SOL'&&!await hasSkrAccount(body.destination,asset==='ORE'?ORE_TOKEN_MINT:config.skrMint,rpc,ASSET_DECIMALS[asset]))return json(409,{ok:false,code:asset==='ORE'?'recipient_ore_account_required':'recipient_skr_account_required'});
     const amount=parseAmount(body.amount,asset);
     if(amount===null||amount>18446744073709551615n)return json(400,{ok:false,code:'invalid_amount'});
+    const available=await call('SELECT seeker_skr.wallet_snapshot($1::uuid) AS result',[player]);
+    const balances=isRecord(available.balances)?available.balances:{};
+    if(BigInt(String(balances[asset]??'0'))<amount)return json(409,{ok:false,code:'skr_insufficient_balance_or_overflow'});
+    if(asset!=='SOL'&&!await hasSkrAccount(body.destination,asset==='ORE'?ORE_TOKEN_MINT:config.skrMint,rpc,ASSET_DECIMALS[asset]))return json(409,{ok:false,code:asset==='ORE'?'recipient_ore_account_required':'recipient_skr_account_required'});
     const report=await reconcile();
     if(report.withdrawals_blocked)return json(409,{ok:false,code:'withdrawals_blocked'});
     const rate=(await rates())[asset==='SKR'?SKR_ASSET.mint:asset==='ORE'?ORE_TOKEN_MINT:SOL_MINT];
@@ -404,6 +407,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8090 }, async (request) => {
   }
   try {
     if (url.pathname === "/wallet/payout-config") return json(200, {ok:true,result:{treasury:config.payoutTreasury,depositTreasury:config.treasury,skrMint:config.skrMint}});
+    if (url.pathname === '/wallet/deletion-status') return json(200,{ok:true,result:await call('SELECT seeker_skr.account_deletion_status($1::uuid) AS result',[body.player_id])});
     if (url.pathname === "/wallet/snapshot") return await snapshot(body.player_id, body.address);
     if (url.pathname === "/wallet/deposit-intent") return await createIntent(body.player_id, body);
     if (url.pathname === "/wallet/deposit-confirm") return await confirm(body.player_id, body);

@@ -99,3 +99,19 @@ Deno.test("legacy migration replay returns only the stored server save", () => {
   const result = prepareLegacyMigration(canonical, forged, playerId);
   assert("state" in result && result.state === canonical.state, "existing canonical save wins");
 });
+
+Deno.test("active Market escrow cannot return through requested or stored inventory and equipment", () => {
+  for (const includeRequested of [false, true]) {
+    const canonical = context();
+    canonical.items = [{ ...ledgerRow, active_escrow: true }];
+    const stored = canonical.state as JsonRecord;
+    stored.ownedHeroes = (stored.ownedHeroes as JsonRecord[]).map((hero) => ({ ...hero, equipped: { helmet: owned.uid } }));
+    const requested = structuredClone(stored);
+    requested.inventory = includeRequested ? [owned, legacy] : [legacy];
+    if (!includeRequested) requested.ownedHeroes = (requested.ownedHeroes as JsonRecord[]).map((hero) => ({ ...hero, equipped: {} }));
+    const result = mergeSaveState(canonical, requested, playerId, now);
+    if ("code" in result) throw new Error(result.code);
+    assert(!(result.state.inventory as JsonRecord[]).some((entry) => entry.uid === owned.uid), "escrow removed from inventory");
+    assert(!JSON.stringify((result.state.ownedHeroes as JsonRecord[]).map((hero) => hero.equipped)).includes(String(owned.uid)), "escrow removed from equipment");
+  }
+});
