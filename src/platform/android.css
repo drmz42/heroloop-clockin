@@ -579,14 +579,15 @@ html[data-hl-platform='android'] .training-camp-screen .training-empty-post smal
   .game-progress-quests { padding-inline: 6px; gap: 4px; font-size: 11px; }
 }
 
-/* Update notice in the native app (src/platform/AppUpdateBanner.tsx). */
-.hl-app-update { position: fixed; left: 8px; right: 8px; top: calc(8px + env(safe-area-inset-top, 0px)); z-index: 1000; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 12px; border: 1px solid rgba(214, 170, 92, .7); border-radius: 10px; background: linear-gradient(180deg, #2a1d12, #150e09); box-shadow: 0 6px 18px rgba(0, 0, 0, .55); color: #f1e2c2; }
-.hl-app-update p { display: flex; flex: 1; min-width: 0; flex-direction: column; margin: 0; }
-.hl-app-update strong { font-size: 13px; }
-.hl-app-update span { overflow: hidden; font-size: 10px; color: rgba(214, 196, 160, .75); text-overflow: ellipsis; white-space: nowrap; }
-.hl-app-update-get { flex: none; min-height: 40px; padding: 0 14px; border-radius: 8px; background: linear-gradient(180deg, #b3261e, #6e110c); color: #fff3dc; font-size: 13px; font-weight: 800; line-height: 40px; text-decoration: none; }
-.hl-app-update-close { flex: none; width: 40px; height: 40px; border: 0; background: none; color: rgba(241, 226, 194, .8); font-size: 22px; }
-.hl-app-update-get:focus-visible, .hl-app-update-close:focus-visible { outline: 2px solid #f1c873; outline-offset: 2px; }
+/* Mandatory update gate in the native app (src/platform/AppUpdateGate.tsx). */
+.hl-app-update { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); background: radial-gradient(circle at 50% 30%, rgba(60, 34, 18, .96), rgba(8, 5, 3, .98) 70%); color: #f1e2c2; text-align: center; }
+.hl-app-update-card { display: flex; width: min(100%, 380px); flex-direction: column; align-items: center; gap: 12px; padding: 22px 18px; border: 1px solid rgba(214, 170, 92, .7); border-radius: 12px; background: linear-gradient(180deg, #2a1d12, #150e09); box-shadow: 0 10px 30px rgba(0, 0, 0, .6); }
+.hl-app-update-card img { width: min(80%, 260px); height: auto; }
+.hl-app-update-card h2 { margin: 0; font: 700 20px/1.2 'Cinzel', Georgia, serif; letter-spacing: .06em; text-transform: uppercase; color: #f2cc80; }
+.hl-app-update-card p { margin: 0; font-size: 14px; line-height: 1.45; color: rgba(241, 226, 194, .85); }
+.hl-app-update-get { display: block; width: 100%; min-height: 48px; border-radius: 8px; background: linear-gradient(180deg, #b3261e, #6e110c); color: #fff3dc; font-size: 15px; font-weight: 800; line-height: 48px; text-decoration: none; }
+.hl-app-update-get:focus-visible { outline: 2px solid #f1c873; outline-offset: 2px; }
+.hl-app-update-link { max-width: 100%; overflow: hidden; font-size: 10px; color: rgba(214, 196, 160, .6); text-overflow: ellipsis; white-space: nowrap; }
 
 /* Version line on the app start and loading screens. */
 .hl-build-version { position: fixed; left: 0; right: 0; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 5; margin: 0; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: rgba(214, 196, 160, .55); pointer-events: none; }

@@ -1,13 +1,13 @@
-// Update notice for the native Seeker app (android/seeker-app). The server publishes the newest
+// Mandatory update for the native Seeker app (android/seeker-app). The server publishes the newest
 // signed APK at /download/<file> with /download/latest.json (ops/install-vps2-apk-download.sh).
 // The app's user agent carries "HeroLoopApp/<versionName>" and, from versionCode 13,
 // "HeroLoopAppCode/<versionCode>"; older APKs are compared by version name only.
 import { useEffect, useState } from 'react';
 import { isNativeApp } from '@/platform/platform';
+import logo from '@/theme/premium/assets/logo-heroloop.webp';
 
 type LatestApk = { fileName: string; versionName: string; versionCode: number };
 
-const DISMISS_KEY = 'heroloop-app-update-dismissed';
 const FILE_NAME = /^heroloop-seeker-[0-9A-Za-z.+-]{1,40}-[0-9]{1,9}\.apk$/;
 
 function parseLatest(value: unknown): LatestApk | null {
@@ -27,7 +27,9 @@ function isOutdated(latest: LatestApk): boolean {
   return Boolean(name) && name !== latest.versionName;
 }
 
-export function AppUpdateBanner() {
+// Founder 2026-10-06: an outdated app cannot be played; the gate covers every screen until
+// the newer APK is installed.
+export function AppUpdateGate() {
   const [latest, setLatest] = useState<LatestApk | null>(null);
 
   useEffect(() => {
@@ -37,13 +39,7 @@ export function AppUpdateBanner() {
       .then((response) => (response.ok ? response.json() : null))
       .then((body) => {
         const parsed = parseLatest(body);
-        if (!parsed || !isOutdated(parsed)) return;
-        try {
-          if (window.sessionStorage.getItem(DISMISS_KEY) === String(parsed.versionCode)) return;
-        } catch {
-          // Blocked storage: show the notice.
-        }
-        setLatest(parsed);
+        if (parsed && isOutdated(parsed)) setLatest(parsed);
       })
       .catch(() => undefined);
     return () => controller.abort();
@@ -54,23 +50,16 @@ export function AppUpdateBanner() {
   const path = `/download/${latest.fileName}`;
   // The WebView cannot download files itself; an intent link hands the APK to the browser.
   const intentUrl = `intent://${host}${path}#Intent;scheme=https;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(`https://${host}${path}`)};end`;
-  const dismiss = () => {
-    try {
-      window.sessionStorage.setItem(DISMISS_KEY, String(latest.versionCode));
-    } catch {
-      // Blocked storage: hide for this page only.
-    }
-    setLatest(null);
-  };
 
   return (
-    <div className="hl-app-update" role="status">
-      <p>
-        <strong>Update available: {latest.versionName}</strong>
-        <span>{host}{path}</span>
-      </p>
-      <a className="hl-app-update-get" href={intentUrl}>Download</a>
-      <button type="button" className="hl-app-update-close" onClick={dismiss} aria-label="Dismiss update notice">×</button>
+    <div className="hl-app-update" role="alertdialog" aria-modal="true" aria-labelledby="hl-app-update-title">
+      <div className="hl-app-update-card">
+        <img src={logo} alt="HeroLoop" width={1100} height={367} />
+        <h2 id="hl-app-update-title">Update required</h2>
+        <p>Version {latest.versionName} is out. Install it to keep playing; your heroes and progress stay on your account.</p>
+        <a className="hl-app-update-get" href={intentUrl}>Download update</a>
+        <span className="hl-app-update-link">{host}{path}</span>
+      </div>
     </div>
   );
 }
