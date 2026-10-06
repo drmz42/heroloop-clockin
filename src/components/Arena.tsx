@@ -25,8 +25,9 @@ function enemyRank(unit: CombatUnit, locationId: number | undefined, dungeonDept
   return { level: Math.min(hi + 2, lo + (hash % (hi - lo + 1)) + (boss ? 2 : unit.eliteAffix ? 1 : 0)), stars };
 }
 
-function formatHealth(value: number) {
-  return compactNumber(Math.max(0, Math.ceil(value)), 4, 3);
+// Unit plates are narrow (dungeon plates most of all), so they keep two significant digits: 9.9m/9.9m.
+function formatHealth(value: number, significant = 2) {
+  return compactNumber(Math.max(0, Math.ceil(value)), 4, significant);
 }
 
 interface ArenaProps {
@@ -255,7 +256,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
         <div className="dungeon-boss-hud">
           <span><Swords size={13} /> SHARED TARGET</span><strong>{dungeonBossScene.bossName}</strong>
           <HealthBar hp={sharedBoss.hp} maxHp={sharedBoss.maxHp} color="#b9373e" />
-          <small>{formatHealth(sharedBoss.hp)} / {formatHealth(sharedBoss.maxHp)} HP</small>
+          <small>{formatHealth(sharedBoss.hp, 3)} / {formatHealth(sharedBoss.maxHp, 3)} HP</small>
           {dungeonBossScene.threshold && <i className="dungeon-threshold" style={{ left: `${100 - dungeonBossScene.threshold}%` }} title={`${dungeonBossScene.threshold}% mechanic threshold`} />}
         </div>
         {dungeonBossScene.cast && <div className={`dungeon-cast-bar ${dungeonBossScene.cast.impact ? 'is-impact' : ''}`} role="status">

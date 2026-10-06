@@ -22,8 +22,10 @@ export function compactNumber(value: number, maxDigits = 3, significant = 4): st
   if (whole < 10 ** maxDigits) return sign + groupNumber(whole);
   const digits = whole < 1e21 ? String(whole).length : Math.floor(Math.log10(whole)) + 1;
   const tier = Math.min(Math.floor((digits - 1) / 3), SUFFIXES.length - 1);
-  const scaled = whole / 1000 ** tier;
-  const decimals = Math.max(0, significant - (scaled >= 100 ? 3 : scaled >= 10 ? 2 : 1));
-  const text = (Math.floor(scaled * 10 ** decimals + 1e-9) / 10 ** decimals).toFixed(decimals);
-  return `${sign}${decimals ? text.replace(/\.?0+$/, '') : text}${SUFFIXES[tier]}`;
+  const intDigits = digits - tier * 3;
+  const decimals = Math.max(0, significant - intDigits);
+  // Integer division keeps the cut exact: 99 999 999 999 is 99.9b, never a float-rounded 100b.
+  const kept = Math.floor(whole / 10 ** (tier * 3 - decimals));
+  const text = decimals ? `${Math.floor(kept / 10 ** decimals)}.${String(kept % 10 ** decimals).padStart(decimals, '0')}`.replace(/\.?0+$/, '') : String(kept);
+  return `${sign}${text}${SUFFIXES[tier]}`;
 }
