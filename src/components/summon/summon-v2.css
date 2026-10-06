@@ -286,43 +286,103 @@
 .sv-altar:not(.is-lit) .sv-altar-cost { color: #f0b7a6; font-size: clamp(7px, 7cqw, 10px); white-space: normal; text-align: center; }
 @media (hover: hover) { .sv-altar:not(:disabled):hover .sv-altar-plate { filter: brightness(1.15); } }
 
-/* Payment selector sits on the temple floor, just above the altars */
+/* Payment choice as an offering: two relics float over a stone table. The chosen one
+   rises and glows; the other rests dim in its socket. */
 .sv-offering {
+  position: relative;
   display: grid;
   width: 100%;
-  max-width: 460px;
+  max-width: 420px;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  margin: auto auto 12px;
+  align-items: end;
+  margin: auto auto 34px;
+  padding: 0 12%;
 }
 .sv-offering-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-.sv-offer {
+.sv-offering-slab {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: -1;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .8));
+  pointer-events: none;
+  user-select: none;
+}
+.sv-relic {
+  --relic-glow: 180, 109, 255;
+  position: relative;
   display: flex;
+  min-width: 0;
   min-height: 44px;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 0 solid transparent;
-  border-width: 8px 12px;
-  border-image: var(--sv-plate) 85 150 fill / 8px 12px / 0 3px stretch;
-  padding: 0 4px;
+  gap: 2px;
+  border: 0;
+  padding: 0 0 clamp(16px, 6.5vw, 28px);
   background: none;
   color: #bfae8f;
-  text-shadow: 0 1px 2px #000;
-  transition: filter .15s ease;
-  font: 700 11px/1 var(--sv-display);
-  letter-spacing: .06em;
-  text-transform: uppercase;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
-.sv-offer[aria-pressed='true'] {
-  border-width: 9px 13px;
-  border-image: var(--sv-seal) 24 56 26 fill / 7px 16px 8px / 0 6px stretch;
-  color: #fff0cf;
-  text-shadow: 0 1px 2px #000, 0 0 10px rgba(255, 120, 90, .45);
+.sv-relic--scroll { --relic-glow: 255, 196, 120; }
+.sv-relic:disabled { cursor: default; }
+.sv-relic:focus-visible { outline: 2px solid var(--sv-gold); outline-offset: 2px; }
+.sv-relic-art {
+  position: relative;
+  z-index: 1;
+  width: clamp(64px, 24vw, 104px);
+  height: clamp(64px, 24vw, 104px);
+  object-fit: contain;
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, .8)) brightness(.55) saturate(.5);
+  transform: translateY(8px) scale(.86);
+  transition: transform .45s cubic-bezier(.3, 1.4, .5, 1), filter .35s ease;
+  user-select: none;
 }
-.sv-offer:not([aria-pressed='true']) { filter: brightness(.82) saturate(.8); }
-.sv-offer:disabled { cursor: default; }
+.sv-relic-halo {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: clamp(80px, 28vw, 120px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--relic-glow), .75), rgba(var(--relic-glow), .22) 42%, transparent 70%);
+  opacity: 0;
+  transform: translate(-50%, -14%) scale(.7);
+  transition: opacity .35s ease, transform .45s ease;
+  pointer-events: none;
+}
+.sv-relic-name {
+  position: absolute;
+  left: 50%;
+  bottom: -28px;
+  z-index: 1;
+  transform: translateX(-50%);
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  color: #9d8f78;
+  font: 700 clamp(10px, 3vw, 12px)/1.1 var(--sv-display);
+  letter-spacing: .08em;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px #000;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color .3s ease;
+}
+.sv-relic[aria-pressed='true'] .sv-relic-art {
+  filter: drop-shadow(0 10px 8px rgba(0, 0, 0, .7)) drop-shadow(0 0 10px rgba(var(--relic-glow), .55));
+  transform: translateY(-4px) scale(1.04);
+  animation: sv-relic-float 3.6s ease-in-out .45s infinite alternate;
+}
+.sv-relic[aria-pressed='true'] .sv-relic-halo { opacity: 1; transform: translate(-50%, -14%) scale(1); animation: sv-glow 3.6s ease-in-out infinite; }
+.sv-relic[aria-pressed='true'] .sv-relic-name { color: #fbeccb; text-shadow: 0 1px 2px #000, 0 0 10px rgba(var(--relic-glow), .6); }
+@media (hover: hover) { .sv-relic:not(:disabled):not([aria-pressed='true']):hover .sv-relic-art { filter: drop-shadow(0 6px 6px rgba(0, 0, 0, .8)) brightness(.8) saturate(.8); } }
+@keyframes sv-relic-float { from { transform: translateY(-4px) scale(1.04); } to { transform: translateY(-10px) scale(1.04); } }
+.sv-still .sv-relic-art, .sv-still .sv-relic-halo { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .sv-relic-art, .sv-relic-halo { animation: none !important; transition: none !important; } }
 
 /* ── Panel below the temple ───────────────────────────────────── */
 .sv-panel {

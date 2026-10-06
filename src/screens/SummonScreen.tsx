@@ -19,6 +19,8 @@ import '@/components/summon/summon-v2.css';
 
 const altarArt = '/assets/summon/altar-standard-v1.webp';
 const altarGrandArt = '/assets/summon/altar-grand-v1.webp';
+const relicCrystalArt = '/assets/summon/relic-crystal-v1.webp';
+const offeringSlabArt = '/assets/summon/offering-slab-v1.webp';
 
 type Batch = 1 | 10 | 100;
 
@@ -248,10 +250,11 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
 
         <div className="sv-offering" role="group" aria-label="Summon payment method">
           <span className="sv-offering-label">Offering</span>
+          <img className="sv-offering-slab" src={offeringSlabArt} alt="" draggable={false} />
           {isolatedHackathon
-            ? <button type="button" onClick={() => { setPaymentMethod('skr'); setPendingQuote(null); }} aria-pressed={paymentMethod === 'skr'} disabled={summoning !== null} className="sv-offer"><SkrTokenIcon size={14} />SKR</button>
-            : <button type="button" onClick={() => setPaymentMethod('paid')} aria-pressed={paymentMethod === 'paid'} disabled={summoning !== null} className="sv-offer"><HeroTokenIcon size={14} />Test · $HERO</button>}
-          <button type="button" onClick={() => { setPaymentMethod('scroll'); setPendingQuote(null); }} aria-pressed={paymentMethod === 'scroll'} disabled={summoning !== null} className="sv-offer"><SummonScrollArtwork size={22} /> Scrolls · {formatNum(state.summonScrolls)}</button>
+            ? <button type="button" onClick={() => { setPaymentMethod('skr'); setPendingQuote(null); }} aria-pressed={paymentMethod === 'skr'} disabled={summoning !== null} className="sv-relic sv-relic--crystal"><span className="sv-relic-halo" aria-hidden="true" /><img className="sv-relic-art" src={relicCrystalArt} alt="" draggable={false} /><span className="sv-relic-name"><SkrTokenIcon size={14} />SKR</span></button>
+            : <button type="button" onClick={() => setPaymentMethod('paid')} aria-pressed={paymentMethod === 'paid'} disabled={summoning !== null} className="sv-relic sv-relic--crystal"><span className="sv-relic-halo" aria-hidden="true" /><img className="sv-relic-art" src={relicCrystalArt} alt="" draggable={false} /><span className="sv-relic-name"><HeroTokenIcon size={14} />Test · $HERO</span></button>}
+          <button type="button" onClick={() => { setPaymentMethod('scroll'); setPendingQuote(null); }} aria-pressed={paymentMethod === 'scroll'} disabled={summoning !== null} className="sv-relic sv-relic--scroll"><span className="sv-relic-halo" aria-hidden="true" /><img className="sv-relic-art" src="/assets/ui/summon-scroll-v1.webp" alt="" draggable={false} /><span className="sv-relic-name">Scrolls · {formatNum(state.summonScrolls)}</span></button>
         </div>
 
         <div className="sv-altars" aria-label="Summon altars">
