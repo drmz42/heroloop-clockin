@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath, URL } from 'node:url';
 import { makeQaGameState } from './qa/gameState';
+import { compressBuildImages } from './scripts/compress-build-images.mjs';
+import runtimeImageAudit from './config/qa/runtime-image-audit.v1.json';
 
 function qaEndpoint() {
   return {
@@ -69,6 +71,17 @@ export default defineConfig(({ mode }) => ({
           .replaceAll('+2% Ordinary Earn Weight', 'SKR reward bonuses unavailable')
           .replaceAll('+5% Ordinary Earn Weight', 'SKR reward bonuses unavailable')
           .replaceAll('Price is {usd(rCost)} · {formatNum(rCost)} $SKR and caps at 5×.', 'SKR reroll pricing is not available yet.'), map: null };
+      },
+    }] : []),
+    ...(['staging2', 'seeker'].includes(mode) ? [{
+      // Hackathon builds ship recompressed images; public/assets keeps the web originals.
+      name: 'heroloop-hackathon-image-compress',
+      apply: 'build' as const,
+      async closeBundle() {
+        const result = await compressBuildImages(fileURLToPath(new URL('./dist', import.meta.url)), {
+          unreferenced: runtimeImageAudit.knownUnreferencedCandidates,
+        });
+        console.log(`hackathon images: ${result.before} -> ${result.after} bytes, removed ${result.removedBytes} unreferenced bytes`);
       },
     }] : []),
     react(), qaEndpoint(),
