@@ -176,7 +176,7 @@
   transition: filter .15s ease, transform .1s ease;
 }
 .onb-cta-primary {
-  border-image: url('./assets/btn-crimson-9.webp') 90 170 fill / 14px 22px / 0 4px stretch;
+  border-image: url('./assets/btn-crimson-play-9.webp') 24 56 26 fill / 11px 25px 12px / 0 9px stretch;
   color: #fff0d2;
   text-shadow: 0 1px 2px #000, 0 0 10px rgba(255, 120, 90, .35);
   filter: drop-shadow(0 0 12px rgba(179, 48, 28, .35));

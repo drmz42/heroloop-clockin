@@ -12,7 +12,7 @@
   --sc-display: 'Cinzel', Georgia, serif;
   --sc-stone: url('../premium/assets/panel-stone.webp');
   --sc-plate: url('../premium/assets/btn-bronze-9.webp');
-  --sc-seal: url('../premium/assets/btn-crimson-9.webp');
+  --sc-seal: url('../premium/assets/btn-crimson-play-9.webp');
   --sc-frame: url('../premium/assets/frame-9.webp');
   position: relative;
   display: flex;
@@ -128,7 +128,7 @@
 }
 .sc-seal {
   border-width: 9px 13px;
-  border-image: var(--sc-seal) 90 170 fill / 9px 13px / 0 3px stretch;
+  border-image: var(--sc-seal) 24 56 26 fill / 7px 16px 8px / 0 6px stretch;
   color: #fbeccb;
   text-shadow: 0 1px 2px #000, 0 0 8px rgba(255, 120, 90, .3);
 }
@@ -136,7 +136,7 @@
 button.sc-chip { cursor: pointer; }
 :is(.sc-plate, .sc-seal, button.sc-chip)[aria-pressed='true'] {
   border-width: 9px 13px;
-  border-image: var(--sc-seal) 90 170 fill / 9px 13px / 0 3px stretch;
+  border-image: var(--sc-seal) 24 56 26 fill / 7px 16px 8px / 0 6px stretch;
   color: #fff0cf;
 }
 :is(.sc-plate, .sc-seal, button.sc-chip):disabled { filter: grayscale(.75) brightness(.6); cursor: default; }
@@ -511,7 +511,7 @@ button.sc-chip { cursor: pointer; }
 .tc-plaque svg { color: var(--sc-gold); }
 .tc-plaque strong { overflow: hidden; max-width: 100%; color: #fff0cf; font: 700 11px/1.1 var(--sc-display); text-overflow: ellipsis; white-space: nowrap; }
 .tc-plaque small { overflow: hidden; max-width: 100%; color: #cbb994; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
-.tc-plaques.is-boosted .tc-plaque:last-child { border-image: var(--sc-seal) 90 170 fill / 7px 11px / 0 2px stretch; }
+.tc-plaques.is-boosted .tc-plaque:last-child { border-image: var(--sc-seal) 24 56 26 fill / 6px 14px 6.5px / 0 4px stretch; }
 .tc-orders { margin: 0; border-left: 2px solid rgba(199, 158, 97, .55); padding: 2px 0 2px 8px; }
 .tc-orders > p { display: flex; gap: 6px; margin: 0; color: var(--sc-muted); font-size: 10px; line-height: 1.45; }
 .tc-orders > p svg { flex: none; margin-top: 1px; color: var(--sc-brass); }

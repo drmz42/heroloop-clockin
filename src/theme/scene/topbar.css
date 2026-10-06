@@ -92,7 +92,7 @@ html[data-hl-platform='android'] .hl-topbar.tb-bar .tb-power .game-power-change 
 .tb-plate > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .tb-plate:active { filter: brightness(.88); }
 .tb-plate:focus-visible, .tb-commander:focus-visible { outline: 2px solid #fff0a2; outline-offset: 2px; }
-.tb-boost { flex: 1.1 1 0; border-width: 9px 13px; border-image: url('../premium/assets/btn-crimson-9.webp') 90 170 fill / 9px 13px / 0 3px stretch; color: #fff0cf; text-shadow: 0 1px 2px #000, 0 0 8px rgba(255, 120, 90, .35); }
+.tb-boost { flex: 1.1 1 0; border-width: 9px 13px; border-image: url('../premium/assets/btn-crimson-play-9.webp') 24 56 26 fill / 7px 16px 8px / 0 6px stretch; color: #fff0cf; text-shadow: 0 1px 2px #000, 0 0 8px rgba(255, 120, 90, .35); }
 .tb-boost > svg { color: #ffd38a; }
 .tb-boost.is-active { border-width: 8px 12px; border-image: url('../premium/assets/btn-bronze-9.webp') 85 150 fill / 8px 12px / 0 2px stretch; color: #c9f5c2; text-shadow: 0 1px 2px #000, 0 0 8px rgba(126, 231, 135, .55); }
 .tb-boost.is-active > svg { color: #86efac; }

@@ -884,7 +884,7 @@ body:has(.has-game-progress) .fixed.inset-0 { top:calc(var(--game-progress-heigh
 @media (prefers-reduced-motion: reduce) { .class-glyph-orb { animation:none; } }
 
 /* Seeker Promote All button and result ceremony (src/components/SeekerPromoteAll.tsx). */
-.seeker-promote-all { display:flex;width:100%;min-height:48px;align-items:center;justify-content:center;gap:8px;margin-top:8px;padding:0 14px;border-style:solid;border-color:transparent;border-image:url('./theme/premium/assets/btn-crimson-9.webp') 90 170 fill / 11px 16px / 0 3px stretch!important;background:none!important;color:#fbeccb!important;font-family:'Cinzel',Georgia,serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-shadow:0 1px 2px #000;filter:drop-shadow(0 0 10px rgba(179,48,28,.3)); }
+.seeker-promote-all { display:flex;width:100%;min-height:48px;align-items:center;justify-content:center;gap:8px;margin-top:8px;padding:0 14px;border-style:solid;border-color:transparent;border-image:url('./theme/premium/assets/btn-crimson-play-9.webp') 24 56 26 fill / 8.5px 20px 9px / 0 7px stretch!important;background:none!important;color:#fbeccb!important;font-family:'Cinzel',Georgia,serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-shadow:0 1px 2px #000;filter:drop-shadow(0 0 10px rgba(179,48,28,.3)); }
 .seeker-promote-all svg { color:#ffd9a8; }
 .seeker-promote-all:disabled { filter:grayscale(.75) brightness(.6); cursor:not-allowed; }
 .seeker-promote-all:not(:disabled):hover { filter:brightness(1.15) drop-shadow(0 0 12px rgba(242,204,128,.35)); }

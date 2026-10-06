@@ -22,7 +22,7 @@
   --pm-display: 'Cinzel', Georgia, serif;
   --pm-frame: url('./assets/frame-9.webp');
   --pm-stone: url('./assets/panel-stone.webp');
-  --pm-crimson: url('./assets/btn-crimson-9.webp');
+  --pm-crimson: url('./assets/btn-crimson-play-9.webp');
   --pm-bronze: url('./assets/btn-bronze-9.webp');
   --pm-surface: linear-gradient(180deg, rgba(10, 8, 7, .5), rgba(6, 5, 4, .72)), var(--pm-stone) center / cover;
   --pm-surface-deep: linear-gradient(180deg, rgba(8, 6, 5, .72), rgba(4, 3, 3, .86)), var(--pm-stone) center / cover;
@@ -114,7 +114,7 @@
   color: #d9c7a3;
 }
 [data-hl-theme=premium] :is(.market-chip-active, .training-sort-button[aria-pressed=true]) {
-  border-image: var(--pm-crimson) 90 170 fill / 7px 11px / 0 3px stretch;
+  border-image: var(--pm-crimson) 24 56 26 fill / 6px 14px 6.5px / 0 5px stretch;
   background: none;
   color: #fbeccb;
   box-shadow: none;
@@ -202,7 +202,7 @@
 [data-hl-theme=premium] :is(.game-shell, .hl-onboarding, .hl-portal) :is(.game-primary, .reward-cta, .item-act--primary, .summon-break-seal):not(#pm-x):not(#pm-y) {
   border-style: solid;
   border-color: transparent;
-  border-image: var(--pm-crimson) 90 170 fill / 9px 13px / 0 3px stretch;
+  border-image: var(--pm-crimson) 24 56 26 fill / 7px 16px 8px / 0 6px stretch;
   background: none !important;
   color: #fbeccb !important;
   box-shadow: 0 0 16px rgba(179, 48, 28, .25);
@@ -307,7 +307,7 @@
 [data-hl-theme=premium] .game-nav-control-active {
   border-style: solid;
   border-color: transparent;
-  border-image: var(--pm-crimson) 90 170 fill / 7px 11px / 0 3px stretch;
+  border-image: var(--pm-crimson) 24 56 26 fill / 6px 14px 6.5px / 0 5px stretch;
   background: none;
   color: #fbeccb;
   box-shadow: none;
@@ -375,7 +375,7 @@
   letter-spacing: .06em;
   filter: brightness(.75);
 }
-[data-hl-theme=premium] .summon-pay-option[aria-pressed=true] { filter: none; color: #fbeccb !important; border-image: var(--pm-crimson) 90 170 fill / 9px 13px / 0 3px stretch; }
+[data-hl-theme=premium] .summon-pay-option[aria-pressed=true] { filter: none; color: #fbeccb !important; border-image: var(--pm-crimson) 24 56 26 fill / 7px 16px 8px / 0 6px stretch; }
 [data-hl-theme=premium] .summon-pay-option:last-child[aria-pressed=true],
 html[data-hl-edition=seeker][data-hl-theme=premium] .summon-pay-option[aria-pressed=true] { border-image: var(--pm-bronze) 85 150 fill / 8px 12px / 0 3px stretch; color: #ffe7b0 !important; filter: brightness(1.15) drop-shadow(0 0 8px rgba(242, 204, 128, .35)); }
 
@@ -399,7 +399,7 @@ html[data-hl-edition=seeker][data-hl-theme=premium] .summon-pay-option[aria-pres
 [data-hl-theme=premium] .summon-best-banner strong { font-family: var(--pm-display); }
 
 /* ── 9. Close buttons and badges ───────────────────────────────────── */
-[data-hl-theme=premium] :is(.game-shell, .hl-onboarding, .hl-portal) .game-window-close:not(#pm-x):not(#pm-y) { border-image: var(--pm-crimson) 90 170 fill / 9px 12px stretch !important; }
+[data-hl-theme=premium] :is(.game-shell, .hl-onboarding, .hl-portal) .game-window-close:not(#pm-x):not(#pm-y) { border-image: var(--pm-crimson) 24 56 26 fill / 7px 14px 8px stretch !important; }
 [data-hl-theme=premium] .hero-level-badge { border-radius: 0 !important; border-color: rgba(242, 204, 128, .7); }
 
 @media (prefers-reduced-motion: reduce) {

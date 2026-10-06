@@ -16,7 +16,7 @@
   --sv-display: 'Cinzel', Georgia, serif;
   --sv-stone: url('../../theme/premium/assets/panel-stone.webp');
   --sv-plate: url('../../theme/premium/assets/btn-bronze-9.webp');
-  --sv-seal: url('../../theme/premium/assets/btn-crimson-9.webp');
+  --sv-seal: url('../../theme/premium/assets/btn-crimson-play-9.webp');
   --sv-frame: url('../../theme/premium/assets/frame-9.webp');
   --sv-art: url('/assets/summon/ritual-sanctum-v1.webp');
 }
@@ -336,7 +336,7 @@
 }
 .sv-offer[aria-pressed='true'] {
   border-width: 9px 13px;
-  border-image: var(--sv-seal) 90 170 fill / 9px 13px / 0 3px stretch;
+  border-image: var(--sv-seal) 24 56 26 fill / 7px 16px 8px / 0 6px stretch;
   color: #fff0cf;
   text-shadow: 0 1px 2px #000, 0 0 10px rgba(255, 120, 90, .45);
 }
@@ -445,7 +445,7 @@
 .sv-btn:disabled { filter: grayscale(.75) brightness(.6); cursor: default; }
 @media (hover: hover) { :is(.sv-btn, .sv-offer):not(:disabled):hover { filter: brightness(1.18) drop-shadow(0 0 6px rgba(242, 204, 128, .35)); } }
 :is(.sv-btn, .sv-offer):not(:disabled):active { filter: brightness(.9); }
-.sv-btn--primary { border-width: 9px 13px; border-image: var(--sv-seal) 90 170 fill / 9px 13px / 0 3px stretch; box-shadow: 0 0 18px rgba(179, 48, 28, .3); color: #fbeccb; text-shadow: 0 1px 2px #000, 0 0 8px rgba(255, 120, 90, .3); }
+.sv-btn--primary { border-width: 9px 13px; border-image: var(--sv-seal) 24 56 26 fill / 7px 16px 8px / 0 6px stretch; box-shadow: 0 0 18px rgba(179, 48, 28, .3); color: #fbeccb; text-shadow: 0 1px 2px #000, 0 0 8px rgba(255, 120, 90, .3); }
 .sv-btn--again { color: var(--sv-gold); }
 .sv-btn--ghost { color: #d8c8a8; }
 .sv-btn:focus-visible,
