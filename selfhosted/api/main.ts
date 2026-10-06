@@ -582,6 +582,24 @@ const pausedFlagFor = createFeatureFlagGate(() =>
   databaseJson("SELECT heroloop_api.feature_flags_paused() AS result", [])
 );
 
+/**
+ * GoTrue session id of a bearer that Auth has just accepted. The signature is
+ * Auth's to check; this only reads the claim so the database can bound the age
+ * of wallet sessions. A missing or malformed claim yields null, which fails
+ * closed for wallet subjects.
+ */
+function bearerSessionId(authorization: string): string | null {
+  try {
+    const payload = authorization.slice("Bearer ".length).split(".")[1] ?? "";
+    const text = atob(payload.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(payload.length / 4) * 4, "="));
+    const claims: unknown = JSON.parse(text);
+    const session = isRecord(claims) ? claims.session_id : null;
+    return typeof session === "string" && uuidPattern.test(session) ? session : null;
+  } catch {
+    return null;
+  }
+}
+
 async function authenticate(
   request: Request,
   requestId: string,
@@ -616,8 +634,8 @@ async function authenticate(
   let resolved: JsonRecord;
   try {
     resolved = await databaseJson(
-      "SELECT heroloop_api.resolve_authenticated_account($1::uuid) AS result",
-      [user.id],
+      "SELECT heroloop_api.resolve_authenticated_account_session($1::uuid, $2::uuid) AS result",
+      [user.id, bearerSessionId(authorization)],
     );
   } catch {
     return errorResponse(503, "authentication_unavailable", requestId);
