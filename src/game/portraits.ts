@@ -1,5 +1,6 @@
 import type { HeroClass, Rarity } from './types';
 import { RARITY_COLORS, RARITY_INDEX } from './heroes';
+import { versionedAsset } from './assetVersion';
 
 const HERO_ART: Record<string, string> = {
   ironfoot: '/assets/heroes/ironfoot-v2.webp',
@@ -10,6 +11,10 @@ const HERO_ART: Record<string, string> = {
 };
 
 export function heroPortraitSrc(heroId: string, heroClass: HeroClass, rarity: Rarity, color: string): string {
+  return versionedAsset(heroPortraitPath(heroId, heroClass, rarity, color));
+}
+
+function heroPortraitPath(heroId: string, heroClass: HeroClass, rarity: Rarity, color: string): string {
   const classFallback: Record<HeroClass, string> = {
     knight: HERO_ART.ironfoot,
     archer: HERO_ART.greenscout,
@@ -23,8 +28,8 @@ export function heroPortraitSrc(heroId: string, heroClass: HeroClass, rarity: Ra
 
 // Small displays (avatars, cards) load a 320px WebP copy of the v4 art: ~30 KB instead of ~600 KB per hero.
 export function heroThumbSrc(heroId: string, heroClass: HeroClass, rarity: Rarity, color: string): string {
-  const src = heroPortraitSrc(heroId, heroClass, rarity, color);
-  return src.startsWith('/assets/heroes/v4/') ? src.replace('/assets/heroes/v4/', '/assets/heroes/v4/thumb/').replace(/\.png$/, '.webp') : src;
+  const src = heroPortraitPath(heroId, heroClass, rarity, color);
+  return versionedAsset(src.startsWith('/assets/heroes/v4/') ? src.replace('/assets/heroes/v4/', '/assets/heroes/v4/thumb/').replace(/\.png$/, '.webp') : src);
 }
 
 export function heroPortraitStyle(heroId: string | undefined, heroClass: HeroClass): Record<string, string> | undefined {

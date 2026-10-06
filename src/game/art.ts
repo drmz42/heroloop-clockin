@@ -1,3 +1,5 @@
+import { versionedAsset } from './assetVersion';
+
 const ENEMY_ART: Record<string, string> = {
   goblin: '/assets/enemies/v4/goblin.png', skeleton: '/assets/enemies/v4/skeleton.png',
   bat: '/assets/enemies/v4/bat.png', slime: '/assets/enemies/v4/slime.png',
@@ -46,7 +48,7 @@ export function enemyArtSrc(unitUid: string, role?: import('./types').CombatUnit
 
 export function itemArtSrc(itemId: string): string | null {
   const productPath = productItemPath(itemId);
-  if (productPath) return productPath;
+  if (productPath) return versionedAsset(productPath);
   return ITEM_ATLAS_INDEX.has(itemId) ? '/assets/items/item-atlas-v2.webp' : null;
 }
 

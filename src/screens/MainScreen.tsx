@@ -40,6 +40,7 @@ import { FantasyBagIcon } from '@/components/FantasyBagIcon';
 import { recommendedTeamPower } from '@/game/balance';
 import { playerSync, authClient, lastRetryAfterSeconds } from '@/game/backend';
 import { groupNumber, groupDigits } from '@/game/numberFormat';
+import { versionedAsset } from '@/game/assetVersion';
 
 const SAVE_KEY = editionStorageKey('afk-heroes-save-v7');
 // Temporarily hide the first-use dialog for hackathon start-of-game recordings.
@@ -1058,7 +1059,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                   onClick={() => !locked && !notYetDiscovered && game.setLocation(lid)}
                   disabled={locked || notYetDiscovered}
                   className={`location-card location-card-art shrink-0 px-2.5 py-1.5 text-left transition ${current ? 'location-card-current' : ''} ${(locked || notYetDiscovered) ? 'location-card-locked' : ''} ${l.boss ? 'ring-1 ring-rose-800/60' : ''}`}
-                  style={{ minWidth: '150px', '--location-card-art': `url('/assets/locations/${lid > 10 ? 'endgame' : 'standard'}/location-${lid}.webp')` } as React.CSSProperties}
+                  style={{ minWidth: '150px', '--location-card-art': `url('${versionedAsset(`/assets/locations/${lid > 10 ? 'endgame' : 'standard'}/location-${lid}.webp`)}')` } as React.CSSProperties}
                 >
                   {/* Top row: number + boss + lock */}
                   <div className="flex items-center justify-between mb-0.5">

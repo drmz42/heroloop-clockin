@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath, URL } from 'node:url';
 import { makeQaGameState } from './qa/gameState';
-import { compressBuildImages } from './scripts/compress-build-images.mjs';
+import { compressBuildImages, readAssetVersions, versionAssetUrls } from './scripts/compress-build-images.mjs';
 import runtimeImageAudit from './config/qa/runtime-image-audit.v1.json';
 
 function qaEndpoint() {
@@ -45,7 +45,13 @@ function qaEndpoint() {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => {
+  const hackathon = ['staging2', 'seeker'].includes(mode);
+  const assetVersions = hackathon
+    ? readAssetVersions(fileURLToPath(new URL('./public', import.meta.url)), { exclude: runtimeImageAudit.knownUnreferencedCandidates })
+    : null;
+  return {
+  define: { __HL_ASSET_VERSIONS__: JSON.stringify(assetVersions) },
   envDir: process.env.HEROLOOP_SKIP_ENV_FILES === 'true' ? '/tmp/heroloop-no-env-files' : undefined,
   plugins: [
     ...(['staging2', 'seeker'].includes(mode) ? [{
@@ -73,7 +79,20 @@ export default defineConfig(({ mode }) => ({
           .replaceAll('Price is {usd(rCost)} · {formatNum(rCost)} $SKR and caps at 5×.', 'SKR reroll pricing is not available yet.'), map: null };
       },
     }] : []),
-    ...(['staging2', 'seeker'].includes(mode) ? [{
+    ...(assetVersions ? [{
+      // Every literal image URL gets its content fingerprint, so a changed image is downloaded once
+      // and an unchanged one is served from the phone cache. Dynamic paths use versionedAsset().
+      name: 'heroloop-hackathon-asset-versions',
+      enforce: 'pre' as const,
+      apply: 'build' as const,
+      transformIndexHtml(html: string) { return versionAssetUrls(html, assetVersions); },
+      transform(code: string, id: string) {
+        if (!/\/(?:src|test\/landing4)\/.*\.(?:[jt]sx?|css)(?:\?|$)/.test(id)) return null;
+        const versioned = versionAssetUrls(code, assetVersions);
+        return versioned === code ? null : { code: versioned, map: null };
+      },
+    }] : []),
+    ...(hackathon ? [{
       // Hackathon builds ship recompressed images; public/assets keeps the web originals.
       name: 'heroloop-hackathon-image-compress',
       apply: 'build' as const,
@@ -97,4 +116,5 @@ export default defineConfig(({ mode }) => ({
   preview: {
     allowedHosts: ['a240afbe538feb86-45-66-228-118.serveousercontent.com'],
   },
-}));
+};
+});

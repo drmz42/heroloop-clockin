@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import type { Rarity } from '@/game/types';
 import '@/theme/scene/rarity.css';
+import { versionedAsset } from '@/game/assetVersion';
 
 // Rarity frames v4 (docs/game/rarities.md; Founder 2026-10-04: frames must complement the art, not dominate).
 // Each tier's forged frame art is drawn as a 9-slice: corners keep their proportions, bars repeat, crests are
@@ -44,8 +45,8 @@ export function RarityFx({ rarity, shape = 'card', label }: { rarity: Rarity; sh
     {tier >= 6 && <span className="rx-aura" />}
     {motes > 0 && <span className="rx-motes">{Array.from({ length: motes }, (_, i) => <i key={i} style={{ '--m': i } as CSSProperties} />)}</span>}
     {tier >= 5 && <span className="rx-glint" />}
-    <span className="rx-frame" style={shape === 'tcg' || shape === 'slot' ? { backgroundImage: `url('/assets/ui/rarity-frames/${art}-${shape === 'tcg' ? 'tcg' : 'sq'}.webp?v=20261005')` } : undefined} />
+    <span className="rx-frame" style={shape === 'tcg' || shape === 'slot' ? { backgroundImage: `url('${versionedAsset(`/assets/ui/rarity-frames/${art}-${shape === 'tcg' ? 'tcg' : 'sq'}.webp?v=20261005`)}')` } : undefined} />
     {shape === 'tcg' && label && <span className="rx-banner"><b>{label}</b></span>}
-    {shape === 'card' && (CRESTS[art] ?? []).map((side) => <span key={side} className={`rx-crest rx-crest-${side}`} style={{ backgroundImage: `url('/assets/ui/rarity-frames/${art}-${shape}-crest-${side}.webp?v=20261005')` }} />)}
+    {shape === 'card' && (CRESTS[art] ?? []).map((side) => <span key={side} className={`rx-crest rx-crest-${side}`} style={{ backgroundImage: `url('${versionedAsset(`/assets/ui/rarity-frames/${art}-${shape}-crest-${side}.webp?v=20261005`)}')` }} />)}
   </span>;
 }

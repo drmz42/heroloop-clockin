@@ -2,6 +2,7 @@
 // (staging2/seeker) build runs it on dist only; public/assets keeps the
 // original art for the web version. File names and formats never change,
 // so every code and CSS reference stays valid.
+import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, extname, join, relative } from 'node:path';
 import sharp from 'sharp';
@@ -35,6 +36,29 @@ function removeUnreferenced(outDir, files, candidates) {
     unlinkSync(path);
   }
   return removed;
+}
+
+const IMAGE_PATH = /\/assets\/[A-Za-z0-9_./-]+?\.(?:png|webp|jpe?g|gif|avif)(?:\?v=[A-Za-z0-9_.-]+)?/g;
+
+// Content fingerprint per public image, keyed by its URL path. A changed image gets a new
+// ?v= so phones download it once; an unchanged one keeps its URL and stays in the cache.
+export function readAssetVersions(publicDir, { exclude = [] } = {}) {
+  const skip = new Set(exclude.map((path) => path.replace(/^public/, '')));
+  const versions = {};
+  for (const path of walk(join(publicDir, 'assets'))) {
+    if (!encoders[extname(path).toLowerCase()]) continue;
+    const url = `/${relative(publicDir, path).split('\\').join('/')}`;
+    if (skip.has(url)) continue;
+    versions[url] = createHash('sha256').update(readFileSync(path)).digest('hex').slice(0, 10);
+  }
+  return versions;
+}
+
+export function versionAssetUrls(code, versions) {
+  return code.replace(IMAGE_PATH, (match) => {
+    const base = match.split('?')[0];
+    return versions[base] ? `${base}?v=${versions[base]}` : match;
+  });
 }
 
 export async function compressBuildImages(outDir, { unreferenced = [] } = {}) {

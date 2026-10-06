@@ -7,6 +7,7 @@ import { RarityFx } from '@/components/RarityFx';
 import { Crosshair, Shield, Skull, Star, Swords, DoorOpen, Flame, Timer, Users } from 'lucide-react';
 import { locationLevelRange } from '@/game/engine';
 import { groupNumber } from '@/game/numberFormat';
+import { versionedAsset } from '@/game/assetVersion';
 
 const HEALTH_NUMBER_FORMAT = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
 const DUNGEON_BOSS_ART: Record<string, string> = {
@@ -209,7 +210,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
 /** Location art as a CSS variable; the Android battle stage reuses it so the art also fills the footer. */
 // eslint-disable-next-line react-refresh/only-export-components
 export function locationArtStyle(locationId: number): React.CSSProperties {
-  return { '--location-arena-art': `url('/assets/locations/${locationId > 10 ? 'endgame' : 'standard'}/location-${locationId}.webp')` } as React.CSSProperties;
+  return { '--location-arena-art': `url('${versionedAsset(`/assets/locations/${locationId > 10 ? 'endgame' : 'standard'}/location-${locationId}.webp`)}')` } as React.CSSProperties;
 }
 
 function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode, dungeonPanelOpen, locationId, dungeonBossScene, dungeonRoom }: ArenaProps) {

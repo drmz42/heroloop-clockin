@@ -38,6 +38,7 @@ import { useTokenomics } from '@/game/useTokenomics';
 import { demoTokenomicsEnabled, playerSync, authClient, tokenomicsEnabled } from '@/game/backend';
 import { isAuthTransient, runAuthCall } from '@/game/authTransient';
 import { clearLegacyState, inventoryCapacity } from '@/game/state';
+import { preloadEntryImages, preloadGameImages } from '@/game/imagePreload';
 import {
   compatibleSolanaWallets,
   restoreSolanaWalletSession,
@@ -475,6 +476,18 @@ function App() {
   useEffect(() => {
     setCombatPresentationVisible(accountGate === 'verified' && routePath !== '/wiki' && tab === 'main');
   }, [accountGate, routePath, tab, setCombatPresentationVisible]);
+  const gameImagesPreloaded = useRef(false);
+  useEffect(() => {
+    if (accountGate !== 'verified') {
+      preloadEntryImages();
+      return;
+    }
+    if (gameImagesPreloaded.current) return;
+    gameImagesPreloaded.current = true;
+    preloadGameImages(game.state);
+    // Runs once per verified session; later state changes need no new preload pass.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountGate]);
 
   const applyPromoRedemption = (result: PromoRedemption) => {
     hydrateServerState(result.state);
