@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Backpack, BookOpen, Crosshair, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, Pickaxe, ScrollText, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, UserPlus, X } from 'lucide-react';
+import { Backpack, BookOpen, Castle, ChevronLeft, ChevronRight, Crosshair, Crown, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, PawPrint, Pickaxe, ScrollText, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, UserPlus, X } from 'lucide-react';
 import type { Tab } from './TopMenu';
 import { OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { setMobileSection, type MobileSection } from '@/platform/platform';
@@ -14,6 +14,16 @@ import { buildVersionLabel } from '@/platform/buildInfo';
 // footer links (Founder 2026-10-03: Refer moved into More to make room for PvP). Any item can
 // carry a count badge on its icon (`badges`; Quests shows its ready rewards) or a red mark without a
 // number (`alerts`, e.g. a Store sale).
+
+// More sheet v3 (Founder 2026-10-06): a painted keep with art banners for the upcoming Season Pass,
+// Guilds and Pets, the live Refer banner and forged plates for the footer links. The three upcoming
+// features only open a "Coming soon" teaser; they grant nothing and promise no amounts.
+type Upcoming = 'pass' | 'guilds' | 'pets';
+const UPCOMING: Record<Upcoming, { title: string; kicker: string; line: string; points: string[]; Icon: typeof Shield }> = {
+  pass: { title: 'Season Pass', kicker: 'Season I', line: 'Climb the season track for exclusive rewards.', points: ['Free and premium reward tracks', 'Season quests and milestones', 'Exclusive cosmetics each season'], Icon: Crown },
+  guilds: { title: 'Guilds', kicker: 'Brotherhood', line: 'Raise a banner with your allies.', points: ['Found or join a guild', 'Guild raids against epic bosses', 'Guild ranks and a shared hall'], Icon: Castle },
+  pets: { title: 'Pets', kicker: 'Companions', line: 'Tame companions that fight at your side.', points: ['Hatch and raise companions', 'Pets assist your heroes in battle', 'Evolve rare forms'], Icon: PawPrint },
+};
 export function MobileTabBar({
   tab, section, moreOpen, onTab, onSection, onMoreOpen, onGuides, onCode, onSupport, onLogout, readyQuests = 0, badges = {}, alerts = {},
   claimQuest, motionOff = false,
@@ -37,6 +47,8 @@ export function MobileTabBar({
 }) {
   const [soon, setSoon] = useState<'mine' | 'pvp' | null>(null);
   const mineOpen = soon !== null;
+  const [teaser, setTeaser] = useState<Upcoming | null>(null);
+  useEffect(() => { if (!moreOpen) setTeaser(null); }, [moreOpen]);
   const setMineOpen = (open: boolean) => { if (!open) setSoon(null); };
   useEffect(() => {
     const close = (event: Event) => { if (!(event as CustomEvent<{ sheetToggle?: boolean }>).detail?.sheetToggle) setSoon(null); };
@@ -81,20 +93,59 @@ export function MobileTabBar({
   return (
     <>
       {moreOpen && (
-        <div className="hl-more-sheet mo-sheet" role="dialog" aria-modal="true" aria-label="More" onMouseDown={(event) => { if (event.currentTarget === event.target) onMoreOpen(false); }}>
-          <div className="mo-panel">
+        <div className="hl-more-sheet mo-sheet mo-v3" role="dialog" aria-modal="true" aria-label="More" onMouseDown={(event) => { if (event.currentTarget === event.target) onMoreOpen(false); }}>
+          <div className="mo-panel mo-keep">
             <div className="mo-head">
-              <span className="mo-title">More</span>
+              {teaser && <button type="button" className="mo-close mo-back" onClick={() => setTeaser(null)} aria-label="Back"><ChevronLeft size={20} /></button>}
+              <span className="mo-title">{teaser ? UPCOMING[teaser].title : 'More'}</span>
               <button type="button" className="mo-close" onClick={() => onMoreOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
-            <div className="hl-more-links mo-links">
-              <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onTab('referrals'); }}><i aria-hidden="true"><UserPlus size={19} /></i>Refer</button>
-              <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onGuides(); }}><i aria-hidden="true"><BookOpen size={19} /></i>Guides</button>
-              <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onCode(); }}><i aria-hidden="true"><KeyRound size={19} /></i>Code</button>
-              <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onSupport(); }}><i aria-hidden="true"><MessageCircle size={19} /></i>Support</button>
-            </div>
-            <button type="button" className="mo-logout" onClick={() => { onMoreOpen(false); onLogout(); }}><LogOut size={16} aria-hidden="true" /> Logout</button>
-            <p className="mo-version" aria-label={`Version: ${buildVersionLabel}`}>{buildVersionLabel}</p>
+            {teaser ? (
+              <div className={`mo-teaser mo-art-${teaser}`}>
+                <div className="mo-teaser-art" aria-hidden="true" />
+                <span className="mo-medal" aria-hidden="true">{(() => { const TeaserIcon = UPCOMING[teaser].Icon; return <TeaserIcon size={34} />; })()}</span>
+                <span className="mo-kicker">{UPCOMING[teaser].kicker}</span>
+                <strong>Coming soon</strong>
+                <span className="mo-teaser-line">{UPCOMING[teaser].line}</span>
+                {teaser === 'pass' && (
+                  <ol className="mo-track" aria-hidden="true">
+                    {[1, 2, 3, 4, 5].map((tier) => <li key={tier} className={tier === 5 ? 'is-crown' : ''}><b><span>{tier === 5 ? <Crown size={14} /> : tier}</span></b></li>)}
+                  </ol>
+                )}
+                <ul className="mo-points">{UPCOMING[teaser].points.map((point) => <li key={point}>{point}</li>)}</ul>
+              </div>
+            ) : (
+              <>
+                <button type="button" className="mo-banner mo-banner-hero mo-art-pass" onClick={() => setTeaser('pass')}>
+                  <span className="mo-banner-text"><span className="mo-kicker">{UPCOMING.pass.kicker}</span><strong>Season Pass</strong><span>{UPCOMING.pass.line}</span></span>
+                  <em className="mo-soon">Soon</em><ChevronRight className="mo-chev" size={18} aria-hidden="true" />
+                </button>
+                <div className="mo-pair">
+                  {(['guilds', 'pets'] as const).map((id) => {
+                    const { title, kicker, Icon } = UPCOMING[id];
+                    return (
+                      <button type="button" key={id} className={`mo-banner mo-tile mo-art-${id}`} onClick={() => setTeaser(id)}>
+                        <i className="mo-tile-icon" aria-hidden="true"><Icon size={18} /></i>
+                        <span className="mo-banner-text"><span className="mo-kicker">{kicker}</span><strong>{title}</strong></span>
+                        <em className="mo-soon">Soon</em>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button type="button" className="mo-banner mo-banner-refer mo-art-refer" onClick={() => { onMoreOpen(false); onTab('referrals'); }}>
+                  <i className="mo-tile-icon" aria-hidden="true"><UserPlus size={18} /></i>
+                  <span className="mo-banner-text"><strong>Refer friends</strong><span>Invite allies and share the spoils.</span></span>
+                  <ChevronRight className="mo-chev" size={18} aria-hidden="true" />
+                </button>
+                <div className="mo-links">
+                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onGuides(); }}><i aria-hidden="true"><BookOpen size={17} /></i>Guides</button>
+                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onCode(); }}><i aria-hidden="true"><KeyRound size={17} /></i>Code</button>
+                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onSupport(); }}><i aria-hidden="true"><MessageCircle size={17} /></i>Support</button>
+                </div>
+                <button type="button" className="mo-logout" onClick={() => { onMoreOpen(false); onLogout(); }}><LogOut size={16} aria-hidden="true" /> Logout</button>
+                <p className="mo-version" aria-label={`Version: ${buildVersionLabel}`}>{buildVersionLabel}</p>
+              </>
+            )}
           </div>
         </div>
       )}
