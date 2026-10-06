@@ -244,7 +244,7 @@ function Nav({ onPlay }) {
   return (
     <header className={`hl-nav ${solid ? "hl-nav--solid" : ""}`}>
       <a href="#top" className="hl-brand" onClick={go("top")}>
-        <span className="hl-brand-mark"><Diamond size={11} color="#1c1306" /></span>
+        <img className="hl-brand-mark" src="/assets/brand/heroloop-emblem.png" alt="" width={30} height={31} draggable={false} />
         <span className="hl-brand-text">HEROLOOP</span>
       </a>
       <nav className="hl-nav-links" aria-label="Sections">
@@ -634,7 +634,7 @@ function FinalSection({ onPlay }) {
       </div>
 
       <footer className="hl-footer">
-        <span className="hl-foot-mark"><Diamond size={9} color="#7a5e2c" /> HEROLOOP</span>
+        <span className="hl-foot-mark"><img src="/assets/brand/heroloop-emblem.png" alt="" width={15} height={16} draggable={false} /> HEROLOOP</span>
         <span className="hl-foot-tag">AFK · GACHA · RPG — your heroes keep fighting.</span>
         <span className="hl-foot-copy">© 2026 HeroLoop. A world that never sleeps.</span>
       </footer>
@@ -823,10 +823,7 @@ button{font-family:inherit}
   border-bottom:1px solid transparent}
 .hl-nav--solid{background:rgba(4,4,6,.92);backdrop-filter:blur(10px);border-bottom-color:var(--line)}
 .hl-brand{display:flex;align-items:center;gap:.65rem}
-.hl-brand-mark{display:grid;place-items:center;width:30px;height:30px;
-  background:linear-gradient(180deg,#bd9234,#9c7626);border:0;
-  transform:rotate(45deg);box-shadow:3px 3px 0 var(--violet-off)}
-.hl-brand-mark svg{transform:rotate(-45deg)}
+.hl-brand-mark{display:block;width:30px;height:31px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(201,146,52,.35))}
 .hl-brand-text{font-family:var(--display);font-weight:900;letter-spacing:.34em;font-size:1rem;
   background:linear-gradient(180deg,#b08f52,#7a5e2c 55%,#3c2d10);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hl-nav-links{display:flex;gap:2rem;font-size:.8rem;letter-spacing:.22em;text-transform:uppercase;font-weight:600;color:var(--muted)}
