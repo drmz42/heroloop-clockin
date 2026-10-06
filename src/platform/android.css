@@ -579,15 +579,23 @@ html[data-hl-platform='android'] .training-camp-screen .training-empty-post smal
   .game-progress-quests { padding-inline: 6px; gap: 4px; font-size: 11px; }
 }
 
-/* Mandatory update gate in the native app (src/platform/AppUpdateGate.tsx). */
-.hl-app-update { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); background: radial-gradient(circle at 50% 30%, rgba(60, 34, 18, .96), rgba(8, 5, 3, .98) 70%); color: #f1e2c2; text-align: center; }
-.hl-app-update-card { display: flex; width: min(100%, 380px); flex-direction: column; align-items: center; gap: 12px; padding: 22px 18px; border: 1px solid rgba(214, 170, 92, .7); border-radius: 12px; background: linear-gradient(180deg, #2a1d12, #150e09); box-shadow: 0 10px 30px rgba(0, 0, 0, .6); }
-.hl-app-update-card img { width: min(80%, 260px); height: auto; }
-.hl-app-update-card h2 { margin: 0; font: 700 20px/1.2 'Cinzel', Georgia, serif; letter-spacing: .06em; text-transform: uppercase; color: #f2cc80; }
-.hl-app-update-card p { margin: 0; font-size: 14px; line-height: 1.45; color: rgba(241, 226, 194, .85); }
-.hl-app-update-get { display: block; width: 100%; min-height: 48px; border-radius: 8px; background: linear-gradient(180deg, #b3261e, #6e110c); color: #fff3dc; font-size: 15px; font-weight: 800; line-height: 48px; text-decoration: none; }
-.hl-app-update-get:focus-visible { outline: 2px solid #f1c873; outline-offset: 2px; }
-.hl-app-update-link { max-width: 100%; overflow: hidden; font-size: 10px; color: rgba(214, 196, 160, .6); text-overflow: ellipsis; white-space: nowrap; }
+/* Mandatory update gate in the native app (src/platform/AppUpdateGate.tsx): key art behind the
+   forged sign-in window from premium-onboarding.css. */
+.hl-app-update { position: fixed; inset: 0; z-index: 2147483000; overflow-y: auto; backdrop-filter: none; -webkit-backdrop-filter: none; background: #050403; }
+.hl-app-update-art { position: fixed; inset: 0; background-position: center top; background-size: cover; filter: saturate(.9); }
+.hl-app-update-shade { position: fixed; inset: 0; background: radial-gradient(ellipse 80% 45% at 50% 18%, transparent, rgba(5, 4, 3, .55) 70%), linear-gradient(180deg, rgba(5, 4, 3, .15) 0%, rgba(5, 4, 3, .7) 45%, rgba(5, 4, 3, .95) 100%); }
+.hl-app-update-inner { position: relative; display: flex; min-height: 100%; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: calc(16px + env(safe-area-inset-top, 0px)) 12px calc(16px + env(safe-area-inset-bottom, 0px)); }
+.hl-app-update-logo { width: min(72%, 300px); height: auto; filter: drop-shadow(0 6px 16px rgba(0, 0, 0, .9)); }
+.hl-app-update-card { width: min(100%, 440px); padding: 4px 4px 2px; text-align: center; }
+.hl-app-update-card .onb-head { padding-bottom: 12px; margin-bottom: 16px; }
+.hl-app-update-card .onb-kicker { justify-content: center; padding-right: 0; }
+.hl-app-update-card .onb-copy { font-size: 15px; }
+.hl-app-update-versions { display: flex; width: fit-content; align-items: center; gap: 10px; margin: 16px auto 0; padding: 6px 18px; border-block: 1px solid rgba(199, 158, 97, .4); background: linear-gradient(90deg, transparent, rgba(80, 52, 20, .45) 18%, rgba(80, 52, 20, .45) 82%, transparent); font-family: var(--onb-display); font-size: 12px; font-weight: 700; letter-spacing: .12em; color: var(--onb-muted); }
+.hl-app-update-versions b { color: var(--onb-brass); }
+.hl-app-update-versions strong { color: var(--onb-brass-hi); text-shadow: 0 0 10px rgba(242, 204, 128, .35); }
+.hl-app-update-card .onb-cta { margin-top: 18px; }
+.hl-app-update-card .onb-note { margin-top: 14px; font-size: 13px; }
+.hl-app-update-link { margin: 12px 0 0; overflow: hidden; font-size: 11px; letter-spacing: .02em; color: rgba(163, 153, 135, .75); text-overflow: ellipsis; white-space: nowrap; }
 
 /* Version line on the app start and loading screens. */
 .hl-build-version { position: fixed; left: 0; right: 0; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 5; margin: 0; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: rgba(214, 196, 160, .55); pointer-events: none; }

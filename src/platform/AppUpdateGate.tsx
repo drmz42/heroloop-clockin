@@ -4,7 +4,10 @@
 // "HeroLoopAppCode/<versionCode>"; older APKs are compared by version name only.
 import { useEffect, useState } from 'react';
 import { isNativeApp } from '@/platform/platform';
+import { Download, ShieldCheck } from 'lucide-react';
+import heroHost from '@/theme/premium/assets/hero-host.webp';
 import logo from '@/theme/premium/assets/logo-heroloop.webp';
+import '@/theme/premium/premium-onboarding.css';
 
 type LatestApk = { fileName: string; versionName: string; versionCode: number };
 
@@ -52,14 +55,34 @@ export function AppUpdateGate() {
   // The WebView cannot download files itself; an intent link hands the APK to the browser.
   const intentUrl = `intent://${host}${path}#Intent;scheme=https;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(`https://${host}${path}`)};end`;
 
+  const installed = /HeroLoopApp\/(\S+)/.exec(navigator.userAgent)?.[1];
+
+  // Same forged window, stone panel, crest and crimson seal as wallet sign-in (premium-onboarding.css).
   return (
-    <div className="hl-app-update" role="alertdialog" aria-modal="true" aria-labelledby="hl-app-update-title">
-      <div className="hl-app-update-card">
-        <img src={logo} alt="HeroLoop" width={1100} height={367} />
-        <h2 id="hl-app-update-title">Update required</h2>
-        <p>Version {latest.versionName} is out. Install it to keep playing; your heroes and progress stay on your account.</p>
-        <a className="hl-app-update-get" href={intentUrl}>Download update</a>
-        <span className="hl-app-update-link">{host}{path}</span>
+    <div className="hl-app-update onb-overlay" role="alertdialog" aria-modal="true" aria-labelledby="hl-app-update-title">
+      <div className="hl-app-update-art" style={{ backgroundImage: `url(${heroHost})` }} aria-hidden="true" />
+      <div className="hl-app-update-shade" aria-hidden="true" />
+      <div className="hl-app-update-inner">
+        <img className="hl-app-update-logo" src={logo} alt="HeroLoop" width={1100} height={367} />
+        <div className="onb-card hl-app-update-card">
+          <div className="onb-head"><p className="onb-kicker">New version</p></div>
+          <div className="onb-crest" aria-hidden="true">
+            <img src="/assets/brand/heroloop-emblem.png" alt="" width={160} height={160} draggable={false} />
+            <Download size={18} className="onb-crest-icon" />
+          </div>
+          <h2 id="hl-app-update-title" className="onb-title">UPDATE REQUIRED</h2>
+          <p className="onb-copy">A new version of HeroLoop is ready. Install it to continue your adventure.</p>
+          <p className="hl-app-update-versions">
+            {installed && <><span>{installed}</span><b aria-hidden="true">→</b></>}
+            <strong>{latest.versionName}</strong>
+          </p>
+          <a className="onb-cta onb-cta-primary" href={intentUrl}><Download size={18} aria-hidden="true" />Download update</a>
+          <div className="onb-note onb-note-safe">
+            <ShieldCheck size={18} aria-hidden="true" />
+            <span>Your heroes, items and progress are saved on your account and stay after the update.</span>
+          </div>
+          <p className="hl-app-update-link">{host}{path}</p>
+        </div>
       </div>
     </div>
   );
