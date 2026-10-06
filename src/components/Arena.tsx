@@ -6,10 +6,9 @@ import { enemyArtSrc } from '@/game/art';
 import { RarityFx } from '@/components/RarityFx';
 import { Crosshair, Shield, Skull, Star, Swords, DoorOpen, Flame, Timer, Users } from 'lucide-react';
 import { locationLevelRange } from '@/game/engine';
-import { groupNumber } from '@/game/numberFormat';
+import { compactNumber } from '@/game/numberFormat';
 import { versionedAsset } from '@/game/assetVersion';
 
-const HEALTH_NUMBER_FORMAT = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
 const DUNGEON_BOSS_ART: Record<string, string> = {
   'iron-warden': 'boss-titan', 'ash-warlock': 'boss-lich', 'thorn-shaman': 'boss-ogre',
   'rift-behemoth': 'boss-dragon', 'grave-necromancer': 'boss-lich',
@@ -27,8 +26,7 @@ function enemyRank(unit: CombatUnit, locationId: number | undefined, dungeonDept
 }
 
 function formatHealth(value: number) {
-  const rounded = Math.max(0, Math.ceil(value));
-  return rounded >= 10_000 ? HEALTH_NUMBER_FORMAT.format(rounded) : groupNumber(rounded);
+  return compactNumber(Math.max(0, Math.ceil(value)), 4, 3);
 }
 
 interface ArenaProps {
@@ -149,7 +147,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
       <div className="arena-unit-info grid h-[64px] w-[88px] shrink-0 grid-rows-[24px_10px_14px] content-center gap-1 rounded-lg border border-[#4b4234] bg-black/45 px-2 shadow-[0_6px_14px_rgba(0,0,0,.25)] sm:w-[104px]" aria-label={`${unit.name}, ${side}`}>
         <div className={`arena-unit-name flex items-center justify-center text-center font-bold ${side === 'enemy' ? 'text-rose-200' : 'text-[#eee5d5]'}`}>{unit.name}</div>
         <HealthBar hp={unit.hp} maxHp={unit.maxHp} color={unit.color} />
-        <div className="whitespace-nowrap text-center ui-text-small font-bold tabular-nums text-[#bdb6a9]" aria-label={`${Math.ceil(unit.hp)} of ${unit.maxHp} health`}>{formatHealth(unit.hp)} / {formatHealth(unit.maxHp)}</div>
+        <div className="whitespace-nowrap text-center ui-text-small font-bold tabular-nums text-[#bdb6a9]" aria-label={`${Math.ceil(unit.hp)} of ${unit.maxHp} health`}>{formatHealth(unit.hp)}/{formatHealth(unit.maxHp)}</div>
       </div>
       {/* Portrait */}
       <div className="relative">
@@ -163,9 +161,9 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
               {f.crit && !f.heal && f.value > 0 ? (
                 <span className="crit-hit-number" aria-label={`Critical hit, ${f.value} damage`}>
                   <span className="crit-blood crit-blood-a" /><span className="crit-blood crit-blood-b" /><span className="crit-blood crit-blood-c" />
-                  <span className="crit-label">CRIT!</span><span className="crit-damage">-{f.value}</span>
+                  <span className="crit-label">CRIT!</span><span className="crit-damage">-{compactNumber(f.value, 4, 3)}</span>
                 </span>
-              ) : f.label ?? (f.miss ? 'MISS' : f.heal ? `+${f.value}` : `-${f.value}`)}
+              ) : f.label ?? (f.miss ? 'MISS' : f.heal ? `+${compactNumber(f.value, 4, 3)}` : `-${compactNumber(f.value, 4, 3)}`)}
             </div>
           </div>
           );

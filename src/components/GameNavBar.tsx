@@ -5,8 +5,8 @@ import type { Tab } from './TopMenu';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { shortWalletAddress } from '@/components/walletAddress';
 import { isolatedHackathon } from '@/game/editionStorage';
-import { formatAmountShort, useWalletSnapshot } from '@/game/seekerWallet';
-import { groupNumber } from '@/game/numberFormat';
+import { ASSET_DECIMALS, formatAmountShort, useWalletSnapshot } from '@/game/seekerWallet';
+import { compactNumber } from '@/game/numberFormat';
 
 const TABS = [
   { id: 'heroes',      label: 'Heroes',   icon: Shield },
@@ -19,7 +19,7 @@ const TABS = [
   { id: 'referrals',   label: 'Refer',    icon: UserPlus },
 ] satisfies { id: Tab; label: string; icon: typeof Shield }[];
 
-const formatResource = (value: number) => groupNumber(Math.floor(value));
+const formatResource = (value: number) => compactNumber(Math.floor(value), 6);
 
 export function GameNavBar({
   tab, onChange, gold, hero, mailCount, onMailClick, walletAddress, onWalletClick, onTokensClick,
@@ -107,7 +107,10 @@ export function GameNavBar({
 }
 
 // Hackathon build: the server SKR ledger balance (deposits), not the legacy $HERO save field.
-export function SkrBalance() {
+// `compact` keeps a narrow phone cell readable: whole balances from 1 000 read 5.56k, 99.9m.
+export function SkrBalance({ compact = false }: { compact?: boolean }) {
   const snapshot = useWalletSnapshot();
-  return <>{snapshot ? formatAmountShort(snapshot.balances.SKR, 'SKR', 'down') : '—'}</>;
+  if (!snapshot) return <>—</>;
+  const whole = BigInt(snapshot.balances.SKR) / 10n ** BigInt(ASSET_DECIMALS.SKR);
+  return <>{compact && whole >= 1_000n ? compactNumber(Number(whole), 3, 3) : formatAmountShort(snapshot.balances.SKR, 'SKR', 'down')}</>;
 }

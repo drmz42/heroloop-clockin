@@ -6,17 +6,13 @@ import { COMMANDER_OPEN_EVENT, TeamPowerReadout } from '@/components/GameProgres
 import { SkrBalance } from '@/components/GameNavBar';
 import { shortWalletAddress } from '@/components/walletAddress';
 import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
-import { groupNumber } from '@/game/numberFormat';
+import { compactNumber, groupNumber } from '@/game/numberFormat';
 import '@/theme/scene/topbar.css';
 import { RarityFx } from '@/components/RarityFx';
 
 // Android top bar, two rows (Founder 2026-10-03, restyled v2 the same day): a stone resource ledger with
 // the emblem, Gold, SKR and Team Power; then Commander, Boost Max, wallet and Mailbox as one row of plates.
 // It replaces the web progress bar and command bar on the phone layout.
-// Full Gold up to a billion; beyond that the number would not fit a phone cell, so it goes compact.
-const formatGold = (gold: number) => gold >= 1_000_000_000
-  ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(gold)
-  : groupNumber(Math.floor(gold));
 
 export function AndroidTopBar({ power, identity, gold, commander, boostActive, walletAddress, mailCount, onLogo, onTokens, onBoost, onWallet, onMail }: {
   power: number; identity: string; gold: number;
@@ -32,11 +28,11 @@ export function AndroidTopBar({ power, identity, gold, commander, boostActive, w
       </button>
       <div className="tb-cell tb-gold" title={`${groupNumber(Math.floor(gold))} Gold`}>
         <span className="tb-cap">Gold</span>
-        <span className="tb-val"><span className="tb-coin" aria-hidden="true" /><span>{formatGold(gold)}</span></span>
+        <span className="tb-val"><span className="tb-coin" aria-hidden="true" /><span>{compactNumber(Math.floor(gold))}</span></span>
       </div>
       <button type="button" onClick={onTokens} className="tb-cell tb-skr" aria-label="Open Rewards and Tokenomics" title="Rewards & Tokenomics">
         <span className="tb-cap">SKR</span>
-        <span className="tb-val"><HeroTokenIcon size={13} /><SkrBalance /></span>
+        <span className="tb-val"><HeroTokenIcon size={13} /><SkrBalance compact /></span>
       </button>
       <div className="tb-cell tb-power"><TeamPowerReadout power={power} identity={identity} /></div>
     </div>

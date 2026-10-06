@@ -2,9 +2,9 @@ import { isolatedHackathon } from '@/game/editionStorage';
 import { Shield } from 'lucide-react';
 import { accountXpForLevel, accountXpProgress } from '@/game/state';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
-import { groupNumber } from '@/game/numberFormat';
+import { compactNumber } from '@/game/numberFormat';
 
-const formatResource = (value: number) => groupNumber(Math.floor(value));
+const formatResource = (value: number) => compactNumber(Math.floor(value), 6);
 
 export function TopBar({
   gold, hero, accountLevel, accountXp,

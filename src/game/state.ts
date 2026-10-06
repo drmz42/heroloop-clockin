@@ -3,6 +3,7 @@ import type { GameState, OwnedHero, DailyQuest, ItemSlot, TrainingBoostKey, Rari
 import { generateRotatingShop, itemPower } from './items';
 import { emptyBalanceTelemetry, BALANCE_VERSION } from './balance';
 import { MAX_ENCHANT_LEVEL } from './enchant';
+import { compactNumber } from './numberFormat';
 
 const STORAGE_KEY = editionStorageKey('afk-heroes-save-v7');
 
@@ -480,8 +481,5 @@ export function clearLegacyState(): void {
 }
 
 export function formatNum(n: number): string {
-  if (n < 1000) return Math.floor(n).toString();
-  if (n < 1_000_000) return (n / 1000).toFixed(n < 10000 ? 1 : 0) + 'K';
-  if (n < 1_000_000_000) return (n / 1_000_000).toFixed(2) + 'M';
-  return (n / 1_000_000_000).toFixed(2) + 'B';
+  return compactNumber(n, 3);
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Rocket, Zap } from 'lucide-react';
 import { HeroPortrait } from '@/components/HeroPortrait';
 import { HERO_MAP } from '@/game/heroes';
-import { groupNumber } from '@/game/numberFormat';
+import { compactNumber, groupNumber } from '@/game/numberFormat';
 
 // The phone top bar's Commander avatar opens the Commander sheet in MainScreen.
 export const COMMANDER_OPEN_EVENT = 'hl:commander-open';
@@ -21,9 +21,7 @@ export function TeamPowerReadout({ power, identity }: { power: number; identity:
     const timer = window.setTimeout(() => setDelta(0), 4000);
     return () => window.clearTimeout(timer);
   }, [power, identity]);
-  const format = (value: number) => value >= 1_000_000
-    ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
-    : groupNumber(Math.round(value));
+  const format = (value: number) => compactNumber(Math.round(value));
   return <div className="game-progress-power">
     <Zap size={21} aria-hidden="true" />
     <div><span className="game-progress-label">Team Power</span><strong title={groupNumber(Math.round(power))} data-team-power={Math.round(power)}>{format(power)}</strong></div>
