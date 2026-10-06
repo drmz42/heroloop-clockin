@@ -7,6 +7,7 @@ import { captureSignupAttribution } from './game/signupAttribution';
 import { applyUiTheme, resolveUiTheme } from './theme/uiTheme';
 import { applyPlatform, isAppShell, webGameEntryAllowed } from './platform/platform';
 import { AppLoadingScreen } from './platform/AppLoadingScreen';
+import { AppUpdateBanner } from './platform/AppUpdateBanner';
 
 captureSignupAttribution();
 const uiTheme = resolveUiTheme();
@@ -47,5 +48,6 @@ function RootScreen() {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Suspense fallback={<AppLoadingScreen />}><RootScreen /></Suspense>
+    <AppUpdateBanner />
   </StrictMode>
 );

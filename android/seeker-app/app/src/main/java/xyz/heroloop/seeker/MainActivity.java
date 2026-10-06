@@ -82,7 +82,8 @@ public class MainActivity extends Activity {
         // trustworthy, this only keeps older WebViews from refusing it as mixed content.
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
         settings.setUserAgentString(settings.getUserAgentString()
-            + " Solana Mobile Web Shell HeroLoopApp/" + BuildConfig.VERSION_NAME);
+            + " Solana Mobile Web Shell HeroLoopApp/" + BuildConfig.VERSION_NAME
+            + " HeroLoopAppCode/" + BuildConfig.VERSION_CODE);
         CookieManager.getInstance().setAcceptCookie(true);
 
         webView.setWebChromeClient(new WebChromeClient());
