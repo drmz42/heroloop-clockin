@@ -12,9 +12,10 @@ import { isolatedHackathon } from '@/game/editionStorage';
 import { SkrTokenIcon } from '@/components/SkrTokenIcon';
 import { SeekerPromoteAll } from '@/components/SeekerPromoteAll';
 import { SummonReveal } from '@/components/summon/SummonReveal';
+import { SummonFlame } from '@/components/summon/SummonFlame';
 import { quoteSkrPurchase, formatAmountShort, formatMinor, type SkrPurchaseQuote } from '@/game/seekerWallet';
 import { useSkrRate, skrPrice, skrError } from '@/game/skrPurchase';
-import stoneTexture from '@/theme/premium/assets/panel-stone.webp';
+import stoneTexture from '@/theme/premium/assets/stone-band.webp';
 import '@/components/summon/summon-v2.css';
 
 type Batch = 1 | 10 | 100;
@@ -77,7 +78,7 @@ function AltarStone({ tone, tall }: { tone: 'violet' | 'gold' | 'crimson'; tall:
       {/* Carved shaft */}
       <g clipPath={ref('shaft')}>
         <rect x="0" y="42" width="120" height={shaftBottom - 42} fill="#211a15" />
-        <image href={stoneTexture} x="-20" y="30" width="160" height="160" preserveAspectRatio="xMidYMid slice" opacity=".75" />
+        <image href={stoneTexture} x="-40" y="34" width="200" height="100" preserveAspectRatio="xMidYMid slice" opacity=".95" />
         <rect x="0" y="42" width="120" height={shaftBottom - 42} fill={ref('stone')} />
         <rect x="0" y="42" width="120" height={shaftBottom - 42} fill={ref('shade')} />
         <circle className="sv-altar-sigil-glow" cx="60" cy={(42 + shaftBottom) / 2} r="34" fill={ref('sigil')} />
@@ -115,7 +116,7 @@ function AltarStone({ tone, tall }: { tone: 'violet' | 'gold' | 'crimson'; tall:
   );
 }
 
-function Altar({ count, tone, title, cost, status, lit, busy, disabled, onClick }: {
+function Altar({ count, tone, title, cost, status, lit, busy, disabled, still, paused, onClick }: {
   count: Batch;
   tone: 'violet' | 'gold' | 'crimson';
   title: string;
@@ -124,6 +125,8 @@ function Altar({ count, tone, title, cost, status, lit, busy, disabled, onClick 
   lit: boolean;
   busy: boolean;
   disabled: boolean;
+  still: boolean;
+  paused: boolean;
   onClick: () => void;
 }) {
   return (
@@ -135,7 +138,7 @@ function Altar({ count, tone, title, cost, status, lit, busy, disabled, onClick 
       aria-label={`${title}${status ? ` · ${status}` : ''}`}
       className={`sv-altar sv-altar--${tone}${lit ? ' is-lit' : ''}${busy ? ' is-busy' : ''}`}
     >
-      <span className="sv-flame" aria-hidden="true"><i /><i /><i /></span>
+      <SummonFlame className="sv-flame" tone={tone} lit={lit} busy={busy} still={still} paused={paused} />
       <span className="sv-altar-stone">
         <AltarStone tone={tone} tall={tone === 'gold'} />
         <span className="sv-altar-face">
@@ -343,9 +346,9 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
         </div>
 
         <div className="sv-altars" aria-label="Summon altars">
-          <Altar count={1} tone="violet" title="Summon" cost={altarCost(1)} status={altarStatus(1)} lit={canSummon(1)} busy={summoning === 1} disabled={!canSummon(1) || busy} onClick={() => void beginSummon(1)} />
-          <Altar count={10} tone="gold" title="Summon" cost={altarCost(10)} status={altarStatus(10)} lit={canSummon(10)} busy={summoning === 10} disabled={!canSummon(10) || busy} onClick={() => void beginSummon(10)} />
-          <Altar count={100} tone="crimson" title="Mass Summon" cost={altarCost(100)} status={altarStatus(100)} lit={canSummon(100)} busy={summoning === 100} disabled={!canSummon(100) || busy} onClick={() => void beginSummon(100)} />
+          <Altar count={1} tone="violet" title="Summon" cost={altarCost(1)} status={altarStatus(1)} lit={canSummon(1)} busy={summoning === 1} disabled={!canSummon(1) || busy} still={reducedMotion} paused={results !== null} onClick={() => void beginSummon(1)} />
+          <Altar count={10} tone="gold" title="Summon" cost={altarCost(10)} status={altarStatus(10)} lit={canSummon(10)} busy={summoning === 10} disabled={!canSummon(10) || busy} still={reducedMotion} paused={results !== null} onClick={() => void beginSummon(10)} />
+          <Altar count={100} tone="crimson" title="Mass Summon" cost={altarCost(100)} status={altarStatus(100)} lit={canSummon(100)} busy={summoning === 100} disabled={!canSummon(100) || busy} still={reducedMotion} paused={results !== null} onClick={() => void beginSummon(100)} />
         </div>
       </section>
 
