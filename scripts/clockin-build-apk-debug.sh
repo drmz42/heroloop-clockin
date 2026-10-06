@@ -6,6 +6,8 @@ set -euo pipefail
 repo=$(cd "$(dirname "$0")/.." && pwd)
 sdk=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}
 [[ -n $sdk && -d $sdk ]] || { echo 'ERROR: set ANDROID_HOME to an Android SDK (platform 36, build-tools 36.0.0)' >&2; exit 2; }
+# README sets JAVA_HOME only; prefer that JDK over whatever java is on PATH.
+[[ -z ${JAVA_HOME:-} ]] || export PATH=$JAVA_HOME/bin:$PATH
 java -version 2>&1 | grep -q 'version "17' || { echo 'ERROR: JDK 17 is required (set JAVA_HOME/PATH)' >&2; exit 2; }
 project=$repo/android/seeker-app
 printf 'sdk.dir=%s\n' "$sdk" >"$project/local.properties"
