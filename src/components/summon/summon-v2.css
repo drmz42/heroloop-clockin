@@ -207,7 +207,17 @@
 .sv-altar.is-lit::after { opacity: .75; animation: sv-pool 3.2s ease-in-out infinite; }
 
 /* Canvas particle fire (SummonFlame); its base sits inside the brazier rim. */
-.sv-flame { position: relative; z-index: 0; display: block; width: 74%; aspect-ratio: 2 / 3; margin-bottom: -30%; pointer-events: none; }
+.sv-flame {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 74%;
+  aspect-ratio: 2 / 3;
+  margin-bottom: -27%;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to top, transparent 0, transparent 7%, #000 13%);
+  mask-image: linear-gradient(to top, transparent 0, transparent 7%, #000 13%);
+}
 .sv-altar--gold .sv-flame { width: 76%; }
 
 /* Painted brazier pedestal with the batch size on its blank panel. Sizes use the altar's
@@ -221,6 +231,26 @@
   margin-top: 0;
   transition: transform .15s ease;
 }
+.sv-altar-stone::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .4s ease;
+}
+/* Coals glowing inside the bowl */
+.sv-altar-stone::before {
+  left: 16%;
+  right: 16%;
+  top: var(--sv-bowl, 1.6%);
+  height: 5%;
+  background: radial-gradient(ellipse at 50% 60%, #fff3d0 0, color-mix(in srgb, var(--tone) 85%, #fff) 22%, color-mix(in srgb, var(--tone) 55%, transparent) 50%, transparent 72%);
+  mix-blend-mode: screen;
+}
+.sv-altar.is-lit .sv-altar-stone::before { opacity: 1; }
+.sv-altar--gold .sv-altar-stone { --sv-bowl: 2.6%; }
 .sv-altar-art { display: block; width: 100%; height: auto; filter: drop-shadow(0 10px 10px rgba(0, 0, 0, .85)); user-select: none; -webkit-user-drag: none; }
 .sv-altar-face {
   position: absolute;
@@ -243,7 +273,7 @@
   white-space: nowrap;
 }
 .sv-altar-count small { margin-right: .03em; font-size: .7em; line-height: 1; }
-.sv-altar--gold { --sv-face: 33.3% 36% 24%; }
+.sv-altar--gold { --sv-face: 33.5% 36% 24%; }
 .sv-altar--gold .sv-altar-count { font-size: clamp(15px, 19cqw, 38px); }
 .sv-altar--crimson .sv-altar-count { font-size: clamp(11px, 14cqw, 24px); letter-spacing: -.04em; }
 .sv-altar:not(.is-lit) .sv-altar-art { filter: drop-shadow(0 10px 10px rgba(0, 0, 0, .85)) brightness(.7) saturate(.7); }
@@ -254,7 +284,8 @@
   display: flex;
   width: 100%;
   min-width: 0;
-  min-height: 46px;
+  height: 52px;
+  flex: none;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -279,11 +310,11 @@
   white-space: nowrap;
 }
 .sv-altar-title { color: #e6d3ad; font: 700 clamp(7px, 7cqw, 10px)/1.1 var(--sv-display); letter-spacing: .12em; text-transform: uppercase; }
-.sv-altar-cost { color: #fbeccb; font: 700 clamp(9px, 9.5cqw, 13px)/1.05 var(--sv-display); font-variant-numeric: tabular-nums; white-space: normal; text-align: center; overflow-wrap: break-word; }
+.sv-altar-cost { display: -webkit-box; max-height: 2.1em; color: #fbeccb; font: 700 clamp(9px, 9.5cqw, 13px)/1.05 var(--sv-display); font-variant-numeric: tabular-nums; white-space: normal; text-align: center; overflow-wrap: break-word; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .sv-altar-cost svg,
 .sv-altar-cost img { flex: none; }
 .sv-altar:not(.is-lit) .sv-altar-plate { filter: brightness(.6) saturate(.45); }
-.sv-altar:not(.is-lit) .sv-altar-cost { color: #f0b7a6; font-size: clamp(7px, 7cqw, 10px); white-space: normal; text-align: center; }
+.sv-altar:not(.is-lit) .sv-altar-cost { color: #f0b7a6; font-size: clamp(7px, 7cqw, 10px); }
 @media (hover: hover) { .sv-altar:not(:disabled):hover .sv-altar-plate { filter: brightness(1.15); } }
 
 /* Payment choice as an offering: two relics float over a stone table. The chosen one

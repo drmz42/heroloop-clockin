@@ -18,7 +18,7 @@ import { useSkrRate, skrPrice, skrError } from '@/game/skrPurchase';
 import '@/components/summon/summon-v2.css';
 
 const altarArt = '/assets/summon/altar-standard-v1.webp';
-const altarGrandArt = '/assets/summon/altar-grand-v1.webp';
+const altarGrandArt = '/assets/summon/altar-grand-v2.webp';
 const relicCrystalArt = '/assets/summon/relic-crystal-v1.webp';
 const offeringSlabArt = '/assets/summon/offering-slab-v1.webp';
 

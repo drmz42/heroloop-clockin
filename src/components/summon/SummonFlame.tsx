@@ -78,7 +78,7 @@ export function SummonFlame({ tone, lit, busy, still, paused, className }: {
     let time = Math.random() * 10;
 
     const spawn = (intensity: number) => {
-      const spread = w * (.13 + .04 * intensity);
+      const spread = w * (.22 + .04 * intensity);
       const offset = (Math.random() - .5) * 2;
       particles.push({
         x: w / 2 + offset * spread,
