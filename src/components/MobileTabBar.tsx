@@ -95,6 +95,7 @@ export function MobileTabBar({
       {moreOpen && (
         <div className="hl-more-sheet mo-sheet mo-v3" role="dialog" aria-modal="true" aria-label="More" onMouseDown={(event) => { if (event.currentTarget === event.target) onMoreOpen(false); }}>
           <div className="mo-panel mo-keep">
+            <div className="mo-keep-art" aria-hidden="true" />
             <div className="mo-head">
               {teaser && <button type="button" className="mo-close mo-back" onClick={() => setTeaser(null)} aria-label="Back"><ChevronLeft size={20} /></button>}
               <span className="mo-title">{teaser ? UPCOMING[teaser].title : 'More'}</span>
@@ -115,7 +116,7 @@ export function MobileTabBar({
                 <ul className="mo-points">{UPCOMING[teaser].points.map((point) => <li key={point}>{point}</li>)}</ul>
               </div>
             ) : (
-              <>
+              <div className="mo-body">
                 <button type="button" className="mo-banner mo-banner-hero mo-art-pass" onClick={() => setTeaser('pass')}>
                   <span className="mo-banner-text"><span className="mo-kicker">{UPCOMING.pass.kicker}</span><strong>Season Pass</strong><span>{UPCOMING.pass.line}</span></span>
                   <em className="mo-soon">Soon</em><ChevronRight className="mo-chev" size={18} aria-hidden="true" />
@@ -144,7 +145,7 @@ export function MobileTabBar({
                 </div>
                 <button type="button" className="mo-logout" onClick={() => { onMoreOpen(false); onLogout(); }}><LogOut size={16} aria-hidden="true" /> Logout</button>
                 <p className="mo-version" aria-label={`Version: ${buildVersionLabel}`}>{buildVersionLabel}</p>
-              </>
+              </div>
             )}
           </div>
         </div>
