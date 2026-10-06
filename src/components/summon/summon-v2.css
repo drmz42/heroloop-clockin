@@ -207,88 +207,84 @@
 .sv-altar.is-lit::after { opacity: .75; animation: sv-pool 3.2s ease-in-out infinite; }
 
 /* Canvas particle fire (SummonFlame); its base sits inside the brazier rim. */
-.sv-flame { position: relative; z-index: 0; display: block; width: 66%; aspect-ratio: 2 / 3; margin-bottom: -22%; pointer-events: none; }
-.sv-altar--gold .sv-flame { width: 70%; }
+.sv-flame { position: relative; z-index: 0; display: block; width: 74%; aspect-ratio: 2 / 3; margin-bottom: -30%; pointer-events: none; }
+.sv-altar--gold .sv-flame { width: 76%; }
 
-/* Carved stone brazier (SVG in SummonScreen) with the batch engraved on its face. */
+/* Painted brazier pedestal with the batch size on its blank panel. Sizes use the altar's
+   own width (container units) so every label fits whichever column width it gets. */
+.sv-altar { container-type: inline-size; }
 .sv-altar-stone {
   position: relative;
   z-index: 1;
   display: block;
   width: 100%;
-  margin-top: -9px;
-  filter: drop-shadow(0 10px 10px rgba(0, 0, 0, .85));
+  margin-top: 0;
   transition: transform .15s ease;
 }
-.sv-altar-svg { display: block; width: 100%; height: auto; overflow: visible; }
-.sv-stop-tone { stop-color: var(--tone); }
-.sv-altar-coals { opacity: .12; transition: opacity .4s ease; }
-.sv-altar.is-lit .sv-altar-coals { opacity: 1; }
-.sv-altar-sigil { stroke: rgba(242, 204, 128, .22); transition: stroke .4s ease; }
-.sv-altar.is-lit .sv-altar-sigil { stroke: color-mix(in srgb, var(--tone) 70%, #fff3d6); }
-.sv-altar-sigil-glow { opacity: 0; transition: opacity .4s ease; }
-.sv-altar.is-lit .sv-altar-sigil-glow { opacity: .8; }
+.sv-altar-art { display: block; width: 100%; height: auto; filter: drop-shadow(0 10px 10px rgba(0, 0, 0, .85)); user-select: none; -webkit-user-drag: none; }
 .sv-altar-face {
   position: absolute;
-  inset: 30% 12% 18%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  inset: var(--sv-face, 30.5% 36% 27%);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
   pointer-events: none;
 }
 .sv-altar-count {
-  color: var(--sv-gold);
+  display: flex;
+  max-width: 100%;
+  align-items: baseline;
   background: linear-gradient(180deg, #fff6d8 10%, #f2cc80 45%, #a8742e 90%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  font: 700 clamp(22px, 7vw, 30px)/1 var(--sv-display);
+  font: 700 clamp(18px, 27cqw, 44px)/1 var(--sv-display);
   filter: drop-shadow(0 2px 1px #000) drop-shadow(0 0 8px color-mix(in srgb, var(--tone) 55%, transparent));
-}
-.sv-altar--gold .sv-altar-count { font-size: clamp(26px, 8.4vw, 36px); }
-.sv-altar--crimson .sv-altar-count { font-size: clamp(19px, 6vw, 27px); }
-.sv-altar-title {
-  margin-top: 5px;
-  color: #d8c6a2;
-  font: 700 clamp(7.5px, 2.2vw, 9px)/1.1 var(--sv-display);
-  letter-spacing: .16em;
-  text-indent: .16em;
-  text-shadow: 0 1px 2px #000;
-  text-transform: uppercase;
   white-space: nowrap;
 }
-.sv-altar-cost {
-  position: relative;
+.sv-altar-count small { margin-right: .03em; font-size: .7em; line-height: 1; }
+.sv-altar--gold { --sv-face: 33.3% 36% 24%; }
+.sv-altar--gold .sv-altar-count { font-size: clamp(15px, 19cqw, 38px); }
+.sv-altar--crimson .sv-altar-count { font-size: clamp(11px, 14cqw, 24px); letter-spacing: -.04em; }
+.sv-altar:not(.is-lit) .sv-altar-art { filter: drop-shadow(0 10px 10px rgba(0, 0, 0, .85)) brightness(.7) saturate(.7); }
+.sv-altar:not(.is-lit) .sv-altar-count { opacity: .6; }
+.sv-altar:not(:disabled):active .sv-altar-stone { transform: translateY(2px); }
+
+.sv-altar-plate {
   display: flex;
   width: 100%;
   min-width: 0;
-  min-height: 40px;
+  min-height: 46px;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  margin-top: 4px;
+  gap: 2px;
+  margin-top: 2px;
   border: 0 solid transparent;
-  border-width: 9px 13px;
-  border-image: var(--sv-seal) 24 56 26 fill / 7px 16px 8px / 0 4px stretch;
+  border-width: 9px 12px;
+  border-image: var(--sv-seal) 24 56 26 fill / 7px 14px 8px / 0 2px stretch;
   padding: 0 2px;
-  color: var(--sv-gold);
-  font: 700 12px/1.1 var(--sv-display);
-  letter-spacing: .02em;
-  text-align: center;
   text-shadow: 0 1px 2px #000;
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: break-word;
 }
-.sv-altar.is-lit .sv-altar-cost { color: #fbeccb; text-shadow: 0 1px 2px #000, 0 0 8px rgba(255, 120, 90, .35); }
-.sv-altar:not(.is-lit) .sv-altar-cost { color: #d9a092; font: 700 9px/1.15 var(--sv-display); filter: brightness(.62) saturate(.45); }
-.sv-altar:not(.is-lit) .sv-altar-stone { filter: drop-shadow(0 10px 10px rgba(0, 0, 0, .85)) brightness(.72) saturate(.7); }
-.sv-altar:not(:disabled):active .sv-altar-stone { transform: translateY(2px); }
-@media (hover: hover) {
-  .sv-altar:not(:disabled):hover .sv-altar-sigil-glow { opacity: 1; }
-  .sv-altar:not(:disabled):hover .sv-altar-cost { filter: brightness(1.15); }
+.sv-altar-title,
+.sv-altar-cost {
+  display: flex;
+  max-width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: safe center;
+  gap: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-@media (max-width: 359px) { .sv-altar-cost { font-size: 10px; border-width: 8px 11px; } }
+.sv-altar-title { color: #e6d3ad; font: 700 clamp(7px, 7cqw, 10px)/1.1 var(--sv-display); letter-spacing: .12em; text-transform: uppercase; }
+.sv-altar-cost { color: #fbeccb; font: 700 clamp(9px, 9.5cqw, 13px)/1.05 var(--sv-display); font-variant-numeric: tabular-nums; white-space: normal; text-align: center; overflow-wrap: break-word; }
+.sv-altar-cost svg,
+.sv-altar-cost img { flex: none; }
+.sv-altar:not(.is-lit) .sv-altar-plate { filter: brightness(.6) saturate(.45); }
+.sv-altar:not(.is-lit) .sv-altar-cost { color: #f0b7a6; font-size: clamp(7px, 7cqw, 10px); white-space: normal; text-align: center; }
+@media (hover: hover) { .sv-altar:not(:disabled):hover .sv-altar-plate { filter: brightness(1.15); } }
 
 /* Payment selector sits on the temple floor, just above the altars */
 .sv-offering {

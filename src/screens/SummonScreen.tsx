@@ -15,107 +15,16 @@ import { SummonReveal } from '@/components/summon/SummonReveal';
 import { SummonFlame } from '@/components/summon/SummonFlame';
 import { quoteSkrPurchase, formatAmountShort, formatMinor, type SkrPurchaseQuote } from '@/game/seekerWallet';
 import { useSkrRate, skrPrice, skrError } from '@/game/skrPurchase';
-import stoneTexture from '@/theme/premium/assets/stone-band.webp';
 import '@/components/summon/summon-v2.css';
+
+const altarArt = '/assets/summon/altar-standard-v1.webp';
+const altarGrandArt = '/assets/summon/altar-grand-v1.webp';
 
 type Batch = 1 | 10 | 100;
 
 // One altar per batch size. The flame is lit while that batch can be paid and stored.
-// The pedestal is a carved stone brazier drawn in SVG; gradient ids are scoped by tone
-// because each tone is used by exactly one altar.
-function AltarStone({ tone, tall }: { tone: 'violet' | 'gold' | 'crimson'; tall: boolean }) {
-  const h = tall ? 150 : 136;
-  const shaftBottom = h - 24;
-  const id = (name: string) => `sv-${tone}-${name}`;
-  const ref = (name: string) => `url(#${id(name)})`;
-  return (
-    <svg className="sv-altar-svg" viewBox={`0 0 120 ${h}`} aria-hidden="true" focusable="false">
-      <defs>
-        <linearGradient id={id('brass')} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#f6dc9c" />
-          <stop offset=".35" stopColor="#b98a45" />
-          <stop offset=".7" stopColor="#5e3d16" />
-          <stop offset="1" stopColor="#2a1906" />
-        </linearGradient>
-        <linearGradient id={id('brass-h')} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#4a2f10" />
-          <stop offset=".22" stopColor="#d9b46c" />
-          <stop offset=".5" stopColor="#fbe7b0" />
-          <stop offset=".78" stopColor="#d9b46c" />
-          <stop offset="1" stopColor="#4a2f10" />
-        </linearGradient>
-        <linearGradient id={id('stone')} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#050403" stopOpacity=".92" />
-          <stop offset=".3" stopColor="#2b2420" stopOpacity=".35" />
-          <stop offset=".55" stopColor="#3a302a" stopOpacity=".2" />
-          <stop offset="1" stopColor="#030202" stopOpacity=".95" />
-        </linearGradient>
-        <linearGradient id={id('shade')} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#000" stopOpacity=".55" />
-          <stop offset=".25" stopColor="#000" stopOpacity="0" />
-          <stop offset=".8" stopColor="#000" stopOpacity=".25" />
-          <stop offset="1" stopColor="#000" stopOpacity=".75" />
-        </linearGradient>
-        <radialGradient id={id('coals')} cx=".5" cy=".5" r=".5">
-          <stop offset="0" stopColor="#fff6dc" />
-          <stop offset=".45" className="sv-stop-tone" />
-          <stop offset="1" className="sv-stop-tone" stopOpacity="0" />
-        </radialGradient>
-        <radialGradient id={id('sigil')} cx=".5" cy=".5" r=".5">
-          <stop offset="0" className="sv-stop-tone" stopOpacity=".55" />
-          <stop offset="1" className="sv-stop-tone" stopOpacity="0" />
-        </radialGradient>
-        <clipPath id={id('shaft')}><path d={`M18 42 H102 L108 ${shaftBottom} H12 Z`} /></clipPath>
-      </defs>
-
-      {/* Stepped plinth */}
-      <path d={`M0 ${h - 10} H120 V${h} H0 Z`} fill={ref('brass')} />
-      <path d={`M1.5 ${h - 8.5} H118.5 V${h - 1} H1.5 Z`} fill="#140e09" />
-      <path d={`M6 ${shaftBottom} H114 V${h - 10} H6 Z`} fill={ref('brass-h')} />
-      <path d={`M8 ${shaftBottom + 2} H112 V${h - 12} H8 Z`} fill="#1c1510" />
-      <path d={`M8 ${shaftBottom + 2} H112 V${h - 12} H8 Z`} fill={ref('stone')} />
-
-      {/* Carved shaft */}
-      <g clipPath={ref('shaft')}>
-        <rect x="0" y="42" width="120" height={shaftBottom - 42} fill="#211a15" />
-        <image href={stoneTexture} x="-40" y="34" width="200" height="100" preserveAspectRatio="xMidYMid slice" opacity=".95" />
-        <rect x="0" y="42" width="120" height={shaftBottom - 42} fill={ref('stone')} />
-        <rect x="0" y="42" width="120" height={shaftBottom - 42} fill={ref('shade')} />
-        <circle className="sv-altar-sigil-glow" cx="60" cy={(42 + shaftBottom) / 2} r="34" fill={ref('sigil')} />
-      </g>
-      <path d={`M18 42 L12 ${shaftBottom} M102 42 L108 ${shaftBottom}`} stroke="#000" strokeWidth="1.2" />
-      <path d={`M26 49 H94 L98.5 ${shaftBottom - 7} H21.5 Z`} fill="none" stroke={ref('brass-h')} strokeWidth=".9" />
-      <path d={`M29 52 H91 L95 ${shaftBottom - 10} H25 Z`} fill="none" stroke="rgba(242,204,128,.28)" strokeWidth=".5" />
-      <g className="sv-altar-sigil" fill="none" strokeWidth=".7">
-        <circle cx="60" cy={(42 + shaftBottom) / 2} r="27" strokeDasharray="1.5 2.5" />
-        <circle cx="60" cy={(42 + shaftBottom) / 2} r="23" strokeDasharray="6 2 1 2" />
-      </g>
-      {[[26, 49], [94, 49], [21.5, shaftBottom - 7], [98.5, shaftBottom - 7]].map(([x, y]) => (
-        <path key={`${x}-${y}`} d={`M${x} ${y - 3} L${x + 3} ${y} L${x} ${y + 3} L${x - 3} ${y} Z`} fill={ref('brass-h')} stroke="#1a1006" strokeWidth=".5" />
-      ))}
-
-      {/* Capital and cornice */}
-      <path d="M14 40 H106 L103 44 H17 Z" fill="#0b0806" />
-      <path d="M8 30 H112 L110 40 H10 Z" fill={ref('brass')} />
-      <path d="M11 31.5 H109 L107.6 38.5 H12.4 Z" fill="#1d1611" />
-      <path d="M11 31.5 H109 L107.6 38.5 H12.4 Z" fill={ref('stone')} />
-      <path d="M8 30 H112" stroke="#fbe7b0" strokeWidth=".8" opacity=".85" />
-      <path d="M44 35 L60 31.5 L76 35 L60 38.5 Z" fill={ref('brass-h')} stroke="#1a1006" strokeWidth=".5" />
-
-      {/* Brazier: neck, bowl and glowing coals */}
-      <path d="M50 22 H70 L73 30 H47 Z" fill={ref('brass')} />
-      <path d="M46 24.5 H74" stroke="#2a1906" strokeWidth="1.4" />
-      <path d="M46 24 H74" stroke="#f0d394" strokeWidth=".6" />
-      <path d="M17 6 Q20 21 46 22.5 H74 Q100 21 103 6 Z" fill={ref('brass')} stroke="#1a1006" strokeWidth=".8" />
-      <path d="M24 10 Q30 18 50 19.5 H70 Q90 18 96 10" fill="none" stroke="rgba(255,236,190,.45)" strokeWidth=".7" />
-      {[30, 45, 60, 75, 90].map((x) => <circle key={x} cx={x} cy={x === 30 || x === 90 ? 13 : 16.5} r="1.3" fill="#fbe7b0" stroke="#3a240a" strokeWidth=".4" />)}
-      <ellipse cx="60" cy="6" rx="43.5" ry="4" fill={ref('brass-h')} stroke="#1a1006" strokeWidth=".7" />
-      <ellipse cx="60" cy="6" rx="39" ry="2.6" fill="#0a0604" />
-      <ellipse className="sv-altar-coals" cx="60" cy="6" rx="36" ry="2.3" fill={ref('coals')} />
-    </svg>
-  );
-}
-
+// The pedestal is painted art; only the batch size sits on its blank panel, while the
+// title and price live on the plate below so long labels can never spill off the stone.
 function Altar({ count, tone, title, cost, status, lit, busy, disabled, still, paused, onClick }: {
   count: Batch;
   tone: 'violet' | 'gold' | 'crimson';
@@ -140,13 +49,13 @@ function Altar({ count, tone, title, cost, status, lit, busy, disabled, still, p
     >
       <SummonFlame className="sv-flame" tone={tone} lit={lit} busy={busy} still={still} paused={paused} />
       <span className="sv-altar-stone">
-        <AltarStone tone={tone} tall={tone === 'gold'} />
-        <span className="sv-altar-face">
-          <span className="sv-altar-count">×{count}</span>
-          <span className="sv-altar-title">{busy ? 'Summoning…' : title}</span>
-        </span>
+        <img className="sv-altar-art" src={tone === 'gold' ? altarGrandArt : altarArt} alt="" draggable={false} />
+        <span className="sv-altar-face"><span className="sv-altar-count"><small>×</small>{count}</span></span>
       </span>
-      <span className="sv-altar-cost">{status ?? cost}</span>
+      <span className="sv-altar-plate">
+        <span className="sv-altar-title">{busy ? 'Summoning…' : title}</span>
+        <span className="sv-altar-cost">{status ?? cost}</span>
+      </span>
     </button>
   );
 }

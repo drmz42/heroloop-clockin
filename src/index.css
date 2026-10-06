@@ -162,7 +162,7 @@ html { scroll-behavior: smooth; }
   .rarity-relic     { border-color:#2dd4bf !important; box-shadow:2px 2px 0 #0f766e !important; }
   .rarity-cursed    { --rarity:#821923;--rarity-rgb:130,25,35;border-color:#821923 !important;box-shadow:inset 0 0 0 1px #240509,0 0 12px rgba(130,25,35,.2) !important; }
   .rarity-cosmic    { --rarity:#55e6d0;--rarity-rgb:85,230,208;border-color:#55e6d0 !important;background-image:radial-gradient(circle at 50% 18%,rgba(85,230,208,.13),rgba(40,155,209,.06) 48%,transparent 72%);box-shadow:0 0 18px rgba(85,230,208,.42),inset 0 0 20px rgba(40,155,209,.22) !important;text-shadow:0 0 8px rgba(85,230,208,.68); }
-  .rarity-divine    { --rarity:#be5bae;--rarity-rgb:190,91,174;border-color:#d7a25b !important;box-shadow:0 0 13px rgba(190,91,174,.22),inset 0 0 0 1px rgba(215,162,91,.38) !important; }
+  .rarity-divine    { --rarity:#ff7ad9;--rarity-rgb:255,122,217;border-color:#e889c9 !important;box-shadow:0 0 13px rgba(255,122,217,.24),inset 0 0 0 1px rgba(255,122,217,.38) !important; }
   .rarity-celestial { --rarity:#73dad6;--rarity-rgb:115,218,214;border-color:#a9efea !important;box-shadow:0 0 14px rgba(115,218,214,.25),inset 0 0 18px rgba(115,218,214,.12) !important; }
   .rarity-immortal  { --rarity:#aca3cd;--rarity-rgb:172,163,205;border-color:#d8dce8 !important;box-shadow:0 0 12px rgba(172,163,205,.24),inset 0 0 0 1px #44356d !important; }
   .rarity-god       { --rarity:#ecd291;--rarity-rgb:236,210,145;border-color:#fff0bd !important;box-shadow:0 0 15px rgba(236,210,145,.28),inset 0 0 0 1px #9c792e !important; }
