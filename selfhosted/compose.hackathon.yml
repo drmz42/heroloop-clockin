@@ -12,7 +12,7 @@ services:
     environment:
       HEROLOOP_EDITION: seeker
       TESTER_CONTROLS_ENABLED: "false"
-      SIWS_ADDITIONAL_URIS: ""
+      SIWS_ADDITIONAL_URIS: ${SIWS_ADDITIONAL_URIS:-}
       COMBAT_EFFECTS_VERSION: combat-effects-v2-team-contributions-candidate-2026.09.06-v1
       WALLET_SERVICE_URL: http://wallet:8090
       WALLET_SERVICE_TOKEN: ${WALLET_SERVICE_TOKEN:?set the wallet service token in the root-owned runtime environment}

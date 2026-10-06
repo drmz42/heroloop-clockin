@@ -1,6 +1,6 @@
 import { ADDRESS,ASSET_DECIMALS,ORE_TOKEN_MINT,base58Decode,type ChainConfig,type WalletAsset,TOKEN_PROGRAM,SYSTEM_PROGRAM } from './chain.ts';
 export type Withdrawal = { request_id:string;player_id:string;asset:WalletAsset;amount_minor:string;fee_minor:string;payout_minor:string;destination:string;expires_at:string;created_at:string };
-export const WITHDRAWAL_DOMAIN='staging2.heroloop.xyz';
+export const WITHDRAWAL_DOMAIN='heroloop.xyz';
 export const FOUNDER_WALLETS=new Set(['5vWcJZVsh1KTfp8bRMhGawoibYMfMfRu7ZoDdMWZjtWR','714yHZvDGqvtDHvmFZMufhECdXVfhPSjEPqFXndKbYwa']);
 export function authorizationMessage(w:Withdrawal):string {
   if(!ADDRESS.test(w.destination)||!['SKR','SOL','ORE'].includes(w.asset)||!/^[1-9][0-9]{0,19}$/.test(w.amount_minor)

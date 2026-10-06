@@ -14,8 +14,8 @@ android {
         targetSdk 35
         versionCode 11
         versionName '0.2.7-lab'
-        buildConfigField 'String', 'GAME_URL', '"https://staging2.heroloop.xyz/?source=android#game"'
-        buildConfigField 'String', 'GAME_HOST', '"staging2.heroloop.xyz"'
+        buildConfigField 'String', 'GAME_URL', '"https://heroloop.xyz/?source=android#game"'
+        buildConfigField 'String', 'GAME_HOST', '"heroloop.xyz"'
     }
 
     buildFeatures { buildConfig true }
