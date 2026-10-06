@@ -175,7 +175,7 @@ export default function PremiumLandingView({ onPlay, referralTotal = 0, onClassi
   return (
     <div className="l5-root" id="top">
       <nav className="l5-nav" aria-label="HeroLoop">
-        <button type="button" className="l5-brand" onClick={go('top')}><i aria-hidden="true" />HEROLOOP</button>
+        <button type="button" className="l5-brand" onClick={go('top')}><img src="/assets/brand/heroloop-emblem.png" alt="" aria-hidden="true" width={154} height={160} draggable={false} />HEROLOOP</button>
         <div className="l5-nav-links">
           <button type="button" onClick={go('classes')}>Heroes</button>
           <button type="button" onClick={go('world')}>World</button>
