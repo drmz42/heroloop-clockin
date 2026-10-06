@@ -8,7 +8,7 @@
 set -euo pipefail
 code=${1:?usage: build-seeker-apk.sh <version-code> <version-name> [host]}
 name=${2:?usage: build-seeker-apk.sh <version-code> <version-name> [host]}
-host=${3:-heroloop.xyz}
+host=${3:-seeker.heroloop.xyz}
 [[ $code =~ ^[1-9][0-9]{0,8}$ && $name =~ ^[0-9A-Za-z.+-]{1,40}$ && $host =~ ^[a-z0-9.-]+$ ]] || { echo 'ERROR: bad arguments' >&2; exit 2; }
 repo=$(cd "$(dirname "$0")/.." && pwd)
 tools=${HEROLOOP_ANDROID_TOOLS:-/var/tmp/hk-android}
