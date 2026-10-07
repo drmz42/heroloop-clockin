@@ -2,21 +2,38 @@ package xyz.heroloop.seeker;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Insets;
+import android.net.ConnectivityManager;
+import android.net.Network;
 import android.net.Uri;
+import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
+import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
+import android.view.WindowInsetsController;
+import android.view.WindowManager;
 import android.webkit.CookieManager;
+import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.view.Gravity;
+import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,8 +48,29 @@ import java.util.Locale;
  */
 public class MainActivity extends Activity {
     private static final int WALLET_REQUEST = 7001;
+    private static final int BRAND_DARK = 0xFF070606;
+    private static final int BRAND_GOLD = 0xFFD6C4A0;
+    // The launch screen waits for React to mount the game; after this long it offers Retry.
+    private static final long READY_STALL_MS = 20_000;
+    private static final long READY_POLL_MS = 250;
+    private static final long READY_GIVE_UP_MS = 90_000;
+    private static final long BACK_EXIT_WINDOW_MS = 2_000;
+    private static final String READY_PROBE =
+        "(function(){var r=document.getElementById('root');return !!(r&&r.childElementCount>0);})()";
+
+    private final Handler main = new Handler(Looper.getMainLooper());
     private WebView webView;
-    private View loadingView;
+    // Launch/error overlay: shown until the game UI is ready, and again for a failed page load.
+    private View launchView;
+    private ProgressBar launchSpinner;
+    private TextView launchMessage;
+    private Button launchRetry;
+    private boolean gameReady;
+    private boolean pageFailed;
+    private boolean walletInFront;
+    private long loadStartedAt;
+    private long lastBackAt;
+    private ConnectivityManager.NetworkCallback networkCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,18 +84,15 @@ public class MainActivity extends Activity {
         root.setBackgroundColor(0xFF070606);
         root.addView(webView, new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
-        // Loading screen: dark backdrop with the app version at the bottom until the first page has loaded.
-        TextView loading = new TextView(this);
-        loading.setBackgroundColor(0xFF070606);
-        loading.setTextColor(0x8CD6C4A0);
-        loading.setTextSize(11);
-        loading.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM);
-        loading.setPadding(0, 0, 0, Math.round(28 * getResources().getDisplayMetrics().density));
-        loading.setText("HeroLoop · App " + BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");
-        root.addView(loading, new FrameLayout.LayoutParams(
+        root.addView(buildLaunchView(), new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
-        loadingView = loading;
         setContentView(root);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            // Draw behind the camera cutout; the inset padding below keeps the game clear of it.
+            WindowManager.LayoutParams attributes = getWindow().getAttributes();
+            attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            getWindow().setAttributes(attributes);
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             getWindow().setDecorFitsSystemWindows(false);
             root.setOnApplyWindowInsetsListener((view, insets) -> {
@@ -89,11 +124,35 @@ public class MainActivity extends Activity {
         webView.setWebChromeClient(new WebChromeClient());
         webView.setWebViewClient(new WebViewClient() {
             @Override
+            public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                pageFailed = false;
+                if (!gameReady) loadStartedAt = SystemClock.uptimeMillis();
+            }
+
+            @Override
             public void onPageFinished(WebView view, String url) {
-                if (loadingView != null) {
-                    ((FrameLayout) loadingView.getParent()).removeView(loadingView);
-                    loadingView = null;
+                // onPageFinished only means the HTML arrived; the overlay stays until React mounts.
+                if (!gameReady && !pageFailed) pollReady();
+            }
+
+            // Only a failed main page replaces the game; a missing image or API call does not.
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                if (request.isForMainFrame()) showLoadError("No connection. Check your internet and try again.");
+            }
+
+            @Override
+            public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse response) {
+                if (request.isForMainFrame() && response.getStatusCode() >= 500) {
+                    showLoadError("HeroLoop servers are not responding. Please try again in a moment.");
                 }
+            }
+
+            // Certificate errors are never bypassed.
+            @Override
+            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                handler.cancel();
+                showLoadError("Secure connection failed. Check your network and try again.");
             }
 
             @Override
@@ -104,8 +163,184 @@ public class MainActivity extends Activity {
             }
         });
 
-        if (savedInstanceState != null) webView.restoreState(savedInstanceState);
-        else webView.loadUrl(BuildConfig.GAME_URL);
+        loadStartedAt = SystemClock.uptimeMillis();
+        if (savedInstanceState == null || webView.restoreState(savedInstanceState) == null) {
+            webView.loadUrl(BuildConfig.GAME_URL);
+        }
+        applyImmersive();
+        watchNetwork();
+    }
+
+    private View buildLaunchView() {
+        float dp = getResources().getDisplayMetrics().density;
+        FrameLayout overlay = new FrameLayout(this);
+        overlay.setBackgroundColor(BRAND_DARK);
+        overlay.setClickable(true);
+
+        LinearLayout column = new LinearLayout(this);
+        column.setOrientation(LinearLayout.VERTICAL);
+        column.setGravity(Gravity.CENTER_HORIZONTAL);
+        int side = Math.round(32 * dp);
+        column.setPadding(side, 0, side, 0);
+
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.mipmap.ic_maskable);
+        logo.setContentDescription("HeroLoop");
+        column.addView(logo, new LinearLayout.LayoutParams(Math.round(112 * dp), Math.round(112 * dp)));
+
+        ProgressBar spinner = new ProgressBar(this);
+        spinner.setIndeterminateTintList(ColorStateList.valueOf(BRAND_GOLD));
+        LinearLayout.LayoutParams spinnerParams = new LinearLayout.LayoutParams(Math.round(28 * dp), Math.round(28 * dp));
+        spinnerParams.topMargin = Math.round(28 * dp);
+        column.addView(spinner, spinnerParams);
+        launchSpinner = spinner;
+
+        TextView message = new TextView(this);
+        message.setTextColor(BRAND_GOLD);
+        message.setTextSize(15);
+        message.setGravity(Gravity.CENTER);
+        message.setVisibility(View.GONE);
+        LinearLayout.LayoutParams messageParams = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        messageParams.topMargin = Math.round(24 * dp);
+        column.addView(message, messageParams);
+        launchMessage = message;
+
+        Button retry = new Button(this);
+        retry.setText("Retry");
+        retry.setAllCaps(false);
+        retry.setTextColor(BRAND_DARK);
+        retry.setBackgroundTintList(ColorStateList.valueOf(BRAND_GOLD));
+        retry.setMinWidth(Math.round(160 * dp));
+        retry.setVisibility(View.GONE);
+        retry.setOnClickListener(view -> retryLoad());
+        LinearLayout.LayoutParams retryParams = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT, Math.round(48 * dp));
+        retryParams.topMargin = Math.round(20 * dp);
+        column.addView(retry, retryParams);
+        launchRetry = retry;
+
+        overlay.addView(column, new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+
+        TextView version = new TextView(this);
+        version.setTextColor(0x8CD6C4A0);
+        version.setTextSize(11);
+        version.setGravity(Gravity.CENTER_HORIZONTAL);
+        version.setText("HeroLoop · App " + BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");
+        FrameLayout.LayoutParams versionParams = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
+        versionParams.bottomMargin = Math.round(28 * dp);
+        overlay.addView(version, versionParams);
+
+        launchView = overlay;
+        return overlay;
+    }
+
+    // Polls until the React app has mounted, then reveals the game. A stall offers Retry but
+    // keeps waiting, so a slow network still lands in the game without a tap.
+    private void pollReady() {
+        main.removeCallbacks(readyPoll);
+        main.post(readyPoll);
+    }
+
+    private final Runnable readyPoll = new Runnable() {
+        @Override
+        public void run() {
+            if (gameReady || pageFailed || webView == null) return;
+            webView.evaluateJavascript(READY_PROBE, value -> {
+                if (gameReady || pageFailed) return;
+                if ("true".equals(value)) {
+                    revealGame();
+                    return;
+                }
+                long waited = SystemClock.uptimeMillis() - loadStartedAt;
+                if (waited >= READY_STALL_MS && launchRetry.getVisibility() != View.VISIBLE) {
+                    showLaunchMessage("Loading is taking longer than usual.", true);
+                }
+                if (waited < READY_GIVE_UP_MS) main.postDelayed(readyPoll, READY_POLL_MS);
+            });
+        }
+    };
+
+    private void revealGame() {
+        gameReady = true;
+        AppUpdater.check(this, false);
+        main.removeCallbacks(readyPoll);
+        launchView.animate().alpha(0f).setDuration(220).withEndAction(() -> {
+            launchView.setVisibility(View.GONE);
+            launchView.setAlpha(1f);
+        }).start();
+    }
+
+    private void showLoadError(String text) {
+        pageFailed = true;
+        gameReady = false;
+        main.removeCallbacks(readyPoll);
+        launchView.animate().cancel();
+        launchView.setAlpha(1f);
+        launchView.setVisibility(View.VISIBLE);
+        showLaunchMessage(text, false);
+    }
+
+    private void showLaunchMessage(String text, boolean keepSpinner) {
+        launchMessage.setText(text);
+        launchMessage.setVisibility(View.VISIBLE);
+        launchRetry.setVisibility(View.VISIBLE);
+        launchSpinner.setVisibility(keepSpinner ? View.VISIBLE : View.GONE);
+    }
+
+    // Retry reloads the same game origin; cookies, storage and the linked account are untouched.
+    private void retryLoad() {
+        pageFailed = false;
+        gameReady = false;
+        loadStartedAt = SystemClock.uptimeMillis();
+        launchMessage.setVisibility(View.GONE);
+        launchRetry.setVisibility(View.GONE);
+        launchSpinner.setVisibility(View.VISIBLE);
+        launchView.setVisibility(View.VISIBLE);
+        String url = webView.getUrl();
+        if (url != null && Uri.parse(url).getHost() != null
+                && BuildConfig.GAME_HOST.equalsIgnoreCase(Uri.parse(url).getHost())) {
+            webView.reload();
+        } else {
+            webView.loadUrl(BuildConfig.GAME_URL);
+        }
+    }
+
+    // When the network comes back while the error screen is up, retry without a tap.
+    private void watchNetwork() {
+        ConnectivityManager connectivity = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivity == null) return;
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network) {
+                main.post(() -> {
+                    if (pageFailed && !isFinishing()) retryLoad();
+                });
+            }
+        };
+        try {
+            connectivity.registerDefaultNetworkCallback(networkCallback);
+        } catch (RuntimeException error) {
+            networkCallback = null;
+        }
+    }
+
+    // Full screen: status and navigation bars stay hidden and return briefly on an edge swipe.
+    // Older Android versions keep their bars, because their fullscreen flags break adjustResize.
+    private void applyImmersive() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return;
+        WindowInsetsController controller = getWindow().getInsetsController();
+        if (controller == null) return;
+        controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) applyImmersive();
     }
 
     // Mirrors the official Solana Mobile web shell (npx solana-mobile webshell init,
@@ -132,21 +367,9 @@ public class MainActivity extends Activity {
                 return false;
             case "http":
             case "https":
-                // APK downloads belong to the external browser, even on the game host.
-                if ("https".equals(scheme)
-                        && "heroloop.xyz".equalsIgnoreCase(uri.getHost())
-                        && uri.getPath() != null
-                        && uri.getPath().matches(
-                            "^/download/heroloop-seeker-[0-9A-Za-z.+-]{1,40}-[0-9]{1,9}\\.apk$")) {
-                    Intent browser = Intent.makeMainSelectorActivity(
-                        Intent.ACTION_MAIN, Intent.CATEGORY_APP_BROWSER);
-                    browser.setAction(Intent.ACTION_VIEW);
-                    browser.setData(uri);
-                    if (!launch(browser)) {
-                        Toast.makeText(this,
-                            "Open this download link in your browser: " + uri,
-                            Toast.LENGTH_LONG).show();
-                    }
+                // The published APK is installed by the app itself (AppUpdater), never in the WebView.
+                if (AppUpdater.isUpdateLink(uri)) {
+                    AppUpdater.check(this, true);
                     return true;
                 }
                 if (BuildConfig.GAME_HOST.equalsIgnoreCase(uri.getHost())) return false;
@@ -187,10 +410,12 @@ public class MainActivity extends Activity {
     // (Digital Asset Links of the game host); the result itself is not used.
     private boolean launchWallet(Intent intent) {
         try {
+            walletInFront = true;
             WalletSessionService.start(this);
             startActivityForResult(intent, WALLET_REQUEST);
             return true;
         } catch (ActivityNotFoundException | SecurityException error) {
+            walletInFront = false;
             WalletSessionService.stop(this);
             return false;
         }
@@ -205,10 +430,25 @@ public class MainActivity extends Activity {
         }
     }
 
+    // Back: leaves an error/launch screen, then walks the game's history, and exits only on a
+    // second press so a stray swipe does not close the game.
     @Override
     public void onBackPressed() {
-        if (webView.canGoBack()) webView.goBack();
-        else super.onBackPressed();
+        if (!gameReady) {
+            super.onBackPressed();
+            return;
+        }
+        if (webView.canGoBack()) {
+            webView.goBack();
+            return;
+        }
+        long now = SystemClock.uptimeMillis();
+        if (now - lastBackAt < BACK_EXIT_WINDOW_MS) {
+            super.onBackPressed();
+            return;
+        }
+        lastBackAt = now;
+        Toast.makeText(this, "Press Back again to exit HeroLoop", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -217,17 +457,40 @@ public class MainActivity extends Activity {
         webView.saveState(outState);
     }
 
-    // The WebView is not paused: while the wallet app is in front, the page must keep its
-    // Mobile Wallet Adapter session alive (fetch the challenge, send the signing request).
+    // While a wallet app is in front the WebView is never paused: the page must keep its Mobile
+    // Wallet Adapter session alive (fetch the challenge, send the signing request). Otherwise
+    // WebView.onPause() marks the page hidden so music and animations stop; JavaScript timers
+    // (pauseTimers) are never paused, and server timers are unaffected either way.
     @Override
     protected void onResume() {
         super.onResume();
+        walletInFront = false;
         WalletSessionService.stop(this);
+        webView.onResume();
+        applyImmersive();
+        // Back from the "install unknown apps" setting: continue the update the player asked for.
+        if (gameReady) AppUpdater.check(this, false);
     }
 
     @Override
     protected void onPause() {
         CookieManager.getInstance().flush();
+        if (!walletInFront) webView.onPause();
         super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        main.removeCallbacksAndMessages(null);
+        if (networkCallback != null) {
+            ConnectivityManager connectivity = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            try {
+                if (connectivity != null) connectivity.unregisterNetworkCallback(networkCallback);
+            } catch (RuntimeException ignored) {
+                // Already unregistered.
+            }
+        }
+        webView.destroy();
+        super.onDestroy();
     }
 }
