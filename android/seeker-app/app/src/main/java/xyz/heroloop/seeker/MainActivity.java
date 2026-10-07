@@ -71,6 +71,8 @@ public class MainActivity extends Activity {
     private long loadStartedAt;
     private long lastBackAt;
     private ConnectivityManager.NetworkCallback networkCallback;
+    // Unpadded system areas in physical pixels, published to the page by pushInsets().
+    private int safeTop, safeRight, safeBottom, safeLeft;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,12 +97,18 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             getWindow().setDecorFitsSystemWindows(false);
             root.setOnApplyWindowInsetsListener((view, insets) -> {
-                // The top runs under the hidden status bar and the camera cutout (no black band);
-                // the page keeps its own content clear of it. Sides avoid a cutout, the bottom the keyboard.
-                Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime());
+                // Only the keyboard is handled natively. Status bar, camera cutout and gesture bar
+                // are passed to the page as CSS variables (pushInsets), so the web layout decides the
+                // spacing and changes to it ship without a new APK.
+                Insets ime = insets.getInsets(WindowInsets.Type.ime());
+                Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
                 Insets cutout = insets.getInsets(WindowInsets.Type.displayCutout());
-                view.setPadding(Math.max(bars.left, cutout.left), bars.top,
-                    Math.max(bars.right, cutout.right), bars.bottom);
+                view.setPadding(0, 0, 0, ime.bottom);
+                safeTop = Math.max(bars.top, cutout.top);
+                safeRight = Math.max(bars.right, cutout.right);
+                safeBottom = ime.bottom > 0 ? 0 : Math.max(bars.bottom, cutout.bottom);
+                safeLeft = Math.max(bars.left, cutout.left);
+                pushInsets();
                 return WindowInsets.CONSUMED;
             });
         }
@@ -133,6 +141,7 @@ public class MainActivity extends Activity {
 
             @Override
             public void onPageFinished(WebView view, String url) {
+                pushInsets();
                 // onPageFinished only means the HTML arrived; the overlay stays until React mounts.
                 if (!gameReady && !pageFailed) pollReady();
             }
@@ -171,6 +180,19 @@ public class MainActivity extends Activity {
         }
         applyImmersive();
         watchNetwork();
+    }
+
+    // Sets --hl-app-safe-{top,right,bottom,left} (CSS px) on <html> for the web layout.
+    private void pushInsets() {
+        if (webView == null) return;
+        float density = getResources().getDisplayMetrics().density;
+        String script = String.format(Locale.ROOT,
+            "(function(s){s.setProperty('--hl-app-safe-top','%dpx');s.setProperty('--hl-app-safe-right','%dpx');"
+                + "s.setProperty('--hl-app-safe-bottom','%dpx');s.setProperty('--hl-app-safe-left','%dpx');})"
+                + "(document.documentElement.style)",
+            Math.round(safeTop / density), Math.round(safeRight / density),
+            Math.round(safeBottom / density), Math.round(safeLeft / density));
+        webView.evaluateJavascript(script, null);
     }
 
     private View buildLaunchView() {
