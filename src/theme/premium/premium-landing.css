@@ -108,7 +108,7 @@
 
 /* Founder packs */
 .l5-pack-track {
-  display: flex; gap: 12px; overflow-x: auto; padding: 6px 16px 12px; scroll-snap-type: x mandatory; scroll-padding: 0 16px; scrollbar-width: none;
+  display: flex; gap: 12px; overflow-x: auto; padding: 16px 16px 12px; scroll-snap-type: x mandatory; scroll-padding: 0 16px; scrollbar-width: none;
 }
 .l5-pack-track::-webkit-scrollbar { display: none; }
 .l5-pack-col { position: relative; flex: 0 0 285px; scroll-snap-align: start; }
@@ -129,7 +129,7 @@
 .l5-dots button::before { content: ''; width: 8px; height: 8px; border-radius: 4px; background: rgba(199, 158, 97, .35); transition: width .2s, background .2s; }
 .l5-dots button.is-active { width: 22px; }
 .l5-dots button.is-active::before { width: 18px; background: var(--l5-brass); }
-.l5-milestone { position: relative; display: grid; justify-items: center; gap: 6px; margin: 14px 0 0; font-family: var(--l5-display); font-weight: 700; font-size: 14px; letter-spacing: .03em; color: var(--l5-ivory); }
+.l5-milestone { position: relative; display: grid; justify-items: center; gap: 12px; margin: 14px 0 0; font-family: var(--l5-display); font-weight: 700; font-size: 14px; letter-spacing: .03em; color: var(--l5-ivory); }
 .l5-milestone { --l5-rail: calc(100% + 12px); color: var(--l5-muted); }
 .l5-milestone i { position: relative; z-index: 1; width: 13px; height: 13px; margin: 3px 0; transform: rotate(45deg); border: 1px solid rgba(199, 158, 97, .55); background: #16110c; transition: background .3s, box-shadow .3s; }
 .l5-milestone.is-reached { color: var(--l5-ivory); }
@@ -279,10 +279,10 @@
 
   /* Founder packs: all six side by side */
   .l5-band--vista { padding-top: calc(30 * var(--d)); }
-  .l5-pack-track { --pd: min(1px, calc((100vw - 48px) / 1955)); display: grid; grid-template-columns: repeat(6, calc(310 * var(--pd))); justify-content: center; gap: calc(19 * var(--pd)); overflow: visible; padding: 0; }
+  .l5-pack-track { --pd: min(1px, calc((100vw - 48px) / 1955)); display: grid; grid-template-columns: repeat(6, calc(310 * var(--pd))); justify-content: center; gap: calc(19 * var(--pd)); overflow: visible; padding: 10px 0 0; }
   .l5-pack-col { flex: none; width: calc(310 * var(--pd)); }
   .l5-pack { height: calc(631 * var(--pd)); }
-  .l5-milestone { gap: calc(8 * var(--pd)); margin-top: calc(17 * var(--pd)); font-size: max(12px, calc(18.5 * var(--pd))); }
+  .l5-milestone { gap: calc(8 * var(--pd) + 6px); margin-top: calc(17 * var(--pd)); font-size: max(12px, calc(18.5 * var(--pd))); }
   .l5-milestone i { width: calc(17 * var(--pd)); height: calc(17 * var(--pd)); margin: calc(3.5 * var(--pd)) 0; }
   .l5-milestone { --l5-rail: calc(329 * var(--pd)); }
   .l5-milestone::before, .l5-milestone::after { top: calc(14 * var(--pd)); height: calc(3 * var(--pd)); min-height: 2px; }
