@@ -130,7 +130,7 @@ export function PromoCodeModal({ onClose, onRedeemed }: { onClose: () => void; o
               <h2 id="promo-title" className="promo-vault__title">Your rewards</h2>
               <p className="promo-vault__campaign">{result.label}</p>
             </header>
-            <div className="promo-vault__body game-scrollbar" tabIndex={0} aria-label="Received rewards">
+            <div className="promo-vault__body game-scrollbar" role="region" tabIndex={0} aria-label="Received rewards">
               <ul className={`promo-vault__gifts${rewards.length === 1 ? ' promo-vault__gifts--single' : ''}`}>
                 {rewards.map((reward, index) => <li key={reward.id} className={`promo-gift promo-gift--${reward.tone}`} style={{ '--gift-delay': `${Math.min(index * 85, 600)}ms` } as CSSProperties}>
                   <div className="promo-gift__art" aria-hidden="true"><span className="promo-gift__halo" />{reward.artwork}<span className="promo-gift__pedestal" /></div>
