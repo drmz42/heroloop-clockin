@@ -1858,7 +1858,7 @@ function NextStepCard({ game, nextLocation, onQuestsClick }: { game: GameApi; ne
       <span className="block truncate ui-text-medium font-bold leading-tight text-[#efe4cf]">{step.label}</span>
       {step.progress && <span className="mt-1 flex items-center gap-1.5"><span className="health-track h-1 flex-1 overflow-hidden"><span className="block h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, step.progress.progress / step.progress.target * 100)}%` }} /></span><span className="ui-text-small tabular-nums text-px-dim">{step.progress.progress}/{step.progress.target}</span></span>}
     </span>
-    {step.cta ? <span className="hl-next-step-cta flex shrink-0 items-center gap-1 rounded px-2 py-1 ui-text-small font-black uppercase">{step.cta}<ArrowRight size={14} aria-hidden="true" /></span> : <ChevronRight size={16} className="shrink-0 text-[#9b8c70]" aria-hidden="true" />}
+    {step.cta ? <span className="hl-next-step-cta flex shrink-0 items-center gap-1 ui-text-small font-black uppercase">{step.cta}<ArrowRight size={14} aria-hidden="true" /></span> : <ChevronRight size={16} className="shrink-0 text-[#9b8c70]" aria-hidden="true" />}
   </button>;
 }
 

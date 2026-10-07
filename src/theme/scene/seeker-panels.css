@@ -44,6 +44,21 @@ html[data-hl-edition='seeker'] .hl-quest-list .quest-reward-ready:not(#hl-q):not
   animation: none;
 }
 html[data-hl-edition='seeker'] .hl-quest-list .quest-reward-ready:disabled:not(#hl-q) { filter: grayscale(.7) brightness(.6); }
+/* Next-step card over the battle: the same crimson seal as the quest Claim button. */
+html[data-hl-edition='seeker'] .hl-next-step-cta {
+  min-height: 32px;
+  border: 0 solid transparent;
+  border-width: 7px 12px;
+  border-image: url('../premium/assets/btn-crimson-play-9.webp') 24 56 26 fill / 7px 16px 8px / 0 4px stretch;
+  border-radius: 0;
+  padding: 0 2px;
+  color: #fbeccb;
+  font-family: 'Cinzel', Georgia, serif;
+  letter-spacing: .08em;
+  text-shadow: 0 1px 2px #000, 0 0 8px rgba(255, 120, 90, .3);
+  filter: drop-shadow(0 0 8px rgba(179, 48, 28, .35));
+}
+html[data-hl-edition='seeker'] .hl-next-step-cta svg { color: #ffd9a8; }
 html[data-hl-edition='seeker'] .hl-quest-list .quest-card:has(> div > svg.text-emerald-400, > div > .text-emerald-400):not(#hl-q) { opacity: .62; }
 
 /* Armory: the phone Bag section */
