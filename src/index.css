@@ -872,6 +872,8 @@ body:has(.has-game-progress) .fixed.inset-0 { top:calc(var(--game-progress-heigh
 .hl-next-step { left:50%; width:min(46%, 340px); transform:translateX(-50%); background:rgba(17,19,15,.9); }
 .hl-next-step.is-ready { border-color:#c9a463; box-shadow:0 0 14px rgba(212,164,73,.35); }
 .location-next { white-space:nowrap; }
+/* Keep the $SKR income details readable: hide the Victory/Defeat banner while they are open. */
+html:has(.battle-income-popover:not([hidden])) .hl-battle-banner { display:none; }
 .game-motion-off .location-disclosure-ready { animation:none!important; }
 
 /* Class-only gear glyph (src/components/ClassGlyph.tsx) and Bag resource art. Outside @layer so the

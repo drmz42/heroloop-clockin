@@ -967,7 +967,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             </div>}
           </div>}
           {!activeDungeon && banner && (
-            <div className="absolute inset-x-0 top-1/4 flex flex-col items-center z-30 pointer-events-none">
+            <div className="hl-battle-banner absolute inset-x-0 top-1/4 flex flex-col items-center z-30 pointer-events-none">
               <div className={`anim-banner battle-result-title font-pixel text-2xl sm:text-3xl tracking-wider ${banner.win ? 'is-victory' : 'is-defeat'}`}>{banner.win ? 'VICTORY' : 'DEFEAT'}</div>
               {hasBattleRewards && (
                 <div className="anim-banner stat-tile mt-2 flex flex-wrap items-center justify-center gap-2 px-3 py-2 font-vt ui-text-medium">
@@ -1040,7 +1040,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             onClick={() => setLocationsExpanded(expanded => !expanded)}
           >
             <span className={`section-kicker ${nextLocationAvailable ? 'location-disclosure-ready' : ''}`}>
-              Locations <span className="ui-text-small">· {String(state.currentLocation).padStart(2, '0')}</span>
+              Locations <span className="ui-text-small">· {String(state.currentLocation).padStart(2, '0')} · {buildLocation(state.currentLocation, state.team.length).name}</span>
             </span>
             <ChevronDown size={20} className={locationsExpanded ? 'rotate-180 shrink-0' : 'shrink-0'} aria-hidden="true" />
           </button>

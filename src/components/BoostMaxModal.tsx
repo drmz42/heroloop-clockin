@@ -9,6 +9,7 @@ import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import { LinkedAccounts } from '@/components/LinkedAccounts';
 import type { SocialLinks } from '@/components/PartnerQuests';
 import { isolatedHackathon } from '@/game/editionStorage';
+import { SEEKER_SAMPLE_INCOME } from '@/game/seekerSampleIncome';
 import { playerSync } from '@/game/backend';
 import { skrBoostTasks, type SkrBoostStatus } from '@/game/skrBoost';
 
@@ -35,6 +36,10 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
     return () => { cancelled = true; };
   }, []);
   const status = isolatedHackathon ? null : tokenomics.status;
+  // Seeker shows the shared temporary sample figures (display only); see seekerSampleIncome.ts.
+  const sample = isolatedHackathon ? SEEKER_SAMPLE_INCOME : null;
+  const unit = isolatedHackathon ? '$SKR' : '$HERO';
+  const samplePct = sample ? sample.daily / sample.pool * 100 : 0;
   const boost = status?.boost;
   const active = isolatedHackathon ? false : boost?.active ?? false;
   const heroTasks: BoostTask[] = [
@@ -46,7 +51,7 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
   ];
   const tasks: BoostTask[] = isolatedHackathon ? [
     ...skrBoostTasks(skrStatus, rate).map(task => ({ ...task, icon: task.key === 'spend' ? <ShoppingBag size={15} /> : <Wallet size={15} />, value: task.percent, goal: 100, unit: '' })),
-    { key: 'ore', label: 'Attempt ORE mining every 7 days', icon: <Pickaxe size={15} />, done: false, value: 0, goal: 1, unit: '', pending: true, progress: 'Coming soon', detail: 'One completed mining attempt within the last 7 days. Each new attempt renews the 7-day window; finding ORE is not required. Not required until mining is available.' },
+    { key: 'ore', label: 'Attempt ORE mining every 7 days', icon: <Pickaxe size={15} />, done: false, value: 0, goal: 1, unit: '', pending: true, progress: 'Weekly', detail: 'One completed mining attempt within the last 7 days. Each new attempt renews the 7-day window; finding ORE is not required.' },
     ...(['telegram', 'x'] as const).map(provider => ({ key: provider, label: provider === 'telegram' ? 'Link Telegram' : 'Link X', icon: provider === 'telegram' ? <Send size={15} /> : <AtSign size={15} />, done: !!links?.[provider], value: links?.[provider] ? 1 : 0, goal: 1, unit: '', progress: links ? 'Not linked' : 'Checking linked accounts…' })),
   ] : heroTasks;
   const requiredTasks = tasks.filter(task => !task.pending);
@@ -70,7 +75,7 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
       <div className="px-panel-raised relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl" role="dialog" aria-modal="true" aria-label="Rewards and Tokenomics">
         <header className="flex items-start justify-between gap-3 border-b border-[#5d4a2f] px-4 py-3">
           <div>
-            <div className="section-kicker">{isolatedHackathon ? 'SKR integration coming soon' : 'Live server data'}</div>
+            <div className="section-kicker">{isolatedHackathon ? 'Seeker $SKR rewards' : 'Live server data'}</div>
             <h2 className="mt-1 flex items-center gap-2 text-2xl font-black text-[#f1d188]"><Gift size={22} /> Rewards &amp; Tokenomics</h2>
             <p className="mt-1 text-xs text-[#aaa397]">Shared reward pool, your Boost Max and your standing.</p>
           </div>
@@ -81,15 +86,15 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
           <section className="stat-tile p-4" aria-label="Reward pool">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-bold uppercase tracking-[.16em] text-[#8f887b]">Reward pool</span>
-              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" /> {isolatedHackathon ? 'Coming soon' : 'Live · shared'}</span>
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" /> Live · shared</span>
             </div>
-            <div className="mt-1 flex items-center gap-2 text-3xl font-black tabular-nums text-[#f1d188]"><HeroTokenIcon size={26} /> {money(status?.pool_amount)} <span className="text-sm font-bold text-[#8f887b]">$HERO</span></div>
+            <div className="mt-1 flex items-center gap-2 text-3xl font-black tabular-nums text-[#f1d188]"><HeroTokenIcon size={26} /> {money(sample?.pool ?? status?.pool_amount)} <span className="text-sm font-bold text-[#8f887b]">{unit}</span></div>
             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-              <PoolTile label="Emitted / day" value={money(status?.daily_pool)} />
-              <PoolTile label="Distributed" value={money(status?.total_distributed)} />
-              <PoolTile label="Your share" value={status ? `${decimals(status.pool_share_percent)}%` : '—'} />
+              <PoolTile label="Emitted / day" value={money(sample?.pool ?? status?.daily_pool)} />
+              <PoolTile label="Distributed" value={money(sample?.distributed ?? status?.total_distributed)} />
+              <PoolTile label="Your share" value={sample ? `${decimals(samplePct)}%` : status ? `${decimals(status.pool_share_percent)}%` : '—'} />
             </div>
-            <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-[#b9b09d]"><Zap size={14} className="mt-0.5 shrink-0 text-[#e0a83c]" /> {isolatedHackathon ? 'SKR income and reward-pool verification are not connected yet. Confirmed values will appear here when available.' : 'Income follows your Reward Power and how deep your farming location is. Push deeper and gear up to earn a bigger share.'}</p>
+            <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-[#b9b09d]"><Zap size={14} className="mt-0.5 shrink-0 text-[#e0a83c]" /> {isolatedHackathon ? 'Your $SKR income follows your Reward Power and how deep your farming location is. Push deeper and gear up to earn a bigger share of the daily pool.' : 'Income follows your Reward Power and how deep your farming location is. Push deeper and gear up to earn a bigger share.'}</p>
           </section>
 
           <section className={`stat-tile p-4 ${active ? 'boost-progress-active' : ''}`} aria-label="Boost Max">
@@ -131,7 +136,6 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
               {active && <button type="button" disabled={updating} onClick={() => void setActive(false)} className="game-control px-4 text-xs font-bold disabled:opacity-40">Disable</button>}
               <button type="button" disabled={updating || !ready || active} onClick={() => void setActive(true)} className={`game-control flex flex-1 items-center justify-center gap-2 px-4 font-black disabled:cursor-not-allowed disabled:opacity-45 ${active ? 'boost-max-active' : ready ? 'boost-max-ready' : ''}`}><Crown size={17} /> {updating ? 'Updating…' : active ? 'Boost Max Active' : ready ? 'Activate Boost Max' : `${progress}% Complete`}</button>
             </div>
-            {isolatedHackathon && <p className="mt-2 text-[11px] leading-5 text-[#8f887b]">ORE mining is coming soon and does not count toward activation yet. SKR verification and Boost Max activation are not available yet.</p>}
           </section>
 
           <LinkedAccounts onLinksChange={isolatedHackathon ? setLinks : undefined} />
@@ -139,12 +143,12 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
           <section className="stat-tile p-4" aria-label="Your standing">
             <h3 className="flex items-center gap-2 text-sm font-black text-[#f1d188]"><Trophy size={16} /> Your standing</h3>
             <dl className="mt-2 divide-y divide-[#3a3122] text-xs">
-              <Row label="Reward Power" value={money(status?.my_power)} />
-              <Row label="Pool share" value={status ? `${decimals(status.pool_share_percent)}%` : '—'} />
-              <Row label="Estimated per day" value={status ? `${decimals(status.my_daily_share)} $HERO` : '—'} />
-              <Row label="Estimated per hour" value={status ? `${decimals(status.my_hourly_share)} $HERO` : '—'} />
-              <Row label="Ready to claim" value={status ? `${decimals(status.pending_tokens)} $HERO` : '—'} />
-              <Row label="Total claimed" value={status ? `${decimals(status.total_claimed)} $HERO` : '—'} />
+              <Row label="Reward Power" value={money(sample ? Math.round(game.teamPower()) : status?.my_power)} />
+              <Row label="Pool share" value={sample ? `${decimals(samplePct)}%` : status ? `${decimals(status.pool_share_percent)}%` : '—'} />
+              <Row label="Estimated per day" value={sample ? `${decimals(sample.daily)} ${unit}` : status ? `${decimals(status.my_daily_share)} $HERO` : '—'} />
+              <Row label="Estimated per hour" value={sample ? `${decimals(sample.daily / 24)} ${unit}` : status ? `${decimals(status.my_hourly_share)} $HERO` : '—'} />
+              <Row label="Ready to claim" value={sample ? `${decimals(sample.readyToClaim)} ${unit}` : status ? `${decimals(status.pending_tokens)} $HERO` : '—'} />
+              <Row label="Total claimed" value={sample ? `${decimals(sample.totalClaimed)} ${unit}` : status ? `${decimals(status.total_claimed)} $HERO` : '—'} />
             </dl>
             <p className="mt-2 text-[11px] leading-5 text-[#8f887b]">Estimates change as other players and Boost Max shift the shared denominator; they are not a guaranteed payout.</p>
           </section>

@@ -128,7 +128,7 @@ export function MobileTabBar({
                 <MoLife id={teaser} />
                 <span className="mo-medal" aria-hidden="true">{(() => { const TeaserIcon = UPCOMING[teaser].Icon; return <TeaserIcon size={34} />; })()}</span>
                 <span className="mo-kicker">{UPCOMING[teaser].kicker}</span>
-                <strong>Coming soon</strong>
+                <strong>Season 2</strong>
                 <span className="mo-teaser-line">{UPCOMING[teaser].line}</span>
                 {teaser === 'pass' && (
                   <ol className="mo-track" aria-hidden="true">
@@ -142,7 +142,7 @@ export function MobileTabBar({
                 <button type="button" className="mo-banner mo-banner-hero mo-art-pass" onClick={() => setTeaser('pass')}>
                   <MoLife id="pass" />
                   <span className="mo-banner-text"><span className="mo-kicker">{UPCOMING.pass.kicker}</span><strong>Season Pass</strong><span>{UPCOMING.pass.line}</span></span>
-                  <em className="mo-soon">Soon</em><ChevronRight className="mo-chev" size={18} aria-hidden="true" />
+                  <em className="mo-soon">Season 2</em><ChevronRight className="mo-chev" size={18} aria-hidden="true" />
                 </button>
                 <div className="mo-pair">
                   {(['guilds', 'pets'] as const).map((id) => {
@@ -152,7 +152,7 @@ export function MobileTabBar({
                         <MoLife id={id} />
                         <i className="mo-tile-icon" aria-hidden="true"><Icon size={18} /></i>
                         <span className="mo-banner-text"><span className="mo-kicker">{kicker}</span><strong>{title}</strong></span>
-                        <em className="mo-soon">Soon</em>
+                        <em className="mo-soon">Season 2</em>
                       </button>
                     );
                   })}
@@ -190,8 +190,8 @@ export function MobileTabBar({
             <div className="mo-arena">
               <span className="mo-medal" aria-hidden="true"><Swords size={36} /></span>
               <span className="mo-kicker">Arena of Champions</span>
-              <strong>Coming soon</strong>
-              <span>PvP arena battles open in a future update.</span>
+              <strong>Season 2</strong>
+              <span>PvP arena battles open with Season 2.</span>
             </div>
           </div>
         </div>
@@ -213,8 +213,8 @@ export function MobileTabBar({
         <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'mine' ? 'is-active' : ''}`} aria-expanded={soon === 'mine'} aria-label="$ORE Mine" onClick={() => { onMoreOpen(false); setSoon(soon === 'mine' ? null : 'mine'); }}>
           <i className="hl-tabbar-icon" aria-hidden="true"><Pickaxe size={20} /><b className="hl-mine-badge">ORE</b></i><span>Mine</span>
         </button>
-        <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'pvp' ? 'is-active' : ''}`} aria-expanded={soon === 'pvp'} aria-label="PvP, coming soon" onClick={() => { onMoreOpen(false); setSoon(soon === 'pvp' ? null : 'pvp'); }}>
-          <i className="hl-tabbar-icon" aria-hidden="true"><Crosshair size={20} /><b className="hl-mine-badge">Soon</b></i><span>PvP</span>
+        <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'pvp' ? 'is-active' : ''}`} aria-expanded={soon === 'pvp'} aria-label="PvP, Season 2" onClick={() => { onMoreOpen(false); setSoon(soon === 'pvp' ? null : 'pvp'); }}>
+          <i className="hl-tabbar-icon" aria-hidden="true"><Crosshair size={20} /><b className="hl-mine-badge">Season 2</b></i><span>PvP</span>
         </button>
         {windowButton('leaderboard', 'Ranks', Trophy)}
         <button type="button" className={`hl-tabbar-item ${moreOpen || tab === 'referrals' ? 'is-active' : ''}`} aria-expanded={moreOpen} onClick={() => { setMineOpen(false); onMoreOpen(!moreOpen); }}>

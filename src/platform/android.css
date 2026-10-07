@@ -239,7 +239,7 @@ html[data-hl-platform='android'] .hl-tabbar-item.has-badge { color: #e9c77a; }
 /* The upcoming $ORE Mine: a soft gold glow and a "Soon" tag, never louder than the active tab. */
 .hl-tabbar-mine { color: #d9b46a; }
 .hl-tabbar-mine svg { filter: drop-shadow(0 0 4px rgba(255, 196, 92, .5)); animation: hl-mine-glow 2.8s ease-in-out infinite; }
-.hl-mine-badge { position: absolute; top: -8px; left: calc(100% - 10px); padding: 0 3px; border: 1px solid rgba(36, 23, 11, .8); background: linear-gradient(180deg, #f2cc80, #c79e61); color: #24170b; font-size: 7px; line-height: 11px; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; }
+.hl-mine-badge { position: absolute; top: -8px; left: calc(100% - 10px); padding: 0 3px; border: 1px solid rgba(36, 23, 11, .8); background: linear-gradient(180deg, #f2cc80, #c79e61); color: #24170b; font-size: 7px; line-height: 11px; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
 @keyframes hl-mine-glow { 50% { filter: drop-shadow(0 0 7px rgba(255, 196, 92, .85)); } }
 
 /* ── More sheet ── */
