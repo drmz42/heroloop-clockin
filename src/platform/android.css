@@ -520,6 +520,8 @@ html[data-hl-platform='android'] .hl-col-right.material-panel:not(#hl-a):not(#hl
 html[data-hl-platform='android'] .hl-col-right.material-panel::after { content: none !important; }
 /* Bag cells use the screen width without the Play shell's extra side gutters. */
 html[data-hl-platform='android'][data-hl-section='bag'] .game-main { padding-inline: 2px; }
+html[data-hl-platform='android'] .hl-inventory-body { scrollbar-width: none; }
+html[data-hl-platform='android'] .hl-inventory-body::-webkit-scrollbar { display: none; }
 
 
 
