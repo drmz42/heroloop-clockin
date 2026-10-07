@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { CheckCircle2, Gift, KeyRound, X } from 'lucide-react';
 import { playerSync } from '@/game/backend';
 import { BossKeyIcon } from '@/components/BossKeyIcon';
 import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 import { groupNumber } from '@/game/numberFormat';
+import { ChestCollectIcon } from '@/components/ChestCollectIcon';
+import { HeroTokenIcon } from '@/components/HeroTokenIcon';
+import { ItemArtwork } from '@/components/ItemArtwork';
+import './PromoCodeModal.css';
 
 type PotionSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 
@@ -25,11 +29,52 @@ const ERROR_TEXT: Record<string, string> = {
   rate_limited: 'Too many attempts. Please wait and try again.',
 };
 
+interface RewardCard {
+  id: string;
+  amount: number;
+  label: string;
+  tone: string;
+  artwork: ReactNode;
+}
+
+function GoldArtwork() {
+  const id = useId();
+  return (
+    <svg viewBox="0 0 100 100" width="88" height="88" aria-hidden="true">
+      <defs>
+        <linearGradient id={`${id}-gold`} x2=".2" y2="1"><stop stopColor="#fff0ae" /><stop offset=".45" stopColor="#d9a143" /><stop offset="1" stopColor="#795016" /></linearGradient>
+        <linearGradient id={`${id}-edge`} x2="0" y2="1"><stop stopColor="#c88b31" /><stop offset="1" stopColor="#55340e" /></linearGradient>
+      </defs>
+      {[[28, 65, 3], [69, 57, 4], [48, 78, 2]].map(([x, y, count]) => (
+        <g key={x}>
+          {Array.from({ length: count }, (_, index) => <g key={index} transform={`translate(${x} ${y - index * 7})`}>
+            <path d="M-20 0v6c0 12 40 12 40 0V0" fill={`url(#${id}-edge)`} stroke="#8c5c21" />
+            <ellipse rx="20" ry="8" fill={`url(#${id}-gold)`} stroke="#f4d28a" strokeWidth="1.2" />
+            <ellipse rx="14" ry="5" fill="none" stroke="#875b21" strokeWidth="1" />
+            <path d="m0-4 5 4-5 4-5-4Z" fill="#956624" />
+          </g>)}
+        </g>
+      ))}
+      <path d="m80 22 2 6 6 2-6 2-2 6-2-6-6-2 6-2Z" fill="#fff1b3" />
+    </svg>
+  );
+}
+
 export function PromoCodeModal({ onClose, onRedeemed }: { onClose: () => void; onRedeemed: (result: PromoRedemption) => void }) {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<PromoRedemption | null>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  const continueRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef(typeof document !== 'undefined' && document.activeElement instanceof HTMLElement ? document.activeElement : null);
+
+  useEffect(() => {
+    const previousFocus = previousFocusRef.current;
+    return () => { if (previousFocus?.isConnected) previousFocus.focus(); };
+  }, []);
+
+  useEffect(() => { if (result) continueRef.current?.focus({ preventScroll: true }); }, [result]);
 
   const redeem = async () => {
     const normalized = code.trim();
@@ -48,29 +93,57 @@ export function PromoCodeModal({ onClose, onRedeemed }: { onClose: () => void; o
     setBusy(false);
   };
 
-  const rewards = result ? [
-    result.rewards.gold > 0 && { label: `${groupNumber(result.rewards.gold)} Gold` },
-    result.rewards.hero > 0 && { label: `${groupNumber(result.rewards.hero)} $HERO` },
-    result.rewards.summon_scrolls > 0 && { label: `${groupNumber(result.rewards.summon_scrolls)} Summon Scrolls`, icon: <SummonScrollArtwork size={20} /> },
-    result.rewards.boss_keys > 0 && { label: `${groupNumber(result.rewards.boss_keys)} Boss Keys`, icon: <BossKeyIcon size={20} /> },
-    (result.rewards.chests ?? 0) > 0 && { label: `${groupNumber((result.rewards.chests ?? 0))} ${result.rewards.chests === 1 ? 'Chest' : 'Chests'}` },
-    ...(Object.entries(result.rewards.potions ?? {}) as [PotionSize, number][]).map(([size, amount]) => amount > 0 && { label: `${groupNumber(amount)} ${POTION_LABEL[size] ?? size} Potions` }),
-  ].filter((reward): reward is { label: string; icon?: JSX.Element } => Boolean(reward)) : [];
+  const rewards: RewardCard[] = result ? [
+    { id: 'gold', amount: result.rewards.gold, label: 'Gold', tone: 'gold', artwork: <GoldArtwork /> },
+    { id: 'hero', amount: result.rewards.hero, label: '$HERO', tone: 'gold', artwork: <HeroTokenIcon size={80} /> },
+    { id: 'scrolls', amount: result.rewards.summon_scrolls, label: 'Summon Scrolls', tone: 'violet', artwork: <SummonScrollArtwork size={88} /> },
+    { id: 'keys', amount: result.rewards.boss_keys, label: 'Boss Keys', tone: 'crimson', artwork: <BossKeyIcon size={88} /> },
+    { id: 'chests', amount: result.rewards.chests ?? 0, label: result.rewards.chests === 1 ? 'Chest' : 'Chests', tone: 'gold', artwork: <ChestCollectIcon size={88} /> },
+    ...(Object.entries(result.rewards.potions ?? {}) as [PotionSize, number][]).map(([size, amount]) => ({
+      id: `potion-${size}`, amount, label: `${POTION_LABEL[size] ?? size} Potions`, tone: 'teal',
+      artwork: <span className="promo-gift__potion"><ItemArtwork itemId={`potion-${size}`} name={`${POTION_LABEL[size] ?? size} Potion`} fallback="Potion" /></span>,
+    })),
+  ].filter((reward) => reward.amount > 0) : [];
 
   return (
-    <div className="fixed inset-0 z-[9999] grid place-items-center bg-black/75 p-3 backdrop-blur-[4px]" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="promo-title" className="px-panel-raised w-full max-w-md rounded-2xl border border-[#9a6a22] p-5 shadow-[0_24px_90px_rgba(0,0,0,.8)]">
-        <div className="flex items-start justify-between gap-3">
+    <div className="promo-overlay fixed inset-0 z-[9999] grid place-items-center bg-black/80 p-3 backdrop-blur-[4px]" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
+      <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="promo-title" className={result ? 'promo-vault' : 'px-panel-raised w-full max-w-md rounded-2xl border border-[#9a6a22] p-5 shadow-[0_24px_90px_rgba(0,0,0,.8)]'} onKeyDown={(event) => {
+        if (event.key === 'Escape') { event.stopPropagation(); onClose(); }
+        if (event.key !== 'Tab') return;
+        const controls = dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled)');
+        if (!controls?.length) return;
+        const first = controls[0]; const last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }}>
+        {!result && <div className="flex items-start justify-between gap-3">
           <div><div className="section-kicker flex items-center gap-2"><Gift size={14} /> Reward code</div><h2 id="promo-title" className="mt-1 font-vt text-xl font-black text-[#f0dfbb]">Enter promo code</h2></div>
-          <button type="button" onClick={onClose} className="game-control grid h-9 w-9 place-items-center" aria-label="Close"><X size={16} /></button>
-        </div>
+          <button type="button" onClick={onClose} className="game-control grid h-11 w-11 place-items-center" aria-label="Close"><X size={16} /></button>
+        </div>}
         {result ? (
-          <div className="mt-5 rounded-xl border border-emerald-500/45 bg-emerald-950/30 p-4 text-center">
-            <CheckCircle2 size={28} className="mx-auto text-emerald-300" />
-            <strong className="mt-2 block text-sm text-emerald-200">{result.label}</strong>
-            <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs leading-5 text-[#c9c2b6]">{rewards.map((reward) => <span key={reward.label} className="inline-flex items-center gap-1">{reward.icon}{reward.label}</span>)}</div>
-            <button type="button" onClick={onClose} className="game-control game-primary mt-4 w-full px-4 py-2 text-xs font-black">Done</button>
-          </div>
+          <>
+            <div className="promo-vault__glow" aria-hidden="true" />
+            <button type="button" onClick={onClose} className="promo-vault__close game-control" aria-label="Close rewards"><X size={18} /></button>
+            <header className="promo-vault__header">
+              <div className="promo-vault__seal" aria-hidden="true"><Gift size={28} strokeWidth={1.4} /></div>
+              <p className="promo-vault__kicker"><span /> Code redeemed <span /></p>
+              <h2 id="promo-title" className="promo-vault__title">Your rewards</h2>
+              <p className="promo-vault__campaign">{result.label}</p>
+            </header>
+            <div className="promo-vault__body game-scrollbar" tabIndex={0} aria-label="Received rewards">
+              <ul className={`promo-vault__gifts${rewards.length === 1 ? ' promo-vault__gifts--single' : ''}`}>
+                {rewards.map((reward, index) => <li key={reward.id} className={`promo-gift promo-gift--${reward.tone}`} style={{ '--gift-delay': `${Math.min(index * 85, 600)}ms` } as CSSProperties}>
+                  <div className="promo-gift__art" aria-hidden="true"><span className="promo-gift__halo" />{reward.artwork}<span className="promo-gift__pedestal" /></div>
+                  <span className="promo-gift__amount">+{groupNumber(reward.amount)}</span>
+                  <span className="promo-gift__name">{reward.label}</span>
+                </li>)}
+              </ul>
+            </div>
+            <footer className="promo-vault__footer">
+              <p role="status"><CheckCircle2 size={15} /> Rewards added to your account</p>
+              <button ref={continueRef} type="button" onClick={onClose} className="game-control game-primary promo-vault__continue">Continue adventure <span aria-hidden="true">→</span></button>
+            </footer>
+          </>
         ) : (
           <form className="mt-5" onSubmit={(event) => { event.preventDefault(); void redeem(); }}>
             <label className="block text-[10px] font-bold uppercase tracking-[.12em] text-[#a79a82]" htmlFor="promo-code">Promo code</label>
