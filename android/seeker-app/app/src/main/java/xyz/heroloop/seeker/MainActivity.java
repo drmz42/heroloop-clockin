@@ -208,7 +208,7 @@ public class MainActivity extends Activity {
         column.setPadding(side, 0, side, 0);
 
         ImageView logo = new ImageView(this);
-        logo.setImageResource(R.mipmap.ic_maskable);
+        logo.setImageResource(R.mipmap.ic_launcher);
         logo.setContentDescription("HeroLoop");
         column.addView(logo, new LinearLayout.LayoutParams(Math.round(112 * dp), Math.round(112 * dp)));
 
