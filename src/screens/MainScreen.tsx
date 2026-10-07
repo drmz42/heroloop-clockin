@@ -129,7 +129,7 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
     return ((hash >>> 0) % 1000) / 1000;
   };
   const strikeFrames = (key: string, speed: number | undefined, from: number) => {
-    const cooldown = period * (100 / Math.max(50, Math.min(200, Number(speed) || 100))) * (0.8 + seed(key, 1) * 0.45);
+    const cooldown = Math.max(2, period * (100 / Math.max(50, Math.min(200, Number(speed) || 100))) * (0.8 + seed(key, 1) * 0.45));
     const result = new Set<number>();
     for (let time = from + 0.5 + seed(key, 2) * cooldown; time <= frames; time += cooldown) result.add(Math.max(from + 1, Math.ceil(time)));
     return result;
@@ -209,7 +209,8 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
       if (received.length === 0 || (fighter.death <= frames && !received.some((hit) => hit.frame === fighter.death))) {
         // A target the staged duel never reached still shows its loss, and a falling fighter takes the last blow.
         const foe = (fighter.side === 'hero' ? enemies : heroes).find((candidate) => canAct(candidate, lastFrame)) ?? (fighter.side === 'hero' ? boss : undefined);
-        received = [...received, { frame: lastFrame, source: foe }];
+        // Move a recent strike to the killing blow instead of adding a second fast swing.
+        received = [...received.filter((hit) => hit.source !== foe || hit.frame < lastFrame - 1), { frame: lastFrame, source: foe }];
       }
       received.forEach((hit, order) => {
         const value = Math.floor(damage / received.length) + (order < damage % received.length ? 1 : 0);
@@ -327,7 +328,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const [bagPurchaseBusy, setBagPurchaseBusy] = useState(false);
   const bagSlotsKey = state.bagSlots.join(',');
   const bagQuoteReady = Number.isSafeInteger(game.serverRevisionHint);
-  const [selectedResource, setSelectedResource] = useState<'summon-scroll' | 'boss-key' | null>(null);
+  const [selectedResource, setSelectedResource] = useState<'summon-scroll' | 'boss-key' | 'chests' | null>(null);
   const [showDropRates, setShowDropRates] = useState(false);
   const dropRatesButtonRef = useRef<HTMLButtonElement>(null);
   const [dropRatesPos, setDropRatesPos] = useState<{ right: number; bottom: number; maxHeight: number } | null>(null);
@@ -495,7 +496,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     ? state.inventory.find((item) => item.uid === selectedHero.equipped[liveSelectedBase.slot]) ?? null
     : null;
   const visiblePotions = POTIONS.filter((p) => state.potions[p.tier] > 0);
-  const resourceSlotCount = 2 + visiblePotions.length;
+  const resourceSlotCount = 3 + visiblePotions.length;
+  const bossChestCount = state.chests.filter((chest) => chest.boss).length;
   const activeBag = inventoryTab === 'resources' ? 1 : inventoryTab;
   const bagStart = state.bagSlots.slice(0, activeBag - 1).reduce((sum, slots) => sum + slots, 0);
   const bagOpenSlots = state.bagSlots[activeBag - 1] ?? 0;
@@ -991,7 +993,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             </div>
           )}
           {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} autoRun={dungeonAutoRun.current} onChange={(next) => void handleDungeonChange(next)} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls })} />}
-          {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Server reward result:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Granted together exactly once by the server</small></> : <><span><SummonScrollArtwork size={18} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST PREVIEW</span><small>{dungeonCompletion.scrolls === 2 ? 'Scrolls granted exactly once by the server; Dungeon Chest is not yet granted' : 'No Scrolls granted for this run; Dungeon Chest is not yet granted'}</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
+          {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Server reward result:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Granted once · Find your chest in Inventory → Resources → Chests</small></> : <><span><SummonScrollArtwork size={18} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST PREVIEW</span><small>{dungeonCompletion.scrolls === 2 ? 'Scrolls granted exactly once by the server; Dungeon Chest is not yet granted' : 'No Scrolls granted for this run; Dungeon Chest is not yet granted'}</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
           {!activeDungeon && import.meta.env.MODE === 'staging' && <TestControls game={game} />}
           {!activeDungeon && <div className="hl-battle-footer normal-battle-footer relative z-30 flex shrink-0 flex-wrap items-end justify-between gap-3 px-3 pb-3">
             <TokenEarningsPanel status={tok.status} stale={tok.incomeStale} today={game.state.tokensEarnedToday} />
@@ -1201,10 +1203,12 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             <div className="grid min-w-0 grid-cols-8 gap-1 overflow-hidden">
             <button type="button" aria-label={`Summon Scrolls: ${formatNum(state.summonScrolls)}`} aria-pressed={selectedResource === 'summon-scroll'} onClick={() => setSelectedResource((current) => current === 'summon-scroll' ? null : 'summon-scroll')} className={`item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-violet-400/55 ${selectedResource === 'summon-scroll' ? 'ring-2 ring-violet-300 ring-offset-1 ring-offset-black' : ''}`} title={`Summon Scrolls: ${formatNum(state.summonScrolls)}`}><span className="resource-slot-art" aria-hidden="true"><SummonScrollArtwork size={48} /></span><span className="ui-text-small absolute bottom-0 right-0 z-10 min-w-3 rounded-tl bg-violet-400 px-px text-center font-bold leading-3 text-black">{formatNum(state.summonScrolls)}</span></button>
             <button type="button" aria-label={`Boss Keys: ${formatNum(state.bossKeys)}`} aria-pressed={selectedResource === 'boss-key'} onClick={() => setSelectedResource((current) => current === 'boss-key' ? null : 'boss-key')} className={`item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-amber-400/55 ${selectedResource === 'boss-key' ? 'ring-2 ring-amber-300 ring-offset-1 ring-offset-black' : ''}`} title={`Boss Keys: ${formatNum(state.bossKeys)}`}><span className="resource-slot-art" aria-hidden="true"><BossKeyIcon size={48} /></span><span className="ui-text-small absolute bottom-0 right-0 z-10 min-w-3 rounded-tl bg-amber-400 px-px text-center font-bold leading-3 text-black">{formatNum(state.bossKeys)}</span></button>
+            <button type="button" aria-label={`Chests: ${state.chests.length}, Boss Chests: ${bossChestCount}`} aria-pressed={selectedResource === 'chests'} onClick={() => setSelectedResource((current) => current === 'chests' ? null : 'chests')} className={`item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-amber-400/55 ${selectedResource === 'chests' ? 'ring-2 ring-amber-300 ring-offset-1 ring-offset-black' : ''}`} title={`Chests: ${state.chests.length} · Boss: ${bossChestCount}`}><span className="resource-slot-art" aria-hidden="true"><ChestCollectIcon size={48} /></span><span className="ui-text-small absolute bottom-0 right-0 z-10 min-w-3 rounded-tl bg-amber-400 px-px text-center font-bold leading-3 text-black">{formatNum(state.chests.length)}</span></button>
             {visiblePotions.map((potion) => <button type="button" key={potion.tier} className="item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-emerald-500/50" title={`${potion.name}: ${state.potions[potion.tier]}`}><ItemArtwork itemId={`potion-${potion.tier}`} name={potion.name} fallback="Potion" /><span className="ui-text-small absolute bottom-0 right-0 z-10 min-w-3 rounded-tl bg-emerald-500 px-px text-center font-bold leading-3 text-black">{state.potions[potion.tier]}</span></button>)}
             {Array.from({ length: GRID_SIZE - resourceSlotCount }, (_, index) => <div key={`resource-empty-${index}`} className="item-slot aspect-square min-w-0 w-full border" style={{ borderColor: 'rgba(128,119,100,0.11)', background: 'linear-gradient(145deg,#151612,#0c0e0d)' }} />)}
             </div>
-            {selectedResource && <div className={`mt-2 rounded-lg border p-2 ${selectedResource === 'summon-scroll' ? 'border-violet-400/45 bg-violet-950/20' : 'border-amber-400/45 bg-amber-950/20'}`}><div className="flex items-center gap-2">{selectedResource === 'summon-scroll' ? <SummonScrollArtwork size={40} /> : <BossKeyIcon size={40} />}<div className="min-w-0"><strong className="ui-text-large block text-[#efe4ce]">{selectedResource === 'summon-scroll' ? 'Summon Scroll' : 'Boss Key'}</strong><span className="ui-text-small text-[#9b9283]">Owned: {formatNum(selectedResource === 'summon-scroll' ? state.summonScrolls : state.bossKeys)}</span></div></div><p className="ui-text-medium mt-1.5 leading-snug text-[#c9c0b1]">{selectedResource === 'summon-scroll' ? 'Persistent consumable for one future Free Summon. Scroll spending is not available until server-authoritative Free Summon launches.' : 'Non-deletable resource used only to summon a Boss. One summon consumes one key; a Boss Chest is awarded only after victory.'}</p></div>}
+            {selectedResource && selectedResource !== 'chests' && <div className={`mt-2 rounded-lg border p-2 ${selectedResource === 'summon-scroll' ? 'border-violet-400/45 bg-violet-950/20' : 'border-amber-400/45 bg-amber-950/20'}`}><div className="flex items-center gap-2">{selectedResource === 'summon-scroll' ? <SummonScrollArtwork size={40} /> : <BossKeyIcon size={40} />}<div className="min-w-0"><strong className="ui-text-large block text-[#efe4ce]">{selectedResource === 'summon-scroll' ? 'Summon Scroll' : 'Boss Key'}</strong><span className="ui-text-small text-[#9b9283]">Owned: {formatNum(selectedResource === 'summon-scroll' ? state.summonScrolls : state.bossKeys)}</span></div></div><p className="ui-text-medium mt-1.5 leading-snug text-[#c9c0b1]">{selectedResource === 'summon-scroll' ? 'Persistent consumable for one future Free Summon. Scroll spending is not available until server-authoritative Free Summon launches.' : 'Non-deletable resource used only to summon a Boss. One summon consumes one key; a Boss Chest is awarded only after victory.'}</p></div>}
+            {selectedResource === 'chests' && <div className="mt-2 rounded-lg border border-amber-400/45 bg-amber-950/20 p-2"><strong className="ui-text-large block text-[#efe4ce]">Chests</strong><p className="ui-text-medium mt-1.5 text-[#c9c0b1]">Owned: {state.chests.length} · Boss Chests: {bossChestCount}. Boss Hunt rewards enter this chest queue after Claim Boss Rewards.</p><button type="button" disabled={state.chests.length === 0 || game.chestOpening} onClick={() => { if (bagItemCount(state) >= inventoryCapacity(state)) { setShowInventoryFull(true); return; } void game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem); }} className="game-control game-primary mt-2 px-3 py-2 ui-text-medium font-bold disabled:opacity-55">{game.chestOpening ? 'OPENING…' : 'OPEN CHESTS'}</button></div>}
           </div> : <div className={`hl-equipment-grid grid min-w-0 grid-cols-8 gap-px overflow-hidden ${inventoryLockMode ? 'inventory-lock-cursor' : ''}`}>
             {cells.slice(0, bagOpenSlots).map((item, i) => {
               const itemBase = item ? ITEM_MAP[item.itemId] : null;
@@ -1351,10 +1355,24 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
     const bossFight = startState.kind === 'shared_boss';
     // Boss frames stay at 36: the cast bars read playback ticks 3-6 and 9-15 (Heavy Strike lands on 15).
     const totalFrames = bossFight ? 36 : 24;
-    const authoritativeDuration = Math.max(totalFrames * 220, Number(finalState.elapsed_ms ?? totalFrames * 450));
+    const authoritativeDuration = Math.max(totalFrames * 450, Number(finalState.elapsed_ms ?? totalFrames * 450));
     const frameDuration = authoritativeDuration / totalFrames;
     const playback = planDungeonPlayback(resolved.room, startState, finalState, totalFrames);
     let pulseId = Date.now() * 32;
+    // Keep each number for the same 1.5 seconds as ordinary combat, across playback frames.
+    let shown: FloatingNumber[] = [];
+    const publishPulses = () => {
+      const now = performance.now();
+      shown = shown.filter((pulse) => now - pulse.born < 1500);
+      onCombatPulse([...shown]);
+    };
+    const waitForFeedback = async (duration: number) => {
+      const deadline = performance.now() + duration;
+      while (performance.now() < deadline) {
+        await new Promise<void>((resolve) => setTimeout(resolve, Math.min(100, deadline - performance.now())));
+        publishPulses();
+      }
+    };
     for (let frame = 1; frame <= totalFrames; frame += 1) {
       const { heroes: nextHeroes, enemies: nextEnemies, pulses } = playback[frame - 1];
       const frameStarted = performance.now();
@@ -1369,15 +1387,15 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
         },
       });
       // Hits that share a frame land one after another inside it rather than as one simultaneous volley.
-      const shown: FloatingNumber[] = [];
       for (let order = 0; order < pulses.length; order += 1) {
-        if (order > 0) await new Promise<void>((resolve) => setTimeout(resolve, (frameDuration * 0.7) / pulses.length));
+        if (order > 0) await waitForFeedback((frameDuration * 0.7) / pulses.length);
         shown.push({ ...pulses[order], id: pulseId++, born: performance.now() });
-        onCombatPulse([...shown]);
+        publishPulses();
       }
       const rest = frameDuration - (performance.now() - frameStarted);
-      if (frame < totalFrames && rest > 0) await new Promise<void>((resolve) => setTimeout(resolve, rest));
+      if (frame < totalFrames && rest > 0) await waitForFeedback(rest);
     }
+    await waitForFeedback(1500);
     onCombatPulse([]);
     if (result.status && result.status !== 'active') {
       onComplete(result.status === 'completed');
