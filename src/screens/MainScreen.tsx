@@ -3,12 +3,12 @@ import { SkrUsd } from '@/components/SkrUsd';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
 import { editionStorageKey, isolatedHackathon } from '../game/editionStorage';
 import { goldHealingEnabled } from '../../managed/functions/player-sync/automatic-healing.mjs';
-import { tutorialProgress } from '@/game/tutorialProgress';
+import { currentTutorialObjective, readyQuestCount, tutorialProgress } from '@/game/tutorialProgress';
 import { Fragment, useCallback, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { isAndroidLayout } from '@/platform/platform';
 import { COMMANDER_OPEN_EVENT, BATTLE_ACTIONS_SLOT, OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
-import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, DoorOpen, Menu, HeartPulse, Gem, Skull, BookOpen } from 'lucide-react';
+import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, DoorOpen, Menu, HeartPulse, Gem, Skull, BookOpen, ArrowRight } from 'lucide-react';
 import { Arena, locationArtStyle } from '@/components/Arena';
 import { CombatErrorBoundary } from '@/components/CombatErrorBoundary';
 import { HeroPortrait } from '@/components/HeroPortrait';
@@ -298,7 +298,7 @@ function emptySlotArtworkId(slot: ItemSlot, heroClass: HeroClass): string {
   return `${slot}-common`;
 }
 
-export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRewardBoostClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void; onRewardBoostClick: () => void; onQuestsClick?: () => void }) {
+export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRewardBoostClick, onQuestsClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void; onRewardBoostClick: () => void; onQuestsClick?: () => void }) {
   const { state, battleResult, respawnCountdowns, paused, setPaused } = game;
   const tok = tokenomics;
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
@@ -953,6 +953,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             {!isAndroidLayout && battleSettingsControl}
           </div>
           {isolatedHackathon && !activeDungeon && <AutomaticHealingStatus game={game} />}
+          {isolatedHackathon && !activeDungeon && <NextStepCard game={game} nextLocation={nextLocationAvailable ? nextLocation : null} onQuestsClick={onQuestsClick} />}
           {isAndroidLayout && <div ref={battleMenuRef} className="hl-battle-menu pointer-events-none absolute bottom-2 right-2 top-2 z-[112] flex flex-col items-end gap-1">
             <button type="button" onClick={() => setBattleMenuOpen((open) => !open)} className="hl-battle-menu-toggle game-control pointer-events-auto grid h-11 w-11 shrink-0 place-items-center p-0" aria-label="Battle menu" aria-haspopup="dialog" aria-expanded={battleMenuOpen}>{battleMenuOpen ? <X size={20} /> : <Menu size={20} />}</button>
             {battleMenuOpen && <div role="dialog" aria-label="Battle menu" className="hl-battle-menu-panel pointer-events-auto min-h-0 w-64 max-w-[calc(100vw-24px)] overflow-y-auto overscroll-contain rounded-lg border border-[#80683f] bg-[#11130f]/97 p-2 shadow-2xl">
@@ -1038,10 +1039,11 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           >
             <span className={`section-kicker ${nextLocationAvailable ? 'location-disclosure-ready' : ''}`}>
               Locations <span className="ui-text-small">· {String(state.currentLocation).padStart(2, '0')}</span>
-              {nextLocationAvailable && <span className="block ui-text-small">Next location available</span>}
             </span>
             <ChevronDown size={20} className={locationsExpanded ? 'rotate-180 shrink-0' : 'shrink-0'} aria-hidden="true" />
-          </button></div> : <div className="mb-1.5 flex items-center justify-between">
+          </button>
+          {nextLocationAvailable && <button type="button" onClick={() => game.setLocation(nextLocation)} className="location-next game-control game-primary flex min-h-11 shrink-0 items-center gap-1.5 px-3 ui-text-small font-black uppercase" aria-label={`Go to location ${nextLocation}`}>Go to {String(nextLocation).padStart(2, '0')}<ArrowRight size={16} aria-hidden="true" /></button>}
+          </div> : <div className="mb-1.5 flex items-center justify-between">
             <span className="section-kicker">Locations</span>
             <span className="ui-text-small font-semibold uppercase tracking-[.12em] text-[#77746d]">Progression path</span>
           </div>}
@@ -1822,11 +1824,35 @@ function TokenEarningsPanel({ status, stale, today }: { status: TokenomicsStatus
   return (
     <div className="battle-income-wrap relative min-w-0" onKeyDown={event => { if (event.key === 'Escape') setOpen(false); }}>
       {isolatedHackathon && <button ref={incomeButton} type="button" className="battle-income-chip game-control flex items-center justify-between gap-2 px-2 font-vt font-black tabular-nums" onClick={() => setOpen(value => !value)} aria-expanded={open} aria-controls="battle-income-details" aria-label="$SKR income details">
-        <HeroTokenIcon size={18} /><span>{fmt(daily)} $SKR / day</span><ChevronDown size={15} aria-hidden="true" className={open ? '' : 'rotate-180'} />
+        <HeroTokenIcon size={18} /><span>{daily > 0 ? `${fmt(daily)} $SKR / day` : '$SKR income · soon'}</span><ChevronDown size={15} aria-hidden="true" className={open ? '' : 'rotate-180'} />
       </button>}
       {isolatedHackathon && open ? createPortal(incomeDetails, document.body) : incomeDetails}
     </div>
   );
+}
+
+// One plain-language prompt over the battle so a new player always knows what to do next.
+// Presentation only: claiming still happens in the quest list, which the server validates.
+function NextStepCard({ game, nextLocation, onQuestsClick }: { game: GameApi; nextLocation: number | null; onQuestsClick?: () => void }) {
+  const { state } = game;
+  const objective = currentTutorialObjective(state);
+  const ready = readyQuestCount(state);
+  const step = objective
+    ? { kicker: `Next step · ${Math.max(1, Math.min(10, state.tutorial.questOrdinal))}/10`, label: objective.ready ? 'Done! Claim your reward' : objective.label, progress: objective.ready ? null : objective, cta: objective.ready ? 'Claim' : null, onClick: onQuestsClick }
+    : ready > 0
+      ? { kicker: 'Next step', label: `${ready} reward${ready === 1 ? '' : 's'} ready`, progress: null, cta: 'Claim', onClick: onQuestsClick }
+      : nextLocation
+        ? { kicker: 'Next step', label: `New location open: ${buildLocation(nextLocation, state.team.length).name}`, progress: null, cta: 'Go', onClick: () => game.setLocation(nextLocation) }
+        : null;
+  if (!step) return null;
+  return <button type="button" onClick={step.onClick} className={`hl-next-step game-control absolute top-2 z-30 flex min-h-11 items-center gap-2 px-2.5 py-1.5 text-left ${step.cta ? 'is-ready' : ''}`} aria-label={`${step.kicker}: ${step.label}`}>
+    <span className="min-w-0 flex-1">
+      <span className="block ui-text-small font-black uppercase tracking-[.12em] text-[#c9a463]">{step.kicker}</span>
+      <span className="block truncate ui-text-medium font-bold leading-tight text-[#efe4cf]">{step.label}</span>
+      {step.progress && <span className="mt-1 flex items-center gap-1.5"><span className="health-track h-1 flex-1 overflow-hidden"><span className="block h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, step.progress.progress / step.progress.target * 100)}%` }} /></span><span className="ui-text-small tabular-nums text-px-dim">{step.progress.progress}/{step.progress.target}</span></span>}
+    </span>
+    {step.cta ? <span className="hl-next-step-cta flex shrink-0 items-center gap-1 rounded px-2 py-1 ui-text-small font-black uppercase">{step.cta}<ArrowRight size={14} aria-hidden="true" /></span> : <ChevronRight size={16} className="shrink-0 text-[#9b8c70]" aria-hidden="true" />}
+  </button>;
 }
 
 function AvatarPicker({ game, onClose }: { game: GameApi; onClose: () => void }) {
