@@ -52,6 +52,20 @@
 .game-select-option.is-selected svg { flex: none; color: #f2cc80; }
 .game-select-option[aria-disabled='true'] { cursor: default; color: #6f675b; }
 
+.game-select-option-badge {
+  flex: none;
+  margin-left: auto;
+  padding: 2px 6px;
+  border: 1px solid rgba(199, 158, 97, .3);
+  border-radius: 4px;
+  background: rgba(199, 158, 97, .08);
+  color: #b9a27c;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 14px;
+  text-transform: uppercase;
+}
+
 @keyframes game-select-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   .game-select-list { animation: none; }

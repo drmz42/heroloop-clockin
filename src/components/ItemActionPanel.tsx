@@ -13,6 +13,8 @@ import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import type { GameApi } from '@/game/useGame';
 import type { ItemStatKey, OwnedItem, ItemSlot } from '@/game/types';
 import { enchantBonusPercent, enchantGuaranteedUsd, MAX_ENCHANT_LEVEL } from '@/game/enchant';
+import { ActionFx } from '@/theme/motion/ActionFx';
+import { flyCoins } from '@/theme/motion/flyCoins';
 
 interface Props {
   item: OwnedItem;
@@ -62,6 +64,8 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
         <div className={`item-slot rarity-${base.rarity} relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden border text-xl`} style={{ borderColor: `${rc}99` }}>
           <ItemArtwork itemId={base.id} name={base.name} fallback={base.icon} className="leading-none" />
           <RarityFx rarity={base.rarity} shape="slot" />
+          <ActionFx watch={Boolean(item.locked)} scope={item.uid} variant={item.locked ? 'lock' : 'unlock'} />
+          <ActionFx watch={item.enchantLevel} scope={item.uid} variant="enchant" downVariant="unequip" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-bold ui-text-medium" style={{ color: rc }}>{base.name} {item.enchantLevel > 0 && <span className="text-amber-400">+{item.enchantLevel}</span>}</div>
@@ -103,7 +107,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
               <p className="ui-text-small font-bold text-[#ead9bf]">Sell for {formatNum(refund)} Gold?</p>
               <div className="mt-1.5 grid grid-cols-2 gap-1">
                 <button type="button" onClick={() => setShowSellConfirm(false)} className="game-control py-1 ui-text-small font-bold">Cancel</button>
-                <button type="button" onClick={async () => { if (!onBeforeSell || await onBeforeSell(item)) { game.sellItem(item.uid); onClose(); } }} className="item-act-confirm item-act--danger rounded border border-rose-500/45 bg-rose-500/15 py-1 ui-text-small font-black text-rose-200">Sell</button>
+                <button type="button" onClick={async (event) => { const coinAnchor = document.querySelector(`[data-inventory-item-uid="${item.uid}"], [data-equipped-item-uid="${item.uid}"]`) ?? event.currentTarget.closest('.item-act-grid'); if (!onBeforeSell || await onBeforeSell(item)) { flyCoins(coinAnchor); game.sellItem(item.uid); onClose(); } }} className="item-act-confirm item-act--danger rounded border border-rose-500/45 bg-rose-500/15 py-1 ui-text-small font-black text-rose-200">Sell</button>
               </div>
             </div>}
           </div>
