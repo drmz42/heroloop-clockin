@@ -16,6 +16,7 @@ import { COMBAT_EFFECTS_V2_PREVIEW, COMBAT_EFFECTS_V2_PRODUCTION_ACTIVE } from '
 import type { HeroBase, OwnedHero, Rarity } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
 import { isAndroidLayout } from '@/platform/platform';
+import { formatUtcTime } from '@/game/numberFormat';
 
 const FILTER_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
 const INACTIVE_COMBAT_LABEL = 'Coming soon — not active in combat';
@@ -392,7 +393,7 @@ export function HeroesScreen({ game }: { game: GameApi }) {
               <StatBox label="Catalogue price" value={`$${(capacityQuote.usdCents / 100).toFixed(2)}`} />
               <StatBox label="Current DEX quote" value={`${formatNum(capacityQuote.tokenCost)} $HERO`} />
             </div>
-            <p className="mt-3 text-sm leading-relaxed text-[#aaa397]">The USD price is fixed for this tier. The $HERO amount was calculated by the server from <b className="text-[#e6d5b4]">{capacityQuote.dexSource}</b> and is locked only until {new Date(capacityQuote.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.</p>
+            <p className="mt-3 text-sm leading-relaxed text-[#aaa397]">The USD price is fixed for this tier. The $HERO amount was calculated by the server from <b className="text-[#e6d5b4]">{capacityQuote.dexSource}</b> and is locked only until {formatUtcTime(capacityQuote.expiresAt)}.</p>
             {capacityQuote.tokenCost > state.hero && <p role="alert" className="mt-2 rounded border border-red-500/45 bg-red-950/35 p-2 text-xs text-red-200">Not enough $HERO · need {formatNum(capacityQuote.tokenCost - state.hero)} more</p>}
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button type="button" onClick={() => setCapacityQuote(null)} disabled={capacityBusy} className="game-control min-h-11 text-sm font-black">Cancel</button>

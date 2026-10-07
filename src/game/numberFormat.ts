@@ -29,3 +29,10 @@ export function compactNumber(value: number, maxDigits = 3, significant = 4): st
   const text = decimals ? `${Math.floor(kept / 10 ** decimals)}.${String(kept % 10 ** decimals).padStart(decimals, '0')}`.replace(/\.?0+$/, '') : String(kept);
   return `${sign}${text}${SUFFIXES[tier]}`;
 }
+
+/** Founder 2026-10-07: quote expiry times read in UTC, never the device or server zone ("14:05:30 UTC"). */
+export function formatUtcTime(value: string | number | Date): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return `${date.toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })} UTC`;
+}
