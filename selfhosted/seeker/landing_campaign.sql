@@ -28,6 +28,11 @@ CREATE TABLE IF NOT EXISTS seeker_skr.campaign_orders (
  submitted_signature text, checked_at timestamptz,
  signature text UNIQUE, paid_at timestamptz, CHECK((signature IS NULL)=(paid_at IS NULL))
 );
+-- Preserve historical prices and recipient snapshots; new Starter intents cost 100,000 lamports.
+ALTER TABLE seeker_skr.campaign_orders DROP CONSTRAINT IF EXISTS campaign_orders_amount_minor_check;
+ALTER TABLE seeker_skr.campaign_orders ADD CONSTRAINT campaign_orders_amount_minor_check
+ CHECK(amount_minor IN (100000,50000000,100000000,250000000,500000000,1000000000));
+ALTER TABLE seeker_skr.campaign_orders ALTER COLUMN catalog_version SET DEFAULT 'sol-landing-v2-test';
 CREATE TABLE IF NOT EXISTS seeker_skr.campaign_points (
  buyer text PRIMARY KEY REFERENCES seeker_skr.campaign_accounts(wallet),
  inviter text NOT NULL REFERENCES seeker_skr.campaign_accounts(wallet),
@@ -102,7 +107,7 @@ BEGIN
  IF w IS NULL THEN RAISE EXCEPTION 'campaign_sign_in_required'; END IF;
  IF p_action='logout' THEN DELETE FROM seeker_skr.campaign_sessions WHERE token_hash=p->>'token_hash'; RETURN '{}'::jsonb; END IF;
  IF p_action='intent' THEN
-  amount:=CASE p->>'pack' WHEN 'starter' THEN 50000000 WHEN 'scout' THEN 100000000 WHEN 'veteran' THEN 250000000 WHEN 'elite' THEN 500000000 WHEN 'founder' THEN 1000000000 END;
+  amount:=CASE p->>'pack' WHEN 'starter' THEN 100000 WHEN 'scout' THEN 100000000 WHEN 'veteran' THEN 250000000 WHEN 'elite' THEN 500000000 WHEN 'founder' THEN 1000000000 END;
   IF amount IS NULL THEN RAISE EXCEPTION 'campaign_invalid_pack'; END IF;
   IF (SELECT count(*) FROM seeker_skr.campaign_orders WHERE wallet=w AND paid_at IS NULL AND expires_at>clock_timestamp())>=3 THEN RAISE EXCEPTION 'campaign_order_limit'; END IF;
   INSERT INTO seeker_skr.campaign_orders(wallet,pack,amount_minor,reference,treasury,expires_at)
@@ -122,7 +127,7 @@ BEGIN
   ELSE
    UPDATE seeker_skr.campaign_orders SET signature=p->>'signature',paid_at=clock_timestamp() WHERE id=o.id;
    INSERT INTO seeker_skr.campaign_chain_receipts VALUES(p->>'signature','campaign',o.id);
-   INSERT INTO seeker_skr.campaign_entitlements(wallet,source,source_id,pack) VALUES(w,'purchase',o.id::text,o.pack);
+   INSERT INTO seeker_skr.campaign_entitlements(wallet,source,source_id,pack,catalog_version) VALUES(w,'purchase',o.id::text,o.pack,o.catalog_version);
    SELECT inviter INTO inv FROM seeker_skr.campaign_accounts WHERE wallet=w;
    IF inv IS NOT NULL THEN
     -- Lock the inviter before counting to serialize different buyers at a threshold.

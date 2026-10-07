@@ -8,7 +8,7 @@ BEGIN
   INSERT INTO seeker_skr.campaign_accounts(wallet,inviter) VALUES(w,root);
   INSERT INTO seeker_skr.campaign_sessions VALUES('buyer'||i,w,now()+interval '1 day');
   o:=seeker_skr.campaign('intent',jsonb_build_object('token_hash','buyer'||i,'pack','starter','reference',repeat(chr(75+i),32),'treasury',repeat('T',32)));
-  IF o->>'amount_minor'<>'50000000' THEN RAISE EXCEPTION 'bad_price'; END IF;
+  IF o->>'amount_minor'<>'100000' THEN RAISE EXCEPTION 'bad_price'; END IF;
   sig:=repeat(chr(65+i),64);
   PERFORM seeker_skr.campaign('settle',jsonb_build_object('token_hash','buyer'||i,'id',o->>'id','signature',sig));
   PERFORM seeker_skr.campaign('settle',jsonb_build_object('token_hash','buyer'||i,'id',o->>'id','signature',sig));
