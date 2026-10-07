@@ -5,6 +5,7 @@ import { formatNum } from '@/game/state';
 import type { GameApi } from '@/game/useGame';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
 import '@/theme/scene/scene.css';
+import './referrals.css';
 
 export function ReferralsScreen({ game }: { game: GameApi }) {
   const { state } = game;
@@ -20,14 +21,21 @@ export function ReferralsScreen({ game }: { game: GameApi }) {
   const invitees = ref.invitedUsers;
 
   const still = state.battleAnimationMode === 'off';
+  const ambient = state.battleAnimationMode === 'spectacular';
 
   return (
-    <div className={`sc-root rf-root${still ? ' sc-still' : ''}`}>
+    <div className={`sc-root rf-root${still ? ' sc-still' : ''}${ambient ? ' rf-ambient' : ''}`}>
       <section className="sc-stage rf-guild" aria-label="Guild Hall">
         <div className="sc-stage-art" aria-hidden="true" />
-        <div className="sc-glow" aria-hidden="true" />
-        {!still && <div className="sc-embers" aria-hidden="true">{[0, 1, 2, 3, 4, 5, 6].map((i) => <i key={i} style={{ '--i': i } as CSSProperties} />)}</div>}
+        <div className="rf-companions" aria-hidden="true">
+          <img className="rf-companion rf-companion-archer" src="/assets/heroes/v4/archer-legendary.png" alt="" />
+          <img className="rf-companion rf-companion-knight" src="/assets/heroes/v4/knight-legendary.png" alt="" />
+          <img className="rf-companion rf-companion-druid" src="/assets/heroes/v4/druid-legendary.png" alt="" />
+        </div>
+        <div className="rf-hearthlight" aria-hidden="true" />
+        {ambient && <div className="sc-embers" aria-hidden="true">{[0, 1, 2, 3, 4, 5, 6].map((i) => <i key={i} style={{ '--i': i } as CSSProperties} />)}</div>}
         <header className="sc-head"><span className="sc-kicker">The Guild Hall</span><h2 className="sc-title">Referrals</h2><p className="sc-lede">{isolatedHackathon ? 'Invite friends. SKR referral rewards are not available yet.' : 'Invite heroes · earn 3 tiers deep on eligible $HERO earnings.'}</p></header>
+        <p className="rf-vow">Every adventure begins with an ally.</p>
         <div className="rf-tiers">
           <StatBox label="Tier 1 · 8%" value={String(invitees.length)} icon={<Users size={14} />} />
           <StatBox label="Tier 2 · 3%" value="0" icon={<Users size={14} />} />
@@ -72,9 +80,9 @@ function ReferralField({ label, value, copied, onCopy, code = false }: { label: 
       <span className="rf-label">{label}</span>
       <div className="rf-field-row">
         <span className={`rf-value${code ? ' is-code' : ''}`}><span>{value}</span></span>
-        <button type="button" onClick={onCopy} aria-label={`Copy ${label.toLowerCase()}`} className="sc-plate rf-copy">
+        <button type="button" onClick={onCopy} aria-label={`Copy ${label.toLowerCase()}`} className={`sc-plate rf-copy${copied ? ' is-copied' : ''}`}>
           {copied ? <Check size={14} /> : <Copy size={14} />}
-          <span>{copied ? 'Copied' : 'Copy'}</span>
+          <span aria-live="polite">{copied ? 'Copied' : 'Copy'}</span>
         </button>
       </div>
     </div>

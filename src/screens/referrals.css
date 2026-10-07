@@ -1,0 +1,52 @@
+/* Seeker guild chamber: existing hero art, local motion and crafted ledger surfaces. */
+.rf-root { background: #090807; }
+.rf-root .rf-guild { min-height: 354px; padding: 18px 14px 16px; }
+.rf-guild .sc-stage-art { animation: none; opacity: .7; }
+.rf-guild::after { background: linear-gradient(180deg, #090807b8, transparent 37%, #09080740 62%, #090807 100%); }
+.rf-guild .sc-head { max-width: 380px; padding: 0 24px; }
+.rf-guild .sc-lede { color: #dacdb6; }
+.rf-companions { position: absolute; inset: 72px 0 52px; z-index: -2; pointer-events: none; }
+.rf-companion { position: absolute; bottom: 0; height: 100%; width: 40%; object-fit: contain; object-position: bottom; filter: saturate(.65) brightness(.85); mask-image: linear-gradient(180deg, transparent, #000 12%, #000 70%, transparent 100%); transform-origin: 50% 90%; animation: rf-breathe 7s ease-in-out infinite alternate; }
+.rf-companion-archer { left: 5%; height: 92%; animation-delay: -3s; }
+.rf-companion-knight { left: 30%; height: 110%; filter: saturate(.75) brightness(.96); animation-duration: 8s; }
+.rf-companion-druid { right: 5%; height: 92%; animation-delay: -5s; }
+.rf-hearthlight { position: absolute; inset: 35% 0 0; z-index: -2; background: linear-gradient(110deg, #ce873116, transparent 40%, #b88a3320); pointer-events: none; }
+.rf-ambient .rf-hearthlight { animation: rf-firelight 6s ease-in-out infinite alternate; }
+.rf-vow { position: relative; z-index: 1; margin: auto 0 0; padding-top: 120px; color: #e2d3b8; text-shadow: 0 2px 5px #000; font: italic 14px/1.3 'EB Garamond', Georgia, serif; }
+.rf-root .rf-tiers { max-width: 460px; gap: 8px; padding-top: 12px; margin-top: 0; }
+.rf-root .rf-tier { position: relative; gap: 6px; border: 1px solid #8b6a3b; padding: 10px 5px 9px; background: linear-gradient(135deg, #30271bfa, #12100efa 55%, #201a12fa); box-shadow: inset 0 0 0 3px #0b0907, inset 0 0 0 4px #b8904828, 0 4px 12px #0008; animation: rf-arrive .55s ease both; }
+.rf-root .rf-tier:nth-child(2) { animation-delay: .08s; }
+.rf-root .rf-tier:nth-child(3) { animation-delay: .16s; }
+.rf-root .rf-tier-medal { display: flex; width: auto; height: auto; gap: 8px; border-radius: 0; background: none; box-shadow: none; }
+.rf-root .rf-tier-medal b { font-size: 24px; font-variant-numeric: tabular-nums; }
+.rf-root .rf-tier-label { font-size: 9px; letter-spacing: .06em; }
+.rf-root .sc-body { gap: 12px; padding: 0 12px 24px; }
+.rf-root .sc-panel { position: relative; border-color: #88673e80; border-radius: 2px; padding: 14px; box-shadow: inset 0 0 0 3px #070605, inset 0 0 0 4px #c79e6114, 0 6px 16px #0005; animation: rf-arrive .5s ease both; }
+.rf-root .sc-panel:nth-child(2) { animation-delay: .07s; }
+.rf-root .sc-panel:nth-child(3) { animation-delay: .14s; }
+.rf-root .sc-panel:nth-child(4) { animation-delay: .21s; }
+.rf-root .sc-section-head { min-height: 20px; flex-wrap: wrap; }
+.rf-root .rf-label { color: #bdb09a; font-size: 10px; }
+.rf-root .rf-ledger dt, .rf-root .rf-empty { color: #c5b79f; }
+.rf-root .rf-ledger div { padding-block: 9px; }
+.rf-root .rf-copy { transition: transform .16s ease, filter .16s ease; }
+.rf-root .rf-copy:active { transform: translateY(1px); }
+.rf-root .rf-copy.is-copied { color: #d8e4b9; }
+.rf-root .rf-copy.is-copied svg { animation: rf-arrive .2s ease both; }
+.rf-root .rf-claim-btn { transition: transform .16s ease, filter .16s ease; }
+.rf-root .rf-claim-btn:not(:disabled):active { transform: translateY(1px); }
+.rf-root .rf-list li { animation: rf-arrive .35s ease both; }
+@keyframes rf-breathe { from { transform: translateY(0) rotate(-.35deg); } to { transform: translateY(-3px) rotate(.35deg); } }
+@keyframes rf-firelight { from { opacity: .35; } to { opacity: .85; } }
+@keyframes rf-arrive { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@media (min-width: 640px) {
+  .rf-root .rf-guild { min-height: 380px; }
+  .rf-companions { inset: 64px 12% 50px; }
+  .rf-root .sc-body { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
+  .rf-invite, .rf-root .sc-panel:last-child { grid-column: 1 / -1; }
+  .rf-root .rf-claim { align-self: stretch; }
+}
+.rf-root.sc-still *, .rf-root.sc-still *::before, .rf-root.sc-still *::after { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .rf-root *, .rf-root *::before, .rf-root *::after { animation: none !important; transition: none !important; }
+}
