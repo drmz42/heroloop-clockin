@@ -112,5 +112,5 @@ export function SkrBalance({ compact = false }: { compact?: boolean }) {
   const snapshot = useWalletSnapshot();
   if (!snapshot) return <>—</>;
   const whole = BigInt(snapshot.balances.SKR) / 10n ** BigInt(ASSET_DECIMALS.SKR);
-  return <>{compact && whole >= 1_000n ? compactNumber(Number(whole), 3, 3) : formatAmountShort(snapshot.balances.SKR, 'SKR', 'down')}</>;
+  return <>{compact && whole >= 10_000n ? compactNumber(Number(whole), 3, 3) : formatAmountShort(snapshot.balances.SKR, 'SKR', 'down')}</>;
 }
