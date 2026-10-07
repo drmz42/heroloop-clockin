@@ -17,6 +17,7 @@
     "check:enchant-v4-sql": "bash scripts/check-enchant-v4-sql.sh",
     "check:account-bonus-sql": "bash scripts/check-account-bonus-sql.sh",
     "check:shop-bundles-sql": "bash scripts/check-shop-bundles-sql.sh",
+    "check:seeker-house-market-sql": "bash scripts/check-seeker-house-market-sql.sh",
     "check:balance-dashboard": "node scripts/check-balance-dashboard-contract.mjs",
     "check:founder-packs": "node scripts/check-founder-pack-contract.mjs",
     "check:shop-platform": "node scripts/check-shop-platform-contract.mjs",

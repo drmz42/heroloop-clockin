@@ -97,6 +97,10 @@ BEGIN
   v_legs:=jsonb_build_array(jsonb_build_object('account_id',v_escrow,'delta_minor',(-p.amount_minor)::text));
   IF NOT p_success THEN
     v_target:=seeker_skr.wallet_account(p_player,'SKR');
+  ELSIF p.context->>'action'='market_buy_listing' AND p.context->>'house_seller'='true' THEN
+    -- Game-owned house merchants (the game marks the context): the whole payment is treasury revenue.
+    IF (p.context->>'seller_id')::uuid=p_player THEN RAISE EXCEPTION 'market_self_purchase'; END IF;
+    v_target:=seeker_skr.system_account('fees','SKR');
   ELSIF p.context->>'action'='market_buy_listing' THEN
     IF (p.context->>'seller_id')::uuid=p_player THEN RAISE EXCEPTION 'market_self_purchase'; END IF;
     v_target:=seeker_skr.wallet_account((p.context->>'seller_id')::uuid,'SKR');

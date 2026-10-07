@@ -387,6 +387,7 @@ button.sc-chip { cursor: pointer; }
 .mv-root .market-rows.mv-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-content: start; padding: 0; }
 @media (min-width: 560px) { .mv-root .market-rows.mv-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .mv-grid > .mv-empty { grid-column: 1 / -1; }
+.mv-grid > .mv-more { grid-column: 1 / -1; justify-self: center; min-height: 44px; padding: 0 22px; margin-top: 4px; font-weight: 800; letter-spacing: .06em; }
 /* Phone: a selected item replaces the grid (same contract as the v1 Market). */
 @media (max-width: 1023px) { .mv-root[data-detail='true'] :is(.market-rows, .market-filter-panel, .mv-fee) { display: none; } }
 .mv-card {

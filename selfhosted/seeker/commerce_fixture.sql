@@ -44,9 +44,17 @@ BEGIN
  PERFORM seeker_skr.purchase_finish(p,k2,true);
  IF seeker_skr.wallet_snapshot(p)#>>'{balances,SKR}'<>'499999' THEN RAISE EXCEPTION 'atomic buyer debit'; END IF;
  IF seeker_skr.wallet_snapshot(q)#>>'{balances,SKR}'<>'900000' THEN RAISE EXCEPTION 'atomic seller rounding'; END IF;
+ -- A house listing pays the whole amount to the treasury fees account, nothing to the seller wallet.
+ k2:=gen_random_uuid();
+ PERFORM seeker_skr.purchase_quote(p,k2,context||'{"house_seller":true}',10,1000000,clock_timestamp());
+ PERFORM seeker_skr.purchase_charge(p,k2);
+ PERFORM seeker_skr.purchase_finish(p,k2,true);
+ PERFORM seeker_skr.purchase_finish(p,k2,true);
+ IF seeker_skr.wallet_snapshot(p)#>>'{balances,SKR}'<>'399999' THEN RAISE EXCEPTION 'house buyer debit'; END IF;
+ IF seeker_skr.wallet_snapshot(q)#>>'{balances,SKR}'<>'900000' THEN RAISE EXCEPTION 'house sale credited a seller wallet'; END IF;
 END $$;
 DO $$ BEGIN
  IF EXISTS(SELECT asset FROM seeker_skr.accounts GROUP BY asset HAVING sum(balance_minor)<>0) THEN RAISE EXCEPTION 'lost conservation'; END IF;
  IF (SELECT balance_minor FROM seeker_skr.accounts WHERE kind='commerce_escrow')<>0 THEN RAISE EXCEPTION 'escrow retained finished payment'; END IF;
- IF (SELECT balance_minor FROM seeker_skr.accounts WHERE kind='fees')<>110001 THEN RAISE EXCEPTION 'fee split'; END IF;
+ IF (SELECT balance_minor FROM seeker_skr.accounts WHERE kind='fees')<>210001 THEN RAISE EXCEPTION 'fee split'; END IF;
 END $$;
