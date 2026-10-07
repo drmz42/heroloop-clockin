@@ -78,8 +78,7 @@ public class MainActivity extends Activity {
         webView = new WebView(this);
         webView.setBackgroundColor(0xFF070606);
         webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        // Android 15 draws apps edge to edge; keep the game clear of the status bar, the display
-        // cutout and the gesture/navigation bar on every version by padding its container.
+        // Android 15 draws apps edge to edge; the container is padded for visible bars and the keyboard.
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(0xFF070606);
         root.addView(webView, new FrameLayout.LayoutParams(
@@ -96,9 +95,12 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             getWindow().setDecorFitsSystemWindows(false);
             root.setOnApplyWindowInsetsListener((view, insets) -> {
-                Insets bars = insets.getInsets(WindowInsets.Type.systemBars()
-                    | WindowInsets.Type.displayCutout() | WindowInsets.Type.ime());
-                view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+                // The top runs under the hidden status bar and the camera cutout (no black band);
+                // the page keeps its own content clear of it. Sides avoid a cutout, the bottom the keyboard.
+                Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime());
+                Insets cutout = insets.getInsets(WindowInsets.Type.displayCutout());
+                view.setPadding(Math.max(bars.left, cutout.left), bars.top,
+                    Math.max(bars.right, cutout.right), bars.bottom);
                 return WindowInsets.CONSUMED;
             });
         }

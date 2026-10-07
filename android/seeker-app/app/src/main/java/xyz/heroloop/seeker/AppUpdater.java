@@ -76,6 +76,7 @@ final class AppUpdater {
         Handler main = new Handler(Looper.getMainLooper());
         new Thread(() -> {
             String failure = null;
+            String fallback = null;
             try {
                 JSONObject latest = new JSONObject(new String(read(MANIFEST_URL, MAX_MANIFEST_BYTES), "UTF-8"));
                 int code = latest.getInt("versionCode");
@@ -90,6 +91,7 @@ final class AppUpdater {
                         || size < 1 || size > MAX_APK_BYTES) {
                     throw new IllegalStateException("bad manifest");
                 }
+                fallback = DOWNLOAD_BASE + fileName;
                 main.post(() -> toast(app, "Downloading HeroLoop update…"));
                 File apk = new File(app.getCacheDir(), "update.apk");
                 download(DOWNLOAD_BASE + fileName, apk, size);
@@ -102,9 +104,12 @@ final class AppUpdater {
                 failure = "Update failed. Check your connection and try again.";
             } finally {
                 String message = failure;
+                String browserUrl = failure != null && fromTap ? fallback : null;
                 main.post(() -> {
                     synchronized (AppUpdater.class) { running = false; }
                     if (message != null) toast(app, message);
+                    // A tapped update that failed in the app still reaches the player through the browser.
+                    if (browserUrl != null) openInBrowser(app, browserUrl);
                 });
             }
         }, "heroloop-update").start();
@@ -195,6 +200,18 @@ final class AppUpdater {
         StringBuilder hex = new StringBuilder();
         for (byte b : sha.digest()) hex.append(String.format(Locale.ROOT, "%02x", b));
         return hex.toString();
+    }
+
+    private static void openInBrowser(Context context, String url) {
+        Intent browser = Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_BROWSER);
+        browser.setAction(Intent.ACTION_VIEW);
+        browser.setData(Uri.parse(url));
+        browser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            context.startActivity(browser);
+        } catch (RuntimeException ignored) {
+            toast(context, "Download the update in your browser: " + url);
+        }
     }
 
     private static void toast(Context context, String text) {
