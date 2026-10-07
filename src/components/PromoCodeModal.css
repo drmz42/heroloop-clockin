@@ -53,26 +53,6 @@
   padding: 25px 65px 20px;
   text-align: center;
 }
-.promo-vault__seal {
-  display: grid;
-  place-items: center;
-  position: relative;
-  width: 58px;
-  height: 58px;
-  margin: 0 auto 12px;
-  border: 1px solid #caa358;
-  border-radius: 50%;
-  color: #f8d48c;
-  background: radial-gradient(circle at 35% 25%, #5a4125, #191511 75%);
-  box-shadow: 0 0 0 5px #cfa75c0f, 0 0 32px #edbf4830, inset 0 0 12px #f8d48c18;
-}
-.promo-vault__seal::before {
-  content: '';
-  position: absolute;
-  inset: -10px;
-  border: 1px solid #e1b96538;
-  border-radius: 50%;
-}
 .promo-vault__kicker {
   display: flex;
   align-items: center;
@@ -159,7 +139,6 @@
 }
 @media (max-height: 560px) {
   .promo-vault__header { padding-top: 15px; padding-bottom: 12px; }
-  .promo-vault__seal { display: none; }
   .promo-vault__footer { padding-top: 10px; padding-bottom: 16px; }
 }
 @media (prefers-reduced-motion: reduce) {

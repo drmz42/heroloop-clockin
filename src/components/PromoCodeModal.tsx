@@ -125,7 +125,6 @@ export function PromoCodeModal({ onClose, onRedeemed }: { onClose: () => void; o
             <div className="promo-vault__glow" aria-hidden="true" />
             <button type="button" onClick={onClose} className="promo-vault__close game-control" aria-label="Close rewards"><X size={18} /></button>
             <header className="promo-vault__header">
-              <div className="promo-vault__seal" aria-hidden="true"><Gift size={28} strokeWidth={1.4} /></div>
               <p className="promo-vault__kicker"><span /> Code redeemed <span /></p>
               <h2 id="promo-title" className="promo-vault__title">Your rewards</h2>
               <p className="promo-vault__campaign">{result.label}</p>
