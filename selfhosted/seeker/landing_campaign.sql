@@ -109,7 +109,14 @@ BEGIN
  IF p_action='intent' THEN
   amount:=CASE p->>'pack' WHEN 'starter' THEN 100000 WHEN 'scout' THEN 100000000 WHEN 'veteran' THEN 250000000 WHEN 'elite' THEN 500000000 WHEN 'founder' THEN 1000000000 END;
   IF amount IS NULL THEN RAISE EXCEPTION 'campaign_invalid_pack'; END IF;
-  IF (SELECT count(*) FROM seeker_skr.campaign_orders WHERE wallet=w AND paid_at IS NULL AND expires_at>clock_timestamp())>=3 THEN RAISE EXCEPTION 'campaign_order_limit'; END IF;
+  -- Serialize preparation and reuse a matching unsigned order.
+  PERFORM 1 FROM seeker_skr.campaign_accounts WHERE wallet=w FOR UPDATE;
+  SELECT * INTO o FROM seeker_skr.campaign_orders
+   WHERE wallet=w AND pack=p->>'pack' AND amount_minor=amount AND treasury=p->>'treasury'
+    AND catalog_version='sol-landing-v2-test' AND paid_at IS NULL AND submitted_signature IS NULL AND expires_at>clock_timestamp()
+   ORDER BY created_at DESC LIMIT 1 FOR UPDATE;
+  IF FOUND THEN RETURN to_jsonb(o)||jsonb_build_object('amount_minor',o.amount_minor::text); END IF;
+  -- Abandoned orders never block choosing another pack; retain their receipt snapshots.
   INSERT INTO seeker_skr.campaign_orders(wallet,pack,amount_minor,reference,treasury,expires_at)
    VALUES(w,p->>'pack',amount,p->>'reference',p->>'treasury',clock_timestamp()+interval '10 minutes') RETURNING * INTO o;
   RETURN to_jsonb(o)||jsonb_build_object('amount_minor',o.amount_minor::text);
