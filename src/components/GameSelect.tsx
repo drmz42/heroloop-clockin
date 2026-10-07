@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Check, ChevronDown } from 'lucide-react';
 import '@/theme/game-select.css';
 
-export type GameSelectOption<T extends string | number> = { value: T; label: string; disabled?: boolean };
+export type GameSelectOption<T extends string | number> = { value: T; label: string; badge?: string; disabled?: boolean };
 
 type Props<T extends string | number> = {
   value: T;
@@ -158,7 +158,7 @@ export function GameSelect<T extends string | number>({ value, options, onChange
             onPointerEnter={() => { if (!option.disabled) setActive(index); }}
             onClick={() => pick(index)}
           >
-            <span>{option.label}</span>{isSelected && <Check size={13} aria-hidden="true" />}
+            <span>{option.label}</span>{option.badge && <span className="game-select-option-badge">{option.badge}</span>}{isSelected && <Check size={13} aria-hidden="true" />}
           </li>;
         })}
       </ul>,
