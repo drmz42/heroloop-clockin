@@ -223,7 +223,10 @@
 .mo-banner-refer > .mo-tile-icon { margin-left: 10px; }
 .mo-tile { --mo-shade: linear-gradient(0deg, rgba(6, 4, 3, .92) 0, rgba(6, 4, 3, .3) 45%, transparent 75%); --mo-life-pos: var(--mo-tile-pos, 70% 40%); --mo-life-size: var(--mo-tile-size, cover);
   background: var(--mo-shade), var(--mo-art) var(--mo-tile-pos, 70% 40%) / var(--mo-tile-size, cover), #120d09; background-origin: border-box; }
-.mo-teaser { --mo-shade: linear-gradient(180deg, transparent 15%, rgba(6, 4, 3, .75) 48%, rgba(6, 4, 3, .97) 72%); --mo-life-pos: var(--mo-teaser-pos, 70% 30%); --mo-life-size: cover; }
+.mo-teaser { --mo-shade: linear-gradient(180deg, transparent 15%, rgba(6, 4, 3, .75) 48%, rgba(6, 4, 3, .97) 72%); --mo-life-pos: var(--mo-teaser-pos, 70% 30%); --mo-life-size: cover;
+  background: var(--mo-shade), var(--mo-art) var(--mo-life-pos) / cover, #0b0807; background-origin: border-box; }
+/* Paint the base on the framed element: overflow clips child artwork at the inner border. */
+.mo-teaser > .mo-teaser-art { display: none; }
 .mo-life { display: none; }
 @media (prefers-reduced-motion: no-preference) {
   html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .mo-life { display: block; }
