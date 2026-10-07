@@ -940,6 +940,14 @@
 .sv-results-actions { display: grid; width: 100%; max-width: 460px; flex: none; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; margin: 0 auto; padding-top: 12px; }
 .sv-results-actions .sv-btn { min-width: 0; padding: 0 8px; font-size: 11px; }
 
+/* Mass summon stays flat: 100 cards with 3D flips overload phone GPUs and the grid flickers, so the
+   first cards keep their order and timing but fade in like the rest. */
+.sv-mass .sv-card { perspective: none; }
+.sv-mass .sv-card-inner { transform-style: flat; }
+.sv-mass .sv-card-flip .sv-card-inner { transform: none; animation: none; }
+.sv-mass .sv-card-flip .sv-card-back { display: none; }
+.sv-mass .sv-card-flip .sv-card-front { animation: sv-card-fade .4s ease-out var(--sv-delay) both; }
+
 /* ── Motion ───────────────────────────────────────────────────── */
 .sv-paused .sv-temple *,
 .sv-paused .sv-temple::after { animation-play-state: paused !important; }
