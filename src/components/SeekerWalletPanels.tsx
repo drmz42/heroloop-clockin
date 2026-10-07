@@ -2,6 +2,7 @@ import { SkrTokenIcon } from './SkrTokenIcon';
 import { WalletAmount, WalletAssetPicker, type DisplayWalletAsset } from './SeekerWalletControls';
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowDownToLine, Check, ExternalLink, Loader2, RefreshCw, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { formatUtcDateTime } from '@/game/numberFormat';
 import {
   commitSkrPurchase,boundWallet, deposit, loadExternalWallet, exactWalletAmount, formatAmountShort, formatMinor, refreshWallet, SeekerWalletError, useWalletSnapshot, waitForDeposit,
   type WalletSnapshot,
@@ -196,7 +197,7 @@ export function SeekerHistoryPanel({onPurchase}:{onPurchase?:(result:Record<stri
             <li key={`${row.event_id}-${row.asset}`} className="stat-tile flex items-center justify-between gap-2 p-2.5 text-xs">
               <div className="min-w-0">
                 <div className="font-bold capitalize text-[#d9d1c0]">{row.kind.replace('_', ' ')}</div>
-                <div className="text-[10px] text-[#8f887b]">{new Date(row.at).toLocaleString()}</div>
+                <div className="text-[10px] text-[#8f887b]">{formatUtcDateTime(row.at)}</div>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`font-black tabular-nums ${row.delta_minor.startsWith('-') ? 'text-rose-300' : 'text-emerald-300'}`}>

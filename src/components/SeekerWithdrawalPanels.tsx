@@ -2,6 +2,7 @@ import { WalletAmount, WalletAssetPicker, type DisplayWalletAsset } from './Seek
 import { useCallback,useEffect,useRef,useState } from 'react';
 import { loadSkrAccount,createPersonalSkrAccount,type SkrAccountStatus,boundWallet,formatMinor,exactWalletAmount,ASSET_DECIMALS,loadWalletRates,loadWithdrawals,requestWithdrawal,useWalletSnapshot,type WithdrawalRow,type WalletRate } from '@/game/seekerWallet';
 import { skrError } from '@/game/skrPurchase';
+import { formatUtcDateTime } from '@/game/numberFormat';
 const withdrawalError=(error:unknown)=>{
   const code=error instanceof Error?error.message:'';
   return ({withdrawals_blocked:'Withdrawals are temporarily unavailable. Please try again later.',
@@ -88,7 +89,7 @@ export function SeekerWithdrawalPanel({initialAsset='SKR'}:{initialAsset?:Displa
     {busy&&abortRef.current&&<button type="button" style={{minHeight:44}} className="game-control min-h-11 w-full text-xs" onClick={()=>abortRef.current?.abort()}>Cancel withdrawal request</button>}
     {message&&<p role="status" className="text-xs leading-5 text-amber-200">{message}</p>}
     <h3 className="text-sm font-bold text-amber-100">Withdrawal history</h3>
-    {rows.map(row=><div key={row.request_id} className="stat-tile space-y-1 p-3 text-xs"><p>{formatMinor(row.amount_minor,row.asset,ASSET_DECIMALS[row.asset])} {row.asset} · you receive {formatMinor(row.payout_minor,row.asset,ASSET_DECIMALS[row.asset])} · {row.status.replace(/_/g,' ')}</p><p className="text-stone-400">{new Date(row.created_at).toLocaleString()}</p>{row.signature&&<a className="block break-all text-lime-200" target="_blank" rel="noreferrer" href={`https://explorer.solana.com/tx/${row.signature}`}>View finalized payout</a>}{row.reject_reason&&<p>{row.reject_reason}</p>}</div>)}
+    {rows.map(row=><div key={row.request_id} className="stat-tile space-y-1 p-3 text-xs"><p>{formatMinor(row.amount_minor,row.asset,ASSET_DECIMALS[row.asset])} {row.asset} · you receive {formatMinor(row.payout_minor,row.asset,ASSET_DECIMALS[row.asset])} · {row.status.replace(/_/g,' ')}</p><p className="text-stone-400">{formatUtcDateTime(row.created_at)}</p>{row.signature&&<a className="block break-all text-lime-200" target="_blank" rel="noreferrer" href={`https://explorer.solana.com/tx/${row.signature}`}>View finalized payout</a>}{row.reject_reason&&<p>{row.reject_reason}</p>}</div>)}
     <button style={{minHeight:44}} className="game-control min-h-11 w-full text-xs" onClick={()=>void refresh()}>Refresh withdrawals</button>
   </div>;
 }

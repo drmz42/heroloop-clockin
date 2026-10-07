@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, MessageCircle, X } from 'lucide-react';
 import { GameSelect } from '@/components/GameSelect';
 import { playerSync } from '@/game/backend';
+import { formatUtcDateTime } from '@/game/numberFormat';
 
 const TOPICS = [
   { value: 'login_save', label: 'Login or saved progress' },
@@ -115,7 +116,7 @@ export function SupportTicketModal({ onClose }: { onClose: () => void }) {
               <div className="mt-2 grid gap-2">
                 {tickets.map((ticket) => <article key={ticket.id} className="rounded-lg border border-[#51422e] bg-black/20 p-3 text-xs text-[#c9c2b6]">
                   <div className="flex flex-wrap items-center justify-between gap-1"><strong className="text-[#f0dfbb]">#{ticket.id} · {TOPICS.find((item) => item.value === ticket.topic)?.label ?? 'Game problem'}</strong><span>{STATUS[ticket.status] ?? ticket.status}</span></div>
-                  <p className="mt-1 text-[10px]">{PRIORITIES[ticket.priority - 1] ?? 'Priority'} · {new Date(ticket.created_at).toLocaleString()}</p>
+                  <p className="mt-1 text-[10px]">{PRIORITIES[ticket.priority - 1] ?? 'Priority'} · {formatUtcDateTime(ticket.created_at)}</p>
                   <p className="mt-2 whitespace-pre-wrap break-words">{ticket.body}</p>
                   {ticket.replies.map((reply, index) => <div key={`${ticket.id}-${index}`} className="mt-2 rounded border border-emerald-500/30 bg-emerald-950/20 p-2"><strong className="text-emerald-200">Support reply</strong><p className="mt-1 whitespace-pre-wrap break-words">{reply.body}</p></div>)}
                 </article>)}

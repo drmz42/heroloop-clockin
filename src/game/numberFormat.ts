@@ -36,3 +36,10 @@ export function formatUtcTime(value: string | number | Date): string {
   if (Number.isNaN(date.getTime())) return '—';
   return `${date.toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })} UTC`;
 }
+
+/** Founder 2026-10-07: player-visible timestamps read in UTC ("07 Oct 2026, 14:05 UTC"). */
+export function formatUtcDateTime(value: string | number | Date): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return `${date.toLocaleString('en-GB', { timeZone: 'UTC', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} UTC`;
+}
