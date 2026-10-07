@@ -1744,6 +1744,8 @@ function TestControls({ game }: { game: GameApi }) {
   );
 }
 
+const SEEKER_SAMPLE_INCOME = { daily: 124, pool: 20_000 };
+
 function TokenEarningsPanel({ status, stale, today }: { status: TokenomicsStatus | null; stale: boolean; today: number }) {
   const [open, setOpen] = useState(false);
   const incomeButton = useRef<HTMLButtonElement>(null);
@@ -1784,10 +1786,15 @@ function TokenEarningsPanel({ status, stale, today }: { status: TokenomicsStatus
   // independent of the zero SKR budget; never display legacy HERO payouts as SKR.
   const TOKEN_PRICE_USD = 0.001;
   const DAILY_POOL = 20_000;
-  const daily = isolatedHackathon ? 0 : status?.my_daily_share ?? 0;
-  const rate = isolatedHackathon ? 0 : status?.my_hourly_share ?? 0;
-  const pool = isolatedHackathon ? 0 : status?.pool_amount ?? DAILY_POOL;
-  const poolSharePct = status?.pool_share_percent ?? 0;
+  // TEMPORARY Founder decision 2026-10-07 for the hackathon video: the tester-only Seeker build shows
+  // fixed sample income figures. Display only — nothing is credited and the server is not consulted.
+  // Remove SEEKER_SAMPLE_INCOME to restore the real (still unfunded) values.
+  const sample = isolatedHackathon ? SEEKER_SAMPLE_INCOME : null;
+  const daily = sample ? sample.daily : isolatedHackathon ? 0 : status?.my_daily_share ?? 0;
+  const rate = sample ? sample.daily / 24 : isolatedHackathon ? 0 : status?.my_hourly_share ?? 0;
+  const pool = sample ? sample.pool : isolatedHackathon ? 0 : status?.pool_amount ?? DAILY_POOL;
+  const poolSharePct = sample ? sample.daily / sample.pool * 100 : status?.pool_share_percent ?? 0;
+  const sampleToday = sample ? daily * ((Date.now() % 86_400_000) / 86_400_000) : 0;
   const fmt = (value: number) => value === 0 ? '0' : value < 1 ? value.toFixed(3) : formatNum(value);
   const usd = (tokens: number) => {
     const v = tokens * TOKEN_PRICE_USD;
@@ -1807,12 +1814,12 @@ function TokenEarningsPanel({ status, stale, today }: { status: TokenomicsStatus
         <span className="ui-text-small font-black uppercase tracking-[.14em] text-[#ffd36e]">$HERO Income</span>
         {stale && <span className="ml-auto ui-text-small font-bold uppercase tracking-wide text-amber-300" title="Keeping the last confirmed server values while income refresh retries">Updating…</span>}
       </div>
-      {status ? (
+      {status || sample ? (
         <div className="grid grid-cols-[max-content_max-content] items-baseline gap-x-2 gap-y-2 whitespace-nowrap">
           <Row label="Per hour" value={isolatedHackathon ? `${fmt(rate)} $SKR` : `${fmt(rate)} (${usd(rate)})`} valueClass="text-[#7ee787]" />
           <Row label="Per day" value={isolatedHackathon ? `${fmt(daily)} $SKR` : `${fmt(daily)} (${usd(daily)})`} valueClass="text-[#e5bd68]" />
           <Row label="Pool share" value={`${poolSharePct.toFixed(poolSharePct < 0.01 ? 4 : 2)}%`} valueClass="text-[#9ed7ff]" />
-          <Row label="Today" value={isolatedHackathon ? '0 $SKR' : `${formatNum(today)} (${usd(today)})`} valueClass="text-[#ffd36e]" />
+          <Row label="Today" value={isolatedHackathon ? `${fmt(sampleToday)} $SKR` : `${formatNum(today)} (${usd(today)})`} valueClass="text-[#ffd36e]" />
           <Row label="Daily pool" value={isolatedHackathon ? `${formatNum(pool)} $SKR` : `${formatNum(pool)} $HERO`} valueClass="text-[#c8b3f0]" />
         </div>
       ) : (
@@ -1824,7 +1831,7 @@ function TokenEarningsPanel({ status, stale, today }: { status: TokenomicsStatus
   return (
     <div className="battle-income-wrap relative min-w-0" onKeyDown={event => { if (event.key === 'Escape') setOpen(false); }}>
       {isolatedHackathon && <button ref={incomeButton} type="button" className="battle-income-chip game-control flex items-center justify-between gap-2 px-2 font-vt font-black tabular-nums" onClick={() => setOpen(value => !value)} aria-expanded={open} aria-controls="battle-income-details" aria-label="$SKR income details">
-        <HeroTokenIcon size={18} /><span>{daily > 0 ? `${fmt(daily)} $SKR / day` : '$SKR income · soon'}</span><ChevronDown size={15} aria-hidden="true" className={open ? '' : 'rotate-180'} />
+        <HeroTokenIcon size={18} /><span>{fmt(daily)} $SKR / day</span><ChevronDown size={15} aria-hidden="true" className={open ? '' : 'rotate-180'} />
       </button>}
       {isolatedHackathon && open ? createPortal(incomeDetails, document.body) : incomeDetails}
     </div>
