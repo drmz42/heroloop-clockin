@@ -16,7 +16,8 @@ html[data-hl-platform='android'] .game-progress-bar.tb-bar {
 .tb-row { display: flex; height: 44px; min-width: 0; align-items: center; gap: 6px; }
 
 /* ── Ledger ── */
-.tb-ledger { gap: 0; border: 1px solid rgba(199, 158, 97, .4); border-radius: 2px; background: linear-gradient(180deg, rgba(30, 22, 15, .9), rgba(8, 6, 5, .95)); box-shadow: inset 0 1px 0 rgba(242, 204, 128, .12), inset 0 -8px 14px rgba(0, 0, 0, .45); }
+/* Founder 2026-10-07: no frame on the sides or top (it looked crooked edge to edge); only the bottom rule divides. */
+.tb-ledger { gap: 0; border: 0; border-bottom: 1px solid rgba(199, 158, 97, .4); border-radius: 0; background: linear-gradient(180deg, rgba(30, 22, 15, .9), rgba(8, 6, 5, .95)); margin: 0 -8px; box-shadow: inset 0 -8px 14px rgba(0, 0, 0, .45); }
 .tb-logo { display: grid; flex: none; width: 46px; height: 100%; place-items: center; border: 0; border-right: 1px solid rgba(199, 158, 97, .3); padding: 0; background: radial-gradient(circle, rgba(242, 160, 70, .18), transparent 70%); }
 .tb-logo img { width: 34px; height: 36px; object-fit: contain; filter: drop-shadow(0 0 5px rgba(226, 150, 61, .45)); }
 .tb-cell {
