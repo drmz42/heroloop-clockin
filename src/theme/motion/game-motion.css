@@ -1,0 +1,154 @@
+/* Interface motion layer (src/theme/motion/gameMotion.ts). Every rule needs html[data-hl-motion=on],
+   a battle animation setting other than "Off" and no Reduced Motion preference, so ?motion=off
+   restores the previous look exactly. Animations only: no size, spacing or position changes.
+   Entrances use fill-mode backwards and end on the element's own transform, so fixed-position
+   overlays inside them are never offset once the entrance finishes. Press feedback uses the
+   independent `scale` property so it never overrides an element's own transform. */
+
+.hl-mo-ambience { display: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* ── Screens: the Play columns fade in when chosen; windows and their pages rise in ── */
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .game-main > :is(.hl-col-left, .hl-col-center, .hl-col-right) {
+    animation: hl-mo-fade .32s ease-out backwards;
+  }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .game-window {
+    animation: hl-mo-window .3s cubic-bezier(.2, .9, .3, 1.08) backwards;
+  }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .game-window > .flex-1 > * {
+    animation: hl-mo-rise .34s ease-out .05s backwards;
+  }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .hl-more-sheet { animation: hl-mo-fade .2s ease-out backwards; }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .hl-more-sheet > * { animation: hl-mo-sheet .3s cubic-bezier(.2, .9, .3, 1) backwards; }
+
+  /* ── Lists deal in one after another ── */
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) :is(.quest-card, .location-card, .hv-card) {
+    animation: hl-mo-rise .36s ease-out backwards;
+  }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .item-slot {
+    animation: hl-mo-pop .3s cubic-bezier(.2, .9, .3, 1.25) backwards;
+  }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) :is(.mb-2:has(> .quest-card), .location-card, .hv-card, .item-slot):nth-child(2) { --hl-mo-i: 1; }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) :is(.mb-2:has(> .quest-card), .location-card, .hv-card, .item-slot):nth-child(3) { --hl-mo-i: 2; }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) :is(.mb-2:has(> .quest-card), .location-card, .hv-card, .item-slot):nth-child(4) { --hl-mo-i: 3; }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) :is(.mb-2:has(> .quest-card), .location-card, .hv-card, .item-slot):nth-child(5) { --hl-mo-i: 4; }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) :is(.mb-2:has(> .quest-card), .location-card, .hv-card, .item-slot):nth-child(6) { --hl-mo-i: 5; }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) :is(.mb-2:has(> .quest-card), .location-card, .hv-card, .item-slot):nth-child(7) { --hl-mo-i: 6; }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) :is(.mb-2:has(> .quest-card), .location-card, .hv-card, .item-slot):nth-child(8) { --hl-mo-i: 7; }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) :is(.mb-2:has(> .quest-card), .location-card, .hv-card, .item-slot):nth-child(n+9) { --hl-mo-i: 8; }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) :is(.quest-card, .location-card, .hv-card) { animation-delay: calc(var(--hl-mo-i, 0) * 45ms); }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .item-slot { animation-delay: calc(var(--hl-mo-i, 0) * 22ms); }
+
+  /* ── Every press answers the finger ── */
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) :is(button, [role='button'], .game-control):not(:disabled):active {
+    scale: .95;
+    filter: brightness(1.18);
+  }
+
+  /* ── Tab bar: the chosen tab's icon leaps and glows ── */
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .hl-tabbar-item.is-active .hl-tabbar-icon {
+    animation: hl-mo-tab .42s cubic-bezier(.2, .9, .3, 1.4), hl-mo-tab-glow 3.2s ease-in-out .42s infinite;
+  }
+
+  /* ── Top bar: the gold value flashes when it changes; the coin glints now and then ── */
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .tb-num { display: inline-block; animation: hl-mo-value .45s ease-out; }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .tb-coin { animation: hl-mo-coin 5s ease-in-out infinite; }
+
+  /* ── Battle stage: fog drifts, embers rise, a light shaft breathes (behind the fighters) ── */
+  html[data-hl-motion='on'] .game-shell.game-motion-spectacular .hl-mo-ambience {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .hl-mo-shaft {
+    position: absolute;
+    top: -10%;
+    left: 18%;
+    width: 46%;
+    height: 90%;
+    background: linear-gradient(180deg, rgba(255, 214, 150, .13), rgba(255, 214, 150, 0) 80%);
+    transform: skewX(-18deg);
+    filter: blur(14px);
+    animation: hl-mo-shaft 9s ease-in-out infinite;
+  }
+  .hl-mo-fog {
+    position: absolute;
+    left: -50%;
+    width: 200%;
+    height: 34%;
+    background: radial-gradient(ellipse 30% 50% at 25% 50%, rgba(190, 180, 160, .2), transparent 70%),
+      radial-gradient(ellipse 25% 45% at 70% 55%, rgba(170, 165, 150, .16), transparent 70%);
+    filter: blur(6px);
+  }
+  .hl-mo-fog-a { bottom: 4%; animation: hl-mo-fog 34s ease-in-out infinite alternate; }
+  .hl-mo-fog-b { bottom: 22%; opacity: .7; animation: hl-mo-fog 52s ease-in-out -20s infinite alternate-reverse; }
+  .hl-mo-ember {
+    position: absolute;
+    bottom: -6px;
+    left: var(--x, 50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #ffd98a;
+    box-shadow: 0 0 8px 3px rgba(255, 140, 40, .6);
+    opacity: 0;
+    animation: hl-mo-ember var(--d, 9s) linear var(--w, 0s) infinite;
+  }
+  .hl-mo-ember:nth-of-type(1) { --x: 6%; --d: 9s; --w: -1s; }
+  .hl-mo-ember:nth-of-type(2) { --x: 14%; --d: 11s; --w: -6s; }
+  .hl-mo-ember:nth-of-type(3) { --x: 23%; --d: 8s; --w: -3s; }
+  .hl-mo-ember:nth-of-type(4) { --x: 31%; --d: 12s; --w: -9s; }
+  .hl-mo-ember:nth-of-type(5) { --x: 40%; --d: 10s; --w: -4s; }
+  .hl-mo-ember:nth-of-type(6) { --x: 48%; --d: 13s; --w: -11s; }
+  .hl-mo-ember:nth-of-type(7) { --x: 57%; --d: 9s; --w: -7s; }
+  .hl-mo-ember:nth-of-type(8) { --x: 65%; --d: 11s; --w: -2s; }
+  .hl-mo-ember:nth-of-type(9) { --x: 73%; --d: 8.5s; --w: -5s; }
+  .hl-mo-ember:nth-of-type(10) { --x: 81%; --d: 12s; --w: -8s; }
+  .hl-mo-ember:nth-of-type(11) { --x: 89%; --d: 10s; --w: -10s; }
+  .hl-mo-ember:nth-of-type(12) { --x: 95%; --d: 9.5s; --w: -3.5s; }
+  .hl-mo-ember:nth-of-type(13) { --x: 10%; --d: 10.5s; --w: -8.5s; }
+  .hl-mo-ember:nth-of-type(14) { --x: 36%; --d: 9s; --w: -12s; }
+  .hl-mo-ember:nth-of-type(15) { --x: 52%; --d: 11.5s; --w: -1.5s; }
+  .hl-mo-ember:nth-of-type(16) { --x: 69%; --d: 8s; --w: -6.5s; }
+  .hl-mo-ember:nth-of-type(17) { --x: 85%; --d: 12.5s; --w: -4.5s; }
+  .hl-mo-ember:nth-of-type(18) { --x: 27%; --d: 10s; --w: -2.5s; }
+}
+
+@keyframes hl-mo-fade { from { opacity: 0; } }
+@keyframes hl-mo-rise { from { opacity: 0; transform: translateY(12px); } }
+@keyframes hl-mo-pop { from { opacity: 0; transform: scale(.82); } }
+@keyframes hl-mo-window { from { opacity: 0; transform: translateY(14px) scale(.97); } }
+@keyframes hl-mo-sheet { from { transform: translateY(40%); opacity: .2; } }
+@keyframes hl-mo-tab {
+  0% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-5px) scale(1.16); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes hl-mo-tab-glow {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 196, 92, 0)); }
+  50% { filter: drop-shadow(0 0 6px rgba(255, 196, 92, .65)); }
+}
+@keyframes hl-mo-value {
+  0% { transform: scale(1.22); color: #fff1c4; text-shadow: 0 0 10px rgba(255, 205, 90, .9); }
+  100% { transform: scale(1); }
+}
+@keyframes hl-mo-coin {
+  0%, 82%, 100% { filter: none; transform: none; }
+  88% { filter: brightness(1.6) drop-shadow(0 0 5px rgba(255, 210, 100, .9)); transform: rotateY(180deg); }
+  94% { transform: rotateY(360deg); }
+}
+@keyframes hl-mo-shaft {
+  0%, 100% { opacity: .55; }
+  50% { opacity: 1; }
+}
+@keyframes hl-mo-fog { from { transform: translateX(0); } to { transform: translateX(25%); } }
+@keyframes hl-mo-ember {
+  0% { opacity: 0; transform: translate(0, 0) scale(1); }
+  12% { opacity: .9; }
+  50% { transform: translate(14px, -45vh) scale(.8); }
+  80% { opacity: .5; }
+  100% { opacity: 0; transform: translate(-8px, -80vh) scale(.4); }
+}

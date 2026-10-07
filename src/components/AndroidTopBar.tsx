@@ -28,7 +28,7 @@ export function AndroidTopBar({ power, identity, gold, commander, boostActive, w
       </button>
       <div className="tb-cell tb-gold" title={`${groupNumber(Math.floor(gold))} Gold`}>
         <span className="tb-cap">Gold</span>
-        <span className="tb-val"><span className="tb-coin" aria-hidden="true" /><span>{compactNumber(Math.floor(gold))}</span></span>
+        <span className="tb-val"><span className="tb-coin" aria-hidden="true" /><span key={compactNumber(Math.floor(gold))} className="tb-num">{compactNumber(Math.floor(gold))}</span></span>
       </div>
       <button type="button" onClick={onTokens} className="tb-cell tb-skr" aria-label="Open Rewards and Tokenomics" title="Rewards & Tokenomics">
         <span className="tb-cap">SKR</span>

@@ -14,6 +14,7 @@ import { SeekerPromoteAll } from '@/components/SeekerPromoteAll';
 import { SummonReveal } from '@/components/summon/SummonReveal';
 import { SummonFlame } from '@/components/summon/SummonFlame';
 import { quoteSkrPurchase, formatAmountShort, formatMinor, type SkrPurchaseQuote } from '@/game/seekerWallet';
+import { formatUtcTime } from '@/game/numberFormat';
 import { useSkrRate, skrPrice, skrError } from '@/game/skrPurchase';
 import '@/components/summon/summon-v2.css';
 
@@ -270,7 +271,7 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
 
         {pendingQuote && <div ref={quoteRef} className="sv-quote" role="region" aria-label="Confirm SKR Summon">
           <p className="sv-quote-title" title={`Exact payment: ${formatMinor(pendingQuote.quote.amount_minor, 'SKR', 6)} SKR`}>Summon ×{pendingQuote.count} · {formatAmountShort(pendingQuote.quote.amount_minor, 'SKR', 'up')} SKR</p>
-          <p className="sv-quote-note">Server quote · ${(Number(pendingQuote.quote.usd_cents) / 100).toFixed(2)} · valid until {new Date(pendingQuote.quote.expires_at).toLocaleTimeString()}. No payment until you confirm.</p>
+          <p className="sv-quote-note">Server quote · ${(Number(pendingQuote.quote.usd_cents) / 100).toFixed(2)} · valid until {formatUtcTime(pendingQuote.quote.expires_at)}. No payment until you confirm.</p>
           <div className="sv-quote-actions"><button type="button" disabled={summoning !== null || cooldownSeconds > 0} onClick={() => void confirmSkrSummon()} className="sv-btn sv-btn--primary">{summoning ? 'Summoning…' : 'Pay SKR & summon'}</button><button type="button" disabled={summoning !== null} onClick={() => setPendingQuote(null)} className="sv-btn sv-btn--ghost">Cancel</button></div>
         </div>}
 

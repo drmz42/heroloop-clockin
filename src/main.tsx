@@ -3,8 +3,10 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import './theme/premium/premium-game.css';
 import './platform/android.css';
+import './theme/motion/game-motion.css';
 import { captureSignupAttribution } from './game/signupAttribution';
 import { applyUiTheme, resolveUiTheme } from './theme/uiTheme';
+import { applyUiMotion, resolveUiMotion } from './theme/motion/gameMotion';
 import { applyPlatform, isAppShell, webGameEntryAllowed } from './platform/platform';
 import { AppLoadingScreen } from './platform/AppLoadingScreen';
 import { AppUpdateGate } from './platform/AppUpdateGate';
@@ -12,6 +14,7 @@ import { AppUpdateGate } from './platform/AppUpdateGate';
 captureSignupAttribution();
 const uiTheme = resolveUiTheme();
 applyUiTheme(uiTheme);
+applyUiMotion(resolveUiMotion());
 applyPlatform();
 
 // eslint-disable-next-line react-refresh/only-export-components
