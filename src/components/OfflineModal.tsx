@@ -2,6 +2,7 @@ import { isolatedHackathon } from '@/game/editionStorage';
 import { CheckCircle2, Coins, X, Package, Star } from 'lucide-react';
 import { formatNum } from '@/game/state';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
+import { SEEKER_SAMPLE_INCOME } from '@/game/seekerSampleIncome';
 
 export function OfflineModal({
   gold, seconds, tokens, chests, xp, onClose,
@@ -24,11 +25,13 @@ export function OfflineModal({
           Your hero fought for <span className="font-bold text-px-text">{timeStr}</span>.
         </p>
         <div className="offline-afk-total mb-3">
-          <span>{isolatedHackathon ? 'Rewards unavailable' : `+${formatNum(tokens ?? 0)}`}</span> <HeroTokenIcon size={15} /> $HERO
+          {isolatedHackathon ? <><span>+{formatNum(gold)}</span> <Coins size={15} /> Gold</> : <><span>+{formatNum(tokens ?? 0)}</span> <HeroTokenIcon size={15} /> $HERO</>}
         </div>
         <div className="mb-2 grid grid-cols-2 gap-2">
           {[
-            { icon: <Coins size={16} />, value: `+${formatNum(gold)}`, label: 'Gold' },
+            isolatedHackathon
+              ? { icon: <HeroTokenIcon size={16} />, value: `${formatNum(SEEKER_SAMPLE_INCOME.daily)}`, label: '$SKR income / day' }
+              : { icon: <Coins size={16} />, value: `+${formatNum(gold)}`, label: 'Gold' },
             { icon: <Star size={16} />, value: `+${formatNum(xp ?? 0)}`, label: 'Account XP' },
             { icon: <Package size={16} />, value: `+${formatNum(chests ?? 0)}`, label: 'Chests' },
           ].map((reward) => (

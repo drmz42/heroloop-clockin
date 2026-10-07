@@ -7,6 +7,7 @@ import { currentTutorialObjective, readyQuestCount, tutorialProgress } from '@/g
 import { Fragment, useCallback, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { isAndroidLayout } from '@/platform/platform';
+import { SEEKER_SAMPLE_INCOME } from '@/game/seekerSampleIncome';
 import { MINE_OPEN_EVENT, SEEKER_TOUR_EVENT, seekerTourSeen } from '@/game/seekerTour';
 import { COMMANDER_OPEN_EVENT, BATTLE_ACTIONS_SLOT, OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, DoorOpen, Menu, HeartPulse, Gem, Skull, BookOpen, ArrowRight } from 'lucide-react';
@@ -1745,8 +1746,6 @@ function TestControls({ game }: { game: GameApi }) {
   );
 }
 
-const SEEKER_SAMPLE_INCOME = { daily: 124, pool: 20_000 };
-
 function TokenEarningsPanel({ status, stale, today }: { status: TokenomicsStatus | null; stale: boolean; today: number }) {
   const [open, setOpen] = useState(false);
   const incomeButton = useRef<HTMLButtonElement>(null);
@@ -1787,9 +1786,6 @@ function TokenEarningsPanel({ status, stale, today }: { status: TokenomicsStatus
   // independent of the zero SKR budget; never display legacy HERO payouts as SKR.
   const TOKEN_PRICE_USD = 0.001;
   const DAILY_POOL = 20_000;
-  // TEMPORARY Founder decision 2026-10-07 for the hackathon video: the tester-only Seeker build shows
-  // fixed sample income figures. Display only — nothing is credited and the server is not consulted.
-  // Remove SEEKER_SAMPLE_INCOME to restore the real (still unfunded) values.
   const sample = isolatedHackathon ? SEEKER_SAMPLE_INCOME : null;
   const daily = sample ? sample.daily : isolatedHackathon ? 0 : status?.my_daily_share ?? 0;
   const rate = sample ? sample.daily / 24 : isolatedHackathon ? 0 : status?.my_hourly_share ?? 0;
