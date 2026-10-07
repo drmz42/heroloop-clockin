@@ -518,6 +518,8 @@ html[data-hl-platform='android'] *, html[data-hl-platform='android'] *::before, 
 /* The inventory column sits inside the Bag window frame; its own frame drew a second, broken border around the cells. */
 html[data-hl-platform='android'] .hl-col-right.material-panel:not(#hl-a):not(#hl-b) { border-image: none !important; border-color: transparent !important; box-shadow: none !important; }
 html[data-hl-platform='android'] .hl-col-right.material-panel::after { content: none !important; }
+/* Bag cells use the screen width without the Play shell's extra side gutters. */
+html[data-hl-platform='android'][data-hl-section='bag'] .game-main { padding-inline: 2px; }
 
 
 
