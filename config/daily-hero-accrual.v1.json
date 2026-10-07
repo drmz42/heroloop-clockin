@@ -5,7 +5,7 @@
   "currency": "hero",
   "earningKind": "mining-pool-distribution-credit",
   "dayBoundary": {
-    "timezone": "Europe/Moscow",
+    "timezone": "UTC",
     "dayKeyFormat": "YYYY-MM-DD",
     "deriveAtReadTime": true,
     "clientClockRejected": true
@@ -37,7 +37,7 @@
     "refresh",
     "relogin",
     "claim-preserves-earned",
-    "moscow-day-rollover",
+    "game-day-rollover",
     "forged-client-value-rejected"
   ]
 }

@@ -70,9 +70,9 @@
     "recoveryNotice": true
   },
   "dailyExport": {
-    "timezone": "Europe/Moscow",
+    "timezone": "UTC",
     "format": "csv",
-    "columns": ["environment", "moscow_day", "balance_version", "flow", "source_kind", "event_count", "amount"],
+    "columns": ["environment", "game_day", "balance_version", "flow", "source_kind", "event_count", "amount"],
     "includesPlayerIdentifiers": false,
     "checksumManifest": true,
     "formulaInjectionEscaping": true,

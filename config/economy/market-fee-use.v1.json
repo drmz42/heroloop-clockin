@@ -78,7 +78,7 @@
     "requiresSeparateFounderApproval": true
   },
   "acceptanceBeforeAnyAdoption": [
-    "observed-gmv-and-fee-cohorts-by-moscow-day",
+    "observed-gmv-and-fee-cohorts-by-game-day",
     "zero-drift-fee-source-to-ledger-reconciliation",
     "thirty-day-circulation-and-concentration-simulation",
     "fee-farming-and-self-trade-abuse-review",
