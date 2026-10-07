@@ -12,14 +12,15 @@ export function groupDigits(text: string): string {
   return text.replace(/(\d),(?=\d{3}\b)/g, `$1${GROUP}`);
 }
 
-/** Founder 2026-10-06: whole numbers stay grouped in full up to `maxDigits` digits; longer ones keep
- * `significant` digits with a k/m/b/t suffix (5.56k, 9.991m, 99.99b). Digits are cut, never rounded
+/** Founder 2026-10-07: at least four whole digits stay grouped in full; `maxDigits` may preserve more.
+ * Longer numbers keep `significant` digits with a k/m/b/t suffix (55.56k, 9.991m, 99.99b).
+ * Digits are cut, never rounded
  * up, so a balance never reads higher than it is and 999 999 shows as 999.9k rather than 1000k. */
 export function compactNumber(value: number, maxDigits = 3, significant = 4): string {
   if (!Number.isFinite(value)) return '—';
   const sign = value < 0 ? '-' : '';
   const whole = Math.trunc(Math.abs(value));
-  if (whole < 10 ** maxDigits) return sign + groupNumber(whole);
+  if (whole < 10 ** Math.max(4, maxDigits)) return sign + groupNumber(whole);
   const digits = whole < 1e21 ? String(whole).length : Math.floor(Math.log10(whole)) + 1;
   const tier = Math.min(Math.floor((digits - 1) / 3), SUFFIXES.length - 1);
   const intDigits = digits - tier * 3;
