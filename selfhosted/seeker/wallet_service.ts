@@ -27,6 +27,7 @@ import { SKR_ASSET } from './ledger.ts';
 import { mineCustodyLamports, mineRoute, parseMineMaster, startMineRunner } from './mine_service.ts';
 import { custodyKey,floatKey } from './mine_runner.ts';
 import {actionId} from './mine_actions.ts';
+import { campaignRoute, reconcileCampaign } from './landing_campaign.ts';
 import {prepareOrePayout,prepareMineSolPayout} from './ore_payout.ts';
 import { custodyBalances,tokenCustodyBalance } from './payout_custody.ts';
 type Json = Record<string, unknown>;
@@ -402,6 +403,16 @@ Deno.serve({ hostname: "0.0.0.0", port: 8090 }, async (request) => {
   } catch {
     return json(400, { ok: false, code: "invalid_json" });
   }
+  if (isRecord(body) && url.pathname.startsWith('/campaign/')) {
+    try {
+      const result=await campaignRoute(url.pathname.slice('/campaign/'.length),body,{call,rpc,config,paymentsEnabled:env('LANDING_PACK_PAYMENTS_ENABLED')==='true'});
+      return json(200,{ok:true,result});
+    } catch(error) {
+      const message=error instanceof Error?error.message:'';
+      const code=message.match(/campaign_[a-z_]+/)?.[0]??'campaign_unavailable';
+      return json(code==='campaign_sign_in_required'?401:409,{ok:false,code});
+    }
+  }
   if (!isRecord(body) || typeof body.player_id !== "string" || !uuid.test(body.player_id)) {
     return json(400, { ok: false, code: "invalid_player" });
   }
@@ -430,3 +441,11 @@ Deno.serve({ hostname: "0.0.0.0", port: 8090 }, async (request) => {
   }
 });
 startMineRunner(mineMaster, call, rpc, oreEnabled);
+let campaignScanRunning=false;
+setInterval(()=>{
+  if(campaignScanRunning)return;
+  campaignScanRunning=true;
+  void reconcileCampaign({call,rpc,config,paymentsEnabled:env('LANDING_PACK_PAYMENTS_ENABLED')==='true'})
+    .catch(()=>{}) // An unapplied campaign migration cannot change existing wallet service availability.
+    .finally(()=>{campaignScanRunning=false;});
+},60_000);

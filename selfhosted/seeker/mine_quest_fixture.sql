@@ -8,7 +8,8 @@ BEGIN
  SELECT token_balance INTO balance FROM public.players WHERE player_id=p;
  day_start:=(date_trunc('day',now() AT TIME ZONE 'Europe/Moscow') AT TIME ZONE 'Europe/Moscow');
  -- Five rounds today and on each of the two previous Moscow days.
- r:=heroloop_api.seeker_mine_record(p,(SELECT jsonb_agg(jsonb_build_object('id',gen_random_uuid(),'at',day_start-make_interval(days=>d)+interval '1 hour'))
+ -- Before 01:00 Moscow, keep today's synthetic receipts inside the elapsed day.
+ r:=heroloop_api.seeker_mine_record(p,(SELECT jsonb_agg(jsonb_build_object('id',gen_random_uuid(),'at',day_start-make_interval(days=>d)+least(interval '1 hour',now()-day_start)))
    FROM generate_series(0,2) d CROSS JOIN generate_series(1,5)));
  IF (r->>'added')::integer<>15 THEN RAISE EXCEPTION 'mine record %',r; END IF;
  -- Replays and a foreign player's claim on the same round ids are inert.

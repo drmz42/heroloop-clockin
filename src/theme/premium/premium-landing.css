@@ -24,6 +24,14 @@
 :where(.l5-root) button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 :where(.l5-root) :is(h1, h2, h3, p) { margin: 0; }
 .l5-root button:focus-visible { outline: 2px solid var(--l5-brass-hi); outline-offset: 3px; }
+.l5-root button:disabled { opacity: .5; cursor: default; }
+.l5-root .l5-ref-url { min-width: 0; color: var(--l5-ivory); font: inherit; background: var(--l5-ink); }
+.l5-payment, .l5-entitlements { margin: 20px auto; padding: 20px; width: min(100% - 32px, 900px); border: 1px solid var(--l5-edge); background: var(--l5-ink); }
+.l5-payment p { margin: 12px 0; overflow-wrap: anywhere; }
+.l5-payment input { display: block; width: 100%; min-height: 44px; margin: 8px 0; padding: 8px; color: var(--l5-ivory); background: var(--l5-ink); border: 1px solid var(--l5-edge); }
+.l5-payment .l5-btn { margin: 8px; min-height: 44px; }
+.l5-root .l5-ref-row button, .l5-root .l5-ref-status button { min-height: 44px; }
+.l5-root .l5-ref-status button { padding: 0 8px; border: 1px solid var(--l5-edge); }
 /* Desktop-only wrappers are transparent on smaller screens, so the mobile flow is unchanged. */
 :is(.l5-hero-cta, .l5-footer-brand) { display: contents; }
 :is(.l5-desk, .l5-hero-aside) { display: none !important; }

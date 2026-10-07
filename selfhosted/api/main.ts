@@ -35,6 +35,7 @@ import {
 } from "./social_link.ts";
 import { parseEdition, seekerRefusal } from "./seeker_edition.ts";
 import { quotePurchase, commitPurchase, SKR_PRODUCTS } from "./seeker_commerce.ts";
+import { handleCampaign } from './landing_campaign_endpoint.ts';
 import { parseAdditionalSiwsUris, siwsSiteForRequest } from "./siws_site.ts";
 
 const jsonHeaders = {
@@ -702,6 +703,12 @@ async function storageHealthy(): Promise<boolean> {
 Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
   const url = new URL(request.url);
   const requestId = crypto.randomUUID();
+
+  if (edition==='seeker' && url.pathname.startsWith('/api/v1/landing/')) {
+    const origins=[siwsEndpointConfig.uri,...siwsAdditionalUris].filter(Boolean).map(uri=>new URL(uri).origin);
+    const client=request.headers.get('x-forwarded-for')?.split(',').at(-1)?.trim()||info.remoteAddr.hostname;
+    return await handleCampaign(request,client,origins,privateWallet);
+  }
 
   if (request.method === "GET" && url.pathname === "/internal/health") {
     return json(200, { ok: true });

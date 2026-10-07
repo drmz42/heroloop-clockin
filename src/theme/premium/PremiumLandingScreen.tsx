@@ -13,7 +13,7 @@ export default function PremiumLandingScreen() {
   useEffect(() => {
     if (webGameEntryAllowed && game.state.walletAddress) window.location.replace('/#game');
   }, [game.state.walletAddress]);
-  return <PremiumLandingView onPlay={() => { if (webGameEntryAllowed) setOnboarding(true); }} referralTotal={game.state.referral?.invitedUsers?.length ?? 0} onClassic={() => setUiTheme('classic')}>
+  return <PremiumLandingView onPlay={() => { if (webGameEntryAllowed) setOnboarding(true); }} onClassic={() => setUiTheme('classic')}>
     {onboarding && <Onboarding game={game} onAccountReady={() => window.location.replace('/#game')} onClose={() => setOnboarding(false)} />}
   </PremiumLandingView>;
 }

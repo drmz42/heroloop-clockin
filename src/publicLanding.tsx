@@ -1,4 +1,4 @@
-// Production marketing entry: no game, account, wallet or API initialization.
+// Public marketing entry: campaign wallet/referral API only; no game save initialization.
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';

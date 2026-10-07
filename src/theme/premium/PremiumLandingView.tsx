@@ -29,17 +29,18 @@ import buyVeteran from './assets/btn-pack-veteran.webp';
 import buyElite from './assets/btn-pack-elite.webp';
 import buyFounder from './assets/btn-pack-founder.webp';
 import banner from './assets/banner.webp';
+import { CAMPAIGN_PRICES, useLandingCampaign, type CampaignPack } from '@/landing/campaign';
 
-type Pack = { id: string; name: string; price: string; art: string; buy: string; buyLabel: string; referrals: number; features: Array<string | { note: string }> };
+type Pack = { id: CampaignPack; name: string; price: string; art: string; buy: string; buyLabel: string; referrals: number; features: Array<string | { note: string }> };
 
-// Pack copy and referral milestones mirror the Figma design; they are presentation only and grant nothing.
+// Pack delivery remains deferred; verified purchases and milestones create durable entitlements.
 const PACKS: Pack[] = [
-  { id: 'free', name: 'FREE', price: '$0', art: packFree, buy: buyFree, buyLabel: 'Play free', referrals: 0, features: ['1 Selectable Starter Hero', 'Starting Gold', '10 Health Potions', 'Free Mode', 'Start Playing Instantly'] },
-  { id: 'starter', name: 'STARTER', price: '$2', art: packStarter, buy: buyStarter, buyLabel: 'Get Starter', referrals: 3, features: ['Earn Mode Unlocked', '20 Uncommon Founder Gear Chests', '2 Heroes', 'Starting Gold', 'Health Potions', 'Starter Resources'] },
-  { id: 'scout', name: 'SCOUT', price: '$5', art: packScout, buy: buyScout, buyLabel: 'Get Scout', referrals: 5, features: ['Earn Mode Unlocked', '20 Rare Founder Gear Chests', '2 Heroes', 'More Starting Gold', 'Health Potions', 'Enhanced Starter Resources'] },
-  { id: 'veteran', name: 'VETERAN', price: '$10', art: packVeteran, buy: buyVeteran, buyLabel: 'Get Veteran', referrals: 10, features: ['Earn Mode Unlocked', 'Marketplace Access', '3 Heroes', '30 Epic Founder Gear Chests', 'Starting Gold', 'Health Potions', '1× Boost Pack', { note: '3 × 24h activations' }, '+50% XP & Gold while active'] },
-  { id: 'elite', name: 'ELITE', price: '$49', art: packElite, buy: buyElite, buyLabel: 'Get Elite', referrals: 25, features: ['Earn Mode Unlocked', 'Marketplace Access', '30 Legendary Founder Gear Chests', '750 Summon Scrolls', 'Starting Gold', 'Health Potions', '2× Boost Packs', '25 Active Market Listings', 'Private Community Access', 'Elite Founder Frame', '+2% Ordinary Earn Weight'] },
-  { id: 'founder', name: 'FOUNDER', price: '$99', art: packFounder, buy: buyFounder, buyLabel: 'Get Founder', referrals: 50, features: ['Earn Mode Unlocked', 'Marketplace Access', '30 Mythic Founder Gear Chests', '3,000 Summon Scrolls', 'Starting Gold', 'Health Potions', '3× Boost Packs', '50 Active Market Listings', 'Private Community Access', 'Founder Frame', 'Founder Sigil', '+5% Ordinary Earn Weight'] },
+  { id: 'free', name: 'FREE', price: CAMPAIGN_PRICES.free, art: packFree, buy: buyFree, buyLabel: 'Play free', referrals: 0, features: ['1 Selectable Starter Hero', 'Starting Gold', '10 Health Potions', 'Free Mode', 'Start Playing Instantly'] },
+  { id: 'starter', name: 'STARTER', price: CAMPAIGN_PRICES.starter, art: packStarter, buy: buyStarter, buyLabel: 'Get Starter', referrals: 3, features: ['Earn Mode Unlocked', '20 Uncommon Founder Gear Chests', '2 Heroes', 'Starting Gold', 'Health Potions', 'Starter Resources'] },
+  { id: 'scout', name: 'SCOUT', price: CAMPAIGN_PRICES.scout, art: packScout, buy: buyScout, buyLabel: 'Get Scout', referrals: 5, features: ['Earn Mode Unlocked', '20 Rare Founder Gear Chests', '2 Heroes', 'More Starting Gold', 'Health Potions', 'Enhanced Starter Resources'] },
+  { id: 'veteran', name: 'VETERAN', price: CAMPAIGN_PRICES.veteran, art: packVeteran, buy: buyVeteran, buyLabel: 'Get Veteran', referrals: 10, features: ['Earn Mode Unlocked', 'Marketplace Access', '3 Heroes', '30 Epic Founder Gear Chests', 'Starting Gold', 'Health Potions', '1× Boost Pack', { note: '3 × 24h activations' }, '+50% XP & Gold while active'] },
+  { id: 'elite', name: 'ELITE', price: CAMPAIGN_PRICES.elite, art: packElite, buy: buyElite, buyLabel: 'Get Elite', referrals: 25, features: ['Earn Mode Unlocked', 'Marketplace Access', '30 Legendary Founder Gear Chests', '750 Summon Scrolls', 'Starting Gold', 'Health Potions', '2× Boost Packs', '25 Active Market Listings', 'Private Community Access', 'Elite Founder Frame', '+2% Ordinary Earn Weight'] },
+  { id: 'founder', name: 'FOUNDER', price: CAMPAIGN_PRICES.founder, art: packFounder, buy: buyFounder, buyLabel: 'Get Founder', referrals: 50, features: ['Earn Mode Unlocked', 'Marketplace Access', '30 Mythic Founder Gear Chests', '3,000 Summon Scrolls', 'Starting Gold', 'Health Potions', '3× Boost Packs', '50 Active Market Listings', 'Private Community Access', 'Founder Frame', 'Founder Sigil', '+5% Ordinary Earn Weight'] },
 ];
 
 const CLASSES = [
@@ -65,13 +66,6 @@ const PLATFORMS = [
   { name: 'Steam', glyph: '●' },
   { name: 'Telegram Mini App', glyph: '➤' },
 ];
-
-// Valid referrals shown on the landing: the player's invite list, or `?refs=N` to preview the fill on this design lab.
-function referralCount(invited: number) {
-  const preview = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('refs') : null;
-  const value = preview !== null && /^\d{1,3}$/.test(preview) ? Number(preview) : invited;
-  return Math.max(0, Math.min(PACKS[PACKS.length - 1].referrals, value));
-}
 
 // Share of the rail from this pack's milestone to the next one that the count has covered.
 function railFill(count: number, index: number) {
@@ -105,7 +99,7 @@ export function ArtButton({ art, label, onClick, className = '' }: { art: string
   );
 }
 
-function PackCarousel({ onChoose, referrals }: { onChoose: () => void; referrals: number }) {
+function PackCarousel({ onChoose, referrals }: { onChoose: (pack: CampaignPack) => void; referrals: number }) {
   const track = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
 
@@ -141,7 +135,7 @@ function PackCarousel({ onChoose, referrals }: { onChoose: () => void; referrals
                 ? <li key={feature}>{feature}</li>
                 : <li key={feature.note} className="l5-pack-note">{feature.note}</li>)}
             </ul>
-            <ArtButton art={pack.buy} label={pack.buyLabel} onClick={onChoose} className="l5-pack-buy" />
+            <ArtButton art={pack.buy} label={pack.buyLabel} onClick={() => onChoose(pack.id)} className="l5-pack-buy" />
           </article>
           <p className={`l5-milestone${referrals >= pack.referrals ? ' is-reached' : ''}`} style={{ '--l5-fill': railFill(referrals, index) } as React.CSSProperties} aria-label={`${pack.referrals} referrals unlock the ${pack.name} pack${referrals >= pack.referrals ? ', reached' : ''}`}><i aria-hidden="true" />{pack.referrals}</p>
           </div>
@@ -157,8 +151,9 @@ function PackCarousel({ onChoose, referrals }: { onChoose: () => void; referrals
   );
 }
 
-export default function PremiumLandingView({ onPlay, referralTotal = 0, onClassic, children }: { onPlay: () => void; referralTotal?: number; onClassic?: () => void; children?: ReactNode }) {
-  const referrals = referralCount(referralTotal);
+export default function PremiumLandingView({ onPlay, onClassic, children }: { onPlay: () => void; onClassic?: () => void; children?: ReactNode }) {
+  const campaign = useLandingCampaign();
+  const referrals = campaign.profile?.points ?? 0;
   const goal = PACKS.find((pack) => pack.referrals > referrals) ?? PACKS[PACKS.length - 1];
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -239,28 +234,41 @@ export default function PremiumLandingView({ onPlay, referralTotal = 0, onClassi
 
         <section className="l5-band l5-band--vista">
           <SectionHeading id="packs" title="Founder Packs" subtitle="Jump-start your journey. Unlock more." />
-          <PackCarousel onChoose={play} referrals={referrals} />
+          <PackCarousel onChoose={pack => { if (pack === 'free') play(); else void campaign.choose(pack); }} referrals={referrals} />
         </section>
 
+        <p className="l5-ref-status">SOL purchases and earned packs are saved for later delivery in the game.</p>
+        {campaign.order && <section className="l5-payment" aria-label="Pack payment">
+          <h3>{campaign.order.pack.toUpperCase()} · {CAMPAIGN_PRICES[campaign.order.pack]}</h3>
+          <p>Recipient: {campaign.order.treasury}</p>
+          <p>Network: Solana mainnet. The wallet also pays the network fee. The pack is saved for later game delivery.</p>
+          {!campaign.receipt && campaign.order.transaction && <button type="button" className="l5-btn" disabled={campaign.busy} onClick={() => void campaign.pay()}>Pay {CAMPAIGN_PRICES[campaign.order.pack]}</button>}
+          <label>Payment signature (for confirmation or recovery)<input aria-label="Payment signature" value={campaign.receipt} onChange={event => campaign.setReceipt(event.target.value.trim())} /></label>
+          <button type="button" className="l5-btn" disabled={campaign.busy || !campaign.receipt} onClick={() => void campaign.confirm()}>Confirm payment</button>
+          <button type="button" className="l5-btn" disabled={campaign.busy} onClick={campaign.close}>Close</button>
+        </section>}
+        {campaign.notice && <p className="l5-ref-status" role="status">{campaign.notice}</p>}
+        {campaign.profile && <ul className="l5-entitlements" aria-label="Saved packs">{campaign.profile.entitlements.map(reward => <li key={reward.id}>{reward.pack.toUpperCase()} · {reward.source === 'referral' ? `${reward.threshold} referral points` : 'Purchased'} · {reward.delivered_at ? 'Delivered' : 'Saved for game delivery'}</li>)}</ul>}
         <section className="l5-strip l5-referral" id="referral" aria-labelledby="l5-referral-title">
           <div className="l5-ref-copy">
             <h3 id="l5-referral-title">Invite friends. Unlock free packs.</h3>
-            <p>Connect your wallet, invite friends, and unlock Founder Packs for free.</p>
+            <p>Connect your wallet and share your link. Each friend’s first confirmed paid pack adds one point.</p>
           </div>
           <div className="l5-ref-center">
             <div className="l5-ref-row">
-              <button type="button" className="l5-btn l5-ref-connect" onClick={play}>Connect wallet</button>
-              <div className="l5-ref-url" aria-label="Your referral link">https://heroloop.xyz/ref/YOURCODE</div>
-              <button type="button" className="l5-btn l5-ref-copy-btn" onClick={play}>Copy</button>
-              <button type="button" className="l5-btn l5-ref-share" onClick={play}>Share</button>
+              <button type="button" className="l5-btn l5-ref-connect" disabled={campaign.busy} onClick={() => void campaign.connect()}>{campaign.profile ? 'Reconnect wallet' : 'Connect wallet'}</button>
+              <input className="l5-ref-url" aria-label="Your referral link" readOnly value={campaign.link} placeholder="Connect wallet to get your link" onFocus={event => event.target.select()} />
+              <button type="button" className="l5-btn l5-ref-copy-btn" disabled={campaign.busy || !campaign.link} onClick={() => void campaign.copy()}>Copy</button>
+              <button type="button" className="l5-btn l5-ref-share" disabled={campaign.busy || !campaign.link} onClick={() => void campaign.copy()}>Share link</button>
             </div>
+            {campaign.profile && <p className="l5-ref-status">Wallet: {campaign.profile.wallet.slice(0, 4)}…{campaign.profile.wallet.slice(-4)} · {campaign.profile.registered} joined <button type="button" disabled={campaign.busy} onClick={() => void campaign.disconnect()}>Disconnect</button></p>}
             <p className="l5-ref-status">Your Referrals: {referrals} / {goal.referrals} ({goal.name.charAt(0)}{goal.name.slice(1).toLowerCase()} Pack)</p>
-            <div className="l5-track" role="progressbar" aria-valuemin={0} aria-valuemax={goal.referrals} aria-valuenow={referrals} aria-label="Referral progress"><span style={{ width: `${Math.min(100, (referrals / goal.referrals) * 100)}%` }} /></div>
+            <div className="l5-track" role="progressbar" aria-valuemin={0} aria-valuemax={goal.referrals} aria-valuenow={referrals} aria-label="Referral progress"><span style={{ width: `${Math.min(100, (referrals / Math.max(1, goal.referrals)) * 100)}%` }} /></div>
           </div>
           <ul className="l5-notes">
-            <li>Earn 5% of valid referred players’ reward earnings</li>
-            <li>Rewards accumulate in Pending</li>
-            <li>Claim unlocks after your first real purchase of $2+</li>
+            <li>One point per friend after a confirmed paid pack purchase</li>
+            <li>Reached packs are saved to your verified wallet</li>
+            <li>Rewards will be delivered in the game later</li>
           </ul>
         </section>
 
