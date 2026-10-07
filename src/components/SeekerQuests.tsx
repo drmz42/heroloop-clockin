@@ -1,3 +1,9 @@
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { isAndroidLayout } from '@/platform/platform';
+import { MINE_OPEN_EVENT } from '@/game/seekerTour';
+import { SeekerMinePanel } from './SeekerMinePanel';
+import '@/theme/scene/sheets.css';
 import { CheckCircle2 } from 'lucide-react';
 import type { DailyQuest } from '@/game/types';
 import type { SeekerQuestBoard } from '@/game/useSeekerQuests';
@@ -46,7 +52,23 @@ export function SeekerQuestChallenge({ board }: { board: SeekerQuestBoard }) {
   </section>;
 }
 
-export function SeekerQuests({ board }: { board: SeekerQuestBoard }) {
+export function SeekerQuests({ board, onOpenShop, claimQuest, motionOff = false }: {
+  board: SeekerQuestBoard;
+  onOpenShop: () => void;
+  claimQuest: (id: string) => Promise<boolean>;
+  motionOff?: boolean;
+}) {
+  const [mineOpen, setMineOpen] = useState(false);
+  useEffect(() => {
+    if (!mineOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setMineOpen(false); };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [mineOpen]);
+  const openMine = () => {
+    if (isAndroidLayout) window.dispatchEvent(new Event(MINE_OPEN_EVENT));
+    else setMineOpen(true);
+  };
   const { quests, mine, busy, error, collect } = board;
   const card = (q: DailyQuest) => <div key={q.id} className="quest-card px-2 py-1">
         <div className="ui-text-medium flex items-start gap-1 text-px-text"><span className="min-w-0 flex-1">{groupDigits(q.label)}</span>{q.claimed && <CheckCircle2 size={12} className="shrink-0 text-emerald-400" />}</div>
@@ -56,6 +78,7 @@ export function SeekerQuests({ board }: { board: SeekerQuestBoard }) {
           <span className="ml-auto text-px-dim">{groupNumber(Math.min(q.progress, q.target))}/{groupNumber(q.target)}</span>
         </div>
         <div className="health-track mt-1 h-1 overflow-hidden"><div className="h-full bg-amber-500" style={{ width: `${Math.min(100, q.progress / q.target * 100)}%` }} /></div>
+        {!q.claimed && q.progress < q.target && (q.id.startsWith('mine-') || q.id.startsWith('skr-')) && <button type="button" onClick={q.id.startsWith('mine-') ? openMine : onOpenShop} style={{ minHeight: 44 }} className="game-control ui-text-medium mt-1 min-h-11 w-full font-bold">{q.id.startsWith('mine-') ? 'To Mine' : 'To Shop'}</button>}
         {!q.claimed && q.progress >= q.target && <button type="button" disabled={busy !== null} onClick={() => void collect(q.id)} style={{ minHeight: 44 }} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full font-bold disabled:opacity-50">{busy === q.id ? 'Claiming…' : 'Claim reward'}</button>}
       </div>;
   const reached = MINER_RANKS.filter(entry => (mine?.rounds_total ?? 0) >= entry.rounds);
@@ -73,6 +96,9 @@ export function SeekerQuests({ board }: { board: SeekerQuestBoard }) {
       <div className="space-y-1">{quests.filter(q => q.id.startsWith('mine-rank-')).map(card)}</div>
       <p className="ui-text-small mt-1 text-px-dim">Only verified rounds count. Rewards are in-game only: Gold and Summon Scrolls, never SOL, SKR or ORE.</p>
     </section>
+    {mineOpen && createPortal(<div className="hl-more-sheet mn-sheet" style={{ inset: 0 }} role="dialog" aria-modal="true" aria-label="$ORE Mine">
+      <SeekerMinePanel onClose={() => setMineOpen(false)} claimQuest={claimQuest} still={motionOff} />
+    </div>, document.body)}
     {error && !error.id.startsWith('challenge-') && <p role="alert" className="ui-text-small mb-2 text-red-300">{error.message}</p>}
   </>;
 }

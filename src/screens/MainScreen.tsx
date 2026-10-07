@@ -916,7 +916,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1 px-2 py-1"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => openTutorialChestsChecked(1)} className="game-control min-h-7 ui-text-small font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => openTutorialChestsChecked(10)} className="game-control min-h-7 ui-text-small font-bold">Open 10</button></div></div>}
             </section>;
           })()}
-          {isolatedHackathon && <SeekerQuests board={seekerQuestBoard} />}
+          {isolatedHackathon && <SeekerQuests board={seekerQuestBoard} onOpenShop={onRewardBoostClick} claimQuest={game.claimQuest} motionOff={state.battleAnimationMode === 'off'} />}
           <div className="section-kicker mb-1">Daily Quests</div>
           <div className="space-y-1">
             {state.dailyQuests.map(q => {
