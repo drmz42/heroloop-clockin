@@ -17,6 +17,7 @@ import type { HeroBase, OwnedHero, Rarity } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
 import { isAndroidLayout } from '@/platform/platform';
 import { formatUtcTime } from '@/game/numberFormat';
+import { ActionFx } from '@/theme/motion/ActionFx';
 
 const FILTER_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
 const INACTIVE_COMBAT_LABEL = 'Coming soon — not active in combat';
@@ -83,6 +84,7 @@ function HeroGridCard({ base, hero, game, onSelect }: { base: HeroBase; hero: Ow
             {upgradeable && <StateBadge label="Upgrade" tone="purple" />}
           </span>
           {hero.locked && <Lock size={12} className="hv-card-lock" />}
+          <ActionFx watch={isInTeam} scope={hero.uid} variant={isInTeam ? 'join' : 'leave'} />
         </span>
         <span className="hv-card-info">
           <span className="hv-card-name">{base.name}</span>
@@ -161,6 +163,7 @@ function HeroDetailModal({ hero, game, onClose }: { hero: OwnedHero; game: GameA
       )}
       <div className={`hero-detail-panel hv-detail rarity-${base.rarity} relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden`} style={{ '--hv-color': rc } as React.CSSProperties} onClick={(event) => event.stopPropagation()}>
         <header className="hv-detail-hero shrink-0">
+          <ActionFx watch={isInTeam} scope={hero.uid} variant={isInTeam ? 'join' : 'leave'} />
           <img className="hv-detail-art" src={heroPortraitSrc(base.id, base.heroClass, base.rarity, base.color)} alt="" decoding="async" style={{ ...heroPortraitStyle(base.id, base.heroClass), transform: 'none' }} />
           <div className="hv-detail-copy">
             <span className="hv-detail-rarity">{RARITY_LABEL[base.rarity]} · {CLASS_LABEL[base.heroClass]}</span>

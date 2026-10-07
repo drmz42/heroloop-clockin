@@ -42,6 +42,8 @@ import { playerSync, authClient, lastRetryAfterSeconds } from '@/game/backend';
 import { groupNumber, groupDigits } from '@/game/numberFormat';
 import { versionedAsset } from '@/game/assetVersion';
 import { BattleAmbience } from '@/components/BattleAmbience';
+import { ActionFx } from '@/theme/motion/ActionFx';
+import { flyCoins } from '@/theme/motion/flyCoins';
 
 const SAVE_KEY = editionStorageKey('afk-heroes-save-v7');
 // Temporarily hide the first-use dialog for hackathon start-of-game recordings.
@@ -1097,7 +1099,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
       <div className="hl-col-right material-panel order-3 flex min-w-0 w-full shrink-0 flex-col overflow-hidden lg:order-none lg:w-[390px] xl:w-[420px]">
         <div className="shrink-0 border-b border-[#4f412e] bg-[radial-gradient(circle_at_20%_0%,rgba(162,118,50,.11),transparent_50%)] px-3 py-2.5">
           <div className="section-kicker mb-2">Active Formation</div>
-          <div className="flex min-h-[54px] items-end gap-1.5">
+          <div className="relative flex min-h-[54px] items-end gap-1.5">
+            <ActionFx watch={state.team.length} variant="join" downVariant="leave" />
             {state.team.map(uid => {
               const h = state.ownedHeroes.find(h => h.uid === uid); const b = h ? HERO_MAP[h.heroId] : null;
               if (!h || !b) return null;
@@ -1157,6 +1160,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                       </span>
                     )}
                     {ib && item!.enchantLevel > 0 && <div className="item-enchant-label absolute left-0 top-0 z-10 ui-text-small font-bold text-amber-400 font-vt leading-none px-0.5">+{item!.enchantLevel}</div>}
+                    <ActionFx watch={eqUid ?? ''} scope={selectedHero.uid} variant={item ? 'equip' : 'unequip'} />
+                    {item && <ActionFx watch={item.enchantLevel} scope={`${selectedHero.uid}:${item.uid}`} variant="enchant" downVariant="unequip" />}
                     {ib?.heroClass && <ClassGlyph heroClass={ib.heroClass} className="absolute right-0 top-0" />}
                     {ib && <div className="item-level-label absolute bottom-0 right-0 ui-text-small font-bold font-vt px-0.5 leading-none" style={{ background: ic, color: '#000' }}>{item!.level}</div>}
                   </button>
@@ -1186,7 +1191,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               <button type="button" aria-label={inventoryLockMode ? 'Exit Inventory Lock mode' : 'Enter Inventory Lock mode'} aria-pressed={inventoryLockMode} onClick={() => { setInventoryLockMode((active) => !active); setSelectedItem(null); setSelectedItemSource(null); setSelectedItemSlot(null); setShowBulkSellConfirm(false); }} className={`game-control grid min-w-0 place-items-center px-0 py-1 ${inventoryLockMode ? 'border-red-500/70 bg-red-950/55 text-red-300' : 'text-[#a69c8c]'}`} title={inventoryLockMode ? 'Lock mode active — click to exit' : 'Lock mode — click items to lock or unlock'}><LockIcon size={13} /></button>
               <div className="relative">
                 <button onClick={() => setShowBulkSellConfirm((value) => !value)} disabled={unlockedSellTotal === 0} className="game-control game-danger flex min-w-0 w-full items-center justify-center gap-1 px-1 py-1 ui-text-medium font-bold" title={`Sell all unlocked items for ${formatNum(unlockedSellTotal)} gold`}><Coins size={12} /> Sell</button>
-                {showBulkSellConfirm && <div className="item-sell-confirm absolute right-0 top-full z-40 mt-1 w-48 rounded-md border border-[#80502d] p-2 text-left shadow-xl"><p className="ui-text-small font-bold text-[#ead9bf]">Sell all unlocked items for {formatNum(unlockedSellTotal)} Gold?</p><div className="mt-1.5 grid grid-cols-2 gap-1"><button type="button" onClick={() => setShowBulkSellConfirm(false)} className="game-control py-1 ui-text-small font-bold">Cancel</button><button type="button" onClick={async () => { setShowBulkSellConfirm(false); const limited = bagItems.filter((item) => !item.locked && !item.serverOwned && ['divine', 'celestial'].includes(ITEM_MAP[item.itemId]?.rarity ?? '')); await Promise.allSettled(limited.map((item) => tok.removeLimitedItem(item.uid))); const unsold = await game.sellAllUnlocked(); if (unsold > 0) showToast(`${unsold} item${unsold === 1 ? '' : 's'} could not be sold`); }} className="rounded border border-rose-500/45 bg-rose-500/15 py-1 ui-text-small font-black text-rose-200">Sell all</button></div></div>}
+                {showBulkSellConfirm && <div className="item-sell-confirm absolute right-0 top-full z-40 mt-1 w-48 rounded-md border border-[#80502d] p-2 text-left shadow-xl"><p className="ui-text-small font-bold text-[#ead9bf]">Sell all unlocked items for {formatNum(unlockedSellTotal)} Gold?</p><div className="mt-1.5 grid grid-cols-2 gap-1"><button type="button" onClick={() => setShowBulkSellConfirm(false)} className="game-control py-1 ui-text-small font-bold">Cancel</button><button type="button" onClick={async (event) => { const coinAnchor = event.currentTarget.closest('.item-sell-confirm')?.parentElement; setShowBulkSellConfirm(false); const limited = bagItems.filter((item) => !item.locked && !item.serverOwned && ['divine', 'celestial'].includes(ITEM_MAP[item.itemId]?.rarity ?? '')); await Promise.allSettled(limited.map((item) => tok.removeLimitedItem(item.uid))); const unsold = await game.sellAllUnlocked(); flyCoins(coinAnchor); if (unsold > 0) showToast(`${unsold} item${unsold === 1 ? '' : 's'} could not be sold`); }} className="rounded border border-rose-500/45 bg-rose-500/15 py-1 ui-text-small font-black text-rose-200">Sell all</button></div></div>}
               </div>
             </div>}
             {inventoryTab !== 'resources' && inventoryLockMode && <div className="mt-1.5 rounded-md border border-red-500/45 bg-red-950/35 px-2 py-1 text-center ui-text-small font-bold text-red-200" role="status">LOCK MODE · click an item to lock or unlock it</div>}
@@ -1220,6 +1225,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                   {item && rarity && <RarityFx rarity={rarity} shape="slot" />}
                   {item?.locked && <LockIcon size={11} className="absolute bottom-0.5 left-0.5 z-10 text-amber-300" />}
                   {item && item.enchantLevel > 0 && <div className="item-enchant-label absolute left-0 top-0 z-10 ui-text-small font-bold text-amber-400 font-vt leading-3 px-px">+{item.enchantLevel}</div>}
+                  {item && <ActionFx watch={Boolean(item.locked)} scope={item.uid} variant={item.locked ? 'lock' : 'unlock'} />}
+                  {item && <ActionFx watch={item.enchantLevel} scope={item.uid} variant="enchant" downVariant="unequip" />}
                   {itemBase?.heroClass && <ClassGlyph heroClass={itemBase.heroClass} className="absolute right-0 top-0" />}
                   {item && <span className="item-level-label ui-text-small absolute bottom-0 right-0 min-w-3 rounded-tl bg-[#d9d0c0] px-px text-center font-bold leading-3 text-black" title={`Item level ${item.level}`}>{item.level}</span>}
                 </button>

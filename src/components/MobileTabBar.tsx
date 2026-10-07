@@ -24,6 +24,18 @@ const UPCOMING: Record<Upcoming, { title: string; kicker: string; line: string; 
   guilds: { title: 'Guilds', kicker: 'Brotherhood', line: 'Raise a banner with your allies.', points: ['Found or join a guild', 'Guild raids against epic bosses', 'Guild ranks and a shared hall'], Icon: Castle },
   pets: { title: 'Pets', kicker: 'Companions', line: 'Tame companions that fight at your side.', points: ['Hatch and raise companions', 'Pets assist your heroes in battle', 'Evolve rare forms'], Icon: PawPrint },
 };
+
+// Living More art (sheets.css "More v4"): masked art layers breathe or sway, light layers flicker.
+const MO_LIFE: Record<'pass' | 'guilds' | 'pets', Array<[string, 'art' | 'light']>> = {
+  pass: [['a', 'light'], ['b', 'light'], ['s1', 'light'], ['s2', 'light'], ['s3', 'light'], ['s4', 'light'], ['s5', 'light'], ['s6', 'light']],
+  guilds: [['a', 'art'], ['b', 'light'], ['c', 'light']],
+  pets: [['a', 'art'], ['b', 'art'], ['c', 'light'], ['d', 'light']],
+};
+function MoLife({ id }: { id: string }) {
+  const layers = MO_LIFE[id as keyof typeof MO_LIFE];
+  return layers ? <>{layers.map(([key, kind]) => <i key={key} className={`mo-life mo-life-${kind} mo-life-${key}`} aria-hidden="true" />)}</> : null;
+}
+
 export function MobileTabBar({
   tab, section, moreOpen, onTab, onSection, onMoreOpen, onGuides, onCode, onSupport, onLogout, readyQuests = 0, badges = {}, alerts = {},
   claimQuest, motionOff = false,
@@ -104,6 +116,7 @@ export function MobileTabBar({
             {teaser ? (
               <div className={`mo-teaser mo-art-${teaser}`}>
                 <div className="mo-teaser-art" aria-hidden="true" />
+                <MoLife id={teaser} />
                 <span className="mo-medal" aria-hidden="true">{(() => { const TeaserIcon = UPCOMING[teaser].Icon; return <TeaserIcon size={34} />; })()}</span>
                 <span className="mo-kicker">{UPCOMING[teaser].kicker}</span>
                 <strong>Coming soon</strong>
@@ -118,6 +131,7 @@ export function MobileTabBar({
             ) : (
               <div className="mo-body">
                 <button type="button" className="mo-banner mo-banner-hero mo-art-pass" onClick={() => setTeaser('pass')}>
+                  <MoLife id="pass" />
                   <span className="mo-banner-text"><span className="mo-kicker">{UPCOMING.pass.kicker}</span><strong>Season Pass</strong><span>{UPCOMING.pass.line}</span></span>
                   <em className="mo-soon">Soon</em><ChevronRight className="mo-chev" size={18} aria-hidden="true" />
                 </button>
@@ -126,6 +140,7 @@ export function MobileTabBar({
                     const { title, kicker, Icon } = UPCOMING[id];
                     return (
                       <button type="button" key={id} className={`mo-banner mo-tile mo-art-${id}`} onClick={() => setTeaser(id)}>
+                        <MoLife id={id} />
                         <i className="mo-tile-icon" aria-hidden="true"><Icon size={18} /></i>
                         <span className="mo-banner-text"><span className="mo-kicker">{kicker}</span><strong>{title}</strong></span>
                         <em className="mo-soon">Soon</em>
