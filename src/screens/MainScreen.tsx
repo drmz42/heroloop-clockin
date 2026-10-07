@@ -1098,7 +1098,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
 
       {/* ── RIGHT COLUMN ── */}
       <div className="hl-col-right material-panel order-3 flex min-w-0 w-full shrink-0 flex-col overflow-hidden lg:order-none lg:w-[390px] xl:w-[420px]">
-        <div className="shrink-0 border-b border-[#4f412e] bg-[radial-gradient(circle_at_20%_0%,rgba(162,118,50,.11),transparent_50%)] px-3 py-2.5">
+        <div className="hl-active-formation shrink-0 border-b border-[#4f412e] bg-[radial-gradient(circle_at_20%_0%,rgba(162,118,50,.11),transparent_50%)] px-1 py-2.5">
           <div className="section-kicker mb-2">Active Formation</div>
           <div className="relative flex min-h-[54px] items-end gap-1.5">
             <ActionFx watch={state.team.length} variant="join" downVariant="leave" />
@@ -1136,7 +1136,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                 </span>
                 <button type="button" aria-label="Unequip all gear" onClick={async () => { if (!canUnequipAll) return; if (await game.unequipAll(selectedHero.uid)) { setSelectedItem(null); showToast('All gear unequipped'); } else showToast(equipmentFailure('Unequip')); }} disabled={!canUnequipAll} className="game-control hl-gear-unequip flex shrink-0 items-center justify-center gap-1 px-2 ui-text-small font-bold leading-none" title={selectedEquippedCount === 0 ? 'No equipped items' : canUnequipAll ? 'Move all equipped items to Inventory' : 'Not enough Inventory space'}><PackageMinus size={10} aria-hidden="true" />Unequip</button>
             </div>
-            <div className="hl-gear-grid grid w-full grid-cols-8 gap-0.5">
+            <div className="hl-gear-grid grid w-full grid-cols-8 gap-px">
               {SLOTS.map(slot => {
                 const eqUid = selectedHero.equipped[slot];
                 const item = eqUid ? state.inventory.find(i => i.uid === eqUid) : null;
@@ -1205,7 +1205,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             {Array.from({ length: GRID_SIZE - resourceSlotCount }, (_, index) => <div key={`resource-empty-${index}`} className="item-slot aspect-square min-w-0 w-full border" style={{ borderColor: 'rgba(128,119,100,0.11)', background: 'linear-gradient(145deg,#151612,#0c0e0d)' }} />)}
             </div>
             {selectedResource && <div className={`mt-2 rounded-lg border p-2 ${selectedResource === 'summon-scroll' ? 'border-violet-400/45 bg-violet-950/20' : 'border-amber-400/45 bg-amber-950/20'}`}><div className="flex items-center gap-2">{selectedResource === 'summon-scroll' ? <SummonScrollArtwork size={40} /> : <BossKeyIcon size={40} />}<div className="min-w-0"><strong className="ui-text-large block text-[#efe4ce]">{selectedResource === 'summon-scroll' ? 'Summon Scroll' : 'Boss Key'}</strong><span className="ui-text-small text-[#9b9283]">Owned: {formatNum(selectedResource === 'summon-scroll' ? state.summonScrolls : state.bossKeys)}</span></div></div><p className="ui-text-medium mt-1.5 leading-snug text-[#c9c0b1]">{selectedResource === 'summon-scroll' ? 'Persistent consumable for one future Free Summon. Scroll spending is not available until server-authoritative Free Summon launches.' : 'Non-deletable resource used only to summon a Boss. One summon consumes one key; a Boss Chest is awarded only after victory.'}</p></div>}
-          </div> : <div className={`hl-equipment-grid grid min-w-0 grid-cols-8 gap-0.5 overflow-hidden ${inventoryLockMode ? 'inventory-lock-cursor' : ''}`}>
+          </div> : <div className={`hl-equipment-grid grid min-w-0 grid-cols-8 gap-px overflow-hidden ${inventoryLockMode ? 'inventory-lock-cursor' : ''}`}>
             {cells.slice(0, bagOpenSlots).map((item, i) => {
               const itemBase = item ? ITEM_MAP[item.itemId] : null;
               const rarity = itemBase?.rarity ?? (item ? 'common' : null);
@@ -1236,7 +1236,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               );
             })}
             {bagOpenSlots < GRID_SIZE && <div data-inventory-locked-region className="col-span-8 grid min-w-0">
-              <div data-inventory-locked-cells className="col-start-1 row-start-1 grid min-w-0 grid-cols-8 gap-0.5">
+              <div data-inventory-locked-cells className="col-start-1 row-start-1 grid min-w-0 grid-cols-8 gap-px">
                 {Array.from({ length: GRID_SIZE - bagOpenSlots }, (_, index) => <button key={`locked-${index}`} type="button" disabled aria-label={`Bag ${activeBag} slot ${bagOpenSlots + index + 1} locked`} className="item-slot aspect-square flex min-w-0 w-full items-center justify-center overflow-hidden border opacity-70" style={{ borderColor: 'rgba(130,103,63,0.35)', background: 'linear-gradient(145deg,#181612,#080909)' }}><LockIcon size={13} className="text-[#8f7652]" aria-hidden="true" /></button>)}
               </div>
             {bagQuote && !bagQuote.complete && bagQuote.bag === inventoryTab && <div className="col-start-1 row-start-1 z-10 m-1 min-w-0 max-w-full self-center justify-self-center text-center ui-text-small text-[#e5d4b4]">
