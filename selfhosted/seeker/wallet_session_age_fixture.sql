@@ -38,6 +38,27 @@ BEGIN
   IF v_seen <> 'true,wallet_session_expired' THEN
     RAISE EXCEPTION 'wallet session age with Boost Max: %', v_seen;
   END IF;
+  UPDATE auth.sessions SET created_at = now() - interval '23 hours 59 minutes'
+  WHERE id = '7a5e1000-0000-4000-8000-000000000002';
+  IF heroloop_api.resolve_authenticated_account_session(w,'7a5e1000-0000-4000-8000-000000000002')->>'authenticated' IS DISTINCT FROM 'true' THEN
+    RAISE EXCEPTION 'Boost Max session refused before 24 hours';
+  END IF;
+  UPDATE auth.sessions SET created_at = now() - interval '24 hours'
+  WHERE id = '7a5e1000-0000-4000-8000-000000000002';
+  IF heroloop_api.resolve_authenticated_account_session(w,'7a5e1000-0000-4000-8000-000000000002')->>'reason' IS DISTINCT FROM 'wallet_session_expired' THEN
+    RAISE EXCEPTION 'Boost Max session accepted at 24 hours';
+  END IF;
+  UPDATE public.players SET boost_max_active = false WHERE player_id = w;
+  UPDATE auth.sessions SET created_at = now() - interval '7 hours 59 minutes'
+  WHERE id = '7a5e1000-0000-4000-8000-000000000002';
+  IF heroloop_api.resolve_authenticated_account_session(w,'7a5e1000-0000-4000-8000-000000000002')->>'authenticated' IS DISTINCT FROM 'true' THEN
+    RAISE EXCEPTION 'Wallet session refused before 8 hours';
+  END IF;
+  UPDATE auth.sessions SET created_at = now() - interval '8 hours', updated_at = now()
+  WHERE id = '7a5e1000-0000-4000-8000-000000000002';
+  IF heroloop_api.resolve_authenticated_account_session(w,'7a5e1000-0000-4000-8000-000000000002')->>'reason' IS DISTINCT FROM 'wallet_session_expired' THEN
+    RAISE EXCEPTION 'Wallet session accepted at 8 hours after Boost Max deactivation';
+  END IF;
   IF has_function_privilege('authenticated','heroloop_api.resolve_authenticated_account_session(uuid,uuid)','EXECUTE')
     OR NOT has_function_privilege('heroloop_api','heroloop_api.resolve_authenticated_account_session(uuid,uuid)','EXECUTE') THEN
     RAISE EXCEPTION 'wallet session resolver privileges';
