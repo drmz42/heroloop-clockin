@@ -32,6 +32,14 @@ Deno.test('campaign signature binds the exact wallet and invitation message',asy
 Deno.test('new payments are disabled by default before RPC or database work',async()=>{
  await assert.rejects(()=>campaignRoute('intent',{pack:'starter'},{call:()=>{throw new Error('unexpected database call');},rpc:()=>{throw new Error('unexpected RPC');},config:{cluster:'mainnet',skrMint:'',treasury:''},paymentsEnabled:false}),/campaign_payments_paused/);
 });
+Deno.test('recipient cannot buy a pack from itself before RPC or order creation',async()=>{
+ const calls:string[]=[];
+ await assert.rejects(()=>campaignRoute('intent',{token:'session',pack:'starter'},{call:async(_sql,args)=>{calls.push(String(args[0]));return{wallet:CAMPAIGN_SOL_TREASURY};},rpc:()=>{throw new Error('unexpected RPC');},config:{cluster:'mainnet',skrMint:'',treasury:''},paymentsEnabled:true}),/campaign_payer_is_treasury/);
+ assert.deepEqual(calls,['profile']);
+});
+Deno.test('RPC outage is reported as payment preparation failure',async()=>{
+ await assert.rejects(()=>campaignRoute('intent',{token:'session',pack:'starter'},{call:async()=>({wallet:base58Encode(new Uint8Array(32).fill(2))}),rpc:()=>{throw new Error('rpc_http_503');},config:{cluster:'mainnet',skrMint:'',treasury:''},paymentsEnabled:true}),/campaign_chain_unavailable/);
+});
 Deno.test('unfinalized transactions do not award points even when new payments are paused',async()=>{
  const calls:string[]=[];
  await assert.rejects(()=>campaignRoute('confirm',{token:'cookie',id:'10000000-0000-4000-8000-000000000001',signature:'B'.repeat(64)},{call:async(_sql,args)=>{calls.push(String(args[0]));return{id:'10000000-0000-4000-8000-000000000001',wallet:'A'.repeat(32),amount_minor:'50000000',reference:'C'.repeat(32),treasury:'T'.repeat(32),created_at:new Date().toISOString(),expires_at:new Date().toISOString()};},rpc:async(method,args)=>{assert.equal(method,'getTransaction');assert.equal((args[1] as {commitment:string}).commitment,'finalized');return null;},config:{cluster:'mainnet',skrMint:'',treasury:'T'.repeat(32)},paymentsEnabled:false}),/campaign_payment_pending/);

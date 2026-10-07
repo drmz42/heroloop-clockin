@@ -39,8 +39,11 @@ export async function campaignRoute(action: string, body: Json, a: Adapters): Pr
  if(action==='profile'||action==='logout') return {...await run(action,{token_hash:token}),payments_enabled:a.paymentsEnabled};
  if(action==='intent') {
   if(!a.paymentsEnabled) throw new Error('campaign_payments_paused');
+  const profile=await run('profile',{token_hash:token});
+  if(profile.wallet===CAMPAIGN_SOL_TREASURY) throw new Error('campaign_payer_is_treasury');
   // Both catalogue amount and recipient come from the server.
-  const latest=await a.rpc('getLatestBlockhash',[{commitment:'confirmed'}]) as {value?:{blockhash?:string}};
+  let latest:{value?:{blockhash?:string}};
+  try {latest=await a.rpc('getLatestBlockhash',[{commitment:'confirmed'}]) as typeof latest;} catch {throw new Error('campaign_chain_unavailable');}
   if(!latest?.value?.blockhash||!ADDRESS.test(latest.value.blockhash)) throw new Error('campaign_chain_unavailable');
   const order=await run('intent',{token_hash:token,pack:body.pack,reference:newReference(),treasury:CAMPAIGN_SOL_TREASURY});
   const bytes=buildDepositTransaction({asset:'SOL',amountMinor:BigInt(String(order.amount_minor)),payer:String(order.wallet),reference:String(order.reference),treasury:String(order.treasury),blockhash:latest.value.blockhash});
@@ -52,7 +55,8 @@ export async function campaignRoute(action: string, body: Json, a: Adapters): Pr
   const order=await run('submit',{token_hash:token,id:body.id,signature:body.signature});
   if(order.signature && order.signature!==body.signature) throw new Error('campaign_signature_conflict');
   if(!order.signature) {
-   const tx=await a.rpc('getTransaction',[body.signature,{encoding:'jsonParsed',commitment:'finalized',maxSupportedTransactionVersion:0}]);
+   let tx:unknown;
+   try {tx=await a.rpc('getTransaction',[body.signature,{encoding:'jsonParsed',commitment:'finalized',maxSupportedTransactionVersion:0}]);} catch {throw new Error('campaign_chain_unavailable');}
    const intent:DepositIntent={intent_id:String(order.id),asset:'SOL',amount_minor:String(order.amount_minor),payer:String(order.wallet),reference:String(order.reference),created_at:String(order.created_at),expires_at:String(order.expires_at)};
    const refusal=verifyDeposit(intent,{...a.config,treasury:String(order.treasury)},tx);
    if(refusal) throw new Error(refusal==='deposit_not_found'?'campaign_payment_pending':`campaign_${refusal}`);
