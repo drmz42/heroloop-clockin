@@ -49,8 +49,11 @@ export function AppUpdateGate() {
   }, []);
 
   if (!latest) return null;
-  // Older APKs open staging2.heroloop.xyz; the public download link is always on heroloop.xyz.
-  const host = window.location.hostname.endsWith('heroloop.xyz') ? 'heroloop.xyz' : window.location.host;
+  // Before build 15, APK links on GAME_HOST stay in a WebView without download support.
+  // www is outside every released GAME_HOST and redirects to the same public HTTPS file.
+  const installedCode = Number(/HeroLoopAppCode\/(\d+)/.exec(navigator.userAgent)?.[1]);
+  const publicHost = installedCode >= 15 ? 'heroloop.xyz' : 'www.heroloop.xyz';
+  const host = window.location.hostname.endsWith('heroloop.xyz') ? publicHost : window.location.host;
   const path = `/download/${latest.fileName}`;
   // The Android shell opens this direct HTTPS link in an external browser.
   const downloadUrl = `https://${host}${path}`;
