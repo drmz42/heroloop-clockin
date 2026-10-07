@@ -216,8 +216,8 @@
    Season Pass are layered (Codex imagegen, upload/more-layers-20261007): an empty background plate,
    transparent creature/object layers sized and positioned exactly like the plate, then the shading.
    MobileTabBar.tsx <MoLife> renders the layers; light layers (SVG in the plate's 1024x683 pixels)
-   follow the motion layer switches. Cloth and creatures move through small background offsets;
-   their full-size elements never transform under the frame clip, which glitched on phone GPUs. */
+   follow the motion layer switches. The cloth stays anchored with a masked traveling highlight;
+   creatures use small background offsets. Full-size elements never transform under the frame clip. */
 .mo-banner, .mo-teaser { clip-path: inset(1.5px); }
 .mo-art-pass { --mo-art: url('/assets/screens/more-pass-bg.webp'); }
 .mo-art-guilds { --mo-art: url('/assets/screens/more-guild-bg.webp'); }
@@ -243,20 +243,27 @@
 .mo-layer-treasure { --mo-layer: url('/assets/screens/more-pass-treasure.webp'); }
 .mo-art-pets { --mo-motion-x: 70%; --mo-motion-y: 38%; }
 .mo-teaser.mo-art-pets { --mo-motion-x: 72%; --mo-motion-y: 30%; }
-.mo-art-guilds { --mo-motion-x: 82%; }
-.mo-teaser.mo-art-guilds { --mo-motion-x: 78%; }
+/* Preserve the cloth's attachment and baked foreground-person occlusion at every frame. */
+.mo-layer-banner::after {
+  content: '';
+  display: none;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 35%, rgba(255, 210, 145, .13) 50%, transparent 65%) 100% 0 / 250% 100% no-repeat;
+  mask: var(--mo-layer) var(--mo-life-pos) / var(--mo-life-size) no-repeat;
+}
 @media (prefers-reduced-motion: no-preference) {
   html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .mo-life { display: block; }
-  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .mo-layer-banner { animation: mo-cloth-offset 6s ease-in-out infinite; }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .mo-layer-banner::after { display: block; animation: mo-cloth-light 8s ease-in-out infinite; }
   html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .mo-layer-dragon { animation: mo-creature-rise 4.2s ease-in-out infinite; }
   html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .mo-layer-wolf { animation: mo-creature-drift 5.4s ease-in-out -1.3s infinite; }
 }
 
-/* Paint-only offsets keep the frame, layer geometry and foreground registration stable. */
-@keyframes mo-cloth-offset {
-  0%, 100% { background-position-x: var(--mo-motion-x); }
-  30% { background-position-x: calc(var(--mo-motion-x) + 1px); }
-  70% { background-position-x: calc(var(--mo-motion-x) - 1px); }
+@keyframes mo-cloth-light {
+  0% { background-position-x: 100%; opacity: 0; }
+  15%, 85% { opacity: 1; }
+  100% { background-position-x: 0%; opacity: 0; }
 }
 @keyframes mo-creature-rise {
   0%, 100% { background-position-y: var(--mo-motion-y); }
