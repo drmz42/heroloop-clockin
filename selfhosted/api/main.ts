@@ -1298,6 +1298,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       } catch (error) {
         const code = databaseErrorCode(error, [
           "invalid_promo_code", "promo_code_already_redeemed", "promo_code_exhausted",
+          "chest_capacity_exceeded",
         ]);
         if (code) return errorResponse(409, code, requestId);
         console.error("promo_redeem database adapter failed", { requestId });

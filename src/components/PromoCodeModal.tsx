@@ -21,6 +21,7 @@ const ERROR_TEXT: Record<string, string> = {
   invalid_promo_code: 'This code is invalid or has expired.',
   promo_code_already_redeemed: 'You have already redeemed this code.',
   promo_code_exhausted: 'This code has reached its redemption limit.',
+  chest_capacity_exceeded: 'Not enough space for the reward chests. Open some stored chests, then redeem this code again. Your code has not been used.',
   rate_limited: 'Too many attempts. Please wait and try again.',
 };
 
