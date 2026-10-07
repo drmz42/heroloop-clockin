@@ -23,7 +23,9 @@ export async function campaignRoute(action: string, body: Json, a: Adapters): Pr
   if(body.ref!==undefined && body.ref!=='' && (typeof body.ref!=='string'||!UUID.test(body.ref))) throw new Error('campaign_invalid_referral');
   if(typeof body.origin!=='string'||!/^https:\/\/[a-z0-9.-]+$/.test(body.origin)) throw new Error('campaign_invalid_origin');
   const id=crypto.randomUUID();
-  const message=`${body.origin} wants you to sign in with your Solana account:\n${body.wallet}\n\nRegister for the HeroLoop pack referral campaign. This does not authorize a transaction.\n\nReferral: ${body.ref||'direct'}\nNonce: ${id}\nIssued At: ${new Date().toISOString()}\nExpires in: 5 minutes`;
+  const issuedAt=new Date();
+  // SIWS domain is the host, not the HTTPS origin; optional fields use canonical names.
+  const message=`${new URL(body.origin).host} wants you to sign in with your Solana account:\n${body.wallet}\n\nRegister for HeroLoop. No transaction or payment is authorized. Invitation: ${body.ref||'direct'}.\n\nURI: ${body.origin}/\nVersion: 1\nChain ID: mainnet\nNonce: ${id.replaceAll('-','')}\nIssued At: ${issuedAt.toISOString()}\nExpiration Time: ${new Date(+issuedAt+300000).toISOString()}`;
   return await run('challenge',{wallet:body.wallet,ref:body.ref,id,binding,message});
  }
  if(action==='verify') {

@@ -1,6 +1,21 @@
 import assert from 'node:assert/strict';
 import { campaignRoute, campaignSignature, reconcileCampaign, CAMPAIGN_SOL_TREASURY } from './landing_campaign.ts';
 import {base58Encode,base58Decode} from './chain.ts';
+Deno.test('wallet challenge uses canonical SIWS domain, nonce and expiration fields',async()=>{
+ const pair=await crypto.subtle.generateKey('Ed25519',true,['sign','verify']) as CryptoKeyPair;
+ const wallet=base58Encode(new Uint8Array(await crypto.subtle.exportKey('raw',pair.publicKey)));
+ const result=await campaignRoute('challenge',{wallet,origin:'https://heroloop.xyz',binding:'browser-cookie',ref:''},{call:async(_sql,args)=>{assert.equal(args[0],'challenge');return JSON.parse(String(args[1]));},rpc:()=>{throw new Error('unexpected RPC');},config:{cluster:'mainnet',skrMint:'',treasury:''},paymentsEnabled:false});
+ const message=String(result.message);
+ assert(message.startsWith(`heroloop.xyz wants you to sign in with your Solana account:\n${wallet}\n\n`));
+ assert(message.includes('\nURI: https://heroloop.xyz/\nVersion: 1\nChain ID: mainnet\n'));
+ assert.match(message,/\nNonce: [a-f0-9]{32}\n/);
+ const issued=message.match(/\nIssued At: (.+)\n/)?.[1];
+ const expires=message.match(/\nExpiration Time: (.+)$/)?.[1];
+ assert.equal(Date.parse(expires!)-Date.parse(issued!),300000);
+ const signature=btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.sign('Ed25519',pair.privateKey,new TextEncoder().encode(message)))));
+ assert(await campaignSignature(wallet,message,signature));
+ assert(!await campaignSignature(wallet,message.replace('heroloop.xyz','evil.example'),signature));
+});
 Deno.test('Founder SOL pack recipient is a canonical 32-byte address',()=>{
  const bytes=base58Decode(CAMPAIGN_SOL_TREASURY);assert.equal(bytes.length,32);assert.equal(base58Encode(bytes),CAMPAIGN_SOL_TREASURY);
 });
