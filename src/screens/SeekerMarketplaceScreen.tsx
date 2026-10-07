@@ -11,7 +11,8 @@ import { HERO_MAP, RARITY_COLORS, RARITY_LABEL } from '@/game/heroes';
 import { ITEM_MAP, STAT_LABEL, displayItemPower, formatStatValue, isMarketEligibleEquipment } from '@/game/items';
 import { formatNum } from '@/game/state';
 import type { OwnedHero, OwnedItem, Rarity } from '@/game/types';
-import type { GameApi, ServerMarketListing, ServerMarketSnapshot } from '@/game/useGame';
+import type { GameApi, ServerMarketHeroListing, ServerMarketListing, ServerMarketSnapshot } from '@/game/useGame';
+import { teamPower } from '@/game/engine';
 import type { TokenomicsApi } from '@/game/useTokenomics';
 import '@/theme/scene/scene.css';
 import { RarityFx } from '@/components/RarityFx';
@@ -20,7 +21,7 @@ import { formatUtcDateTime } from '@/game/numberFormat';
 type MarketTab = 'browse' | 'activity' | 'history' | 'supply' | 'listings' | 'sell';
 type Category = 'all' | 'weapons' | 'armor' | 'accessories' | 'heroes' | 'pets';
 type LevelFilter = 'all' | 'my' | 'usable' | 'upgrades' | 'endgame';
-type Listing = { id: string; kind: 'item' | 'hero'; sourceId: string; name: string; rarity: Rarity; level: number; enchantLevel: number; power: number; price: number; seller: string; createdAt: number; stats: string[]; owned?: OwnedItem | OwnedHero };
+type Listing = { id: string; kind: 'item' | 'hero'; sourceId: string; name: string; rarity: Rarity; level: number; enchantLevel: number; stars?: number; power: number; price: number; seller: string; createdAt: number; stats: string[]; owned?: OwnedItem | OwnedHero };
 
 const MARKET_PAGE = 40;
 
@@ -45,6 +46,14 @@ function listingFromServer(entry: ServerMarketListing): Listing | null {
   return { id: entry.id, kind: 'item', sourceId: entry.item.itemId, name: base.name, rarity: base.rarity, level: entry.item.level, enchantLevel: entry.item.enchantLevel, power: displayItemPower(entry.item), price: entry.price, seller: entry.is_own ? 'You' : entry.seller, createdAt: Date.parse(entry.created_at), stats: entry.item.stats.map((stat) => `${STAT_LABEL[stat.key]} ${formatStatValue(stat)}`), owned: entry.item };
 }
 
+// House merchants list heroes too; a bought hero joins the roster directly (no Mailbox).
+function heroListingFromServer(entry: ServerMarketHeroListing): Listing | null {
+  const base = HERO_MAP[entry.hero?.heroId];
+  if (!base) return null;
+  const hero: OwnedHero = { uid: entry.id, heroId: base.id, level: entry.hero.level, stars: entry.hero.stars, equipped: {}, xp: 0 };
+  return { id: entry.id, kind: 'hero', sourceId: base.id, name: base.name, rarity: base.rarity, level: entry.hero.level, enchantLevel: 0, stars: entry.hero.stars, power: teamPower([hero], []), price: entry.price, seller: entry.is_own ? 'You' : entry.seller, createdAt: Date.parse(entry.created_at), stats: [`${entry.hero.stars} ★`, `Level ${entry.hero.level}`] };
+}
+
 export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokenomics: TokenomicsApi }) {
   const screenRef = useRef<HTMLDivElement>(null);
   const detailRef = useRef<HTMLElement>(null);
@@ -57,7 +66,8 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
   const loadMarket = game.loadMarket;
   useEffect(() => { let active = true; const load = async () => { const next = await loadMarket(); if (!active) return; if (next) { setMarket(next); setNotice(previous => previous === 'Market is unavailable. Try again shortly.' ? '' : previous); } else setNotice('Market is unavailable. Try again shortly.'); }; void load(); const timer = window.setInterval(() => void load(), 15_000); return () => { active = false; window.clearInterval(timer); }; }, [loadMarket]);
   const serverListings = market?.listings ?? [];
-  const browse = serverListings.map(listingFromServer).filter((row): row is Listing => Boolean(row));
+  const browse = [...serverListings.map(listingFromServer), ...(market?.hero_listings ?? []).map(heroListingFromServer)]
+    .filter((row): row is Listing => Boolean(row)).sort((a, b) => b.createdAt - a.createdAt);
   const mine = serverListings.filter((entry) => entry.is_own).map(listingFromServer).filter((row): row is Listing => Boolean(row));
   const sellable = ownedRows(game);
   const comparisonHero = game.state.ownedHeroes.find((hero) => hero.uid === comparisonHeroUid) ?? game.state.ownedHeroes[0];
@@ -131,12 +141,12 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
         const supply = limited ? tokenomics.status?.rarity_supply?.[key as 'divine' | 'celestial' | 'cursed' | 'immortal' | 'god'] : undefined;
         return <div key={key} className={`mv-supply-tile rarity-${key}`} style={{ '--mv-color': RARITY_COLORS[key] } as CSSProperties}><b className={`rarity-title rarity-${key}`}>{RARITY_LABEL[key]}</b><strong>{limited ? `${supply ? formatNum(supply.existing) : '—'} / ${formatNum(supply?.max ?? limits[key] ?? 0)}` : 'No global limit'}</strong><span>{limited ? 'Existing / maximum' : 'Uncapped rarity'} · {['cursed', 'immortal', 'god'].includes(key) ? 'Crafting only' : 'Level-gated drops'}</span></div>;
       })}</div></section>}
-      <footer className="mv-foot"><ShieldCheck size={12} /> Server escrow · buyer pays in SKR · seller receives 90% · purchases arrive in Mailbox.</footer>
+      <footer className="mv-foot"><ShieldCheck size={12} /> Server escrow · buyer pays in SKR · seller receives 90% · items arrive in Mailbox, heroes join your roster.</footer>
     </div>
   </div>;
 }
 
-function Row({ row, active, onClick, rate, selling }: { row: Listing; active: boolean; onClick: () => void; rate: string | null; selling: boolean }) { const blocked = row.seller === 'Locked' || row.seller === 'Equipped' || row.seller === 'Active team'; return <button type="button" onClick={onClick} aria-pressed={active} className={`mv-card rarity-${row.rarity}`} style={{ '--mv-color': RARITY_COLORS[row.rarity] } as CSSProperties}><span className="mv-card-art"><span className="mv-card-img"><Artwork row={row} compact /></span><RarityFx rarity={row.rarity} shape="slot" />{row.kind === 'item' && row.enchantLevel > 0 && <span className="mv-card-plus">+{row.enchantLevel}</span>}<span className="mv-card-lv">Lv {row.level}</span></span><span className="mv-card-info"><b className={`rarity-title rarity-${row.rarity}`}>{row.name}</b><small>{formatNum(row.power)} PWR · {row.seller}</small><span className="mv-card-price">{blocked ? <Lock size={13} /> : selling ? 'Set sale price' : <>{skrPrice(row.price, rate)}<SkrUsd cents={row.price} /></>}</span></span></button>; }
+function Row({ row, active, onClick, rate, selling }: { row: Listing; active: boolean; onClick: () => void; rate: string | null; selling: boolean }) { const blocked = row.seller === 'Locked' || row.seller === 'Equipped' || row.seller === 'Active team'; return <button type="button" onClick={onClick} aria-pressed={active} className={`mv-card rarity-${row.rarity}`} style={{ '--mv-color': RARITY_COLORS[row.rarity] } as CSSProperties}><span className="mv-card-art"><span className="mv-card-img"><Artwork row={row} compact /></span><RarityFx rarity={row.rarity} shape="slot" />{row.kind === 'item' && row.enchantLevel > 0 && <span className="mv-card-plus">+{row.enchantLevel}</span>}{row.kind === 'hero' && Boolean(row.stars) && <span className="mv-card-plus">{row.stars}★</span>}<span className="mv-card-lv">Lv {row.level}</span></span><span className="mv-card-info"><b className={`rarity-title rarity-${row.rarity}`}>{row.name}</b><small>{formatNum(row.power)} PWR · {row.seller}</small><span className="mv-card-price">{blocked ? <Lock size={13} /> : selling ? 'Set sale price' : <>{skrPrice(row.price, rate)}<SkrUsd cents={row.price} /></>}</span></span></button>; }
 function Detail({ row, children }: { row: Listing; children: ReactNode }) { const item = row.kind === 'item' ? ITEM_MAP[row.sourceId] : null; const hero = row.kind === 'hero' ? HERO_MAP[row.sourceId] : null; return <div className="mv-detail-body" style={{ '--mv-color': RARITY_COLORS[row.rarity] } as CSSProperties}><span className="mv-detail-rarity">{RARITY_LABEL[row.rarity]}</span><h3 className={`rarity-title rarity-${row.rarity} mv-detail-name`}>{row.name}</h3><div className={`market-detail-art mv-detail-art rarity-${row.rarity}`} style={{ position: 'relative' }}><Artwork row={row} /><RarityFx rarity={row.rarity} shape="slot" /></div>{children}<dl className="mv-props"><div><dt>Owner</dt><dd>{row.seller}</dd></div><div><dt>Type</dt><dd>{item?.slot.replace('_', ' ') ?? hero?.heroClass ?? row.kind}</dd></div><div><dt>Rarity</dt><dd style={{ color: RARITY_COLORS[row.rarity] }}>{RARITY_LABEL[row.rarity]}</dd></div><div><dt>Level / Upgrade</dt><dd>{row.level} / +{row.enchantLevel}</dd></div><div><dt>Power</dt><dd>{formatNum(row.power)}</dd></div></dl><p className="mv-label">All properties</p><ul className="mv-stats">{row.stats.map((stat, index) => <li key={`${stat}-${index}`}>{stat}</li>)}</ul></div>; }
 function Artwork({ row, compact = false }: { row: Listing; compact?: boolean }) { if (row.kind === 'hero') { const hero = HERO_MAP[row.sourceId]; return hero ? <HeroPortrait heroId={hero.id} heroClass={hero.heroClass} rarity={hero.rarity} color={hero.color} size={compact ? 64 : 136} /> : null; } const item = ITEM_MAP[row.sourceId]; return item ? <ItemArtwork itemId={item.id} name={item.name} fallback={item.icon} /> : null; }
 function Records({ title, rows, rate }: { title: string; rate: string | null; rows: { id: string; name: string; price: number; createdAt: number; action: 'bought' | 'sold'; rarity?: Rarity }[] }) { return <section className="sc-panel mv-records"><div className="sc-section-head"><span>{title}</span></div><ul>{rows.map((row) => <li key={row.id} className="mv-record"><span className={`mv-record-action is-${row.action}`}>{row.action}</span><span className={`rarity-title rarity-${row.rarity ?? 'common'} mv-record-name`} style={{ color: row.rarity ? RARITY_COLORS[row.rarity] : undefined }}>{row.name}</span><time dateTime={new Date(row.createdAt).toISOString()}>{formatUtcDateTime(row.createdAt)}</time><span className="mv-record-price">{skrPrice(row.price, rate)}<SkrUsd cents={row.price} /><small>At current rate</small></span></li>)}</ul>{rows.length === 0 && <Empty text="No records yet" />}</section>; }

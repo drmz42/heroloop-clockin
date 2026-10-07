@@ -199,8 +199,19 @@ export interface ServerMarketListing {
   item: OwnedItem;
 }
 
+export interface ServerMarketHeroListing {
+  id: string;
+  price: number;
+  seller_id: string;
+  seller: string;
+  is_own: boolean;
+  created_at: string;
+  hero: { heroId: string; level: number; stars: number };
+}
+
 export interface ServerMarketSnapshot {
   listings: ServerMarketListing[];
+  hero_listings?: ServerMarketHeroListing[];
   history: { id: string; name: string; price: number; createdAt: number; action: 'bought' | 'sold' }[];
   activity?: ServerMarketSnapshot['history'];
   active_limit: number;
