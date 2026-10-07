@@ -52,8 +52,8 @@ export function AppUpdateGate() {
   // Older APKs open staging2.heroloop.xyz; the public download link is always on heroloop.xyz.
   const host = window.location.hostname.endsWith('heroloop.xyz') ? 'heroloop.xyz' : window.location.host;
   const path = `/download/${latest.fileName}`;
-  // The WebView cannot download files itself; an intent link hands the APK to the browser.
-  const intentUrl = `intent://${host}${path}#Intent;scheme=https;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(`https://${host}${path}`)};end`;
+  // The Android shell opens this direct HTTPS link in an external browser.
+  const downloadUrl = `https://${host}${path}`;
 
   const installed = /HeroLoopApp\/(\S+)/.exec(navigator.userAgent)?.[1];
 
@@ -76,7 +76,7 @@ export function AppUpdateGate() {
             {installed && <><span>{installed}</span><b aria-hidden="true">→</b></>}
             <strong>{latest.versionName}</strong>
           </p>
-          <a className="onb-cta onb-cta-primary" href={intentUrl}><Download size={18} aria-hidden="true" />Download update</a>
+          <a className="onb-cta onb-cta-primary" href={downloadUrl}><Download size={18} aria-hidden="true" />Download update</a>
           <div className="onb-note onb-note-safe">
             <ShieldCheck size={18} aria-hidden="true" />
             <span>Your heroes, items and progress are saved on your account and stay after the update.</span>

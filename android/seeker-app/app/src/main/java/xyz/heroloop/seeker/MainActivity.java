@@ -132,6 +132,23 @@ public class MainActivity extends Activity {
                 return false;
             case "http":
             case "https":
+                // APK downloads belong to the external browser, even on the game host.
+                if ("https".equals(scheme)
+                        && "heroloop.xyz".equalsIgnoreCase(uri.getHost())
+                        && uri.getPath() != null
+                        && uri.getPath().matches(
+                            "^/download/heroloop-seeker-[0-9A-Za-z.+-]{1,40}-[0-9]{1,9}\\.apk$")) {
+                    Intent browser = Intent.makeMainSelectorActivity(
+                        Intent.ACTION_MAIN, Intent.CATEGORY_APP_BROWSER);
+                    browser.setAction(Intent.ACTION_VIEW);
+                    browser.setData(uri);
+                    if (!launch(browser)) {
+                        Toast.makeText(this,
+                            "Open this download link in your browser: " + uri,
+                            Toast.LENGTH_LONG).show();
+                    }
+                    return true;
+                }
                 if (BuildConfig.GAME_HOST.equalsIgnoreCase(uri.getHost())) return false;
                 launch(new Intent(Intent.ACTION_VIEW, uri));
                 return true;
