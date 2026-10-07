@@ -3,8 +3,13 @@ import { BookOpen, ChevronRight, LibraryBig, Search, ShieldCheck, Sparkles } fro
 import { STAR_UP_BASE_USD_CENTS } from '@/game/state';
 import { isolatedHackathon } from '@/game/editionStorage';
 import { MINE_GUIDE, MINE_LIMIT_ROWS } from '@/game/seekerMine';
+import { SEEKER_STAR_GOLD_BASE } from '@/game/seekerPromotion';
+import { ITEM_ROLL_V5_CONTRACT } from '@/game/item-roll-runtime.generated';
+import { SLOT_LABEL, STAT_LABEL } from '@/game/items';
+import type { ItemSlot, ItemStatKey } from '@/game/types';
+import { enchantGoldCost, enchantMultiplier } from '@/game/enchant';
 
-type GuideStatus = 'Live' | 'Testing' | 'Coming soon';
+type GuideStatus = 'Live' | 'Testing' | 'Coming soon' | 'Unavailable';
 
 interface GuideEntry {
   category: string;
@@ -96,7 +101,146 @@ const GUIDES: GuideEntry[] = [
   ] : []),
 ];
 
-const CATEGORIES = ['All', ...Array.from(new Set(GUIDES.map((entry) => entry.category)))];
+// Seeker availability is explicit: currency words never determine feature status.
+// Owners: heronomics.md, equipment.md, progression-and-economy.md,
+// balance-v6-proposal.md, seeker-skr-payments.md, seeker-ore-mine.md and feature-archive.md.
+const SEEKER_GUIDE_UPDATES: Record<string, Partial<GuideEntry>> = {
+  'What happens while I am away?': {
+    answer: 'Offline progress uses your last farming location and active formation, within the ordinary eight-hour reward window after a visit. Boost Max activation and SKR battle income are not available in Seeker yet.',
+  },
+  'How does Ascension work?': {
+    answer: 'Star Up consumes exact zero-star duplicate heroes and Gold. Promote all heroes upgrades eligible targets as far as your copies and Gold allow. Active, locked and Training Camp copies cannot be consumed. The server confirms the result.',
+  },
+  'How much $HERO does a star upgrade cost?': {
+    question: 'How much Gold does a star upgrade cost?',
+    answer: 'Each next star costs the rarity base multiplied by the next star number, plus the required exact zero-star copies. Seeker Star Up does not charge SKR. The preview shows total Gold, copies, stars and projected Power before you confirm.',
+    details: Object.entries(SEEKER_STAR_GOLD_BASE).map(([rarity, base]) => `${rarity[0].toUpperCase() + rarity.slice(1)}: ${base} Gold base; ${(base ?? 0) * 210} Gold total through 20★`),
+  },
+  'How does Ascension Focus affect one specific hero?': {
+    question: 'Can I focus one specific hero in Seeker?',
+    status: 'Unavailable',
+    answer: 'Ascension Focus is disabled in Seeker. Both SKR and Scroll Summon ignore saved Focus selections. Each rarity has five equally likely identities; Focus never increases your chance for a named hero here.',
+    details: undefined,
+  },
+  'How does Ascension Focus work?': {
+    question: 'Does an old Focus selection affect my summons?',
+    status: 'Unavailable',
+    answer: 'No. Historical Focus selections are preserved but inactive. Both Seeker Summon methods use the same rarity odds and Pity without identity targeting.',
+    details: undefined,
+  },
+  'What is the current chance for one specific hero?': {
+    answer: 'Each summonable rarity has five equally likely hero identities. Before Pity, divide its rarity chance by five for one named hero. Ascension Focus is inactive in Seeker.',
+  },
+  'Can Summon partially fill my hero roster?': {
+    answer: 'No. Your roster starts at 500 slots and can expand by 100 at a time to 1,000 through SKR purchases. Summon x1, x10 or x100 needs room for the whole batch before delivery. A batch never partially fills the remaining space.',
+  },
+  'Where does equipment come from?': {
+    answer: 'Standard Chests are timed Active rewards and roll equipment when opened. A Boss Chest is awarded after defeating a Boss summoned with one Boss Key. Store offers sell server-generated equipment for SKR; equipment of any rarity can also be traded through Market.',
+  },
+  'How many stat lines does each rarity have?': {
+    answer: 'The rarity fixes the number of distinct random stat lines. The fixed combat base stat from the slot is additional and does not use a random line.',
+  },
+  'Which stats can roll on each equipment slot?': {
+    answer: 'Random lines are distinct and come from the slot pool below. Off-hand pools depend on class. Gold Bonus and XP Bonus roll only on Helmet, Chest, Gloves, Boots, Ring and Amulet. Equipment also has a fixed combat base stat from its slot, rarity and Item Level.',
+    details: [
+      ...Object.entries(ITEM_ROLL_V5_CONTRACT.slotPools).map(([slot, keys]) => `${SLOT_LABEL[slot as ItemSlot]}: ${keys.map(key => STAT_LABEL[key as ItemStatKey]).join(', ')}`),
+      ...Object.entries(ITEM_ROLL_V5_CONTRACT.classOffhandPools).map(([heroClass, keys]) => `${heroClass === 'crossbowman' ? 'Ranger' : heroClass[0].toUpperCase() + heroClass.slice(1)} Off-hand: ${keys.map(key => STAT_LABEL[key as ItemStatKey]).join(', ')}`),
+    ],
+  },
+  'How large can an equipment stat roll be?': {
+    answer: 'Rarity, Item Level and the server roll determine random stat values. Each item also contributes a fixed slot base stat. Current Enchant adds 11% of the original item stats per level without compounding.',
+    details: [5, 10, 15, 20].map(level => `Enchant +${level}: ${enchantMultiplier(level).toFixed(2)}× original item stats`),
+  },
+  'How do Set Bonus and Enchant Resonance work?': {
+    answer: 'A full eight-item matching-rarity set and eight-slot Enchant Resonance strengthen item stats, never hero base stats. Resonance uses the lowest Enchant level across all eight slots; their rarities need not match. Enchant, Set Bonus and Resonance add against original item stats.',
+    details: ['Set Bonus: Common 5%, Uncommon 10%, Rare 15%, Epic 20%, Legendary 30%, Mythic 40%, Cosmic 50%, Divine 60%, Celestial 70%', 'Resonance: 50% at all +10; 150% at all +20', 'Current Enchant: +220% at +20', 'Celestial +20 matching set: 5.40× original item stats with full Resonance', 'Cursed, Immortal and God acquisition remains unavailable'],
+  },
+  'How much does Enchant cost in the new Staging economy?': {
+    question: 'How much does Enchant cost?',
+    answer: 'Ordinary Enchant spends the displayed rarity-scaled Gold. +1…+6 always succeed; from +7, success declines from 85% to 10%. Failure destroys the item and there is no Pity. Guaranteed Enchant adds a fresh server-quoted SKR payment and succeeds at 100%; Gold is still charged.',
+    details: ['Common +1 / +2 / +3 / +4: ' + [0, 1, 2, 3].map(level => enchantGoldCost('common', level).toLocaleString('en-US')).join(' / ') + ' Gold', `Celestial +20: ${enchantGoldCost('celestial', 19).toLocaleString('en-US')} Gold`, 'Guaranteed catalogue: $0.10 at +7, $0.80 at +10, $30 at +15 and $1,000 at +20', 'Exact SKR amount: confirmed from a fresh server quote; no fixed SKR/USD rate'],
+  },
+  'What is the Balance v4 item model?': {
+    question: 'What is the current item upgrade model?',
+    answer: 'Seeker uses the current linear Enchant curve through +20: +11% per level, reaching 3.20× original item stats. Eight-slot Resonance and matching-rarity Set Bonus add separately. The former tiered 4.50× Enchant curve is historical.',
+    details: undefined,
+  },
+  'Is the Balance v4 Gold price final?': {
+    question: 'Where can I check the current Gold upgrade price?',
+    answer: 'Item Details shows the current server-validated Gold cost for the next Enchant level. Prices depend on rarity and target level. A full upgrade path costs the sum of every step; Guaranteed SKR payments are additional. Check the displayed price before confirming.',
+    details: undefined,
+  },
+  'What increases Gold and XP rewards?': {
+    answer: 'Equipment Gold Bonus and XP Bonus add across your Active Formation. Enchant, matching-rarity Set Bonus and Resonance strengthen those lines. Active account bonuses count once per account; the paid Gold/XP Boost adds +100% of each while active.',
+    details: ['Equipment income slots: Helmet, Chest, Gloves, Boots, Ring and Amulet', 'Seasonal frames: planned; seasons have not started', 'Profile, badges, achievements and cosmetic bonus targets are plans, not automatic grants'],
+  },
+  'What does the paid Gold/XP boost do?': {
+    answer: 'The Shop Gold/XP Boost adds +100% Gold and +100% XP for its duration. Purchase uses a fresh SKR quote. Buying again extends time rather than stacking strength. This purchase is separate from unavailable Boost Max activation.',
+    details: ['24 hours: $1 catalogue', '7 days: $6 catalogue', '30 days: $22.50 catalogue', 'Commander: shows remaining time', 'Exact SKR amount: shown before confirmation'],
+  },
+  'How much does Reroll cost?': {
+    answer: 'Reroll spends server-quoted SKR, replaces all random stat lines and can improve or worsen the item. Its USD catalogue is converted using a fresh rate. Repeated rerolls cost 1×, 2×, 3×, 4× and then a capped 5×.',
+    details: ['First Reroll: Common $0.005, Uncommon $0.01, Rare $0.02, Epic $0.04', 'Legendary $0.08, Mythic $0.15, Cosmic $0.30', 'Divine $0.60, Celestial $1', 'Exact SKR amount: shown before payment; no fixed SKR/USD rate'],
+  },
+  'What does Item Power measure?': {
+    answer: 'Gear Power scores fixed slot base stats and rolled combat stats, applies the item’s Enchant multiplier and rounds. Current Enchant reaches 1.55× at +5, 2.10× at +10, 2.65× at +15 and 3.20× at +20. Gold/XP lines add zero Gear Power. Team Power uses the equipped hero’s final combat stats and may differ from the Gear Power comparison.',
+  },
+  'What changes in Locations 11–20?': {
+    answer: 'Locations 11–20 span Account Levels 53–99 in the current ladder. Enemies can use Tank, Striker, Skirmisher, Support or Caster roles. Elite waves display one shared affix; Recommended Power is guidance, while Account Level and discovered progression control access.',
+  },
+  'What are Gold and $HERO used for?': {
+    question: 'What are Gold and SKR used for?',
+    answer: 'Gold pays for ordinary Enchant, automatic potion purchases and hero Star Up. SKR pays for supported Store offers, Summon, guaranteed Enchant, Reroll, capacity, Training Camp purchases and Market trading. Battle and quest rewards do not mint SKR; Boost Max SKR income is unavailable.',
+  },
+  'What is available in the Market?': {
+    answer: 'Server-owned wearable equipment of any rarity can be listed, bought and cancelled through escrow. Equipped items cannot be listed. Inventory locks protect Gold sales but do not block a deliberate Market listing. Heroes and Pets cannot be traded. Each seller can have 20 active listings; purchases arrive through Mailbox.',
+  },
+  'How can I use Summon Scrolls?': {
+    answer: 'Scroll Summon spends one Scroll per hero in batches of 1, 10 or 100, with the same rarity odds and Pity as SKR Summon. Both ignore archived Focus and require space for the full batch in your current roster capacity.',
+    details: ['Summon milestones: 1 / 5 / 10 / 50 Scrolls at 10 / 100 / 1,000 / 10,000 lifetime summons', 'Eligible final Dungeon Boss claims: two Scrolls; Quick Boss does not grant them', 'Store: server-priced Scroll bundles', 'SKR Summon catalogue: $0.02 / $0.20 / $2.00 for 1 / 10 / 100 heroes'],
+  },
+  'How do promo codes work?': {
+    answer: 'Open Code from the game navigation. The server validates and redeems an eligible code once. Seeker codes grant supported game resources such as Gold, Summon Scrolls and Boss Keys, not SKR. Invalid, expired, exhausted or already-used codes do not change your balance.',
+  },
+  'What are the deposit and withdrawal limits?': {
+    answer: 'Deposit SKR or SOL from your linked Solana wallet. Request SKR, SOL or available ORE withdrawals to that same wallet. You sign a request for the gross amount, 5% fee and 95% net payout. An admin approves it before the server sends and verifies the payout.',
+    details: ['One deposit: up to 10,000 SKR or 2 SOL; ORE deposits unavailable', 'Withdrawal fee: 5% of the requested amount', 'Daily review: requests above $20 per UTC day need manual approval', 'Request signature: sends no transaction and charges no network fee', 'Missing SKR/ORE token account: create it using SOL in your personal linked wallet first', 'Pending or reserved funds: unavailable for spending or another withdrawal'],
+  },
+  'How does the ORE Mine work?': {
+    answer: 'ORE Mine is available in Seeker. Open Mine from the game navigation, accept Guide & Terms, then select shafts, a fixed SOL stake and a bounded session. The server reports verified round progress and returns unspent reserves when the session closes. A submitted round cannot be cancelled. Availability also depends on server status and liquidity.',
+    details: [...MINE_GUIDE.map(section => `${section.title}: ${section.body}`), 'Acceptance: a losing round and SOL return have been verified; winning ORE and ORE payout acceptance remain pending'],
+    status: 'Testing',
+  },
+  'What are the ORE Mine stakes and limits?': { status: 'Testing' },
+};
+
+function seekerGuide(entry: GuideEntry): GuideEntry {
+  const updated = { ...entry, ...SEEKER_GUIDE_UPDATES[entry.question] };
+  // Dungeon access is available for testing; uncredited rewards stay Coming soon.
+  const status = updated.status === 'Testing' && !['Dungeons', 'Wallet & Mine'].includes(updated.category)
+    ? 'Live' : updated.status;
+  const copy = (value: string) => value.replace(/\$HERO/g, 'SKR')
+    .replace('current Staging candidate', 'current Seeker version')
+    .replace('Staging Dungeons', 'Seeker Dungeons')
+    .replace('On Staging,', 'In Seeker,')
+    .replace('available on Staging', 'available in Seeker')
+    .replace('in Staging testing', 'in Dungeon testing')
+    .replace('current Staging final-Boss claim', 'current Seeker final-Boss claim')
+    .replace(' Production remains unchanged until a separately approved release.', '')
+    .replace(' Production does not have it yet.', '');
+  return { ...updated, status, question: copy(updated.question), answer: copy(updated.answer),
+    details: updated.details?.filter(detail => !detail.startsWith('Production remains unchanged')).map(copy) };
+}
+
+const SEEKER_EXTRA_GUIDES: GuideEntry[] = [
+  { category: 'Heroes', question: 'How does Training Camp work?', answer: 'Assign reserve heroes to unlocked Training Camp posts to earn passive XP, capped at Account Level. Active Formation heroes cannot train. Additional posts and training speed boosts use fresh server-quoted SKR purchases.', status: 'Live' },
+  { category: 'Items', question: 'How can I expand my equipment bag?', answer: 'New accounts start with 48 open Bag-1 cells. Upgrade a bag to 64 cells before buying the next 48-cell bag. Seeker uses SKR purchases with a server quote. Equipped items do not occupy bag cells; a full bag blocks chest opening without consuming the chest.', status: 'Live' },
+  { category: 'Features', question: 'What do Seeker quests reward?', answer: 'Daily, Milestone, Special, Tutorial and Quest Challenge rewards grant Gold and supported game resources, not SKR. Spending and Market objectives use confirmed payment receipts. Mine objectives count server-verified rounds, not opening the Mine or signing a request.', details: ['Daily quests: reset by Moscow date', 'Mine daily goals: 5 / 20 / 50 verified rounds', 'Mine streaks: 3 / 7 days with at least 5 rounds each day', 'Miner ranks: 50 / 250 / 1,000 / 5,000 lifetime rounds', 'Quest Challenge: one-time prizes for each 10% of claimed finite lifetime quests'], status: 'Live' },
+  { category: 'Economy', question: 'Can I activate Boost Max or earn SKR in battles?', answer: 'Not yet. Boost Max activation, SKR battle income and the SKR reward pool are unavailable. Displayed requirements do not activate earnings. The separate Shop Gold/XP Boost is available and adds +100% Gold and XP for its purchased duration.', status: 'Coming soon' },
+];
+const EDITION_GUIDES = isolatedHackathon ? [...GUIDES.map(seekerGuide), ...SEEKER_EXTRA_GUIDES] : GUIDES;
+
+const CATEGORIES = ['All', ...Array.from(new Set(EDITION_GUIDES.map((entry) => entry.category)))];
 
 function splitDetail(detail: string): [string, string] | null {
   for (const separator of [': ', ' — ']) {
@@ -125,7 +269,7 @@ function GuideDetails({ details }: { details: string[] }) {
 }
 
 export function GuidesScreen() {
-  const editionGuides = useMemo(() => isolatedHackathon ? GUIDES.map(entry => /\$HERO/i.test(`${entry.question} ${entry.answer} ${entry.details?.join(' ') ?? ''}`) ? { ...entry, status: 'Coming soon' as const, answer: 'SKR payment pricing, rewards and balance verification are not connected yet. Current SKR quotes and confirmed transactions are required before these features become available.', details: undefined } : entry) : GUIDES, []);
+  const editionGuides = EDITION_GUIDES;
   const [category, setCategory] = useState('All');
   const [query, setQuery] = useState('');
   const filtered = useMemo(() => {
@@ -140,7 +284,7 @@ export function GuidesScreen() {
         <Sparkles className="absolute right-7 top-6 text-[#c99a49]/35" size={70} strokeWidth={1} aria-hidden="true" />
         <div className="section-kicker flex items-center gap-2"><BookOpen size={15} /> HeroLoop Codex</div>
         <h1 className="mt-2 font-vt text-3xl font-black text-[#f4dfb0]">Wiki &amp; Player Guide</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#b8ae9d]">Rules, drop tables and system guides in one searchable codex. Planned mechanics are always separated from the live game.</p>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#b8ae9d]">{isolatedHackathon ? 'Seeker rules and system guides. Live means available; Testing means available with the stated test limits; Coming soon means planned; Unavailable means disabled.' : 'Rules, drop tables and system guides in one searchable codex. Planned mechanics are always separated from the live game.'}</p>
         <div className="mt-5 grid max-w-2xl grid-cols-3 gap-2">
           {[['Answers', editionGuides.length], ['Categories', CATEGORIES.length - 1], ['Live now', editionGuides.filter((entry) => entry.status === 'Live').length]].map(([label, value]) => <div key={label} className="rounded-xl border border-[#5c492d] bg-black/25 px-3 py-2"><strong className="block font-vt text-lg text-[#f1cb77]">{value}</strong><span className="text-[9px] font-bold uppercase tracking-[.12em] text-[#928673]">{label}</span></div>)}
         </div>
