@@ -4,6 +4,7 @@ import { commitSkrPurchase,formatAmountShort,quoteSkrPurchase,SeekerWalletError,
 import { formatUtcTime } from '@/game/numberFormat';
 import { skrError } from '@/game/skrPurchase';
 import { SkrTokenIcon } from '@/components/SkrTokenIcon';
+import { playSfx } from '@/audio/gameAudio';
 export function SkrPurchaseButton({product,params,label='Buy',disabled=false,onDelivered}:{
   product:string;params:Record<string,unknown>;label?:ReactNode;disabled?:boolean;
   onDelivered:(result:Record<string,unknown>)=>void;
@@ -23,12 +24,12 @@ export function SkrPurchaseButton({product,params,label='Buy',disabled=false,onD
         setQuote(null);setMessage('The selection changed. Check a new quote.');return;
       }
       const result=await commitSkrPurchase(quote.quote_id);
-      if(result.status==='delivered'){onDelivered(result.result);setMessage('Paid with SKR. Purchase delivered.');}
-      else setMessage(skrError(String(result.result.code)));
+      if(result.status==='delivered'){onDelivered(result.result);setMessage('Paid with SKR. Purchase delivered.');playSfx('purchase');}
+      else {setMessage(skrError(String(result.result.code)));playSfx('error');}
       setQuote(null);setPending(false);
     }catch(error){
       const code=error instanceof SeekerWalletError?error.code:'';
-      setMessage(skrError(error));
+      setMessage(skrError(error));playSfx('error');
       const uncertain=Boolean(quote)&&!['skr_quote_expired','skr_insufficient_balance_or_overflow','skr_purchase_refunded'].includes(code);
       setPending(uncertain);
       if(!uncertain)setQuote(null);

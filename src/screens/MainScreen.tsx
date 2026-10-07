@@ -46,6 +46,8 @@ import { versionedAsset } from '@/game/assetVersion';
 import { BattleAmbience } from '@/components/BattleAmbience';
 import { ActionFx } from '@/theme/motion/ActionFx';
 import { flyCoins } from '@/theme/motion/flyCoins';
+import { installGameAudio, playSfx } from '@/audio/gameAudio';
+import { BossIntro } from '@/theme/motion/BossIntro';
 
 const SAVE_KEY = editionStorageKey('afk-heroes-save-v7');
 // Temporarily hide the first-use dialog for hackathon start-of-game recordings.
@@ -363,6 +365,27 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     // within ~250ms, which must not cut the reward tile short.
     if (battleResult) setBanner(battleResult);
   }, [battleResult]);
+
+  useEffect(() => installGameAudio(), []);
+
+  // Tutorial Chests open only when every item fits; otherwise explain the full bag instead of doing nothing.
+  const openTutorialChestsChecked = (count: 1 | 10) => {
+    if (inventoryCapacity(state) - bagItemCount(state) < count) { playSfx('error'); setShowInventoryFull(true); return; }
+    void game.openTutorialChests(count);
+  };
+
+  // Victory/defeat sting only while the battle is on screen (other tabs overlay the live arena).
+  useEffect(() => {
+    if (!banner || document.querySelector('.game-window-overlay') || !document.querySelector('.arena-stage-inner')?.getClientRects().length) return;
+    playSfx(banner.win ? 'victory' : 'defeat');
+    if (banner.win && (banner.gold > 0 || banner.chest)) window.setTimeout(() => playSfx('coin'), 380);
+  }, [banner]);
+
+  const lastAccountLevel = useRef(state.accountLevel);
+  useEffect(() => {
+    if (state.accountLevel > lastAccountLevel.current) playSfx('levelUp');
+    lastAccountLevel.current = state.accountLevel;
+  }, [state.accountLevel]);
 
   useEffect(() => {
     if (!banner) return undefined;
@@ -883,13 +906,14 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                   try {
                     const error = await game.claimTutorialQuest(quest[0]);
                     if (error) setTutorialClaimError(error === 'state_conflict' ? 'Your game changed. Please try claiming again.' : error === 'tutorial_quest_incomplete' ? 'The server has not confirmed this task yet. Please try again.' : error === 'tutorial_quest_locked' || error === 'tutorial_completed' ? 'This tutorial step is no longer available. Reload the game.' : 'Could not claim the reward. Please try again.');
-                    else if (quest[0] === 'defeat-tutorial-boss') setTutorialFinished(true);
-                    else showToast('Tutorial reward claimed');
+                    else playSfx('claim');
+                    if (!error && quest[0] === 'defeat-tutorial-boss') setTutorialFinished(true);
+                    else if (!error) showToast('Tutorial reward claimed');
                   } finally { setTutorialClaimBusy(false); }
                 }} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold disabled:opacity-50">{tutorialClaimBusy ? 'Claiming…' : 'Claim & unlock next'}</button>}
                 {tutorialClaimError && <p role="alert" className="mt-1 ui-text-small text-red-300">{tutorialClaimError}</p>}
               </div>
-              {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1 px-2 py-1"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => void game.openTutorialChests(1)} className="game-control min-h-7 ui-text-small font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => void game.openTutorialChests(10)} className="game-control min-h-7 ui-text-small font-bold">Open 10</button></div></div>}
+              {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1 px-2 py-1"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => openTutorialChestsChecked(1)} className="game-control min-h-7 ui-text-small font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => openTutorialChestsChecked(10)} className="game-control min-h-7 ui-text-small font-bold">Open 10</button></div></div>}
             </section>;
           })()}
           {isolatedHackathon && <SeekerQuests board={seekerQuestBoard} />}
@@ -908,7 +932,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     <div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
                     <span className="ui-text-small shrink-0 text-px-dim">{groupNumber(q.progress)}/{groupNumber(q.target)}</span>
                   </div>
-                  {done && !q.claimed && <button onClick={() => game.claimQuest(q.id)} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold">Claim reward</button>}
+                  {done && !q.claimed && <button onClick={() => void game.claimQuest(q.id).then((ok) => { if (ok) playSfx('claim'); })} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold">Claim reward</button>}
                 </div>
               );
             })}
@@ -929,7 +953,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     <span className="ui-text-small shrink-0 text-px-dim">{formatNum(q.progress)}/{formatNum(q.target)}</span>
                     <span className="ui-text-small shrink-0 font-bold uppercase text-[#8e887b]">T{(q.tier ?? 0) + 1}</span>
                   </div>
-                  {done && <button onClick={() => game.claimQuest(q.id)} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold">Claim & unlock next</button>}
+                  {done && <button onClick={() => void game.claimQuest(q.id).then((ok) => { if (ok) playSfx('claim'); })} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold">Claim & unlock next</button>}
                 </div>
               );
             })}
@@ -985,6 +1009,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           >
             <div className="h-full">
               <CombatPresentationLayer game={game} activeDungeon={activeDungeon} dungeonUnits={dungeonUnits} dungeonFloaters={dungeonFloaters} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
+              <BossIntro encounterKey={activeDungeon && (activeDungeon.type === 'boss_hunt' || dungeonBossScene) ? String(activeDungeon.encounter_id) : null} bossName={dungeonBossScene?.bossName ?? 'Boss'} phase={dungeonBossScene?.phase ?? null} motion={state.battleAnimationMode !== 'off'} />
             </div>
           </CombatErrorBoundary>
           {!activeDungeon && game.combatRecovery.status !== 'healthy' && (
@@ -1013,6 +1038,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               <button
                 onClick={() => {
                   if (isolatedHackathon && bagItemCount(state) >= inventoryCapacity(state)) {
+                    playSfx('error');
                     setShowInventoryFull(true);
                     return;
                   }

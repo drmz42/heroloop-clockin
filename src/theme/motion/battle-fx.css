@@ -1,0 +1,89 @@
+/* Battle juice (src/components/Arena.tsx, src/theme/motion/BossIntro.tsx): impacts, sparks, recoil,
+   trailing health, ember deaths, crit flash and the Boss entrance. Transform/opacity only, so weak
+   phones keep their frame budget; Reduced Motion and the "off" battle setting remove all of it. */
+
+.hl-hp-ghost { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, rgba(255, 236, 196, .55), rgba(255, 248, 230, .9)); transition: width .55s cubic-bezier(.3, .7, .3, 1) .28s; }
+
+.hl-impact, .hl-hit-flash, .hl-swing, .hl-death-burst, .hl-crit-flash { display: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .arena-stage-inner:not(.arena-mode-off) :is(.hl-impact, .hl-hit-flash, .hl-swing, .hl-death-burst, .hl-crit-flash) { display: block; }
+
+  /* The old full-portrait filter flash is replaced by a cheap overlay. */
+  .arena-stage-inner:not(.arena-mode-off) .anim-hit { animation: none; }
+  .hl-hit-flash { position: absolute; inset: 0; z-index: 6; pointer-events: none; background: radial-gradient(circle at 50% 45%, rgba(255, 246, 225, .75), rgba(255, 120, 80, .25) 70%); animation: hl-fx-flash .22s ease-out forwards; }
+  .hl-recoil-left { animation: hl-fx-recoil-l .22s cubic-bezier(.2, .8, .3, 1); }
+  .hl-recoil-right { animation: hl-fx-recoil-r .22s cubic-bezier(.2, .8, .3, 1); }
+
+  .hl-impact { position: absolute; left: 50%; top: 50%; z-index: 25; width: 0; height: 0; pointer-events: none; }
+  .hl-impact-slash { position: absolute; left: -48px; top: -2px; width: 96px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, transparent, #fff6d8 35%, #ffd27a 60%, transparent); box-shadow: 0 0 10px rgba(255, 214, 140, .9); transform: rotate(-32deg) scaleX(0); animation: hl-fx-slash .3s cubic-bezier(.2, .9, .3, 1) forwards; }
+  .from-right .hl-impact-slash { transform: rotate(32deg) scaleX(0); animation-name: hl-fx-slash-r; }
+  .hl-impact-ring { position: absolute; left: -26px; top: -26px; width: 52px; height: 52px; border-radius: 50%; border: 2px solid rgba(255, 226, 160, .9); box-shadow: 0 0 12px rgba(255, 196, 96, .6), inset 0 0 10px rgba(255, 196, 96, .4); animation: hl-fx-ring .34s ease-out forwards; }
+  .hl-spark { position: absolute; left: -2px; top: -6px; width: 4px; height: 12px; border-radius: 3px; background: linear-gradient(#fffbe8, #ffb347); box-shadow: 0 0 6px rgba(255, 179, 71, .9); transform: rotate(var(--a)) translateY(0) scaleY(1); animation: hl-fx-spark .38s cubic-bezier(.15, .8, .3, 1) forwards; }
+  .hl-impact.is-crit .hl-impact-slash { height: 6px; left: -64px; width: 128px; background: linear-gradient(90deg, transparent, #fff 30%, #ff5a48 62%, transparent); box-shadow: 0 0 16px rgba(255, 70, 50, .95); }
+  .hl-impact.is-crit .hl-impact-ring { border-color: rgba(255, 110, 80, .95); box-shadow: 0 0 18px rgba(255, 60, 40, .8), inset 0 0 14px rgba(255, 160, 80, .5); animation-duration: .46s; }
+  .hl-impact.is-crit .hl-spark { background: linear-gradient(#fff, #ff6a3d); height: 16px; animation-duration: .5s; }
+
+  /* Weapon arc in front of the attacker during the lunge. */
+  .hl-swing { position: absolute; top: 50%; z-index: 22; width: 74px; height: 74px; margin-top: -37px; border-radius: 50%; border: 3px solid transparent; border-top-color: rgba(255, 236, 190, .95); border-right-color: rgba(255, 200, 120, .45); pointer-events: none; filter: drop-shadow(0 0 6px rgba(255, 200, 120, .8)); }
+  .hl-swing.is-hero { right: -34px; animation: hl-fx-swing-h .32s ease-out .06s both; }
+  .hl-swing.is-enemy { left: -34px; border-top-color: rgba(255, 150, 140, .95); border-right-color: transparent; border-left-color: rgba(220, 70, 60, .45); filter: drop-shadow(0 0 6px rgba(220, 60, 50, .8)); animation: hl-fx-swing-e .32s ease-out .06s both; }
+
+  /* Fallen fighters burst into embers and a soul wisp rises. */
+  .hl-death-burst { position: absolute; left: 50%; top: 50%; z-index: 26; width: 0; height: 0; pointer-events: none; }
+  .hl-ember { position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; background: radial-gradient(circle, #fff3c4, #ff9a3c 55%, rgba(200, 40, 20, 0) 72%); transform: rotate(var(--a)) translateY(0); animation: hl-fx-ember .85s cubic-bezier(.2, .7, .4, 1) forwards; }
+  .hl-death-burst.is-hero .hl-ember { background: radial-gradient(circle, #e9f4ff, #6fb6ff 55%, rgba(40, 80, 200, 0) 72%); }
+  .hl-death-soul { position: absolute; left: -22px; top: -30px; width: 44px; height: 60px; border-radius: 50%; background: radial-gradient(ellipse at 50% 60%, rgba(255, 236, 200, .7), rgba(255, 140, 60, .2) 55%, transparent 72%); animation: hl-fx-soul .9s ease-out forwards; }
+  .hl-death-burst.is-hero .hl-death-soul { background: radial-gradient(ellipse at 50% 60%, rgba(220, 236, 255, .7), rgba(90, 150, 255, .2) 55%, transparent 72%); }
+
+  .hl-crit-flash { position: absolute; inset: 0; z-index: 40; pointer-events: none; background: radial-gradient(ellipse at center, transparent 42%, rgba(170, 18, 24, .5) 100%); animation: hl-fx-crit .5s ease-out forwards; }
+
+  @keyframes hl-fx-flash { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes hl-fx-recoil-l { 0% { transform: translateX(0); } 35% { transform: translateX(-6px) rotate(-2deg); } 100% { transform: translateX(0); } }
+  @keyframes hl-fx-recoil-r { 0% { transform: translateX(0); } 35% { transform: translateX(6px) rotate(2deg); } 100% { transform: translateX(0); } }
+  @keyframes hl-fx-slash { 0% { opacity: 1; transform: rotate(-32deg) scaleX(0); } 45% { opacity: 1; transform: rotate(-32deg) scaleX(1.1); } 100% { opacity: 0; transform: rotate(-32deg) scaleX(1.2) translateY(3px); } }
+  @keyframes hl-fx-slash-r { 0% { opacity: 1; transform: rotate(32deg) scaleX(0); } 45% { opacity: 1; transform: rotate(32deg) scaleX(1.1); } 100% { opacity: 0; transform: rotate(32deg) scaleX(1.2) translateY(3px); } }
+  @keyframes hl-fx-ring { 0% { opacity: 1; transform: scale(.25); } 100% { opacity: 0; transform: scale(1.5); } }
+  @keyframes hl-fx-spark { 0% { opacity: 1; transform: rotate(var(--a)) translateY(-4px) scaleY(1.2); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-40px) scaleY(.3); } }
+  @keyframes hl-fx-swing-h { 0% { opacity: 0; transform: rotate(-80deg) scale(.7); } 40% { opacity: 1; } 100% { opacity: 0; transform: rotate(50deg) scale(1.05); } }
+  @keyframes hl-fx-swing-e { 0% { opacity: 0; transform: rotate(80deg) scale(.7); } 40% { opacity: 1; } 100% { opacity: 0; transform: rotate(-50deg) scale(1.05); } }
+  @keyframes hl-fx-ember { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(1.2); } 60% { opacity: .9; } 100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(var(--d) * -1)) translateX(4px) scale(.3); } }
+  @keyframes hl-fx-soul { 0% { opacity: 0; transform: translateY(6px) scale(.6); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-58px) scale(1.15, 1.4); } }
+  @keyframes hl-fx-crit { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 0; } }
+
+  /* Lunge with a short wind-up, so each strike reads as a blow rather than a slide. */
+  .arena-stage-inner:not(.arena-mode-off):not(.dungeon-boss-phase-shared) .anim-attack-hero { animation: hl-fx-lunge-h .42s cubic-bezier(.3, .7, .2, 1); }
+  .arena-stage-inner:not(.arena-mode-off):not(.dungeon-boss-phase-shared) .anim-attack-hero-b { animation: hl-fx-lunge-h-b .42s cubic-bezier(.3, .7, .2, 1); }
+  .arena-stage-inner:not(.arena-mode-off):not(.dungeon-boss-phase-shared) .anim-attack-enemy { animation: hl-fx-lunge-e .42s cubic-bezier(.3, .7, .2, 1); }
+  .arena-stage-inner:not(.arena-mode-off):not(.dungeon-boss-phase-shared) .anim-attack-enemy-b { animation: hl-fx-lunge-e-b .42s cubic-bezier(.3, .7, .2, 1); }
+  @keyframes hl-fx-lunge-h { 0% { transform: none; } 22% { transform: translateX(-7px) scale(.96) rotate(-2deg); } 48% { transform: translateX(26px) scale(1.1) rotate(2deg); } 100% { transform: none; } }
+  @keyframes hl-fx-lunge-h-b { 0% { transform: none; } 22% { transform: translateX(-7px) scale(.96) rotate(-2deg); } 48% { transform: translateX(26px) scale(1.1) rotate(2deg); } 100% { transform: none; } }
+  @keyframes hl-fx-lunge-e { 0% { transform: none; } 22% { transform: translateX(7px) scale(.96) rotate(2deg); } 48% { transform: translateX(-26px) scale(1.1) rotate(-2deg); } 100% { transform: none; } }
+  @keyframes hl-fx-lunge-e-b { 0% { transform: none; } 22% { transform: translateX(7px) scale(.96) rotate(2deg); } 48% { transform: translateX(-26px) scale(1.1) rotate(-2deg); } 100% { transform: none; } }
+}
+
+/* Boss entrance. */
+.hl-boss-intro { position: absolute; inset: 0; z-index: 60; overflow: hidden; pointer-events: none; display: grid; place-items: center; }
+.hl-boss-bar { position: absolute; left: 0; right: 0; height: 13%; background: linear-gradient(#000, #0b0605); box-shadow: 0 0 24px rgba(0, 0, 0, .8); }
+.hl-boss-bar.is-top { top: 0; }
+.hl-boss-bar.is-bottom { bottom: 0; }
+.hl-boss-vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 35%, rgba(150, 10, 18, .55) 100%); opacity: 0; }
+.hl-boss-card { position: relative; display: grid; justify-items: center; gap: 6px; padding: 14px 26px; text-align: center; background: radial-gradient(ellipse at center, rgba(12, 6, 5, .82), rgba(12, 6, 5, 0) 72%); }
+.hl-boss-kicker { color: #ff8a70; font-family: var(--pm-display, serif); font-size: 13px; font-weight: 800; letter-spacing: .42em; text-shadow: 0 0 12px rgba(255, 60, 40, .8); }
+.hl-boss-name { color: #f7e2b0; font-family: var(--pm-display, serif); font-size: clamp(24px, 7vw, 38px); font-weight: 800; letter-spacing: .06em; line-height: 1.05; text-shadow: 0 2px 0 #2a0d08, 0 0 22px rgba(255, 120, 60, .55); }
+.hl-boss-rule { display: block; width: 72%; height: 2px; background: linear-gradient(90deg, transparent, #e2a54b, transparent); }
+@media (prefers-reduced-motion: no-preference) {
+  .hl-boss-bar.is-top { animation: hl-boss-bar-t 2.6s cubic-bezier(.2, .8, .2, 1) forwards; }
+  .hl-boss-bar.is-bottom { animation: hl-boss-bar-b 2.6s cubic-bezier(.2, .8, .2, 1) forwards; }
+  .hl-boss-vignette { animation: hl-boss-pulse 1.3s ease-in-out 2; }
+  .hl-boss-card { animation: hl-boss-card 2.6s cubic-bezier(.2, .8, .2, 1) forwards; }
+  .hl-boss-rule { animation: hl-boss-rule 2.6s ease-out forwards; }
+  .hl-boss-name { animation: hl-boss-name 2.6s cubic-bezier(.2, .8, .2, 1) forwards; }
+  @keyframes hl-boss-bar-t { 0% { transform: translateY(-100%); } 14%, 84% { transform: translateY(0); } 100% { transform: translateY(-100%); } }
+  @keyframes hl-boss-bar-b { 0% { transform: translateY(100%); } 14%, 84% { transform: translateY(0); } 100% { transform: translateY(100%); } }
+  @keyframes hl-boss-pulse { 0%, 100% { opacity: 0; } 35% { opacity: 1; } }
+  @keyframes hl-boss-card { 0% { opacity: 0; transform: scale(1.35); } 16% { opacity: 1; transform: scale(.96); } 24% { transform: scale(1); } 82% { opacity: 1; transform: scale(1.03); } 100% { opacity: 0; transform: scale(1.08); } }
+  @keyframes hl-boss-rule { 0% { transform: scaleX(0); } 30% { transform: scaleX(1); } 100% { transform: scaleX(1); } }
+  @keyframes hl-boss-name { 0%, 10% { letter-spacing: .3em; } 30% { letter-spacing: .06em; } 100% { letter-spacing: .08em; } }
+}
+@media (prefers-reduced-motion: reduce) { .hl-boss-intro { display: none; } }

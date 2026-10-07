@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Backpack, BookOpen, Castle, ChevronLeft, ChevronRight, Crosshair, Crown, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, PawPrint, Pickaxe, ScrollText, Send, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, Twitter, UserPlus, X } from 'lucide-react';
+import { Backpack, BookOpen, Castle, ChevronLeft, ChevronRight, Crosshair, Crown, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, PawPrint, Pickaxe, ScrollText, Send, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, Twitter, UserPlus, X, Volume2, VolumeX, Music } from 'lucide-react';
+import { setMusicEnabled, setSfxEnabled, useAudioSettings } from '@/audio/gameAudio';
 import type { Tab } from './TopMenu';
 import { OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { setMobileSection, type MobileSection } from '@/platform/platform';
@@ -59,6 +60,7 @@ export function MobileTabBar({
   motionOff?: boolean;
 }) {
   const [soon, setSoon] = useState<'mine' | 'pvp' | null>(null);
+  const audioSettings = useAudioSettings();
   const mineOpen = soon !== null;
   const [teaser, setTeaser] = useState<Upcoming | null>(null);
   useEffect(() => { if (!moreOpen) setTeaser(null); }, [moreOpen]);
@@ -171,6 +173,8 @@ export function MobileTabBar({
                   <div className="mo-socials" role="group" aria-label="Social networks">
                     <a className="mo-social" href="https://t.me/heroloopgame" target="_blank" rel="noopener noreferrer" aria-label="Telegram" title="Telegram"><Send size={19} aria-hidden="true" /></a>
                     <a className="mo-social" href="https://x.com/heroloopgame" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" title="X (Twitter)"><Twitter size={19} aria-hidden="true" /></a>
+                    <button type="button" className={`mo-social mo-audio ${audioSettings.sfx ? '' : 'is-off'}`} aria-pressed={audioSettings.sfx} aria-label={audioSettings.sfx ? 'Sound effects on' : 'Sound effects off'} title={audioSettings.sfx ? 'Sound effects on' : 'Sound effects off'} onClick={() => setSfxEnabled(!audioSettings.sfx)}>{audioSettings.sfx ? <Volume2 size={19} aria-hidden="true" /> : <VolumeX size={19} aria-hidden="true" />}</button>
+                    <button type="button" className={`mo-social mo-audio ${audioSettings.music ? '' : 'is-off'}`} aria-pressed={audioSettings.music} aria-label={audioSettings.music ? 'Music on' : 'Music off'} title={audioSettings.music ? 'Music on' : 'Music off'} onClick={() => setMusicEnabled(!audioSettings.music)}><Music size={19} aria-hidden="true" /></button>
                   </div>
                   <button type="button" className="mo-logout" onClick={() => { onMoreOpen(false); onLogout(); }}><LogOut size={14} aria-hidden="true" /> Logout</button>
                 </div>

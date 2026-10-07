@@ -33,6 +33,10 @@
 .mo-socials { display: flex; gap: 8px; }
 .mo-social { display: grid; width: 44px; height: 44px; place-items: center; color: #f2cc80; background: radial-gradient(circle at 50% 40%, rgba(60, 44, 26, .95), rgba(10, 8, 7, .98) 72%); border: 1px solid rgba(199, 158, 97, .6); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .6); }
 .mo-social:hover { color: #fff0a2; border-color: #f2cc80; }
+.mo-audio { cursor: pointer; position: relative; }
+.mo-audio.is-off { color: #7d7466; border-color: rgba(125, 116, 102, .55); }
+.mo-audio.is-off::after { content: ''; position: absolute; left: 11px; right: 11px; top: 50%; height: 2px; background: #c0524f; transform: rotate(-38deg); border-radius: 2px; }
+.mo-audio.mo-audio:has(svg.lucide-volume-x)::after { display: none; }
 .mo-logout {
   display: flex;
   width: auto;

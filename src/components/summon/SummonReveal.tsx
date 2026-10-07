@@ -5,6 +5,7 @@ import { ChevronsRight, Sparkles, X } from 'lucide-react';
 import { HERO_MAP, RARITY_COLORS, RARITY_INDEX, RARITY_LABEL, CLASS_LABEL } from '@/game/heroes';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import type { HeroBase, OwnedHero, Rarity } from '@/game/types';
+import { duckMusic, playReveal, playSfx } from '@/audio/gameAudio';
 
 // Effect tiers: 0 Common/Uncommon, 1 Rare/Epic, 2 Legendary/Mythic, 3 Cosmic and above.
 function summonTier(rarity: Rarity): 0 | 1 | 2 | 3 {
@@ -71,6 +72,15 @@ export function SummonReveal({ heroes, newHeroIds, reducedMotion, onClose, again
     if (spotlights.length) { setSpotIndex(0); setPhase('spotlight'); } else toCards();
   }, [spotlights.length, toCards]);
 
+  // Sound: ritual swell on the portal, a rarity sting per spotlight, a deal swish for the cards.
+  useEffect(() => {
+    if (phase === 'portal') { duckMusic(PORTAL_MS[bestTier] + 2500); playSfx('summon'); }
+    else if (phase === 'cards') playSfx('cardFly');
+    else if (phase === 'done' && reducedMotion) playReveal(RARITY_INDEX[pulls[0]?.base.rarity ?? 'common'] ?? 0);
+    // Phase changes only; the other values are fixed for one reveal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
   useEffect(() => {
     if (phase !== 'portal') return;
     const timer = window.setTimeout(afterPortal, PORTAL_MS[bestTier]);
@@ -80,7 +90,7 @@ export function SummonReveal({ heroes, newHeroIds, reducedMotion, onClose, again
   useEffect(() => {
     if (phase !== 'spotlight') return;
     const pull = spotlights[spotIndex];
-    if (pull) vibrate(pull.tier >= 3 ? [40, 60, 90] : 35);
+    if (pull) { vibrate(pull.tier >= 3 ? [40, 60, 90] : 35); playReveal(RARITY_INDEX[pull.base.rarity] ?? 0); }
   }, [phase, spotIndex, spotlights]);
 
   // Card sequence length: the last stagger delay plus one flip.
