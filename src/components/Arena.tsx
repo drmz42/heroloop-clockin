@@ -278,7 +278,6 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
         <UnitView unit={sharedBoss} floaters={floaters} side="enemy" opponentAlive={heroes.some((hero) => hero.alive)} animationMode={animationMode} rank={{ ...enemyRank(sharedBoss, locationId, dungeonRoom?.depth), stars: 3 }} />
       </div>}
       {dungeonBossScene?.transition && <div className="dungeon-phase-banner" role="status">{dungeonBossScene.transition}</div>}
-      <div className="pointer-events-none absolute inset-x-[8%] bottom-[18%] h-16 rounded-[50%] border-b border-[#9b7540]/25 bg-[radial-gradient(ellipse,rgba(168,122,58,.13),transparent_68%)]" />
       <div className="arena-lanes relative z-10 grid grid-cols-2 items-center gap-4 sm:gap-10">
         <div className="arena-roster flex min-w-0 flex-col items-end justify-center gap-2">
           {heroes.map((u, lane) => {
