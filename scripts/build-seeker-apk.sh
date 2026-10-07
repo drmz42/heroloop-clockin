@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the HeroLoop Seeker TWA APK (android/seeker-twa) reproducibly on VPS1.
+# Build the HeroLoop Seeker Android app (android/seeker-app, native WebView shell) reproducibly on VPS1.
 # usage: scripts/build-seeker-apk.sh <version-code> <version-name> [host]
 # Toolchain (JDK 17, Android SDK 36, Gradle cache) lives under $HEROLOOP_ANDROID_TOOLS
 # (default /var/tmp/hk-android) and is downloaded on first use. Signing needs sudo:
