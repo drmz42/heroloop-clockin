@@ -78,18 +78,23 @@ export function SeekerQuests({ board, onOpenShop, claimQuest, motionOff = false 
           <span className="ml-auto text-px-dim">{groupNumber(Math.min(q.progress, q.target))}/{groupNumber(q.target)}</span>
         </div>
         <div className="health-track mt-1 h-1 overflow-hidden"><div className="h-full bg-amber-500" style={{ width: `${Math.min(100, q.progress / q.target * 100)}%` }} /></div>
-        {!q.claimed && q.progress < q.target && (q.id.startsWith('mine-') || q.id.startsWith('skr-')) && <button type="button" onClick={q.id.startsWith('mine-') ? openMine : onOpenShop} style={{ minHeight: 44 }} className="game-control ui-text-medium mt-1 min-h-11 w-full font-bold">{q.id.startsWith('mine-') ? 'To Mine' : 'To Shop'}</button>}
         {!q.claimed && q.progress >= q.target && <button type="button" disabled={busy !== null} onClick={() => void collect(q.id)} style={{ minHeight: 44 }} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full font-bold disabled:opacity-50">{busy === q.id ? 'Claiming…' : 'Claim reward'}</button>}
       </div>;
   const reached = MINER_RANKS.filter(entry => (mine?.rounds_total ?? 0) >= entry.rounds);
   const rank = reached.length ? reached[reached.length - 1].name : 'Unranked';
   return <>
     {(['daily', 'milestone'] as const).map(kind => <section key={kind} className="mb-2" aria-label={kind === 'daily' ? 'Daily SKR & Market Quests' : 'Lifetime SKR Quests'}>
-      <div className="section-kicker mb-1">{kind === 'daily' ? 'Daily SKR & Market Quests' : 'Lifetime SKR Quests'}</div>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <div className="section-kicker min-w-0">{kind === 'daily' ? 'Daily SKR & Market Quests' : 'Lifetime SKR Quests'}</div>
+        {kind === 'daily' && <button type="button" onClick={onOpenShop} className="inline-flex min-h-11 shrink-0 items-center" aria-label="To Shop"><span style={{ minHeight: 24, height: 24, fontSize: 10 }} className="game-control ui-text-small inline-flex items-center px-2 font-bold">To Shop</span></button>}
+      </div>
       <div className="space-y-1">{quests.filter(q => q.kind === kind && !q.id.startsWith('mine-')).map(card)}</div>
     </section>)}
     <section className="mb-2" aria-label="ORE Mine quests">
-      <div className="section-kicker mb-1">ORE Mine Quests</div>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <div className="section-kicker min-w-0">ORE Mine Quests</div>
+        <button type="button" onClick={openMine} className="inline-flex min-h-11 shrink-0 items-center" aria-label="To Mine"><span style={{ minHeight: 24, height: 24, fontSize: 10 }} className="game-control ui-text-small inline-flex items-center px-2 font-bold">To Mine</span></button>
+      </div>
       {mine && <p className="ui-text-small mb-1 text-px-dim">Today {groupNumber(mine.rounds_today)} rounds · Streak {mine.streak_days} {mine.streak_days === 1 ? 'day' : 'days'} · {rank} Miner ({groupNumber(mine.rounds_total)} rounds)</p>}
       <div className="space-y-1">{quests.filter(q => q.id.startsWith('mine-') && q.kind === 'daily').map(card)}</div>
       <div className="section-kicker mb-1 mt-2">Miner Ranks</div>
