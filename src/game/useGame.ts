@@ -8,7 +8,7 @@ import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedI
 import {
   loadState, normalizeState, makeInitialState, starUpCost,
   MAX_TEAM, BASE_HERO_CAPACITY, MAX_HERO_CAPACITY, HERO_CAPACITY_STEP, MAX_HERO_STARS, inventoryCapacity, MAX_CHESTS, MAX_ACCOUNT_XP, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
-  accountLevelFromXp, advanceHeroXp, moscowDayKey,
+  accountLevelFromXp, advanceHeroXp, gameDayKey,
   heroXpForLevel, TRAINING_SLOT_COSTS, TRAINING_BOOST_COSTS,
   trainingTokenPenalty,
 } from '@/game/state';
@@ -1165,7 +1165,7 @@ export function useGame() {
       previousTick = now;
       if (document.visibilityState !== 'visible') return;
       setState((prev) => {
-        const dayChanged = moscowDayKey(prev.lastChestReset) !== moscowDayKey(now);
+        const dayChanged = gameDayKey(prev.lastChestReset) !== gameDayKey(now);
         const base = dayChanged ? { ...prev, chestsOpenedToday: 0, lastChestReset: now } : prev;
         if (!base.walletAddress) return dayChanged ? base : prev;
         const progress = base.boost.chestProgressSeconds + elapsed;
@@ -1210,7 +1210,7 @@ export function useGame() {
       hiddenSince = null;
       setState((prev) => {
         if (!prev.walletAddress) return prev;
-        const dayChanged = moscowDayKey(prev.lastChestReset) !== moscowDayKey(now);
+        const dayChanged = gameDayKey(prev.lastChestReset) !== gameDayKey(now);
         const base = dayChanged ? { ...prev, chestsOpenedToday: 0, lastChestReset: now } : prev;
         if (base.team.length === 0) return { ...base, lastSeen: now, combatXpAt: now };
         if (elapsed < 12) return { ...base, lastSeen: now, combatXpAt: now };
@@ -1238,7 +1238,7 @@ export function useGame() {
         const penalty = trainingTokenPenalty(base.trainingCamp.heroUids.filter(Boolean).length);
         const tokens = tokenomicsEnabled ? 0 : (canMineTokens(base.currentLocation, base.accountLevel, base.highestLocation) ? Math.floor((activeSeconds / 86400) * 20_000 * (1 - penalty)) : 0);
         const nextAccountXp = Math.min(MAX_ACCOUNT_XP, base.accountXp + accountXp);
-        const dayKey = moscowDayKey();
+        const dayKey = gameDayKey();
         return {
           ...base,
           lastSeen: now,
@@ -1311,7 +1311,7 @@ export function useGame() {
         Math.max(0, MAX_CHESTS_PER_DAY - st.chestsOpenedToday),
       );
       const kills = battles * loc.enemies.length;
-      const dayKey = moscowDayKey(now);
+      const dayKey = gameDayKey(now);
       setState((p) => ({
           ...p,
           lastSeen: tokenomicsEnabled ? p.lastSeen : now,
@@ -1383,7 +1383,7 @@ export function useGame() {
     const safeAmount = Math.max(0, Math.floor(amount));
     if (safeAmount <= 0) return;
     setState((prev) => {
-      const dayKey = moscowDayKey();
+      const dayKey = gameDayKey();
       return {
         ...prev,
         hero: prev.hero + safeAmount,
@@ -1400,7 +1400,7 @@ export function useGame() {
     const safeAmount = Math.max(0, Math.floor(amount));
     const safeBalance = Math.max(0, Math.floor(balance));
     setState((prev) => {
-      const dayKey = moscowDayKey();
+      const dayKey = gameDayKey();
       return {
         ...prev,
         hero: safeBalance,

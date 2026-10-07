@@ -60,7 +60,7 @@
       "response": ["quest_id", "family", "claimed", "reward", "balances", "resources", "next_milestone", "revision"]
     },
     "dailyReset": {
-      "timezone": "Europe/Moscow",
+      "timezone": "UTC",
       "instanceKey": "family:quest_id:YYYY-MM-DD",
       "clockAuthority": "database-server-time",
       "previousDayClaim": "reject",
@@ -92,7 +92,7 @@
       "unit-fixtures-for-every-catalogue-quest",
       "same-key-replay-and-changed-payload-conflict",
       "parallel-double-claim-one-credit",
-      "moscow-midnight-boundary",
+      "utc-midnight-boundary",
       "reload-and-relogin-persistence",
       "daily-to-milestone-overflow",
       "tutorial-early-action-preservation",

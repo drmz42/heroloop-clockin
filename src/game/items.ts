@@ -319,7 +319,7 @@ export function rerollItemStats(item: OwnedItem): OwnedItem {
 
 // ── Chest rarity weights ──────────────────────────────────────────────────
 
-// Daily timed-reward cap: max 1000 chests per Moscow day per player.
+// Daily timed-reward cap: max 1000 chests per game day (UTC) per player.
 export const MAX_CHESTS_PER_DAY = 1000;
 
 type LimitedAvailability = Partial<Record<'divine' | 'celestial', boolean>>;

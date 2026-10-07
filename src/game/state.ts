@@ -60,16 +60,18 @@ export function genUid(): string {
 }
 
 function isSameDay(t1: number, t2: number): boolean {
-  const d1 = new Date(t1); const d2 = new Date(t2);
-  return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+  return gameDayKey(t1) === gameDayKey(t2);
 }
 
-export function moscowDayKey(timestamp = Date.now()): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit', day: '2-digit',
-  }).formatToParts(new Date(timestamp));
-  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${value.year}-${value.month}-${value.day}`;
+// Founder 2026-10-07: the game day rolls over at 00:00 UTC. Until this instant the server keeps
+// the legacy UTC+3 boundary, so the day in progress ends at 00:00 UTC and never resets twice
+// (selfhosted/postgres/migrations/20261007220000_game_day_helpers.sql).
+const GAME_DAY_UTC_CUTOVER = Date.UTC(2026, 9, 9);
+const LEGACY_DAY_OFFSET_MS = 3 * 60 * 60 * 1000;
+
+export function gameDayKey(timestamp = Date.now()): string {
+  const shifted = timestamp < GAME_DAY_UTC_CUTOVER ? timestamp + LEGACY_DAY_OFFSET_MS : timestamp;
+  return new Date(shifted).toISOString().slice(0, 10);
 }
 
 export function generateDailyQuests(): DailyQuest[] {
@@ -153,7 +155,7 @@ export function makeInitialState(): GameState {
     totalGoldEarned: 0,
     totalTokensEarned: 0,
     tokensEarnedToday: 0,
-    tokenDayKey: moscowDayKey(now),
+    tokenDayKey: gameDayKey(now),
     totalKills: 0,
     totalBossKills: 0,
     summons: 0,
@@ -425,8 +427,8 @@ export function normalizeState(parsed: Partial<GameState>): GameState {
       totalKills: parsed.totalKills ?? 0,
       totalBossKills: parsed.totalBossKills ?? parsed.session?.bossKills ?? 0,
       summonScrolls: Math.max(0, Math.floor(parsed.summonScrolls ?? 0)),
-      tokensEarnedToday: parsed.tokenDayKey === moscowDayKey(now) ? (parsed.tokensEarnedToday ?? 0) : 0,
-      tokenDayKey: moscowDayKey(now),
+      tokensEarnedToday: parsed.tokenDayKey === gameDayKey(now) ? (parsed.tokensEarnedToday ?? 0) : 0,
+      tokenDayKey: gameDayKey(now),
       currentLocation: parsed.currentLocation ?? 1,
       highestLocation: parsed.highestLocation ?? 1,
       combatXpAt: Math.max(0, Number(parsed.combatXpAt ?? parsed.lastSeen ?? now) || now),
