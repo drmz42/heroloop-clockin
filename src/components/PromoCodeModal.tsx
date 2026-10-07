@@ -123,7 +123,6 @@ export function PromoCodeModal({ onClose, onRedeemed }: { onClose: () => void; o
         {result ? (
           <>
             <div className="promo-vault__glow" aria-hidden="true" />
-            <button type="button" onClick={onClose} className="promo-vault__close game-control" aria-label="Close rewards"><X size={18} /></button>
             <header className="promo-vault__header">
               <p className="promo-vault__kicker"><span /> Code redeemed <span /></p>
               <h2 id="promo-title" className="promo-vault__title">Your rewards</h2>
@@ -140,7 +139,7 @@ export function PromoCodeModal({ onClose, onRedeemed }: { onClose: () => void; o
             </div>
             <footer className="promo-vault__footer">
               <p role="status"><CheckCircle2 size={15} /> Rewards added to your account</p>
-              <button ref={continueRef} type="button" onClick={onClose} className="game-control game-primary promo-vault__continue">Continue adventure <span aria-hidden="true">→</span></button>
+              <button ref={continueRef} type="button" onClick={onClose} className="game-control game-primary promo-vault__continue">Continue adventure</button>
             </footer>
           </>
         ) : (
