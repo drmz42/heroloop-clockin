@@ -489,8 +489,8 @@ html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\] { display: flex !impo
 html[data-hl-platform='android'] .fixed.inset-0.z-\[9999\] > * { flex: 0 1 auto; min-height: 0; max-height: 100% !important; }
 
 /* The location art covers the whole battle stage, footer included (the inner arena alone left the footer bare). */
-html[data-hl-platform='android'] .battle-stage-normal { background-image: linear-gradient(180deg, rgba(4, 6, 8, .12), rgba(4, 6, 8, .78)), var(--location-arena-art); background-position: center; background-size: cover; background-repeat: no-repeat; }
-html[data-hl-platform='android'] .battle-stage-normal .arena-location-art { background-image: radial-gradient(ellipse at 50% 78%, rgba(205, 153, 70, .17), transparent 55%); }
+html[data-hl-edition='seeker'] .battle-stage-normal { background-image: radial-gradient(ellipse at 50% 78%, rgba(205, 153, 70, .17), transparent 55%), linear-gradient(180deg, rgba(4, 6, 8, .12), rgba(4, 6, 8, .78)), var(--location-arena-art); background-position: center; background-size: cover; background-repeat: no-repeat; }
+html[data-hl-edition='seeker'] .battle-stage-normal .arena-location-art { background-image: none; }
 
 /* Boost Max lives in the top bar between the Commander and Quests; the battle dock keeps the drop-rate info next to the chests. */
 .game-progress-boost { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: 54px; height: 44px; flex-shrink: 0; padding: 0 2px; border: 1px solid #b98a3c; border-radius: 4px; background: radial-gradient(ellipse 90% 70% at 50% 110%, rgba(229, 177, 70, .28), transparent 70%), linear-gradient(180deg, #2a2114, #110e09); color: #ffd36e; font-size: 8.5px; font-weight: 900; line-height: 1; letter-spacing: .06em; text-transform: uppercase; text-align: center; box-shadow: inset 0 1px rgba(255, 230, 170, .14), 0 0 10px rgba(229, 177, 70, .22); }

@@ -936,6 +936,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
         {!isAndroidLayout && (battleActionsHost ? createPortal(encounterActions, battleActionsHost) : encounterActions)}
         {/* Arena */}
         <div className={`battle-stage ${!activeDungeon ? 'battle-stage-normal' : ''} relative min-h-[320px] flex-1 overflow-hidden bg-arena`} style={activeDungeon ? undefined : locationArtStyle(game.state.currentLocation)}>
+          {!activeDungeon && state.battleAnimationMode === 'spectacular' && <div className="arena-spectacular-atmosphere pointer-events-none absolute inset-0" aria-hidden="true" />}
           {!activeDungeon && <BattleAmbience />}
           {!activeDungeon && showZoomTip && <div className="hl-zoom-tip absolute left-1/2 top-12 z-40 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-lg border border-[#80683f] bg-[#11130f]/95 px-3 py-1.5 font-vt ui-text-small font-bold text-[#d8c9ad] shadow-xl backdrop-blur-sm"><span>Adjust browser zoom with <kbd className="text-[#ffd36e]">Ctrl +</kbd> / <kbd className="text-[#ffd36e]">Ctrl -</kbd> to fit all interface elements.</span><button type="button" onClick={() => setShowZoomTip(false)} className="text-[#8f887b] hover:text-white" aria-label="Dismiss browser zoom tip"><X size={12} /></button></div>}
           <div className={`hl-battle-hud-left absolute left-3 top-3 flex items-start gap-1.5 ${showPotSettings || showBattleSettings ? 'z-[110]' : 'z-30'}`}>

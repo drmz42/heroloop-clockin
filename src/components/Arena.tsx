@@ -241,7 +241,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
 
   return (
     <div className={`arena-stage-inner arena-mode-${animationMode} ${locationId ? 'arena-location-art' : ''} ${dungeonPanelOpen ? 'dungeon-panel-open' : ''} ${dungeonRoom ? `dungeon-room dungeon-depth-${dungeonRoom.depth} dungeon-room-${dungeonRoom.room}` : ''} ${dungeonBossScene ? `dungeon-boss-phase-${dungeonBossScene.phase} dungeon-boss-${dungeonBossScene.bossId}` : ''} relative flex h-full w-full flex-col justify-end px-3 pb-4 pt-16 sm:px-6 ${shake ? 'anim-shake' : ''}`} style={locationId ? locationArtStyle(locationId) : undefined}>
-      {animationMode === 'spectacular' && <div className="arena-spectacular-atmosphere pointer-events-none absolute inset-0" aria-hidden="true" />}
+      {animationMode === 'spectacular' && !locationId && <div className="arena-spectacular-atmosphere pointer-events-none absolute inset-0" aria-hidden="true" />}
       {dungeonRoom && <div className="dungeon-route" aria-label={`Dungeon route, room ${dungeonRoom.room} of 4`}>
         {['GUARDS', 'ELITE', 'FATE', 'BOSS'].map((label, index) => <div key={label} className={index + 1 < dungeonRoom.room ? 'is-done' : index + 1 === dungeonRoom.room ? 'is-active' : ''}><i>{index + 1 < dungeonRoom.room ? '✓' : index + 1}</i><span>{label}</span></div>)}
       </div>}
@@ -291,7 +291,6 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
           {laneEnemies.length === 0 && !sharedBoss && <div className="intentional-empty p-4 ui-text-medium">Enemies defeated</div>}
         </div>
       </div>
-      <div className="relative z-20 mt-3 h-px bg-gradient-to-r from-transparent via-[#a78045]/35 to-transparent" />
     </div>
   );
 }
