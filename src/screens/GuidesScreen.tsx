@@ -297,7 +297,7 @@ export function GuidesScreen() {
       </label>
 
       <div className="mt-4 grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
-        <nav className="no-scrollbar flex gap-1 overflow-x-auto rounded-xl border border-[#4f402b] bg-black/20 p-2 md:flex-col md:self-start" aria-label="Guide categories">
+        <nav className="no-scrollbar -mx-4 flex scroll-px-4 gap-2 overflow-x-auto px-4 py-1 sm:-mx-6 sm:scroll-px-6 sm:px-6 md:mx-0 md:flex-col md:gap-1 md:self-start md:rounded-xl md:border md:border-[#4f402b] md:bg-black/20 md:p-2" aria-label="Guide categories">
           {CATEGORIES.map((item) => (
             <button key={item} type="button" onClick={() => setCategory(item)} className={`game-control flex shrink-0 items-center justify-between gap-3 px-3 py-2 text-left text-xs font-bold ${category === item ? 'game-primary' : ''}`} aria-pressed={category === item}><span>{item}</span><span className="rounded-full bg-black/25 px-1.5 text-[9px] text-[#b9a886]">{item === 'All' ? editionGuides.length : editionGuides.filter((entry) => entry.category === item).length}</span></button>
           ))}
