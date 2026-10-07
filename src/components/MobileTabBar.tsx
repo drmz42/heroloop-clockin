@@ -6,6 +6,7 @@ import { setMobileSection, type MobileSection } from '@/platform/platform';
 import '@/theme/scene/sheets.css';
 import { SeekerMinePanel } from '@/components/SeekerMinePanel';
 import { buildVersionLabel } from '@/platform/buildInfo';
+import { MINE_OPEN_EVENT, markSeekerTourStep } from '@/game/seekerTour';
 
 // Android layout only (src/platform/platform.ts): the phone's primary navigation, two rows
 // (Founder 2026-10-02). Row 1: Battle, Quests and Bag switch the Play screen between its three
@@ -67,6 +68,14 @@ export function MobileTabBar({
     window.addEventListener(OVERLAYS_CLOSE_EVENT, close);
     return () => window.removeEventListener(OVERLAYS_CLOSE_EVENT, close);
   }, []);
+  // The battle screen's Next-step card and income details open the Mine sheet directly.
+  useEffect(() => {
+    const openMine = () => { onMoreOpen(false); setSoon('mine'); };
+    window.addEventListener(MINE_OPEN_EVENT, openMine);
+    return () => window.removeEventListener(MINE_OPEN_EVENT, openMine);
+  }, [onMoreOpen]);
+  useEffect(() => { if (soon === 'mine') markSeekerTourStep('mine'); }, [soon]);
+  useEffect(() => { if (tab === 'shop') markSeekerTourStep('store'); }, [tab]);
   useEffect(() => { setMobileSection(section); }, [section]);
   // While a window covers the Play screen, the screen underneath is not painted (android.css):
   // a phone WebView left the Bag grid showing through an unfinished Summon window.
@@ -76,10 +85,10 @@ export function MobileTabBar({
     return () => { delete document.documentElement.dataset.hlWindow; };
   }, [tab]);
   const countFor = (id: MobileSection | Tab) => (id === 'quests' ? readyQuests : badges[id] ?? 0);
-  const icon = (Icon: typeof Shield, count: number, alert = false) => (
+  const icon = (Icon: typeof Shield, count: number, alert = false, tag?: string) => (
     <i className="hl-tabbar-icon" aria-hidden="true">
       <Icon size={20} />
-      {count > 0 ? <b className="hl-tabbar-badge">{count > 99 ? '99+' : count}</b> : alert && <b className="hl-tabbar-alert">!</b>}
+      {count > 0 ? <b className="hl-tabbar-badge">{count > 99 ? '99+' : count}</b> : alert ? <b className="hl-tabbar-alert">!</b> : tag && <b className="hl-mine-badge">{tag}</b>}
     </i>
   );
   const sectionButton = (id: MobileSection, label: string, Icon: typeof Shield) => {
@@ -91,13 +100,13 @@ export function MobileTabBar({
       </button>
     );
   };
-  const windowButton = (id: Tab, label: string, Icon: typeof Shield) => {
+  const windowButton = (id: Tab, label: string, Icon: typeof Shield, tag?: string) => {
     const active = tab === id && !moreOpen && !mineOpen;
     const count = countFor(id);
     const alert = count === 0 && alerts[id] === true;
     return (
       <button type="button" className={`hl-tabbar-item ${active ? 'is-active' : ''} ${count > 0 || alert ? 'has-badge' : ''}`} aria-current={active ? 'page' : undefined} aria-label={count > 0 ? `${label}, ${count} new` : alert ? `${label}, new` : label} onClick={() => { onMoreOpen(false); setMineOpen(false); onTab(id); }}>
-        {icon(Icon, count, alert)}<span>{label}</span>
+        {icon(Icon, count, alert, tag)}<span>{label}</span>
       </button>
     );
   };
@@ -200,9 +209,9 @@ export function MobileTabBar({
         {windowButton('summon', 'Summon', Sparkles)}
         {windowButton('market', 'Market', Store)}
         {windowButton('training', 'Training', Dumbbell)}
-        {windowButton('shop', 'Store', ShoppingBag)}
+        {windowButton('shop', 'Store', ShoppingBag, 'SKR')}
         <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'mine' ? 'is-active' : ''}`} aria-expanded={soon === 'mine'} aria-label="$ORE Mine" onClick={() => { onMoreOpen(false); setSoon(soon === 'mine' ? null : 'mine'); }}>
-          <i className="hl-tabbar-icon" aria-hidden="true"><Pickaxe size={20} /></i><span>Mine</span>
+          <i className="hl-tabbar-icon" aria-hidden="true"><Pickaxe size={20} /><b className="hl-mine-badge">ORE</b></i><span>Mine</span>
         </button>
         <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'pvp' ? 'is-active' : ''}`} aria-expanded={soon === 'pvp'} aria-label="PvP, coming soon" onClick={() => { onMoreOpen(false); setSoon(soon === 'pvp' ? null : 'pvp'); }}>
           <i className="hl-tabbar-icon" aria-hidden="true"><Crosshair size={20} /><b className="hl-mine-badge">Soon</b></i><span>PvP</span>
