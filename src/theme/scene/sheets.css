@@ -215,8 +215,9 @@
    The frame image is transparent for its outer 1.4px, so the art is clipped there. Pets, Guilds and
    Season Pass are layered (Codex imagegen, upload/more-layers-20261007): an empty background plate,
    transparent creature/object layers sized and positioned exactly like the plate, then the shading.
-   MobileTabBar.tsx <MoLife> renders the layers; light layers (SVG in the plate's 1024x683 pixels) and
-   all movement follow the motion layer switches, while the layers themselves always show. */
+   MobileTabBar.tsx <MoLife> renders the layers; light layers (SVG in the plate's 1024x683 pixels)
+   follow the motion layer switches. The layers stay still: scaling full-size layers under the frame
+   clip made phone GPUs glitch, so only the lights flicker. */
 .mo-banner, .mo-teaser { clip-path: inset(1.5px); }
 .mo-art-pass { --mo-art: url('/assets/screens/more-pass-bg.webp'); }
 .mo-art-guilds { --mo-art: url('/assets/screens/more-guild-bg.webp'); }
@@ -242,10 +243,6 @@
 .mo-layer-treasure { --mo-layer: url('/assets/screens/more-pass-treasure.webp'); }
 @media (prefers-reduced-motion: no-preference) {
   html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .mo-life { display: block; }
-  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .mo-layer-dragon { animation: mo-breathe-a 4.2s ease-in-out infinite; }
-  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .mo-layer-wolf { animation: mo-breathe-b 5.4s ease-in-out -1.3s infinite; }
-  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .mo-layer-banner { animation: mo-sway 6s ease-in-out infinite; }
-  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .mo-layer-treasure { animation: mo-gleam 4.6s ease-in-out infinite; }
 }
 
 .mo-art-pets .mo-life-c { --mo-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1024' height='683'%3E%3CradialGradient id='c0'%3E%3Cstop offset='0' stop-color='%23ff7a1a' stop-opacity='0.5'/%3E%3Cstop offset='1' stop-color='%23ff7a1a' stop-opacity='0'/%3E%3C/radialGradient%3E%3Ccircle cx='565' cy='330' r='62' fill='url(%23c0)'/%3E%3CradialGradient id='c1'%3E%3Cstop offset='0' stop-color='%23ff7a1a' stop-opacity='0.42'/%3E%3Cstop offset='1' stop-color='%23ff7a1a' stop-opacity='0'/%3E%3C/radialGradient%3E%3Ccircle cx='600' cy='410' r='48' fill='url(%23c1)'/%3E%3CradialGradient id='c2'%3E%3Cstop offset='0' stop-color='%23ff7a1a' stop-opacity='0.35'/%3E%3Cstop offset='1' stop-color='%23ff7a1a' stop-opacity='0'/%3E%3C/radialGradient%3E%3Ccircle cx='520' cy='245' r='40' fill='url(%23c2)'/%3E%3CradialGradient id='c3'%3E%3Cstop offset='0' stop-color='%23ff7a1a' stop-opacity='0.3'/%3E%3Cstop offset='1' stop-color='%23ff7a1a' stop-opacity='0'/%3E%3C/radialGradient%3E%3Ccircle cx='640' cy='300' r='40' fill='url(%23c3)'/%3E%3C/svg%3E"); animation: mo-flicker 2.6s ease-in-out infinite; }
@@ -262,10 +259,6 @@
 .mo-art-pass .mo-life-s6 { --mo-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1024' height='683'%3E%3Cpath d='M907 139 Q907 155 923 155 Q907 155 907 171 Q907 155 891 155 Q907 155 907 139Z' fill='%23fff6d0'/%3E%3Ccircle cx='907' cy='155' r='5.6' fill='%23ffe9a0'/%3E%3C/svg%3E"); animation: mo-twinkle 2.8s ease-in-out 1.05s infinite; }
 /* The teaser shows the treasure behind its copy, so only the light shafts and fires live there. */
 .mo-teaser.mo-art-pass > :is(.mo-life-s1, .mo-life-s2, .mo-life-s3, .mo-life-s4, .mo-life-s5, .mo-life-s6) { display: none; }
-@keyframes mo-breathe-a { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.014, 1.03); } }
-@keyframes mo-breathe-b { 0%, 100% { transform: scale(1, 1) translateX(0); } 45% { transform: scale(1.01, 1.024) translateX(.3%); } }
-@keyframes mo-sway { 0%, 100% { transform: skewX(0deg); } 30% { transform: skewX(1.6deg); } 70% { transform: skewX(-1.2deg); } }
-@keyframes mo-gleam { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.14) saturate(1.08); } }
 @keyframes mo-flicker { 0%, 100% { opacity: .65; } 20% { opacity: 1; } 40% { opacity: .5; } 60% { opacity: .9; } 80% { opacity: .7; } }
 @keyframes mo-pulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
 @keyframes mo-twinkle { 0%, 70%, 100% { opacity: 0; } 82% { opacity: 1; } }
