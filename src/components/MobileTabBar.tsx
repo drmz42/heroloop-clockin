@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Backpack, BookOpen, Castle, ChevronLeft, ChevronRight, Crosshair, Crown, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, PawPrint, Pickaxe, ScrollText, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, UserPlus, X } from 'lucide-react';
+import { Backpack, BookOpen, Castle, ChevronLeft, ChevronRight, Crosshair, Crown, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, PawPrint, Pickaxe, ScrollText, Send, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, Twitter, UserPlus, X } from 'lucide-react';
 import type { Tab } from './TopMenu';
 import { OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { setMobileSection, type MobileSection } from '@/platform/platform';
@@ -158,7 +158,13 @@ export function MobileTabBar({
                   <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onCode(); }}><i aria-hidden="true"><KeyRound size={17} /></i>Code</button>
                   <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onSupport(); }}><i aria-hidden="true"><MessageCircle size={17} /></i>Support</button>
                 </div>
-                <button type="button" className="mo-logout" onClick={() => { onMoreOpen(false); onLogout(); }}><LogOut size={16} aria-hidden="true" /> Logout</button>
+                <div className="mo-footer">
+                  <div className="mo-socials" role="group" aria-label="Social networks">
+                    <a className="mo-social" href="https://t.me/heroloopgame" target="_blank" rel="noopener noreferrer" aria-label="Telegram" title="Telegram"><Send size={19} aria-hidden="true" /></a>
+                    <a className="mo-social" href="https://x.com/heroloopgame" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" title="X (Twitter)"><Twitter size={19} aria-hidden="true" /></a>
+                  </div>
+                  <button type="button" className="mo-logout" onClick={() => { onMoreOpen(false); onLogout(); }}><LogOut size={14} aria-hidden="true" /> Logout</button>
+                </div>
                 <p className="mo-version" aria-label={`Version: ${buildVersionLabel}`}>{buildVersionLabel}</p>
               </div>
             )}
