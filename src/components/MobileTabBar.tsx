@@ -8,6 +8,7 @@ import '@/theme/scene/sheets.css';
 import { SeekerMinePanel } from '@/components/SeekerMinePanel';
 import { buildVersionLabel } from '@/platform/buildInfo';
 import { MINE_OPEN_EVENT, markSeekerTourStep } from '@/game/seekerTour';
+import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
 
 // Android layout only (src/platform/platform.ts): the phone's primary navigation, two rows
 // (Founder 2026-10-02). Row 1: Battle, Quests and Bag switch the Play screen between its three
@@ -65,6 +66,8 @@ export function MobileTabBar({
   const mineOpen = soon !== null;
   useEffect(() => { onSheetOpenChange?.(mineOpen); }, [mineOpen, onSheetOpenChange]);
   const [teaser, setTeaser] = useState<Upcoming | null>(null);
+  // Back from a Season Pass/feature teaser returns to the More list.
+  useAndroidOverlayHistory(moreOpen && teaser !== null, () => setTeaser(null));
   useEffect(() => { if (!moreOpen) setTeaser(null); }, [moreOpen]);
   const setMineOpen = (open: boolean) => { if (!open) setSoon(null); };
   useEffect(() => {

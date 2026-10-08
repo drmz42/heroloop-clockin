@@ -419,7 +419,9 @@ function App() {
   const [mobileSection, setMobileSection] = useState<MobileSection>('battle');
   const [moreOpen, setMoreOpen] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
-  const overlayHistory = useAndroidOverlayHistory(tab !== 'main' || moreOpen || mobileSheetOpen || mobileSection !== 'battle', () => {
+  // Founder 2026-10-08: Back from anything opened in More (Refer, Code, Support, Guides) returns to More.
+  const [moreReturn, setMoreReturn] = useState(false);
+  const overlayHistory = useAndroidOverlayHistory(tab !== 'main' || moreOpen || mobileSheetOpen || mobileSection !== 'battle' || moreReturn, () => {
     setMoreOpen(false);
     setTab('main');
     setMobileSection('battle');
@@ -438,6 +440,16 @@ function App() {
   useAndroidOverlayHistory(showWallet, () => setShowWallet(false));
   const [showPromoCode, setShowPromoCode] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
+  const wikiFromMoreRef = useRef(false);
+  const moreChildOpen = tab !== 'main' || showPromoCode || showSupport;
+  useAndroidOverlayHistory(moreReturn && moreChildOpen, () => {
+    setMoreReturn(false);
+    setShowPromoCode(false);
+    setShowSupport(false);
+    setTab('main');
+    setMoreOpen(true);
+  });
+  useEffect(() => { if (moreReturn && !moreChildOpen) setMoreReturn(false); }, [moreReturn, moreChildOpen]);
   const [showMail, setShowMail] = useState(false);
   const setCombatPresentationVisible = game.setCombatPresentationVisible;
   // Founder 2026-10-03: a button in the top bar or tab bar first closes whatever is open (Commander, battle
@@ -478,7 +490,13 @@ function App() {
   };
 
   useEffect(() => {
-    const handlePopState = () => setRoutePath(window.location.pathname);
+    const handlePopState = () => {
+      setRoutePath(window.location.pathname);
+      if (window.location.pathname !== '/wiki' && wikiFromMoreRef.current) {
+        wikiFromMoreRef.current = false;
+        setMoreOpen(true);
+      }
+    };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
@@ -487,6 +505,7 @@ function App() {
     // Guides opened from the More sheet reuse its history entry; closing the sheet must not
     // step Back over the new /wiki entry (Android layout).
     const entry = overlayHistory.current;
+    wikiFromMoreRef.current = isAndroidLayout && moreOpen;
     if (entry.pushed) {
       entry.pushed = false;
       window.history.replaceState(null, '', '/wiki');
@@ -497,6 +516,7 @@ function App() {
   };
 
   const closeWiki = () => {
+    wikiFromMoreRef.current = false;
     window.history.pushState(null, '', '/#game');
     setRoutePath('/');
   };
@@ -629,13 +649,13 @@ function App() {
           tab={tab}
           section={mobileSection}
           moreOpen={moreOpen}
-          onTab={setTab}
+          onTab={(next) => { if (moreOpen && next !== 'main') setMoreReturn(true); setTab(next); }}
           onSection={setMobileSection}
           onMoreOpen={setMoreOpen}
           onSheetOpenChange={setMobileSheetOpen}
           onGuides={openWiki}
-          onCode={() => setShowPromoCode(true)}
-          onSupport={() => setShowSupport(true)}
+          onCode={() => { if (moreOpen) setMoreReturn(true); setShowPromoCode(true); }}
+          onSupport={() => { if (moreOpen) setMoreReturn(true); setShowSupport(true); }}
           onLogout={() => void logout()}
         />
       ) : (
