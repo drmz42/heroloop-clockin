@@ -512,7 +512,8 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
                 {solanaAuthEnabled ? <Shield size={18} className="onb-crest-icon" /> : <UserRound size={18} className="onb-crest-icon" />}
               </div>
               <h2 className="onb-title">{solanaAuthEnabled ? 'CONNECT SOLANA WALLET' : 'CONTINUE AS GUEST'}</h2>
-              <p className="onb-copy">{solanaAuthEnabled ? (isNativeApp ? 'Choose any Solana wallet app — Phantom, Solflare, Backpack or Seed Vault —' : isAndroidLayout ? 'Connect your Solana wallet' : 'Connect Phantom') + ' and sign one free message to prove ownership—no transaction and no gas.' : 'The current beta uses a temporary server account. Existing guests enter directly; new guests continue to registration.'}</p>
+              {/* The Seeker app already says what to do in the title, ribbon and safety note. */}
+              {!(solanaAuthEnabled && isNativeApp) && <p className="onb-copy">{solanaAuthEnabled ? (isAndroidLayout ? 'Connect your Solana wallet' : 'Connect Phantom') + ' and sign one free message to prove ownership—no transaction and no gas.' : 'The current beta uses a temporary server account. Existing guests enter directly; new guests continue to registration.'}</p>}
               {solanaAuthEnabled && legacyWalletMode && (
                 <div className="onb-note onb-note-amber">
                   {legacyWalletMode === 'link'
