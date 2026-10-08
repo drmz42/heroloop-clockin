@@ -41,7 +41,9 @@ services:
       PGUSER: seeker_wallet_runtime
       PGPASSWORD: ${WALLET_DATABASE_PASSWORD:?set the wallet database password in the root-owned runtime environment}
       WALLET_SERVICE_TOKEN: ${WALLET_SERVICE_TOKEN:?set the wallet service token in the root-owned runtime environment}
-      SOLANA_RPC_URL: https://${SOLANA_RPC_HOST:-api.mainnet-beta.solana.com}
+      # SOLANA_RPC_PATH carries a provider key in its query (RPC provider, ops/set-vps2-seeker-rpc-key.sh); the
+      # host alone stays in --allow-net.
+      SOLANA_RPC_URL: https://${SOLANA_RPC_HOST:-api.mainnet-beta.solana.com}${SOLANA_RPC_PATH:-/}
       # Mainnet SKR; the project wallet (Founder key, never on the server) comes from the runtime environment.
       SKR_MINT: SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3
       WALLET_TREASURY: ${WALLET_TREASURY:?set the project wallet address in the root-owned runtime environment}
