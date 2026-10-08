@@ -1,3 +1,4 @@
+import { PremiumPotionWorkshop, PremiumPotionBattleControls, type PremiumPotionChoice, type PremiumPotionEvent } from '@/components/PremiumPotions';
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { SkrUsd } from '@/components/SkrUsd';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
@@ -99,7 +100,7 @@ type DungeonCheckpoint = {
   type: 'dungeon' | 'boss_hunt'; encounter_id: string; boss_encounter_id?: string; depth: number; room: number; revision: number;
   roster_snapshot?: Array<{ uid: string; hero_id: string; stats?: Record<string, number> }>;
   run_state?: { heroes?: DungeonUnitState[]; rooms_cleared?: number; tutorial_boss?: boolean };
-  room_state: null | { status: string; kind?: string; choice?: string; modifier?: string; heroes?: DungeonUnitState[]; enemies?: DungeonUnitState[]; boss?: { boss_id: string; name: string; status: string; current_hp?: number; max_hp?: number }; reward_preview?: { summon_scrolls?: number; dungeon_chests?: number; settled?: boolean; reward_table_version?: string }; playback_tick?: number; elapsed_ms?: number; heavy_target_uid?: string; heavy_casts?: number; identity_ability?: string; identity_casts?: number };
+  room_state: null | { status: string; kind?: string; choice?: string; modifier?: string; heroes?: DungeonUnitState[]; enemies?: DungeonUnitState[]; boss?: { boss_id: string; name: string; status: string; current_hp?: number; max_hp?: number }; reward_preview?: { summon_scrolls?: number; dungeon_chests?: number; settled?: boolean; reward_table_version?: string }; playback_tick?: number; elapsed_ms?: number; premium_potion_events?: PremiumPotionEvent[]; heavy_target_uid?: string; heavy_casts?: number; identity_ability?: string; identity_casts?: number };
 };
 type DungeonUnitState = {
   uid?: string; unit_id?: string; position?: number; lane?: number; current_hp: number; max_hp: number; alive: boolean;
@@ -345,7 +346,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const dungeonAutoRun = useRef(false);
   const [activeDungeon, setActiveDungeon] = useState<DungeonCheckpoint | null>(null);
   const [dungeonFloaters, setDungeonFloaters] = useState<FloatingNumber[]>([]);
-  const [dungeonCompletion, setDungeonCompletion] = useState<{ won: boolean; depth: number; kind: 'dungeon' | 'boss_hunt'; gold: number; scrolls: number } | null>(null);
+  const [dungeonCompletion, setDungeonCompletion] = useState<{ won: boolean; depth: number; kind: 'dungeon' | 'boss_hunt'; gold: number; scrolls: number; premium: number } | null>(null);
   const [dungeonAttempts, setDungeonAttempts] = useState<{ remaining: number; max: number } | null>(null);
   const dungeonPreviousPause = useRef<boolean | null>(null);
   const [selectedHeroUid, setSelectedHeroUid] = useState<string | null>(state.team[0] ?? null);
@@ -1022,8 +1023,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               </div>
             </div>
           )}
-          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} autoRun={dungeonAutoRun.current} onChange={(next) => void handleDungeonChange(next)} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls })} />}
-          {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Server reward result:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span><small>Granted once · Find your chest in Inventory → Resources → Chests</small></> : <><span><SummonScrollArtwork size={18} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST PREVIEW</span><small>{dungeonCompletion.scrolls === 2 ? 'Scrolls granted exactly once by the server; Dungeon Chest is not yet granted' : 'No Scrolls granted for this run; Dungeon Chest is not yet granted'}</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
+          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} autoRun={dungeonAutoRun.current} onChange={(next) => void handleDungeonChange(next)} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0, premium = 0) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls, premium })} />}
+          {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Server reward result:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span>{dungeonCompletion.premium > 0 && <span><FlaskConical size={14} /> {dungeonCompletion.premium} WEAK PREMIUM POTION</span>}<small>Granted once · Find your chest in Inventory → Resources → Chests</small></> : <><span><SummonScrollArtwork size={18} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST PREVIEW</span><small>{dungeonCompletion.scrolls === 2 ? 'Scrolls granted exactly once by the server; Dungeon Chest is not yet granted' : 'No Scrolls granted for this run; Dungeon Chest is not yet granted'}</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
           {!activeDungeon && import.meta.env.MODE === 'staging' && <TestControls game={game} />}
           {!activeDungeon && <div className="hl-battle-footer normal-battle-footer relative z-30 flex shrink-0 flex-wrap items-end justify-between gap-3 px-3 pb-3">
             <TokenEarningsPanel status={tok.status} stale={tok.incomeStale} today={game.state.tokensEarnedToday} />
@@ -1126,7 +1127,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             <button onClick={() => scrollLocations(1)} className="game-control grid place-items-center" aria-label="Next locations"><ChevronRight size={20} /></button>
           </div>
           </div>
-        </div> : activeDungeon.type === 'boss_hunt' ? <div className="hl-encounter-strip material-panel mt-1.5 shrink-0 p-3"><div className="flex items-center justify-between gap-3"><span className="section-kicker">Boss Hunt</span><span className="ui-text-small font-black uppercase tracking-widest text-violet-300">Server combat · reload-safe · potions disabled</span></div><div className="mt-2 grid grid-cols-2 gap-1.5"><div className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room_state?.kind === 'retinue' ? 'border-violet-400 bg-violet-950/40 text-violet-100' : 'border-emerald-700/60 bg-emerald-950/25 text-emerald-300'}`}>1. Retinue</div><div className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room_state?.kind === 'shared_boss' ? 'border-violet-400 bg-violet-950/40 text-violet-100' : 'border-white/10 bg-black/20 text-[#77706f]'}`}>2. Shared Boss</div></div></div> : <div className="hl-encounter-strip material-panel mt-1.5 shrink-0 p-3"><div className="flex items-center justify-between gap-3"><span className="section-kicker">Cursed Citadel</span><span className="ui-text-small font-black uppercase tracking-widest text-violet-300">HP persists · potions disabled</span></div><div className="mt-2 grid grid-cols-4 gap-1.5">{['Guards', 'Elite', 'Crossroads', 'Boss'].map((label, index) => <div key={label} className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room === index + 1 ? 'border-violet-400 bg-violet-950/40 text-violet-100' : activeDungeon.room > index + 1 ? 'border-emerald-700/60 bg-emerald-950/25 text-emerald-300' : 'border-white/10 bg-black/20 text-[#77706f]'}`}>{index + 1}. {label}</div>)}</div></div>}
+        </div> : activeDungeon.type === 'boss_hunt' ? <div className="hl-encounter-strip material-panel mt-1.5 shrink-0 p-3"><div className="flex items-center justify-between gap-3"><span className="section-kicker">Boss Hunt</span><span className="ui-text-small font-black uppercase tracking-widest text-violet-300">Server combat · reload-safe · premium potions optional</span></div><div className="mt-2 grid grid-cols-2 gap-1.5"><div className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room_state?.kind === 'retinue' ? 'border-violet-400 bg-violet-950/40 text-violet-100' : 'border-emerald-700/60 bg-emerald-950/25 text-emerald-300'}`}>1. Retinue</div><div className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room_state?.kind === 'shared_boss' ? 'border-violet-400 bg-violet-950/40 text-violet-100' : 'border-white/10 bg-black/20 text-[#77706f]'}`}>2. Shared Boss</div></div></div> : <div className="hl-encounter-strip material-panel mt-1.5 shrink-0 p-3"><div className="flex items-center justify-between gap-3"><span className="section-kicker">Cursed Citadel</span><span className="ui-text-small font-black uppercase tracking-widest text-violet-300">HP persists · potions disabled</span></div><div className="mt-2 grid grid-cols-4 gap-1.5">{['Guards', 'Elite', 'Crossroads', 'Boss'].map((label, index) => <div key={label} className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room === index + 1 ? 'border-violet-400 bg-violet-950/40 text-violet-100' : activeDungeon.room > index + 1 ? 'border-emerald-700/60 bg-emerald-950/25 text-emerald-300' : 'border-white/10 bg-black/20 text-[#77706f]'}`}>{index + 1}. {label}</div>)}</div></div>}
 
       </div>
 
@@ -1240,6 +1241,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             {Array.from({ length: GRID_SIZE - resourceSlotCount }, (_, index) => <div key={`resource-empty-${index}`} className="item-slot aspect-square min-w-0 w-full border" style={{ borderColor: 'rgba(128,119,100,0.11)', background: 'linear-gradient(145deg,#151612,#0c0e0d)' }} />)}
             </div>
             {selectedResource && selectedResource !== 'chests' && <div className={`mt-2 rounded-lg border p-2 ${selectedResource === 'summon-scroll' ? 'border-violet-400/45 bg-violet-950/20' : 'border-amber-400/45 bg-amber-950/20'}`}><div className="flex items-center gap-2">{selectedResource === 'summon-scroll' ? <SummonScrollArtwork size={40} /> : <BossKeyIcon size={40} />}<div className="min-w-0"><strong className="ui-text-large block text-[#efe4ce]">{selectedResource === 'summon-scroll' ? 'Summon Scroll' : 'Boss Key'}</strong><span className="ui-text-small text-[#9b9283]">Owned: {formatNum(selectedResource === 'summon-scroll' ? state.summonScrolls : state.bossKeys)}</span></div></div><p className="ui-text-medium mt-1.5 leading-snug text-[#c9c0b1]">{selectedResource === 'summon-scroll' ? 'Persistent consumable for one future Free Summon. Scroll spending is not available until server-authoritative Free Summon launches.' : 'Non-deletable resource used only to summon a Boss. One summon consumes one key; a Boss Chest is awarded only after victory.'}</p></div>}
+            {isolatedHackathon && <PremiumPotionWorkshop onHydrate={(remote, revision) => { game.mergeServerResourceState(remote); if (revision) game.applyServerRevision(revision); }} />}
             {selectedResource === 'chests' && <div className="mt-2 rounded-lg border border-amber-400/45 bg-amber-950/20 p-2"><strong className="ui-text-large block text-[#efe4ce]">Chests</strong><p className="ui-text-medium mt-1.5 text-[#c9c0b1]">Owned: {state.chests.length} · Boss Chests: {bossChestCount}. Boss Hunt rewards enter this chest queue after Claim Boss Rewards.</p><button type="button" disabled={state.chests.length === 0 || game.chestOpening} onClick={() => { if (bagItemCount(state) >= inventoryCapacity(state)) { setShowInventoryFull(true); return; } void game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem); }} className="game-control game-primary mt-2 !min-h-[44px] px-3 py-2 ui-text-medium font-bold disabled:opacity-55">{game.chestOpening ? 'OPENING…' : 'OPEN CHESTS'}</button></div>}
           </div> : <div className={`hl-equipment-grid grid min-w-0 grid-cols-8 gap-px overflow-hidden ${inventoryLockMode ? 'inventory-lock-cursor' : ''}`}>
             {cells.slice(0, bagOpenSlots).map((item, i) => {
@@ -1336,11 +1338,13 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
   onAttempts: (attempts: { remaining: number; max: number } | null) => void;
   onCombatPulse: (floaters: FloatingNumber[]) => void;
   onHydrate: (state: unknown) => void;
-  onComplete: (won: boolean, gold?: number, scrolls?: number) => void;
+  onComplete: (won: boolean, gold?: number, scrolls?: number, premium?: number) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [confirmAbandon, setConfirmAbandon] = useState(false);
+  const [premiumGate, setPremiumGate] = useState('');
+  const premiumAvailability = useCallback((available: boolean) => setPremiumGate(`${checkpoint.revision}:${available ? 'stock' : 'empty'}`), [checkpoint.revision]);
   const roomState = checkpoint.room_state;
   const rewardCount = (value: unknown) => {
     const count = Number(value);
@@ -1370,7 +1374,7 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
       if (result.state) onHydrate(result.state);
       if (action === 'dungeon_abandon' || (result.status && result.status !== 'active')) {
         if (attempts) onAttempts({ remaining: Number(result.attempts_remaining ?? attempts.remaining), max: attempts.max });
-        if (action !== 'dungeon_abandon') onComplete(result.status === 'completed', Number(result.gold) || 0, Number(result.scrolls_awarded) || 0);
+        if (action !== 'dungeon_abandon') onComplete(result.status === 'completed', Number(result.gold) || 0, Number(result.scrolls_awarded) || 0, Number(result.premium_potions_awarded) || 0);
         onChange(null);
       } else {
         onChange(checkpointFromResult(checkpoint, result));
@@ -1391,6 +1395,8 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
     const frameDuration = authoritativeDuration / totalFrames;
     const playback = planDungeonPlayback(resolved.room, startState, finalState, totalFrames);
     let pulseId = Date.now() * 32;
+    let nextPremiumEvent = 0;
+    const premiumEvents = finalState.premium_potion_events ?? [];
     // Keep each number for the same 1.5 seconds as ordinary combat, across playback frames.
     let shown: FloatingNumber[] = [];
     const publishPulses = () => {
@@ -1408,6 +1414,10 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
     for (let frame = 1; frame <= totalFrames; frame += 1) {
       const { heroes: nextHeroes, enemies: nextEnemies, pulses } = playback[frame - 1];
       const frameStarted = performance.now();
+      while (nextPremiumEvent < premiumEvents.length && premiumEvents[nextPremiumEvent].elapsed_ms <= frame * Number(finalState.elapsed_ms ?? authoritativeDuration) / totalFrames) {
+        const event = premiumEvents[nextPremiumEvent++];
+        pulses.push({ targetUid: event.hero_uid, value: Math.round(event.amount), crit: false, heal: true, label: `PREMIUM +${Math.round(event.amount)}` });
+      }
       onChange({
         ...resolved,
         room_state: {
@@ -1445,13 +1455,13 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
       });
       if (revealed?.status && revealed.status !== 'active') {
         if (revealed.state) onHydrate(revealed.state);
-        onComplete(revealed.status === 'completed', Number(revealed.gold) || 0, Number(revealed.scrolls_awarded) || 0);
+        onComplete(revealed.status === 'completed', Number(revealed.gold) || 0, Number(revealed.scrolls_awarded) || 0, Number(revealed.premium_potions_awarded) || 0);
         onChange(null);
       } else if (revealed) onChange(checkpointFromResult(resolved, revealed));
     }
   };
 
-  const startBattle = async () => {
+  const startBattle = async (premium?: PremiumPotionChoice) => {
     if (busy) return;
     setBusy(true); setError(''); setConfirmAbandon(false);
     let ready = checkpoint;
@@ -1465,11 +1475,12 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
       onChange(ready);
     }
     if (ready.room_state?.status !== 'ready') { setBusy(false); return; }
-    const resolved = await requestAction('dungeon_room_action', {
+    const resolved = await requestAction(premium ? 'premium_potion_use' : 'dungeon_room_action', {
       encounter_id: ready.encounter_id,
       expected_revision: ready.revision,
-      command: 'resolve',
+      ...(premium ?? { command: 'resolve' }),
     });
+    if (resolved?.state) onHydrate(resolved.state);
     if (resolved) await playServerCombat(ready, resolved);
     setBusy(false);
   };
@@ -1503,7 +1514,8 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
   // own; only the Room 3 path choice, a defeat and the reward Claim wait for a press. A run restored on app
   // load waits for one press first.
   const [engaged, setEngaged] = useState(autoRun);
-  const autoStep = roomState?.status === 'reward_locked' || roomState?.status === 'failed' || roomState?.status === 'resolving' ? null
+  const premiumChoicePending = isolatedHackathon && checkpoint.room === 4 && roomState?.kind === 'shared_boss' && roomState.status === 'ready' && premiumGate !== `${checkpoint.revision}:empty`;
+  const autoStep = premiumChoicePending ? null : roomState?.status === 'reward_locked' || roomState?.status === 'failed' || roomState?.status === 'resolving' ? null
     : !roomState ? (checkpoint.room === 3 ? null : 'start')
       : roomState.status === 'ready' ? 'start'
         : roomState.status === 'cleared' || roomState.status === 'boss_locked' ? 'advance' : null;
@@ -1528,6 +1540,7 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
       {roomState?.status === 'failed' && <div className="dungeon-panel-status text-center ui-text-medium font-black uppercase tracking-wider text-rose-300">Formation defeated</div>}
       {busy && <div className="dungeon-panel-status text-center ui-text-medium font-black uppercase tracking-wide text-violet-200">Battle in progress…</div>}
       {checkpoint.room === 3 && !roomState && <div className="grid grid-cols-2 gap-2"><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'recovery' })} className="game-control min-h-11 px-2 ui-text-small font-black text-emerald-300"><HeartPulse size={15} className="mx-auto mb-1" />Recovery · +25% HP</button><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'treasure' })} className="game-control min-h-11 px-2 ui-text-small font-black text-amber-300"><Gem size={15} className="mx-auto mb-1" />Treasure fight</button></div>}
+      {isolatedHackathon && checkpoint.room === 4 && roomState?.status === 'ready' && <PremiumPotionBattleControls key={`${checkpoint.encounter_id}:${checkpoint.revision}`} heroes={roomState.heroes ?? []} busy={busy} onAvailability={premiumAvailability} onUse={(choice) => { setEngaged(true); void startBattle(choice); }} />}
       {checkpoint.room === 4 && roomState?.boss && <div className="dungeon-panel-boss-line rounded-lg border border-amber-800/45 bg-amber-950/20 px-3 py-2 text-center ui-text-small font-bold text-amber-200">{roomState.boss.name} · {roomState.status === 'reward_locked' ? 'Defeated · Rewards locked' : roomState.kind === 'shared_boss' ? 'Vulnerable · Shared target' : roomState.status === 'boss_locked' ? 'Retinue defeated · Boss vulnerable' : 'Protected by Retinue'}</div>}
       {/* Founder 2026-10-05: a won run goes straight to Claim; the run summary covered the party. */}
       {roomState?.status === 'cleared' && checkpoint.room < 4 && <div className="rounded border border-amber-700/35 bg-amber-950/20 px-2 py-1.5 text-center ui-text-small font-bold text-amber-200">Room reward preview · Gold + XP · settlement disabled in testing</div>}

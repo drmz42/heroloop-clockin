@@ -195,6 +195,9 @@ const commandActions = new Set([
   "mine_start",
   "mine_stop",
   "mine_board",
+  "premium_potion_status",
+  "premium_potion_upgrade",
+  "premium_potion_use",
   "promo_redeem",
   "player_report",
   "support_ticket_submit",
@@ -980,6 +983,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       const rateLimit = await consumeRateLimit(identity.playerId,
         edition === "seeker" && requestedAction === "hero_summon" && payload.payment_method === "scroll"
           ? "seeker_scroll_summon"
+          : requestedAction.startsWith("premium_potion_") ? (requestedAction === "premium_potion_status" ? "status" : "item_upgrade")
           : requestedAction === "skr_boost_status" ? "status"
           : ["skr_quest_status", "skr_purchase_quote", "skr_purchase_commit"].includes(requestedAction) ? "status"
           : Object.hasOwn(walletActions, requestedAction) ? "status"
@@ -2290,7 +2294,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         return errorResponse(400, payloadError ?? "invalid_dungeon_request", requestId);
       }
       try {
-        const functionName = action;
+        const functionName = action === "boss_claim" && edition === "seeker" ? "premium_boss_claim" : action;
         const query = action === "dungeon_room_action"
           ? `SELECT heroloop_api.${functionName}($1::uuid, $2::uuid, $3::bigint, $4::text, $5::uuid) AS result`
           : action === "dungeon_room_choose"
@@ -2317,6 +2321,39 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         }
         if (code) return errorResponse(409, code, requestId);
         return errorResponse(503, `${action}_failed`, requestId);
+      }
+    }
+    if (String(parsed.value.action).startsWith("premium_potion_")) {
+      if (edition !== "seeker") return errorResponse(409, "unavailable_in_standard_edition", requestId);
+      const action = String(parsed.value.action);
+      const fields = action === "premium_potion_status" ? [] : action === "premium_potion_upgrade"
+        ? ["recipe"] : ["encounter_id", "expected_revision", "tier", "hero_uid", "delay_ms"];
+      const invalid = validatePayloadFields(payload, fields);
+      if (invalid) return errorResponse(400, invalid, requestId);
+      const key = idempotencyKey(parsed.value);
+      if (action !== "premium_potion_status" && !key) return errorResponse(400, "invalid_premium_potion", requestId);
+      try {
+        let result: JsonRecord;
+        if (action === "premium_potion_status") {
+          result = await databaseJson("SELECT heroloop_api.premium_potion_status($1::uuid) AS result", [identity.playerId]);
+        } else if (action === "premium_potion_upgrade") {
+          if (!["brew", "merge"].includes(String(payload.recipe))) return errorResponse(400, "invalid_premium_potion", requestId);
+          result = await databaseJson("SELECT heroloop_api.premium_potion_upgrade($1::uuid,$2::text,$3::uuid) AS result",
+            [identity.playerId, payload.recipe, key]);
+        } else {
+          if (typeof payload.encounter_id !== "string" || !uuidPattern.test(payload.encounter_id)
+            || typeof payload.hero_uid !== "string" || payload.hero_uid.length > 128
+            || !Number.isSafeInteger(payload.expected_revision) || Number(payload.expected_revision) < 1
+            || !["weak", "strong"].includes(String(payload.tier)) || ![0, 5000, 10000].includes(Number(payload.delay_ms))
+            || typeof payload.delay_ms !== "number") return errorResponse(400, "invalid_premium_potion", requestId);
+          result = await databaseJson("SELECT heroloop_api.premium_potion_use($1::uuid,$2::uuid,$3::bigint,$4::text,$5::text,$6::integer,$7::uuid) AS result",
+            [identity.playerId, payload.encounter_id, payload.expected_revision, payload.tier, payload.hero_uid, payload.delay_ms, key]);
+        }
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["invalid_premium_potion", "premium_encounter_not_ready", "premium_invalid_target",
+          "dungeon_revision_conflict", "resource_insufficient_balance", "resource_idempotency_conflict", "resource_balance_cap", "premium_potion_reserved_stock"]);
+        return errorResponse(code === "invalid_premium_potion" ? 400 : code ? 409 : 503, code ?? "premium_potion_failed", requestId);
       }
     }
     if (parsed.value.action === "leaderboard") {
