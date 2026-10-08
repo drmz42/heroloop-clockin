@@ -104,18 +104,36 @@ export function SeekerMinePanel({ onClose, claimQuest, still = false }: {
       setSecondsLeft(next.ends_in_seconds);
     } catch { /* the board is informative; keep the last one */ }
   }, []);
-  useEffect(() => { void refresh(); void refreshBoard(); }, [refresh, refreshBoard]);
   useEffect(() => {
-    const timer = setInterval(() => { void refreshBoard(); }, 4_000);
-    const tick = setInterval(() => setSecondsLeft(s => (s == null ? s : Math.max(0, s - 1))), 1_000);
-    return () => { clearInterval(timer); clearInterval(tick); };
-  }, [refreshBoard]);
+    let timer: ReturnType<typeof setInterval> | undefined;
+    let tick: ReturnType<typeof setInterval> | undefined;
+    const stop = () => { clearInterval(timer); clearInterval(tick); };
+    const syncVisibility = () => {
+      stop();
+      if (document.visibilityState !== 'visible') return;
+      // Reload authoritative round time after a hidden tab resumes.
+      void refresh();
+      void refreshBoard();
+      timer = setInterval(() => { void refreshBoard(); }, 4_000);
+      tick = setInterval(() => setSecondsLeft(s => (s == null ? s : Math.max(0, s - 1))), 1_000);
+    };
+    syncVisibility();
+    document.addEventListener('visibilitychange', syncVisibility);
+    return () => { stop(); document.removeEventListener('visibilitychange', syncVisibility); };
+  }, [refresh, refreshBoard]);
   const live = status?.session && status.session.status !== 'closed' ? status.session : null;
   const liveId = live?.id;
   useEffect(() => {
     if (!liveId) return;
-    const timer = setInterval(() => { void refresh(); }, 6_000);
-    return () => clearInterval(timer);
+    let timer: ReturnType<typeof setInterval> | undefined;
+    const syncVisibility = () => {
+      clearInterval(timer);
+      if (document.visibilityState !== 'visible') return;
+      timer = setInterval(() => { void refresh(); }, 6_000);
+    };
+    syncVisibility();
+    document.addEventListener('visibilitychange', syncVisibility);
+    return () => { clearInterval(timer); document.removeEventListener('visibilitychange', syncVisibility); };
   }, [liveId, refresh]);
 
   const act = async (action: () => Promise<unknown>) => {
