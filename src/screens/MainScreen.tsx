@@ -790,7 +790,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
 
   const commanderPanel = (
   <div className="hl-commander commander-card">
-    <div className="section-kicker mb-3">Commander</div>
+    <div className="section-kicker mb-2">Commander</div>
     <div className="commander-identity">
       <button type="button" onClick={() => setShowAvatarPicker(true)} className="commander-avatar relative shrink-0 overflow-hidden rounded-lg bg-black/30" aria-label="Change account avatar">
         {avatarBase && <img src={heroPortraitSrc(avatarBase.id, avatarBase.heroClass, avatarBase.rarity, avatarBase.color)} alt="" className="h-full w-full object-cover" style={{ ...heroPortraitStyle(avatarBase.id, avatarBase.heroClass), transform: 'none' }} />}
@@ -825,9 +825,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     {selectedHero && (
       <div className="commander-row">
         <div className="commander-divider" aria-hidden="true" />
-        <div className="flex items-baseline justify-between"><span className="commander-label">Hero XP</span><span className="commander-xp">Level {selectedHero.level}</span></div>
+        <div className="flex items-baseline justify-between gap-2"><span className="commander-label">Hero XP · Level {selectedHero.level}</span><span className="commander-xp">{formatNum(selectedHero.xp)} / {formatNum(heroXpForLevel(selectedHero.level))} XP</span></div>
         <div className="commander-bar health-track is-hero"><span style={{ width: `${Math.min(100, (selectedHero.xp / heroXpForLevel(selectedHero.level)) * 100)}%` }} /></div>
-        <div className="commander-xp">{formatNum(selectedHero.xp)} / {formatNum(heroXpForLevel(selectedHero.level))} XP</div>
       </div>
     )}
     <RewardBoostTile bonus={game.accountBonus} onOpenShop={() => { setCommanderOpen(false); onRewardBoostClick(); }} />
