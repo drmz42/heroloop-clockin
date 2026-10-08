@@ -324,13 +324,13 @@ export function reviewWithdrawal(request_id:string,action:'begin_payout'|'finali
 export type MineRound = { seq: number; status: 'pending' | 'settled'; ore_round_id: string | null; cost_minor: string | null; signature: string | null };
 export type MineSession = {
   id: string; status: 'active' | 'stopped' | 'closed'; reserved_minor: string; spent_minor: string; released_minor: string | null;
-  credited_minor: string; credited_ore_minor?: string; completed: number; round_limit: number; stake_minor: string; square_mask: string | null; custody_address: string | null;
+  credited_minor: string; credited_ore_minor?: string; net_sol_minor?: string; completed: number; round_limit: number; stake_minor: string; square_mask: string | null; custody_address: string | null;
   created_at: string; rounds: MineRound[];
 };
 export type MineStatus = {
   enabled: boolean; wallet_mode?: 'shared_project' | 'legacy_custody'; float_address: string | null; terms_version: string; accepted_terms_version: string | null; tiers: string[]; max_rounds: number;
   session_limit_minor: string; daily_limit_minor: string; available_minor: string | null; used_today_minor: string;
-  session: MineSession | null;
+  session: MineSession | null; history?: MineSession[];
 };
 export const loadMineStatus = (): Promise<MineStatus> => command('mine_status');
 export const acceptMineTerms = (version: string): Promise<MineStatus> => command('mine_accept_terms', { version });

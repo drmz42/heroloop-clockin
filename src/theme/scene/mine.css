@@ -101,3 +101,14 @@
 
 @media (prefers-reduced-motion: reduce) { .mn-tile.is-strike::after, .mn-hint, .mn-mini-tile.is-flow svg { animation: none; } .mn-tile svg { transition: none; } }
 .game-motion-off .mn-tile.is-strike::after, .game-motion-off .mn-hint, .game-motion-off .mn-mini-tile.is-flow svg { animation: none; }
+
+/* Session receipts keep exact atomic precision readable on phone widths. */
+.mn-history { border-top: 1px solid var(--sc-brass); margin-top: 12px; padding-top: 8px; min-width: 0; }
+.mn-history summary { min-height: 44px; cursor: pointer; color: var(--sc-ivory); font-size: 12px; overflow-wrap: anywhere; }
+.mn-history summary span { display: block; padding: 3px 0; }
+.mn-history .mn-dl { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.mn-history dd { overflow-wrap: anywhere; }
+.mn-history-rounds { list-style: none; margin: 8px 0 0; padding: 0; }
+.mn-history-rounds li { display: grid; gap: 4px; padding: 8px 0; font-size: 12px; overflow-wrap: anywhere; }
+.mn-history-rounds a { display: inline-flex; align-items: center; min-height: 44px; color: var(--sc-gold); text-decoration: underline; }
+.mn-history summary:focus-visible, .mn-history-rounds a:focus-visible { outline: 2px solid var(--sc-gold); outline-offset: 2px; }

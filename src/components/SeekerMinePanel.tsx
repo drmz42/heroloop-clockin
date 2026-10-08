@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'r
 import { BookOpen, ChevronDown, Gem, HelpCircle, Loader2, Pickaxe, Square, X } from 'lucide-react';
 import { markTutorialSeen, MINE_GUIDE, MINE_LIMIT_ROWS, MINE_LIMITS, MINE_STAKE_TIERS, tutorialSeen, type MineStakeTier } from '@/game/seekerMine';
 import {
-  acceptMineTerms, formatAmountShort, formatMinor, loadMineBoard, loadMineStatus, refreshWallet, SeekerWalletError, startMine, stopMine,
-  type MineBoard, type MineStatus,
+  acceptMineTerms, formatMinor, loadMineBoard, loadMineStatus, refreshWallet, SeekerWalletError, startMine, stopMine,
+  type MineBoard, type MineStatus, type MineSession,
 } from '@/game/seekerWallet';
 import { MineQuests, MineTutorial } from '@/components/SeekerMineExtras';
 import '@/theme/scene/scene.css';
@@ -23,7 +23,7 @@ const ERRORS: Record<string, string> = {
   invalid_mining_request: 'Pick at least one shaft.',
   skr_insufficient_balance_or_overflow: 'Not enough SOL in your game balance. Deposit SOL first.',
 };
-const sol = (minor: string | null | undefined) => `${formatAmountShort(minor ?? '0', 'SOL', 'down')} SOL`;
+const sol = (minor: string | null | undefined) => `${formatMinor(minor ?? '0', 'SOL', 9)} SOL`;
 const shortSol = (minor: string | undefined) => {
   const value = Number(minor ?? 0) / 1e9;
   return value >= 10 ? value.toFixed(0) : value >= 1 ? value.toFixed(1) : value.toFixed(2);
@@ -31,6 +31,42 @@ const shortSol = (minor: string | undefined) => {
 const maskSquares = (mask: string | null | undefined) =>
   mask == null ? SQUARES : SQUARES.filter(i => Number(mask) & (1 << i));
 const fmt = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+// Rewards can be claimed across rounds, so report them per session only.
+function MineHistory({ sessions }: { sessions: MineSession[] }) {
+  return (
+    <section className="sc-panel" aria-label="Mine history">
+      <div className="sc-section-head"><span>Session &amp; round history</span></div>
+      <p className="sc-muted">Latest 10 sessions. SOL result is returned SOL minus spent SOL, including costs charged to your session. ORE is shown separately; its value is not realized SOL profit. Active results are provisional.</p>
+      {!sessions.length && <p className="sc-muted">Your verified rounds will appear here after your first session.</p>}
+      {sessions.map(session => (
+        <details key={session.id} className="mn-history">
+          <summary>
+            <span>{new Date(session.created_at).toLocaleString('en-US')} · {session.status === 'closed' ? 'Settled' : session.status === 'stopped' ? 'Settling' : 'Active'}</span>
+            <span>{session.completed} / {session.round_limit} rounds</span>
+          </summary>
+          <dl className="mn-dl">
+            <dt>Spent SOL</dt><dd>{sol(session.spent_minor)}</dd>
+            <dt>Returned SOL</dt><dd>{sol(session.credited_minor)}</dd>
+            <dt>SOL result{session.status !== 'closed' ? ' (provisional)' : ''}</dt><dd>{session.net_sol_minor == null ? 'Unavailable' : sol(session.net_sol_minor)}</dd>
+            <dt>Net ORE credited</dt><dd>{formatMinor(session.credited_ore_minor ?? '0', 'ORE', 11)} ORE</dd>
+            <dt>Unspent SOL released</dt><dd>{session.released_minor == null ? 'Pending' : sol(session.released_minor)}</dd>
+          </dl>
+          <p className="sc-muted">SOL and ORE rewards are credited per session; they cannot be assigned to individual rounds from a combined claim.</p>
+          <ol className="mn-history-rounds" aria-label="Rounds in this session">
+            {session.rounds.map(round => (
+              <li key={round.seq}>
+                <span>Round {round.seq}{round.ore_round_id ? ` · ORE #${round.ore_round_id}` : ''}</span>
+                <span>{round.status === 'pending' ? 'Awaiting confirmation' : round.cost_minor === '0' ? 'No deployment cost' : `Cost ${sol(round.cost_minor)}`}</span>
+                {round.signature && <a href={`https://solscan.io/tx/${encodeURIComponent(round.signature)}`} target="_blank" rel="noopener noreferrer">Transaction receipt</a>}
+              </li>
+            ))}
+          </ol>
+        </details>
+      ))}
+    </section>
+  );
+}
 
 // ORE Mine: the Deep Vein scene. The player picks shafts on the live 5x5 board; rounds run
 // on the server from the player's in-game SOL.
@@ -213,6 +249,8 @@ export function SeekerMinePanel({ onClose, claimQuest, still = false }: {
               )}
             </section>
           )}
+
+          <MineHistory sessions={status?.history ?? (status?.session ? [status.session] : [])} />
 
           <MineQuests claim={claimQuest} />
 

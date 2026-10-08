@@ -131,3 +131,64 @@ BEGIN
   RAISE EXCEPTION 'fixture_checkpoint_backfill_lost_or_doubled'; END IF;
 END $$;
 RESET ROLE;
+
+-- Player history must preserve settled sessions, exact net receipts and isolation.
+SET ROLE seeker_wallet_runtime;
+DO $$
+DECLARE p uuid:='88000000-0000-4000-8000-000000000001'; h jsonb; x jsonb; found boolean:=false;
+BEGIN
+ h:=seeker_skr.mine_status(p)->'history';
+ IF jsonb_typeof(h)<>'array' OR jsonb_array_length(h)<2 OR jsonb_array_length(h)>10 THEN
+   RAISE EXCEPTION 'fixture_history_missing_sessions'; END IF;
+ FOR x IN SELECT value FROM jsonb_array_elements(h) LOOP
+   IF (x->>'net_sol_minor')::numeric<>(x->>'credited_minor')::numeric-(x->>'spent_minor')::numeric THEN
+     RAISE EXCEPTION 'fixture_wrong_sol_result'; END IF;
+   IF x->>'id'='89000000-0000-4000-8000-000000000001' THEN
+     found:=true;
+     IF x->>'status'<>'closed' OR x->>'credited_ore_minor'<>'100000000001' THEN
+       RAISE EXCEPTION 'fixture_history_lost_net_ore'; END IF;
+   END IF;
+ END LOOP;
+ IF NOT found THEN RAISE EXCEPTION 'fixture_history_lost_closed_session'; END IF;
+ IF seeker_skr.mine_status('88000000-0000-4000-8000-000000000099')->'history'<>'[]'::jsonb THEN
+   RAISE EXCEPTION 'fixture_history_cross_player_leak'; END IF;
+END $$;
+RESET ROLE;
+
+-- Exercise the actual 60-round and 10-session boundaries without retained test rows.
+BEGIN;
+SELECT seeker_skr.post(md5('history-boundary-fund')::uuid,'transfer',jsonb_build_array(
+ jsonb_build_object('account_id',seeker_skr.wallet_account('88000000-0000-4000-8000-000000000098','SOL'),'delta_minor','100'),
+ jsonb_build_object('account_id',seeker_skr.system_account('chain','SOL'),'delta_minor','-100')));
+SET LOCAL ROLE seeker_wallet_runtime;
+DO $$
+DECLARE p uuid:='88000000-0000-4000-8000-000000000098'; s uuid; r uuid; sig text; h jsonb;
+ policy jsonb:='{"session_limit":"100","daily_limit":"100","stake_per_round":"1","network_per_round":"0","protocol_per_round":"0","max_rounds":"60","fee_bps":"0"}';
+ alphabet text:='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+BEGIN
+ PERFORM seeker_skr.mine_accept_terms(p,'v1');
+ s:=md5('history-sixty-rounds')::uuid;
+ PERFORM seeker_skr.mine_start(p,s,60,policy,'v1',repeat('H',32));
+ FOR i IN 1..60 LOOP
+   r:=md5('history-round:'||i)::uuid;
+   sig:=repeat('S',62)||substr(alphabet,i/58+1,1)||substr(alphabet,i%58+1,1);
+   PERFORM seeker_skr.mine_round_prepare(s,r,500000+i,sig,repeat('A',100),1000);
+   PERFORM seeker_skr.mine_round_settle(r,0,sig);
+ END LOOP;
+ PERFORM seeker_skr.mine_stop(p,s);
+ PERFORM seeker_skr.mine_session_close(s);
+ h:=seeker_skr.mine_status(p)->'history';
+ IF jsonb_array_length(h->0->'rounds')<>60 OR h->0->'rounds'->0->>'seq'<>'60'
+   OR h->0->'rounds'->59->>'seq'<>'1' THEN RAISE EXCEPTION 'fixture_history_truncated_rounds'; END IF;
+ FOR i IN 1..11 LOOP
+   s:=md5('history-session:'||i)::uuid;
+   PERFORM seeker_skr.mine_start(p,s,1,policy,'v1',repeat('H',32));
+   PERFORM seeker_skr.mine_stop(p,s);
+   PERFORM seeker_skr.mine_session_close(s);
+ END LOOP;
+ h:=seeker_skr.mine_status(p)->'history';
+ IF jsonb_array_length(h)<>10 OR h->0->>'id'<>md5('history-session:11')::uuid::text
+   OR h->9->>'id'<>md5('history-session:2')::uuid::text THEN
+   RAISE EXCEPTION 'fixture_history_bound_or_order'; END IF;
+END $$;
+ROLLBACK;

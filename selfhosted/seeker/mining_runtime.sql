@@ -38,7 +38,10 @@ BEGIN
     'available_minor',(SELECT balance_minor::text FROM seeker_skr.accounts WHERE id=v_account),
     'used_today_minor',(SELECT COALESCE(sum(reserved_minor-COALESCE(released_minor,0)),0)::text
       FROM seeker_skr.mining_sessions WHERE source_account=v_account AND day=v_day),
-    'session',CASE WHEN s.id IS NULL THEN NULL ELSE seeker_skr.mine_session_json(s) END);
+    'session',CASE WHEN s.id IS NULL THEN NULL ELSE seeker_skr.mine_session_json(s) END,
+    'history',(SELECT COALESCE(jsonb_agg(seeker_skr.mine_session_json(h) ORDER BY h.created_at DESC,h.id DESC),'[]'::jsonb)
+      FROM (SELECT * FROM seeker_skr.mining_sessions WHERE source_account=v_account
+        ORDER BY created_at DESC,id DESC LIMIT 10) h));
 END $$;
 
 CREATE OR REPLACE FUNCTION seeker_skr.mine_accept_terms(p_player uuid,p_version text) RETURNS jsonb
