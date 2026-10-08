@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { BookOpen, ChevronDown, Gem, HelpCircle, Loader2, Pickaxe, Square, X } from 'lucide-react';
-import { markTutorialSeen, MINE_GUIDE, MINE_LIMIT_ROWS, MINE_LIMITS, MINE_STAKE_TIERS, tutorialSeen, type MineStakeTier } from '@/game/seekerMine';
+import { observeMineRewards, type MineRewardNotice, markTutorialSeen, MINE_GUIDE, MINE_LIMIT_ROWS, MINE_LIMITS, MINE_STAKE_TIERS, tutorialSeen, type MineStakeTier } from '@/game/seekerMine';
 import {
   acceptMineTerms, formatMinor, loadMineBoard, loadMineStatus, refreshWallet, SeekerWalletError, startMine, stopMine,
   type MineBoard, type MineStatus, type MineSession,
 } from '@/game/seekerWallet';
-import { MineQuests, MineTutorial } from '@/components/SeekerMineExtras';
+import { MineQuests, MineTutorial, MineRewardBanner } from '@/components/SeekerMineExtras';
 import '@/theme/scene/scene.css';
 import '@/theme/scene/mine.css';
 
@@ -26,11 +26,11 @@ const ERRORS: Record<string, string> = {
 const sol = (minor: string | null | undefined) => `${formatMinor(minor ?? '0', 'SOL', 9)} SOL`;
 const shortSol = (minor: string | undefined) => {
   const value = Number(minor ?? 0) / 1e9;
-  return value >= 10 ? value.toFixed(0) : value >= 1 ? value.toFixed(1) : value.toFixed(2);
+  return value >= 10 ? value.toFixed(0) : value >= 1 ? value.toFixed(1) : value >= 0.01 ? value.toFixed(2) : value.toFixed(5);
 };
 const maskSquares = (mask: string | null | undefined) =>
   mask == null ? SQUARES : SQUARES.filter(i => Number(mask) & (1 << i));
-const fmt = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+const fmt = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 5 });
 
 // Rewards can be claimed across rounds, so report them per session only.
 function MineHistory({ sessions }: { sessions: MineSession[] }) {
@@ -84,9 +84,18 @@ export function SeekerMinePanel({ onClose, claimQuest, still = false }: {
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const rewardSeen = useRef<Record<string, string> | null>(null);
+  const [rewardNotice, setRewardNotice] = useState<MineRewardNotice | null>(null);
 
   const refresh = useCallback(async () => {
-    try { setStatus(await loadMineStatus()); } catch { setStatus(null); }
+    try {
+      const next = await loadMineStatus();
+      const sessions = next.history ?? (next.session ? [next.session] : []);
+      const observed = observeMineRewards(rewardSeen.current, sessions);
+      rewardSeen.current = observed.seen;
+      if (observed.notice) { setRewardNotice(observed.notice); void refreshWallet(); }
+      setStatus(next);
+    } catch { /* Keep the last confirmed snapshot; reconnecting must not replay a win. */ }
   }, []);
   const refreshBoard = useCallback(async () => {
     try {
@@ -129,7 +138,18 @@ export function SeekerMinePanel({ onClose, claimQuest, still = false }: {
   const strike = board?.previous?.winning_square ?? null;
   const shown = useMemo(() => new Set(live ? maskSquares(live.square_mask) : picked), [live, picked]);
   const perRound = Number(stake) * picked.length;
-  const tooBig = (count: number) => perRound * count > Number(MINE_LIMITS.sessionSol);
+  const feeReserve = status?.network_per_round_minor != null && status?.protocol_per_round_minor != null
+    ? BigInt(status.network_per_round_minor) + BigInt(status.protocol_per_round_minor) : null;
+  const stakeMinor = BigInt(Math.round(Number(stake) * 1e9)) * BigInt(picked.length);
+  const budget = (count: number) => feeReserve == null ? null : (stakeMinor + feeReserve) * BigInt(count);
+  const tooBig = (count: number) => {
+    const amount = budget(count);
+    return amount != null ? amount > BigInt(status?.session_limit_minor ?? '10000000000') : perRound * count > Number(MINE_LIMITS.sessionSol);
+  };
+  const recentReward = (status?.history ?? (status?.session ? [status.session] : []))
+    .find(session => BigInt(session.credited_ore_minor ?? '0') > 0n);
+  const displayedReward = rewardNotice && (status?.history ?? (status?.session ? [status.session] : []))
+    .some(session => session.id === rewardNotice.sessionId) ? rewardNotice : null;
   const toggle = (square: number) => setPicked(list => list.includes(square) ? list.filter(s => s !== square) : [...list, square]);
   const random = () => setPicked([...SQUARES].sort(() => Math.random() - .5).slice(0, 3));
   // 1 pick shafts → 2 set stake → 3 strike (running session).
@@ -164,6 +184,16 @@ export function SeekerMinePanel({ onClose, claimQuest, still = false }: {
                 <li key={label} className={`mn-step${stepNow[i] ? ' is-now' : ''}${stepDone[i] ? ' is-done' : ''}`}><b>{i + 1}</b>{label}</li>
               ))}
             </ol>
+          </section>
+
+          {(displayedReward || recentReward) && <MineRewardBanner
+            key={displayedReward ? `${displayedReward.sessionId}:${displayedReward.totalMinor}` : recentReward!.id}
+            amount={displayedReward?.totalMinor ?? recentReward!.credited_ore_minor!}
+            added={displayedReward?.addedMinor} fresh={displayedReward !== null} still={still} />}
+
+          <section className="sc-panel" aria-label="How Mine rewards arrive">
+            <div className="sc-section-head"><span>From shaft to reward</span></div>
+            <p className="sc-muted">Pick a shaft → wait for the round → the winning shaft becomes eligible for ORE → your session settles → confirmed net ORE reaches your game balance. A highlighted shaft is the round result for everyone, not proof of your personal reward.</p>
           </section>
 
           <section className="sc-panel" aria-label="Mine shafts">
@@ -201,7 +231,7 @@ export function SeekerMinePanel({ onClose, claimQuest, still = false }: {
                   {busy ? <Loader2 size={15} className="animate-spin" /> : <Square size={14} />} Stop after this round
                 </button>
               )}
-              <p className="sc-muted" style={{ marginTop: 8 }}>Winnings are claimed when the session ends; unspent SOL then returns to your balance.</p>
+              <p className="sc-muted" style={{ marginTop: 8 }}>ORE reward pending settlement. When the session ends, confirmed net ORE is credited and shown above; unspent SOL returns to your balance.</p>
             </section>
           ) : (
             <section className="sc-panel" aria-label="Your stake">
@@ -229,6 +259,12 @@ export function SeekerMinePanel({ onClose, claimQuest, still = false }: {
                   ? <><b>{picked.length}</b> {picked.length === 1 ? 'shaft' : 'shafts'} × <b>{stake} SOL</b> = <b>{fmt(perRound)} SOL</b> a round{rounds > 1 ? <>, up to <b>{fmt(perRound * rounds)} SOL</b></> : null}</>
                   : 'Choose shafts on the vein above.'}
               </p>
+              {picked.length > 0 && <p className="sc-muted mn-budget">
+                {feeReserve == null ? 'Budget includes network and protocol costs; the server checks the full amount before starting.' : <>
+                  Fee reserve per round: {sol(feeReserve.toString())}. Total reserved: {sol(budget(rounds)!.toString())}.
+                  {' '}Unused reserve returns after settlement. Fees can exceed the smallest stake.
+                </>}
+              </p>}
               {error && <p role="alert" className="mn-warn" style={{ marginBottom: 10 }}>{error}</p>}
               {!enabled ? (
                 <button type="button" className="sc-seal mn-strike-btn" disabled><Pickaxe size={16} aria-hidden="true" /> The shafts open soon</button>

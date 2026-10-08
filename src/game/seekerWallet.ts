@@ -331,6 +331,7 @@ export type MineStatus = {
   enabled: boolean; wallet_mode?: 'shared_project' | 'legacy_custody'; float_address: string | null; terms_version: string; accepted_terms_version: string | null; tiers: string[]; max_rounds: number;
   session_limit_minor: string; daily_limit_minor: string; available_minor: string | null; used_today_minor: string;
   session: MineSession | null; history?: MineSession[];
+  network_per_round_minor?: string; protocol_per_round_minor?: string;
 };
 export const loadMineStatus = (): Promise<MineStatus> => command('mine_status');
 export const acceptMineTerms = (version: string): Promise<MineStatus> => command('mine_accept_terms', { version });

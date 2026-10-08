@@ -1,8 +1,8 @@
 // Player-facing ORE Mine rules for the Android/Seeker edition. Display only:
 // the server policy in selfhosted/seeker/mining_sessions.sql stays authoritative.
-// Owner: docs/game/seeker-ore-mine.md. The Mine is not live yet.
+// Owner: docs/game/seeker-ore-mine.md.
 
-export const MINE_STAKE_TIERS = ['0.01', '0.1', '1'] as const;
+export const MINE_STAKE_TIERS = ['0.00001', '0.1', '1'] as const;
 export type MineStakeTier = (typeof MINE_STAKE_TIERS)[number];
 
 export const MINE_LIMITS = {
@@ -33,7 +33,7 @@ export const MINE_GUIDE: MineGuideSection[] = [
   },
   {
     title: 'What it costs',
-    body: `Stake ${MINE_STAKE_TIERS.slice(0, -1).join(', ')} or ${MINE_STAKE_TIERS[MINE_STAKE_TIERS.length - 1]} SOL on each chosen shaft every round, paid from your in-game SOL balance. Each round also uses a small Solana network cost. HeroLoop takes no fee from Mine rounds. You can stop at any time; unspent SOL returns to your balance when the session ends.`,
+    body: `Stake ${MINE_STAKE_TIERS.slice(0, -1).join(', ')} or ${MINE_STAKE_TIERS[MINE_STAKE_TIERS.length - 1]} SOL on each chosen shaft every round, paid from your in-game SOL balance. Network and protocol costs are separate from your stake and can exceed a 0.00001 SOL stake. The pre-start budget includes a fee reserve; unused SOL returns when settlement completes. HeroLoop takes no fee from Mine rounds. You can stop at any time; unspent SOL returns to your balance when the session ends.`,
   },
   {
     title: 'Limits',
@@ -41,7 +41,7 @@ export const MINE_GUIDE: MineGuideSection[] = [
   },
   {
     title: 'Winnings',
-    body: 'Returned SOL and net ORE prizes are claimed when your session ends and added to your in-game balances after Solana finalizes them. You can request withdrawal to your linked wallet; the existing 5% withdrawal fee applies and an admin must approve the payout. If your wallet has no ORE token account, you create it with your own SOL before requesting ORE withdrawal.',
+    body: 'Choosing the winning shaft makes you eligible for an ORE prize; the highlighted shaft alone does not confirm a personal reward. Returned SOL and net ORE prizes are claimed when your session ends and added to your in-game balances after Solana finalizes them. The Mine shows an ORE credited notice only after your net reward is confirmed, and keeps it in session history. You can request withdrawal to your linked wallet; the existing 5% withdrawal fee applies and an admin must approve the payout. If your wallet has no ORE token account, you create it with your own SOL before requesting ORE withdrawal.',
   },
   {
     title: 'Risks — please read',
@@ -61,4 +61,23 @@ export function tutorialSeen(): boolean {
 }
 export function markTutorialSeen() {
   try { localStorage.setItem(SEEN_KEY, '1'); } catch { /* per-device convenience only */ }
+}
+
+// UI observations never grant rewards. High-water marks suppress duplicate polling receipts.
+export type MineRewardSession = { id: string; credited_ore_minor?: string };
+export type MineRewardNotice = { sessionId: string; totalMinor: string; addedMinor: string };
+export function observeMineRewards(previous: Record<string, string> | null, sessions: MineRewardSession[]) {
+  const seen = { ...previous };
+  let notice: MineRewardNotice | null = null;
+  for (const session of sessions) {
+    const raw = session.credited_ore_minor;
+    if (!raw || !/^[0-9]+$/.test(raw)) continue;
+    const total = BigInt(raw);
+    const before = BigInt(seen[session.id] ?? '0');
+    if (previous !== null && total > before && notice === null) {
+      notice = { sessionId: session.id, totalMinor: total.toString(), addedMinor: (total - before).toString() };
+    }
+    seen[session.id] = (total > before ? total : before).toString();
+  }
+  return { seen, notice };
 }

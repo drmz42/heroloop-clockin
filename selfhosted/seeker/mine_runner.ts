@@ -11,9 +11,9 @@ import {
 } from "./ore.ts";
 
 type Json = Record<string, unknown>;
-export const MINE_TERMS_VERSION = "2026-10-04-withdrawals";
-// Stake per round in lamports, spread evenly over all 25 squares.
-export const MINE_TIERS: Record<string, bigint> = { "0.01": 10_000_000n, "0.1": 100_000_000n, "1": 1_000_000_000n };
+export const MINE_TERMS_VERSION = "2026-10-08-tiny-stake";
+// Stake per chosen shaft in lamports; legacy requests without squares spread it over 25.
+export const MINE_TIERS: Record<string, bigint> = { "0.00001": 10_000n, "0.1": 100_000_000n, "1": 1_000_000_000n };
 const ALL_SQUARES = Array.from({ length: 25 }, (_, i) => i);
 // The session's chosen squares (policy.square_mask) and the stake on each; default all 25.
 export function sessionSquares(policy: Json): { squares: number[]; perSquare: bigint } {

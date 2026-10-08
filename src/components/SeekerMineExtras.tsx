@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Gem, Pickaxe, ScrollText, X } from 'lucide-react';
 import type { DailyQuest } from '@/game/types';
 import { playerSync } from '@/game/backend';
+import { MINE_STAKE_TIERS } from '@/game/seekerMine';
+import { formatMinor } from '@/game/seekerWallet';
 import { groupNumber } from '@/game/numberFormat';
 
 // ── How to play: three code-native infographic slides ──
@@ -18,7 +20,7 @@ function MiniBoard({ picked = [], strike, flow }: { picked?: number[]; strike?: 
   );
 }
 const SLIDES = [
-  { title: 'Pick your shafts', body: 'Tap one or more of the 25 shafts and choose a stake for each: 0.01, 0.1 or 1 SOL.', art: <MiniBoard picked={[6, 12, 18]} /> },
+  { title: 'Pick your shafts', body: `Tap one or more of the 25 shafts and choose a stake for each: ${MINE_STAKE_TIERS.join(', ')} SOL. Network and protocol costs are extra.`, art: <MiniBoard picked={[6, 12, 18]} /> },
   { title: 'One shaft strikes', body: 'Every round (about a minute and a half) one shaft strikes at random. Miners on it share the round’s ORE prize — about 1 ORE — by stake.', art: <MiniBoard picked={[6, 12, 18]} strike={STRIKE} /> },
   { title: 'What comes back', body: 'Win or lose, most SOL returns after every round. The difference is the ORE protocol’s cut.', art: (
     <div className="mn-share" aria-hidden="true">
@@ -89,6 +91,19 @@ export function MineQuests({ claim }: { claim?: (id: string) => Promise<boolean>
         ))}
         {!open.length && <li className="sc-muted">All Mine quests done for now. Come back tomorrow.</li>}
       </ul>
+    </section>
+  );
+}
+
+export function MineRewardBanner({ amount, added, fresh, still }: { amount: string; added?: string; fresh: boolean; still: boolean }) {
+  return (
+    <section className={`sc-panel mn-reward${fresh && !still ? ' is-fresh' : ''}`} role="status" aria-live="polite" aria-atomic="true">
+      <div className="mn-reward-crystal" aria-hidden="true"><Gem /><i /><i /><i /></div>
+      <div>
+        <strong>{fresh ? 'You struck ORE!' : 'Confirmed ORE reward'}</strong>
+        <p>{fresh && added ? `+${formatMinor(added, 'ORE', 11)} ORE credited` : `${formatMinor(amount, 'ORE', 11)} ORE credited`}</p>
+        <small>Confirmed in your game balance. See session history for receipts.</small>
+      </div>
     </section>
   );
 }

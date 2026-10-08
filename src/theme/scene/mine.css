@@ -112,3 +112,23 @@
 .mn-history-rounds li { display: grid; gap: 4px; padding: 8px 0; font-size: 12px; overflow-wrap: anywhere; }
 .mn-history-rounds a { display: inline-flex; align-items: center; min-height: 44px; color: var(--sc-gold); text-decoration: underline; }
 .mn-history summary:focus-visible, .mn-history-rounds a:focus-visible { outline: 2px solid var(--sc-gold); outline-offset: 2px; }
+
+.mn-budget { line-height: 1.5; overflow-wrap: anywhere; }
+.mn-reward { display: flex; align-items: center; gap: 12px; border-color: var(--sc-gold); overflow: hidden; }
+.mn-reward > div:last-child { min-width: 0; overflow-wrap: anywhere; }
+.mn-reward strong { color: var(--sc-gold); font: 700 15px/1.3 var(--sc-display); }
+.mn-reward p { margin: 4px 0; color: var(--sc-ivory); font-size: 14px; }
+.mn-reward small { color: var(--sc-muted); font-size: 11px; }
+.mn-reward-crystal { position: relative; flex: 0 0 42px; color: var(--sc-gold); }
+.mn-reward-crystal > svg { width: 36px; height: 36px; }
+.mn-reward-crystal i { position: absolute; left: 18px; top: 18px; width: 5px; height: 5px; background: var(--sc-gold); opacity: 0; }
+.mn-reward.is-fresh { animation: mn-reward-glow 1s ease-out 3; }
+.mn-reward.is-fresh svg { animation: mn-reward-pop .7s ease-out; }
+.mn-reward.is-fresh i { animation: mn-reward-spark 1s ease-out 2; --spark-x: -18px; --spark-y: -24px; }
+.mn-reward.is-fresh i:nth-child(3) { --spark-x: 20px; --spark-y: -16px; animation-delay: .15s; }
+.mn-reward.is-fresh i:nth-child(4) { --spark-x: 12px; --spark-y: 24px; animation-delay: .3s; }
+@keyframes mn-reward-glow { 50% { box-shadow: inset 0 0 18px rgba(242,204,128,.3); } }
+@keyframes mn-reward-pop { 0% { transform: scale(.6); opacity: .3; } 60% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes mn-reward-spark { 15% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--spark-x),var(--spark-y)) rotate(90deg); } }
+@media (prefers-reduced-motion: reduce) { .mn-reward.is-fresh, .mn-reward.is-fresh svg, .mn-reward.is-fresh i { animation: none; } }
+.game-motion-off .mn-reward.is-fresh, .game-motion-off .mn-reward.is-fresh svg, .game-motion-off .mn-reward.is-fresh i { animation: none; }

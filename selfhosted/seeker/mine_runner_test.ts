@@ -40,7 +40,7 @@ Deno.test('shared session closes without self-transfer or scanning another playe
 });
 Deno.test('shared start distinguishes a busy miner from missing project liquidity before reservation',async()=>{
  const m=await sharedMaster();const {mineRoute}=await import('./mine_service.ts');
- const body={tier:'0.01',rounds:1,squares:[0],session_id:'aaaaaaaa-0000-4000-8000-000000000001'};
+ const body={tier:'0.00001',rounds:1,squares:[0],session_id:'aaaaaaaa-0000-4000-8000-000000000001'};
  let sessions:Record<string,unknown>[]=[];let saved:unknown[]=[];let balance=0;
  const call=async(sql:string,args:unknown[])=>{
   if(sql.includes('mine_runner_work'))return {sessions};
@@ -55,7 +55,7 @@ Deno.test('shared start distinguishes a busy miner from missing project liquidit
  sessions=[];
  const started=await mineRoute('/wallet/mine/start',PLAYER,body,m,call,rpc,true);
  assert.equal(started?.status,200);assert.equal(saved[5],(await floatKey(m)).address);
- assert.equal(JSON.parse(String(saved[3])).stake_per_round,'10000000');
+ assert.equal(JSON.parse(String(saved[3])).stake_per_round,'10000');
 });
 
 Deno.test('custody keys are deterministic, distinct per player and sign verifiably', async () => {
@@ -117,7 +117,7 @@ Deno.test('tick persists the round before sending exactly one deploy', async () 
   const key = await custodyKey(master, PLAYER);
   const calls: [string, unknown[]][] = [];
   const session = { id: 'aaaaaaaa-0000-4000-8000-000000000001', player_id: PLAYER, status: 'active',
-    policy: minePolicy('0.01'), custody_address: key.address, reserved_minor: '100000000', spent_minor: '0', completed: 0,
+    policy: minePolicy('0.00001'), custody_address: key.address, reserved_minor: '100000000', spent_minor: '0', completed: 0,
     round_limit: 6, round_cost_minor: '14510000', last_ore_round_id: null, pending: null };
   const chain = fakeChain({ custody: 100_000_000n });
   await mineTick({ master, rpc: chain.rpc, call: async (sql, args) => {
@@ -135,7 +135,7 @@ Deno.test('finalized pending round settles its exact cost; unfunded custody is f
   const key = await custodyKey(master, PLAYER);
   const calls: [string, unknown[]][] = [];
   let funding:Record<string,unknown>={};
-  const base = { id: 'aaaaaaaa-0000-4000-8000-000000000002', player_id: PLAYER, status: 'active', policy: minePolicy('0.01'),
+  const base = { id: 'aaaaaaaa-0000-4000-8000-000000000002', player_id: PLAYER, status: 'active', policy: minePolicy('0.00001'),
     custody_address: key.address, reserved_minor: '100000000', spent_minor: '0', completed: 0, round_limit: 6,
     round_cost_minor: '14510000', last_ore_round_id: '49' };
   const tx = { meta: { err: null, preBalances: [100_000_000, 0], postBalances: [85_505_000, 0] },
@@ -171,7 +171,7 @@ Deno.test('chosen squares set a mask and a per-square stake', () => {
   assert.equal(policy.square_mask, String(1 + 64 + (1 << 24)));
   assert.equal(policy.stake_per_round, '300000000');
   assert.deepEqual(sessionSquares(policy), { squares: [0, 6, 24], perSquare: 100_000_000n });
-  assert.deepEqual(sessionSquares(minePolicy('0.01')!).squares.length, 25);
+  assert.deepEqual(sessionSquares(minePolicy('0.00001')!).squares.length, 25);
   for (const bad of [[], [25], [1, 1], ['3'], 'x']) assert.equal(minePolicy('0.1', bad), null);
 });
 
@@ -180,7 +180,7 @@ Deno.test('Mine start retains the global exposure gate and requires ORE activati
   const {MINE_TERMS_VERSION}=await import('./mine_runner.ts');
   const calls:string[]=[];
   const call=async(sql:string)=>{calls.push(sql);return {sessions:[{reserved_minor:MINE_MAX_IN_FLIGHT.toString(),spent_minor:'0'}]};};
-  const body={tier:'0.01',rounds:1,session_id:'aaaaaaaa-0000-4000-8000-000000000001'};
+  const body={tier:'0.00001',rounds:1,session_id:'aaaaaaaa-0000-4000-8000-000000000001'};
   const rpc=async()=>{throw new Error('capacity must refuse before RPC or mutation');};
   const unavailable=await mineRoute('/wallet/mine/start',PLAYER,body,master,call,rpc,false);
   assert.equal(unavailable?.status,409);assert.equal(calls.length,0);
@@ -216,4 +216,30 @@ Deno.test('pending deploys reuse stored bytes and require actual expiry before r
     assert.equal(!!settled,expectedSettle);
     if(settled)assert.deepEqual(settled[1].slice(1),['0','saved-signature']);
   }
+});
+
+Deno.test('tiny per-shaft stake retains fee reserve and rejects removed or forged tiers', () => {
+ const policy=minePolicy('0.00001',[0,24])!;
+ assert.equal(policy.stake_per_round,'20000');
+ assert.deepEqual(sessionSquares(policy),{squares:[0,24],perSquare:10000n});
+ assert.equal(BigInt(String(policy.stake_per_round))+BigInt(String(policy.network_per_round))+BigInt(String(policy.protocol_per_round)),4530000n);
+ for(const tier of ['0.01','0.000001','0.000010','1e-5','-0.00001'])assert.equal(minePolicy(tier,[0]),null);
+});
+
+Deno.test('tiny start reserves server-derived costs and status discloses the same caps', async () => {
+ const {mineRoute}=await import('./mine_service.ts');
+ const m=await sharedMaster();let saved:unknown[]=[];
+ const call=async(sql:string,args:unknown[])=>{
+   if(sql.includes('mine_runner_work'))return {sessions:[]};
+   if(sql.includes('mine_start'))saved=args;
+   return {};
+ };
+ const rpc=async()=>({value:85000000});
+ const response=await mineRoute('/wallet/mine/start',PLAYER,{tier:'0.00001',rounds:1,squares:[0],session_id:'aaaaaaaa-0000-4000-8000-000000000001',amount:'1'},m,call,rpc,true);
+ assert.equal(response?.status,200);assert.equal(saved[2],'4520000');
+ const status=await mineRoute('/wallet/mine/status',PLAYER,{},m,call,rpc,true);
+ const result=(await status!.json()).result;
+ assert.equal(result.network_per_round_minor,'10000');
+ assert.equal(result.protocol_per_round_minor,'4500000');
+ assert.deepEqual(result.tiers,['0.00001','0.1','1']);
 });

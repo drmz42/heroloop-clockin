@@ -76,11 +76,16 @@ export async function mineCustodyLamports(master: Uint8Array | null, call: Call,
 export async function mineRoute(path: string, player: string, body: Json, master: Uint8Array | null, call: Call, rpc: Rpc, oreEnabled=false):
   Promise<Response | null> {
   if (!path.startsWith("/wallet/mine/")) return null;
+  const tiers = Object.keys(MINE_TIERS).sort((a, b) => Number(a) - Number(b));
+  const reservePolicy = minePolicy(tiers[0])!;
   const config = { enabled: master !== null && oreEnabled, terms_version: MINE_TERMS_VERSION,
     wallet_mode: master?.length === 64 ? 'shared_project' : 'legacy_custody',
-    float_address: master ? (await floatKey(master)).address : null, tiers: Object.keys(MINE_TIERS),
+    float_address: master ? (await floatKey(master)).address : null, tiers,
     max_rounds: MINE_LIMITS.maxRounds, session_limit_minor: MINE_LIMITS.sessionLimit.toString(),
-    daily_limit_minor: MINE_LIMITS.dailyLimit.toString() };
+    daily_limit_minor: MINE_LIMITS.dailyLimit.toString(),
+    // Policy caps, not estimated realized fees; returned unused reserve is not spent.
+    network_per_round_minor: reservePolicy.network_per_round,
+    protocol_per_round_minor: reservePolicy.protocol_per_round };
   // The database reports the player's accepted version; config carries the current one.
   const status = (db: Json) => ({ ...db, ...config, accepted_terms_version: db.terms_version ?? null });
   if (path === "/wallet/mine/status") {
