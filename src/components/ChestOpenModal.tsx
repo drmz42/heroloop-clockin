@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { RarityFx } from '@/components/RarityFx';
 import { Package, Sparkles } from 'lucide-react';
@@ -73,13 +73,25 @@ export function ChestOpenModal({
       const tier = tierOf(item);
       playReveal(tier);
       if (tier >= 4) setStamp({ key: Date.now(), rarity: rarityOf(item) });
-      if (tier >= 3) {
-        const card = gridRef.current?.querySelector<HTMLElement>(`[data-cc-index="${index}"]`);
-        card?.scrollIntoView?.({ block: 'nearest' });
-      }
     }, at));
     later(() => setPhase('done'), (revealSchedule[revealSchedule.length - 1] ?? 0) + 450);
   }, [ordered, revealSchedule]);
+
+  useLayoutEffect(() => {
+    if (phase !== 'reveal' || flipped === 0) return;
+    const grid = gridRef.current;
+    const card = grid?.querySelector<HTMLElement>(`[data-cc-index="${flipped - 1}"]`);
+    if (!grid || !card) return;
+    // Follow every rarity after the flip commits. Scroll only the item grid, and move
+    // immediately so fast Common batches never outrun a smooth-scroll animation.
+    // Layout offsets ignore the temporary card-deal transform.
+    const cardTop = card.offsetTop - grid.offsetTop;
+    const cardBottom = cardTop + card.offsetHeight;
+    const top = grid.scrollTop + 6;
+    const bottom = grid.scrollTop + grid.clientHeight - 10;
+    if (cardBottom > bottom) grid.scrollTop = cardBottom - grid.clientHeight + 10;
+    else if (cardTop < top) grid.scrollTop = cardTop - 6;
+  }, [phase, flipped]);
 
   // Decode every item picture during the charge so flips never wait on image loading.
   useEffect(() => {
