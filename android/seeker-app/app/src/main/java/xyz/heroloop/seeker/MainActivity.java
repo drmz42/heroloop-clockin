@@ -8,6 +8,7 @@ import android.content.res.ColorStateList;
 import android.graphics.Insets;
 import android.net.ConnectivityManager;
 import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
@@ -73,6 +74,8 @@ public class MainActivity extends Activity {
     private ConnectivityManager.NetworkCallback networkCallback;
     // Unpadded system areas in physical pixels, published to the page by pushInsets().
     private int safeTop, safeRight, safeBottom, safeLeft;
+    // In-game strip shown while Android reports no internet; the battle resumes by itself after.
+    private TextView offlineBanner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +88,8 @@ public class MainActivity extends Activity {
         root.setBackgroundColor(0xFF070606);
         root.addView(webView, new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        root.addView(buildOfflineBanner(), new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.TOP));
         root.addView(buildLaunchView(), new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         setContentView(root);
@@ -109,6 +114,8 @@ public class MainActivity extends Activity {
                 safeBottom = ime.bottom > 0 ? 0 : Math.max(bars.bottom, cutout.bottom);
                 safeLeft = Math.max(bars.left, cutout.left);
                 pushInsets();
+                ((FrameLayout.LayoutParams) offlineBanner.getLayoutParams()).topMargin = safeTop;
+                offlineBanner.requestLayout();
                 return WindowInsets.CONSUMED;
             });
         }
@@ -149,7 +156,7 @@ public class MainActivity extends Activity {
             // Only a failed main page replaces the game; a missing image or API call does not.
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame()) showLoadError("No connection. Check your internet and try again.");
+                if (request.isForMainFrame()) showLoadError(NO_CONNECTION);
             }
 
             @Override
@@ -175,7 +182,9 @@ public class MainActivity extends Activity {
         });
 
         loadStartedAt = SystemClock.uptimeMillis();
-        if (savedInstanceState == null || webView.restoreState(savedInstanceState) == null) {
+        // Offline at launch: say so instead of showing a cached page that cannot reach the server.
+        if (!isOnline()) showLoadError(NO_CONNECTION);
+        else if (savedInstanceState == null || webView.restoreState(savedInstanceState) == null) {
             webView.loadUrl(BuildConfig.GAME_URL);
         }
         applyImmersive();
@@ -289,6 +298,7 @@ public class MainActivity extends Activity {
 
     private void revealGame() {
         gameReady = true;
+        showOffline(!isOnline());
         AppUpdater.check(this, false);
         main.removeCallbacks(readyPoll);
         launchView.animate().alpha(0f).setDuration(220).withEndAction(() -> {
@@ -316,6 +326,10 @@ public class MainActivity extends Activity {
 
     // Retry reloads the same game origin; cookies, storage and the linked account are untouched.
     private void retryLoad() {
+        if (!isOnline()) {
+            showLoadError(NO_CONNECTION);
+            return;
+        }
         pageFailed = false;
         gameReady = false;
         loadStartedAt = SystemClock.uptimeMillis();
@@ -332,6 +346,36 @@ public class MainActivity extends Activity {
         }
     }
 
+    private static final String NO_CONNECTION = "No connection. Check your internet and try again.";
+
+    private boolean isOnline() {
+        ConnectivityManager connectivity = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivity == null) return true;
+        Network network = connectivity.getActiveNetwork();
+        NetworkCapabilities capabilities = network == null ? null : connectivity.getNetworkCapabilities(network);
+        return capabilities != null && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+    }
+
+    private View buildOfflineBanner() {
+        float dp = getResources().getDisplayMetrics().density;
+        TextView banner = new TextView(this);
+        banner.setBackgroundColor(0xE6400E0A);
+        banner.setTextColor(0xFFF3E3C3);
+        banner.setTextSize(13);
+        banner.setGravity(Gravity.CENTER);
+        int pad = Math.round(8 * dp);
+        banner.setPadding(pad, pad, pad, pad);
+        banner.setText("No connection — reconnecting…");
+        banner.setVisibility(View.GONE);
+        offlineBanner = banner;
+        return banner;
+    }
+
+    // The strip only covers a running game; the launch/error screen has its own message.
+    private void showOffline(boolean offline) {
+        offlineBanner.setVisibility(offline && gameReady ? View.VISIBLE : View.GONE);
+    }
+
     // When the network comes back while the error screen is up, retry without a tap.
     private void watchNetwork() {
         ConnectivityManager connectivity = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -340,8 +384,14 @@ public class MainActivity extends Activity {
             @Override
             public void onAvailable(Network network) {
                 main.post(() -> {
+                    showOffline(false);
                     if (pageFailed && !isFinishing()) retryLoad();
                 });
+            }
+
+            @Override
+            public void onLost(Network network) {
+                main.post(() -> showOffline(!isOnline()));
             }
         };
         try {
@@ -531,6 +581,8 @@ public class MainActivity extends Activity {
         WalletSessionService.stop(this);
         webView.onResume();
         applyImmersive();
+        // Airplane mode may have changed while HeroLoop was in the background.
+        showOffline(!isOnline());
         // Back from the "install unknown apps" setting: continue the update the player asked for.
         if (gameReady) AppUpdater.check(this, false);
     }
