@@ -41,6 +41,20 @@ function ownedRows(game: GameApi): Listing[] {
   });
 }
 
+// Heroes follow the server's Hero Release guards; the reason shows instead of a price.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function ownedHeroRows(game: GameApi): Listing[] {
+  const { ownedHeroes, team } = game.state;
+  const training = new Set(game.state.trainingCamp?.heroUids ?? []);
+  return ownedHeroes.flatMap((hero) => {
+    const base = HERO_MAP[hero.heroId];
+    if (!base || !UUID.test(hero.uid)) return [];
+    const reason = ownedHeroes.length <= 1 ? 'Last hero' : hero.locked ? 'Locked' : team.includes(hero.uid) ? 'Active team'
+      : training.has(hero.uid) ? 'Training' : Object.values(hero.equipped ?? {}).some(Boolean) ? 'Equipped' : 'Ready';
+    return [{ id: hero.uid, kind: 'hero' as const, sourceId: base.id, name: base.name, rarity: base.rarity, level: hero.level, enchantLevel: 0, stars: hero.stars, power: teamPower([hero], game.state.inventory), price: 0, seller: reason, createdAt: 0, stats: [`${hero.stars} ★`, `Level ${hero.level}`], owned: hero }];
+  });
+}
+
 function listingFromServer(entry: ServerMarketListing): Listing | null {
   const base = ITEM_MAP[entry.item.itemId];
   if (!base) return null;
@@ -69,8 +83,8 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
   const serverListings = market?.listings ?? [];
   const browse = [...serverListings.map(listingFromServer), ...(market?.hero_listings ?? []).map(heroListingFromServer)]
     .filter((row): row is Listing => Boolean(row)).sort((a, b) => b.createdAt - a.createdAt);
-  const mine = serverListings.filter((entry) => entry.is_own).map(listingFromServer).filter((row): row is Listing => Boolean(row));
-  const sellable = ownedRows(game);
+  const mine = [...serverListings.filter((entry) => entry.is_own).map(listingFromServer), ...(market?.hero_listings ?? []).filter((entry) => entry.is_own).map(heroListingFromServer)].filter((row): row is Listing => Boolean(row));
+  const sellable = [...ownedRows(game), ...ownedHeroRows(game)];
   const comparisonHero = game.state.ownedHeroes.find((hero) => hero.uid === comparisonHeroUid) ?? game.state.ownedHeroes[0];
   const comparisonLevel = comparisonHero?.level ?? 1;
   const heroRarities: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
@@ -108,7 +122,7 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
     setMarketBusy(true);
     try {
       const result = await game.cancelMarketListing(row.id);
-      flash(result.ok ? `${row.name} returned to ${result.mailed ? 'your Mailbox' : 'inventory'}` : marketError(result.error));
+      flash(result.ok ? `${row.name} returned to ${row.kind === 'hero' ? 'your heroes' : result.mailed ? 'your Mailbox' : 'inventory'}` : marketError(result.error));
       await refreshMarket();
     } catch { flash('Cancellation failed. Refresh and try again.'); }
     finally { setMarketBusy(false); }
@@ -149,7 +163,7 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
   </div>;
 }
 
-function Row({ row, active, onClick, rate, selling }: { row: Listing; active: boolean; onClick: () => void; rate: string | null; selling: boolean }) { const blocked = row.seller === 'Locked' || row.seller === 'Equipped' || row.seller === 'Active team'; return <button type="button" onClick={onClick} aria-pressed={active} className={`mv-card rarity-${row.rarity}`} style={{ '--mv-color': RARITY_COLORS[row.rarity] } as CSSProperties}><span className="mv-card-art"><span className="mv-card-img"><Artwork row={row} compact /></span><RarityFx rarity={row.rarity} shape="slot" />{row.kind === 'item' && row.enchantLevel > 0 && <span className="mv-card-plus">+{row.enchantLevel}</span>}{row.kind === 'hero' && Boolean(row.stars) && <span className="mv-card-plus">{row.stars}★</span>}<span className="mv-card-lv">Lv {row.level}</span></span><span className="mv-card-info"><b className={`rarity-title rarity-${row.rarity}`}>{row.name}</b><small>{formatNum(row.power)} PWR · {row.seller}</small><span className="mv-card-price">{blocked ? <Lock size={13} /> : selling ? 'Set sale price' : <>{skrPrice(row.price, rate)}<SkrUsd cents={row.price} /></>}</span></span></button>; }
+function Row({ row, active, onClick, rate, selling }: { row: Listing; active: boolean; onClick: () => void; rate: string | null; selling: boolean }) { const blocked = ['Locked', 'Equipped', 'Active team', 'Training', 'Last hero'].includes(row.seller); return <button type="button" onClick={onClick} aria-pressed={active} className={`mv-card rarity-${row.rarity}`} style={{ '--mv-color': RARITY_COLORS[row.rarity] } as CSSProperties}><span className="mv-card-art"><span className="mv-card-img"><Artwork row={row} compact /></span><RarityFx rarity={row.rarity} shape="slot" />{row.kind === 'item' && row.enchantLevel > 0 && <span className="mv-card-plus">+{row.enchantLevel}</span>}{row.kind === 'hero' && Boolean(row.stars) && <span className="mv-card-plus">{row.stars}★</span>}<span className="mv-card-lv">Lv {row.level}</span></span><span className="mv-card-info"><b className={`rarity-title rarity-${row.rarity}`}>{row.name}</b><small>{formatNum(row.power)} PWR · {row.seller}</small><span className="mv-card-price">{blocked ? <Lock size={13} /> : selling ? 'Set sale price' : <>{skrPrice(row.price, rate)}<SkrUsd cents={row.price} /></>}</span></span></button>; }
 function Detail({ row, children }: { row: Listing; children: ReactNode }) { const item = row.kind === 'item' ? ITEM_MAP[row.sourceId] : null; const hero = row.kind === 'hero' ? HERO_MAP[row.sourceId] : null; return <div className="mv-detail-body" style={{ '--mv-color': RARITY_COLORS[row.rarity] } as CSSProperties}><span className="mv-detail-rarity">{RARITY_LABEL[row.rarity]}</span><h3 className={`rarity-title rarity-${row.rarity} mv-detail-name`}>{row.name}</h3><div className={`market-detail-art mv-detail-art rarity-${row.rarity}`} style={{ position: 'relative' }}><Artwork row={row} /><RarityFx rarity={row.rarity} shape="slot" /></div>{children}<dl className="mv-props"><div><dt>Owner</dt><dd>{row.seller}</dd></div><div><dt>Type</dt><dd>{item?.slot.replace('_', ' ') ?? hero?.heroClass ?? row.kind}</dd></div><div><dt>Rarity</dt><dd style={{ color: RARITY_COLORS[row.rarity] }}>{RARITY_LABEL[row.rarity]}</dd></div><div><dt>Level / Upgrade</dt><dd>{row.level} / +{row.enchantLevel}</dd></div><div><dt>Power</dt><dd>{formatNum(row.power)}</dd></div></dl><p className="mv-label">All properties</p><ul className="mv-stats">{row.stats.map((stat, index) => <li key={`${stat}-${index}`}>{stat}</li>)}</ul></div>; }
 function Artwork({ row, compact = false }: { row: Listing; compact?: boolean }) { if (row.kind === 'hero') { const hero = HERO_MAP[row.sourceId]; return hero ? <HeroPortrait heroId={hero.id} heroClass={hero.heroClass} rarity={hero.rarity} color={hero.color} size={compact ? 64 : 136} /> : null; } const item = ITEM_MAP[row.sourceId]; return item ? <ItemArtwork itemId={item.id} name={item.name} fallback={item.icon} /> : null; }
 function Records({ title, rows, rate }: { title: string; rate: string | null; rows: { id: string; name: string; price: number; createdAt: number; action: 'bought' | 'sold'; rarity?: Rarity }[] }) { return <section className="sc-panel mv-records"><div className="sc-section-head"><span>{title}</span></div><ul>{rows.map((row) => <li key={row.id} className="mv-record"><span className={`mv-record-action is-${row.action}`}>{row.action}</span><span className={`rarity-title rarity-${row.rarity ?? 'common'} mv-record-name`} style={{ color: row.rarity ? RARITY_COLORS[row.rarity] : undefined }}>{row.name}</span><time dateTime={new Date(row.createdAt).toISOString()}>{formatUtcDateTime(row.createdAt)}</time><span className="mv-record-price">{skrPrice(row.price, rate)}<SkrUsd cents={row.price} /><small>At current rate</small></span></li>)}</ul>{rows.length === 0 && <Empty text="No records yet" />}</section>; }

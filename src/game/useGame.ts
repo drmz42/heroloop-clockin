@@ -2103,7 +2103,9 @@ export function useGame() {
     if (!Array.isArray(result.inventory) || !Number.isFinite(result.token_balance)) return false;
     if (result.delivered_to === 'mail') void loadMail();
     if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
-    setState((prev) => ({ ...prev, inventory: result.inventory, hero: Math.max(0, Math.floor(result.token_balance)) }));
+    const owned = (result as { owned_heroes?: unknown }).owned_heroes;
+    setState((prev) => ({ ...prev, inventory: result.inventory, hero: Math.max(0, Math.floor(result.token_balance)),
+      ...(Array.isArray(owned) ? { ownedHeroes: owned as OwnedHero[] } : {}) }));
     return true;
   }, [loadMail]);
 
