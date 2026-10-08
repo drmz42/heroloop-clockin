@@ -186,13 +186,31 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
     <div style={showFigure ? { '--lane': lane } as React.CSSProperties : undefined} className={`arena-unit relative flex items-center gap-2 transition-opacity duration-300 ${showFigure ? 'has-figure' : ''} ${showFigure && side === 'enemy' && /boss/i.test(unit.uid) ? 'is-boss' : ''} ${side === 'enemy' ? 'flex-row-reverse' : ''} ${dungeonBoss ? 'dungeon-shared-boss' : ''} ${protectedBoss ? 'dungeon-protected-boss' : ''} ${targeted ? 'dungeon-heavy-target' : ''} ${unit.alive || dying ? 'opacity-100' : 'opacity-40 grayscale'}`}>
       {targeted && <div className="dungeon-target-sigil" aria-hidden="true" />}
       {targeted && <div className="dungeon-target-label"><Crosshair size={11} /> HEAVY TARGET</div>}
+      {showFigure ? (
+      // Figure plate: level and name on one line, HP written inside the bar.
+      <div className={`figure-plate is-${side}`} aria-label={`${unit.name}, ${side}`}>
+        <div className="figure-plate-head">
+          <span className="figure-plate-name">{unit.name}</span>
+          {(heroData ? heroData.stars : rank?.stars ?? 0) > 0 && <span className="figure-plate-stars" aria-label={`${heroData ? heroData.stars : rank?.stars ?? 0} stars`}><Star size={8} fill="currentColor" aria-hidden="true" />{heroData ? heroData.stars : rank?.stars ?? 0}</span>}
+        </div>
+        <div className="figure-plate-body">
+          {(heroData || rank) && <span className="figure-plate-level" aria-label={`Level ${heroData ? heroData.level : rank?.level}`}>{heroData ? heroData.level : rank?.level}</span>}
+          <div className="figure-plate-hp">
+            <HealthBar hp={unit.hp} maxHp={unit.maxHp} color={unit.color} />
+            <span aria-label={`${Math.ceil(unit.hp)} of ${unit.maxHp} health`}>{formatHealth(unit.hp)}/{formatHealth(unit.maxHp)}</span>
+          </div>
+        </div>
+      </div>
+      ) : (
+      <>
       {/* Unit name + HP bar + HP numbers */}
       <div className="arena-unit-info grid h-[64px] w-[88px] shrink-0 grid-rows-[24px_10px_14px] content-center gap-1 rounded-lg border border-[#4b4234] bg-black/45 px-2 shadow-[0_6px_14px_rgba(0,0,0,.25)] sm:w-[104px]" aria-label={`${unit.name}, ${side}`}>
-        {showFigure && !dungeonBoss && rankPlate}
         <div className={`arena-unit-name flex items-center justify-center text-center font-bold ${side === 'enemy' ? 'text-rose-200' : 'text-[#eee5d5]'}`}>{unit.name}</div>
         <HealthBar hp={unit.hp} maxHp={unit.maxHp} color={unit.color} />
         <div className="whitespace-nowrap text-center ui-text-small font-bold tabular-nums text-[#bdb6a9]" aria-label={`${Math.ceil(unit.hp)} of ${unit.maxHp} health`}>{formatHealth(unit.hp)}/{formatHealth(unit.maxHp)}</div>
       </div>
+      </>
+      )}
       {/* Portrait */}
       <div className="relative">
       {/* Floating combat numbers sit over the portrait */}
@@ -217,7 +235,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
         <div className={`arena-portrait-motion relative ${side === 'hero' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-hero' : 'anim-attack-hero-b') : ''} ${side === 'enemy' && attackPhase > 0 ? (attackPhase === 1 ? 'anim-attack-enemy' : 'anim-attack-enemy-b') : ''}`}>
           <div className={`relative ${hit ? 'anim-hit' : ''}`}>
           {attackPhase > 0 && <span key={attackPhase} className={`hl-swing ${side === 'enemy' ? 'is-enemy' : 'is-hero'}`} aria-hidden="true" />}
-      {(!showFigure || dungeonBoss) && rankPlate}
+      {!showFigure && rankPlate}
         {showFigure ? (
         <div className={`arena-figure ${hit ? (side === 'enemy' ? 'hl-recoil-right' : 'hl-recoil-left') : ''}`} data-combat-side={side} style={{ '--figure-color': portraitColor } as React.CSSProperties}>
           <span className="arena-figure-ground" aria-hidden="true" />
@@ -245,7 +263,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
           {heroData && HERO_MAP[heroData.heroId] && <RarityFx rarity={HERO_MAP[heroData.heroId].rarity} shape="slot" />}
         </div>
         )}
-        {dungeonBoss && <span className="boss-frame" aria-hidden="true" />}
+        {dungeonBoss && !showFigure && <span className="boss-frame" aria-hidden="true" />}
         {dying > 0 && <span key={dying} className={`hl-death-burst ${side === 'enemy' ? 'is-enemy' : 'is-hero'}`} aria-hidden="true"><i className="hl-death-soul" />{Array.from({ length: 12 }, (_, index) => <i key={index} className="hl-ember" style={{ ['--a' as string]: `${index * 30 + 8}deg`, ['--d' as string]: `${36 + (index % 4) * 12}px` }} />)}</span>}
         </div>
         </div>
@@ -273,7 +291,11 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
   const bossArt = dungeonBossScene ? enemyArtSrc(`e0-${DUNGEON_BOSS_ART[dungeonBossScene.bossId] ?? 'boss-lich'}`) : null;
   // Full-body figures stand in a staggered column (each lane steps toward the centre) while a lane holds at most
   // three fighters per side; the shared Boss phase keeps its compact hero strip.
-  const figureLanes = dungeonBossScene?.phase !== 'shared' && heroes.length <= 3 && laneEnemies.length <= 3;
+  const sharedPhase = dungeonBossScene?.phase === 'shared';
+  const figureLanes = !sharedPhase && heroes.length <= 3 && laneEnemies.length <= 3;
+  // The shared Boss phase keeps its party row but draws it as figures, and its summoned guards stand beside the
+  // Boss as targets: they can outlive the Boss, and the party must not be seen striking at nothing.
+  const sharedSummons = sharedPhase ? laneEnemies.filter((unit) => unit.alive) : [];
   const [shake, setShake] = useState(false);
   const lastShake = useRef(0);
   const [critFlash, setCritFlash] = useState(0);
@@ -354,15 +376,17 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
           {dungeonBossScene.enrage && <span className="is-danger"><Flame size={10} /> ENRAGED</span>}
         </div>
         <div className="dungeon-boss-floor-sigil" />
-        {Boolean(dungeonBossScene.summons) && <div className="dungeon-summon-rack" aria-label={`${dungeonBossScene.summons} summoned guards protect the Boss`}>{Array.from({ length: Math.min(2, dungeonBossScene.summons ?? 0) }, (_, index) => <div key={index}><Skull size={18} /><span>SUMMON {index + 1}</span><i /></div>)}</div>}
         <UnitView unit={sharedBoss} floaters={floaters} side="enemy" opponentAlive={heroes.some((hero) => hero.alive)} animationMode={animationMode} rank={{ ...enemyRank(sharedBoss, locationId, dungeonRoom?.depth), stars: 3 }} figure />
+      </div>}
+      {sharedSummons.length > 0 && <div className={`dungeon-summon-line ${sharedBoss ? '' : 'is-alone'}`} aria-label={`${sharedSummons.length} summoned guards`}>
+        {sharedSummons.map((u) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={heroes.some((hero) => hero.alive)} animationMode={animationMode} rank={enemyRank(u, locationId, dungeonRoom?.depth)} figure />)}
       </div>}
       {dungeonBossScene?.transition && <div className="dungeon-phase-banner" role="status">{dungeonBossScene.transition}</div>}
       <div className={`arena-lanes ${figureLanes ? 'arena-figures' : ''} relative z-10 grid grid-cols-2 items-center gap-4 sm:gap-10`}>
         <div className="arena-roster flex min-w-0 flex-col items-end justify-center gap-2">
           {heroes.map((u, lane) => {
             const heroData = ownedHeroes?.find((h) => h.uid === u.uid);
-            return <UnitView key={u.uid} unit={u} floaters={floaters} side="hero" heroData={heroData} respawnSeconds={respawnCountdowns?.[u.uid]} opponentAlive={sharedBossActive || Boolean(laneEnemies[lane]?.alive) || (dungeonFight && laneEnemies.some((enemy) => enemy.alive))} animationMode={animationMode} targeted={dungeonBossScene?.targetUid === u.uid} figure={figureLanes} lane={lane} />;
+            return <UnitView key={u.uid} unit={u} floaters={floaters} side="hero" heroData={heroData} respawnSeconds={respawnCountdowns?.[u.uid]} opponentAlive={sharedBossActive || Boolean(laneEnemies[lane]?.alive) || (dungeonFight && laneEnemies.some((enemy) => enemy.alive))} animationMode={animationMode} targeted={dungeonBossScene?.targetUid === u.uid} figure={figureLanes || sharedPhase} lane={figureLanes ? lane : 0} />;
           })}
           {heroes.length === 0 && <div className="intentional-empty p-4 ui-text-medium">Assemble a team to fight</div>}
         </div>
