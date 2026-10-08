@@ -414,6 +414,8 @@ button.sc-chip { cursor: pointer; }
 .mv-card[aria-pressed='true'] { box-shadow: inset 0 0 0 2px var(--sc-gold), 0 0 14px rgba(242, 204, 128, .4); }
 .mv-card-art { position: relative; display: grid; aspect-ratio: 1; place-items: center; overflow: hidden; padding: 10%; background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--mv-color) 30%, #16101a), #060405 78%); }
 .mv-card-img { display: grid; width: 100%; height: 100%; place-items: center; }
+/* Hero art fills the whole card frame like item art, instead of a small portrait inside the padding. */
+.mv-card-img.is-hero { position: absolute; inset: 0; }
 .mv-card-art::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 1.5px var(--mv-color), inset 0 -24px 20px -12px rgba(0, 0, 0, .9); pointer-events: none; }
 .mv-card-plus, .mv-card-lv { position: absolute; z-index: 1; border-radius: 2px; padding: 1px 4px; background: rgba(0, 0, 0, .8); color: #fff; font-size: 9px; font-weight: 900; }
 .mv-card-plus { left: 3px; top: 3px; color: #ffd98a; box-shadow: 0 0 0 1px rgba(242, 204, 128, .5); }
