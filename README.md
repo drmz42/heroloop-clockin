@@ -36,7 +36,7 @@ npm ci
 npm run build:web        # production bundle in dist/, configured by .env.staging2
 ```
 
-`.env.staging2` only holds public client settings; it points the client at the hosted Seeker backend `https://heroloop.xyz`.
+`.env.staging2` only holds public client settings; it points the client at the hosted Seeker backend `https://seeker.heroloop.xyz`.
 
 ## 2. Build the Android APK
 
