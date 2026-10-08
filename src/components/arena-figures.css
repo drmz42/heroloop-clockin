@@ -1,0 +1,44 @@
+/* Full-body 2.5D battle figures (Founder 2026-10-08). Each side is one column of up to three lanes; lower lanes
+   step toward the centre and overlap the lane above a little, so no figure hides another. Name/HP plates stay
+   in a straight outer column. Every hero uses the same figure box; Bosses are slightly larger. */
+.arena-stage-inner:has(.arena-figures) { container-type: size; }
+.arena-lanes.arena-figures {
+  /* Three overlapping lanes plus a Boss need about 2.6 figure heights, so the stage height also bounds them. */
+  --fig-h: clamp(96px, min(34vw, 34cqh), 168px);
+  --fig-w: calc(var(--fig-h) * .68);
+  --fig-step: clamp(6px, 2.4vw, 16px);
+  --fig-overlap: .32;
+  column-gap: clamp(12px, calc(8vw - 20px), 90px) !important;
+}
+@media (min-width: 1024px) {
+  .arena-lanes.arena-figures { --fig-h: clamp(150px, min(22vh, 34cqh), 260px); --fig-step: clamp(18px, 1.6vw, 34px); }
+}
+.arena-lanes.arena-figures .arena-unit.has-figure { z-index: calc(1 + var(--lane, 0)); }
+.arena-lanes.arena-figures .arena-roster > .arena-unit.has-figure + .arena-unit.has-figure { margin-top: calc(var(--fig-h) * -1 * var(--fig-overlap)); }
+.arena-lanes.arena-figures .arena-unit.has-figure > .arena-unit-info + .relative { translate: calc(var(--lane, 0) * var(--fig-step)) 0; }
+.arena-lanes.arena-figures .arena-unit.has-figure.flex-row-reverse > .arena-unit-info + .relative { translate: calc(var(--lane, 0) * var(--fig-step) * -1) 0; }
+
+.arena-figure { position: relative; width: var(--fig-w, 120px); height: var(--fig-h, 150px); }
+.arena-figure .arena-portrait-impact-layer { overflow: visible; }
+.arena-figure-art {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: contain; object-position: 50% 100%;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .55));
+  pointer-events: none; user-select: none;
+}
+/* A soft rarity-tinted pool under the feet grounds the figure on the location floor. */
+.arena-figure-ground {
+  position: absolute; left: 8%; right: 8%; bottom: -5%; height: 16%; border-radius: 50%;
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--figure-color, #7e7055) 34%, rgba(0, 0, 0, .7)) 0, rgba(0, 0, 0, .45) 45%, transparent 72%);
+  pointer-events: none;
+}
+.arena-figure-dead { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.arena-figure .enemy-role-badge { bottom: -2px; }
+.arena-mode-spectacular .arena-figure { filter: drop-shadow(0 0 10px rgba(245, 194, 91, .22)); }
+
+/* Bosses and the shared Dungeon Boss stand taller than ordinary fighters. */
+.arena-unit.has-figure.is-boss .arena-figure { height: calc(var(--fig-h) * 1.18); width: calc(var(--fig-w) * 1.18); }
+.arena-unit.has-figure.dungeon-shared-boss .arena-figure { --fig-h: clamp(170px, 48vw, 300px); --fig-w: calc(var(--fig-h) * .8); }
+/* With figures the level plate rides on the name plate, so it never lands on the lane above. */
+.arena-unit.has-figure .arena-unit-info { position: relative; }
+.arena-unit.has-figure .arena-unit-info > .battle-rank-plate { top: -13px; }
