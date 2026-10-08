@@ -17,6 +17,7 @@ Deno.test('wallet challenge uses canonical SIWS domain, nonce and expiration fie
  assert(!await campaignSignature(wallet,message.replace('heroloop.xyz','evil.example'),signature));
 });
 Deno.test('Founder SOL pack recipient is a canonical 32-byte address',()=>{
+ assert.equal(CAMPAIGN_SOL_TREASURY,'7WbERESYT8ENKpe4bQBBbRpySFDbxScT9rhDjeE1nUP6');
  const bytes=base58Decode(CAMPAIGN_SOL_TREASURY);assert.equal(bytes.length,32);assert.equal(base58Encode(bytes),CAMPAIGN_SOL_TREASURY);
 });
 Deno.test('campaign signature binds the exact wallet and invitation message',async()=>{

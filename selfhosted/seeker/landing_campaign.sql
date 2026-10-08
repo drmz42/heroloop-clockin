@@ -35,11 +35,11 @@ CREATE TABLE IF NOT EXISTS seeker_skr.campaign_orders (
  submitted_signature text, checked_at timestamptz,
  signature text UNIQUE, paid_at timestamptz, CHECK((signature IS NULL)=(paid_at IS NULL))
 );
--- Preserve historical prices and recipient snapshots; new Starter intents cost 100,000 lamports.
+-- Preserve historical prices and recipient snapshots; new Starter intents cost 50,000,000 lamports.
 ALTER TABLE seeker_skr.campaign_orders DROP CONSTRAINT IF EXISTS campaign_orders_amount_minor_check;
 ALTER TABLE seeker_skr.campaign_orders ADD CONSTRAINT campaign_orders_amount_minor_check
  CHECK(amount_minor IN (100000,50000000,100000000,250000000,500000000,1000000000));
-ALTER TABLE seeker_skr.campaign_orders ALTER COLUMN catalog_version SET DEFAULT 'sol-landing-v2-test';
+ALTER TABLE seeker_skr.campaign_orders ALTER COLUMN catalog_version SET DEFAULT 'sol-landing-v3';
 CREATE TABLE IF NOT EXISTS seeker_skr.campaign_points (
  buyer text PRIMARY KEY REFERENCES seeker_skr.campaign_accounts(wallet),
  inviter text NOT NULL REFERENCES seeker_skr.campaign_accounts(wallet),
@@ -115,13 +115,13 @@ BEGIN
  IF w IS NULL THEN RAISE EXCEPTION 'campaign_sign_in_required'; END IF;
  IF p_action='logout' THEN DELETE FROM seeker_skr.campaign_sessions WHERE token_hash=p->>'token_hash'; RETURN '{}'::jsonb; END IF;
  IF p_action='intent' THEN
-  amount:=CASE p->>'pack' WHEN 'starter' THEN 100000 WHEN 'scout' THEN 100000000 WHEN 'veteran' THEN 250000000 WHEN 'elite' THEN 500000000 WHEN 'founder' THEN 1000000000 END;
+  amount:=CASE p->>'pack' WHEN 'starter' THEN 50000000 WHEN 'scout' THEN 100000000 WHEN 'veteran' THEN 250000000 WHEN 'elite' THEN 500000000 WHEN 'founder' THEN 1000000000 END;
   IF amount IS NULL THEN RAISE EXCEPTION 'campaign_invalid_pack'; END IF;
   -- Serialize preparation and reuse a matching unsigned order.
   PERFORM 1 FROM seeker_skr.campaign_accounts WHERE wallet=w FOR UPDATE;
   SELECT * INTO o FROM seeker_skr.campaign_orders
    WHERE wallet=w AND pack=p->>'pack' AND amount_minor=amount AND treasury=p->>'treasury'
-    AND catalog_version='sol-landing-v2-test' AND paid_at IS NULL AND submitted_signature IS NULL AND expires_at>clock_timestamp()
+    AND catalog_version='sol-landing-v3' AND paid_at IS NULL AND submitted_signature IS NULL AND expires_at>clock_timestamp()
    ORDER BY created_at DESC LIMIT 1 FOR UPDATE;
   IF FOUND THEN RETURN to_jsonb(o)||jsonb_build_object('amount_minor',o.amount_minor::text); END IF;
   -- Abandoned orders never block choosing another pack; retain their receipt snapshots.
