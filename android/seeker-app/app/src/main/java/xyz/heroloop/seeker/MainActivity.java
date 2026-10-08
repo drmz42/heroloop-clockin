@@ -454,25 +454,64 @@ public class MainActivity extends Activity {
         }
     }
 
-    // Back: leaves an error/launch screen, then walks the game's history, and exits only on a
-    // second press so a stray swipe does not close the game.
+    // Back: first closes the game's open window (the page's own hlAndroidBack() hook if it
+    // defines one, else an Escape key for a visible dialog, which every game modal handles), then
+    // walks the game's history, and exits only on a second press so a stray swipe does not close
+    // the game. The mandatory update gate cannot be dismissed. Launch/error screens exit directly.
+    private static final String BACK_PROBE = "(function(){"
+        + "try{if(typeof window.hlAndroidBack==='function'&&window.hlAndroidBack()===true)return 'handled';}catch(e){}"
+        + "if(document.querySelector('.hl-app-update'))return 'none';"
+        + "var d=Array.prototype.filter.call(document.querySelectorAll('[aria-modal=\\'true\\'],[role=dialog],[role=alertdialog]'),"
+        + "function(e){return e.getClientRects().length>0;});"
+        + "if(!d.length)return 'none';"
+        + "var t=document.activeElement||document.body;"
+        + "t.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',keyCode:27,bubbles:true,cancelable:true}));"
+        + "return 'dialogs:'+d.length;})()";
+    private static final String DIALOG_COUNT = "Array.prototype.filter.call(document.querySelectorAll("
+        + "'[aria-modal=\\'true\\'],[role=dialog],[role=alertdialog]'),function(e){return e.getClientRects().length>0;}).length";
+    private static final long BACK_DIALOG_CHECK_MS = 250;
+
     @Override
     public void onBackPressed() {
         if (!gameReady) {
             super.onBackPressed();
             return;
         }
+        webView.evaluateJavascript(BACK_PROBE, value -> {
+            if ("\"handled\"".equals(value) || isFinishing()) return;
+            String result = value == null ? "" : value.replace("\"", "");
+            if (!result.startsWith("dialogs:")) {
+                backWithoutDialog();
+                return;
+            }
+            // A dialog without Escape handling stays open: then Back acts as if none were open.
+            int before = parseCount(result.substring("dialogs:".length()));
+            main.postDelayed(() -> webView.evaluateJavascript(DIALOG_COUNT, after -> {
+                if (!isFinishing() && parseCount(after) >= before) backWithoutDialog();
+            }), BACK_DIALOG_CHECK_MS);
+        });
+    }
+
+    private void backWithoutDialog() {
         if (webView.canGoBack()) {
             webView.goBack();
             return;
         }
         long now = SystemClock.uptimeMillis();
         if (now - lastBackAt < BACK_EXIT_WINDOW_MS) {
-            super.onBackPressed();
+            finish();
             return;
         }
         lastBackAt = now;
         Toast.makeText(this, "Press Back again to exit HeroLoop", Toast.LENGTH_SHORT).show();
+    }
+
+    private static int parseCount(String value) {
+        try {
+            return Integer.parseInt(value == null ? "" : value.replace("\"", "").trim());
+        } catch (NumberFormatException error) {
+            return Integer.MAX_VALUE;
+        }
     }
 
     @Override
