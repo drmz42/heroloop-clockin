@@ -4,7 +4,7 @@ import { ItemArtwork } from '@/components/ItemArtwork';
 import { RARITY_COLORS } from '@/game/heroes';
 import { ITEM_MAP, displayItemPower } from '@/game/items';
 import { formatNum } from '@/game/state';
-import { versionedAsset } from '@/game/assetVersion';
+import { ChestCollectIcon } from '@/components/ChestCollectIcon';
 import type { MailClaimResult, MailEntry } from '@/game/useGame';
 
 const SOURCE: Record<MailEntry['source'], string> = {
@@ -73,7 +73,7 @@ export function MailboxModal({ onClose, loadMail, claimMail, freeSlots, chestCou
                 {entries.map((entry) => {
                   if (entry.kind === 'chest') {
                     return <article key={entry.id} className="flex items-center gap-3 rounded-lg border border-[#9a6a22]/70 bg-black/20 p-2">
-                      <span className="block h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-black/25"><img src={versionedAsset('/assets/ui/open-treasure-chest-v1.webp')} alt="" className="h-full w-full object-contain" /></span>
+                      <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-black/25"><ChestCollectIcon size={40} /></span>
                       <span className="min-w-0 flex-1">
                         <b className="block truncate text-xs text-[#f3c64e]">{entry.chest.boss ? 'Boss Chest' : 'Chest'}</b>
                         <span className="block text-[10px] text-[#8d8374]">Location {entry.chest.stage} · {SOURCE[entry.source] ?? 'Delivery'}</span>

@@ -2087,10 +2087,18 @@ export function useGame() {
     return { ok: true, claimed: result.claimed, remaining: result.remaining, itemsFull: result.items_full === true, chestsFull: result.chests_full === true };
   }, []);
 
-  // Load once the server save is known; later mail only comes from own actions.
+  // Load once the server save is known, then recheck every minute and on return to the app: rewards and
+  // deliveries also arrive from the server on their own (Founder 2026-10-08).
   const serverSaveKnown = serverRevisionHint !== null;
   useEffect(() => {
     if (tokenomicsEnabled && serverSaveKnown) void loadMail();
+  }, [serverSaveKnown, loadMail]);
+  useEffect(() => {
+    if (!tokenomicsEnabled || !serverSaveKnown) return undefined;
+    const refresh = () => { if (document.visibilityState === 'visible') void loadMail(); };
+    const timer = window.setInterval(refresh, 60_000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', refresh); };
   }, [serverSaveKnown, loadMail]);
 
   const applyMarketState = useCallback((result: { inventory: OwnedItem[]; token_balance: number; revision: number; delivered_to?: string }) => {
