@@ -30,7 +30,7 @@ type Batch = 1 | 10 | 100;
 // The pedestal is painted art; only the batch size sits on its blank panel, while the
 // paid title and price live on the plate below. Scroll batches use the stone count
 // directly, with plain status text only when unavailable or settling.
-function Altar({ count, tone, title, cost, status, lit, busy, disabled, still, paused, scrollOnly, onClick }: {
+function Altar({ count, tone, title, cost, status, lit, busy, disabled, still, paused, scrollOnly, guide, onClick }: {
   count: Batch;
   tone: 'violet' | 'gold' | 'crimson';
   title: string;
@@ -42,6 +42,7 @@ function Altar({ count, tone, title, cost, status, lit, busy, disabled, still, p
   still: boolean;
   paused: boolean;
   scrollOnly: boolean;
+  guide?: string;
   onClick: () => void;
 }) {
   return (
@@ -50,6 +51,7 @@ function Altar({ count, tone, title, cost, status, lit, busy, disabled, still, p
       onClick={onClick}
       disabled={disabled}
       aria-busy={busy}
+      data-guide={guide}
       aria-label={`${title} ×${count}${scrollOnly ? ` · ${count} ${count === 1 ? 'Scroll' : 'Scrolls'}` : ''}${status ? ` · ${status}` : ''}`}
       className={`sv-altar sv-altar--${tone}${lit ? ' is-lit' : ''}${busy ? ' is-busy' : ''}`}
     >
@@ -259,11 +261,11 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
           {isolatedHackathon
             ? <button type="button" onClick={() => { setPaymentMethod('skr'); setPendingQuote(null); }} aria-pressed={paymentMethod === 'skr'} disabled={summoning !== null} className="sv-relic sv-relic--crystal"><span className="sv-relic-halo" aria-hidden="true" /><img className="sv-relic-art" src={relicCrystalArt} alt="" draggable={false} /><span className="sv-relic-name"><SkrTokenIcon size={14} />SKR</span></button>
             : <button type="button" onClick={() => setPaymentMethod('paid')} aria-pressed={paymentMethod === 'paid'} disabled={summoning !== null} className="sv-relic sv-relic--crystal"><span className="sv-relic-halo" aria-hidden="true" /><img className="sv-relic-art" src={relicCrystalArt} alt="" draggable={false} /><span className="sv-relic-name"><HeroTokenIcon size={14} />Test · $HERO</span></button>}
-          <button type="button" onClick={() => { setPaymentMethod('scroll'); setPendingQuote(null); }} aria-pressed={paymentMethod === 'scroll'} disabled={summoning !== null} className="sv-relic sv-relic--scroll"><span className="sv-relic-halo" aria-hidden="true" /><img className="sv-relic-art" src="/assets/ui/summon-scroll-v1.webp" alt="" draggable={false} /><span className="sv-relic-name">Scrolls · {formatNum(state.summonScrolls)}</span></button>
+          <button type="button" onClick={() => { setPaymentMethod('scroll'); setPendingQuote(null); }} data-guide={paymentMethod === 'scroll' ? undefined : 'summon'} aria-pressed={paymentMethod === 'scroll'} disabled={summoning !== null} className="sv-relic sv-relic--scroll"><span className="sv-relic-halo" aria-hidden="true" /><img className="sv-relic-art" src="/assets/ui/summon-scroll-v1.webp" alt="" draggable={false} /><span className="sv-relic-name">Scrolls · {formatNum(state.summonScrolls)}</span></button>
         </div>
 
         <div className="sv-altars" aria-label="Summon altars">
-          <Altar count={1} tone="violet" title="Summon" cost={altarCost(1)} status={altarStatus(1)} lit={canSummon(1)} busy={summoning === 1} disabled={!canSummon(1) || busy} still={reducedMotion} paused={results !== null} scrollOnly={paymentMethod === 'scroll'} onClick={() => void beginSummon(1)} />
+          <Altar count={1} tone="violet" title="Summon" guide={paymentMethod === 'scroll' ? 'summon' : undefined} cost={altarCost(1)} status={altarStatus(1)} lit={canSummon(1)} busy={summoning === 1} disabled={!canSummon(1) || busy} still={reducedMotion} paused={results !== null} scrollOnly={paymentMethod === 'scroll'} onClick={() => void beginSummon(1)} />
           <Altar count={10} tone="gold" title="Summon" cost={altarCost(10)} status={altarStatus(10)} lit={canSummon(10)} busy={summoning === 10} disabled={!canSummon(10) || busy} still={reducedMotion} paused={results !== null} scrollOnly={paymentMethod === 'scroll'} onClick={() => void beginSummon(10)} />
           <Altar count={100} tone="crimson" title="Mass Summon" cost={altarCost(100)} status={altarStatus(100)} lit={canSummon(100)} busy={summoning === 100} disabled={!canSummon(100) || busy} still={reducedMotion} paused={results !== null} scrollOnly={paymentMethod === 'scroll'} onClick={() => void beginSummon(100)} />
         </div>

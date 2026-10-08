@@ -4,6 +4,7 @@ import { skrPrice, useSkrRate } from '@/game/skrPurchase';
 import { editionStorageKey, isolatedHackathon } from '../game/editionStorage';
 import { goldHealingEnabled } from '../../managed/functions/player-sync/automatic-healing.mjs';
 import { currentTutorialObjective, readyQuestCount, tutorialProgress } from '@/game/tutorialProgress';
+import { TUTORIAL_GO_EVENT, tutorialDestination, tutorialGuide } from '@/game/tutorialGuide';
 import { Fragment, useCallback, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { isAndroidLayout } from '@/platform/platform';
@@ -780,6 +781,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             </button>
             <button
               onClick={handleSummonBoss}
+              data-guide="boss"
               disabled={summonBusy || state.bossKeys < 1 || state.bossBattleActive}
               className="pm-socket game-control flex min-h-11 items-center gap-1 px-2 py-0.5 ui-text-small font-bold"
             >
@@ -910,10 +912,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     if (!error && quest[0] === 'defeat-tutorial-boss') setTutorialFinished(true);
                     else if (!error) showToast('Tutorial reward claimed');
                   } finally { setTutorialClaimBusy(false); }
-                }} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold disabled:opacity-50">{tutorialClaimBusy ? 'Claiming…' : 'Claim & unlock next'}</button>}
+                }} data-guide="claim" className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold disabled:opacity-50">{tutorialClaimBusy ? 'Claiming…' : 'Claim & unlock next'}</button>}
                 {tutorialClaimError && <p role="alert" className="mt-1 ui-text-small text-red-300">{tutorialClaimError}</p>}
               </div>
-              {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1 px-2 py-1"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => openTutorialChestsChecked(1)} className="game-control min-h-7 ui-text-small font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => openTutorialChestsChecked(10)} className="game-control min-h-7 ui-text-small font-bold">Open 10</button></div></div>}
+              {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1 px-2 py-1"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => openTutorialChestsChecked(1)} className="game-control min-h-7 ui-text-small font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => openTutorialChestsChecked(10)} data-guide="open-chests" className="game-control min-h-7 ui-text-small font-bold">Open 10</button></div></div>}
             </section>;
           })()}
           {isolatedHackathon && <SeekerQuests board={seekerQuestBoard} onOpenShop={onRewardBoostClick} claimQuest={game.claimQuest} motionOff={state.battleAnimationMode === 'off'} />}
@@ -981,11 +983,11 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           {isolatedHackathon && !activeDungeon && <AutomaticHealingStatus game={game} />}
           {isolatedHackathon && !activeDungeon && <NextStepCard game={game} nextLocation={nextLocationAvailable ? nextLocation : null} onQuestsClick={onQuestsClick} onStoreClick={onRewardBoostClick} />}
           {isAndroidLayout && <div ref={battleMenuRef} className="hl-battle-menu pointer-events-none absolute bottom-2 right-2 top-2 z-[112] flex flex-col items-end gap-1">
-            <button type="button" onClick={() => setBattleMenuOpen((open) => !open)} className="hl-battle-menu-toggle game-control pointer-events-auto grid h-11 w-11 shrink-0 place-items-center p-0" aria-label="Battle menu" aria-haspopup="dialog" aria-expanded={battleMenuOpen}>{battleMenuOpen ? <X size={20} /> : <Menu size={20} />}</button>
+            <button type="button" onClick={() => setBattleMenuOpen((open) => !open)} data-guide="boss" className="hl-battle-menu-toggle game-control pointer-events-auto grid h-11 w-11 shrink-0 place-items-center p-0" aria-label="Battle menu" aria-haspopup="dialog" aria-expanded={battleMenuOpen}>{battleMenuOpen ? <X size={20} /> : <Menu size={20} />}</button>
             {battleMenuOpen && <div role="dialog" aria-label="Battle menu" className="hl-battle-menu-panel pointer-events-auto min-h-0 w-64 max-w-[calc(100vw-24px)] overflow-y-auto overscroll-contain rounded-lg border border-[#80683f] bg-[#11130f]/97 p-2 shadow-2xl">
               {!activeDungeon && <div className="mb-2 grid grid-cols-2 gap-1.5 border-b border-[#80683f]/50 pb-2">
                 <button type="button" onClick={() => { setBattleMenuOpen(false); setShowDungeonInfo(true); }} className="pm-socket game-control flex min-h-11 items-center justify-center gap-1.5 px-2 ui-text-small font-bold text-[#d7c6ea]"><DoorOpen size={15} aria-hidden="true" /> DUNGEONS</button>
-                <button type="button" onClick={() => void handleSummonBoss()} disabled={summonBusy || state.bossKeys < 1 || state.bossBattleActive} className="pm-socket game-control flex min-h-11 items-center justify-center gap-1 px-2 ui-text-small font-bold disabled:opacity-50"><BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}</button>
+                <button type="button" onClick={() => void handleSummonBoss()} data-guide="boss" disabled={summonBusy || state.bossKeys < 1 || state.bossBattleActive} className="pm-socket game-control flex min-h-11 items-center justify-center gap-1 px-2 ui-text-small font-bold disabled:opacity-50"><BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}</button>
               </div>}
               {battleSettingsContent}
             </div>}
@@ -1218,7 +1220,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             {inventoryTab !== 'resources' && <div className="mt-2 grid min-w-0 grid-cols-[1fr_1fr_32px_1fr] gap-1">
               <button onClick={() => { game.sortInventory(); showToast('Sorted by rarity'); }} className="game-control flex min-w-0 items-center justify-center gap-1 px-1 py-1 ui-text-medium font-bold" title="Sort by rarity"><ArrowUpDown size={12} /> Sort</button>
               <div className="relative min-w-0">
-              <button onClick={async () => { if (state.team.length === 0) return; const message = await game.autoEquipBest() ? 'Best gear equipped on active team' : equipmentFailure('Auto Equip'); if (!isolatedHackathon) { showToast(message); return; } if (autoGearNoticeTimer.current) clearTimeout(autoGearNoticeTimer.current); setAutoGearNotice(message); autoGearNoticeTimer.current = setTimeout(() => setAutoGearNotice(null), 2400); }} disabled={state.team.length === 0} className="game-control flex w-full min-w-0 items-center justify-center gap-1 px-1 py-1 ui-text-medium font-bold" title="Equip the strongest valid gear on each active hero in formation order"><Wand2 size={12} /> Auto</button>
+              <button onClick={async () => { if (state.team.length === 0) return; const message = await game.autoEquipBest() ? 'Best gear equipped on active team' : equipmentFailure('Auto Equip'); if (!isolatedHackathon) { showToast(message); return; } if (autoGearNoticeTimer.current) clearTimeout(autoGearNoticeTimer.current); setAutoGearNotice(message); autoGearNoticeTimer.current = setTimeout(() => setAutoGearNotice(null), 2400); }} disabled={state.team.length === 0} data-guide="equip" className="game-control flex w-full min-w-0 items-center justify-center gap-1 px-1 py-1 ui-text-medium font-bold" title="Equip the strongest valid gear on each active hero in formation order"><Wand2 size={12} /> Auto</button>
               {autoGearNotice && <div role="status" className="auto-gear-notice pointer-events-none absolute left-1/2 top-full z-40 mt-1 w-52 -translate-x-1/2 rounded border border-[#9e7b3d] bg-[#15130f] px-2 py-1 text-center ui-text-small font-bold text-[#f2d393] shadow-lg">{autoGearNotice}</div>}
               </div>
               <button type="button" aria-label={inventoryLockMode ? 'Exit Inventory Lock mode' : 'Enter Inventory Lock mode'} aria-pressed={inventoryLockMode} onClick={() => { setInventoryLockMode((active) => !active); setSelectedItem(null); setSelectedItemSource(null); setSelectedItemSlot(null); setShowBulkSellConfirm(false); }} className={`game-control grid min-w-0 place-items-center px-0 py-1 ${inventoryLockMode ? 'border-red-500/70 bg-red-950/55 text-red-300' : 'text-[#a69c8c]'}`} title={inventoryLockMode ? 'Lock mode active — click to exit' : 'Lock mode — click items to lock or unlock'}><LockIcon size={13} /></button>
@@ -1875,7 +1877,7 @@ function NextStepCard({ game, nextLocation, onQuestsClick, onStoreClick }: { gam
   const objective = currentTutorialObjective(state);
   const ready = readyQuestCount(state);
   const step = objective
-    ? { kicker: `Next step · ${Math.max(1, Math.min(10, state.tutorial.questOrdinal))}/10`, label: objective.ready ? 'Done! Claim your reward' : objective.label, progress: objective.ready ? null : objective, cta: objective.ready ? 'Claim' : null, onClick: onQuestsClick }
+    ? { kicker: `Next step · ${Math.max(1, Math.min(10, state.tutorial.questOrdinal))}/10`, label: objective.ready ? 'Done! Claim your reward' : objective.label, progress: objective.ready ? null : objective, cta: objective.ready ? 'Claim' : null, onClick: () => { const guide = tutorialGuide(state); if (!guide || guide === 'claim' || !isAndroidLayout) onQuestsClick?.(); else window.dispatchEvent(new CustomEvent(TUTORIAL_GO_EVENT, { detail: tutorialDestination(guide) })); } }
     : ready > 0
       ? { kicker: 'Next step', label: `${ready} reward${ready === 1 ? '' : 's'} ready`, progress: null, cta: 'Claim', onClick: onQuestsClick }
       : nextLocation

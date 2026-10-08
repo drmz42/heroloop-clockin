@@ -26,6 +26,6 @@ export function currentTutorialObjective(state: GameState) {
   const ordinal = Math.max(1, Math.min(10, state.tutorial.questOrdinal));
   const quest = contract.quests[ordinal - 1];
   const progress = tutorialProgress(state, ordinal);
-  return { label: quest.id === 'enable-auto-pot' ? 'Automatic healing' : quest.label,
+  return { id: quest.id, label: quest.id === 'enable-auto-pot' ? 'Automatic healing' : quest.label,
     progress: Math.min(progress, quest.target), target: quest.target, ready: progress >= quest.target };
 }

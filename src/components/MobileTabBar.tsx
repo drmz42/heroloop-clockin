@@ -23,7 +23,7 @@ import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
 // features only open a "Coming soon" teaser; they grant nothing and promise no amounts.
 type Upcoming = 'pass' | 'guilds' | 'pets';
 const UPCOMING: Record<Upcoming, { title: string; kicker: string; line: string; points: string[]; Icon: typeof Shield }> = {
-  pass: { title: 'Season Pass', kicker: 'Season I', line: 'Climb the season track for exclusive rewards.', points: ['Free and premium reward tracks', 'Season quests and milestones', 'Exclusive cosmetics each season'], Icon: Crown },
+  pass: { title: 'Season Pass', kicker: 'Coming in Season 2', line: 'Climb the season track for exclusive rewards.', points: ['Free and premium reward tracks', 'Season quests and milestones', 'Exclusive cosmetics each season'], Icon: Crown },
   guilds: { title: 'Guilds', kicker: 'Brotherhood', line: 'Raise a banner with your allies.', points: ['Found or join a guild', 'Guild raids against epic bosses', 'Guild ranks and a shared hall'], Icon: Castle },
   pets: { title: 'Pets', kicker: 'Companions', line: 'Tame companions that fight at your side.', points: ['Hatch and raise companions', 'Pets assist your heroes in battle', 'Evolve rare forms'], Icon: PawPrint },
 };
@@ -98,11 +98,12 @@ export function MobileTabBar({
       {count > 0 ? <b className="hl-tabbar-badge">{count > 99 ? '99+' : count}</b> : alert ? <b className="hl-tabbar-alert">!</b> : tag && <b className="hl-mine-badge">{tag}</b>}
     </i>
   );
+  const guideFor = (id: MobileSection | Tab) => ({ battle: 'battle boss', quests: 'claim open-chests', bag: 'equip', summon: 'summon', heroes: 'formation' } as Partial<Record<MobileSection | Tab, string>>)[id];
   const sectionButton = (id: MobileSection, label: string, Icon: typeof Shield) => {
     const active = tab === 'main' && !moreOpen && !mineOpen && section === id;
     const count = countFor(id);
     return (
-      <button type="button" className={`hl-tabbar-item ${active ? 'is-active' : ''} ${count > 0 ? 'has-badge' : ''}`} aria-current={active ? 'page' : undefined} aria-label={count > 0 ? (id === 'quests' ? `Quests, ${count} rewards ready` : `${label}, ${count} new`) : label} onClick={() => { onMoreOpen(false); setMineOpen(false); onTab('main'); onSection(id); }}>
+      <button type="button" className={`hl-tabbar-item ${active ? 'is-active' : ''} ${count > 0 ? 'has-badge' : ''}`} aria-current={active ? 'page' : undefined} data-guide={guideFor(id)} aria-label={count > 0 ? (id === 'quests' ? `Quests, ${count} rewards ready` : `${label}, ${count} new`) : label} onClick={() => { onMoreOpen(false); setMineOpen(false); onTab('main'); onSection(id); }}>
         {icon(Icon, count)}<span>{label}</span>
       </button>
     );
@@ -112,7 +113,7 @@ export function MobileTabBar({
     const count = countFor(id);
     const alert = count === 0 && alerts[id] === true;
     return (
-      <button type="button" className={`hl-tabbar-item ${active ? 'is-active' : ''} ${count > 0 || alert ? 'has-badge' : ''}`} aria-current={active ? 'page' : undefined} aria-label={count > 0 ? `${label}, ${count} new` : alert ? `${label}, new` : label} onClick={() => { onMoreOpen(false); setMineOpen(false); onTab(id); }}>
+      <button type="button" className={`hl-tabbar-item ${active ? 'is-active' : ''} ${count > 0 || alert ? 'has-badge' : ''}`} aria-current={active ? 'page' : undefined} data-guide={guideFor(id)} aria-label={count > 0 ? `${label}, ${count} new` : alert ? `${label}, new` : label} onClick={() => { onMoreOpen(false); setMineOpen(false); onTab(id); }}>
         {icon(Icon, count, alert, tag)}<span>{label}</span>
       </button>
     );

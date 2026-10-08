@@ -6,6 +6,7 @@ import { GameNavBar } from '@/components/GameNavBar';
 import { GameProgressBar, OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { isolatedHackathon } from '@/game/editionStorage';
 import { readyQuestCount, currentTutorialObjective } from '@/game/tutorialProgress';
+import { TUTORIAL_GO_EVENT, tutorialGuide, useTutorialGuide, type TutorialDestination } from '@/game/tutorialGuide';
 import { FooterBar } from '@/components/FooterBar';
 import { MobileTabBar } from '@/components/MobileTabBar';
 import { markStoreNoticeSeen, storeNoticeUnseen } from '@/game/storeNotice';
@@ -421,6 +422,18 @@ function App() {
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   // Founder 2026-10-08: Back from anything opened in More (Refer, Code, Support, Guides) returns to More.
   const [moreReturn, setMoreReturn] = useState(false);
+  useTutorialGuide(isolatedHackathon ? tutorialGuide(game.state) : null);
+  // The battle Next-step card sends a new player straight to the screen the current Tutorial step needs.
+  useEffect(() => {
+    const go = (event: Event) => {
+      const destination = (event as CustomEvent<TutorialDestination>).detail;
+      setMoreOpen(false);
+      if ('tab' in destination) setTab(destination.tab);
+      else { setTab('main'); setMobileSection(destination.section); }
+    };
+    window.addEventListener(TUTORIAL_GO_EVENT, go);
+    return () => window.removeEventListener(TUTORIAL_GO_EVENT, go);
+  }, []);
   const overlayHistory = useAndroidOverlayHistory(tab !== 'main' || moreOpen || mobileSheetOpen || mobileSection !== 'battle' || moreReturn, () => {
     setMoreOpen(false);
     setTab('main');

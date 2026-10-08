@@ -871,6 +871,16 @@ body:has(.has-game-progress) .fixed.inset-0 { top:calc(var(--game-progress-heigh
 @media (prefers-reduced-motion:reduce) { .location-disclosure-ready { animation:none!important; } }
 .hl-next-step { left:50%; width:min(46%, 340px); transform:translateX(-50%); background:rgba(17,19,15,.9); }
 .hl-next-step.is-ready { border-color:#c9a463; box-shadow:0 0 14px rgba(212,164,73,.35); }
+/* Tutorial guidance (src/game/tutorialGuide.ts): the next control a new player needs pulses. */
+html[data-hl-guide='claim'] [data-guide~='claim']:not(:disabled):not(.is-active),
+html[data-hl-guide='battle'] [data-guide~='battle']:not(:disabled):not(.is-active),
+html[data-hl-guide='open-chests'] [data-guide~='open-chests']:not(:disabled):not(.is-active),
+html[data-hl-guide='equip'] [data-guide~='equip']:not(:disabled):not(.is-active),
+html[data-hl-guide='summon'] [data-guide~='summon']:not(:disabled):not(.is-active),
+html[data-hl-guide='formation'] [data-guide~='formation']:not(:disabled):not(.is-active),
+html[data-hl-guide='boss'] [data-guide~='boss']:not(:disabled):not(.is-active) { outline:2px solid #f0c860; outline-offset:2px; animation:hl-guide-pulse 1.4s ease-in-out infinite; }
+@keyframes hl-guide-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(240,200,96,.55); } 50% { box-shadow:0 0 16px 4px rgba(240,200,96,.55); } }
+@media (prefers-reduced-motion: reduce) { html[data-hl-guide] [data-guide] { animation:none !important; } }
 .location-next { white-space:nowrap; }
 /* Keep the $SKR income details readable: hide the Victory/Defeat banner while they are open. */
 html:has(.battle-income-popover:not([hidden])) .hl-battle-banner { display:none; }
