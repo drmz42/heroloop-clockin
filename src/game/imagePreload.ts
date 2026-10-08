@@ -57,8 +57,8 @@ export function preloadGameImages(state: Pick<GameState, 'ownedHeroes' | 'invent
     return heroClass ? [`/assets/heroes/v5/thumb/${heroClass}.webp`, `/assets/heroes/v5/${heroClass}.webp`] : [];
   });
   const items = state.inventory.map((item) => itemArtSrc(item.itemId)).filter((path): path is string => Boolean(path));
-  enqueue([...under('/assets/screens/'), ...heroes, ...items, ...under('/assets/heroes/', '/assets/summon/').filter((path) => !path.includes('/v4/'))]);
+  enqueue([...under('/assets/screens/'), ...heroes, ...items, ...under('/assets/heroes/', '/assets/summon/').filter((path) => !path.includes('/v4/') && !path.includes('/v6/'))]);
   const type = connection()?.type;
-  // The retired v4 hero art is kept for rollback only and is never shown, so it is not downloaded.
-  if (type === undefined || type === 'wifi' || type === 'ethernet') enqueue(allPaths().filter((path) => !path.startsWith('/assets/heroes/v4/')));
+  // Retired v4 and not-yet-active v6 hero art are never shown, so they are not downloaded.
+  if (type === undefined || type === 'wifi' || type === 'ethernet') enqueue(allPaths().filter((path) => !path.startsWith('/assets/heroes/v4/') && !path.startsWith('/assets/heroes/v6/')));
 }
