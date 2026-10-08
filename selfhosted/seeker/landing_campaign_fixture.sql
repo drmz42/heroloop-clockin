@@ -18,6 +18,9 @@ BEGIN
  END LOOP;
  p:=seeker_skr.campaign('profile','{"token_hash":"root"}');
  IF (p->>'points')::integer<>5 OR jsonb_array_length(p->'entitlements')<>2 THEN RAISE EXCEPTION 'bad_milestones'; END IF;
+ IF coalesce(p->>'short_code','') !~ '^[2-9A-HJ-NP-Za-km-z]{6}$' THEN RAISE EXCEPTION 'bad_short_code'; END IF;
+ PERFORM seeker_skr.campaign('challenge',jsonb_build_object('wallet',repeat('Z',32),'ref',p->>'short_code','id',gen_random_uuid(),'binding','short-ref','message','m'));
+ IF (SELECT inviter FROM seeker_skr.campaign_challenges WHERE binding='short-ref') IS DISTINCT FROM root THEN RAISE EXCEPTION 'bad_short_referral'; END IF;
  IF EXISTS(SELECT 1 FROM seeker_skr.campaign_entitlements WHERE delivered_at IS NOT NULL) THEN RAISE EXCEPTION 'premature_grant'; END IF;
  IF (SELECT count(*) FROM seeker_skr.campaign_points)<>5 OR (SELECT count(*) FROM seeker_skr.campaign_orders WHERE paid_at IS NOT NULL)<>10 THEN RAISE EXCEPTION 'bad_replay'; END IF;
  IF (SELECT sum(balance_minor) FROM seeker_skr.accounts WHERE asset='SOL')<>0 THEN RAISE EXCEPTION 'unbalanced_revenue'; END IF;

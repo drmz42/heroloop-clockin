@@ -2,6 +2,7 @@ import { ADDRESS, base58Decode, buildDepositTransaction, newReference, SIGNATURE
 type Json = Record<string, unknown>;
 type Adapters = { call: (sql: string, args: unknown[]) => Promise<Json>; rpc: (method: string, args: unknown[]) => Promise<unknown>; config: ChainConfig; paymentsEnabled: boolean };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const SHORT_CODE = /^[2-9A-HJ-NP-Za-km-z]{6}$/;
 export const CAMPAIGN_SOL_TREASURY='G4CGnsuASJsSXBd6F3im8icQ53kpqkPxKNuUBNviAd8o';
 export async function campaignHash(value: string): Promise<string> {
  return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))),b=>b.toString(16).padStart(2,'0')).join('');
@@ -20,7 +21,7 @@ export async function campaignRoute(action: string, body: Json, a: Adapters): Pr
  const token=typeof body.token==='string'?await campaignHash(body.token):'';
  if(action==='challenge') {
   if(typeof body.wallet!=='string'||!ADDRESS.test(body.wallet)||base58Decode(body.wallet).length!==32||!binding) throw new Error('campaign_invalid_wallet');
-  if(body.ref!==undefined && body.ref!=='' && (typeof body.ref!=='string'||!UUID.test(body.ref))) throw new Error('campaign_invalid_referral');
+  if(body.ref!==undefined && body.ref!=='' && (typeof body.ref!=='string'||!(UUID.test(body.ref)||SHORT_CODE.test(body.ref)))) throw new Error('campaign_invalid_referral');
   if(typeof body.origin!=='string'||!/^https:\/\/[a-z0-9.-]+$/.test(body.origin)) throw new Error('campaign_invalid_origin');
   const id=crypto.randomUUID();
   const issuedAt=new Date();

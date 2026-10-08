@@ -52,3 +52,9 @@ Deno.test('closed-browser recovery verifies the snapshotted recipient before set
  await reconcileCampaign({paymentsEnabled:false,config:{cluster:'mainnet',skrMint:'',treasury:'changed-current-treasury'},call:async(_sql,args)=>{calls.push(String(args[0]));if(args[0]==='pending')return{orders:[order]};assert.deepEqual(JSON.parse(String(args[1])),{id:order.id,signature});return{};},rpc:async()=>({blockTime:Math.floor(+now/1000),transaction:{message:{accountKeys:[{pubkey:payer,signer:true},{pubkey:treasury,signer:false},{pubkey:reference,signer:false}]}},meta:{err:null,preBalances:[1000000000,0,0],postBalances:[950000000,50000000,0]}})});
  assert.deepEqual(calls,['pending','settle_pending']);
 });
+Deno.test('wallet challenge accepts UUID and six-character invitation codes only',async()=>{
+ const wallet=base58Encode(new Uint8Array(32).fill(7));
+ const adapters={call:async(_sql:string,args:unknown[])=>JSON.parse(String(args[1])),rpc:()=>{throw new Error('unexpected RPC');},config:{cluster:'mainnet' as const,skrMint:'',treasury:''},paymentsEnabled:false};
+ for(const ref of ['Ab3dEf',crypto.randomUUID()]) assert.equal((await campaignRoute('challenge',{wallet,origin:'https://heroloop.xyz',binding:'b',ref},adapters)).ref,ref);
+ for(const ref of ['Ab0dEf','AbIdEf','Abcde','Abcdefg']) await assert.rejects(()=>campaignRoute('challenge',{wallet,origin:'https://heroloop.xyz',binding:'b',ref},adapters),/campaign_invalid_referral/);
+});

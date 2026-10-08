@@ -10,6 +10,13 @@ CREATE TABLE IF NOT EXISTS seeker_skr.campaign_accounts (
  inviter text REFERENCES seeker_skr.campaign_accounts(wallet),
  created_at timestamptz NOT NULL DEFAULT clock_timestamp(), CHECK(inviter IS DISTINCT FROM wallet)
 );
+-- Six-character invitation codes from 57 unambiguous characters (no 0/O/1/l/I); UUID codes stay valid.
+CREATE OR REPLACE FUNCTION seeker_skr.campaign_short_code() RETURNS text
+LANGUAGE sql VOLATILE SET search_path=pg_catalog AS $$
+ SELECT string_agg(substr('23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz',1+get_byte(r.b,i)%57,1),'' ORDER BY i)
+ FROM (SELECT uuid_send(gen_random_uuid()) AS b) r, generate_series(0,5) i $$;
+ALTER TABLE seeker_skr.campaign_accounts ADD COLUMN IF NOT EXISTS short_code text NOT NULL UNIQUE
+ DEFAULT seeker_skr.campaign_short_code() CHECK(short_code ~ '^[2-9A-HJ-NP-Za-km-z]{6}$');
 CREATE TABLE IF NOT EXISTS seeker_skr.campaign_challenges (
  id uuid PRIMARY KEY, wallet text NOT NULL, inviter text REFERENCES seeker_skr.campaign_accounts(wallet),
  binding text NOT NULL, message text NOT NULL, expires_at timestamptz NOT NULL
@@ -84,7 +91,8 @@ BEGIN
   IF EXISTS(SELECT 1 FROM seeker_skr.campaign_accounts WHERE wallet=w) THEN
    SELECT inviter INTO inv FROM seeker_skr.campaign_accounts WHERE wallet=w;
   ELSIF coalesce(p->>'ref','')<>'' THEN
-   SELECT wallet INTO inv FROM seeker_skr.campaign_accounts WHERE code=(p->>'ref')::uuid;
+   IF length(p->>'ref')=36 THEN SELECT wallet INTO inv FROM seeker_skr.campaign_accounts WHERE code=(p->>'ref')::uuid;
+   ELSE SELECT wallet INTO inv FROM seeker_skr.campaign_accounts WHERE short_code=p->>'ref'; END IF;
    IF inv IS NULL OR inv=w THEN RAISE EXCEPTION 'campaign_invalid_referral'; END IF;
   END IF;
   INSERT INTO seeker_skr.campaign_challenges VALUES((p->>'id')::uuid,w,inv,p->>'binding',p->>'message',clock_timestamp()+interval '5 minutes');
@@ -149,7 +157,7 @@ BEGIN
   END IF;
  END IF;
  IF p_action NOT IN ('profile','settle','settle_pending') THEN RAISE EXCEPTION 'campaign_invalid_action'; END IF;
- SELECT jsonb_build_object('wallet',w,'code',a.code,
+ SELECT jsonb_build_object('wallet',w,'code',a.code,'short_code',a.short_code,
   'registered',(SELECT count(*) FROM seeker_skr.campaign_accounts WHERE inviter=w),
   'points',(SELECT count(*) FROM seeker_skr.campaign_points WHERE inviter=w),
   'entitlements',coalesce((SELECT jsonb_agg(to_jsonb(e) ORDER BY earned_at) FROM seeker_skr.campaign_entitlements e WHERE wallet=w),'[]'::jsonb),
@@ -160,6 +168,7 @@ END $$;
 REVOKE ALL ON seeker_skr.campaign_accounts,seeker_skr.campaign_challenges,seeker_skr.campaign_sessions,seeker_skr.campaign_orders,seeker_skr.campaign_points,seeker_skr.campaign_entitlements FROM PUBLIC,seeker_wallet_runtime;
 REVOKE ALL ON seeker_skr.campaign_chain_receipts FROM PUBLIC,seeker_wallet_runtime;
 REVOKE ALL ON FUNCTION seeker_skr.campaign_wallet_receipt() FROM PUBLIC,seeker_wallet_runtime;
+REVOKE ALL ON FUNCTION seeker_skr.campaign_short_code() FROM PUBLIC,seeker_wallet_runtime;
 REVOKE ALL ON FUNCTION seeker_skr.campaign(text,jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION seeker_skr.campaign(text,jsonb) TO seeker_wallet_runtime;
 COMMIT;
