@@ -695,8 +695,9 @@ function App() {
           onClose={() => setShowWallet(false)}
         />
       )}
-      {showPromoCode && <PromoCodeModal onClose={() => setShowPromoCode(false)} onRedeemed={applyPromoRedemption} />}
-      {showSupport && <SupportTicketModal onClose={() => setShowSupport(false)} />}
+      {/* Both close on Escape, which is how Android Back reaches them: opened from More, they return to More. */}
+      {showPromoCode && <PromoCodeModal onClose={() => { setShowPromoCode(false); if (moreReturn) setMoreOpen(true); }} onRedeemed={applyPromoRedemption} />}
+      {showSupport && <SupportTicketModal onClose={() => { setShowSupport(false); if (moreReturn) setMoreOpen(true); }} />}
       {showMail && <MailboxModal onClose={() => setShowMail(false)} loadMail={game.loadMail} claimMail={game.claimMail} freeSlots={inventoryCapacity(game.state) - bagItemCount(game.state)} />}
     </div>
   );
