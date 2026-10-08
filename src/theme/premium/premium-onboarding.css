@@ -282,7 +282,10 @@
     box-shadow: none;
   }
   .onb-head { padding-inline: 0; border-bottom: 0; }
-  .onb-body { flex: 1; min-height: 0; padding: 18px 0 6px; }
+  .onb-body { display: flex; flex: 1; min-height: 0; flex-direction: column; padding: 18px 0 6px; }
+  /* The wallet step is short; centre it in the free space instead of hugging the stepper. */
+  .onb-body > * { width: 100%; }
+  .onb-body > .onb-step1 { margin-block: auto; }
   .onb-foot { padding-inline: 0; border-top: 0; }
   .onb-close { right: 14px; top: max(12px, env(safe-area-inset-top)); width: 36px; height: 36px; border-color: transparent; background: rgba(10, 8, 7, .6); border-radius: 50%; }
   .onb-copy { font-size: 15px; }

@@ -506,7 +506,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
 
         <div className="onb-body">
           {step === 1 && (
-            <div className="mx-auto max-w-xl">
+            <div className="onb-step1 mx-auto max-w-xl">
               <div className="onb-crest" aria-hidden="true">
                 <img src="/assets/brand/heroloop-emblem.png" alt="" width={160} height={160} draggable={false} />
                 {solanaAuthEnabled ? <Shield size={18} className="onb-crest-icon" /> : <UserRound size={18} className="onb-crest-icon" />}
