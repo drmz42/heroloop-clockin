@@ -28,8 +28,9 @@ type Batch = 1 | 10 | 100;
 
 // One altar per batch size. The flame is lit while that batch can be paid and stored.
 // The pedestal is painted art; only the batch size sits on its blank panel, while the
-// title and price live on the plate below so long labels can never spill off the stone.
-function Altar({ count, tone, title, cost, status, lit, busy, disabled, still, paused, onClick }: {
+// paid title and price live on the plate below. Scroll batches use the stone count
+// directly, with plain status text only when unavailable or settling.
+function Altar({ count, tone, title, cost, status, lit, busy, disabled, still, paused, scrollOnly, onClick }: {
   count: Batch;
   tone: 'violet' | 'gold' | 'crimson';
   title: string;
@@ -40,6 +41,7 @@ function Altar({ count, tone, title, cost, status, lit, busy, disabled, still, p
   disabled: boolean;
   still: boolean;
   paused: boolean;
+  scrollOnly: boolean;
   onClick: () => void;
 }) {
   return (
@@ -48,7 +50,7 @@ function Altar({ count, tone, title, cost, status, lit, busy, disabled, still, p
       onClick={onClick}
       disabled={disabled}
       aria-busy={busy}
-      aria-label={`${title}${status ? ` · ${status}` : ''}`}
+      aria-label={`${title} ×${count}${scrollOnly ? ` · ${count} ${count === 1 ? 'Scroll' : 'Scrolls'}` : ''}${status ? ` · ${status}` : ''}`}
       className={`sv-altar sv-altar--${tone}${lit ? ' is-lit' : ''}${busy ? ' is-busy' : ''}`}
     >
       <SummonFlame className="sv-flame" tone={tone} lit={lit} busy={busy} still={still} paused={paused} />
@@ -56,10 +58,10 @@ function Altar({ count, tone, title, cost, status, lit, busy, disabled, still, p
         <img className="sv-altar-art" src={tone === 'gold' ? altarGrandArt : altarArt} alt="" draggable={false} />
         <span className="sv-altar-face"><span className="sv-altar-count"><small>×</small>{count}</span></span>
       </span>
-      <span className="sv-altar-plate">
+      {scrollOnly ? (busy || status) && <span className="sv-altar-scroll-status">{busy ? 'Summoning…' : status}</span> : <span className="sv-altar-plate">
         <span className="sv-altar-title">{busy ? 'Summoning…' : title}</span>
         <span className="sv-altar-cost">{status ?? cost}</span>
-      </span>
+      </span>}
     </button>
   );
 }
@@ -261,9 +263,9 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
         </div>
 
         <div className="sv-altars" aria-label="Summon altars">
-          <Altar count={1} tone="violet" title="Summon" cost={altarCost(1)} status={altarStatus(1)} lit={canSummon(1)} busy={summoning === 1} disabled={!canSummon(1) || busy} still={reducedMotion} paused={results !== null} onClick={() => void beginSummon(1)} />
-          <Altar count={10} tone="gold" title="Summon" cost={altarCost(10)} status={altarStatus(10)} lit={canSummon(10)} busy={summoning === 10} disabled={!canSummon(10) || busy} still={reducedMotion} paused={results !== null} onClick={() => void beginSummon(10)} />
-          <Altar count={100} tone="crimson" title="Mass Summon" cost={altarCost(100)} status={altarStatus(100)} lit={canSummon(100)} busy={summoning === 100} disabled={!canSummon(100) || busy} still={reducedMotion} paused={results !== null} onClick={() => void beginSummon(100)} />
+          <Altar count={1} tone="violet" title="Summon" cost={altarCost(1)} status={altarStatus(1)} lit={canSummon(1)} busy={summoning === 1} disabled={!canSummon(1) || busy} still={reducedMotion} paused={results !== null} scrollOnly={paymentMethod === 'scroll'} onClick={() => void beginSummon(1)} />
+          <Altar count={10} tone="gold" title="Summon" cost={altarCost(10)} status={altarStatus(10)} lit={canSummon(10)} busy={summoning === 10} disabled={!canSummon(10) || busy} still={reducedMotion} paused={results !== null} scrollOnly={paymentMethod === 'scroll'} onClick={() => void beginSummon(10)} />
+          <Altar count={100} tone="crimson" title="Mass Summon" cost={altarCost(100)} status={altarStatus(100)} lit={canSummon(100)} busy={summoning === 100} disabled={!canSummon(100) || busy} still={reducedMotion} paused={results !== null} scrollOnly={paymentMethod === 'scroll'} onClick={() => void beginSummon(100)} />
         </div>
       </section>
 
