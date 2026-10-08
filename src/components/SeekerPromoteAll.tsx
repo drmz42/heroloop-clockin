@@ -65,10 +65,12 @@ function PromotionCeremony({ promotions, goldSpent, freed, onClose }: { promotio
       <i className="promo-ceremony-rays" aria-hidden="true" />
       <section className="promo-ceremony-panel">
         <header className="promo-ceremony-head">
-          <span className="promo-ceremony-crest" aria-hidden="true"><Star size={30} fill="currentColor" /></span>
-          <small>Covenant of stars</small>
+          <span className="promo-ceremony-crest" aria-hidden="true"><Star size={22} fill="currentColor" /></span>
           <h2 id="promo-ceremony-title">Heroes ascended</h2>
-          <p>+{totalStars}★ across {promotions.length} {promotions.length === 1 ? 'hero' : 'heroes'} · +{formatNum(totalPower)} Power</p>
+          <p className="promo-ceremony-sum">
+            <span><b>+{totalStars}★</b><small>{promotions.length} {promotions.length === 1 ? 'hero' : 'heroes'}</small></span>
+            <span><b>+{formatNum(totalPower)}</b><small>Power</small></span>
+          </p>
         </header>
         <ol className="promo-ceremony-list" tabIndex={0} aria-label="Promoted heroes">
           {promotions.map((entry, index) => {
@@ -77,7 +79,7 @@ function PromotionCeremony({ promotions, goldSpent, freed, onClose }: { promotio
             const color = RARITY_COLORS[hero.rarity];
             const delay = Math.min(index, 12) * 90;
             return <li key={entry.uid} className="promo-row" style={{ '--promo-color': color, '--promo-delay': `${delay}ms` } as React.CSSProperties}>
-              <span className="promo-row-portrait"><HeroPortrait heroId={hero.id} heroClass={hero.heroClass} rarity={hero.rarity} color={hero.color} size={48} /></span>
+              <span className="promo-row-portrait"><HeroPortrait heroId={hero.id} heroClass={hero.heroClass} rarity={hero.rarity} color={hero.color} size={64} /></span>
               <span className="promo-row-body">
                 <b style={{ color }}>{hero.name}</b>
                 <small>{RARITY_LABEL[hero.rarity]} · Power {formatNum(entry.powerBefore)} → {formatNum(entry.powerAfter)} (+{formatNum(entry.powerAfter - entry.powerBefore)})</small>
