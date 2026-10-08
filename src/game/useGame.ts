@@ -3033,6 +3033,15 @@ export function useGame() {
     void spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
   }, [spawnBattle]);
 
+  // The recovery backoff grows to 30 s while offline; when the connection returns, reconnect the
+  // battle at once instead of waiting out the backoff (Founder Android test 2026-10-08).
+  useEffect(() => {
+    if (combatRecovery.status === 'healthy') return;
+    const reconnect = () => { if (!paused) retry(); };
+    window.addEventListener('online', reconnect);
+    return () => window.removeEventListener('online', reconnect);
+  }, [combatRecovery.status, paused, retry]);
+
   // ── Referrals ────────────────────────────────────────────────────────────
   const claimReferralReward = useCallback(() => {
     setState((prev) => {
