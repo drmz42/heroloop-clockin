@@ -17,6 +17,7 @@ import { quoteSkrPurchase, formatAmountShort, formatMinor, type SkrPurchaseQuote
 import { formatUtcTime } from '@/game/numberFormat';
 import { useSkrRate, skrPrice, skrError } from '@/game/skrPurchase';
 import '@/components/summon/summon-v2.css';
+import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
 
 const altarArt = '/assets/summon/altar-standard-v1.webp';
 const altarGrandArt = '/assets/summon/altar-grand-v2.webp';
@@ -69,6 +70,7 @@ export function SummonScreen({ game, rarityCapacity = {} }: {
 }) {
   const { state } = game;
   const [results, setResults] = useState<OwnedHero[] | null>(null);
+  useAndroidOverlayHistory(results !== null, () => setResults(null));
   const [resultBatch, setResultBatch] = useState<Batch>(1);
   const [newHeroIds, setNewHeroIds] = useState<ReadonlySet<string>>(new Set());
   const [promotionNotice, setPromotionNotice] = useState('');

@@ -17,6 +17,7 @@ import type { TokenomicsApi } from '@/game/useTokenomics';
 import '@/theme/scene/scene.css';
 import { RarityFx } from '@/components/RarityFx';
 import { formatUtcDateTime } from '@/game/numberFormat';
+import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
 
 type MarketTab = 'browse' | 'activity' | 'history' | 'supply' | 'listings' | 'sell';
 type Category = 'all' | 'weapons' | 'armor' | 'accessories' | 'heroes' | 'pets';
@@ -77,6 +78,8 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
   const matchesCategory = (row: Listing) => { if (category === 'all') return true; if (category === 'heroes') return row.kind === 'hero'; if (category === 'pets') return false; if (row.kind !== 'item') return false; const item = ITEM_MAP[row.sourceId]; const slot = item?.slot; const isShield = slot === 'offhand' && item?.heroClass === 'knight'; if (category === 'weapons') return !isShield && ['class_weapon', 'offhand', 'weapon', 'ring2'].includes(slot ?? ''); if (category === 'armor') return isShield || ['helmet', 'chest', 'gloves', 'boots', 'armor'].includes(slot ?? ''); return ['ring', 'amulet', 'ring1'].includes(slot ?? ''); };
   // Hundreds of listings render in pages so phones stay smooth; any filter change starts over.
   const [shown, setShown] = useState(MARKET_PAGE);
+  // Android Back closes the item/hero detail and stays in the Market (Founder 2026-10-08).
+  useAndroidOverlayHistory(selectedId !== null, () => setSelectedId(null));
   const filterKey = [tab, query, category, rarity, enchant, levelFilter, comparisonHeroUid].join('|');
   useEffect(() => setShown(MARKET_PAGE), [filterKey]);
   const rows = (tab === 'browse' ? browse : tab === 'listings' ? mine : tab === 'sell' ? sellable : []).filter((row) => {

@@ -391,7 +391,9 @@ public class MainActivity extends Activity {
 
             @Override
             public void onLost(Network network) {
-                main.post(() -> showOffline(!isOnline()));
+                // The default network is gone; getActiveNetwork() can still report it for a moment,
+                // so trust the callback. onAvailable clears the strip when any network returns.
+                main.post(() -> showOffline(true));
             }
         };
         try {
