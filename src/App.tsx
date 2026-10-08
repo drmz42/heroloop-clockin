@@ -711,7 +711,7 @@ function App() {
       {/* Both close on Escape, which is how Android Back reaches them: opened from More, they return to More. */}
       {showPromoCode && <PromoCodeModal onClose={() => { setShowPromoCode(false); if (moreReturn) setMoreOpen(true); }} onRedeemed={applyPromoRedemption} />}
       {showSupport && <SupportTicketModal onClose={() => { setShowSupport(false); if (moreReturn) setMoreOpen(true); }} />}
-      {showMail && <MailboxModal onClose={() => setShowMail(false)} loadMail={game.loadMail} claimMail={game.claimMail} freeSlots={inventoryCapacity(game.state) - bagItemCount(game.state)} />}
+      {showMail && <MailboxModal onClose={() => setShowMail(false)} loadMail={game.loadMail} claimMail={game.claimMail} freeSlots={inventoryCapacity(game.state) - bagItemCount(game.state)} chestCount={game.state.chests.length} />}
     </div>
   );
 }

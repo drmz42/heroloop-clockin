@@ -1544,7 +1544,8 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
       {roomState?.status === 'cleared' && checkpoint.room < 4 && <div className="rounded border border-amber-700/35 bg-amber-950/20 px-2 py-1.5 text-center ui-text-small font-bold text-amber-200">Room reward preview · Gold + XP · settlement disabled in testing</div>}
       {primary && <button type="button" disabled={busy} onClick={() => { setEngaged(true); void primary.action(); }} className="dungeon-panel-primary game-control game-primary min-h-11 px-3 ui-text-medium font-black"><Skull size={17} className="mr-2 inline" />{primary.label}</button>}
       {error && <div role="alert" className="text-center ui-text-small font-bold text-rose-300">{error.split('_').join(' ')}</div>}
-      <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="dungeon-panel-abandon game-control min-h-10 px-3 ui-text-medium font-bold text-rose-300">{confirmAbandon ? 'Confirm exit · no refund' : checkpoint.type === 'boss_hunt' ? 'Abandon Boss Hunt' : 'Exit Dungeon'}</button>
+      {/* Founder 2026-10-08: a won fight waiting for its Claim has nothing to abandon. */}
+      {roomState?.status !== 'reward_locked' && <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="dungeon-panel-abandon game-control min-h-10 px-3 ui-text-medium font-bold text-rose-300">{confirmAbandon ? 'Confirm exit · no refund' : checkpoint.type === 'boss_hunt' ? 'Abandon Boss Hunt' : 'Exit Dungeon'}</button>}
     </div>
   </aside>;
 }

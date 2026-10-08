@@ -5,7 +5,7 @@ import { commitSkrPurchase } from './seekerWallet';
 import { skrError } from './skrPurchase';
 import { automaticHealingConfig } from '../../managed/functions/player-sync/automatic-healing.mjs';
 import { flushSync } from 'react-dom';
-import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey } from '@/game/types';
+import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey, Chest } from '@/game/types';
 import {
   loadState, normalizeState, makeInitialState, starUpCost,
   MAX_TEAM, BASE_HERO_CAPACITY, MAX_HERO_CAPACITY, HERO_CAPACITY_STEP, MAX_HERO_STARS, inventoryCapacity, MAX_CHESTS, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
@@ -217,8 +217,11 @@ export interface ServerMarketSnapshot {
 }
 
 export interface MarketActionResult { ok: boolean; error?: string; mailed?: boolean }
-export interface MailEntry { id: string; source: 'market_purchase' | 'market_return' | 'store_overflow'; created_at: string; item: OwnedItem }
-export interface MailClaimResult { ok: boolean; error?: string; claimed?: number; remaining?: number }
+export interface MailItemEntry { kind: 'item'; id: string; source: 'market_purchase' | 'market_return' | 'store_overflow'; created_at: string; item: OwnedItem }
+// Founder 2026-10-08: rewards arrive in the Mailbox first; a chest moves into the 500-chest queue when claimed.
+export interface MailChestEntry { kind: 'chest'; id: string; source: 'boss_reward'; created_at: string; chest: Chest }
+export type MailEntry = MailItemEntry | MailChestEntry;
+export interface MailClaimResult { ok: boolean; error?: string; claimed?: number; remaining?: number; itemsFull?: boolean; chestsFull?: boolean }
 
 interface NormalCombatWave {
   startKey: string;
@@ -2058,23 +2061,30 @@ export function useGame() {
   // claimed; the claim result carries the canonical inventory and revision.
   const loadMail = useCallback(async (): Promise<MailEntry[] | null> => {
     if (!tokenomicsEnabled) return null;
-    const result = await playerSync<{ count: number; items: MailEntry[] }>('mail_list');
+    const result = await playerSync<{ count: number; items: Omit<MailItemEntry, 'kind'>[]; rewards?: { id: string; kind: string; source: string; created_at: string; payload: Chest }[] }>('mail_list');
     if (!result || !Array.isArray(result.items)) return null;
     setMailCount(Math.max(0, Math.floor(Number(result.count) || 0)));
-    return result.items.filter((entry) => entry?.item?.serverOwned === true && Boolean(ITEM_MAP[entry.item.itemId]));
+    const chests: MailEntry[] = (Array.isArray(result.rewards) ? result.rewards : [])
+      .filter((entry) => entry?.kind === 'chest' && entry.source === 'boss_reward' && Number.isSafeInteger(Number(entry.payload?.stage)))
+      .map((entry) => ({ kind: 'chest', id: entry.id, source: 'boss_reward', created_at: entry.created_at, chest: { stage: Number(entry.payload.stage), boss: entry.payload.boss === true } }));
+    const items: MailEntry[] = result.items
+      .filter((entry) => entry?.item?.serverOwned === true && Boolean(ITEM_MAP[entry.item.itemId]))
+      .map((entry) => ({ ...entry, kind: 'item' }));
+    return [...chests, ...items];
   }, []);
 
   const claimMail = useCallback(async (mailId: string | null): Promise<MailClaimResult> => {
     if (!tokenomicsEnabled) return { ok: false, error: 'unavailable' };
     let error = '';
-    const result = await playerSync<{ claimed: number; remaining: number; inventory: OwnedItem[]; revision: number }>('mail_claim', {
+    const result = await playerSync<{ claimed: number; remaining: number; inventory: OwnedItem[]; chests?: Chest[]; revision: number; items_full?: boolean; chests_full?: boolean }>('mail_claim', {
       mail_id: mailId, idempotency_key: createIdempotencyKey(),
     }, (message) => { error = message; });
     if (!result || !Array.isArray(result.inventory)) return { ok: false, error: error || 'mail_failed' };
     if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
-    setState((prev) => ({ ...prev, inventory: result.inventory }));
+    const chests = Array.isArray(result.chests) ? result.chests : null;
+    setState((prev) => ({ ...prev, inventory: result.inventory, ...(chests ? { chests } : {}) }));
     setMailCount(Math.max(0, Math.floor(Number(result.remaining) || 0)));
-    return { ok: true, claimed: result.claimed, remaining: result.remaining };
+    return { ok: true, claimed: result.claimed, remaining: result.remaining, itemsFull: result.items_full === true, chestsFull: result.chests_full === true };
   }, []);
 
   // Load once the server save is known; later mail only comes from own actions.
