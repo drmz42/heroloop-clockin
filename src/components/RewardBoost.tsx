@@ -38,19 +38,17 @@ export function RewardBoostTile({ bonus, onOpenShop }: { bonus: AccountBonusSnap
   const remaining = useBoostRemaining(bonus?.boostEndsAt ?? null);
   const active = remaining > 0;
   return (
-    <div className={`stat-tile mb-2 px-2 py-1.5 ${active ? 'border-[#b48a43] shadow-[0_0_12px_rgba(225,177,77,.22)]' : ''}`}>
-      <button
-        type="button"
-        onClick={onOpenShop}
-        className="mt-1 flex min-h-9 w-full items-center gap-1.5 rounded border border-[#4a4032]/70 bg-black/10 px-1.5 py-1 text-left"
-        aria-label={active ? `Gold and XP boost active, ${formatBoostRemaining(remaining)} left` : 'Get a Gold and XP boost in the Shop'}
-      >
-        <Rocket size={13} aria-hidden="true" className={active ? 'text-[#efc760]' : 'text-[#777269]'} />
-        <span className="flex-1 truncate ui-text-small font-bold text-[#e8e1d3]">{active ? 'Gold/XP Boost ×2' : 'Gold/XP Boost'}</span>
-        <span className={`shrink-0 ui-text-small font-bold tabular-nums ${active ? 'text-[#efc760]' : 'text-[#9b8862]'}`}>
-          {active ? `${formatBoostRemaining(remaining)} left` : 'Get'}
-        </span>
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={onOpenShop}
+      className={`commander-boost game-control ${active ? 'is-active' : ''}`}
+      aria-label={active ? `Gold and XP boost active, ${formatBoostRemaining(remaining)} left` : 'Get a Gold and XP boost in the Shop'}
+    >
+      <Rocket size={15} aria-hidden="true" className={active ? 'text-[#efc760]' : 'text-[#c9a560]'} />
+      <span className="flex-1 truncate ui-text-medium font-semibold text-[#e8e1d3]">{active ? 'Gold/XP Boost ×2' : 'Gold/XP Boost'}</span>
+      <span className={`shrink-0 ui-text-small font-bold tabular-nums ${active ? 'text-[#efc760]' : 'text-[#c9a560]'}`}>
+        {active ? `${formatBoostRemaining(remaining)} left` : 'Get ›'}
+      </span>
+    </button>
   );
 }

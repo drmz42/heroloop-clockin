@@ -788,14 +788,10 @@ html[data-hl-platform='android'] .hl-locations .hl-battle-settings > button { he
 /* Beside the settings button the Locations label stays on one line. */
 html[data-hl-platform='android'] .location-disclosure .section-kicker { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: .03em; }
 
-/* Keep Commander controls readable inside the centered phone sheet. */
-.hl-commander .commander-profile .stat-tile { margin-bottom: 0; }
-.hl-commander .commander-profile button[aria-label*="boost"] { min-height: 44px; flex-wrap: wrap; }
-.hl-commander .commander-profile button[aria-label*="boost"] > span { white-space: normal; }
-.hl-commander .commander-hero { min-height: 44px; }
+/* Narrow phones: the Commander avatar and squad shrink before the text wraps. */
 @media (max-width: 359px) {
-  .hl-commander .commander-profile { gap: 8px; padding: 8px; }
-  .hl-commander .commander-hero { padding: 4px; }
+  .hl-commander .commander-avatar { width: 96px; height: 96px; }
+  .hl-commander .commander-squad { gap: 6px; }
 }
 /* ── One page system for every menu item (Founder 2026-10-03) ──
    The Bag is the reference: a page is open stone with sections divided by a thin brass rule, never a

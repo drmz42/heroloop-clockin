@@ -940,3 +940,50 @@ html:has(.battle-income-popover:not([hidden])) .hl-battle-banner { display:none;
   .promo-ceremony,.promo-ceremony-panel,.promo-row,.promo-star-new,.promo-row-gain,.promo-ceremony-crest,.promo-ceremony-rays { animation:none; }
 }
 .game-motion-off :is(.promo-ceremony,.promo-ceremony-panel,.promo-row,.promo-star-new,.promo-row-gain,.promo-ceremony-crest,.promo-ceremony-rays) { animation:none; }
+
+/* Commander sheet: one framed power plate; large portraits and ornamental hairlines instead of tile frames. */
+.commander-card { position:relative; padding:14px 14px 8px; background:radial-gradient(ellipse 70% 120px at 22% 80px,rgba(201,150,62,.14),transparent 70%); }
+.commander-label { display:block; color:#9a8f79; font-size:var(--ui-text-small); font-weight:700; letter-spacing:.14em; text-transform:uppercase; text-shadow:0 1px 2px #000; }
+.commander-identity { display:flex; align-items:center; gap:16px; }
+.commander-avatar { flex:none; width:128px; height:128px; transition:filter .2s ease; }
+.commander-avatar:hover, .commander-avatar:focus-visible { filter:brightness(1.12); outline:none; }
+.commander-avatar:focus-visible { box-shadow:0 0 0 2px #f2cc80,0 12px 28px rgba(0,0,0,.65); }
+.commander-squad .hero-portrait-rarity { width:100%!important; height:auto!important; aspect-ratio:1/1; }
+.commander-level { margin-top:2px; color:#f4e2b8; font-family:'Cinzel',Georgia,serif; font-size:25px; font-weight:700; line-height:1.1; letter-spacing:.03em; text-shadow:0 2px 4px #000,0 0 18px rgba(240,190,100,.18); }
+.commander-bar { position:relative; height:9px; margin-top:9px; overflow:hidden; }
+.commander-bar > span { position:absolute; inset:0 auto 0 0; background:linear-gradient(180deg,rgba(255,240,200,.35),transparent 55%),linear-gradient(90deg,#8a5d22,#efc760); box-shadow:0 0 10px rgba(225,177,77,.45); }
+.commander-bar.is-hero > span { background:linear-gradient(180deg,rgba(255,240,200,.25),transparent 55%),linear-gradient(90deg,#5e4626,#d6ad57); box-shadow:none; }
+.commander-xp { margin-top:5px; color:#8f8775; font-size:var(--ui-text-small); font-weight:600; font-variant-numeric:tabular-nums; }
+.commander-stats { position:relative; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; margin:16px 0 4px; padding:10px 14px; text-align:center; }
+.commander-stats-gem { width:7px; height:7px; transform:rotate(45deg); background:linear-gradient(135deg,#f2cc80,#734d1f); box-shadow:0 0 0 1px #000,0 0 8px rgba(242,204,128,.5); }
+.commander-stats strong { display:block; margin-top:3px; color:#f2c868; font-family:'Cinzel',Georgia,serif; font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; text-shadow:0 2px 3px #000,0 0 12px rgba(240,190,90,.25); }
+.commander-divider { display:flex; align-items:center; gap:8px; margin:14px 0 10px; }
+.commander-divider::before, .commander-divider::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(199,158,97,.55)); }
+.commander-divider::after { background:linear-gradient(90deg,rgba(199,158,97,.55),transparent); }
+.commander-divider:empty::before { flex:none; width:0; }
+.commander-divider:empty::after { background:linear-gradient(90deg,transparent,rgba(199,158,97,.5) 50%,transparent); }
+.commander-divider > span { color:#c79e61; font-family:'Cinzel',Georgia,serif; font-size:var(--ui-text-small); font-weight:700; letter-spacing:.18em; text-transform:uppercase; text-shadow:0 1px 2px #000; }
+.commander-divider > span::before, .commander-divider > span::after { content:'\25C6'; margin:0 7px; color:#a77a34; font-size:.7em; vertical-align:.15em; }
+.commander-squad { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.commander-squad-slot { display:flex; min-width:0; min-height:44px; flex-direction:column; align-items:stretch; gap:0; padding:0; text-align:center; }
+.commander-squad-slot .commander-xp { margin-top:1px; }
+.commander-squad-slot.is-selected .hero-portrait-rarity { transform:translateY(-2px); }
+.commander-squad-name { display:block; margin-top:6px; overflow:hidden; color:#b2a68e; font-family:'Cinzel',Georgia,serif; font-size:var(--ui-text-small); font-weight:700; letter-spacing:.03em; text-overflow:ellipsis; white-space:nowrap; text-shadow:0 1px 2px #000; }
+.commander-squad-empty { display:grid; font-size:var(--ui-text-small); aspect-ratio:1/1; place-items:center; border:1px dashed rgba(199,158,97,.3); border-radius:5px; color:#6b6252; background:radial-gradient(circle at 50% 40%,rgba(60,45,28,.5),rgba(0,0,0,.45) 75%); }
+.commander-row .commander-bar { margin-top:6px; }
+.commander-boost { display:flex; width:100%; min-height:44px; align-items:center; gap:10px; margin-top:14px; padding:0 14px; text-align:left; }
+.commander-boost.is-active { filter:brightness(1.15) saturate(1.1); }
+.commander-toggle { display:flex; width:100%; min-height:44px; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; padding:0 2px; text-align:left; border-bottom:1px solid rgba(199,158,97,.18); }
+.commander-stat-list { display:grid; grid-template-columns:1fr 1fr; column-gap:16px; margin:4px 0 0; }
+.commander-stat-list > div { display:flex; min-width:0; align-items:baseline; justify-content:space-between; gap:6px; padding:6px 2px; border-bottom:1px solid rgba(199,158,97,.09); }
+.commander-stat-list dt { overflow:hidden; color:#958d7e; font-size:var(--ui-text-small); font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
+.commander-stat-list dd { flex:none; margin:0; color:#efe3c9; font-size:var(--ui-text-medium); font-weight:700; font-variant-numeric:tabular-nums; }
+.commander-subrow { margin-top:10px; padding:10px 2px 0; border-top:1px solid rgba(199,158,97,.14); }
+@media (min-width:1024px) {
+  .commander-avatar { width:88px; height:88px; }
+  .commander-level { font-size:21px; }
+  .commander-squad { gap:8px; }
+}
+.commander-kill-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); margin-top:4px; padding:10px 0 4px; text-align:center; }
+.commander-kill-stats > div + div { border-left:1px solid rgba(199,158,97,.14); }
+.commander-kill-stats strong { display:block; margin-top:2px; color:#efe3c9; font-family:'Cinzel',Georgia,serif; font-size:var(--ui-text-large); font-weight:700; font-variant-numeric:tabular-nums; text-shadow:0 1px 2px #000; }
