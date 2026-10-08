@@ -1,9 +1,10 @@
+import { seekerAccountXpNeeded, SEEKER_MAX_LEVEL } from './seeker-progression.mjs';
 import { V6_LOCATION_UNLOCK_LEVELS, v6EnchantMultiplier, v6AttackSpeedPoints, v6ItemImplicit, v6LevelMastery, v6StarMultiplier } from './balance-v6.mjs';
 
 const RARITIES = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial'];
 const RARITY_SCALE = [1, 1.441163, 2.147372, 3.084756, 4.435796, 6.370091, 9.143236, 13.119459, 18.814853];
 const LOCATION_UNLOCK_LEVELS = V6_LOCATION_UNLOCK_LEVELS;
-const MAX_LEVEL = 99;
+const MAX_LEVEL = SEEKER_MAX_LEVEL;
 const ITEM_SELL_MULTIPLIER = {
   common: 0.3, uncommon: 0.7, rare: 1.4, epic: 2.8, legendary: 4.6,
   mythic: 6.5, relic: 6.5, cosmic: 9, divine: 13, celestial: 18,
@@ -124,13 +125,11 @@ export function serverLocationCap(state) {
   for (let index = 0; index < discoveredCap; index += 1) {
     if (accountLevel >= LOCATION_UNLOCK_LEVELS[index]) latestLocation = index + 1;
   }
-  return latestLocation;
+  return Math.min(discoveredCap, Math.max(latestLocation, integer(safeState.seekerProgression?.legacyLocationAccess, 1, 20)));
 }
 
 function accountXpNeeded(level) {
-  if (level < 20) return Math.round(1800 + level * 85);
-  if (level < 29) return Math.round(10_400 + (level - 20) * 360);
-  return Math.min(36_000, Math.round(14_000 + (level - 29) * 1_100));
+  return seekerAccountXpNeeded(level);
 }
 
 function heroXpNeeded(level) {

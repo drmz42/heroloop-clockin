@@ -440,7 +440,7 @@ export function mergeSaveState(
     return { code: "invalid_team_reference", status: 409, result: { revision, state: current, conflict: true } };
   }
   for (const field of [
-    "accountXp", "accountLevel", "highestLocation", "totalGoldEarned", "totalKills", "totalBossKills",
+    "seekerProgression", "accountXp", "accountLevel", "highestLocation", "totalGoldEarned", "totalKills", "totalBossKills",
     "chestsOpenedToday", "lastChestReset", "combatXpAt",
   ]) requested[field] = current[field];
   requested.currentLocation = Math.min(

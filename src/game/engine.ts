@@ -52,7 +52,7 @@ export function heroStarMultiplier(stars: number): number {
 export function heroStats(owned: OwnedHero, equippedItems?: OwnedItem[]) {
   const base = HERO_MAP[owned.heroId];
   if (!base) return null;
-  const lvl = Math.max(1, Math.min(99, Math.floor(owned.level)));
+  const lvl = Math.max(1, Math.min(200, Math.floor(owned.level)));
   const tier = Math.min(8, RARITY_INDEX[base.rarity]);
   const growth = CLASS_GROWTH[base.heroClass];
   const starMul = heroStarMultiplier(owned.stars);
@@ -203,33 +203,33 @@ export function locationLevelRange(locationId: number): [number, number] {
   return LOCATION_RANGES[idx];
 }
 
-export function isLocationUnlocked(locationId: number, accountLevel: number, highestLocation: number): boolean {
+export function isLocationUnlocked(locationId: number, accountLevel: number, highestLocation: number, legacyAccess = 1): boolean {
   if (locationId > highestLocation) return false;
-  return accountLevel >= locationUnlockLevel(locationId);
+  return accountLevel >= locationUnlockLevel(locationId) || locationId <= legacyAccess;
 }
 
-export function latestTokenLocation(accountLevel: number, highestLocation: number): number {
+export function latestTokenLocation(accountLevel: number, highestLocation: number, legacyAccess = 1): number {
   const discoveredCap = Math.max(1, Math.min(LOCATION_RANGES.length, highestLocation));
   let latest = 1;
   for (let locationId = 1; locationId <= discoveredCap; locationId += 1) {
     if (accountLevel >= locationUnlockLevel(locationId)) latest = locationId;
   }
-  return latest;
+  return Math.min(discoveredCap, Math.max(latest, legacyAccess));
 }
 
-export function canMineTokens(locationId: number, accountLevel: number, highestLocation: number): boolean {
-  const latest = latestTokenLocation(accountLevel, highestLocation);
+export function canMineTokens(locationId: number, accountLevel: number, highestLocation: number, legacyAccess = 1): boolean {
+  const latest = latestTokenLocation(accountLevel, highestLocation, legacyAccess);
   return locationId <= latest && locationId >= Math.max(1, latest - 1);
 }
 
-export function buildLocation(id: number, teamSize: number = 1, forceBoss = false): Location {
+export function buildLocation(id: number, teamSize: number = 1, forceBoss = false, accountLevel?: number): Location {
   const isBoss = forceBoss;
   const enemyCount = Math.max(1, Math.min(teamSize, 3));
   const scale = 1 + (id - 1) * 0.35;
   const difficultyRamp = id === 1 ? 1 : 1.45 + (id - 2) * 0.18;
   // Power is guidance, not an unlock gate. Each active hero creates one enemy lane,
   // so compare the formation against a per-lane recommendation.
-  const requiredPower = recommendedTeamPower(id, enemyCount);
+  const requiredPower = recommendedTeamPower(id, enemyCount, undefined, accountLevel);
 
   let enemies: Enemy[];
   if (isBoss) {
@@ -252,7 +252,7 @@ export function buildLocation(id: number, teamSize: number = 1, forceBoss = fals
   } else {
     enemies = Array.from({ length: enemyCount }).map((_, i) => {
       const e = ENEMY_POOL[(id + i) % ENEMY_POOL.length];
-      const base = v6EnemyBase(id);
+      const base = v6EnemyBase(id, accountLevel === undefined || accountLevel >= locationUnlockLevel(id));
       return {
         ...e,
         hp: Math.round(base.hp * (0.85 + i * 0.08)),

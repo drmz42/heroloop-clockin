@@ -1,0 +1,630 @@
+{
+  "version": "seeker-progression-200-v1",
+  "controlSha256": "4e3d412c73581c220f188daabc03d676cbd1f6cdef287660d63c77299edfffb4",
+  "assumptions": "Reference Hero and item levels equal the location entry Account Level; fixed v6 rarity/Stars/gear investment; no paid healing, carry damage, Training or calendar prediction.",
+  "calibrationSamples": 110,
+  "holdoutSamples": 110,
+  "recommendationSamples": 55,
+  "rows": [
+    {
+      "location": 1,
+      "levels": [
+        1,
+        10
+      ],
+      "enemy": [
+        99,
+        10.24,
+        2.5
+      ],
+      "recommended": [
+        40,
+        44,
+        46
+      ],
+      "reference": {
+        "heroTier": 0,
+        "stars": 0,
+        "gearTier": 0,
+        "gearSlots": 2,
+        "upgradedSlots": 0,
+        "enchant": 0
+      },
+      "entryWins": [
+        1,
+        1,
+        1
+      ],
+      "exitWins": 1
+    },
+    {
+      "location": 2,
+      "levels": [
+        11,
+        20
+      ],
+      "enemy": [
+        141,
+        58.05,
+        4.4
+      ],
+      "recommended": [
+        98,
+        105,
+        110
+      ],
+      "reference": {
+        "heroTier": 0,
+        "stars": 1,
+        "gearTier": 0,
+        "gearSlots": 4,
+        "upgradedSlots": 2,
+        "enchant": 1
+      },
+      "entryWins": [
+        1,
+        0.990909090909091,
+        0.9636363636363636
+      ],
+      "exitWins": 1
+    },
+    {
+      "location": 3,
+      "levels": [
+        21,
+        30
+      ],
+      "enemy": [
+        219,
+        85.72,
+        6.83
+      ],
+      "recommended": [
+        149,
+        159,
+        167
+      ],
+      "reference": {
+        "heroTier": 0,
+        "stars": 2,
+        "gearTier": 0,
+        "gearSlots": 6,
+        "upgradedSlots": 2,
+        "enchant": 2
+      },
+      "entryWins": [
+        1,
+        0.990909090909091,
+        0.9818181818181818
+      ],
+      "exitWins": 1
+    },
+    {
+      "location": 4,
+      "levels": [
+        31,
+        40
+      ],
+      "enemy": [
+        311,
+        133.43,
+        9.7
+      ],
+      "recommended": [
+        232,
+        248,
+        262
+      ],
+      "reference": {
+        "heroTier": 0,
+        "stars": 2,
+        "gearTier": 0,
+        "gearSlots": 8,
+        "upgradedSlots": 2,
+        "enchant": 3
+      },
+      "entryWins": [
+        1,
+        0.9818181818181818,
+        0.7090909090909091
+      ],
+      "exitWins": 1
+    },
+    {
+      "location": 5,
+      "levels": [
+        41,
+        50
+      ],
+      "enemy": [
+        430,
+        207.03,
+        13.39
+      ],
+      "recommended": [
+        325,
+        347,
+        368
+      ],
+      "reference": {
+        "heroTier": 0,
+        "stars": 3,
+        "gearTier": 0,
+        "gearSlots": 8,
+        "upgradedSlots": 6,
+        "enchant": 3
+      },
+      "entryWins": [
+        1,
+        0.9727272727272728,
+        0.7272727272727273
+      ],
+      "exitWins": 1
+    },
+    {
+      "location": 6,
+      "levels": [
+        51,
+        60
+      ],
+      "enemy": [
+        680,
+        299.4,
+        21.06
+      ],
+      "recommended": [
+        515,
+        559,
+        584
+      ],
+      "reference": {
+        "heroTier": 1,
+        "stars": 3,
+        "gearTier": 0,
+        "gearSlots": 8,
+        "upgradedSlots": 6,
+        "enchant": 4
+      },
+      "entryWins": [
+        1,
+        0.9636363636363636,
+        0.7636363636363637
+      ],
+      "exitWins": 1
+    },
+    {
+      "location": 7,
+      "levels": [
+        61,
+        70
+      ],
+      "enemy": [
+        1017,
+        436.45,
+        31.19
+      ],
+      "recommended": [
+        792,
+        846,
+        897
+      ],
+      "reference": {
+        "heroTier": 1,
+        "stars": 4,
+        "gearTier": 1,
+        "gearSlots": 8,
+        "upgradedSlots": 2,
+        "enchant": 5
+      },
+      "entryWins": [
+        1,
+        1,
+        0.7727272727272727
+      ],
+      "exitWins": 1
+    },
+    {
+      "location": 8,
+      "levels": [
+        71,
+        80
+      ],
+      "enemy": [
+        1547,
+        606.53,
+        47.16
+      ],
+      "recommended": [
+        1208,
+        1312,
+        1370
+      ],
+      "reference": {
+        "heroTier": 2,
+        "stars": 4,
+        "gearTier": 1,
+        "gearSlots": 8,
+        "upgradedSlots": 2,
+        "enchant": 5
+      },
+      "entryWins": [
+        1,
+        1,
+        0.7090909090909091
+      ],
+      "exitWins": 1
+    },
+    {
+      "location": 9,
+      "levels": [
+        81,
+        90
+      ],
+      "enemy": [
+        2215,
+        929.07,
+        66.85
+      ],
+      "recommended": [
+        1901,
+        2033,
+        2161
+      ],
+      "reference": {
+        "heroTier": 2,
+        "stars": 4,
+        "gearTier": 2,
+        "gearSlots": 8,
+        "upgradedSlots": 0,
+        "enchant": 5
+      },
+      "entryWins": [
+        1,
+        0.990909090909091,
+        0.7272727272727273
+      ],
+      "exitWins": 1
+    },
+    {
+      "location": 10,
+      "levels": [
+        91,
+        100
+      ],
+      "enemy": [
+        3426,
+        1209.25,
+        101.93
+      ],
+      "recommended": [
+        2867,
+        3065,
+        3262
+      ],
+      "reference": {
+        "heroTier": 3,
+        "stars": 4,
+        "gearTier": 2,
+        "gearSlots": 8,
+        "upgradedSlots": 0,
+        "enchant": 5
+      },
+      "entryWins": [
+        1,
+        0.990909090909091,
+        0.7272727272727273
+      ],
+      "exitWins": 1
+    },
+    {
+      "location": 11,
+      "levels": [
+        101,
+        110
+      ],
+      "enemy": [
+        4554,
+        1874.5,
+        135.24
+      ],
+      "recommended": [
+        4478,
+        4695,
+        4838
+      ],
+      "reference": {
+        "heroTier": 3,
+        "stars": 5,
+        "gearTier": 2,
+        "gearSlots": 8,
+        "upgradedSlots": 6,
+        "enchant": 6
+      },
+      "entryWins": [
+        0.8454545454545455,
+        0.8181818181818182,
+        0.7
+      ],
+      "exitWins": 0.9727272727272728
+    },
+    {
+      "location": 12,
+      "levels": [
+        111,
+        120
+      ],
+      "enemy": [
+        6197,
+        2383.92,
+        182.16
+      ],
+      "recommended": [
+        5848,
+        6234,
+        6421
+      ],
+      "reference": {
+        "heroTier": 3,
+        "stars": 6,
+        "gearTier": 3,
+        "gearSlots": 8,
+        "upgradedSlots": 0,
+        "enchant": 7
+      },
+      "entryWins": [
+        0.8636363636363636,
+        0.8090909090909091,
+        0.7181818181818181
+      ],
+      "exitWins": 0.9818181818181818
+    },
+    {
+      "location": 13,
+      "levels": [
+        121,
+        130
+      ],
+      "enemy": [
+        8817,
+        2950.71,
+        256.88
+      ],
+      "recommended": [
+        8197,
+        8582,
+        8692
+      ],
+      "reference": {
+        "heroTier": 4,
+        "stars": 7,
+        "gearTier": 3,
+        "gearSlots": 8,
+        "upgradedSlots": 0,
+        "enchant": 7
+      },
+      "entryWins": [
+        0.8636363636363636,
+        0.7272727272727273,
+        0.6272727272727273
+      ],
+      "exitWins": 0.9636363636363636
+    },
+    {
+      "location": 14,
+      "levels": [
+        131,
+        140
+      ],
+      "enemy": [
+        11013,
+        3720.19,
+        309.38
+      ],
+      "recommended": [
+        10333,
+        10830,
+        10962
+      ],
+      "reference": {
+        "heroTier": 4,
+        "stars": 8,
+        "gearTier": 3,
+        "gearSlots": 8,
+        "upgradedSlots": 2,
+        "enchant": 9
+      },
+      "entryWins": [
+        0.8909090909090909,
+        0.7727272727272727,
+        0.6909090909090909
+      ],
+      "exitWins": 0.9727272727272728
+    },
+    {
+      "location": 15,
+      "levels": [
+        141,
+        150
+      ],
+      "enemy": [
+        13410,
+        5173.39,
+        367.81
+      ],
+      "recommended": [
+        12941,
+        14021,
+        14210
+      ],
+      "reference": {
+        "heroTier": 4,
+        "stars": 9,
+        "gearTier": 3,
+        "gearSlots": 8,
+        "upgradedSlots": 7,
+        "enchant": 9
+      },
+      "entryWins": [
+        0.9,
+        0.7727272727272727,
+        0.6545454545454545
+      ],
+      "exitWins": 0.9181818181818182
+    },
+    {
+      "location": 16,
+      "levels": [
+        151,
+        160
+      ],
+      "enemy": [
+        16801,
+        5813.87,
+        444.61
+      ],
+      "recommended": [
+        15307,
+        16603,
+        17104
+      ],
+      "reference": {
+        "heroTier": 4,
+        "stars": 9,
+        "gearTier": 4,
+        "gearSlots": 8,
+        "upgradedSlots": 0,
+        "enchant": 9
+      },
+      "entryWins": [
+        0.9,
+        0.7909090909090909,
+        0.7636363636363637
+      ],
+      "exitWins": 0.9090909090909091
+    },
+    {
+      "location": 17,
+      "levels": [
+        161,
+        170
+      ],
+      "enemy": [
+        20770,
+        7071.79,
+        533.96
+      ],
+      "recommended": [
+        18865,
+        20786,
+        20749
+      ],
+      "reference": {
+        "heroTier": 4,
+        "stars": 10,
+        "gearTier": 4,
+        "gearSlots": 8,
+        "upgradedSlots": 0,
+        "enchant": 11
+      },
+      "entryWins": [
+        0.9,
+        0.7818181818181819,
+        0.7545454545454545
+      ],
+      "exitWins": 0.9454545454545454
+    },
+    {
+      "location": 18,
+      "levels": [
+        171,
+        180
+      ],
+      "enemy": [
+        24058,
+        9548.17,
+        619.54
+      ],
+      "recommended": [
+        22818,
+        25598,
+        25571
+      ],
+      "reference": {
+        "heroTier": 4,
+        "stars": 11,
+        "gearTier": 4,
+        "gearSlots": 8,
+        "upgradedSlots": 6,
+        "enchant": 11
+      },
+      "entryWins": [
+        0.9090909090909091,
+        0.8090909090909091,
+        0.7636363636363637
+      ],
+      "exitWins": 0.9181818181818182
+    },
+    {
+      "location": 19,
+      "levels": [
+        181,
+        190
+      ],
+      "enemy": [
+        32574,
+        10978.05,
+        827.21
+      ],
+      "recommended": [
+        30091,
+        32064,
+        33019
+      ],
+      "reference": {
+        "heroTier": 5,
+        "stars": 11,
+        "gearTier": 4,
+        "gearSlots": 8,
+        "upgradedSlots": 6,
+        "enchant": 11
+      },
+      "entryWins": [
+        0.8909090909090909,
+        0.7636363636363637,
+        0.7181818181818181
+      ],
+      "exitWins": 0.9272727272727272
+    },
+    {
+      "location": 20,
+      "levels": [
+        191,
+        200
+      ],
+      "enemy": [
+        41825,
+        13163.2,
+        1021.47
+      ],
+      "recommended": [
+        37332,
+        40467,
+        42317
+      ],
+      "reference": {
+        "heroTier": 5,
+        "stars": 12,
+        "gearTier": 5,
+        "gearSlots": 8,
+        "upgradedSlots": 0,
+        "enchant": 11
+      },
+      "entryWins": [
+        0.9090909090909091,
+        0.7909090909090909,
+        0.7272727272727273
+      ],
+      "exitWins": 0.8727272727272727
+    }
+  ]
+}

@@ -324,7 +324,16 @@ export interface ReferralData {
   alreadyClaimed: number;
 }
 
+export interface SeekerProgressionState {
+  version: 1;
+  accountXpRemainder: number;
+  heroXpRemainders: Record<string, number>;
+  legacyLocationAccess: number;
+  activatedAt: number;
+}
+
 export interface GameState {
+  seekerProgression?: SeekerProgressionState;
   gold: number;
   hero: number;
   accountXp: number;

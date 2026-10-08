@@ -16,4 +16,4 @@ export interface NormalCombatBuild {
 export const NORMAL_COMBAT_SERVER_PAUSE_MS: number;
 export const BALANCE_VERSION: string;
 export const COMBAT_EFFECTS_V2_BALANCE_VERSION: string;
-export function buildNormalCombat(state: unknown, ledgerItems: unknown, location: number, seed: number, resourceSnapshot?: unknown, startedAtMs?: number, combatEffectsVersion?: string | null, healingPolicy?: string | null): NormalCombatBuild;
+export function buildNormalCombat(state: unknown, ledgerItems: unknown, location: number, seed: number, resourceSnapshot?: unknown, startedAtMs?: number, combatEffectsVersion?: string | null, healingPolicy?: string | null, progressionVersion?: string | null): NormalCombatBuild;

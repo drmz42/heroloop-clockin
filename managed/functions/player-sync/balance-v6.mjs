@@ -1,3 +1,5 @@
+import { SEEKER_ENEMY_BASE } from './seeker-enemies.generated.mjs';
+import { SEEKER_LOCATION_RANGES, seekerLevelMastery, seekerItemLevelMultiplier } from './seeker-progression.mjs';
 // Balance v6 runtime formulas shared by the client, server combat and server Power summary.
 // Source of every number: config/balance/balance-v6-proposal.v1.json (docs/game/balance-v6-proposal.md),
 // verified by `npx tsx scripts/model-balance-v6.ts --check` against normal-combat.mjs.
@@ -19,7 +21,7 @@ export function v6StarMultiplier(stars) {
 
 // Hero Level mastery applies to base stats only; items carry their own Item Level curve.
 export function v6LevelMastery(level) {
-  return (1 + V6_MASTERY_PER_LEVEL) ** (clamp(Math.floor(finite(level)), 1, 99) - 1);
+  return seekerLevelMastery(level);
 }
 
 // Linear Enchant: +11% of the item's stats per level, ×3.2 at +20.
@@ -53,8 +55,7 @@ export function v6CanonicalSlot(slot) {
 }
 
 export function v6ItemLevelMultiplier(itemLevel) {
-  const level = clamp(Math.floor(finite(itemLevel)), 1, 99);
-  return (1 + V6_ITEM_LEVEL_LINEAR * (level - 1)) * (1 + V6_MASTERY_PER_LEVEL) ** (level - 1);
+  return seekerItemLevelMultiplier(itemLevel);
 }
 
 // Unrounded base stats of one item before Enchant, Set Bonus and Resonance.
@@ -69,10 +70,7 @@ export function v6ItemImplicit(slot, rarity, itemLevel) {
 }
 
 // Location bands (Account Level) and their unlock levels.
-export const V6_LOCATION_RANGES = [
-  [1, 4], [5, 9], [10, 15], [16, 22], [23, 27], [28, 32], [33, 37], [38, 42], [43, 47], [48, 52],
-  [53, 57], [58, 62], [63, 67], [68, 72], [73, 77], [78, 82], [83, 87], [88, 91], [92, 95], [96, 99],
-];
+export const V6_LOCATION_RANGES = SEEKER_LOCATION_RANGES;
 export const V6_LOCATION_UNLOCK_LEVELS = V6_LOCATION_RANGES.map(([low]) => low);
 
 // Lane-0 enemy base [HP, Attack, Defense] per Location, calibrated for a 72% reference win rate.
@@ -86,7 +84,8 @@ export const V6_ENEMY_BASE = [
   [7520, 2370, 199], [9530, 2990, 245], [11300, 4200, 291], [15200, 4790, 386], [19900, 5810, 486],
 ];
 
-export function v6EnemyBase(location) {
-  const [hp, atk, def] = V6_ENEMY_BASE[clamp(Math.floor(finite(location)), 1, V6_ENEMY_BASE.length) - 1];
+export function v6EnemyBase(location, progression = true) {
+  const rows = progression ? SEEKER_ENEMY_BASE : V6_ENEMY_BASE;
+  const [hp, atk, def] = rows[clamp(Math.floor(finite(location)), 1, rows.length) - 1];
   return { hp, atk, def };
 }

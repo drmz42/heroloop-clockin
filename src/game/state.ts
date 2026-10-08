@@ -1,3 +1,4 @@
+import { seekerAccountXpNeeded, seekerXpReward, SEEKER_MAX_LEVEL } from '../../managed/functions/player-sync/seeker-progression.mjs';
 import { editionStorageKey } from './editionStorage';
 import type { GameState, OwnedHero, DailyQuest, ItemSlot, TrainingBoostKey, Rarity } from './types';
 import { generateRotatingShop, itemPower } from './items';
@@ -206,12 +207,10 @@ export function makeRegisteredStarterState(username: string, walletAddress: stri
 
 // ── XP curves ────────────────────────────────────────────────────────────
 export function accountXpForLevel(level: number): number {
-  if (level < 20) return Math.round(1800 + level * 85);
-  if (level < 29) return Math.round(10_400 + (level - 20) * 360);
-  return Math.min(36_000, Math.round(14_000 + (level - 29) * 1_100));
+  return seekerAccountXpNeeded(level);
 }
 
-export const MAX_LEVEL = 99;
+export const MAX_LEVEL = SEEKER_MAX_LEVEL;
 export const MAX_ACCOUNT_XP = Array.from({ length: MAX_LEVEL - 1 }, (_, index) => accountXpForLevel(index + 1)).reduce((sum, need) => sum + need, 0);
 
 export function accountLevelFromXp(xp: number): number {
@@ -484,4 +483,22 @@ export function clearLegacyState(): void {
 
 export function formatNum(n: number): string {
   return compactNumber(n, 3);
+}
+
+// Local/demo rewards use the same integer carry policy as authoritative saves.
+export function awardSeekerXp(state: GameState, accountGross: number, heroGross: Record<string, number>, training = false): GameState {
+  const policy = state.seekerProgression ?? { version: 1 as const, accountXpRemainder: 0, heroXpRemainders: {}, legacyLocationAccess: 1, activatedAt: 0 };
+  const account = seekerXpReward(accountGross, policy.accountXpRemainder);
+  const accountXp = Math.min(MAX_ACCOUNT_XP, state.accountXp + account.xp);
+  const accountLevel = accountLevelFromXp(accountXp);
+  const heroXpRemainders: Record<string, number> = {};
+  const ownedHeroes = state.ownedHeroes.map((hero) => {
+    const reward = seekerXpReward(heroGross[hero.uid] ?? 0, policy.heroXpRemainders[hero.uid] ?? 0);
+    const advanced = advanceHeroXp(hero.level, hero.xp, reward.xp);
+    const capped = training && advanced.level >= accountLevel && hero.level < accountLevel;
+    const level = capped ? accountLevel : advanced.level;
+    heroXpRemainders[hero.uid] = level >= MAX_LEVEL || capped ? 0 : reward.remainder;
+    return { ...hero, level, xp: capped ? 0 : advanced.remaining };
+  });
+  return { ...state, accountXp, accountLevel, ownedHeroes, seekerProgression: { ...policy, accountXpRemainder: accountLevel >= MAX_LEVEL ? 0 : account.remainder, heroXpRemainders } };
 }

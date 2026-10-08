@@ -1,6 +1,7 @@
+import { SEEKER_RECOMMENDED_POWER } from '../../managed/functions/player-sync/seeker-enemies.generated.mjs';
 import type { BalanceTelemetry, BalanceTelemetrySummary } from './types';
 
-export const BALANCE_VERSION = 'balance-v6-2026.09.29-v1:telemetry-ratio-v2';
+export const BALANCE_VERSION = 'seeker-200-2026.10.08-v1:telemetry-ratio-v2';
 // Balance v6 smooth per-lane target Power by Location (docs/game/data/balance-v6/recommended-power.csv).
 export const BASE_POWER_PER_LANE = [49, 99, 136, 188, 259, 358, 494, 682, 941, 1298, 1792, 2473, 3412, 4333, 5503, 6989, 8876, 11273, 14317, 18182] as const;
 // Displayed Recommended Power per lane for 1/2/3-hero formations: the v6 target curve times one formation
@@ -128,9 +129,10 @@ export function summarizeBalanceTelemetry(telemetry: BalanceTelemetry): BalanceT
     .sort((left, right) => left.teamSize - right.teamSize || Number(left.boss) - Number(right.boss) || left.powerRatioBand - right.powerRatioBand);
 }
 
-export function recommendedTeamPower(locationId: number, teamSize: number, telemetry?: BalanceTelemetry): number {
+export function recommendedTeamPower(locationId: number, teamSize: number, telemetry?: BalanceTelemetry, accountLevel?: number): number {
   const lanes = Math.max(1, Math.min(teamSize, 3));
-  const row = RECOMMENDED_POWER_PER_LANE[Math.max(0, Math.min(locationId - 1, RECOMMENDED_POWER_PER_LANE.length - 1))];
+  const recommendations = accountLevel !== undefined && accountLevel < (locationId - 1) * 10 + 1 ? RECOMMENDED_POWER_PER_LANE : SEEKER_RECOMMENDED_POWER;
+  const row = recommendations[Math.max(0, Math.min(locationId - 1, recommendations.length - 1))];
   const baseline = row[lanes - 1] * lanes;
   if (!telemetry || telemetry.version !== BALANCE_VERSION) return Math.round(baseline);
   const samples = Object.values(telemetry.cohorts).filter((row) =>

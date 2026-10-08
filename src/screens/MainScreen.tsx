@@ -1083,14 +1083,14 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             <div ref={locationRailRef} className="game-scrollbar flex gap-1.5 overflow-x-auto pb-1.5">
             {Array.from({ length: totalLocations }).map((_, i) => {
               const lid = i + 1;
-              const l = buildLocation(lid, state.team.length);
+              const l = buildLocation(lid, state.team.length, false, state.accountLevel);
               const current = lid === state.currentLocation;
               const completed = lid < state.currentLocation;
               const unlockLv = locationUnlockLevel(lid);
-              const locked = state.accountLevel < unlockLv;
+              const locked = state.accountLevel < unlockLv && lid > (state.seekerProgression?.legacyLocationAccess ?? 1);
               const notYetDiscovered = lid > state.highestLocation;
               const [rLo, rHi] = locationLevelRange(lid);
-              const tokenEligible = canMineTokens(lid, state.accountLevel, state.highestLocation);
+              const tokenEligible = canMineTokens(lid, state.accountLevel, state.highestLocation, state.seekerProgression?.legacyLocationAccess);
               return (
                 <button
                   key={lid}
@@ -1112,7 +1112,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                   <div className="mt-0.5 truncate ui-text-medium font-bold text-[#e5ddcc]">{l.name}</div>
                   {/* Level, required power and gold */}
                   <div className="mt-0.5 ui-text-small font-semibold text-[#8f8a7e]">
-                    Lv {rLo}–{rHi} · Recommended {formatNum(recommendedTeamPower(lid, state.team.length, state.balanceTelemetry))}
+                    Lv {rLo}–{rHi} · Recommended {formatNum(recommendedTeamPower(lid, state.team.length, state.balanceTelemetry, state.accountLevel))}
                   </div>
                   <div className="mt-0.5 flex items-center gap-1 ui-text-small font-vt">
                     <span className="flex items-center gap-1 text-[#c79b4e]"><Coins size={11} />{formatNum(l.goldReward * (isolatedHackathon ? 2 : 1))} Gold</span>

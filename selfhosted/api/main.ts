@@ -1,3 +1,4 @@
+import { SEEKER_PROGRESSION_VERSION, SEEKER_PROGRESSION_BALANCE_VERSION } from '/app/shared/seeker-progression.mjs';
 import { Pool } from "@db/postgres";
 import { BALANCE_VERSION, COMBAT_EFFECTS_V2_BALANCE_VERSION, buildNormalCombat } from "/app/shared/normal-combat.mjs";
 import { COMBAT_EFFECTS_V2_VERSION } from "/app/shared/combat-effects-v2.mjs";
@@ -101,8 +102,9 @@ const combatEffectsVersion = Deno.env.get("COMBAT_EFFECTS_VERSION") ?? "combat-e
 if (!["combat-effects-v1", COMBAT_EFFECTS_V2_VERSION].includes(combatEffectsVersion)) {
   throw new Error("invalid COMBAT_EFFECTS_VERSION");
 }
+const seekerProgressionBalanceVersion = SEEKER_PROGRESSION_BALANCE_VERSION;
 const normalCombatBalanceVersion = edition === "seeker" && combatEffectsVersion === COMBAT_EFFECTS_V2_VERSION
-  ? AUTOMATIC_HEALING_BALANCE_VERSION : combatEffectsVersion === COMBAT_EFFECTS_V2_VERSION
+  ? seekerProgressionBalanceVersion : combatEffectsVersion === COMBAT_EFFECTS_V2_VERSION
   ? COMBAT_EFFECTS_V2_BALANCE_VERSION
   : BALANCE_VERSION;
 const databasePool = new Pool({
@@ -2185,7 +2187,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
               if (!isRecord(prepared.state) || !Array.isArray(prepared.ledger_items)) {
                 throw new Error("invalid normal combat simulation context");
               }
-              if (![BALANCE_VERSION, COMBAT_EFFECTS_V2_BALANCE_VERSION, AUTOMATIC_HEALING_BALANCE_VERSION].includes(String(prepared.balance_version))) {
+              if (![BALANCE_VERSION, COMBAT_EFFECTS_V2_BALANCE_VERSION, AUTOMATIC_HEALING_BALANCE_VERSION, seekerProgressionBalanceVersion].includes(String(prepared.balance_version))) {
                 throw new Error("normal combat balance version mismatch");
               }
               const startKey = String(prepared.start_key ?? "");
@@ -2204,11 +2206,11 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
               if (resourcesQuery.rows.length !== 1 || !isRecord(resources)) {
                 throw new Error("invalid normal combat resource snapshot");
               }
-              const preparedEffectsVersion = [COMBAT_EFFECTS_V2_BALANCE_VERSION, AUTOMATIC_HEALING_BALANCE_VERSION].includes(String(prepared.balance_version))
+              const preparedEffectsVersion = [COMBAT_EFFECTS_V2_BALANCE_VERSION, AUTOMATIC_HEALING_BALANCE_VERSION, seekerProgressionBalanceVersion].includes(String(prepared.balance_version))
                 ? COMBAT_EFFECTS_V2_VERSION
                 : null;
-              const healingPolicy = prepared.balance_version === AUTOMATIC_HEALING_BALANCE_VERSION ? AUTOMATIC_HEALING_POLICY : null;
-              const combat = buildNormalCombat(prepared.state, prepared.ledger_items, preparedLocation, seed, resources, startedAtMs, preparedEffectsVersion, healingPolicy);
+              const healingPolicy = [AUTOMATIC_HEALING_BALANCE_VERSION, seekerProgressionBalanceVersion].includes(String(prepared.balance_version)) ? AUTOMATIC_HEALING_POLICY : null;
+              const combat = buildNormalCombat(prepared.state, prepared.ledger_items, preparedLocation, seed, resources, startedAtMs, preparedEffectsVersion, healingPolicy, prepared.balance_version === seekerProgressionBalanceVersion ? SEEKER_PROGRESSION_VERSION : null);
               const storedQuery = await client.queryObject<{ result: unknown }>(
                 "SELECT heroloop_api.normal_combat_store_outcome($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, $5::jsonb) AS result",
                 [

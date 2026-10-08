@@ -1,3 +1,4 @@
+import { SEEKER_PROGRESSION_VERSION, SEEKER_PROGRESSION_BALANCE_VERSION } from './seeker-progression.mjs';
 import { resolveCombat } from './combat-step.mjs';
 import { AUTOMATIC_HEALING_POLICY, AUTOMATIC_HEALING_BALANCE_VERSION, AUTOMATIC_HEALING_PRICES, automaticHealingConfig } from './automatic-healing.mjs';
 import { COMBAT_TIMELINE_VERSION, serializeCombatTimeline } from './combat-timeline.mjs';
@@ -59,7 +60,7 @@ function heroUnit(hero, lane, itemMap, carriedHp, startedAtMs, combatEffectsVers
   const tier = RARITIES.indexOf(rarity);
   const level = Math.floor(finite(hero.level));
   const stars = Math.floor(finite(hero.stars));
-  if (extra !== undefined || !archetype || tier < 0 || level < 1 || level > 99 || stars < 0 || stars > 20) {
+  if (extra !== undefined || !archetype || tier < 0 || level < 1 || level > 200 || stars < 0 || stars > 20) {
     throw new Error('normal_combat_invalid_formation');
   }
   const equipped = canonicalItemsForHero(hero, itemMap);
@@ -138,8 +139,8 @@ function heroUnit(hero, lane, itemMap, carriedHp, startedAtMs, combatEffectsVers
 const ENDGAME_ENEMY_SPEED = 103;
 const ENDGAME_ROLES = ['tank', 'striker', 'skirmisher', 'support', 'caster'];
 const ELITE_AFFIXES = ['guard-aura', 'mending', 'barrier', 'enrage', 'curse', 'lane-blast', 'summoner'];
-function enemyUnits(location, teamSize, seed) {
-  const { hp: baseHp, atk: baseAtk, def: baseDef } = v6EnemyBase(location);
+function enemyUnits(location, teamSize, seed, progressionVersion) {
+  const { hp: baseHp, atk: baseAtk, def: baseDef } = v6EnemyBase(location, progressionVersion === SEEKER_PROGRESSION_VERSION);
   if (location > 10) {
     const baseSpeed = ENDGAME_ENEMY_SPEED;
     const elite = Math.abs(seed) % 20 === 0 ? ELITE_AFFIXES[Math.abs(seed >>> 5) % ELITE_AFFIXES.length] : null;
@@ -169,7 +170,8 @@ function enemyUnits(location, teamSize, seed) {
   });
 }
 
-export function buildNormalCombat(state, ledgerItems, location, seed, resourceSnapshot, startedAtMs = Date.now(), combatEffectsVersion = /** @type {string | null} */ (null), healingPolicy = /** @type {string | null} */ (null)) {
+export function buildNormalCombat(state, ledgerItems, location, seed, resourceSnapshot, startedAtMs = Date.now(), combatEffectsVersion = /** @type {string | null} */ (null), healingPolicy = /** @type {string | null} */ (null), progressionVersion = /** @type {string | null} */ (null)) {
+  if (progressionVersion !== null && progressionVersion !== SEEKER_PROGRESSION_VERSION) throw new Error('normal_combat_invalid_progression_version');
   if (combatEffectsVersion !== null && combatEffectsVersion !== COMBAT_EFFECTS_V2_VERSION) {
     throw new Error('normal_combat_invalid_effects_version');
   }
@@ -184,7 +186,8 @@ export function buildNormalCombat(state, ledgerItems, location, seed, resourceSn
   const heroesByUid = new Map(state.ownedHeroes.map((hero) => [hero?.uid, hero]));
   const savedHp = record(state.normalCombatHp) ? state.normalCombatHp : {};
   const built = state.team.map((uid, lane) => heroUnit(heroesByUid.get(uid), lane, items, savedHp[uid], startedAtMs, combatEffectsVersion));
-  const initialUnits = [...built.map(({ unit }) => unit), ...enemyUnits(location, built.length, seed)];
+  const initialUnits = [...built.map(({ unit }) => unit), ...enemyUnits(location, built.length, seed,
+    Number(state.accountLevel) >= (location - 1) * 10 + 1 ? progressionVersion : null)];
   const savedConfig = record(state.autoPot) ? state.autoPot : {};
   const config = healingPolicy === AUTOMATIC_HEALING_POLICY ? automaticHealingConfig(savedConfig) : savedConfig;
   const potions = healingPolicy === AUTOMATIC_HEALING_POLICY
@@ -225,7 +228,7 @@ export function buildNormalCombat(state, ledgerItems, location, seed, resourceSn
     return units.map((unit) => unit.uid === hero.uid ? { ...unit, hp: hpAfter } : unit);
   });
   return {
-    seed, balance_version: healingPolicy === AUTOMATIC_HEALING_POLICY ? AUTOMATIC_HEALING_BALANCE_VERSION : combatEffectsVersion === COMBAT_EFFECTS_V2_VERSION ? COMBAT_EFFECTS_V2_BALANCE_VERSION : BALANCE_VERSION,
+    seed, balance_version: progressionVersion === SEEKER_PROGRESSION_VERSION ? SEEKER_PROGRESSION_BALANCE_VERSION : healingPolicy === AUTOMATIC_HEALING_POLICY ? AUTOMATIC_HEALING_BALANCE_VERSION : combatEffectsVersion === COMBAT_EFFECTS_V2_VERSION ? COMBAT_EFFECTS_V2_BALANCE_VERSION : BALANCE_VERSION,
     initial_units: initialUnits,
     reward_bonuses: {
       gold: built.reduce((sum, hero) => sum + hero.goldBonus, 0),

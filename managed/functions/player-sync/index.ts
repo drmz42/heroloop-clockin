@@ -469,7 +469,7 @@ Deno.serve(async (req: Request) => {
           const lineup = (Array.isArray(savedState.team) ? savedState.team : []).slice(0, 3).flatMap((uid) => {
             const hero = heroesByUid.get(String(uid));
             const heroId = typeof hero?.heroId === "string" ? hero.heroId.replace(/[^a-z0-9_-]/gi, "").slice(0, 64) : "";
-            return heroId ? [{ hero_id: heroId, level: Math.max(1, safeInt(hero?.level, 99)), stars: safeInt(hero?.stars, 20) }] : [];
+            return heroId ? [{ hero_id: heroId, level: Math.max(1, safeInt(hero?.level, 200)), stars: safeInt(hero?.stars, 20) }] : [];
           });
           if (username.length >= 3 && ownedHeroes.length > 0) {
             const { data: recovered, error: recoveryError } = await supabase.from("players").insert({
@@ -478,7 +478,7 @@ Deno.serve(async (req: Request) => {
               online: true,
               last_heartbeat: new Date().toISOString(),
               updated_at: new Date().toISOString(),
-              account_level: Math.max(1, safeInt(savedState.accountLevel, 99)),
+              account_level: Math.max(1, safeInt(savedState.accountLevel, 200)),
               token_balance: safeInt(savedState.hero, 1_000_000_000_000),
               summons: safeInt(savedState.summons, 1_000_000_000),
               total_tokens_earned: safeInt(savedState.totalTokensEarned, 1_000_000_000_000),

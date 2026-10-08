@@ -222,7 +222,7 @@ export function HeroesScreen({ game }: { game: GameApi }) {
   const [sort, setSort] = useState<'rarity' | 'stars' | 'level' | 'power'>('rarity');
   const [classFilter, setClassFilter] = useState('all');
   const [rarityFilter, setRarityFilter] = useState('all');
-  const [levelFilter, setLevelFilter] = useState<'all' | '1-19' | '20-39' | '40-59' | '60-79' | '80-99'>('all');
+  const [levelFilter, setLevelFilter] = useState<'all' | '1-19' | '20-39' | '40-59' | '60-79' | '80-99' | '100-149' | '150-200'>('all');
   const [search, setSearch] = useState('');
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
   const skrRate = useSkrRate(isolatedHackathon);
@@ -371,45 +371,8 @@ export function HeroesScreen({ game }: { game: GameApi }) {
             <div className="hv-filters">
               <Filter value={classFilter} onChange={setClassFilter} label="Class" icon={Swords} options={['all', 'knight', 'archer', 'assassin', 'shepherd', 'druid']} />
               <Filter value={rarityFilter} onChange={setRarityFilter} label="Rarity" icon={Gem} options={['all', ...FILTER_RARITIES]} />
-              <Filter value={levelFilter} onChange={(value) => setLevelFilter(value as typeof levelFilter)} label="Level" icon={ChevronsUp} options={['all', '1-19', '20-39', '40-59', '60-79', '80-99']} />
+              <Filter value={levelFilter} onChange={(value) => setLevelFilter(value as typeof levelFilter)} label="Level" icon={ChevronsUp} options={['all', '1-19', '20-39', '40-59', '60-79', '80-99', '100-149', '150-200']} />
               <button type="button" disabled={!filtersSet} onClick={() => { setClassFilter('all'); setRarityFilter('all'); setLevelFilter('all'); setSearch(''); }} className="sc-chip" aria-label="Clear filters"><X size={12} /></button>
             </div>
             <div className="hv-sort" role="group" aria-label="Sort heroes">
               {(['rarity', 'stars', 'power', 'level'] as const).map((value) => { const Icon = SORT_ICONS[value]; return <button type="button" key={value} onClick={() => setSort(value)} aria-pressed={sort === value} className="sc-chip">{value}<Icon size={10} aria-hidden="true" /></button>; })}
-            </div>
-          </div>
-        </section>
-
-        {entries.length > 0
-          ? <ol className="hv-grid hl-hero-grid">{entries.map(({ base, hero }) => <HeroGridCard key={hero.uid} base={base} hero={hero} game={game} onSelect={() => openHero(hero)} />)}</ol>
-          : <div className="sc-panel hv-empty"><Shield className="mx-auto text-[#806b49]" /><b>No owned heroes match these filters</b><div className="sc-muted mt-1">Change class, rarity, level or search.</div></div>}
-      </div>
-      {selected && <HeroDetailModal hero={selected} game={game} onClose={() => setSelectedUid(null)} />}
-      {capacityQuote && (
-        <div className="fixed inset-0 z-[90] grid place-items-center bg-black/80 p-3 backdrop-blur-sm">
-          <section role="dialog" aria-modal="true" aria-labelledby="capacity-quote-title" tabIndex={-1} autoFocus className="material-panel game-scrollbar max-h-[calc(100vh-24px)] w-full max-w-md overflow-y-auto p-4 shadow-2xl">
-            <div className="flex items-start justify-between gap-3">
-              <div><div className="section-kicker">Permanent storage</div><h3 id="capacity-quote-title" className="mt-1 text-lg font-black text-[#eee4d3]">Expand to {capacityQuote.heroCapacity} Heroes</h3></div>
-              <button type="button" onClick={() => setCapacityQuote(null)} disabled={capacityBusy} aria-label="Close capacity quote" className="game-control grid min-h-11 min-w-11 place-items-center"><X size={16} /></button>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <StatBox label="Catalogue price" value={`$${(capacityQuote.usdCents / 100).toFixed(2)}`} />
-              <StatBox label="Current DEX quote" value={`${formatNum(capacityQuote.tokenCost)} $HERO`} />
-            </div>
-            <p className="mt-3 text-sm leading-relaxed text-[#aaa397]">The USD price is fixed for this tier. The $HERO amount was calculated by the server from <b className="text-[#e6d5b4]">{capacityQuote.dexSource}</b> and is locked only until {formatUtcTime(capacityQuote.expiresAt)}.</p>
-            {capacityQuote.tokenCost > state.hero && <p role="alert" className="mt-2 rounded border border-red-500/45 bg-red-950/35 p-2 text-xs text-red-200">Not enough $HERO · need {formatNum(capacityQuote.tokenCost - state.hero)} more</p>}
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setCapacityQuote(null)} disabled={capacityBusy} className="game-control min-h-11 text-sm font-black">Cancel</button>
-              <button type="button" onClick={() => void confirmCapacityUpgrade()} disabled={capacityBusy || capacityQuote.tokenCost > state.hero} aria-busy={capacityBusy} className="game-control game-primary min-h-11 px-3 text-sm font-black disabled:opacity-45">{capacityBusy ? 'Confirming…' : `Pay ${formatNum(capacityQuote.tokenCost)} $HERO`}</button>
-            </div>
-          </section>
-        </div>
-      )}
-    </div>
-  );
-}
-
-const SORT_ICONS = { rarity: Gem, stars: Star, power: Zap, level: ChevronsUp } as const;
-
-// A small icon follows each filter name (Founder 2026-10-03); tapping opens the themed list, not the platform picker.
-function Filter({ value, onChange, label, icon: Icon, options }: { value: string; onChange: (value: string) => void; label: string; icon: typeof Star; options: string[] }) { const text = value === 'all' ? label : value; return <GameSelect ariaLabel={label} value={value} onChange={onChange} options={options.map((option) => ({ value: option, label: option === 'all' ? `All ${label}` : option }))} className={`hv-filter sc-chip${value === 'all' ? '' : ' is-set'}`}><span aria-hidden="true">{text}</span><Icon size={10} aria-hidden="true" /></GameSelect>; }

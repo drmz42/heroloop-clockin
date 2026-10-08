@@ -9,7 +9,7 @@ const DATA_FIELDS = new Set([
   "summonScrolls", "potions", "autoPot", "tutorial", "trainingCamp", "rotatingShop",
   "rotatingShopRefreshAt", "session", "dailyQuests", "milestoneQuests", "lastQuestReset", "referral",
   "username", "walletAddress", "avatarHeroId", "boost", "balanceTelemetry", "marketListings",
-  "marketHistory", "starterBalanceV2", "compatibilityMigrations",
+  "marketHistory", "starterBalanceV2", "compatibilityMigrations", "seekerProgression",
 ]);
 const TOP_LEVEL_FIELDS = new Set([...DATA_FIELDS, "save_schema_version"]);
 const AUTHORITATIVE_FIELDS = new Set([
@@ -18,7 +18,7 @@ const AUTHORITATIVE_FIELDS = new Set([
   "totalTokensEarned", "tokensEarnedToday", "tokenDayKey", "totalKills", "totalBossKills", "summons",
   "summonScrolls", "potions", "tutorial", "trainingCamp", "rotatingShop", "rotatingShopRefreshAt",
   "dailyQuests", "milestoneQuests", "lastQuestReset", "referral", "username", "walletAddress", "boost",
-  "marketListings", "marketHistory", "starterBalanceV2", "compatibilityMigrations",
+  "marketListings", "marketHistory", "starterBalanceV2", "compatibilityMigrations", "seekerProgression",
 ]);
 const EPHEMERAL_FIELDS = new Set(["session", "balanceTelemetry"]);
 const ITEM_SLOTS = new Set(["class_weapon", "offhand", "helmet", "chest", "gloves", "boots", "ring", "amulet", "weapon", "armor", "ring1", "ring2"]);
@@ -68,7 +68,7 @@ function validateComplexity(value, validateNumbers = true) {
 function hero(value) {
   const allowed = new Set(["uid", "heroId", "level", "stars", "equipped", "respawnAt", "xp", "locked", "isNew"]);
   if (!keysExact(value, allowed) || !text(value.uid, 128) || !text(value.heroId, 96, ID_PATTERN) ||
-      !finite(value.level, 1, 99) || !finite(value.stars, 0, 20) || !finite(value.xp, 0, 1_000_000_000)) return false;
+      !finite(value.level, 1, 200) || !finite(value.stars, 0, 20) || !finite(value.xp, 0, 1_000_000_000)) return false;
   if (!keysExact(value.equipped, ITEM_SLOTS)) return false;
   if (!Object.values(value.equipped).every((uid) => text(uid, 128))) return false;
   return (value.respawnAt === undefined || finite(value.respawnAt, 0, 8_640_000_000_000_000)) &&
@@ -84,7 +84,7 @@ function itemError(value) {
   }
   if (!text(value.uid, 128)) return "uid";
   if (!text(value.itemId, 96, ID_PATTERN)) return "item_id";
-  if (!finite(value.level, 1, 99)) return "level";
+  if (!finite(value.level, 1, 200)) return "level";
   if (!Array.isArray(value.stats) || value.stats.length > 12) return "stats_bounds";
   if (!decimal(value.power, 0)) return "power";
   if (!finite(value.enchantLevel, 0, 20)) return "enchant_level";
@@ -166,6 +166,13 @@ function validateSettings(state) {
 }
 
 function authoritativeShapeError(state) {
+  if (state.seekerProgression !== undefined) {
+    const p = state.seekerProgression;
+    if (!keysExact(p, new Set(["version", "accountXpRemainder", "heroXpRemainders", "legacyLocationAccess", "activatedAt"])) ||
+        p.version !== 1 || !finite(p.accountXpRemainder, 0, 19) || !finite(p.legacyLocationAccess, 1, 20) ||
+        !finite(p.activatedAt) || !record(p.heroXpRemainders) || Object.keys(p.heroXpRemainders).length > 1000 ||
+        !Object.entries(p.heroXpRemainders).every(([key, value]) => text(key, 128) && !FORBIDDEN_KEYS.has(key) && finite(value, 0, 19))) return "seeker_progression";
+  }
   const ints = ["accountXp", "accountLevel", "heroCapacity", "bossKeys", "chestsOpenedToday", "lastChestReset", "highestLocation", "lastSeen", "combatXpAt", "activeUntil", "totalGoldEarned", "totalKills", "totalBossKills", "summons", "summonScrolls", "rotatingShopRefreshAt", "lastQuestReset"];
   for (const field of ints) if (!finite(state[field], field === "accountLevel" || field === "highestLocation" ? 1 : 0)) return `integer:${field}`;
   for (const field of ["gold", "hero", "totalTokensEarned", "tokensEarnedToday"]) if (!decimal(state[field], 0)) return `decimal:${field}`;
@@ -196,7 +203,7 @@ function authoritativeShapeError(state) {
       !Array.isArray(state.milestoneQuests) || state.milestoneQuests.length > 100 || !state.milestoneQuests.every(quest)) return "quests";
   if (!keysExact(state.referral, new Set(["code", "invitedUsers", "pendingReward", "totalEarned", "alreadyClaimed"])) ||
       !text(state.referral.code, 32, /^[A-Z0-9]*$/) || !Array.isArray(state.referral.invitedUsers) || state.referral.invitedUsers.length > 1_000 ||
-      !state.referral.invitedUsers.every((entry) => keysExact(entry, new Set(["username", "level", "active"])) && text(entry.username, 32) && finite(entry.level, 1, 99) && typeof entry.active === "boolean") ||
+      !state.referral.invitedUsers.every((entry) => keysExact(entry, new Set(["username", "level", "active"])) && text(entry.username, 32) && finite(entry.level, 1, 200) && typeof entry.active === "boolean") ||
       !decimal(state.referral.pendingReward, 0) || !decimal(state.referral.totalEarned, 0) || !finite(state.referral.alreadyClaimed, 0, 1_000_000_000)) return "referral";
   if (!text(state.username, 32) || !text(state.walletAddress, 128)) return "identity_display";
   if (!keysExact(state.boost, new Set(["active", "progress", "bonusPct", "chestProgressSeconds", "goldProgressSeconds", "combatProgressSeconds", "conditions"])) ||
@@ -261,6 +268,7 @@ export function validateAndMigrateGameState(value, options = {}) {
   // This marker did not exist before v2, so an older client cannot forge it.
   if (version <= 1) state.compatibilityMigrations = {};
   if (record(options.canonicalState)) {
+    if (!Object.hasOwn(options.canonicalState, "seekerProgression")) delete state.seekerProgression;
     for (const field of AUTHORITATIVE_FIELDS) {
       if (Object.hasOwn(options.canonicalState, field)) state[field] = structuredClone(options.canonicalState[field]);
     }
@@ -269,7 +277,7 @@ export function validateAndMigrateGameState(value, options = {}) {
   state.save_schema_version = SAVE_SCHEMA_VERSION;
   if (!validateComplexity(state)) return { ok: false, code: "invalid_state", reason: "complexity" };
   if (!Object.keys(state).every((key) => TOP_LEVEL_FIELDS.has(key))) return { ok: false, code: "invalid_state", reason: "migrated_fields" };
-  if (![...DATA_FIELDS].filter((field) => !EPHEMERAL_FIELDS.has(field)).every((field) => Object.hasOwn(state, field))) return { ok: false, code: "invalid_state", reason: "required_fields" };
+  if (![...DATA_FIELDS].filter((field) => !EPHEMERAL_FIELDS.has(field) && field !== "seekerProgression").every((field) => Object.hasOwn(state, field))) return { ok: false, code: "invalid_state", reason: "required_fields" };
   const ownedError = ownedCollectionsError(state, options.allowMissingTeamReferences === true);
   if (ownedError) return { ok: false, code: "invalid_state", reason: `owned_collections:${ownedError}` };
   if (!validateSettings(state)) return { ok: false, code: "invalid_state", reason: "settings" };

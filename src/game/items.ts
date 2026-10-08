@@ -247,7 +247,11 @@ function rollStats(slot: ItemSlot, rarity: Rarity, level: number, itemId: string
   const canonicalSlot = slot === 'weapon' ? 'class_weapon'
     : slot === 'armor' ? 'chest'
       : slot === 'ring1' || slot === 'ring2' ? 'ring' : slot;
-  return itemRollV5RollItem(canonicalSlot, rarity, level, itemId, () => Math.random()) as ItemStatRoll[];
+  if (!Number.isInteger(level) || level < 1 || level > 200) throw new Error('invalid_item_level');
+  const rolls = itemRollV5RollItem(canonicalSlot, rarity, Math.min(99, level), itemId, () => Math.random()) as ItemStatRoll[];
+  return level <= 99 ? rolls : rolls.map((roll) => ({ ...roll,
+    value: ['hp', 'atk', 'def'].includes(roll.key) ? Math.round(roll.value * (1 + (level - 99) * .009) * 1_000_000) / 1_000_000 : roll.value,
+  }));
 }
 
 const STORED_POWER_WEIGHTS: Record<ItemStatKey, number> = {
@@ -377,7 +381,7 @@ export function standardChestWeights(playerLevel: number, availability: LimitedA
 }
 
 function rollItemLevel(playerLevel: number): number {
-  return Math.min(99, Math.max(1, playerLevel + Math.floor(Math.random() * 5) - 2));
+  return Math.min(200, Math.max(1, playerLevel + Math.floor(Math.random() * 5) - 2));
 }
 
 function rollFromWeights(weights: Record<Rarity, number>, playerLevel: number): OwnedItem | null {
