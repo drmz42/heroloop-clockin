@@ -141,9 +141,9 @@ BEGIN
       WHERE a.id=v_player OR a.id IN (SELECT account_id FROM seeker_skr.entries WHERE event_id=ANY(v_events))),
     'entries',COALESCE((SELECT jsonb_agg(jsonb_build_object('event_id',event_id,'account_id',account_id,'delta_minor',delta_minor::text)) FROM seeker_skr.entries WHERE event_id=ANY(v_events)),'[]'::jsonb),
     'events',COALESCE((SELECT jsonb_agg(jsonb_build_object('id',id,'kind',kind,'idempotency_key',idempotency_key,'chain_signature',chain_signature,'created_at',created_at)) FROM seeker_skr.events WHERE id=ANY(v_events)),'[]'::jsonb),
-    'purchases',COALESCE((SELECT jsonb_agg(jsonb_build_object('event_id',charge_event,'quote_id',id,'category',CASE WHEN context->>'action'='item_upgrade' THEN CASE WHEN context#>>'{params,operation}'='reroll' THEN 'reroll' ELSE 'gear_upgrade' END ELSE 'store' END,'usd_cents',usd_cents::text,
+    'purchases',COALESCE((SELECT jsonb_agg(jsonb_build_object('event_id',charge_event,'quote_id',id,'category',CASE WHEN context->>'action'='hero_summon' THEN 'gacha' WHEN context->>'action'='item_upgrade' THEN CASE WHEN context#>>'{params,operation}'='reroll' THEN 'reroll' ELSE 'gear_upgrade' END ELSE 'store' END,'usd_cents',usd_cents::text,
       'mint','SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3','network','solana:mainnet')) FROM seeker_skr.purchases
-      WHERE player_id=p_player AND status='committed' AND context->>'action' IN ('store_buy_item','shop_bundle_buy','reward_boost_buy','inventory_bag_buy','item_upgrade','training_slot_unlock','training_boost_buy')),'[]'::jsonb),
+      WHERE player_id=p_player AND status='committed' AND context->>'action' IN ('store_buy_item','shop_bundle_buy','reward_boost_buy','inventory_bag_buy','item_upgrade','training_slot_unlock','training_boost_buy','hero_summon')),'[]'::jsonb),
     'refunds','[]'::jsonb);
 END $$;
 REVOKE ALL ON ALL TABLES IN SCHEMA seeker_skr FROM PUBLIC;
