@@ -371,7 +371,7 @@ export function HeroesScreen({ game }: { game: GameApi }) {
             <div className="hv-filters">
               <Filter value={classFilter} onChange={setClassFilter} label="Class" icon={Swords} options={['all', 'knight', 'archer', 'assassin', 'shepherd', 'druid']} />
               <Filter value={rarityFilter} onChange={setRarityFilter} label="Rarity" icon={Gem} options={['all', ...FILTER_RARITIES]} />
-              <Filter value={levelFilter} onChange={(value) => setLevelFilter(value as typeof levelFilter)} label="Level" icon={ChevronsUp} options={['all', '1-19', '20-39', '40-59', '60-79', '80-99']} />
+              <Filter value={levelFilter} onChange={(value) => setLevelFilter(value as typeof levelFilter)} label="Level" icon={ChevronsUp} options={['all', '1-19', '20-39', '40-59', '60-79', '80-99', '100-149', '150-200']} />
               <button type="button" disabled={!filtersSet} onClick={() => { setClassFilter('all'); setRarityFilter('all'); setLevelFilter('all'); setSearch(''); }} className="sc-chip" aria-label="Clear filters"><X size={12} /></button>
             </div>
             <div className="hv-sort" role="group" aria-label="Sort heroes">
