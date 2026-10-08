@@ -1,7 +1,7 @@
 export function HeroTokenIcon({ size = 14, className = '' }: { size?: number; className?: string }) {
   return (
     <img
-      src="/assets/brand/hero-token.png"
+      src="/assets/brand/skr-token.png"
       alt=""
       aria-hidden="true"
       loading="lazy"

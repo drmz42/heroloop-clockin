@@ -64,7 +64,7 @@ export function LandingScreen({ game, legacyWalletMode = null, onAccountReady }:
       <header className="fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-[#070711]/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
           <a href="#top" className="flex items-center">
-            <img src="/assets/brand/heroloop-logo.png" alt="HeroLoop" width={180} height={52} className="h-11 w-auto max-w-[180px] object-contain drop-shadow-[0_0_10px_rgba(226,170,61,.25)]" />
+            <img src="/assets/brand/heroloop-wordmark.webp" alt="HeroLoop" width={211} height={52} className="h-11 w-auto max-w-[180px] object-contain drop-shadow-[0_0_10px_rgba(226,170,61,.25)]" />
           </a>
 
           <nav className="hidden items-center gap-8 text-xs font-bold uppercase tracking-[.16em] text-slate-400 md:flex">

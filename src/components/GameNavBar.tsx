@@ -39,7 +39,7 @@ export function GameNavBar({
       <button type="button" onClick={() => onChange('main')} className="hl-nav-logo mr-1 flex shrink-0 items-center border-r border-[#59472d] pl-1 pr-3" aria-label="Open Play screen">
         {isAndroidLayout
           ? <img src="/assets/brand/heroloop-emblem.png" alt="HeroLoop" width={154} height={160} className="hl-nav-emblem" />
-          : <img src="/assets/brand/heroloop-logo.png" alt="HeroLoop" width={154} height={46} className="h-9 w-auto max-w-[148px] object-contain drop-shadow-[0_0_8px_rgba(226,170,61,.28)]" />}
+          : <img src="/assets/brand/heroloop-wordmark.webp" alt="HeroLoop" width={187} height={46} className="h-9 w-auto max-w-[148px] object-contain drop-shadow-[0_0_8px_rgba(226,170,61,.28)]" />}
       </button>
 
       {/* Nav tabs */}

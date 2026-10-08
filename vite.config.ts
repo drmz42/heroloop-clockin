@@ -65,8 +65,6 @@ export default defineConfig(({ mode }) => {
         const marketCopy = id.includes('/screens/MarketplaceScreen.')
           ? presentation.replaceAll('{row.price}', "{'—'}").replaceAll('formatNum(game.state.hero)', "'—'") : presentation;
         return { code: marketCopy.replace(/\$HERO\b/gi, '$SKR')
-          .replaceAll('/assets/brand/hero-token.png', '/assets/brand/skr-token.png')
-          .replaceAll('/assets/landing4/coin.webp', '/assets/brand/skr-token.png')
           .replaceAll('HERO...p7Xq9M', 'SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3')
           .replaceAll('$SKR rewards are currently simulated', 'SKR rewards are not available yet')
           .replaceAll('Earn $SKR by winning battles in locations.', 'SKR rewards are not available yet.')
