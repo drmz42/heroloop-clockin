@@ -22,14 +22,16 @@ function heroPortraitPath(heroId: string, heroClass: HeroClass, rarity: Rarity, 
     shepherd: HERO_ART.acolyte,
     druid: HERO_ART.shrubmage,
   };
-  if (/^(shepherd|assassin|knight|druid|archer)-(common|uncommon|rare|epic|legendary|mythic|cosmic|divine|celestial|cursed|immortal|god)$/.test(heroId)) return `/assets/heroes/v4/${heroId}.png`;
+  // Every rarity of a class shares one v5 portrait; the frame shows the rarity. The previous v4 art stays in public/assets/heroes/v4.
+  const v5 = /^(shepherd|assassin|knight|druid|archer)-(common|uncommon|rare|epic|legendary|mythic|cosmic|divine|celestial|cursed|immortal|god)$/.exec(heroId);
+  if (v5) return `/assets/heroes/v5/${v5[1]}.webp`;
   return HERO_ART[heroId] ?? classFallback[heroClass] ?? buildHeroSvg(heroClass, rarity, color);
 }
 
-// Small displays (avatars, cards) load a 320px WebP copy of the v4 art: ~30 KB instead of ~600 KB per hero.
+// Small displays (avatars, cards) load a 320px WebP copy of the v5 art: ~25 KB instead of ~100 KB per hero.
 export function heroThumbSrc(heroId: string, heroClass: HeroClass, rarity: Rarity, color: string): string {
   const src = heroPortraitPath(heroId, heroClass, rarity, color);
-  return versionedAsset(src.startsWith('/assets/heroes/v4/') ? src.replace('/assets/heroes/v4/', '/assets/heroes/v4/thumb/').replace(/\.png$/, '.webp') : src);
+  return versionedAsset(src.startsWith('/assets/heroes/v5/') ? src.replace('/assets/heroes/v5/', '/assets/heroes/v5/thumb/') : src);
 }
 
 export function heroPortraitStyle(heroId: string | undefined, heroClass: HeroClass): Record<string, string> | undefined {
@@ -41,7 +43,7 @@ export function heroPortraitStyle(heroId: string | undefined, heroClass: HeroCla
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-    // Hero art is 349x887; a high crop keeps the head clear of the frame's top rim in square and card boxes.
+    // Hero art is 720x1080; a high crop keeps the head clear of the frame's top rim in square and card boxes.
     objectPosition: '50% 18%',
   };
 }

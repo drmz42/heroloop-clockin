@@ -52,9 +52,13 @@ export function preloadEntryImages() {
 
 /** Stages 2 and 3, once the game is shown: the player's own art, then everything else on unmetered networks. */
 export function preloadGameImages(state: Pick<GameState, 'ownedHeroes' | 'inventory'>) {
-  const heroes = state.ownedHeroes.flatMap((hero) => [`/assets/heroes/v4/thumb/${hero.heroId}.webp`, `/assets/heroes/v4/${hero.heroId}.png`]);
+  const heroes = state.ownedHeroes.flatMap((hero) => {
+    const heroClass = /^(shepherd|assassin|knight|druid|archer)-/.exec(hero.heroId)?.[1];
+    return heroClass ? [`/assets/heroes/v5/thumb/${heroClass}.webp`, `/assets/heroes/v5/${heroClass}.webp`] : [];
+  });
   const items = state.inventory.map((item) => itemArtSrc(item.itemId)).filter((path): path is string => Boolean(path));
   enqueue([...under('/assets/screens/'), ...heroes, ...items, ...under('/assets/heroes/', '/assets/summon/').filter((path) => !path.includes('/v4/'))]);
   const type = connection()?.type;
-  if (type === undefined || type === 'wifi' || type === 'ethernet') enqueue(allPaths());
+  // The retired v4 hero art is kept for rollback only and is never shown, so it is not downloaded.
+  if (type === undefined || type === 'wifi' || type === 'ethernet') enqueue(allPaths().filter((path) => !path.startsWith('/assets/heroes/v4/')));
 }

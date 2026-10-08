@@ -28,9 +28,9 @@ export function ReferralsScreen({ game }: { game: GameApi }) {
       <section className="sc-stage rf-guild" aria-label="Guild Hall">
         <div className="sc-stage-art" aria-hidden="true" />
         <div className="rf-companions" aria-hidden="true">
-          <img className="rf-companion rf-companion-archer" src="/assets/heroes/v4/archer-legendary.png" alt="" />
-          <img className="rf-companion rf-companion-knight" src="/assets/heroes/v4/knight-legendary.png" alt="" />
-          <img className="rf-companion rf-companion-druid" src="/assets/heroes/v4/druid-legendary.png" alt="" />
+          <img className="rf-companion rf-companion-archer" src="/assets/heroes/v5/archer.webp" alt="" />
+          <img className="rf-companion rf-companion-knight" src="/assets/heroes/v5/knight.webp" alt="" />
+          <img className="rf-companion rf-companion-druid" src="/assets/heroes/v5/druid.webp" alt="" />
         </div>
         <div className="rf-hearthlight" aria-hidden="true" />
         {ambient && <div className="sc-embers" aria-hidden="true">{[0, 1, 2, 3, 4, 5, 6].map((i) => <i key={i} style={{ '--i': i } as CSSProperties} />)}</div>}
