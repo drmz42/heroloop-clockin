@@ -3,7 +3,7 @@
 
 .hl-chest-ceremony { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; overflow: hidden; padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)); color: #efe4ce; -webkit-tap-highlight-color: transparent; }
 .hl-cc-backdrop { position: absolute; inset: 0; background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--cc-best) 26%, #140b08) 0%, #070404 64%), #050303; }
-.hl-cc-rays { position: absolute; left: 50%; top: 42%; width: 190vmax; height: 190vmax; margin: -95vmax 0 0 -95vmax; opacity: 0; background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--cc-best) 30%, transparent) 0deg 6deg, transparent 6deg 18deg); -webkit-mask: radial-gradient(circle, #000 0%, rgba(0, 0, 0, .6) 22%, transparent 48%); mask: radial-gradient(circle, #000 0%, rgba(0, 0, 0, .6) 22%, transparent 48%); pointer-events: none; }
+.hl-cc-rays { position: absolute; left: 50%; top: 42%; width: 140vmax; height: 140vmax; margin: -70vmax 0 0 -70vmax; will-change: transform; opacity: 0; background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--cc-best) 30%, transparent) 0deg 6deg, transparent 6deg 18deg); -webkit-mask: radial-gradient(circle, #000 0%, rgba(0, 0, 0, .6) 22%, transparent 48%); mask: radial-gradient(circle, #000 0%, rgba(0, 0, 0, .6) 22%, transparent 48%); pointer-events: none; }
 .hl-chest-ceremony:is(.is-reveal, .is-done) .hl-cc-rays { opacity: .55; }
 .hl-chest-ceremony.is-jackpot:is(.is-reveal, .is-done) .hl-cc-rays { opacity: .9; }
 .hl-cc-motes { position: absolute; inset: 0; pointer-events: none; }
@@ -24,6 +24,11 @@
 .hl-cc-burst i { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; background: linear-gradient(135deg, #fff8dc, color-mix(in srgb, var(--cc-best) 80%, #ffd27a)); box-shadow: 0 0 10px var(--cc-best); transform: rotate(var(--a)) translateY(0) rotate(45deg); opacity: 0; }
 
 .hl-cc-result { position: relative; z-index: 4; display: flex; width: min(100%, 560px); max-height: 100%; flex-direction: column; align-items: stretch; gap: 10px; }
+/* Founder 2026-10-08: the cards stay in the upper part of the screen (ending a little below the middle)
+   and "Send to Bag" sits right under them, so the found items and the action are visible together. */
+.hl-chest-ceremony:is(.is-reveal, .is-done) { place-items: start center; }
+.hl-chest-ceremony:is(.is-reveal, .is-done) .hl-cc-result { margin-top: 5dvh; }
+.hl-cc-result .hl-cc-grid { max-height: 46dvh; }
 .hl-cc-head { display: grid; justify-items: center; gap: 2px; text-align: center; }
 .hl-cc-kicker { display: inline-flex; align-items: center; gap: 5px; color: #d6a85a; font-size: 11px; font-weight: 800; letter-spacing: .22em; text-transform: uppercase; }
 .hl-cc-head h2 { margin: 0; color: #f7e2b0; font-family: var(--pm-display, serif); font-size: 22px; font-weight: 800; letter-spacing: .08em; text-shadow: 0 0 18px color-mix(in srgb, var(--cc-best) 60%, transparent), 0 2px 0 #1b0d07; }
@@ -31,7 +36,7 @@
 .hl-cc-grid.is-many { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
 .hl-cc-grid.is-single { grid-template-columns: 200px; justify-content: center; }
 
-.hl-cc-card { position: relative; aspect-ratio: 3 / 4.25; perspective: 800px; }
+.hl-cc-card { position: relative; aspect-ratio: 3 / 4.25; perspective: 800px; contain: layout style; }
 .hl-cc-card-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; }
 .hl-cc-card.is-open .hl-cc-card-inner { transform: rotateY(180deg); }
 .hl-cc-back, .hl-cc-front { position: absolute; inset: 0; overflow: hidden; border-radius: 10px; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
@@ -63,9 +68,9 @@
 .hl-chest-ceremony.is-animated .hl-cc-backdrop { animation: hl-cc-fade .35s ease-out both; }
 .hl-chest-ceremony.is-animated .hl-cc-rays { transition: opacity .6s ease-out; animation: hl-cc-spin 22s linear infinite; }
 .hl-chest-ceremony.is-animated .hl-cc-motes i { animation: hl-cc-mote 4.2s ease-in var(--t) infinite; }
-.hl-chest-ceremony.is-animated.is-charge .hl-cc-chest { animation: hl-cc-rise .5s cubic-bezier(.2, .9, .3, 1.2) both, hl-cc-shake 1.5s ease-in .1s both; }
-.hl-chest-ceremony.is-animated.is-charge .hl-cc-leak { animation: hl-cc-charge 1.5s ease-in forwards; }
-.hl-chest-ceremony.is-animated.is-charge .hl-cc-seal { animation: hl-cc-seal-spin 1.5s ease-in forwards; }
+.hl-chest-ceremony.is-animated.is-charge .hl-cc-chest { animation: hl-cc-rise .5s cubic-bezier(.2, .9, .3, 1.2) both, hl-cc-shake 1s ease-in .05s both; }
+.hl-chest-ceremony.is-animated.is-charge .hl-cc-leak { animation: hl-cc-charge 1s ease-in forwards; }
+.hl-chest-ceremony.is-animated.is-charge .hl-cc-seal { animation: hl-cc-seal-spin 1s ease-in forwards; }
 .hl-chest-ceremony.is-animated .hl-cc-hint { animation: hl-cc-blink 1.2s ease-in-out infinite; }
 .hl-chest-ceremony.is-animated.is-burst .hl-cc-chest img { animation: hl-cc-pop-out .5s ease-in forwards; }
 .hl-chest-ceremony.is-animated.is-burst .hl-cc-seal { animation: hl-cc-shatter .4s ease-out forwards; }
@@ -75,12 +80,13 @@
 .hl-chest-ceremony.is-animated .hl-cc-shock { animation: hl-cc-shock .6s cubic-bezier(.1, .7, .3, 1) forwards; }
 .hl-chest-ceremony.is-animated .hl-cc-burst i { animation: hl-cc-shard .7s cubic-bezier(.1, .8, .3, 1) forwards; }
 .hl-chest-ceremony.is-animated .hl-cc-head { animation: hl-cc-drop .45s cubic-bezier(.2, .9, .3, 1.2) both; }
-.hl-chest-ceremony.is-animated .hl-cc-card { animation: hl-cc-deal .5s cubic-bezier(.2, .85, .3, 1.15) both; animation-delay: min(calc(var(--i) * 32ms), 640ms); }
-.hl-chest-ceremony.is-animated .hl-cc-card-inner { transition: transform .55s cubic-bezier(.2, .8, .25, 1); }
+.hl-chest-ceremony.is-animated .hl-cc-card { animation: hl-cc-deal .38s cubic-bezier(.2, .85, .3, 1.15) both; animation-delay: min(calc(var(--i) * 20ms), 360ms); }
+.hl-chest-ceremony.is-animated .hl-cc-card-inner { transition: transform .4s cubic-bezier(.2, .8, .25, 1); }
+.hl-chest-ceremony.is-animated.is-reveal .hl-cc-card-inner { will-change: transform; }
 .hl-chest-ceremony.is-animated .hl-cc-card.is-teasing .hl-cc-card-inner { animation: hl-cc-tease .32s ease-in-out infinite; }
 .hl-chest-ceremony.is-animated .hl-cc-card.is-teasing .hl-cc-back { border-color: var(--rc); box-shadow: 0 0 22px var(--rc), inset 0 0 18px color-mix(in srgb, var(--rc) 50%, transparent); }
-.hl-chest-ceremony.is-animated .hl-cc-card.is-open:is(.tier-3, .tier-4, .tier-5, .tier-6) { animation: hl-cc-deal .5s both, hl-cc-boast .6s cubic-bezier(.2, .9, .3, 1.3) .28s; z-index: 2; }
-.hl-chest-ceremony.is-animated .hl-cc-card.is-open .hl-cc-front-glow { animation: hl-cc-spin 4s linear infinite; }
+.hl-chest-ceremony.is-animated .hl-cc-card.is-open:is(.tier-3, .tier-4, .tier-5, .tier-6) { animation: hl-cc-deal .38s both, hl-cc-boast .5s cubic-bezier(.2, .9, .3, 1.3) .2s; z-index: 2; }
+.hl-chest-ceremony.is-animated .hl-cc-card.is-open .hl-cc-front-glow { animation: hl-cc-spin 1.2s cubic-bezier(.2, .7, .3, 1) 1; }
 .hl-chest-ceremony.is-animated .hl-cc-foot { animation: hl-cc-fade .3s ease-out both; }
 .hl-chest-ceremony.is-animated .hl-cc-stamp strong { animation: hl-cc-stamp 1.3s cubic-bezier(.2, .9, .3, 1) forwards; }
 .hl-chest-ceremony.is-animated .hl-cc-stamp-flash { animation: hl-cc-flash 1s ease-out forwards; }

@@ -260,14 +260,39 @@
 .onb-back { min-height: 44px; padding: 0 10px; font-family: var(--onb-display); font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--onb-muted); transition: color .15s; }
 .onb-back:hover { color: var(--onb-ivory); }
 
+/* Phone (Founder 2026-10-08): the forged window frame ran into rounded screen corners and got
+   clipped, so the phone layout drops the outer frame and becomes a full-bleed stone screen with
+   safe-area padding. Inner panels lose their hard outlines for the same reason. */
 @media (max-width: 480px) {
-  .onb-card { border-width: 22px; border-image-width: 22px; border-image-outset: 6px; }
-  .onb-body { min-height: 0; padding: 16px 0 6px; }
-  .onb-head { padding-inline: 0; }
-  .onb-foot { padding-inline: 0; }
-  .onb-close { right: -10px; top: -10px; }
+  .hl-onboarding.onb-overlay { place-items: stretch; padding: 0; }
+  .onb-card {
+    display: flex;
+    min-height: 100dvh;
+    margin: 0;
+    flex-direction: column;
+    border: 0;
+    border-image: none;
+    padding: max(18px, env(safe-area-inset-top)) 22px max(14px, env(safe-area-inset-bottom));
+    background:
+      radial-gradient(ellipse 120% 45% at 50% 0%, rgba(143, 31, 18, .22), transparent 70%),
+      radial-gradient(ellipse 90% 35% at 50% 30%, rgba(199, 158, 97, .08), transparent 70%),
+      linear-gradient(180deg, rgba(10, 8, 7, .55), rgba(5, 4, 3, .92) 80%),
+      url('./assets/panel-stone.webp') center / cover,
+      #0b0908;
+    box-shadow: none;
+  }
+  .onb-head { padding-inline: 0; border-bottom: 0; }
+  .onb-body { flex: 1; min-height: 0; padding: 18px 0 6px; }
+  .onb-foot { padding-inline: 0; border-top: 0; }
+  .onb-close { right: 14px; top: max(12px, env(safe-area-inset-top)); width: 36px; height: 36px; border-color: transparent; background: rgba(10, 8, 7, .6); border-radius: 50%; }
   .onb-copy { font-size: 15px; }
+  .onb-ribbon { border-color: transparent; }
+  .onb-cta-primary { width: calc(100% - 18px); }
+  .onb-note { border: 0; background: rgba(8, 7, 6, .45); box-shadow: none; }
+  .onb-error { border: 0; background: rgba(110, 20, 15, .32); }
 }
+/* A cancelled wallet request is not a failure: show it as a calm note, not a red alarm box. */
+.onb-error.is-soft { border-color: rgba(199, 158, 97, .3); background: rgba(20, 16, 12, .6); color: #e6d6b6; }
 @media (prefers-reduced-motion: reduce) {
   .onb-crest::before { animation: none; }
   .onb-cta, .onb-hero { transition: none; }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { RarityFx } from '@/components/RarityFx';
 import { Package, Sparkles } from 'lucide-react';
@@ -8,15 +8,18 @@ import type { OwnedItem, OwnedHero, Rarity } from '@/game/types';
 import type { GameApi } from '@/game/useGame';
 import { ItemArtwork } from '@/components/ItemArtwork';
 import { versionedAsset } from '@/game/assetVersion';
+import { itemArtSrc } from '@/game/art';
 import { duckMusic, playReveal, playSfx } from '@/audio/gameAudio';
 import '@/theme/motion/chest-ceremony.css';
 
 // Chest opening ceremony (presentation only; the server already settled every item): the sealed chest
 // charges in the colour of the best item, the seal shatters, cards fly out face down and flip one by one,
 // commons quickly and Rare+ with a pause, Legendary+ with a full-screen stamp. Tap skips ahead.
+// Founder 2026-10-08: faster pacing, item art is decoded while the chest charges, and each card is a memoized
+// component so a flip re-renders one card instead of the whole grid (game ticks no longer touch the grid).
 type Phase = 'charge' | 'burst' | 'reveal' | 'done';
-const CHARGE_MS = 1500;
-const BURST_MS = 650;
+const CHARGE_MS = 1000;
+const BURST_MS = 420;
 
 const motionActive = () => typeof document !== 'undefined'
   && document.documentElement.dataset.hlMotion === 'on'
@@ -50,12 +53,12 @@ export function ChestOpenModal({
 
   const revealSchedule = useMemo(() => {
     // Commons speed up for big batches so 48 items never take more than a few seconds.
-    const fast = ordered.length > 12 ? 45 : 140;
+    const fast = ordered.length > 12 ? 32 : 90;
     let at = 0;
     return ordered.map((item, index) => {
       const tier = tierOf(item);
-      const pause = tier >= 4 ? 900 : tier === 3 ? 520 : tier === 2 ? 260 : fast;
-      at += index === 0 ? 350 : pause;
+      const pause = tier >= 4 ? 640 : tier === 3 ? 360 : tier === 2 ? 160 : fast;
+      at += index === 0 ? 260 : pause;
       return at;
     });
   }, [ordered]);
@@ -72,11 +75,25 @@ export function ChestOpenModal({
       if (tier >= 4) setStamp({ key: Date.now(), rarity: rarityOf(item) });
       if (tier >= 3) {
         const card = gridRef.current?.querySelector<HTMLElement>(`[data-cc-index="${index}"]`);
-        card?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+        card?.scrollIntoView?.({ block: 'nearest' });
       }
     }, at));
-    later(() => setPhase('done'), (revealSchedule[revealSchedule.length - 1] ?? 0) + 700);
+    later(() => setPhase('done'), (revealSchedule[revealSchedule.length - 1] ?? 0) + 450);
   }, [ordered, revealSchedule]);
+
+  // Decode every item picture during the charge so flips never wait on image loading.
+  useEffect(() => {
+    const seen = new Set<string>();
+    ordered.forEach((item) => {
+      const src = itemArtSrc(item.itemId);
+      if (!src || seen.has(src)) return;
+      seen.add(src);
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = src;
+      img.decode?.().catch(() => undefined);
+    });
+  }, [ordered]);
 
   useEffect(() => {
     if (!animated) { if (ordered.length) playReveal(bestTier); return; }
@@ -96,7 +113,7 @@ export function ChestOpenModal({
   }, [stamp]);
 
   const skip = () => {
-    if (phase === 'charge') { clearTimers(); setPhase('burst'); playSfx('chestBurst', bestTier); later(startReveal, 380); return; }
+    if (phase === 'charge') { clearTimers(); setPhase('burst'); playSfx('chestBurst', bestTier); later(startReveal, 300); return; }
     if (phase === 'reveal') { clearTimers(); setFlipped(ordered.length); setStamp(null); playReveal(bestTier); setPhase('done'); }
   };
 
@@ -134,7 +151,7 @@ export function ChestOpenModal({
     <div className={`hl-portal hl-chest-ceremony is-${phase} ${bestTier >= 4 ? 'is-jackpot' : bestTier >= 3 ? 'is-rare' : ''} ${animated ? 'is-animated' : ''}`} style={style} data-sfx="off" role="dialog" aria-modal="true" aria-label={`${ordered.length} items found`} onClick={phase === 'charge' || phase === 'reveal' ? skip : undefined}>
       <div className="hl-cc-backdrop" aria-hidden="true" />
       <div className="hl-cc-rays" aria-hidden="true" />
-      <div className="hl-cc-motes" aria-hidden="true">{Array.from({ length: 14 }, (_, index) => <i key={index} style={{ ['--x' as string]: `${(index * 37) % 100}%`, ['--t' as string]: `${(index % 5) * 0.6}s` }} />)}</div>
+      <div className="hl-cc-motes" aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <i key={index} style={{ ['--x' as string]: `${(index * 53 + 7) % 100}%`, ['--t' as string]: `${(index % 5) * 0.6}s` }} />)}</div>
 
       {(phase === 'charge' || phase === 'burst') && (
         <div className="hl-cc-stage">
@@ -165,30 +182,9 @@ export function ChestOpenModal({
             <h2>{ordered.length} {single ? 'ITEM' : 'ITEMS'} FOUND</h2>
           </header>
           <div ref={gridRef} className={`hl-cc-grid ${single ? 'is-single' : ''} ${ordered.length > 12 ? 'is-many' : ''}`}>
-            {ordered.map((item, index) => {
-              const base = ITEM_MAP[item.itemId]!;
-              const rc = RARITY_COLORS[base.rarity];
-              const tier = tierOf(item);
-              const open = index < flipped;
-              const next = index === flipped && phase === 'reveal';
-              return (
-                <div key={item.uid} data-cc-index={index} className={`hl-cc-card rarity-${base.rarity} tier-${Math.min(tier, 6)} ${open ? 'is-open' : ''} ${next && tier >= 3 ? 'is-teasing' : ''}`} style={{ '--rc': rc, '--i': index } as CSSProperties}>
-                  <div className="hl-cc-card-inner">
-                    <div className="hl-cc-back" aria-hidden="true"><i /></div>
-                    <div className="hl-cc-front" aria-hidden={!open}>
-                      <i className="hl-cc-front-glow" aria-hidden="true" />
-                      <div className="hl-cc-art item-slot">
-                        <ItemArtwork itemId={base.id} name={base.name} fallback={base.icon} className={single ? 'text-6xl' : 'text-3xl'} />
-                        <RarityFx rarity={base.rarity} shape="slot" />
-                      </div>
-                      <strong className="hl-cc-name" style={{ color: rc }}>{base.name}</strong>
-                      <span className="hl-cc-meta">{RARITY_LABEL[base.rarity]} · {SLOT_LABEL[base.slot]}</span>
-                      <span className="hl-cc-stats">iLvl {item.level} · ⚡ {displayItemPower(item)}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {ordered.map((item, index) => (
+              <ChestCard key={item.uid} item={item} index={index} open={index < flipped} teasing={index === flipped && phase === 'reveal'} single={single} />
+            ))}
           </div>
           {phase === 'done' ? (
             <footer className="hl-cc-foot">
@@ -206,3 +202,26 @@ export function ChestOpenModal({
     document.body,
   );
 }
+
+const ChestCard = memo(function ChestCard({ item, index, open, teasing, single }: { item: OwnedItem; index: number; open: boolean; teasing: boolean; single: boolean }) {
+  const base = ITEM_MAP[item.itemId]!;
+  const rc = RARITY_COLORS[base.rarity];
+  const tier = tierOf(item);
+  return (
+    <div data-cc-index={index} className={`hl-cc-card rarity-${base.rarity} tier-${Math.min(tier, 6)} ${open ? 'is-open' : ''} ${teasing && tier >= 3 ? 'is-teasing' : ''}`} style={{ '--rc': rc, '--i': index } as CSSProperties}>
+      <div className="hl-cc-card-inner">
+        <div className="hl-cc-back" aria-hidden="true"><i /></div>
+        <div className="hl-cc-front" aria-hidden={!open}>
+          <i className="hl-cc-front-glow" aria-hidden="true" />
+          <div className="hl-cc-art item-slot">
+            <ItemArtwork itemId={base.id} name={base.name} fallback={base.icon} className={single ? 'text-6xl' : 'text-3xl'} />
+            <RarityFx rarity={base.rarity} shape="slot" />
+          </div>
+          <strong className="hl-cc-name" style={{ color: rc }}>{base.name}</strong>
+          <span className="hl-cc-meta">{RARITY_LABEL[base.rarity]} · {SLOT_LABEL[base.slot]}</span>
+          <span className="hl-cc-stats">iLvl {item.level} · ⚡ {displayItemPower(item)}</span>
+        </div>
+      </div>
+    </div>
+  );
+});

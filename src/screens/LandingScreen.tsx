@@ -315,6 +315,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
   const [connecting, setConnecting] = useState(false);
   const [guestId, setGuestId] = useState('');
   const [error, setError] = useState('');
+  const [errorSoft, setErrorSoft] = useState(false);
   const [wallets, setWallets] = useState<readonly Wallet[]>([]);
   const [selectedWallet, setSelectedWallet] = useState('');
   const [legacyImportConfirmed, setLegacyImportConfirmed] = useState(false);
@@ -353,7 +354,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
       setError('Confirm the one-time import before connecting your wallet.');
       return;
     }
-    setConnecting(true); setError('');
+    setConnecting(true); setError(''); setErrorSoft(false);
     try {
       if (legacyWalletMode === 'import') {
         const migrated = await accountRequest(playerSync<{ state: unknown; revision: number; migrated: boolean }>('game_state_migrate', {
@@ -406,18 +407,20 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
       const detail = reason instanceof Error && 'detail' in reason && typeof reason.detail === 'string' && reason.detail
         ? ` (${reason.detail})` : '';
       reportSignInStep(`error:${code}${detail}`);
-      setError(code === 'wallet_already_linked'
+      // A declined or closed wallet request is the player's choice, not a bug: keep it short and calm.
+      // The raw adapter detail stays in the diagnostics line above, never on screen.
+      const cancelled = code === 'wallet_signature_rejected' || (code === 'wallet_connect_rejected' && isAndroidLayout);
+      setErrorSoft(cancelled);
+      setError(cancelled
+        ? 'Sign-in cancelled. Tap the button above when you are ready to try again.'
+        : code === 'wallet_already_linked'
         ? 'This wallet already belongs to another HeroLoop account.'
-        : code === 'wallet_signature_rejected'
-        ? 'The signature request was cancelled.'
         : code === 'wallet_sign_in_unavailable'
         ? `Phantom sign-in could not start. Reload Phantom and try again.${detail}`
         : code === 'wallet_sign_message_unavailable'
         ? `Phantom sign-message could not start. Reload Phantom and try again.${detail}`
         : code === 'wallet_connect_rejected'
-        ? (isAndroidLayout
-          ? `The wallet app did not answer. Open your wallet, unlock it, approve the connection and come back.${detail}`
-          : 'Phantom did not authorize the connection. Unlock Phantom, approve the request and try again.')
+        ? 'Phantom did not authorize the connection. Unlock Phantom, approve the request and try again.'
         : `Wallet authentication failed. Please try again.${/^[a-z0-9_]{3,64}$/.test(code) ? ` (${code})` : ''}`);
     } finally {
       setConnecting(false);
@@ -532,7 +535,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
               {solanaAuthEnabled && canOpenInPhantom && <a href={phantomBrowseUrl()} className="onb-cta onb-cta-secondary">Open in Phantom app</a>}
               {solanaAuthEnabled && canOpenInPhantom && <p className="onb-hint">No wallet window? “Open in Phantom app” opens HeroLoop inside Phantom, where you sign in the same way. No Phantom yet? <a href="https://play.google.com/store/apps/details?id=app.phantom" target="_blank" rel="noreferrer">Get it on Google Play</a>.</p>}
               {solanaAuthEnabled && !canOpenInPhantom && wallets.length === 0 && <div className="onb-hint">Phantom was not detected. <a href="https://phantom.com/" target="_blank" rel="noreferrer">Get Phantom</a></div>}
-              {error && <div className="onb-error" role="alert">{error}</div>}
+              {error && <div className={`onb-error ${errorSoft ? 'is-soft' : ''}`} role={errorSoft ? 'status' : 'alert'}>{error}</div>}
               <div className="onb-note onb-note-safe"><Shield size={16} className="mt-0.5 shrink-0" aria-hidden="true" /><span>{solanaAuthEnabled ? 'HeroLoop never asks for a transaction signature during login. A different wallet cannot inherit this account or its saves.' : 'Your Guest ID is not a wallet address and cannot receive funds. Verified wallet sign-in is a separate future feature.'}</span></div>
             </div>
           )}
