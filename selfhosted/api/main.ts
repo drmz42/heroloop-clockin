@@ -38,7 +38,7 @@ import {
 import { parseEdition, seekerRefusal } from "./seeker_edition.ts";
 import { quotePurchase, commitPurchase, SKR_PRODUCTS } from "./seeker_commerce.ts";
 import { handleCampaign } from './landing_campaign_endpoint.ts';
-import { parseAdditionalSiwsUris, siwsSiteForRequest } from "./siws_site.ts";
+import { parseAdditionalSiwsUris, siwsOriginAllowed, siwsSiteForRequest } from "./siws_site.ts";
 
 const jsonHeaders = {
   "cache-control": "no-store",
@@ -711,6 +711,12 @@ async function storageHealthy(): Promise<boolean> {
 Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
   const url = new URL(request.url);
   const requestId = crypto.randomUUID();
+
+  if (edition === "seeker" && request.method === "POST" &&
+    url.pathname.startsWith("/api/v1/auth/solana/") &&
+    !siwsOriginAllowed(siwsEndpointConfig, siwsAdditionalUris, request)) {
+    return errorResponse(403, "siws_origin_mismatch", requestId);
+  }
 
   if (edition==='seeker' && url.pathname.startsWith('/api/v1/landing/')) {
     const origins=[siwsEndpointConfig.uri,...siwsAdditionalUris].filter(Boolean).map(uri=>new URL(uri).origin);
