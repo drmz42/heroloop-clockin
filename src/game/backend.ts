@@ -153,7 +153,7 @@ export async function playerSync<T>(
       || action === 'market_cancel_listing' || action === 'market_buy_listing' || action === 'store_buy_item'
       || action === 'dungeon_start' || action === 'dungeon_room_start' || action === 'dungeon_room_action'
       || action === 'dungeon_room_complete' || action === 'dungeon_room_choose' || action === 'dungeon_abandon'
-      || action === 'summon_boss' || action === 'boss_claim'
+      || action === 'summon_boss' || action === 'boss_claim' || action === 'premium_potion_upgrade' || action === 'premium_potion_use'
       || action === 'normal_combat_start' || action === 'normal_combat_complete' || action === 'player_report'
       || action === 'support_ticket_submit' || action === 'partner_quest_claim' || action === 'mail_claim'
     );
