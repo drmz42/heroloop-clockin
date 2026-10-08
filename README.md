@@ -62,7 +62,7 @@ The first `up` generates fresh random secrets into `selfhosted/clockin.env.local
 ## Tests
 
 ```bash
-npx tsx --test test/solanaWallet*.test.ts test/authTransient.test.ts     # wallet sign-in and session (30 tests)
+npx tsx --tsconfig tsconfig.app.json --test test/solanaWallet*.test.ts test/authTransient.test.ts     # wallet sign-in and session (30 tests)
 docker run --rm -v "$PWD/selfhosted:/app:ro" -w /app denoland/deno:2.9.4 \
   test --config=/app/deno.json --cached-only seeker/ api/skr_quote_test.ts api/seeker_edition_test.ts   # SKR ledger, quotes, edition gate
 ```
