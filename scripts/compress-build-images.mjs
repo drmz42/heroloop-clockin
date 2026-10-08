@@ -8,6 +8,18 @@ import { basename, extname, join, relative } from 'node:path';
 import sharp from 'sharp';
 
 const MAX_SIDE = 2048;
+// Source sheets stay in public/assets; packaged builds omit these unused originals.
+// Keep build inputs independent of internal QA and backup inventories.
+export const UNREFERENCED_SOURCE_IMAGES = [
+  'public/assets/enemies/cave-bat-v2.png',
+  'public/assets/enemies/skeleton-v2.png',
+  'public/assets/enemies/toxic-slime-v2.png',
+  'public/assets/enemies/v4/source-grid.png',
+  'public/assets/heroes/v4/source-lineup.png',
+  'public/assets/items/item-atlas-v3.png',
+  'public/assets/items/rusty-blade-v2.png',
+  'public/assets/items/v4/source-grid.png',
+];
 const encoders = {
   '.png': (image) => image.png({ palette: true, quality: 90, effort: 7, dither: 0.8, compressionLevel: 9 }),
   '.webp': (image) => image.webp({ quality: 86, alphaQuality: 90, effort: 5, smartSubsample: true }),

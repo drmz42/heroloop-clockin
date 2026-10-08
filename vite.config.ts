@@ -3,8 +3,7 @@ import react from '@vitejs/plugin-react';
 import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath, URL } from 'node:url';
 import { makeQaGameState } from './qa/gameState';
-import { compressBuildImages, readAssetVersions, versionAssetUrls } from './scripts/compress-build-images.mjs';
-import runtimeImageAudit from './config/qa/runtime-image-audit.v1.json';
+import { compressBuildImages, readAssetVersions, versionAssetUrls, UNREFERENCED_SOURCE_IMAGES } from './scripts/compress-build-images.mjs';
 
 function qaEndpoint() {
   return {
@@ -48,7 +47,7 @@ function qaEndpoint() {
 export default defineConfig(({ mode }) => {
   const hackathon = ['staging2', 'seeker'].includes(mode);
   const assetVersions = hackathon
-    ? readAssetVersions(fileURLToPath(new URL('./public', import.meta.url)), { exclude: runtimeImageAudit.knownUnreferencedCandidates })
+    ? readAssetVersions(fileURLToPath(new URL('./public', import.meta.url)), { exclude: UNREFERENCED_SOURCE_IMAGES })
     : null;
   return {
   define: { __HL_ASSET_VERSIONS__: JSON.stringify(assetVersions) },
@@ -98,7 +97,7 @@ export default defineConfig(({ mode }) => {
       apply: 'build' as const,
       async closeBundle() {
         const result = await compressBuildImages(fileURLToPath(new URL('./dist', import.meta.url)), {
-          unreferenced: runtimeImageAudit.knownUnreferencedCandidates,
+          unreferenced: UNREFERENCED_SOURCE_IMAGES,
         });
         console.log(`hackathon images: ${result.before} -> ${result.after} bytes, removed ${result.removedBytes} unreferenced bytes`);
       },
