@@ -47,7 +47,15 @@ export function verifyPayout(w:Withdrawal,config:ChainConfig & {payoutTreasury?:
   const authority=config.tokenAuthority??sender;
   const decimals=ASSET_DECIMALS[w.asset];
   if(w.asset==='ORE'&&(!Number.isSafeInteger(meta.fee)||Number(meta.fee)<0))return 'payout_unreadable';
-  if(w.asset==='ORE'&&(instructions.length!==1||keys.filter(k=>k.signer===true).length!==2||!keys.some(k=>k.pubkey===authority&&k.signer===true)))return 'payout_wrong_sender';
+  if(w.asset==='ORE') {
+    // Shared-project custody uses one authority for both roles; legacy custody
+    // requires the fee payer and the distinct token owner to sign.
+    const signers=keys.filter(k=>k.signer===true);
+    const expectedSigners=authority===sender?1:2;
+    if(instructions.length!==1||signers.length!==expectedSigners
+      ||transaction.signatures.length!==expectedSigners
+      ||!signers.some(k=>k.pubkey===authority))return 'payout_wrong_sender';
+  }
   const total=(balances:unknown,owner:string)=>{
     if(!Array.isArray(balances))return 0n;
     let result=0n;

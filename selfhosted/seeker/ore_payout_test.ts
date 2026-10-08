@@ -13,11 +13,18 @@ Deno.test('ORE amounts and authorizations preserve eleven decimals',()=>{
  const w={request_id:request,player_id:player,asset:'ORE',amount_minor:'100000000001',fee_minor:'5000000001',payout_minor:'95000000000',destination:ORE_BOARD,created_at:new Date().toISOString(),expires_at:new Date(Date.now()+60000).toISOString()} as Withdrawal;
  assert.ok(authorizationMessage(w).includes('Amount: 1.00000000001 ORE'));
 });
-Deno.test('ORE payout refuses unapproved requests and persists two-signature bytes',async()=>{
- const key=await custodyKey(master,player),float=await floatKey(master);
+for(const shared of [false,true])Deno.test(`ORE payout refuses unapproved requests and persists ${shared?'shared':'legacy'} signed bytes`,async()=>{
+ let signingMaster=master;
+ if(shared){
+  const pair=await crypto.subtle.generateKey({name:'Ed25519'},true,['sign','verify']) as CryptoKeyPair;
+  const secret=new Uint8Array(await crypto.subtle.exportKey('pkcs8',pair.privateKey)).slice(-32);
+  const publicKey=new Uint8Array(await crypto.subtle.exportKey('raw',pair.publicKey));
+  signingMaster=new Uint8Array([...secret,...publicKey]);
+ }
+ const key=await custodyKey(signingMaster,player),float=await floatKey(signingMaster);
  const recipient=await custodyKey(master,'recipient');
  let status='pending';let saved:Record<string,unknown>={};let sends=0;
- const deps:MineDeps={master,call:async(sql,args)=>{
+ const deps:MineDeps={master:signingMaster,call:async(sql,args)=>{
   if(sql.includes('withdrawal_admin_get'))return {asset:'ORE',status,player_id:player,destination:recipient.address,payout_minor:'95000000000'};
   if(sql.includes('mine_action_prepare'))saved={signature:args[4],wire:args[5],last_valid_height:args[6],status:'signed'};
   return saved;
@@ -35,8 +42,10 @@ Deno.test('ORE payout refuses unapproved requests and persists two-signature byt
  const a=await prepareOrePayout(deps,request),again=await prepareOrePayout({...deps},request);
  assert.equal(a.transaction,again.transaction);assert.equal(sends,0);
  const wire=Uint8Array.from(atob(String(a.transaction)),c=>c.charCodeAt(0));
- assert.equal(wire[0],2);const message=wire.slice(129);assert.equal(message[0],2);
- for(const [index,owner] of [float.address,key.address].entries()){
+ const signers=[...new Set([float.address,key.address])];
+ assert.equal(signers.length,shared?1:2);
+ assert.equal(wire[0],signers.length);const message=wire.slice(1+64*signers.length);assert.equal(message[0],signers.length);
+ for(const [index,owner] of signers.entries()){
   const pub=await crypto.subtle.importKey('raw',base58Decode(owner).slice().buffer,{name:'Ed25519'},false,['verify']);
   assert.equal(await crypto.subtle.verify('Ed25519',pub,wire.slice(1+index*64,65+index*64),message),true);
  }
@@ -55,7 +64,34 @@ Deno.test('ORE finalized payout binds float, custody signer, exact mint, precisi
   (v:typeof tx)=>{v.meta.postTokenBalances[1].uiTokenAmount.decimals=6;},
   (v:typeof tx)=>{v.meta.postTokenBalances[1].mint='foreign';},
   (v:typeof tx)=>{v.transaction.message.accountKeys[1].signer=false;},
+  (v:typeof tx)=>{v.transaction.signatures.pop();},
+  (v:typeof tx)=>{v.transaction.message.accountKeys[2].signer=true;},
   (v:typeof tx)=>{v.transaction.message.instructions[0].parsed.info.tokenAmount.amount='94';},
+ ]){const wrong=structuredClone(tx);mutate(wrong);assert.notEqual(verifyPayout(w,config,'signature',wrong),null);}
+});
+
+Deno.test('shared-project ORE payout finalizes with one signer and rejects altered receipts',()=>{
+ const sender=ORE_BOARD,destination='destination';
+ const w={asset:'ORE',destination,payout_minor:'95',created_at:'2026-10-04T00:00:00Z'} as Withdrawal;
+ const balances=(owner:string,index:number,amount:string)=>({owner,accountIndex:index,mint:ORE_MINT,programId:TOKEN_PROGRAM,uiTokenAmount:{amount,decimals:11}});
+ const tx={blockTime:1791072001,meta:{err:null,fee:5000,
+  preTokenBalances:[balances(sender,1,'100'),balances(destination,2,'0')],
+  postTokenBalances:[balances(sender,1,'5'),balances(destination,2,'95')]},
+  transaction:{signatures:['signature'],message:{accountKeys:[{pubkey:sender,signer:true},{pubkey:'source',signer:false},{pubkey:'dest-ata',signer:false}],
+   instructions:[{programId:TOKEN_PROGRAM,parsed:{type:'transferChecked',info:{authority:sender,destination:'dest-ata',mint:ORE_MINT,tokenAmount:{amount:'95',decimals:11}}}}]}}};
+ const config={cluster:'mainnet' as const,skrMint:'skr',treasury:'treasury',payoutTreasury:sender,tokenAuthority:sender};
+ assert.equal(verifyPayout(w,config,'signature',tx),null);
+ assert.equal(verifyPayout(w,{...config,tokenAuthority:'other-owner'},'signature',tx),'payout_wrong_sender');
+ for(const mutate of [
+  (v:typeof tx)=>{v.transaction.message.accountKeys[0].signer=false;},
+  (v:typeof tx)=>{v.transaction.message.accountKeys[1].signer=true;},
+  (v:typeof tx)=>{v.transaction.signatures.push('extra-signature');},
+  (v:typeof tx)=>{v.transaction.message.instructions.push(structuredClone(v.transaction.message.instructions[0]));},
+  (v:typeof tx)=>{v.transaction.message.instructions[0].parsed.info.authority='other-owner';},
+  (v:typeof tx)=>{v.meta.postTokenBalances[1].uiTokenAmount.amount='96';},
+  (v:typeof tx)=>{v.meta.postTokenBalances[0].uiTokenAmount.amount='6';},
+  (v:typeof tx)=>{v.transaction.message.instructions[0].parsed.info.tokenAmount.decimals=6;},
+  (v:typeof tx)=>{v.transaction.message.instructions[0].parsed.info.mint='foreign';},
  ]){const wrong=structuredClone(tx);mutate(wrong);assert.notEqual(verifyPayout(w,config,'signature',wrong),null);}
 });
 
