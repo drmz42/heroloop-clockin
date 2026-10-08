@@ -218,12 +218,13 @@ Deno.test('pending deploys reuse stored bytes and require actual expiry before r
   }
 });
 
-Deno.test('tiny per-shaft stake retains fee reserve and rejects removed or forged tiers', () => {
+Deno.test('tiny per-shaft stake retains fee reserve and preserves old-page stakes and rejects forged tiers', () => {
  const policy=minePolicy('0.00001',[0,24])!;
  assert.equal(policy.stake_per_round,'20000');
  assert.deepEqual(sessionSquares(policy),{squares:[0,24],perSquare:10000n});
  assert.equal(BigInt(String(policy.stake_per_round))+BigInt(String(policy.network_per_round))+BigInt(String(policy.protocol_per_round)),4530000n);
- for(const tier of ['0.01','0.000001','0.000010','1e-5','-0.00001'])assert.equal(minePolicy(tier,[0]),null);
+ assert.equal(minePolicy('0.01',[0])?.stake_per_round,'10000000');
+ for(const tier of ['0.000001','0.000010','1e-5','-0.00001'])assert.equal(minePolicy(tier,[0]),null);
 });
 
 Deno.test('tiny start reserves server-derived costs and status discloses the same caps', async () => {

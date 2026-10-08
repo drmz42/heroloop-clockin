@@ -32,7 +32,8 @@ const COMPUTE_UNITS = 400_000;
 // Without squares the tier is the whole round's stake, spread over all 25 squares.
 // With chosen squares the tier is the stake on each chosen square.
 export function minePolicy(tier: string, squares?: unknown): Json | null {
-  const stake = MINE_TIERS[tier];
+  // Existing APK pages may remain open across a release; retain their exact higher stake.
+  const stake = MINE_TIERS[tier] ?? (tier === "0.01" ? 10_000_000n : undefined);
   if (!stake) return null;
   let mask: number | null = null;
   if (squares !== undefined) {
