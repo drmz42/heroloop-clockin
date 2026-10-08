@@ -9,6 +9,7 @@ import {
   type SolanaSignMessageOutput,
 } from '@solana/wallet-standard-features';
 import { StandardConnect, type StandardConnectFeature } from '@wallet-standard/features';
+import { withWalletReturnGrace } from '@/platform/walletReturn';
 
 const MAX_CHALLENGE_BYTES = 8_192;
 const MAX_CLOCK_SKEW_MS = 30_000;
@@ -405,7 +406,7 @@ export async function createMwaSessionProof(options: MwaSessionProofOptions): Pr
     fetchImpl(input, { ...init, signal: AbortSignal.timeout(MWA_CHALLENGE_TIMEOUT_MS) });
   options.onStage?.('connect');
   try {
-    return await transact(async (wallet) => {
+    return await withWalletReturnGrace(transact(async (wallet) => {
       const authorization = await wallet.authorize({ chain: 'solana:mainnet', identity: options.appIdentity });
       const authorized = authorization.accounts[0];
       if (!authorized) fail('wallet_account_unavailable');
@@ -436,7 +437,7 @@ export async function createMwaSessionProof(options: MwaSessionProofOptions): Pr
       const signature = signed.slice(-64);
       const signedMessage = signed.length === 64 ? message : signed.slice(0, -64);
       return proofPayload(account, challenge, SolanaSignMessage, { signature, signedMessage });
-    });
+    }));
   } catch (error) {
     if (error instanceof SolanaWalletAuthError) throw error;
     const { stage } = progress;

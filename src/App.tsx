@@ -419,9 +419,10 @@ function App() {
   const [mobileSection, setMobileSection] = useState<MobileSection>('battle');
   const [moreOpen, setMoreOpen] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
-  const overlayHistory = useAndroidOverlayHistory(tab !== 'main' || moreOpen || mobileSheetOpen, () => {
+  const overlayHistory = useAndroidOverlayHistory(tab !== 'main' || moreOpen || mobileSheetOpen || mobileSection !== 'battle', () => {
     setMoreOpen(false);
     setTab('main');
+    setMobileSection('battle');
     window.dispatchEvent(new CustomEvent(OVERLAYS_CLOSE_EVENT));
   });
   const openQuests = () => {
@@ -433,6 +434,8 @@ function App() {
   const [routePath, setRoutePath] = useState(() => window.location.pathname);
   const [showBoost, setShowBoost] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
+  useAndroidOverlayHistory(showBoost, () => setShowBoost(false));
+  useAndroidOverlayHistory(showWallet, () => setShowWallet(false));
   const [showPromoCode, setShowPromoCode] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
   const [showMail, setShowMail] = useState(false);

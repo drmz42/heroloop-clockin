@@ -7,6 +7,7 @@ import { playerSync } from './backend';
 import { compatibleSolanaWallets } from './solanaWalletRegistry';
 import { nativeMwaSession, readWalletBinding } from './solanaWalletSession';
 import { mobileWalletAppIdentity } from '@/platform/platform';
+import { withWalletReturnGrace } from '@/platform/walletReturn';
 
 export type WalletAsset = 'SKR' | 'SOL' | 'ORE';
 export const ASSET_DECIMALS: Record<WalletAsset, number> = { SKR: 6, SOL: 9, ORE: 11 };
@@ -145,14 +146,14 @@ async function signAndSend(transaction: string, chain: WalletChain, payer: strin
       import('@solana-mobile/mobile-wallet-adapter-protocol'),
       import('@solana-mobile/mobile-wallet-adapter-protocol/encoding'),
     ]);
-    return transact(async (wallet) => {
+    return withWalletReturnGrace(transact(async (wallet) => {
       const authorization = await wallet.authorize({ chain: chainId, identity: mobileWalletAppIdentity() });
       const account = authorization.accounts.find((entry) => base58(base64ToUint8Array(entry.address)) === payer);
       if (!account) throw new SeekerWalletError('wallet_account_mismatch');
       const { signatures } = await wallet.signAndSendTransactions({ payloads: [transaction] });
       if (signatures.length !== 1) throw new SeekerWalletError('wallet_send_failed');
       return base58(base64ToUint8Array(signatures[0]));
-    });
+    }));
   }
   const wallet: Wallet | undefined = compatibleSolanaWallets().find((entry) => entry.name === walletName);
   const account: WalletAccount | undefined = wallet?.accounts.find((entry) => entry.address === payer);
@@ -284,7 +285,7 @@ export async function requestWithdrawal(asset:WalletAsset,amount:string,signal?:
   let signature:string;
   try {
     signature=await Promise.race([
-      signAuthorization(intent.message,bound.address,bound.walletName),
+      withWalletReturnGrace(signAuthorization(intent.message,bound.address,bound.walletName),30_000),
       new Promise<never>((_,reject)=>{
         const fail=(code:string)=>reject(new SeekerWalletError(code));
         cap=setTimeout(()=>fail('wallet_timeout'),9*60_000);

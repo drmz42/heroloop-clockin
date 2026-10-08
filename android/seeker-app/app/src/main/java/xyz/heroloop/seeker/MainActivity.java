@@ -577,6 +577,9 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        // Back from a wallet app: tell the page, so a request the wallet dropped without an answer
+        // (cancelled fingerprint/PIN unlock) ends instead of blocking the game (walletReturn.ts).
+        if (walletInFront) webView.evaluateJavascript("window.dispatchEvent(new Event('hl-wallet-return'))", null);
         walletInFront = false;
         WalletSessionService.stop(this);
         webView.onResume();

@@ -48,6 +48,7 @@ import { ActionFx } from '@/theme/motion/ActionFx';
 import { flyCoins } from '@/theme/motion/flyCoins';
 import { installGameAudio, playSfx } from '@/audio/gameAudio';
 import { BossIntro } from '@/theme/motion/BossIntro';
+import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
 
 const SAVE_KEY = editionStorageKey('afk-heroes-save-v7');
 // Temporarily hide the first-use dialog for hackathon start-of-game recordings.
@@ -752,6 +753,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     if (isolatedHackathon && !isAndroidLayout) setBattleActionsHost(document.getElementById(BATTLE_ACTIONS_SLOT));
   }, []);
   const [commanderOpen, setCommanderOpen] = useState(false);
+  useAndroidOverlayHistory(commanderOpen, () => setCommanderOpen(false));
   useEffect(() => {
     const open = () => setCommanderOpen((visible) => !visible);
     window.addEventListener(COMMANDER_OPEN_EVENT, open);
