@@ -678,7 +678,7 @@ button.sc-chip { cursor: pointer; }
   color: #ebdfca;
 }
 .hv-detail > header.hv-detail-hero { position: relative; isolation: isolate; display: block; min-height: 196px; overflow: hidden; border-bottom: 1px solid color-mix(in srgb, var(--hv-color) 45%, #3b2a14); padding: 14px 12px 12px; }
-.hv-detail-art { position: absolute !important; inset: 0 0 0 auto !important; z-index: -2; width: 58% !important; height: 100% !important; object-fit: cover; object-position: 50% 18%; -webkit-mask: linear-gradient(90deg, transparent, #000 38%); mask: linear-gradient(90deg, transparent, #000 38%); }
+.hv-detail-art { position: absolute !important; inset: 0 0 0 auto !important; z-index: -2; width: 58% !important; height: 100% !important; object-fit: cover; object-position: 50% 18%; -webkit-mask: linear-gradient(90deg, transparent, #000 38%) !important; mask: linear-gradient(90deg, transparent, #000 38%) !important; }
 .hv-detail-hero::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 80% 40%, color-mix(in srgb, var(--hv-color) 28%, transparent), transparent 60%), linear-gradient(90deg, rgba(8, 6, 5, .96) 30%, rgba(8, 6, 5, .35) 70%, rgba(8, 6, 5, .1)), linear-gradient(0deg, rgba(8, 6, 5, .9), transparent 40%); }
 .hv-detail-copy { display: grid; max-width: 62%; gap: 5px; justify-items: start; }
 .hv-detail-rarity { color: var(--hv-color); font: 700 9px/1.2 var(--sc-display); letter-spacing: .26em; text-transform: uppercase; text-shadow: 0 0 10px color-mix(in srgb, var(--hv-color) 60%, transparent); }

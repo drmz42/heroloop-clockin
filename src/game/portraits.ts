@@ -39,12 +39,15 @@ export function heroPortraitStyle(heroId: string | undefined, heroClass: HeroCla
   void heroClass;
   return {
     position: 'absolute',
-    inset: '0',
+    // Hero art is 720x1080. Starting the art 10% below the box top keeps the head clear of the frame's top rim;
+    // the soft top edge blends into the box background.
+    inset: '10% 0 0 0',
     width: '100%',
-    height: '100%',
+    height: '90%',
     objectFit: 'cover',
-    // Hero art is 720x1080; a high crop keeps the head clear of the frame's top rim in square and card boxes.
-    objectPosition: '50% 18%',
+    objectPosition: '50% 8%',
+    WebkitMaskImage: 'linear-gradient(180deg, transparent, #000 14%)',
+    maskImage: 'linear-gradient(180deg, transparent, #000 14%)',
   };
 }
 
