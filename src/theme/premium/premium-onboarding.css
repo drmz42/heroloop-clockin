@@ -272,7 +272,9 @@
     flex-direction: column;
     border: 0;
     border-image: none;
-    padding: max(18px, env(safe-area-inset-top)) 22px max(14px, env(safe-area-inset-bottom));
+    /* The Seeker app draws under the camera cutout and publishes its height as --hl-app-safe-*. */
+    padding: max(18px, env(safe-area-inset-top), calc(var(--hl-app-safe-top, 0px) + 14px)) 22px
+      max(14px, env(safe-area-inset-bottom), calc(var(--hl-app-safe-bottom, 0px) + 10px));
     background:
       radial-gradient(ellipse 120% 45% at 50% 0%, rgba(143, 31, 18, .22), transparent 70%),
       radial-gradient(ellipse 90% 35% at 50% 30%, rgba(199, 158, 97, .08), transparent 70%),
@@ -287,7 +289,7 @@
   .onb-body > * { width: 100%; }
   .onb-body > .onb-step1 { margin-block: auto; }
   .onb-foot { padding-inline: 0; border-top: 0; }
-  .onb-close { right: 14px; top: max(12px, env(safe-area-inset-top)); width: 36px; height: 36px; border-color: transparent; background: rgba(10, 8, 7, .6); border-radius: 50%; }
+  .onb-close { right: 14px; top: max(12px, env(safe-area-inset-top), calc(var(--hl-app-safe-top, 0px) + 8px)); width: 36px; height: 36px; border-color: transparent; background: rgba(10, 8, 7, .6); border-radius: 50%; }
   .onb-copy { font-size: 15px; }
   .onb-ribbon { border-color: transparent; }
   .onb-cta-primary { width: calc(100% - 18px); }
