@@ -79,7 +79,7 @@ function PromotionCeremony({ promotions, goldSpent, freed, onClose }: { promotio
             const color = RARITY_COLORS[hero.rarity];
             const delay = Math.min(index, 12) * 90;
             return <li key={entry.uid} className="promo-row" style={{ '--promo-color': color, '--promo-delay': `${delay}ms` } as React.CSSProperties}>
-              <span className="promo-row-portrait"><HeroPortrait heroId={hero.id} heroClass={hero.heroClass} rarity={hero.rarity} color={hero.color} size={84} /></span>
+              <span className="promo-row-portrait"><HeroPortrait heroId={hero.id} heroClass={hero.heroClass} rarity={hero.rarity} color={hero.color} size={108} /></span>
               <span className="promo-row-body">
                 <b style={{ color }}>{hero.name}</b>
                 <small>{RARITY_LABEL[hero.rarity]} · Power {formatNum(entry.powerBefore)} → {formatNum(entry.powerAfter)} (+{formatNum(entry.powerAfter - entry.powerBefore)})</small>
