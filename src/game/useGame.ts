@@ -1177,7 +1177,7 @@ export function useGame() {
           ? [...base.chests, ...Array.from({ length: awarded }, (_, index) => ({ id: `active-${now}-${index}`, stage: base.currentLocation }))]
           : base.chests;
         return {
-          ...awardedXp,
+          ...base,
           lastSeen: now,
           chests,
           chestsOpenedToday: base.chestsOpenedToday + awarded,
