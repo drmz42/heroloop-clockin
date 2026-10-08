@@ -1891,7 +1891,7 @@ function NextStepCard({ game, nextLocation, onQuestsClick, onStoreClick }: { gam
   return <button type="button" onClick={step.onClick} className={`hl-next-step game-control absolute top-2 z-30 flex min-h-11 items-center gap-2 px-2.5 py-1.5 text-left ${step.cta ? 'is-ready' : ''}`} aria-label={`${step.kicker}: ${step.label}`}>
     <span className="min-w-0 flex-1">
       <span className="block ui-text-small font-black uppercase tracking-[.12em] text-[#c9a463]">{step.kicker}</span>
-      <span className="block truncate ui-text-medium font-bold leading-tight text-[#efe4cf]">{step.label}</span>
+      <span className="block whitespace-normal break-words ui-text-medium font-bold leading-tight text-[#efe4cf]">{step.label}</span>
       {step.progress && <span className="mt-1 flex items-center gap-1.5"><span className="health-track h-1 flex-1 overflow-hidden"><span className="block h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, step.progress.progress / step.progress.target * 100)}%` }} /></span><span className="ui-text-small tabular-nums text-px-dim">{step.progress.progress}/{step.progress.target}</span></span>}
     </span>
     {step.cta ? <span className="hl-next-step-cta flex shrink-0 items-center gap-1 ui-text-small font-black uppercase">{step.cta}<ArrowRight size={14} aria-hidden="true" /></span> : <ChevronRight size={16} className="shrink-0 text-[#9b8c70]" aria-hidden="true" />}
