@@ -109,7 +109,7 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
   const selected = rows.find((row) => row.id === selectedId) ?? null;
   useEffect(() => {
     if (!selectedId || !window.matchMedia('(max-width: 1023px)').matches) return;
-    screenRef.current?.scrollTo({ top: 0 });
+    detailRef.current?.scrollIntoView({ block: 'start' });
     detailRef.current?.focus({ preventScroll: true });
   }, [selectedId]);
   const flash = (value: string) => { setNotice(value); window.setTimeout(() => setNotice(''), 2400); };
