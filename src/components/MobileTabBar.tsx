@@ -40,7 +40,7 @@ function MoLife({ id }: { id: string }) {
 
 export function MobileTabBar({
   tab, section, moreOpen, onTab, onSection, onMoreOpen, onGuides, onCode, onSupport, onLogout, readyQuests = 0, badges = {}, alerts = {},
-  claimQuest, motionOff = false,
+  claimQuest, motionOff = false, onSheetOpenChange,
 }: {
   tab: Tab;
   section: MobileSection;
@@ -58,10 +58,12 @@ export function MobileTabBar({
   /** Mine quests claim through the same server settlement as the Quest Board. */
   claimQuest?: (id: string) => Promise<boolean>;
   motionOff?: boolean;
+  onSheetOpenChange?: (open: boolean) => void;
 }) {
   const [soon, setSoon] = useState<'mine' | 'pvp' | null>(null);
   const audioSettings = useAudioSettings();
   const mineOpen = soon !== null;
+  useEffect(() => { onSheetOpenChange?.(mineOpen); }, [mineOpen, onSheetOpenChange]);
   const [teaser, setTeaser] = useState<Upcoming | null>(null);
   useEffect(() => { if (!moreOpen) setTeaser(null); }, [moreOpen]);
   const setMineOpen = (open: boolean) => { if (!open) setSoon(null); };

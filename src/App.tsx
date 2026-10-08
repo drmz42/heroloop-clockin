@@ -9,6 +9,7 @@ import { readyQuestCount, currentTutorialObjective } from '@/game/tutorialProgre
 import { FooterBar } from '@/components/FooterBar';
 import { MobileTabBar } from '@/components/MobileTabBar';
 import { markStoreNoticeSeen, storeNoticeUnseen } from '@/game/storeNotice';
+import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
 import { isAndroidLayout, isAppShell, type MobileSection } from '@/platform/platform';
 import { SupportTicketModal } from '@/components/SupportTicketModal';
 import { MailboxModal } from '@/components/MailboxModal';
@@ -417,35 +418,12 @@ function App() {
   }, [tab, storeNotice]);
   const [mobileSection, setMobileSection] = useState<MobileSection>('battle');
   const [moreOpen, setMoreOpen] = useState(false);
-  // Android layout: a window or the More sheet takes one history entry, so the
-  // system Back button closes it instead of leaving the game.
-  const overlayOpen = isAndroidLayout && (tab !== 'main' || moreOpen);
-  const overlayHistory = useRef({ pushed: false, ignoreNextPop: false });
-  useEffect(() => {
-    if (!isAndroidLayout) return;
-    const entry = overlayHistory.current;
-    if (overlayOpen && !entry.pushed) {
-      window.history.pushState({ heroloopOverlay: true }, '');
-      entry.pushed = true;
-    } else if (!overlayOpen && entry.pushed) {
-      entry.pushed = false;
-      entry.ignoreNextPop = true;
-      window.history.back();
-    }
-  }, [overlayOpen]);
-  useEffect(() => {
-    if (!isAndroidLayout) return;
-    const entry = overlayHistory.current;
-    const onPop = () => {
-      if (entry.ignoreNextPop) { entry.ignoreNextPop = false; return; }
-      if (!entry.pushed) return;
-      entry.pushed = false;
-      setMoreOpen(false);
-      setTab('main');
-    };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, []);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const overlayHistory = useAndroidOverlayHistory(tab !== 'main' || moreOpen || mobileSheetOpen, () => {
+    setMoreOpen(false);
+    setTab('main');
+    window.dispatchEvent(new CustomEvent(OVERLAYS_CLOSE_EVENT));
+  });
   const openQuests = () => {
     setTab('main');
     setMoreOpen(false);
@@ -651,6 +629,7 @@ function App() {
           onTab={setTab}
           onSection={setMobileSection}
           onMoreOpen={setMoreOpen}
+          onSheetOpenChange={setMobileSheetOpen}
           onGuides={openWiki}
           onCode={() => setShowPromoCode(true)}
           onSupport={() => setShowSupport(true)}
