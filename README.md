@@ -57,7 +57,7 @@ npm run backend:local -- status
 npm run backend:local -- down     # stops everything and deletes the local database volume
 ```
 
-The first `up` generates fresh random secrets into `selfhosted/clockin.env.local` (git-ignored) and applies the database baseline and the SKR ledger schema. When it prints `Backend ready`, the API answers on `http://127.0.0.1:28081/api/v1/health` and Auth on `http://127.0.0.1:29999/health`. Ports can be changed with `HL_LOCAL_API_PORT`, `HL_LOCAL_AUTH_PORT` and `HL_LOCAL_DB_PORT`.
+The first `up` generates fresh random secrets into `selfhosted/clockin.env.local` (git-ignored), applies the database baseline, installs the Seeker 200-level progression policy in the local game database and creates the separate SKR ledger schema. Repeated `up` preserves the installed progression policy; an incompatible policy version stops startup. This local helper does not install or migrate a hosted backend. When it prints `Backend ready`, the API answers on `http://127.0.0.1:28081/api/v1/health` and Auth on `http://127.0.0.1:29999/health`. Ports can be changed with `HL_LOCAL_API_PORT`, `HL_LOCAL_AUTH_PORT` and `HL_LOCAL_DB_PORT`.
 
 ## Tests
 

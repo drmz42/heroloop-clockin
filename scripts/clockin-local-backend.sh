@@ -51,6 +51,14 @@ case $action in
       compose exec -T postgres bash "/docker-entrypoint-initdb.d/$initializer" >/dev/null
     done
     "$repo/scripts/apply-selfhosted-baseline.sh" "$container"
+    # The Seeker client requires its explicit policy, which is excluded from the shared baseline.
+    if [[ $(psql -d postgres -Atc "SELECT to_regclass('public.seeker_progression_settings') IS NOT NULL") != t ]]; then
+      psql -d postgres -c "SET heroloop.edition = 'seeker'" -f - <"$repo/selfhosted/postgres/manual/seeker-progression-200.sql"
+    fi
+    [[ $(psql -d postgres -Atc "SELECT version FROM public.seeker_progression_settings WHERE singleton") == seeker-progression-200-v1 ]] || {
+      echo 'ERROR: local Seeker progression version does not match this client' >&2
+      exit 1
+    }
     # The SKR ledger lives in its own database, never inside the game database.
     [[ $(psql -d postgres -Atc "SELECT count(*) FROM pg_database WHERE datname='seeker_skr'") != 0 ]] || psql -d postgres -c 'CREATE DATABASE seeker_skr OWNER supabase_admin'
     [[ $(psql -d seeker_skr -Atc "SELECT to_regclass('seeker_skr.events') IS NOT NULL") == t ]] || psql -d seeker_skr <"$repo/selfhosted/seeker/ledger.sql"
