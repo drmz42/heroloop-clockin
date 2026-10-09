@@ -13,7 +13,7 @@ import { shortWalletAddress } from '@/components/walletAddress';
 
 // Android layout only (src/platform/platform.ts): the phone's primary navigation, two rows
 // (Founder 2026-10-02). Row 1: Battle, Quests and Bag switch the Play screen between its three
-// columns; Heroes, Summon and Market open their windows. Row 2: PvP ("Season 2"), Wallet, the
+// columns; Heroes, Summon and Market open their windows. Row 2: PvP ("Season"), Wallet, the
 // upcoming $ORE Mine (its own sheet), Store, Ranks, and More with Training, Refer and the footer links
 // (Founder 2026-10-09: Wallet moved from More between PvP and Mine). Any item can
 // carry a count badge on its icon (`badges`; Quests shows its ready rewards) or a red mark without a
@@ -255,7 +255,7 @@ export function MobileTabBar({
         {windowButton('summon', 'Summon', Sparkles)}
         {windowButton('market', 'Market', Store)}
         <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'pvp' ? 'is-active' : ''}`} aria-expanded={soon === 'pvp'} aria-label="PvP, Season 2" onClick={() => { onMoreOpen(false); setSoon(soon === 'pvp' ? null : 'pvp'); }}>
-          <i className="hl-tabbar-icon" aria-hidden="true"><Crosshair size={20} /><b className="hl-mine-badge">Season 2</b></i><span>PvP</span>
+          <i className="hl-tabbar-icon" aria-hidden="true"><Crosshair size={20} /><b className="hl-mine-badge">Season</b></i><span>PvP</span>
         </button>
         {onWallet && <button type="button" className="hl-tabbar-item" onClick={() => { onMoreOpen(false); setMineOpen(false); onWallet(); }} aria-label={walletAddress ? `Open wallet ${shortWalletAddress(walletAddress)}` : 'Open account'} title={walletAddress ?? 'Account'}>
           {icon(Wallet, 0)}<span>Wallet</span>
