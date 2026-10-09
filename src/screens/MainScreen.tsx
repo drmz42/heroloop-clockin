@@ -1371,11 +1371,6 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const roomState = checkpoint.room_state;
-  const rewardCount = (value: unknown) => {
-    const count = Number(value);
-    return Number.isSafeInteger(count) && count >= 0 ? count : 0;
-  };
-  const rewardPreview = roomState?.reward_preview;
 
   const checkpointFromResult = (base: DungeonCheckpoint, result: Record<string, unknown>): DungeonCheckpoint => ({
     ...base,
