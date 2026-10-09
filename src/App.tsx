@@ -11,7 +11,7 @@ import { FooterBar } from '@/components/FooterBar';
 import { MobileTabBar } from '@/components/MobileTabBar';
 import { BattleSettings } from '@/components/BattleSettings';
 import { SeekerEventsPage } from '@/components/SeekerEvents';
-import { useSeekerEvents, type EventTab } from '@/game/useSeekerEvents';
+import { readyEventCount, useSeekerEvents, type EventTab } from '@/game/useSeekerEvents';
 import { markStoreNoticeSeen, storeNoticeUnseen } from '@/game/storeNotice';
 import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
 import { isAndroidLayout, isAppShell, type MobileSection } from '@/platform/platform';
@@ -469,7 +469,9 @@ function App() {
   // The Mailbox is a page (tab "mail"); its old modal flag is gone.
   // Seeker Events (Calendar, Weekly Event, Premium Pass) open over the battle from the burger or More.
   const [eventsTab, setEventsTab] = useState<EventTab>('calendar');
-  const openEvents = (next: EventTab) => { setEventsTab(next); setMoreOpen(false); setTab('events'); };
+  const openEvents = (next: EventTab) => { setEventsTab(next); setMoreOpen(false); setEventsMenuOpen(false); setTab('events'); };
+  // Founder 2026-10-09: the top bar's Events plate (the wallet's old slot) opens the former battle burger.
+  const [eventsMenuOpen, setEventsMenuOpen] = useState(false);
   const seekerEvents = useSeekerEvents(isolatedHackathon && accountGate === 'verified', (state, revision) => {
     game.hydrateServerState(state);
     game.applyServerRevision(revision);
@@ -482,7 +484,8 @@ function App() {
     const target = event.target as Element;
     if (!target.closest('button, a') || target.closest('.hl-more-sheet')) return;
     // More and Mine toggle their own sheets (and close each other); closing them here as well reopened More.
-    const sheetToggle = Boolean(target.closest('[aria-expanded]'));
+    // The Events plate opens a menu over the battle, so it closes More and Mine like any other bar button.
+    const sheetToggle = Boolean(target.closest('[aria-expanded]')) && !target.closest('.tb-events');
     const commanderToggle = Boolean(target.closest('.game-progress-commander, .tb-commander'));
     setShowBoost(false); setShowWallet(false); setShowPromoCode(false); setShowSupport(false);
     if (!sheetToggle) setMoreOpen(false);
@@ -596,6 +599,7 @@ function App() {
           onBoost={() => setShowBoost(true)}
           onWallet={() => setShowWallet(true)}
           onMail={() => setTab('mail')}
+          events={isolatedHackathon ? { open: eventsMenuOpen && tab === 'main', ready: readyEventCount(seekerEvents.status), onToggle: () => { const open = !(eventsMenuOpen && tab === 'main'); setTab('main'); setEventsMenuOpen(open); } } : undefined}
         />
       ) : isolatedHackathon && <GameProgressBar power={game.teamPower()} readyQuests={readyQuestCount(game.state)} objective={currentTutorialObjective(game.state)} identity={game.state.walletAddress} onQuestsClick={openQuests} />}
       {isAndroidLayout && <OfflineBar />}
@@ -629,7 +633,7 @@ function App() {
       {/* The window overlay lives in the Play area's host: fixed on the web, but on the Android layout
           (android.css) it fills exactly the Play area, so every menu item reads as a page like the Bag. */}
       <div className="game-main-host flex-1 min-h-0 overflow-hidden">
-        <MainScreen game={game} tokenomics={tokenomics} onBoostClick={() => setShowBoost(true)} onGuidesClick={openWiki} onRewardBoostClick={() => setTab('shop')} onQuestsClick={openQuests} events={isolatedHackathon ? seekerEvents : undefined} onEventsOpen={openEvents} />
+        <MainScreen game={game} tokenomics={tokenomics} onBoostClick={() => setShowBoost(true)} onGuidesClick={openWiki} onRewardBoostClick={() => setTab('shop')} onQuestsClick={openQuests} events={isolatedHackathon ? seekerEvents : undefined} onEventsOpen={openEvents} eventsMenuOpen={eventsMenuOpen && tab === 'main'} onEventsMenuOpen={isolatedHackathon ? setEventsMenuOpen : undefined} />
         {tab !== 'main' && (
           <div
             className="game-window-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-[5px]"
@@ -684,6 +688,8 @@ function App() {
           onLogout={() => void logout()}
           onPass={isolatedHackathon ? () => openEvents('pass') : undefined}
           settings={isolatedHackathon ? <BattleSettings game={game} /> : undefined}
+          walletAddress={linkedWalletAddress}
+          onWallet={isolatedHackathon ? () => setShowWallet(true) : undefined}
         />
       ) : (
         <FooterBar onLogout={() => void logout()} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} onSupportClick={() => setShowSupport(true)} />
@@ -702,6 +708,7 @@ function App() {
       {game.chestOpenResult && (
         <ChestOpenModal
           items={game.chestOpenResult}
+          mailed={game.chestRewardsMailed}
           game={game}
           heroes={game.state.ownedHeroes}
           onClose={game.closeChestResult}

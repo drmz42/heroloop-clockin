@@ -124,3 +124,17 @@ html[data-hl-platform='android'] .hl-topbar.tb-bar .tb-power .game-power-change 
   .tb-plate { font-size: 9.5px; letter-spacing: .03em; }
   .tb-wallet { font-size: 10px; }
 }
+/* Events plate (Founder 2026-10-09): the old wallet slot opens the Events menu; an ember glow and a flickering
+   flame mark rewards waiting, the count sits on it as the Mailbox gem. */
+.tb-events { position: relative; flex: 1.2 1 0; overflow: visible; color: #ffe7b8; }
+.tb-events > svg { color: #ff9a4a; filter: drop-shadow(0 0 4px rgba(255, 120, 50, .6)); }
+.tb-events.is-active { border-image: url('../premium/assets/btn-crimson-play-9.webp') 24 56 26 fill / 7px 16px 8px / 0 6px stretch; border-width: 9px 13px; color: #fff3d6; }
+.tb-events > .tb-badge { overflow: visible; }
+.tb-events::after { content: ''; position: absolute; inset: -8px -12px; border-radius: 3px; box-shadow: 0 0 14px rgba(255, 120, 50, .45), inset 0 0 10px rgba(255, 120, 50, .25); opacity: 0; pointer-events: none; }
+.tb-events.has-ready::after { opacity: .8; }
+@media (prefers-reduced-motion: no-preference) {
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .tb-events > svg { animation: tb-flame 1.8s ease-in-out infinite; transform-origin: 50% 90%; }
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .tb-events.has-ready::after { animation: tb-ember 2.2s ease-in-out infinite; }
+}
+@keyframes tb-flame { 0%, 100% { transform: scale(1) rotate(0); } 30% { transform: scale(1.08, 1.14) rotate(-4deg); } 60% { transform: scale(.96, 1.04) rotate(3deg); } }
+@keyframes tb-ember { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }

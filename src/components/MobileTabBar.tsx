@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Backpack, BookOpen, Castle, ChevronLeft, ChevronRight, Crosshair, Crown, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, PawPrint, Pickaxe, ScrollText, Send, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, Twitter, UserPlus, X, Volume2, VolumeX, Music, Settings2 } from 'lucide-react';
+import { Backpack, BookOpen, Castle, ChevronLeft, ChevronRight, Crosshair, Crown, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, PawPrint, Pickaxe, ScrollText, Send, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, Twitter, UserPlus, Wallet, X, Volume2, VolumeX, Music, Settings2 } from 'lucide-react';
 import { setMusicEnabled, setMusicVolume, setSfxEnabled, setSfxVolume, useAudioSettings } from '@/audio/gameAudio';
 import type { Tab } from './TopMenu';
 import { OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
@@ -9,12 +9,13 @@ import { SeekerMinePanel } from '@/components/SeekerMinePanel';
 import { buildVersionLabel } from '@/platform/buildInfo';
 import { MINE_OPEN_EVENT, markSeekerTourStep } from '@/game/seekerTour';
 import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
+import { shortWalletAddress } from '@/components/walletAddress';
 
 // Android layout only (src/platform/platform.ts): the phone's primary navigation, two rows
 // (Founder 2026-10-02). Row 1: Battle, Quests and Bag switch the Play screen between its three
-// columns; Heroes, Summon and Market open their windows. Row 2: Training, Store, the upcoming
-// $ORE Mine (its own sheet) and PvP ("Soon"), both slightly highlighted, Ranks, and More with Refer and the
-// footer links (Founder 2026-10-03: Refer moved into More to make room for PvP). Any item can
+// columns; Heroes, Summon and Market open their windows. Row 2: PvP ("Season"), Wallet, the
+// upcoming $ORE Mine (its own sheet), Store, Ranks, and More with Training, Refer and the footer links
+// (Founder 2026-10-09: Wallet moved from More between PvP and Mine). Any item can
 // carry a count badge on its icon (`badges`; Quests shows its ready rewards) or a red mark without a
 // number (`alerts`, e.g. a Store sale).
 
@@ -41,7 +42,7 @@ function MoLife({ id }: { id: string }) {
 
 export function MobileTabBar({
   tab, section, moreOpen, onTab, onSection, onMoreOpen, onGuides, onCode, onSupport, onLogout, readyQuests = 0, badges = {}, alerts = {},
-  claimQuest, motionOff = false, onSheetOpenChange, onPass, settings,
+  claimQuest, motionOff = false, onSheetOpenChange, onPass, settings, walletAddress = null, onWallet,
 }: {
   tab: Tab;
   section: MobileSection;
@@ -64,6 +65,9 @@ export function MobileTabBar({
   onPass?: () => void;
   /** Seeker: automatic healing and battle graphics (moved out of the battle burger). */
   settings?: ReactNode;
+  /** Seeker: Wallet opens from the bottom row between PvP and Mine. */
+  walletAddress?: string | null;
+  onWallet?: () => void;
 }) {
   const [soon, setSoon] = useState<'mine' | 'pvp' | null>(null);
   const audioSettings = useAudioSettings();
@@ -138,6 +142,8 @@ export function MobileTabBar({
               <span className="mo-title">{settingsOpen ? 'Settings' : teaser ? UPCOMING[teaser].title : 'More'}</span>
               <button type="button" className="mo-close" onClick={() => onMoreOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
+            {/* The list scrolls; the footer row (socials, Settings, Logout) stays put (Founder 2026-10-09). */}
+            <div className="mo-scroll">
             {settingsOpen ? (
               <div className="mo-settings-page">
                 <section className="mo-set-group" aria-label="Sound">
@@ -195,24 +201,28 @@ export function MobileTabBar({
                     );
                   })}
                 </div>
-                <button type="button" className="mo-banner mo-banner-refer mo-art-refer" onClick={() => { onMoreOpen(false); onTab('referrals'); }}>
-                  <i className="mo-tile-icon" aria-hidden="true"><UserPlus size={18} /></i>
-                  <span className="mo-banner-text"><strong>Refer friends</strong><span>Invite allies and share the spoils.</span></span>
-                  <ChevronRight className="mo-chev" size={18} aria-hidden="true" />
-                </button>
-                <div className="mo-links mo-links-single">
-                  <button type="button" className="mo-link" onClick={() => setSettingsOpen(true)}><i aria-hidden="true"><Settings2 size={17} /></i>Settings</button>
-                </div>
-                <div className="mo-footer">
-                  <div className="mo-socials" role="group" aria-label="Social networks">
-                    <a className="mo-social" href="https://t.me/heroloopgame" target="_blank" rel="noopener noreferrer" aria-label="Telegram" title="Telegram"><Send size={19} aria-hidden="true" /></a>
-                    <a className="mo-social" href="https://x.com/heroloopgame" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" title="X (Twitter)"><Twitter size={19} aria-hidden="true" /></a>
-                  </div>
-                  <button type="button" className="mo-logout" onClick={() => { onMoreOpen(false); onLogout(); }}><LogOut size={14} aria-hidden="true" /> Logout</button>
+                <div className="mo-pair mo-pair-short">
+                  <button type="button" className="mo-banner mo-tile mo-art-training" onClick={() => { onMoreOpen(false); onTab('training'); }}>
+                    <i className="mo-tile-icon" aria-hidden="true"><Dumbbell size={18} /></i>
+                    <span className="mo-banner-text"><span className="mo-kicker">Train heroes</span><strong>Training</strong></span>
+                  </button>
+                  <button type="button" className="mo-banner mo-tile mo-art-refer" onClick={() => { onMoreOpen(false); onTab('referrals'); }}>
+                    <i className="mo-tile-icon" aria-hidden="true"><UserPlus size={18} /></i>
+                    <span className="mo-banner-text"><span className="mo-kicker">Share the spoils</span><strong>Refer friends</strong></span>
+                  </button>
                 </div>
                 <p className="mo-version" aria-label={`Version: ${buildVersionLabel}`}>{buildVersionLabel}</p>
               </div>
             )}
+            </div>
+            {!settingsOpen && !teaser && <div className="mo-footer">
+              <div className="mo-socials" role="group" aria-label="Social networks">
+                <a className="mo-social" href="https://t.me/heroloopgame" target="_blank" rel="noopener noreferrer" aria-label="Telegram" title="Telegram"><Send size={19} aria-hidden="true" /></a>
+                <a className="mo-social" href="https://x.com/heroloopgame" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" title="X (Twitter)"><Twitter size={19} aria-hidden="true" /></a>
+              </div>
+              <button type="button" className="mo-settings-btn" onClick={() => setSettingsOpen(true)}><Settings2 size={15} aria-hidden="true" />Settings</button>
+              <button type="button" className="mo-logout" onClick={() => { onMoreOpen(false); onLogout(); }}><LogOut size={14} aria-hidden="true" /> Logout</button>
+            </div>}
           </div>
         </div>
       )}
@@ -237,23 +247,25 @@ export function MobileTabBar({
           <SeekerMinePanel onClose={() => setMineOpen(false)} claimQuest={claimQuest} still={motionOff} />
         </div>
       )}
-      <nav className="hl-tabbar" aria-label="Game navigation">
+      <nav className={`hl-tabbar${onWallet ? '' : ' hl-tabbar-5'}`} aria-label="Game navigation">
         {sectionButton('battle', 'Battle', Swords)}
         {sectionButton('quests', 'Quests', ScrollText)}
         {sectionButton('bag', 'Bag', Backpack)}
         {windowButton('heroes', 'Heroes', Shield)}
         {windowButton('summon', 'Summon', Sparkles)}
         {windowButton('market', 'Market', Store)}
-        {windowButton('training', 'Training', Dumbbell)}
-        {windowButton('shop', 'Store', ShoppingBag, 'SKR')}
+        <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'pvp' ? 'is-active' : ''}`} aria-expanded={soon === 'pvp'} aria-label="PvP, Season 2" onClick={() => { onMoreOpen(false); setSoon(soon === 'pvp' ? null : 'pvp'); }}>
+          <i className="hl-tabbar-icon" aria-hidden="true"><Crosshair size={20} /><b className="hl-mine-badge">Season</b></i><span>PvP</span>
+        </button>
+        {onWallet && <button type="button" className="hl-tabbar-item" onClick={() => { onMoreOpen(false); setMineOpen(false); onWallet(); }} aria-label={walletAddress ? `Open wallet ${shortWalletAddress(walletAddress)}` : 'Open account'} title={walletAddress ?? 'Account'}>
+          {icon(Wallet, 0)}<span>Wallet</span>
+        </button>}
         <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'mine' ? 'is-active' : ''}`} aria-expanded={soon === 'mine'} aria-label="$ORE Mine" onClick={() => { onMoreOpen(false); setSoon(soon === 'mine' ? null : 'mine'); }}>
           <i className="hl-tabbar-icon" aria-hidden="true"><Pickaxe size={20} /><b className="hl-mine-badge">ORE</b></i><span>Mine</span>
         </button>
-        <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'pvp' ? 'is-active' : ''}`} aria-expanded={soon === 'pvp'} aria-label="PvP, Season 2" onClick={() => { onMoreOpen(false); setSoon(soon === 'pvp' ? null : 'pvp'); }}>
-          <i className="hl-tabbar-icon" aria-hidden="true"><Crosshair size={20} /><b className="hl-mine-badge">Season 2</b></i><span>PvP</span>
-        </button>
+        {windowButton('shop', 'Store', ShoppingBag, 'SKR')}
         {windowButton('leaderboard', 'Ranks', Trophy)}
-        <button type="button" className={`hl-tabbar-item ${moreOpen || tab === 'referrals' ? 'is-active' : ''}`} aria-expanded={moreOpen} onClick={() => { setMineOpen(false); onMoreOpen(!moreOpen); }}>
+        <button type="button" className={`hl-tabbar-item ${moreOpen || tab === 'referrals' || tab === 'training' ? 'is-active' : ''}`} aria-expanded={moreOpen} onClick={() => { setMineOpen(false); onMoreOpen(!moreOpen); }}>
           {icon(Menu, 0)}<span>More</span>
         </button>
       </nav>

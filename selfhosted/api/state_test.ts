@@ -100,10 +100,10 @@ Deno.test("legacy migration replay returns only the stored server save", () => {
   assert("state" in result && result.state === canonical.state, "existing canonical save wins");
 });
 
-Deno.test("active Market escrow cannot return through requested or stored inventory and equipment", () => {
-  for (const includeRequested of [false, true]) {
+Deno.test("pending Mailbox or Market escrow cannot return through requested or stored inventory and equipment", () => {
+  for (const protection of ["active_escrow", "active_mail"]) for (const includeRequested of [false, true]) {
     const canonical = context();
-    canonical.items = [{ ...ledgerRow, active_escrow: true }];
+    canonical.items = [{ ...ledgerRow, [protection]: true }];
     const stored = canonical.state as JsonRecord;
     stored.ownedHeroes = (stored.ownedHeroes as JsonRecord[]).map((hero) => ({ ...hero, equipped: { helmet: owned.uid } }));
     const requested = structuredClone(stored);

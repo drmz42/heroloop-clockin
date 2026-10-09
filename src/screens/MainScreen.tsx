@@ -51,7 +51,7 @@ import { versionedAsset } from '@/game/assetVersion';
 import { BattleAmbience } from '@/components/BattleAmbience';
 import { ActionFx } from '@/theme/motion/ActionFx';
 import { flyCoins } from '@/theme/motion/flyCoins';
-import { installGameAudio, playSfx } from '@/audio/gameAudio';
+import { installGameAudio, playSfx, setMusicScene } from '@/audio/gameAudio';
 import { BossIntro } from '@/theme/motion/BossIntro';
 import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
 
@@ -308,7 +308,7 @@ function emptySlotArtworkId(slot: ItemSlot, heroClass: HeroClass): string {
   return `${slot}-common`;
 }
 
-export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRewardBoostClick, onQuestsClick, events, onEventsOpen }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void; onRewardBoostClick: () => void; onQuestsClick?: () => void; events?: SeekerEventsApi; onEventsOpen?: (tab: EventTab) => void }) {
+export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRewardBoostClick, onQuestsClick, events, onEventsOpen, eventsMenuOpen, onEventsMenuOpen }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void; onRewardBoostClick: () => void; onQuestsClick?: () => void; events?: SeekerEventsApi; onEventsOpen?: (tab: EventTab) => void; eventsMenuOpen?: boolean; onEventsMenuOpen?: (open: boolean) => void }) {
   const { state, battleResult, respawnCountdowns, paused, setPaused } = game;
   const tok = tokenomics;
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
@@ -316,7 +316,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const [banner, setBanner] = useState<typeof battleResult>(null);
   const [showPotSettings, setShowPotSettings] = useState(false);
   const [showBattleSettings, setShowBattleSettings] = useState(false);
-  const [battleMenuOpen, setBattleMenuOpen] = useState(false);
+  // Seeker (Founder 2026-10-09): the top bar's Events plate owns this menu; elsewhere the battle burger does.
+  const [localBattleMenuOpen, setLocalBattleMenuOpen] = useState(false);
+  const battleMenuOpen = onEventsMenuOpen ? Boolean(eventsMenuOpen) : localBattleMenuOpen;
+  const setBattleMenuOpen = onEventsMenuOpen ?? setLocalBattleMenuOpen;
   const eventsReady = readyEventCount(events?.status ?? null);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [autoGearNotice, setAutoGearNotice] = useState<string | null>(null);
@@ -374,6 +377,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   }, [battleResult]);
 
   useEffect(() => installGameAudio(), []);
+  const encounterMusic = Boolean(activeDungeon) || state.bossBattleActive;
+  useEffect(() => {
+    setMusicScene(encounterMusic ? 'encounter' : 'main');
+  }, [encounterMusic]);
 
   // Tutorial Chests open only when every item fits; otherwise explain the full bag instead of doing nothing.
   const openTutorialChestsChecked = (count: 1 | 10) => {
@@ -581,12 +588,13 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const battleMenuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!battleMenuOpen) return;
-    const close = (event: PointerEvent) => { if (!battleMenuRef.current?.contains(event.target as Node)) setBattleMenuOpen(false); };
+    // The top bar's Events plate toggles the menu itself on click.
+    const close = (event: PointerEvent) => { if (!battleMenuRef.current?.contains(event.target as Node) && !(event.target as Element).closest?.('.tb-events')) setBattleMenuOpen(false); };
     const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setBattleMenuOpen(false); };
     document.addEventListener('pointerdown', close);
     document.addEventListener('keydown', escape);
     return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', escape); };
-  }, [battleMenuOpen]);
+  }, [battleMenuOpen, setBattleMenuOpen]);
 
   // Opening the collapsed hackathon path scrolls the battle column so the whole path is on screen at once.
   useEffect(() => {
@@ -763,7 +771,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     };
     window.addEventListener(OVERLAYS_CLOSE_EVENT, close);
     return () => window.removeEventListener(OVERLAYS_CLOSE_EVENT, close);
-  }, []);
+  }, [setBattleMenuOpen]);
 
   // Commander panel: in the Quests column on desktop; on a phone it opens from the avatar in the
   // top bar (Founder 2026-10-02).
@@ -976,14 +984,21 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           {isolatedHackathon && !activeDungeon && <AutomaticHealingStatus game={game} />}
           {isolatedHackathon && !activeDungeon && <NextStepCard game={game} nextLocation={nextLocationAvailable ? nextLocation : null} onQuestsClick={onQuestsClick} onStoreClick={onRewardBoostClick} />}
           {isAndroidLayout && <div ref={battleMenuRef} className="hl-battle-menu pointer-events-none absolute bottom-2 right-2 top-2 z-[112] flex flex-col items-end gap-1">
-            <button type="button" onClick={() => setBattleMenuOpen((open) => !open)} data-guide="boss" className="hl-battle-menu-toggle game-control pointer-events-auto relative grid h-11 w-11 shrink-0 place-items-center p-0" aria-label={eventsReady ? 'Battle menu, event rewards ready' : 'Battle menu'} aria-haspopup="dialog" aria-expanded={battleMenuOpen}>{battleMenuOpen ? <X size={20} /> : <Menu size={20} />}{eventsReady > 0 && !battleMenuOpen && <b className="hl-battle-menu-dot" aria-hidden="true" />}</button>
-            {battleMenuOpen && <div role="dialog" aria-label="Battle menu" className="hl-battle-menu-panel pointer-events-auto min-h-0 w-64 max-w-[calc(100vw-24px)] overflow-y-auto overscroll-contain rounded-lg border border-[#80683f] bg-[#11130f] p-2 shadow-2xl">
+            {!onEventsMenuOpen && <button type="button" onClick={() => setBattleMenuOpen(!battleMenuOpen)} data-guide="boss" className="hl-battle-menu-toggle game-control pointer-events-auto relative grid h-11 w-11 shrink-0 place-items-center p-0" aria-label={eventsReady ? 'Battle menu, event rewards ready' : 'Battle menu'} aria-haspopup="dialog" aria-expanded={battleMenuOpen}>{battleMenuOpen ? <X size={20} /> : <Menu size={20} />}{eventsReady > 0 && !battleMenuOpen && <b className="hl-battle-menu-dot" aria-hidden="true" />}</button>}
+            {battleMenuOpen && (events && onEventsOpen ? <div role="dialog" aria-label="Events" className="ev-menu-panel pointer-events-auto">
+              <EventMenuCards events={events} onOpen={(tab) => { setBattleMenuOpen(false); onEventsOpen(tab); }}>
+                {!activeDungeon && <div className="ev-menu-battle">
+                  <button type="button" onClick={() => { setBattleMenuOpen(false); setShowDungeonInfo(true); }} className="ev-menu-btn ev-menu-btn-dungeon"><DoorOpen size={16} aria-hidden="true" /><span>Dungeons</span></button>
+                  <button type="button" onClick={() => void handleSummonBoss()} data-guide="boss" disabled={summonBusy || state.bossKeys < 1 || state.bossBattleActive} className="ev-menu-btn ev-menu-btn-boss"><BossKeyIcon size={22} /><span>{state.bossBattleActive ? 'Boss active' : `Boss · ${state.bossKeys}`}</span></button>
+                </div>}
+              </EventMenuCards>
+            </div> : <div role="dialog" aria-label="Battle menu" className="hl-battle-menu-panel pointer-events-auto min-h-0 w-64 max-w-[calc(100vw-24px)] overflow-y-auto overscroll-contain rounded-lg border border-[#80683f] bg-[#11130f] p-2 shadow-2xl">
               {!activeDungeon && <div className="mb-2 grid grid-cols-2 gap-1.5 border-b border-[#80683f]/50 pb-2">
                 <button type="button" onClick={() => { setBattleMenuOpen(false); setShowDungeonInfo(true); }} className="pm-socket game-control flex min-h-11 items-center justify-center gap-1.5 px-2 ui-text-small font-bold text-[#d7c6ea]"><DoorOpen size={15} aria-hidden="true" /> DUNGEONS</button>
                 <button type="button" onClick={() => void handleSummonBoss()} data-guide="boss" disabled={summonBusy || state.bossKeys < 1 || state.bossBattleActive} className="pm-socket game-control flex min-h-11 items-center justify-center gap-1 px-2 ui-text-small font-bold disabled:opacity-50"><BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}</button>
               </div>}
-              {events && onEventsOpen ? <EventMenuCards events={events} onOpen={(tab) => { setBattleMenuOpen(false); onEventsOpen(tab); }} /> : battleSettingsContent}
-            </div>}
+              {battleSettingsContent}
+            </div>)}
           </div>}
           {!activeDungeon && banner && (
             <div className="hl-battle-banner absolute inset-x-0 top-1/4 flex flex-col items-center z-30 pointer-events-none">
@@ -1016,7 +1031,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             </div>
           )}
           {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} autoRun={dungeonAutoRun.current} onChange={(next) => void handleDungeonChange(next)} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onComplete={(won, gold = 0, scrolls = 0, premium = 0, mailed = false) => setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls, premium, mailed })} />}
-          {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Server reward result:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span>{dungeonCompletion.premium > 0 && <span><FlaskConical size={14} /> {dungeonCompletion.premium} WEAK PREMIUM POTION</span>}<small>Granted once · Find your chest in Inventory → Resources → Chests</small></> : <><span><SummonScrollArtwork size={18} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST PREVIEW</span><small>{dungeonCompletion.mailed ? 'Scrolls sent to Mailbox. Claim them there; Dungeon Chest is not yet granted' : dungeonCompletion.scrolls === 2 ? 'Scrolls granted exactly once by the server; Dungeon Chest is not yet granted' : 'No Scrolls granted for this run; Dungeon Chest is not yet granted'}</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
+          {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Server reward result:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span>{dungeonCompletion.premium > 0 && <span><FlaskConical size={14} /> {dungeonCompletion.premium} WEAK PREMIUM POTION</span>}<small>{dungeonCompletion.mailed ? 'Rewards sent to Mailbox. Claim them there when you have room.' : 'Granted once · Find your chest in Inventory → Resources → Chests'}</small></> : <><span><SummonScrollArtwork size={18} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST PREVIEW</span><small>{dungeonCompletion.mailed ? 'Scrolls sent to Mailbox. Claim them there; Dungeon Chest is not yet granted' : dungeonCompletion.scrolls === 2 ? 'Scrolls granted exactly once by the server; Dungeon Chest is not yet granted' : 'No Scrolls granted for this run; Dungeon Chest is not yet granted'}</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
           {!activeDungeon && import.meta.env.MODE === 'staging' && <TestControls game={game} />}
           {!activeDungeon && <div className="hl-battle-footer normal-battle-footer relative z-30 flex shrink-0 flex-wrap items-end justify-between gap-3 px-3 pb-3">
             <TokenEarningsPanel status={tok.status} stale={tok.incomeStale} today={game.state.tokensEarnedToday} />
@@ -1031,13 +1046,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             <div className="flex flex-row gap-1 sm:flex-col sm:gap-1.5">
               <button type="button" onClick={onBoostClick} className={`pm-boost game-control flex h-7 w-auto shrink-0 items-center sm:h-8 sm:w-36 justify-center gap-1 px-1.5 py-0.5 sm:px-2 ui-text-small font-black ${state.boost.active ? 'boost-max-active' : 'boost-max-ready'}`} title="Boost your offline earnings to 24/7"><Rocket size={15} /><span>{state.boost.active ? 'BOOST ON' : 'BOOST MAX'}</span></button>
               <button
-                onClick={() => {
-                  if (isolatedHackathon && bagItemCount(state) >= inventoryCapacity(state)) {
-                    playSfx('error');
-                    setShowInventoryFull(true);
-                    return;
-                  }
-                  void game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem);
+                onClick={async () => {
+                  const result = await game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem);
+                  if (result === 'inventory-full') { playSfx('error'); setShowInventoryFull(true); }
                 }}
                 disabled={state.chests.length === 0 || game.chestOpening}
                 className="pm-chest reward-cta game-control flex h-7 w-auto shrink-0 items-center sm:h-8 sm:w-36 justify-center gap-1 px-1.5 py-0.5 sm:px-2 ui-text-small font-black disabled:opacity-55"
@@ -1233,7 +1244,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             {Array.from({ length: GRID_SIZE - resourceSlotCount }, (_, index) => <div key={`resource-empty-${index}`} className="item-slot aspect-square min-w-0 w-full border" style={{ borderColor: 'rgba(128,119,100,0.11)', background: 'linear-gradient(145deg,#151612,#0c0e0d)' }} />)}
             </div>
             {selectedResource && selectedResource !== 'chests' && <div className={`mt-2 rounded-lg border p-2 ${selectedResource === 'summon-scroll' ? 'border-violet-400/45 bg-violet-950/20' : 'border-amber-400/45 bg-amber-950/20'}`}><div className="flex items-center gap-2">{selectedResource === 'summon-scroll' ? <SummonScrollArtwork size={40} /> : <BossKeyIcon size={40} />}<div className="min-w-0"><strong className="ui-text-large block text-[#efe4ce]">{selectedResource === 'summon-scroll' ? 'Summon Scroll' : 'Boss Key'}</strong><span className="ui-text-small text-[#9b9283]">Owned: {formatNum(selectedResource === 'summon-scroll' ? state.summonScrolls : state.bossKeys)}</span></div></div><p className="ui-text-medium mt-1.5 leading-snug text-[#c9c0b1]">{selectedResource === 'summon-scroll' ? 'Persistent consumable for one future Free Summon. Scroll spending is not available until server-authoritative Free Summon launches.' : 'Non-deletable resource used only to summon a Boss. One summon consumes one key; a Boss Chest is awarded only after victory.'}</p></div>}
-            {selectedResource === 'chests' && <div className="mt-2 rounded-lg border border-amber-400/45 bg-amber-950/20 p-2"><strong className="ui-text-large block text-[#efe4ce]">Chests</strong><p className="ui-text-medium mt-1.5 text-[#c9c0b1]">Owned: {state.chests.length} · Boss Chests: {bossChestCount}. Boss Hunt rewards enter this chest queue after Claim Boss Rewards.</p><button type="button" disabled={state.chests.length === 0 || game.chestOpening} onClick={() => { if (bagItemCount(state) >= inventoryCapacity(state)) { setShowInventoryFull(true); return; } void game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem); }} className="game-control game-primary mt-2 !min-h-[44px] px-3 py-2 ui-text-medium font-bold disabled:opacity-55">{game.chestOpening ? 'OPENING…' : 'OPEN CHESTS'}</button></div>}
+            {selectedResource === 'chests' && <div className="mt-2 rounded-lg border border-amber-400/45 bg-amber-950/20 p-2"><strong className="ui-text-large block text-[#efe4ce]">Chests</strong><p className="ui-text-medium mt-1.5 text-[#c9c0b1]">Owned: {state.chests.length} · Boss Chests: {bossChestCount}. {isolatedHackathon ? 'Reward chests arrive in Mailbox. Claim them there to add them to this queue.' : 'Boss Hunt rewards enter this chest queue after Claim Boss Rewards.'}</p><button type="button" disabled={state.chests.length === 0 || game.chestOpening} onClick={() => { if (!isolatedHackathon && bagItemCount(state) >= inventoryCapacity(state)) { setShowInventoryFull(true); return; } void game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem); }} className="game-control game-primary mt-2 !min-h-[44px] px-3 py-2 ui-text-medium font-bold disabled:opacity-55">{game.chestOpening ? 'OPENING…' : 'OPEN CHESTS'}</button></div>}
           </div> : <div className={`hl-equipment-grid grid min-w-0 grid-cols-8 gap-px overflow-hidden ${inventoryLockMode ? 'inventory-lock-cursor' : ''}`}>
             {cells.slice(0, bagOpenSlots).map((item, i) => {
               const itemBase = item ? ITEM_MAP[item.itemId] : null;
@@ -1363,7 +1374,7 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
       if (result.state) onHydrate(result.state);
       if (action === 'dungeon_abandon' || (result.status && result.status !== 'active')) {
         if (attempts) onAttempts({ remaining: Number(result.attempts_remaining ?? attempts.remaining), max: attempts.max });
-        if (action !== 'dungeon_abandon') onComplete(result.status === 'completed', Number(result.gold) || 0, Number(result.scrolls_awarded) || 0, Number(result.premium_potions_awarded) || 0, result.rewards_mailed === true);
+        if (action !== 'dungeon_abandon') onComplete(result.status === 'completed', Number(result.gold) || 0, Number(result.scrolls_awarded) || 0, Number(result.premium_potions_awarded) || 0, result.rewards_mailed === true || result.gold_delivered_to === 'mail');
         onChange(null);
       } else {
         onChange(checkpointFromResult(checkpoint, result));
@@ -1380,7 +1391,10 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
     const bossFight = startState.kind === 'shared_boss';
     // Boss frames stay at 36: the cast bars read playback ticks 3-6 and 9-15 (Heavy Strike lands on 15).
     const totalFrames = bossFight ? 36 : 24;
-    const authoritativeDuration = Math.max(totalFrames * 450, Number(finalState.elapsed_ms ?? totalFrames * 450));
+    // The checkpoint contains aggregate HP, not an attack timeline. Keep Boss presentation beats
+    // at 450ms instead of stretching twelve staged swings over a potentially four-minute result.
+    // Server elapsed time still owns the summary and the relative placement of potion events.
+    const authoritativeDuration = bossFight ? totalFrames * 450 : Math.max(totalFrames * 450, Number(finalState.elapsed_ms ?? totalFrames * 450));
     const frameDuration = authoritativeDuration / totalFrames;
     const playback = planDungeonPlayback(resolved.room, startState, finalState, totalFrames);
     let pulseId = Date.now() * 32;
@@ -1417,12 +1431,14 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
           playback_tick: frame,
         },
       });
-      // Hits that share a frame land one after another inside it rather than as one simultaneous volley.
+      // Boss fighters have independent beats; hits sharing a beat must land together.
+      // Keep the existing stagger for ordinary Dungeon rooms.
       for (let order = 0; order < pulses.length; order += 1) {
-        if (order > 0) await waitForFeedback((frameDuration * 0.7) / pulses.length);
+        if (!bossFight && order > 0) await waitForFeedback((frameDuration * 0.7) / pulses.length);
         shown.push({ ...pulses[order], id: pulseId++, born: performance.now() });
-        publishPulses();
+        if (!bossFight) publishPulses();
       }
+      if (bossFight) publishPulses();
       const rest = frameDuration - (performance.now() - frameStarted);
       if (frame < totalFrames && rest > 0) await waitForFeedback(rest);
     }
@@ -1444,7 +1460,7 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
       });
       if (revealed?.status && revealed.status !== 'active') {
         if (revealed.state) onHydrate(revealed.state);
-        onComplete(revealed.status === 'completed', Number(revealed.gold) || 0, Number(revealed.scrolls_awarded) || 0, Number(revealed.premium_potions_awarded) || 0, revealed.rewards_mailed === true);
+        onComplete(revealed.status === 'completed', Number(revealed.gold) || 0, Number(revealed.scrolls_awarded) || 0, Number(revealed.premium_potions_awarded) || 0, revealed.rewards_mailed === true || revealed.gold_delivered_to === 'mail');
         onChange(null);
       } else if (revealed) onChange(checkpointFromResult(resolved, revealed));
     }
@@ -1521,6 +1537,9 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engaged, autoKey, busy, error]);
 
+  // Keep the controller mounted while its async playback runs, without covering the Boss arena.
+  if (checkpoint.type === 'boss_hunt' && (busy || roomState?.status === 'resolving')) return null;
+
   return <aside className="dungeon-battle-panel" aria-label={checkpoint.type === 'boss_hunt' ? 'Boss Hunt controls' : 'Dungeon battle controls'}>
     <div className="dungeon-panel-head flex items-center justify-between ui-text-small font-black uppercase tracking-wide text-[#b7a9c0]"><span>{roomState?.modifier?.split('_').join(' ') ?? (roomState?.kind?.split('_').join(' ') || 'Ready')}</span><span className="flex items-center gap-1">{checkpoint.type === 'boss_hunt' ? <><BossKeyIcon size={16} /> 1 Boss Key spent</> : attempts ? `${attempts.remaining}/${attempts.max} attempts` : '— attempts'}</span></div>
     <div className="dungeon-panel-body grid w-full gap-2">
@@ -1534,7 +1553,7 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
       {primary && <button type="button" disabled={busy} onClick={() => { setEngaged(true); void primary.action(); }} className="dungeon-panel-primary game-control game-primary min-h-11 px-3 ui-text-medium font-black"><Skull size={17} className="mr-2 inline" />{primary.label}</button>}
       {error && <div role="alert" className="text-center ui-text-small font-bold text-rose-300">{error.split('_').join(' ')}</div>}
       {/* Founder 2026-10-08: a won fight waiting for its Claim has nothing to abandon. */}
-      {roomState?.status !== 'reward_locked' && <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="dungeon-panel-abandon game-control min-h-10 px-3 ui-text-medium font-bold text-rose-300">{confirmAbandon ? 'Confirm exit · no refund' : checkpoint.type === 'boss_hunt' ? 'Abandon Boss Hunt' : 'Exit Dungeon'}</button>}
+      {checkpoint.type === 'dungeon' && roomState?.status !== 'reward_locked' && <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="dungeon-panel-abandon game-control min-h-10 px-3 ui-text-medium font-bold text-rose-300">{confirmAbandon ? 'Confirm exit · no refund' : 'Exit Dungeon'}</button>}
     </div>
   </aside>;
 }

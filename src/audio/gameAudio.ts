@@ -1,4 +1,4 @@
-// Game sound: one looping music track plus synthesized interface and combat effects (no sample files).
+// Game sound: one streaming music player plus synthesized interface and combat effects (no sample files).
 // Two player switches (effects, music) persist per device; everything is silent until the first touch
 // because Android WebView and browsers only start audio after a user gesture.
 import { useSyncExternalStore } from 'react';
@@ -8,7 +8,15 @@ export type SfxName =
   | 'coin' | 'claim' | 'purchase' | 'error' | 'levelUp' | 'equip' | 'summon'
   | 'chestCharge' | 'chestRattle' | 'chestBurst' | 'cardFly' | 'bossIntro' | 'bossPhase';
 
-const MUSIC_SRC = '/assets/audio/shadows-of-the-void-v1.mp3';
+const MUSIC_SOURCES = {
+  main: ['/assets/audio/shadows-of-the-void-v1.mp3', '/assets/audio/somber-drone-v1.mp3'],
+  encounter: '/assets/audio/subterranean-drone-v1.mp3',
+};
+export type MusicScene = keyof typeof MUSIC_SOURCES;
+let musicScene: MusicScene = 'main';
+let mainTrackIndex = 0;
+let loadedMusicSource: string | null = null;
+let musicRequest = 0;
 const MUSIC_VOLUME = 0.3;
 const SFX_KEY = 'hl-audio-sfx';
 const MUSIC_KEY = 'hl-audio-music';
@@ -193,8 +201,13 @@ export function vibrate(pattern: number | number[]) {
 
 function musicElement(): HTMLAudioElement {
   if (!music) {
-    music = new Audio(MUSIC_SRC);
-    music.loop = true; music.preload = 'none'; music.volume = 0;
+    music = new Audio();
+    music.preload = 'none'; music.volume = 0;
+    music.addEventListener('ended', () => {
+      if (musicScene !== 'main' || !installed) return;
+      mainTrackIndex = (mainTrackIndex + 1) % MUSIC_SOURCES.main.length;
+      syncMusic();
+    });
   }
   return music;
 }
@@ -216,13 +229,42 @@ function musicTarget() { return (performance.now() < duckUntil ? MUSIC_VOLUME * 
 
 function syncMusic() {
   if (!installed || !unlocked) return;
-  if (settings.music && document.visibilityState !== 'hidden') {
+  if (settings.music && settings.musicVolume > 0 && document.visibilityState !== 'hidden') {
     const el = musicElement();
-    if (el.paused) void el.play().then(() => fadeMusic(musicTarget(), 1800)).catch(() => undefined);
-    else fadeMusic(musicTarget(), 400);
+    const source = musicScene === 'main' ? MUSIC_SOURCES.main[mainTrackIndex] : MUSIC_SOURCES.encounter;
+    if (loadedMusicSource !== source) {
+      window.clearInterval(musicFade);
+      el.pause();
+      el.volume = 0;
+      el.loop = musicScene === 'encounter';
+      el.src = source;
+      loadedMusicSource = source;
+      musicRequest += 1;
+    }
+    if (el.paused) {
+      const request = ++musicRequest;
+      void el.play().then(() => {
+        if (request !== musicRequest) return;
+        if (!installed || !settings.music || settings.musicVolume === 0 || document.visibilityState === 'hidden') {
+          el.pause();
+          return;
+        }
+        fadeMusic(musicTarget(), 1800);
+      }).catch(() => undefined);
+    } else fadeMusic(musicTarget(), 400);
   } else if (music && !music.paused) {
     fadeMusic(0, 350, true);
   }
+}
+
+/** Switch sources on the same element; muted/hidden scenes are not fetched in advance. */
+export function setMusicScene(scene: MusicScene) {
+  if (musicScene === scene) return;
+  musicScene = scene;
+  musicRequest += 1;
+  window.clearInterval(musicFade);
+  music?.pause();
+  syncMusic();
 }
 
 /** Lowers the music while a big moment (chest, summon) plays its own sound. */
@@ -243,7 +285,8 @@ export function setSfxVolume(value: number) {
 export function setMusicVolume(value: number) {
   const level = Math.max(0, Math.min(1, value));
   settings = { ...settings, musicVolume: level }; writeLevel(MUSIC_VOLUME_KEY, level); emit();
-  if (music && !music.paused) { window.clearInterval(musicFade); music.volume = musicTarget(); }
+  if (level === 0 || music?.paused) syncMusic();
+  else if (music) { window.clearInterval(musicFade); music.volume = musicTarget(); }
 }
 
 export function useAudioSettings() {
@@ -253,6 +296,10 @@ export function useAudioSettings() {
 function unlock() {
   const context = audio();
   if (context && context.state === 'suspended') void context.resume().catch(() => undefined);
+  if (unlocked) {
+    if (!music || music.paused) syncMusic();
+    return;
+  }
   unlocked = true;
   syncMusic();
 }
@@ -265,7 +312,9 @@ function onClick(event: MouseEvent) {
 
 function onVisibility() {
   if (document.visibilityState === 'hidden') {
-    if (music && !music.paused) { window.clearInterval(musicFade); music.pause(); }
+    musicRequest += 1;
+    window.clearInterval(musicFade);
+    music?.pause();
     if (ctx && ctx.state === 'running') void ctx.suspend().catch(() => undefined);
   } else {
     if (ctx && ctx.state === 'suspended' && unlocked) void ctx.resume().catch(() => undefined);
@@ -290,6 +339,9 @@ export function installGameAudio(): () => void {
     window.removeEventListener('keydown', unlock, { capture: true });
     document.removeEventListener('click', onClick, { capture: true });
     document.removeEventListener('visibilitychange', onVisibility);
-    if (music) { window.clearInterval(musicFade); music.pause(); }
+    musicRequest += 1;
+    musicScene = 'main';
+    window.clearInterval(musicFade);
+    music?.pause();
   };
 }

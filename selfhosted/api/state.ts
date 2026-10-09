@@ -375,7 +375,7 @@ export function mergeSaveState(
   const ledger = recordArray(context.items);
   const ledgerIds = new Set(ledger.map((row) => String(row.id ?? "")));
   const ledgerById = new Map(ledger.map((row) => [String(row.id ?? ""), row]));
-  const escrowIds = new Set(ledger.filter((row) => row.active_escrow === true).map((row) => String(row.id)));
+  const escrowIds = new Set(ledger.filter((row) => row.active_escrow === true || row.active_mail === true).map((row) => String(row.id)));
   const currentInventory = recordArray(current.inventory).filter((item) => !escrowIds.has(String(item.uid ?? "")));
   const requestedInventory = recordArray(requested.inventory).filter((item) => !escrowIds.has(String(item.uid ?? "")));
   if (requestedInventory.some((item) => item.serverOwned === true && !ledgerIds.has(String(item.uid ?? "")))) {

@@ -67,6 +67,10 @@
 /* Like the Summon temple: the sheet fills the screen above the tab bar, the keep art shows through
    the open upper part and the banners sit in the lower part, growing on tall phones. */
 .mo-v3 { align-items: stretch; background: #050403; }
+/* Founder 2026-10-09: the sheet starts under the fixed top bar. Painted beneath it, the breathing keep
+   art made the Gold/Events bar flicker on phones and hid the More title. */
+html[data-hl-platform='android'] .hl-more-sheet.mo-v3 { top: calc(var(--game-progress-height) + env(safe-area-inset-top, 0px)); }
+html[data-hl-platform='android'] .mo-v3 .mo-keep { padding-top: 10px; }
 .mo-keep {
   isolation: isolate;
   border-top: 0;
@@ -94,7 +98,7 @@
 .mo-body > .mo-pair { flex: 1 1 132px; max-height: 230px; }
 .mo-body > .mo-pair > .mo-tile { height: 100%; }
 .mo-body > .mo-banner-refer { flex: 0 0 auto; }
-.mo-keep > .mo-teaser { flex: 1 0 auto; align-content: end; margin-top: clamp(40px, 14vh, 200px); }
+.mo-scroll > .mo-teaser { flex: 1 0 auto; align-content: end; margin-top: clamp(40px, 14vh, 200px); }
 .mo-keep .mo-head { margin-bottom: 8px; }
 .mo-keep .mo-title { position: relative; padding: 0 30px; }
 .mo-keep .mo-title::before, .mo-keep .mo-title::after { content: ''; position: absolute; top: 50%; width: 22px; height: 1px; background: linear-gradient(90deg, transparent, #c79e61); }
@@ -302,3 +306,62 @@
 .mo-set-row input[type='range'] { width: 100%; height: 24px; margin: 0; accent-color: #e0a64f; }
 .mo-set-row input[type='range']:disabled { opacity: .35; }
 .mo-set-toggle:focus-visible, .mo-set-row input:focus-visible { outline: 2px solid #fff0a2; outline-offset: 2px; }
+
+/* More v5 (Founder 2026-10-09): the list scrolls under a fixed footer row (Telegram, X, a small Settings plate
+   and Logout); the wallet heads the list; Training joined Refer as a pair of tiles. */
+.mo-keep { overflow: hidden; }
+.mo-scroll { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; margin: 0 -12px; padding: 0 12px 4px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.mo-scroll::-webkit-scrollbar { display: none; }
+.mo-scroll > .mo-settings-page { flex: 1 0 auto; }
+.mo-keep > .mo-footer { position: relative; flex: none; margin: 8px -12px -4px; padding: 10px 12px 2px; background: linear-gradient(180deg, rgba(5, 4, 3, .2), rgba(5, 4, 3, .92) 40%); }
+.mo-keep > .mo-footer::before { content: ''; position: absolute; left: 8%; right: 8%; top: 0; height: 1px; background: linear-gradient(90deg, transparent, #c79e61 30%, #f2cc80 50%, #c79e61 70%, transparent); }
+.mo-settings-btn {
+  display: inline-flex; min-height: 38px; flex-shrink: 0; align-items: center; justify-content: center; gap: 5px;
+  border: 0 solid transparent; border-width: 8px 12px;
+  border-image: url('../premium/assets/btn-bronze-9.webp') 85 150 fill / 8px 12px / 0 3px stretch;
+  padding: 0; background: none; color: #f4e6c6;
+  font: 700 9.5px/1 'Cinzel', Georgia, serif; letter-spacing: .08em; text-shadow: 0 1px 2px #000; text-transform: uppercase;
+  -webkit-tap-highlight-color: transparent;
+}
+.mo-settings-btn > svg { color: #f2cc80; }
+.mo-settings-btn:active { filter: brightness(1.2); }
+.mo-settings-btn:focus-visible, .mo-wallet:focus-visible { outline: 2px solid #fff0a2; outline-offset: 2px; }
+/* Wallet: a forged gold plate with a diamond seal, the short address and a crimson call to action. */
+.mo-wallet {
+  position: relative; display: flex; width: 100%; min-height: 64px; flex: none; align-items: center; gap: 12px; overflow: hidden;
+  border: 12px solid transparent; border-image: var(--mo-frame) 200 / 12px / 0 stretch; padding: 0 2px 0 6px;
+  background:
+    radial-gradient(ellipse 60% 140% at 0% 50%, rgba(255, 176, 80, .22), transparent 70%),
+    linear-gradient(180deg, rgba(48, 34, 20, .96), rgba(14, 10, 7, .98)),
+    url('../premium/assets/panel-stone.webp') center / 220px;
+  background-origin: border-box; clip-path: inset(1.5px);
+  color: #ebdfca; text-align: left; box-shadow: 0 10px 24px rgba(0, 0, 0, .6);
+  -webkit-tap-highlight-color: transparent;
+}
+.mo-wallet + .mo-banner { margin-top: 8px; }
+.mo-pair + .mo-pair { margin-top: 8px; }
+.mo-wallet:active { filter: brightness(1.15); }
+.mo-wallet-seal {
+  display: grid; width: 34px; height: 34px; flex: none; place-items: center; transform: rotate(45deg);
+  border: 1px solid #f2cc80; background: radial-gradient(circle at 50% 40%, #5a3c18, #120b05 75%);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, .7), 0 0 14px rgba(255, 190, 90, .45); color: #ffd98a; font-style: normal;
+}
+.mo-wallet-seal svg { transform: rotate(-45deg); }
+.mo-wallet-text { display: grid; min-width: 0; flex: 1; gap: 3px; }
+.mo-wallet-text strong { overflow: hidden; color: #fff1d2; font: 700 15px/1.1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 3px #000; }
+.mo-wallet .mo-kicker { font-size: 8px; color: #e0b56a; }
+.mo-wallet-cta {
+  flex: none; border: 0 solid transparent; border-width: 7px 11px;
+  border-image: url('../premium/assets/btn-crimson-play-9.webp') 24 56 26 fill / 6px 13px 7px / 0 4px stretch;
+  padding: 2px 2px 1px; color: #fbeccb; font: 700 9px/1 'Cinzel', Georgia, serif; font-style: normal; letter-spacing: .12em; text-shadow: 0 1px 2px #000; text-transform: uppercase;
+}
+.mo-wallet::after { content: ''; position: absolute; inset: -12px auto -12px -40%; width: 30%; transform: skewX(-20deg); background: linear-gradient(90deg, transparent, rgba(255, 230, 170, .16), transparent); pointer-events: none; opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .mo-wallet::after { opacity: 1; animation: mo-sheen 5.5s ease-in-out 1s infinite; }
+}
+@keyframes mo-sheen { 0%, 70% { left: -40%; } 100% { left: 130%; } }
+.mo-art-training { --mo-art: url('/assets/screens/training-camp-v1.webp'); --mo-tile-pos: 50% 45%; }
+.mo-pair-short > .mo-tile.mo-art-refer { --mo-tile-pos: 50% 58%; }
+.mo-body > .mo-pair.mo-pair-short { flex: 0 0 auto; }
+.mo-body > .mo-pair.mo-pair-short > .mo-tile { min-height: 92px; height: auto; }
+.mo-keep > .mo-scroll .mo-version { margin-top: 8px; }

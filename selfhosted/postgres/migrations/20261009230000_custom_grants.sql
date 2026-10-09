@@ -2,8 +2,11 @@
 -- Two kinds: account-bound ("without ID": stays on the account, can never be listed on a market) and ordinary
 -- tradeable copies ("with ID": every recipient gets a fresh unique item or hero). Bound state is server-owned:
 -- player_items.bound for items and public.player_bound_heroes for heroes; both market listing paths refuse them.
--- The client only shows the flag. Catalog entries of kind item/hero carry the design (base item, rarity, level
--- range, roll quality range, chosen stat lines, enchant; or hero, level, stars) and whether copies are bound.
+-- The client only shows the flag. Builder entries in the Reward Catalog: kind item_design (base item, rarity, level
+-- range, roll quality range, chosen stat lines, enchant) is minted per recipient when the letter is sent, through
+-- public.mail_catalog_attachments, and arrives as an ordinary item attachment; kind hero (hero, level, stars) becomes a
+-- fresh hero on Claim. Limited rarities keep their rules: cursed/immortal/god are craft-only, divine/celestial use
+-- the shared rarity_supply (heroes through the existing save trigger).
 BEGIN;
 
 ALTER TABLE public.player_items ADD COLUMN IF NOT EXISTS bound boolean NOT NULL DEFAULT false;
@@ -137,10 +140,10 @@ REVOKE ALL ON FUNCTION public.roll_item_stats_v5_custom(text,text,integer,text,n
 CREATE OR REPLACE FUNCTION public.validate_grant_design(p_kind text, p_design jsonb)
 RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path = pg_catalog, public
 AS $function$
-DECLARE v_base text; v_slot text; v_rarity text; v_rarities text := '(common|uncommon|rare|epic|legendary|mythic|cosmic|divine|celestial|cursed|immortal|god)';
+DECLARE v_base text; v_slot text; v_rarity text; v_rarities text := '(common|uncommon|rare|epic|legendary|mythic|cosmic|divine|celestial)';
 BEGIN
   IF jsonb_typeof(p_design) <> 'object' THEN RAISE EXCEPTION 'invalid_item_design'; END IF;
-  IF p_kind = 'item' THEN
+  IF p_kind = 'item_design' THEN
     v_base := p_design->>'base_item_id';
     v_rarity := substring(v_base from v_rarities || '$');
     v_slot := CASE
@@ -173,15 +176,15 @@ END
 $function$;
 REVOKE ALL ON FUNCTION public.validate_grant_design(text,jsonb) FROM PUBLIC;
 
--- Catalog: items and heroes join Gold, resources and chests.
+-- Catalog: builder designs and heroes join Gold, resources, chests and fixed item templates.
 ALTER TABLE public.reward_catalog ADD COLUMN IF NOT EXISTS design jsonb;
 ALTER TABLE public.reward_catalog ADD COLUMN IF NOT EXISTS bound boolean NOT NULL DEFAULT false;
 ALTER TABLE public.reward_catalog DROP CONSTRAINT IF EXISTS reward_catalog_kind_check;
-ALTER TABLE public.reward_catalog ADD CONSTRAINT reward_catalog_kind_check CHECK (kind IN ('gold', 'resource', 'chest', 'item', 'hero'));
+ALTER TABLE public.reward_catalog ADD CONSTRAINT reward_catalog_kind_check CHECK (kind IN ('gold', 'resource', 'chest', 'item', 'item_design', 'hero'));
 ALTER TABLE public.reward_catalog DROP CONSTRAINT IF EXISTS reward_catalog_design_check;
-ALTER TABLE public.reward_catalog ADD CONSTRAINT reward_catalog_design_check CHECK ((kind IN ('item', 'hero')) = (design IS NOT NULL));
+ALTER TABLE public.reward_catalog ADD CONSTRAINT reward_catalog_design_check CHECK ((kind IN ('item_design', 'hero')) = (design IS NOT NULL));
 
--- Letters: an item or hero attachment carries the design; the copy is made when the letter is claimed.
+-- Letters: a hero attachment carries its design; the hero is made when the letter is claimed.
 ALTER TABLE public.player_mail_rewards DROP CONSTRAINT IF EXISTS player_mail_rewards_kind_check;
 ALTER TABLE public.player_mail_rewards ADD CONSTRAINT player_mail_rewards_kind_check CHECK (kind IN ('chest', 'gold', 'resource', 'item', 'hero'));
 DO $patch$
@@ -190,46 +193,65 @@ BEGIN
   d := pg_get_functiondef('public.mail_attachment_payload(jsonb)'::regprocedure);
   IF position('validate_grant_design' in d) > 0 THEN RETURN; END IF;
   n := replace(d, E'  END IF;\n  RAISE EXCEPTION ''invalid_mail_attachment'';\nEND',
-E'  ELSIF p_attachment->>''kind'' IN (''item'', ''hero'') THEN\n    RETURN public.validate_grant_design(p_attachment->>''kind'', p_attachment->''design'')\n      || jsonb_build_object(''bound'', COALESCE((p_attachment->>''bound'')::boolean, false), ''title'', left(COALESCE(p_attachment->>''title'', ''''), 60));\n  END IF;\n  RAISE EXCEPTION ''invalid_mail_attachment'';\nEND');
+E'  ELSIF p_attachment->>''kind'' = ''hero'' THEN\n    RETURN public.validate_grant_design(''hero'', p_attachment->''design'')\n      || jsonb_build_object(''bound'', COALESCE((p_attachment->>''bound'')::boolean, false), ''title'', left(COALESCE(p_attachment->>''title'', ''''), 60));\n  END IF;\n  RAISE EXCEPTION ''invalid_mail_attachment'';\nEND');
   IF n = d THEN RAISE EXCEPTION 'grant_attachment_patch_failed'; END IF;
   EXECUTE n;
 END
 $patch$;
 
--- One fresh item for a player from a design; the caller adds it to the bag.
+-- One fresh item for a player from a builder design (limited rarities reserve the shared supply, like catalog templates).
 CREATE OR REPLACE FUNCTION public.mail_create_item(p_player_id uuid, p_design jsonb)
 RETURNS public.player_items LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, public
 AS $function$
 DECLARE v_level integer; v_stats jsonb; v_item public.player_items%ROWTYPE;
 BEGIN
+  IF p_design->>'rarity' IN ('divine', 'celestial') THEN
+    UPDATE public.rarity_supply SET existing_count = existing_count + 1, updated_at = now()
+    WHERE rarity = p_design->>'rarity' AND existing_count < max_existing;
+    IF NOT FOUND THEN RAISE EXCEPTION 'rarity_supply_exhausted'; END IF;
+  END IF;
   v_level := (p_design->>'level_min')::integer + floor(random() * ((p_design->>'level_max')::integer - (p_design->>'level_min')::integer + 1))::integer;
   v_stats := public.roll_item_stats_v5_custom(p_design->>'slot', p_design->>'rarity', v_level, p_design->>'base_item_id',
     (p_design->>'quality_min')::numeric, (p_design->>'quality_max')::numeric, ARRAY(SELECT jsonb_array_elements_text(COALESCE(p_design->'stat_keys', '[]'::jsonb))));
-  INSERT INTO public.player_items(player_id, base_item_id, slot, rarity, item_level, stats, enchant_level, power, item_roll_version, enchant_stats_version, source_kind, bound)
+  INSERT INTO public.player_items(player_id, base_item_id, slot, rarity, item_level, stats, enchant_level, power, item_roll_version, enchant_stats_version, source_kind, bound, locked)
   VALUES (p_player_id, p_design->>'base_item_id', p_design->>'slot', p_design->>'rarity', v_level, v_stats, (p_design->>'enchant_level')::integer,
-    public.calculate_item_power_v5(v_stats, (p_design->>'enchant_level')::integer), 5, 4, 'mail_grant', COALESCE((p_design->>'bound')::boolean, false))
+    public.calculate_item_power_v5(v_stats, (p_design->>'enchant_level')::integer), 5, 4, 'mail_grant', COALESCE((p_design->>'bound')::boolean, false),
+    p_design->>'rarity' IN ('divine', 'celestial'))
   RETURNING * INTO v_item;
   RETURN v_item;
 END
 $function$;
 REVOKE ALL ON FUNCTION public.mail_create_item(uuid,jsonb) FROM PUBLIC;
 
--- Claim: an item needs a bag slot, a hero needs room under heroCapacity; what does not fit stays attached.
+-- Sending: builder designs are minted for each recipient inside the letter's transaction; heroes ride as a design.
+DO $patch$
+DECLARE d text; n text;
+BEGIN
+  d := pg_get_functiondef('public.mail_catalog_attachments(uuid,jsonb)'::regprocedure);
+  IF position('item_design' in d) > 0 THEN RETURN; END IF;
+  n := replace(d, E'        ELSE\n          v_rarity:=substring(c.base_item_id',
+E'        ELSIF c.kind=''item_design'' THEN\n          item:=public.mail_create_item(p_player, public.validate_grant_design(''item_design'', c.design) || jsonb_build_object(''bound'', c.bound));\n          attachments:=attachments||jsonb_build_array(jsonb_build_object(''kind'',''item'',''item_id'',item.id,''item'',public.mail_item_json(item)));\n        ELSIF c.kind=''hero'' THEN\n          attachments:=attachments||jsonb_build_array(jsonb_build_object(''kind'',''hero'',''design'',c.design,''bound'',c.bound,''title'',c.title));\n        ELSE\n          v_rarity:=substring(c.base_item_id');
+  IF n = d THEN RAISE EXCEPTION 'grant_catalog_attachment_patch_failed'; END IF;
+  EXECUTE n;
+END
+$patch$;
+
+-- Claim: a hero needs room under heroCapacity; what does not fit stays attached.
 DO $patch$
 DECLARE d text; n text;
 BEGIN
   d := pg_get_functiondef('heroloop_api.mail_claim(uuid,uuid,uuid)'::regprocedure);
-  IF position('mail_create_item' in d) > 0 THEN RETURN; END IF;
-  n := replace(d, E'  v_resources_full boolean := false;\n', E'  v_resources_full boolean := false;\n  v_heroes jsonb;\n  v_heroes_full boolean := false;\n  v_new_item public.player_items%ROWTYPE;\n  v_hero_uid text;\n');
+  IF position('player_bound_heroes' in d) > 0 THEN RETURN; END IF;
+  n := replace(d, E'  v_resources_full boolean := false;\n', E'  v_resources_full boolean := false;\n  v_heroes jsonb;\n  v_heroes_full boolean := false;\n  v_hero_uid text;\n');
   n := replace(n, E'  v_chests := COALESCE(v_state->''chests'', ''[]''::jsonb);\n',
     E'  v_chests := COALESCE(v_state->''chests'', ''[]''::jsonb);\n  v_heroes := COALESCE(v_state->''ownedHeroes'', ''[]''::jsonb);\n');
   n := replace(n, E'      ELSIF v_reward.kind = ''resource'' THEN\n',
-E'      ELSIF v_reward.kind = ''item'' THEN\n        IF v_free <= 0 THEN v_items_full := true; CONTINUE; END IF;\n        v_new_item := public.mail_create_item(p_player_id, v_reward.payload);\n        v_inventory := v_inventory || jsonb_build_array(public.mail_item_json(v_new_item));\n        v_free := v_free - 1;\n      ELSIF v_reward.kind = ''hero'' THEN\n        IF jsonb_array_length(v_heroes) >= COALESCE((v_state->>''heroCapacity'')::integer, 0) THEN v_heroes_full := true; CONTINUE; END IF;\n        v_hero_uid := gen_random_uuid()::text;\n        v_heroes := v_heroes || jsonb_build_array(jsonb_build_object(''uid'', v_hero_uid, ''heroId'', v_reward.payload->>''hero_id'', ''level'', (v_reward.payload->>''level'')::integer,\n          ''stars'', (v_reward.payload->>''stars'')::integer, ''xp'', 0, ''locked'', false, ''equipped'', ''{}''::jsonb, ''isNew'', true)\n          || CASE WHEN COALESCE((v_reward.payload->>''bound'')::boolean, false) THEN jsonb_build_object(''bound'', true) ELSE ''{}''::jsonb END);\n        IF COALESCE((v_reward.payload->>''bound'')::boolean, false) THEN\n          INSERT INTO public.player_bound_heroes(player_id, hero_uid) VALUES (p_player_id, v_hero_uid);\n        END IF;\n      ELSIF v_reward.kind = ''resource'' THEN\n');
+E'      ELSIF v_reward.kind = ''hero'' THEN\n        IF jsonb_array_length(v_heroes) >= COALESCE((v_state->>''heroCapacity'')::integer, 0) THEN v_heroes_full := true; CONTINUE; END IF;\n        v_hero_uid := gen_random_uuid()::text;\n        v_heroes := v_heroes || jsonb_build_array(jsonb_build_object(''uid'', v_hero_uid, ''heroId'', v_reward.payload->>''hero_id'', ''level'', (v_reward.payload->>''level'')::integer,\n          ''stars'', (v_reward.payload->>''stars'')::integer, ''xp'', 0, ''locked'', false, ''equipped'', ''{}''::jsonb, ''isNew'', true)\n          || CASE WHEN COALESCE((v_reward.payload->>''bound'')::boolean, false) THEN jsonb_build_object(''bound'', true) ELSE ''{}''::jsonb END);\n        IF COALESCE((v_reward.payload->>''bound'')::boolean, false) THEN\n          INSERT INTO public.player_bound_heroes(player_id, hero_uid) VALUES (p_player_id, v_hero_uid);\n        END IF;\n      ELSIF v_reward.kind = ''resource'' THEN\n');
   n := replace(n, E'    v_state := jsonb_set(v_state, ''{chests}'', v_chests, true);\n',
     E'    v_state := jsonb_set(v_state, ''{chests}'', v_chests, true);\n    v_state := jsonb_set(v_state, ''{ownedHeroes}'', v_heroes, true);\n');
   n := replace(n, E'''resources_full'', v_resources_full,', E'''resources_full'', v_resources_full, ''heroes_full'', v_heroes_full,');
   n := replace(n, E'''resources'', public.resource_snapshot(p_player_id)', E'''resources'', public.resource_snapshot(p_player_id), ''owned_heroes'', v_heroes');
-  IF position('mail_create_item' in n) = 0 OR position('player_bound_heroes' in n) = 0 OR position('{ownedHeroes}' in n) = 0
+  IF position('player_bound_heroes' in n) = 0 OR position('{ownedHeroes}' in n) = 0
     OR position('heroes_full'', v_heroes_full' in n) = 0 OR position('''owned_heroes'', v_heroes' in n) = 0 OR position('v_heroes := COALESCE' in n) = 0 THEN
     RAISE EXCEPTION 'mail_claim_grant_patch_failed';
   END IF;

@@ -217,11 +217,11 @@ export interface ServerMarketSnapshot {
 }
 
 export interface MarketActionResult { ok: boolean; error?: string; mailed?: boolean }
-export interface MailItemEntry { kind: 'item'; id: string; source: 'market_purchase' | 'market_return' | 'store_overflow'; created_at: string; item: OwnedItem }
+export interface MailItemEntry { kind: 'item'; id: string; source: 'market_purchase' | 'market_return' | 'store_overflow' | 'chest_reward'; created_at: string; item: OwnedItem }
 // Founder 2026-10-08: rewards arrive in the Mailbox as letters (sender, title, text, attachments); a chest
 // attachment moves into the 500-chest queue only when there is room, Gold always lands.
-export type MailAttachment = { id: string; claimed: boolean } & ({ kind: 'chest'; chest: Chest } | { kind: 'gold'; amount: number } | { kind: 'resource'; resourceId: string; title: string; amount: number }
-  | { kind: 'item'; itemId: string; title: string; levelMin: number; levelMax: number; bound: boolean } | { kind: 'hero'; heroId: string; title: string; level: number; stars: number; bound: boolean });
+export type MailAttachment = { id: string; claimed: boolean } & ({ kind: 'item'; item: OwnedItem } | { kind: 'chest'; chest: Chest } | { kind: 'gold'; amount: number } | { kind: 'resource'; resourceId: string; title: string; amount: number }
+  | { kind: 'hero'; heroId: string; title: string; level: number; stars: number; bound: boolean });
 export interface MailLetterEntry {
   kind: 'letter'; id: string; source: 'boss_reward' | 'compensation' | 'admin' | 'system'; sender: string; title: string; body: string;
   created_at: string; read: boolean; claimed: boolean; attachments: MailAttachment[];
@@ -234,15 +234,17 @@ function parseMailLetters(raw: RawMailLetter[] | undefined): MailLetterEntry[] {
   return raw.filter((letter) => typeof letter?.id === 'string' && typeof letter.title === 'string').map((letter) => ({
     ...letter, kind: 'letter', body: String(letter.body ?? ''), sender: String(letter.sender ?? 'HeroLoop'), read: letter.read === true, claimed: letter.claimed === true,
     attachments: (Array.isArray(letter.attachments) ? letter.attachments : []).flatMap((attachment): MailAttachment[] => {
+      if (attachment?.kind === 'item' && attachment.payload?.item && typeof attachment.payload.item === 'object') {
+        const item = attachment.payload.item as OwnedItem;
+        if (typeof item.uid === 'string' && item.serverOwned === true && ITEM_MAP[item.itemId]) {
+          return [{ id: attachment.id, claimed: attachment.claimed === true, kind: 'item', item }];
+        }
+      }
       if (attachment?.kind === 'chest' && Number.isSafeInteger(Number(attachment.payload?.stage))) {
         return [{ id: attachment.id, claimed: attachment.claimed === true, kind: 'chest', chest: { stage: Number(attachment.payload.stage), boss: attachment.payload.boss === true } }];
       }
       if (attachment?.kind === 'resource' && typeof attachment.payload?.resource_id === 'string' && Number.isSafeInteger(Number(attachment.payload?.amount))) {
         return [{ id: attachment.id, claimed: attachment.claimed === true, kind: 'resource', resourceId: attachment.payload.resource_id, title: String(attachment.payload.title ?? attachment.payload.resource_id), amount: Number(attachment.payload.amount) }];
-      }
-      if (attachment?.kind === 'item' && typeof attachment.payload?.base_item_id === 'string') {
-        return [{ id: attachment.id, claimed: attachment.claimed === true, kind: 'item', itemId: attachment.payload.base_item_id, title: String(attachment.payload.title ?? ''),
-          levelMin: Number(attachment.payload.level_min) || 1, levelMax: Number(attachment.payload.level_max) || 1, bound: attachment.payload.bound === true }];
       }
       if (attachment?.kind === 'hero' && typeof attachment.payload?.hero_id === 'string') {
         return [{ id: attachment.id, claimed: attachment.claimed === true, kind: 'hero', heroId: attachment.payload.hero_id, title: String(attachment.payload.title ?? ''),
@@ -388,6 +390,7 @@ export function useGame() {
   const [respawnCountdowns, setRespawnCountdowns] = useState<Record<string, number>>({});
   const [presentationNow, setPresentationNow] = useState(Date.now);
   const [chestOpenResult, setChestOpenResult] = useState<OwnedItem[] | null>(null);
+  const [chestRewardsMailed, setChestRewardsMailed] = useState(false);
   const [chestOpening, setChestOpening] = useState(false);
   const [enchantResult, setEnchantResult] = useState<{ success: boolean; item?: OwnedItem } | null>(null);
   const [hydrationVersion, setHydrationVersion] = useState(0);
@@ -2119,7 +2122,7 @@ export function useGame() {
     setState((prev) => ({ ...prev, inventory: result.inventory, ...(chests ? { chests } : {}), ...(gold !== null ? { gold } : {}), ...(heroes ? { ownedHeroes: heroes } : {}) }));
     setMailCount(Math.max(0, Math.floor(Number(result.remaining) || 0)));
     // Scrolls, keys, potions and materials live in the server resource ledger: reload the save so they show at once.
-    if (result.resources_changed) {
+    if (result.claimed > 0 || result.resources_changed) {
       const refreshed = await playerSync<{ state: GameState; revision: number }>('game_state_load');
       if (refreshed?.state && Number.isSafeInteger(refreshed.revision)) { setServerRevisionHint(refreshed.revision); hydrateServerState(refreshed.state); }
     }
@@ -2698,11 +2701,14 @@ export function useGame() {
     if (chestOpeningRef.current) return;
     const st = stateRef.current;
     const freeSlots = inventoryCapacity(st) - bagItemCount(st);
-    if (freeSlots <= 0 || st.chests.length === 0) return;
+    if (freeSlots <= 0 && st.chests.length > 0) return 'inventory-full' as const;
+    if (st.chests.length === 0) return;
     chestOpeningRef.current = true;
     setChestOpening(true);
     try {
       let openCount = Math.min(freeSlots, st.chests.length);
+      let mailed = false;
+      let inventoryFull = false;
       let results: OwnedItem[] = [];
       let revision: number | null = null;
       if (tokenomicsEnabled) {
@@ -2711,13 +2717,14 @@ export function useGame() {
         while (results.length < openCount) {
           const batchCount = Math.min(CHEST_OPEN_BATCH_SIZE, openCount - results.length);
           const idempotencyKey = createIdempotencyKey();
-          let response: { items: OwnedItem[]; chest_count: number; revision: number } | null = null;
+          let response: { items: OwnedItem[]; chest_count: number; revision: number; mailed?: boolean } | null = null;
           for (let attempt = 0; attempt < 3; attempt++) {
             let error = '';
-            response = await playerSync<{ items: OwnedItem[]; chest_count: number; revision: number }>('chest_open', {
+            response = await playerSync<{ items: OwnedItem[]; chest_count: number; revision: number; mailed?: boolean }>('chest_open', {
               count: batchCount,
               idempotency_key: idempotencyKey,
             }, (message) => { error = message; });
+            if (error === 'item_capacity_exceeded') inventoryFull = true;
             if (response || error !== 'chest_count_exceeded' || attempt === 2) break;
             await new Promise((resolve) => window.setTimeout(resolve, 900));
           }
@@ -2725,10 +2732,12 @@ export function useGame() {
           const batch = response.items.filter((item) => item && typeof item.uid === 'string' && item.serverOwned === true
             && Boolean(ITEM_MAP[item.itemId]) && Array.isArray(item.stats));
           if (batch.length !== batchCount) break;
+          if (results.length > 0 && mailed !== (response.mailed === true)) break;
+          mailed = response.mailed === true;
           results = [...results, ...batch];
           if (Number.isSafeInteger(response.revision)) revision = response.revision;
         }
-        if (results.length === 0) return;
+        if (results.length === 0) return inventoryFull ? 'inventory-full' as const : undefined;
         openCount = results.length;
       } else {
         for (let i = 0; i < openCount; i++) {
@@ -2747,12 +2756,13 @@ export function useGame() {
         }
       }
       if (revision !== null) setServerRevisionHint(revision);
-      flushSync(() => setChestOpenResult(results));
+      flushSync(() => { setChestRewardsMailed(mailed); setChestOpenResult(results); });
+      if (mailed) void loadMail();
       const openedTutorial = st.chests.slice(0, openCount).some((chest) => chest.tutorial);
       setState((prev) => ({
         ...prev,
         chests: prev.chests.slice(openCount),
-        inventory: [...prev.inventory, ...results.map((item) => shouldAutoLockItem(item) ? { ...item, locked: true } : item)].sort((a, b) => {
+        inventory: [...prev.inventory, ...(mailed ? [] : results.map((item) => shouldAutoLockItem(item) ? { ...item, locked: true } : item))].sort((a, b) => {
           const rarityDelta = RARITY_INDEX[ITEM_MAP[b.itemId]?.rarity ?? 'common'] - RARITY_INDEX[ITEM_MAP[a.itemId]?.rarity ?? 'common'];
           return rarityDelta || displayItemPower(b) - displayItemPower(a);
         }),
@@ -2761,11 +2771,12 @@ export function useGame() {
         milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'chest-', openCount),
         tutorial: openedTutorial ? { ...prev.tutorial, chestCompleted: true } : prev.tutorial,
       }));
+      if (inventoryFull) return 'inventory-full' as const;
     } finally {
       chestOpeningRef.current = false;
       setChestOpening(false);
     }
-  }, []);
+  }, [loadMail]);
 
   const closeChestResult = useCallback(() => setChestOpenResult(null), []);
   const dismissEnchantResult = useCallback(() => setEnchantResult(null), []);
@@ -2863,8 +2874,9 @@ export function useGame() {
     if (!result?.state || !Number.isSafeInteger(result.revision)) return false;
     setServerRevisionHint(result.revision);
     hydrateServerState(result.state);
+    if (result.claimed) void loadMail();
     return result.claimed === true;
-  }, [hydrateServerState, serverRevisionHint]);
+  }, [hydrateServerState, loadMail, serverRevisionHint]);
 
   // Partner Quests: the reward was approved in the Founder panel; the claim is
   // the only step that changes the save, with the same revision retry as quests.
@@ -2906,7 +2918,7 @@ export function useGame() {
     const attemptClaim = () => {
       claimError = '';
       return playerSync<{
-        gold: number; revision: number; tutorial: GameState['tutorial'];
+        gold: number; revision: number; mailed?: boolean; tutorial: GameState['tutorial'];
         resources: { balances?: Record<string, string> };
       }>('tutorial_quest_claim', {
         quest_id: questId, expected_revision: expectedRevision, idempotency_key: idempotencyKey,
@@ -2934,27 +2946,29 @@ export function useGame() {
       bossKeys: read('boss_key', prev.bossKeys), summonScrolls: read('summon_scroll', prev.summonScrolls),
       potions: { ...prev.potions, xs: read('potion_xs', prev.potions.xs) },
     }));
+    if (result.mailed) void loadMail();
     return null;
-  }, [hydrateServerState, serverRevisionHint]);
+  }, [hydrateServerState, loadMail, serverRevisionHint]);
 
   const openTutorialChests = useCallback(async (requestedCount: 1 | 10): Promise<boolean> => {
     if (!tokenomicsEnabled || chestOpeningRef.current) return false;
     const current = stateRef.current;
-    const count = Math.min(requestedCount, current.tutorial.chestBalance, inventoryCapacity(current) - bagItemCount(current));
+    const count = Math.min(requestedCount, current.tutorial.chestBalance, isolatedHackathon ? requestedCount : inventoryCapacity(current) - bagItemCount(current));
     if (count !== 1 && count !== 10) return false;
     chestOpeningRef.current = true; setChestOpening(true);
     try {
-      const result = await playerSync<{ items: OwnedItem[]; chest_count: number; revision: number; tutorial: GameState['tutorial'] }>('tutorial_chest_open', {
+      const result = await playerSync<{ items: OwnedItem[]; chest_count: number; revision: number; mailed?: boolean; tutorial: GameState['tutorial'] }>('tutorial_chest_open', {
         count, idempotency_key: createIdempotencyKey(),
       });
       if (!result || result.chest_count !== count || !Array.isArray(result.items) || result.items.length !== count || !result.tutorial) return false;
       const items = result.items.filter((item) => item?.serverOwned === true && typeof item.uid === 'string' && Boolean(ITEM_MAP[item.itemId]));
       if (items.length !== count) return false;
       if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
-      flushSync(() => setChestOpenResult(items));
+      flushSync(() => { setChestRewardsMailed(result.mailed === true); setChestOpenResult(items); });
+      if (result.mailed) void loadMail();
       setState((prev) => ({
         ...prev, tutorial: result.tutorial,
-        inventory: [...prev.inventory, ...items.map((item) => shouldAutoLockItem(item) ? { ...item, locked: true } : item)]
+        inventory: [...prev.inventory, ...(result.mailed ? [] : items.map((item) => shouldAutoLockItem(item) ? { ...item, locked: true } : item))]
           .sort((a, b) => RARITY_INDEX[ITEM_MAP[b.itemId]?.rarity ?? 'common'] - RARITY_INDEX[ITEM_MAP[a.itemId]?.rarity ?? 'common'] || displayItemPower(b) - displayItemPower(a)),
         session: { ...prev.session, chestsOpened: prev.session.chestsOpened + count },
         dailyQuests: updateQuestProgress(prev.dailyQuests, 'chest-', count),
@@ -2962,7 +2976,7 @@ export function useGame() {
       }));
       return true;
     } finally { chestOpeningRef.current = false; setChestOpening(false); }
-  }, []);
+  }, [loadMail]);
 
   const resetAccount = useCallback(() => {
     const initial = makeInitialState();
@@ -3148,7 +3162,7 @@ export function useGame() {
 
   return {
     state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, trainingIncomeRevision, battleResult, combatRecovery, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
-    offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, enchantResult,
+    offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, chestRewardsMailed, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
     starUpHero, promoteAllHeroes, seekerPromoteAll, releaseHero, quoteHeroCapacity, upgradeHeroCapacity, toggleHeroLock, markHeroSeen,
     applySeekerPurchase, accountBonus, refreshAccountBonus, buyRewardBoost, buyShopBundle, quoteInventoryBag, buyInventoryBag,

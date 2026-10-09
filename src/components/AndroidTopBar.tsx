@@ -1,4 +1,4 @@
-import { Mail, Rocket, UserRound, Wallet } from 'lucide-react';
+import { Flame, Mail, Rocket, UserRound, Wallet } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
@@ -12,13 +12,16 @@ import { RarityFx } from '@/components/RarityFx';
 
 // Android top bar, two rows (Founder 2026-10-03, restyled v2 the same day): a stone resource ledger with
 // the emblem, Gold, SKR and Team Power; then Commander, Boost Max, wallet and Mailbox as one row of plates.
+// Seeker (Founder 2026-10-09): the Events plate takes the wallet's place and opens the former battle burger
+// (Events, Dungeons, Boss); the wallet moved to the top of More.
 // It replaces the web progress bar and command bar on the phone layout.
 
-export function AndroidTopBar({ power, identity, gold, commander, boostActive, walletAddress, mailCount, onLogo, onTokens, onBoost, onWallet, onMail }: {
+export function AndroidTopBar({ power, identity, gold, commander, boostActive, walletAddress, mailCount, onLogo, onTokens, onBoost, onWallet, onMail, events }: {
   power: number; identity: string; gold: number;
   commander: { heroId: string; level: number };
   boostActive: boolean; walletAddress: string | null; mailCount: number;
   onLogo: () => void; onTokens: () => void; onBoost: () => void; onWallet: () => void; onMail: () => void;
+  events?: { open: boolean; ready: number; onToggle: () => void };
 }) {
   const avatar = HERO_MAP[commander.heroId];
   return <header className="game-progress-bar hl-topbar tb-bar" aria-label="Account and resources">
@@ -45,10 +48,13 @@ export function AndroidTopBar({ power, identity, gold, commander, boostActive, w
       <button type="button" className={`tb-plate tb-boost${boostActive ? ' is-active' : ''}`} onClick={onBoost} aria-label={boostActive ? 'Boost Max active' : 'Open Boost Max'}>
         <Rocket size={15} aria-hidden="true" /><span>{boostActive ? 'Boost on' : 'Boost max'}</span>
       </button>
-      <button type="button" onClick={onWallet} className="tb-plate tb-wallet" aria-label={walletAddress ? `Open wallet ${shortWalletAddress(walletAddress)}` : 'Open account'} title={walletAddress ?? 'Account'}>
+      {events ? <button type="button" onClick={events.onToggle} className={`tb-plate tb-events${events.open ? ' is-active' : ''}${events.ready > 0 ? ' has-ready' : ''}`} data-guide="boss" aria-haspopup="dialog" aria-expanded={events.open} aria-label={events.ready > 0 ? `Events, ${events.ready} rewards ready` : 'Events'}>
+        <Flame size={15} aria-hidden="true" /><span>Events</span>
+        {events.ready > 0 && <span className="tb-badge">{events.ready > 99 ? '99+' : events.ready}</span>}
+      </button> : <button type="button" onClick={onWallet} className="tb-plate tb-wallet" aria-label={walletAddress ? `Open wallet ${shortWalletAddress(walletAddress)}` : 'Open account'} title={walletAddress ?? 'Account'}>
         {walletAddress ? <Wallet size={15} aria-hidden="true" /> : <UserRound size={15} aria-hidden="true" />}
         <span>{walletAddress ? shortWalletAddress(walletAddress) : 'Account'}</span>
-      </button>
+      </button>}
       <button type="button" onClick={onMail} className="tb-plate tb-mail" title="Mailbox" aria-label={mailCount > 0 ? `Mailbox, ${mailCount} waiting` : 'Mailbox'}>
         <Mail size={16} aria-hidden="true" />
         {mailCount > 0 && <span className="tb-badge">{mailCount}</span>}

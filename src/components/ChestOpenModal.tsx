@@ -30,9 +30,9 @@ const rarityOf = (item: OwnedItem): Rarity => ITEM_MAP[item.itemId]?.rarity ?? '
 const tierOf = (item: OwnedItem) => RARITY_INDEX[rarityOf(item)] ?? 0;
 
 export function ChestOpenModal({
-  items, onClose,
+  items, onClose, mailed = false,
 }: {
-  items: OwnedItem[]; game: GameApi; heroes: OwnedHero[]; onClose: () => void;
+  items: OwnedItem[]; mailed?: boolean; game: GameApi; heroes: OwnedHero[]; onClose: () => void;
 }) {
   // Reveal order saves the best for last; the summary lists best first.
   const ordered = useMemo(() => items.filter((item) => ITEM_MAP[item.itemId])
@@ -131,6 +131,7 @@ export function ChestOpenModal({
 
   const collect = () => {
     if (leaving) return;
+    if (mailed) { onClose(); return; }
     playSfx('claim');
     const bag = [...document.querySelectorAll<HTMLElement>('.hl-tabbar-item')].find((el) => /bag/i.test(el.textContent ?? ''));
     const cards = [...(gridRef.current?.querySelectorAll<HTMLElement>('.hl-cc-card') ?? [])].slice(0, 24);
@@ -201,7 +202,7 @@ export function ChestOpenModal({
           {phase === 'done' ? (
             <footer className="hl-cc-foot">
               <div className="hl-cc-tally">{tally.map(([rarity, count]) => <span key={rarity} style={{ color: RARITY_COLORS[rarity], borderColor: `${RARITY_COLORS[rarity]}88` }}>{count} {RARITY_LABEL[rarity]}</span>)}</div>
-              <button type="button" className="hl-cc-collect" onClick={collect} disabled={leaving}><Package size={16} aria-hidden="true" /> Send to Bag</button>
+              <button type="button" className="hl-cc-collect" onClick={collect} disabled={leaving}><Package size={16} aria-hidden="true" /> {mailed ? 'Sent to Mailbox · Close' : 'Send to Bag'}</button>
             </footer>
           ) : (
             <footer className="hl-cc-foot"><button type="button" className="hl-cc-skip" onClick={(event) => { event.stopPropagation(); skip(); }}>Reveal all</button></footer>

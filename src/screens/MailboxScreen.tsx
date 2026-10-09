@@ -8,6 +8,7 @@ import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { heroThumbSrc } from '@/game/portraits';
 import { ITEM_MAP, displayItemPower } from '@/game/items';
 import { formatNum } from '@/game/state';
+import type { OwnedItem } from '@/game/types';
 import type { MailAttachment, MailClaimResult, MailEntry, MailItemEntry } from '@/game/useGame';
 import './mailbox.css';
 
@@ -19,6 +20,7 @@ const ITEM_SOURCE: Record<MailItemEntry['source'], string> = {
   market_purchase: 'Market purchase',
   market_return: 'Returned from Market',
   store_overflow: 'Store purchase',
+  chest_reward: 'Chest reward',
 };
 const ERRORS: Record<string, string> = {
   item_capacity_exceeded: 'Your bag is full. Free a slot to claim items.',
@@ -36,7 +38,8 @@ const hasUnclaimed = (entry: MailEntry) => entry.kind === 'item' || entry.attach
 const isRead = (entry: MailEntry) => entry.kind === 'letter' && entry.read && !hasUnclaimed(entry);
 
 function AttachmentTile({ attachment }: { attachment: MailAttachment }) {
-  if (attachment.kind === 'item' || attachment.kind === 'hero') return <GrantTile attachment={attachment} />;
+  if (attachment.kind === 'item') return <ItemTile item={attachment.item} claimed={attachment.claimed} />;
+  if (attachment.kind === 'hero') return <GrantTile attachment={attachment} />;
   const title = attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss Chest' : 'Chest'}, Location ${attachment.chest.stage}`
     : attachment.kind === 'resource' ? `${formatNum(attachment.amount)} × ${attachment.title}` : `${formatNum(attachment.amount)} Gold`;
   return <div className={`mailbox-reward ${attachment.claimed ? 'is-claimed' : ''}`} title={title} aria-label={title}>
@@ -47,19 +50,15 @@ function AttachmentTile({ attachment }: { attachment: MailAttachment }) {
   </div>;
 }
 
-// A custom item or hero (Founder 2026-10-09): a fresh copy is made on Claim; "Bound" copies stay on the account.
-function GrantTile({ attachment }: { attachment: Extract<MailAttachment, { kind: 'item' | 'hero' }> }) {
-  const item = attachment.kind === 'item' ? ITEM_MAP[attachment.itemId] : undefined;
-  const hero = attachment.kind === 'hero' ? HERO_MAP[attachment.heroId] : undefined;
-  const name = attachment.title || item?.name || hero?.name || 'Reward';
-  const rarity = item?.rarity ?? hero?.rarity;
-  const level = attachment.kind === 'item' ? (attachment.levelMin === attachment.levelMax ? `Lv ${attachment.levelMin}` : `Lv ${attachment.levelMin}–${attachment.levelMax}`)
-    : `Lv ${attachment.level}${attachment.stars ? ` · ★${attachment.stars}` : ''}`;
+// A custom hero (Founder 2026-10-09): a fresh copy with its own id is made on Claim; "Bound" copies stay on the account.
+function GrantTile({ attachment }: { attachment: Extract<MailAttachment, { kind: 'hero' }> }) {
+  const hero = HERO_MAP[attachment.heroId];
+  const name = attachment.title || hero?.name || 'Hero';
+  const level = `Lv ${attachment.level}${attachment.stars ? ` · ★${attachment.stars}` : ''}`;
   const label = `${name}, ${level}${attachment.bound ? ', account-bound' : ''}`;
-  return <div className={`mailbox-reward ${rarity ? `rarity-${rarity}` : ''} ${attachment.claimed ? 'is-claimed' : ''}`} title={label} aria-label={label}>
-    <span className="mailbox-reward-art">{item ? <ItemArtwork itemId={item.id} name={item.name} fallback={item.icon} />
-      : hero ? <img src={heroThumbSrc(hero.id, hero.heroClass, hero.rarity, hero.color)} alt="" className="h-full w-full object-cover" /> : <Sparkles size={26} />}</span>
-    <b style={rarity ? { color: RARITY_COLORS[rarity] } : undefined}>{level}</b>
+  return <div className={`mailbox-reward ${hero ? `rarity-${hero.rarity}` : ''} ${attachment.claimed ? 'is-claimed' : ''}`} title={label} aria-label={label}>
+    <span className="mailbox-reward-art">{hero ? <img src={heroThumbSrc(hero.id, hero.heroClass, hero.rarity, hero.color)} alt="" className="h-full w-full object-cover" /> : <Sparkles size={26} />}</span>
+    <b style={hero ? { color: RARITY_COLORS[hero.rarity] } : undefined}>{level}</b>
     <small className="mailbox-reward-name">{name}</small>
     {attachment.bound && <small className="mailbox-reward-bound">Bound</small>}
     {attachment.claimed && <i aria-label="Claimed">✓</i>}
@@ -76,12 +75,14 @@ function ResourceArt({ resourceId }: { resourceId: string }) {
   return src ? <img src={versionedAsset(src)} alt="" className="h-full w-full object-contain" /> : <Sparkles size={26} />;
 }
 
-function ItemTile({ entry }: { entry: MailItemEntry }) {
-  const base = ITEM_MAP[entry.item.itemId];
+function ItemTile({ item, claimed = false }: { item: OwnedItem; claimed?: boolean }) {
+  const base = ITEM_MAP[item.itemId];
   if (!base) return null;
-  return <div className={`mailbox-reward rarity-${base.rarity}`} title={base.name}>
+  return <div className={`mailbox-reward rarity-${base.rarity} ${claimed ? 'is-claimed' : ''}`} title={base.name} aria-label={base.name}>
     <span className="mailbox-reward-art"><ItemArtwork itemId={base.id} name={base.name} fallback={base.icon} /></span>
-    <b style={{ color: RARITY_COLORS[base.rarity] }}>Lv {entry.item.level}</b>
+    <b style={{ color: RARITY_COLORS[base.rarity] }}>Lv {item.level}</b>
+    {item.bound && <small className="mailbox-reward-bound">Bound</small>}
+    {claimed && <i aria-label="Claimed">✓</i>}
   </div>;
 }
 
@@ -182,7 +183,7 @@ export function MailboxScreen({ loadMail, claimMail, readMail, deleteReadMail, f
         {(opened.kind === 'item' || opened.attachments.length > 0) && <>
           <h4>Rewards</h4>
           <div className="mailbox-rewards">
-            {opened.kind === 'item' ? <ItemTile entry={opened} /> : opened.attachments.map((attachment) => <AttachmentTile key={attachment.id} attachment={attachment} />)}
+            {opened.kind === 'item' ? <ItemTile item={opened.item} /> : opened.attachments.map((attachment) => <AttachmentTile key={attachment.id} attachment={attachment} />)}
           </div>
           <button type="button" disabled={busy || !hasUnclaimed(opened)} onClick={() => void claim(opened.id)} className="game-control game-primary mailbox-claim">{busy ? 'Claiming…' : hasUnclaimed(opened) ? 'Claim' : 'Claimed'}</button>
         </>}
