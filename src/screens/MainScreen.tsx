@@ -236,7 +236,7 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
 
   const timeline: DungeonPlaybackFrame[] = [];
   const spent = new Map<PlaybackFighter, number>();
-  let bossAttacksShown = 0;
+  const attacksShown = new Map<PlaybackFighter, number>();
   for (let frame = 1; frame <= frames; frame += 1) {
     const pulses: DungeonPlaybackFrame['pulses'] = [];
     const snapshot = (fighter: PlaybackFighter): DungeonUnitState => {
@@ -251,16 +251,18 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
     };
     const nextHeroes = heroes.map(snapshot);
     const nextEnemies = enemies.filter((fighter) => frame > fighter.spawn || frame === frames).map(snapshot);
-    if (boss && pulses.some((pulse) => pulse.sourceUid === boss.uid)) bossAttacksShown += 1;
     // Net HP cannot reveal attacks absorbed by shields or offset by healing. Keep server-confirmed
-    // Boss attempts visible without inventing damage, misses, or changing the authoritative HP.
-    if (boss && canAct(boss, frame) && boss.strikes.has(frame)
-      && bossAttacksShown < Number(boss.unit.attacks ?? 0)
-      && !pulses.some((pulse) => pulse.sourceUid === boss.uid)) {
-      const target = chooseTarget(boss, frame);
-      if (target) {
-        pulses.push({ sourceUid: boss.uid, targetUid: target.uid, value: 0, crit: false, heal: false, attackOnly: true });
-        bossAttacksShown += 1;
+    // Hero and enemy attempts visible without inventing damage, misses, or changing the authoritative HP.
+    for (const fighter of [...heroes, ...enemies]) {
+      if (pulses.some((pulse) => pulse.sourceUid === fighter.uid && !pulse.heal)) {
+        attacksShown.set(fighter, (attacksShown.get(fighter) ?? 0) + 1);
+      } else if (canAct(fighter, frame) && fighter.strikes.has(frame)
+        && (attacksShown.get(fighter) ?? 0) < Number(fighter.unit.attacks ?? 0)) {
+        const target = chooseTarget(fighter, frame);
+        if (target) {
+          pulses.push({ sourceUid: fighter.uid, targetUid: target.uid, value: 0, crit: false, heal: false, attackOnly: true });
+          attacksShown.set(fighter, (attacksShown.get(fighter) ?? 0) + 1);
+        }
       }
     }
     timeline.push({ heroes: nextHeroes, enemies: nextEnemies, pulses });
