@@ -148,6 +148,21 @@ REVOKE ALL ON FUNCTION public.normal_combat_complete_before_ordinary_potion(uuid
 REVOKE ALL ON FUNCTION public.normal_combat_complete(uuid,uuid,uuid) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.normal_combat_complete(uuid,uuid,uuid) TO service_role;
 
+-- Retained frozen Boss resolvers may execute repeatedly in one transaction.
+-- Reset only their session-local event buffer; historical receipts remain intact.
+DO $patch$
+DECLARE signature text; d text; marker text:='CREATE TEMP TABLE premium_potion_events (';
+BEGIN
+  FOREACH signature IN ARRAY ARRAY[
+    'public.dungeon_room_four_retinue_action(uuid,uuid,bigint,text,uuid)',
+    'public.dungeon_shared_boss_basic_action(uuid,uuid,bigint,text,uuid)',
+    'public.dungeon_shared_boss_v2_basic_action(uuid,uuid,bigint,text,uuid)'] LOOP
+    d:=pg_get_functiondef(signature::regprocedure);
+    IF position(marker in d)=0 THEN RAISE EXCEPTION 'ordinary_legacy_resolver_mismatch'; END IF;
+    EXECUTE replace(d,marker,'DROP TABLE IF EXISTS pg_temp.premium_potion_events; '||marker);
+  END LOOP;
+END $patch$;
+
 -- New promo codes cannot contain potions. Existing redemption receipts remain immutable;
 -- new uses of mixed legacy codes receive their other rewards, without potion issuance.
 ALTER FUNCTION public.promo_code_reward_valid(jsonb) RENAME TO promo_code_reward_valid_before_ordinary_potion;
