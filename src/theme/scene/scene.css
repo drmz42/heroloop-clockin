@@ -187,9 +187,9 @@ button.sc-chip { cursor: pointer; }
 .sc-flame i:nth-child(2) { width: 46%; height: 100%; background: radial-gradient(ellipse at 50% 85%, #fff, #ffe2a0 35%, #ff9c2e 60%, transparent 75%); animation-duration: 1.05s; animation-delay: -.3s; }
 
 /* ── Heroes: Hall of Champions ───────────────────────────────── */
-.hv-hall { --sc-art: url('/assets/screens/heroes-hall-v2.webp'); --sc-glow-y: 70%; min-height: 360px; padding-bottom: 10px; }
+.hv-hall { --sc-art: url('/assets/screens/heroes-hall-v2.webp'); --sc-glow-y: 70%; min-height: 0; padding: 8px 12px 6px; }
 .hv-hall .sc-stage-art { background-position: 50% 40%; }
-.hv-head-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; }
+.hv-head-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin-top: 4px; }
 .hv-head-row .skr-purchase-button,
 .hv-head-row > button { min-height: 40px; }
 /* Keep the +100 slots purchase the same compact height as the hero count chip. */
@@ -197,7 +197,7 @@ button.sc-chip { cursor: pointer; }
 .hv-head-row > div > button.game-primary { position: relative; display: inline-flex; width: auto; min-height: 34px !important; height: 34px; align-items: center; gap: 4px; border-radius: 4px; padding: 0 10px; font: 800 10px/1 system-ui, sans-serif; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; box-shadow: inset 0 1px #fff1b7, inset 0 -2px rgba(72, 39, 4, .45); }
 .hv-head-row > div > button.game-primary::after { content: ''; position: absolute; inset: -5px 0; }
 .hv-head-row > div > p { margin-top: 0; font-size: 10px; }
-.hv-team { position: relative; z-index: 1; display: grid; width: 100%; max-width: 420px; grid-template-columns: repeat(3, 1fr); align-items: end; gap: 10px; margin-top: auto; padding-top: 18px; }
+.hv-team { position: relative; z-index: 1; display: grid; width: 100%; max-width: 420px; grid-template-columns: repeat(3, 1fr); align-items: end; gap: 10px; margin-top: 0; padding-top: 8px; }
 .hv-seat { display: flex; min-width: 0; flex-direction: column; align-items: center; }
 /* Founder 2026-10-05: team seats show the same framed TCG card as the collection, without the green halo. */
 .hv-seat-card { width: 80%; max-width: 104px; }
@@ -239,7 +239,7 @@ button.sc-chip { cursor: pointer; }
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 4px;
   border: 0 solid transparent;
   border-width: 7px 11px;
   border-image: var(--sc-plate) 85 150 fill / 7px 11px / 0 2px stretch;
@@ -252,22 +252,23 @@ button.sc-chip { cursor: pointer; }
 }
 .hv-power b { color: var(--sc-gold); font: 700 18px/1 var(--sc-display); letter-spacing: .04em; text-shadow: 0 0 10px rgba(242, 180, 80, .45); }
 
-.hv-tools { display: grid; gap: 6px; }
-.hv-search { position: relative; display: block; }
-.hv-search svg { position: absolute; left: 10px; top: 50%; color: var(--sc-muted); transform: translateY(-50%); pointer-events: none; }
-.hv-search input {
-  width: 100%;
-  min-height: 40px;
-  border: 1px solid rgba(199, 158, 97, .35);
-  border-radius: 2px;
-  padding: 0 10px 0 30px;
-  background: rgba(6, 5, 4, .85);
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, .6);
-  color: var(--sc-ivory);
-  font-size: 12px;
-  outline: none;
+/* Compact roster controls; hero cards and formation portrait geometry stay unchanged. */
+.hv-root > .sc-body { gap: 6px; padding-top: 0; }
+.hv-root .heroes-head .sc-kicker { display: none; }
+.hv-root .heroes-head .sc-title { margin: 0; font-size: 20px; }
+.hv-root .hl-heroes-promote .seeker-promote-all { min-height: 44px; margin-top: 0; gap: 6px; padding: 0 10px; font-size: 10px; letter-spacing: .03em; }
+.hv-root .hl-heroes-promote .seeker-promote-all-cost { font-size: 10px; }
+.hv-root .hl-heroes-promote .seeker-promote-all-hint { margin-top: 2px; }
+.hv-collection { padding: 6px; }
+.hv-collection .sc-section-head { margin-bottom: 4px; }
+.hv-collection .sc-chip { min-height: 44px; }
+.hv-collection .hv-filters { gap: 4px; grid-template-columns: repeat(3, minmax(0, 1fr)) 44px; }
+.hv-collection .hv-sort .sc-chip { min-height: 44px; }
+@media (min-width: 700px) {
+  .hv-collection .hv-tools { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
-.hv-search input:focus { border-color: var(--sc-gold); }
+
+.hv-tools { display: grid; gap: 6px; }
 .hv-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 6px; }
 .hv-filter { position: relative; min-width: 0; text-transform: capitalize; font: 800 10px/1 system-ui, sans-serif; letter-spacing: .02em; }
 .hv-filter > span:first-of-type { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

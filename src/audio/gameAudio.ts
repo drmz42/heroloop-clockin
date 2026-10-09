@@ -4,6 +4,7 @@
 import { useSyncExternalStore } from 'react';
 
 export type SfxName =
+  | 'heroAttack' | 'enemyAttack'
   | 'tap' | 'tab' | 'sheet' | 'hit' | 'crit' | 'heal' | 'miss' | 'death' | 'victory' | 'defeat'
   | 'coin' | 'claim' | 'purchase' | 'error' | 'levelUp' | 'equip' | 'summon'
   | 'chestCharge' | 'chestRattle' | 'chestBurst' | 'cardFly' | 'bossIntro' | 'bossPhase';
@@ -122,6 +123,8 @@ function bell(freq: number, dur: number, gain: number, at = 0) {
 const vary = (value: number, spread = 0.08) => value * (1 - spread + Math.random() * spread * 2);
 
 const PLAYERS: Record<SfxName, (tier: number) => void> = {
+  heroAttack: () => hiss(0.10, { type: 'bandpass', freq: vary(1800), to: 650, q: 1.2, gain: 0.12, attack: 0.015 }),
+  enemyAttack: () => { hiss(0.13, { type: 'bandpass', freq: vary(700), to: 260, gain: 0.14, attack: 0.015 }); tone(vary(110), 0.12, { gain: 0.10, to: 65 }); },
   tap: () => { hiss(0.03, { type: 'bandpass', freq: 2400, q: 1.4, gain: 0.07 }); tone(vary(540), 0.05, { gain: 0.035, to: 380 }); },
   tab: () => { hiss(0.04, { type: 'bandpass', freq: 1800, q: 1.2, gain: 0.08 }); tone(vary(220), 0.09, { gain: 0.07, to: 150 }); },
   sheet: () => hiss(0.22, { type: 'bandpass', freq: 380, to: 1700, q: 1.1, gain: 0.08, attack: 0.06 }),
@@ -183,7 +186,7 @@ export function playReveal(tier: number) {
   }
 }
 
-const THROTTLE_MS: Partial<Record<SfxName, number>> = { tap: 40, hit: 90, crit: 120, heal: 160, miss: 120, death: 140, coin: 60, cardFly: 35 };
+const THROTTLE_MS: Partial<Record<SfxName, number>> = { heroAttack: 90, enemyAttack: 90, tap: 40, hit: 90, crit: 120, heal: 160, miss: 120, death: 140, coin: 60, cardFly: 35 };
 
 export function playSfx(name: SfxName, tier = 0) {
   if (!settings.sfx || !unlocked || document.visibilityState === 'hidden' || !audio()) return;

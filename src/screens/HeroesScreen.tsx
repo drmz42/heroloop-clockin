@@ -5,7 +5,7 @@ import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { SkrUsd } from '@/components/SkrUsd';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Star, Lock, Unlock, Trash2, Search, X, Sparkles, Users, Swords, Shield, AlertTriangle, UserPlus, Gem, ChevronsUp, Zap } from 'lucide-react';
+import { Star, Lock, Unlock, Trash2, X, Sparkles, Users, Swords, Shield, AlertTriangle, UserPlus, Gem, ChevronsUp, Zap } from 'lucide-react';
 import { GameSelect } from '@/components/GameSelect';
 import { heroPortraitSrc, heroThumbSrc, heroPortraitStyle } from '@/game/portraits';
 import '@/theme/scene/scene.css';
@@ -224,7 +224,6 @@ export function HeroesScreen({ game }: { game: GameApi }) {
   const [classFilter, setClassFilter] = useState('all');
   const [rarityFilter, setRarityFilter] = useState('all');
   const [levelFilter, setLevelFilter] = useState<'all' | '1-19' | '20-39' | '40-59' | '60-79' | '80-99' | '100-149' | '150-200'>('all');
-  const [search, setSearch] = useState('');
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
   const skrRate = useSkrRate(isolatedHackathon);
   const [promotionNotice, setPromotionNotice] = useState('');
@@ -255,7 +254,7 @@ export function HeroesScreen({ game }: { game: GameApi }) {
         const [minimum, maximum] = levelFilter.split('-').map(Number);
         if (hero.level < minimum || hero.level > maximum) return false;
       }
-      return !search || base.name.toLowerCase().includes(search.toLowerCase());
+      return true;
     });
     return list.sort((a, b) => {
       if (sort === 'level') return b.hero.level - a.hero.level;
@@ -263,7 +262,7 @@ export function HeroesScreen({ game }: { game: GameApi }) {
       if (sort === 'power') { const aStats = heroStats(a.hero, getEquippedItems(a.hero, state.inventory)); const bStats = heroStats(b.hero, getEquippedItems(b.hero, state.inventory)); return ((bStats?.atk ?? 0) + (bStats?.hp ?? 0) / 10) - ((aStats?.atk ?? 0) + (aStats?.hp ?? 0) / 10); }
       return RARITY_INDEX[b.base.rarity] - RARITY_INDEX[a.base.rarity];
     });
-  }, [state.ownedHeroes, state.inventory, classFilter, rarityFilter, levelFilter, search, sort]);
+  }, [state.ownedHeroes, state.inventory, classFilter, rarityFilter, levelFilter, sort]);
 
   const selected = selectedUid ? state.ownedHeroes.find((hero) => hero.uid === selectedUid) ?? null : null;
   const openHero = (hero: OwnedHero) => { game.markHeroSeen(hero.uid); setSelectedUid(hero.uid); };
@@ -320,7 +319,7 @@ export function HeroesScreen({ game }: { game: GameApi }) {
     }
   };
   const teamHeroes = state.team.map((uid) => state.ownedHeroes.find((candidate) => candidate.uid === uid)).filter((hero): hero is OwnedHero => Boolean(hero));
-  const filtersSet = classFilter !== 'all' || rarityFilter !== 'all' || levelFilter !== 'all' || search !== '';
+  const filtersSet = classFilter !== 'all' || rarityFilter !== 'all' || levelFilter !== 'all';
   return (
     <div className={`sc-root hv-root${state.battleAnimationMode === 'off' ? ' sc-still' : ''}`}>
       <section className="sc-stage hv-hall" aria-label="Hall of Champions">
@@ -367,15 +366,14 @@ export function HeroesScreen({ game }: { game: GameApi }) {
           : <button type="button" disabled={promoting} onClick={() => void promoteAll()} className="sc-seal w-full"><Sparkles size={13} /> {promoting ? 'Promoting…' : 'Promote All'}</button>}
         {promotionNotice && <div className="hv-notice"><span><Sparkles size={13} className="mr-1 inline text-amber-300" />{promotionNotice}</span><button type="button" onClick={() => setPromotionNotice('')} aria-label="Dismiss promotion result"><X size={14} /></button></div>}
 
-        <section className="sc-panel" aria-label="Hero collection">
+        <section className="sc-panel hv-collection" aria-label="Hero collection">
           <div className="sc-section-head"><span>Collection</span><span className="sc-muted">{entries.length} shown</span></div>
           <div className="hv-tools">
-            <label className="hv-search"><Search size={13} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search heroes" aria-label="Search heroes" /></label>
             <div className="hv-filters">
               <Filter value={classFilter} onChange={setClassFilter} label="Class" icon={Swords} options={['all', 'knight', 'archer', 'assassin', 'shepherd', 'druid']} />
               <Filter value={rarityFilter} onChange={setRarityFilter} label="Rarity" icon={Gem} options={['all', ...FILTER_RARITIES]} />
               <Filter value={levelFilter} onChange={(value) => setLevelFilter(value as typeof levelFilter)} label="Level" icon={ChevronsUp} options={['all', '1-19', '20-39', '40-59', '60-79', '80-99', '100-149', '150-200']} />
-              <button type="button" disabled={!filtersSet} onClick={() => { setClassFilter('all'); setRarityFilter('all'); setLevelFilter('all'); setSearch(''); }} className="sc-chip" aria-label="Clear filters"><X size={12} /></button>
+              <button type="button" disabled={!filtersSet} onClick={() => { setClassFilter('all'); setRarityFilter('all'); setLevelFilter('all'); }} className="sc-chip" aria-label="Clear filters"><X size={12} /></button>
             </div>
             <div className="hv-sort" role="group" aria-label="Sort heroes">
               {(['rarity', 'stars', 'power', 'level'] as const).map((value) => { const Icon = SORT_ICONS[value]; return <button type="button" key={value} onClick={() => setSort(value)} aria-pressed={sort === value} className="sc-chip">{value}<Icon size={10} aria-hidden="true" /></button>; })}
@@ -385,7 +383,7 @@ export function HeroesScreen({ game }: { game: GameApi }) {
 
         {entries.length > 0
           ? <ol className="hv-grid hl-hero-grid">{entries.map(({ base, hero }) => <HeroGridCard key={hero.uid} base={base} hero={hero} game={game} guided={hero.uid === guidedUid} onSelect={() => openHero(hero)} />)}</ol>
-          : <div className="sc-panel hv-empty"><Shield className="mx-auto text-[#806b49]" /><b>No owned heroes match these filters</b><div className="sc-muted mt-1">Change class, rarity, level or search.</div></div>}
+          : <div className="sc-panel hv-empty"><Shield className="mx-auto text-[#806b49]" /><b>No owned heroes match these filters</b><div className="sc-muted mt-1">Change class, rarity or level.</div></div>}
       </div>
       {selected && <HeroDetailModal hero={selected} game={game} onClose={() => setSelectedUid(null)} />}
       {capacityQuote && (
