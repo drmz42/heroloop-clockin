@@ -66,18 +66,21 @@ function validateComplexity(value, validateNumbers = true) {
 }
 
 function hero(value) {
-  const allowed = new Set(["uid", "heroId", "level", "stars", "equipped", "respawnAt", "xp", "locked", "isNew"]);
+  // "bound" (Founder 2026-10-09) only displays account binding; player_bound_heroes is the authority.
+  const allowed = new Set(["uid", "heroId", "level", "stars", "equipped", "respawnAt", "xp", "locked", "isNew", "bound"]);
   if (!keysExact(value, allowed) || !text(value.uid, 128) || !text(value.heroId, 96, ID_PATTERN) ||
       !finite(value.level, 1, 200) || !finite(value.stars, 0, 20) || !finite(value.xp, 0, 1_000_000_000)) return false;
   if (!keysExact(value.equipped, ITEM_SLOTS)) return false;
   if (!Object.values(value.equipped).every((uid) => text(uid, 128))) return false;
   return (value.respawnAt === undefined || finite(value.respawnAt, 0, 8_640_000_000_000_000)) &&
     (value.locked === undefined || typeof value.locked === "boolean") &&
-    (value.isNew === undefined || typeof value.isNew === "boolean");
+    (value.isNew === undefined || typeof value.isNew === "boolean") &&
+    (value.bound === undefined || typeof value.bound === "boolean");
 }
 
 function itemError(value) {
-  const allowed = new Set(["uid", "itemId", "level", "stats", "power", "serverOwned", "locked", "isNew", "enchantLevel", "enchantStatsVersion", "itemRollVersion", "rerollCount"]);
+  // "bound" (Founder 2026-10-09) mirrors player_items.bound for display; the ledger column is the authority.
+  const allowed = new Set(["uid", "itemId", "level", "stats", "power", "serverOwned", "locked", "isNew", "enchantLevel", "enchantStatsVersion", "itemRollVersion", "rerollCount", "bound"]);
   if (!keysExact(value, allowed)) {
     const unknown = record(value) ? Object.keys(value).filter((key) => !allowed.has(key)).sort().join(",") : "not_record";
     return `fields:${unknown}`;
@@ -94,6 +97,7 @@ function itemError(value) {
   if (value.serverOwned !== undefined && typeof value.serverOwned !== "boolean") return "server_owned";
   if (value.locked !== undefined && typeof value.locked !== "boolean") return "locked";
   if (value.isNew !== undefined && typeof value.isNew !== "boolean") return "is_new";
+  if (value.bound !== undefined && typeof value.bound !== "boolean") return "bound";
   if (value.enchantStatsVersion !== undefined && value.enchantStatsVersion !== 2 && value.enchantStatsVersion !== 3 && value.enchantStatsVersion !== 4) return "enchant_stats_version";
   if (value.itemRollVersion !== undefined && value.itemRollVersion !== 2 && value.itemRollVersion !== 3 && value.itemRollVersion !== 4 && value.itemRollVersion !== 5) return "item_roll_version";
   return null;

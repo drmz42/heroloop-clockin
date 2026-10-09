@@ -36,7 +36,8 @@ function ownedRows(game: GameApi): Listing[] {
   return game.state.inventory.flatMap((item) => {
     const base = ITEM_MAP[item.itemId];
     // Inventory locks protect Gold sales; deliberate Market listings remain available.
-    if (!base || !item.serverOwned || !isMarketEligibleEquipment(base) || equipped.has(item.uid)) return [];
+    // Account-bound items (Founder 2026-10-09) never reach the Market; the server refuses them too.
+    if (!base || !item.serverOwned || item.bound || !isMarketEligibleEquipment(base) || equipped.has(item.uid)) return [];
     return [{ id: item.uid, kind: 'item' as const, sourceId: item.itemId, name: base.name, rarity: base.rarity, level: item.level, enchantLevel: item.enchantLevel, power: displayItemPower(item), price: 0, seller: 'Ready', createdAt: 0, stats: item.stats.map((stat) => `${STAT_LABEL[stat.key]} ${formatStatValue(stat)}`), owned: item }];
   });
 }
@@ -49,7 +50,7 @@ function ownedHeroRows(game: GameApi): Listing[] {
   return ownedHeroes.flatMap((hero) => {
     const base = HERO_MAP[hero.heroId];
     if (!base || !UUID.test(hero.uid)) return [];
-    const reason = ownedHeroes.length <= 1 ? 'Last hero' : hero.locked ? 'Locked' : team.includes(hero.uid) ? 'Active team'
+    const reason = hero.bound ? 'Account-bound' : ownedHeroes.length <= 1 ? 'Last hero' : hero.locked ? 'Locked' : team.includes(hero.uid) ? 'Active team'
       : training.has(hero.uid) ? 'Training' : Object.values(hero.equipped ?? {}).some(Boolean) ? 'Equipped' : 'Ready';
     return [{ id: hero.uid, kind: 'hero' as const, sourceId: base.id, name: base.name, rarity: base.rarity, level: hero.level, enchantLevel: 0, stars: hero.stars, power: teamPower([hero], game.state.inventory), price: 0, seller: reason, createdAt: 0, stats: [`${hero.stars} ★`, `Level ${hero.level}`], owned: hero }];
   });

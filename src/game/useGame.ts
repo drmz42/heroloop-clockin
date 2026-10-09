@@ -220,7 +220,8 @@ export interface MarketActionResult { ok: boolean; error?: string; mailed?: bool
 export interface MailItemEntry { kind: 'item'; id: string; source: 'market_purchase' | 'market_return' | 'store_overflow'; created_at: string; item: OwnedItem }
 // Founder 2026-10-08: rewards arrive in the Mailbox as letters (sender, title, text, attachments); a chest
 // attachment moves into the 500-chest queue only when there is room, Gold always lands.
-export type MailAttachment = { id: string; claimed: boolean } & ({ kind: 'chest'; chest: Chest } | { kind: 'gold'; amount: number } | { kind: 'resource'; resourceId: string; title: string; amount: number });
+export type MailAttachment = { id: string; claimed: boolean } & ({ kind: 'chest'; chest: Chest } | { kind: 'gold'; amount: number } | { kind: 'resource'; resourceId: string; title: string; amount: number }
+  | { kind: 'item'; itemId: string; title: string; levelMin: number; levelMax: number; bound: boolean } | { kind: 'hero'; heroId: string; title: string; level: number; stars: number; bound: boolean });
 export interface MailLetterEntry {
   kind: 'letter'; id: string; source: 'boss_reward' | 'compensation' | 'admin' | 'system'; sender: string; title: string; body: string;
   created_at: string; read: boolean; claimed: boolean; attachments: MailAttachment[];
@@ -239,6 +240,14 @@ function parseMailLetters(raw: RawMailLetter[] | undefined): MailLetterEntry[] {
       if (attachment?.kind === 'resource' && typeof attachment.payload?.resource_id === 'string' && Number.isSafeInteger(Number(attachment.payload?.amount))) {
         return [{ id: attachment.id, claimed: attachment.claimed === true, kind: 'resource', resourceId: attachment.payload.resource_id, title: String(attachment.payload.title ?? attachment.payload.resource_id), amount: Number(attachment.payload.amount) }];
       }
+      if (attachment?.kind === 'item' && typeof attachment.payload?.base_item_id === 'string') {
+        return [{ id: attachment.id, claimed: attachment.claimed === true, kind: 'item', itemId: attachment.payload.base_item_id, title: String(attachment.payload.title ?? ''),
+          levelMin: Number(attachment.payload.level_min) || 1, levelMax: Number(attachment.payload.level_max) || 1, bound: attachment.payload.bound === true }];
+      }
+      if (attachment?.kind === 'hero' && typeof attachment.payload?.hero_id === 'string') {
+        return [{ id: attachment.id, claimed: attachment.claimed === true, kind: 'hero', heroId: attachment.payload.hero_id, title: String(attachment.payload.title ?? ''),
+          level: Number(attachment.payload.level) || 1, stars: Number(attachment.payload.stars) || 0, bound: attachment.payload.bound === true }];
+      }
       if (attachment?.kind === 'gold' && Number.isSafeInteger(Number(attachment.payload?.amount))) {
         return [{ id: attachment.id, claimed: attachment.claimed === true, kind: 'gold', amount: Number(attachment.payload.amount) }];
       }
@@ -247,7 +256,7 @@ function parseMailLetters(raw: RawMailLetter[] | undefined): MailLetterEntry[] {
   }));
 }
 
-export interface MailClaimResult { ok: boolean; error?: string; claimed?: number; remaining?: number; itemsFull?: boolean; chestsFull?: boolean; resourcesFull?: boolean }
+export interface MailClaimResult { ok: boolean; error?: string; claimed?: number; remaining?: number; itemsFull?: boolean; chestsFull?: boolean; resourcesFull?: boolean; heroesFull?: boolean }
 
 interface NormalCombatWave {
   startKey: string;
@@ -2099,21 +2108,22 @@ export function useGame() {
   const claimMail = useCallback(async (mailId: string | null): Promise<MailClaimResult> => {
     if (!tokenomicsEnabled) return { ok: false, error: 'unavailable' };
     let error = '';
-    const result = await playerSync<{ claimed: number; remaining: number; inventory: OwnedItem[]; chests?: Chest[]; gold?: number; revision: number; items_full?: boolean; chests_full?: boolean; resources_full?: boolean; resources_changed?: boolean }>('mail_claim', {
+    const result = await playerSync<{ claimed: number; remaining: number; inventory: OwnedItem[]; chests?: Chest[]; gold?: number; revision: number; items_full?: boolean; chests_full?: boolean; resources_full?: boolean; resources_changed?: boolean; heroes_full?: boolean; owned_heroes?: OwnedHero[] }>('mail_claim', {
       mail_id: mailId, idempotency_key: createIdempotencyKey(),
     }, (message) => { error = message; });
     if (!result || !Array.isArray(result.inventory)) return { ok: false, error: error || 'mail_failed' };
     if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
     const chests = Array.isArray(result.chests) ? result.chests : null;
     const gold = Number.isSafeInteger(result.gold) ? Number(result.gold) : null;
-    setState((prev) => ({ ...prev, inventory: result.inventory, ...(chests ? { chests } : {}), ...(gold !== null ? { gold } : {}) }));
+    const heroes = Array.isArray(result.owned_heroes) ? result.owned_heroes : null;
+    setState((prev) => ({ ...prev, inventory: result.inventory, ...(chests ? { chests } : {}), ...(gold !== null ? { gold } : {}), ...(heroes ? { ownedHeroes: heroes } : {}) }));
     setMailCount(Math.max(0, Math.floor(Number(result.remaining) || 0)));
     // Scrolls, keys, potions and materials live in the server resource ledger: reload the save so they show at once.
     if (result.resources_changed) {
       const refreshed = await playerSync<{ state: GameState; revision: number }>('game_state_load');
       if (refreshed?.state && Number.isSafeInteger(refreshed.revision)) { setServerRevisionHint(refreshed.revision); hydrateServerState(refreshed.state); }
     }
-    return { ok: true, claimed: result.claimed, remaining: result.remaining, itemsFull: result.items_full === true, chestsFull: result.chests_full === true, resourcesFull: result.resources_full === true };
+    return { ok: true, claimed: result.claimed, remaining: result.remaining, itemsFull: result.items_full === true, chestsFull: result.chests_full === true, resourcesFull: result.resources_full === true, heroesFull: result.heroes_full === true };
   }, [hydrateServerState]);
 
   const readMail = useCallback(async (letterId: string) => {

@@ -86,3 +86,4 @@
 .mailbox-confirm-card div { display: flex; gap: 10px; }
 .mailbox-confirm-card button { flex: 1; min-height: 48px; font-family: var(--mb-display); font-size: 14px; font-weight: 700; letter-spacing: .06em; }
 .mailbox-reward-name { max-width: 100%; overflow: hidden; font-size: 9.5px; color: var(--mb-muted); text-overflow: ellipsis; white-space: nowrap; }
+.mailbox-reward-bound { position: absolute; top: -6px; left: -4px; padding: 1px 4px; border: 1px solid rgba(242, 204, 128, .6); background: #2a1d0b; font-size: 8.5px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: var(--mb-brass-hi); }

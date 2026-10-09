@@ -4,7 +4,8 @@ import { versionedAsset } from '@/game/assetVersion';
 import { ChestCollectIcon } from '@/components/ChestCollectIcon';
 import { GoldIcon } from '@/components/GoldIcon';
 import { ItemArtwork } from '@/components/ItemArtwork';
-import { RARITY_COLORS } from '@/game/heroes';
+import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
+import { heroThumbSrc } from '@/game/portraits';
 import { ITEM_MAP, displayItemPower } from '@/game/items';
 import { formatNum } from '@/game/state';
 import type { MailAttachment, MailClaimResult, MailEntry, MailItemEntry } from '@/game/useGame';
@@ -35,12 +36,32 @@ const hasUnclaimed = (entry: MailEntry) => entry.kind === 'item' || entry.attach
 const isRead = (entry: MailEntry) => entry.kind === 'letter' && entry.read && !hasUnclaimed(entry);
 
 function AttachmentTile({ attachment }: { attachment: MailAttachment }) {
+  if (attachment.kind === 'item' || attachment.kind === 'hero') return <GrantTile attachment={attachment} />;
   const title = attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss Chest' : 'Chest'}, Location ${attachment.chest.stage}`
     : attachment.kind === 'resource' ? `${formatNum(attachment.amount)} × ${attachment.title}` : `${formatNum(attachment.amount)} Gold`;
   return <div className={`mailbox-reward ${attachment.claimed ? 'is-claimed' : ''}`} title={title} aria-label={title}>
     <span className="mailbox-reward-art">{attachment.kind === 'chest' ? <ChestCollectIcon size={44} /> : attachment.kind === 'resource' ? <ResourceArt resourceId={attachment.resourceId} /> : <GoldIcon size={30} />}</span>
     <b>{attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss · ' : ''}L${attachment.chest.stage}` : formatNum(attachment.amount)}</b>
     {attachment.kind === 'resource' && <small className="mailbox-reward-name">{attachment.title}</small>}
+    {attachment.claimed && <i aria-label="Claimed">✓</i>}
+  </div>;
+}
+
+// A custom item or hero (Founder 2026-10-09): a fresh copy is made on Claim; "Bound" copies stay on the account.
+function GrantTile({ attachment }: { attachment: Extract<MailAttachment, { kind: 'item' | 'hero' }> }) {
+  const item = attachment.kind === 'item' ? ITEM_MAP[attachment.itemId] : undefined;
+  const hero = attachment.kind === 'hero' ? HERO_MAP[attachment.heroId] : undefined;
+  const name = attachment.title || item?.name || hero?.name || 'Reward';
+  const rarity = item?.rarity ?? hero?.rarity;
+  const level = attachment.kind === 'item' ? (attachment.levelMin === attachment.levelMax ? `Lv ${attachment.levelMin}` : `Lv ${attachment.levelMin}–${attachment.levelMax}`)
+    : `Lv ${attachment.level}${attachment.stars ? ` · ★${attachment.stars}` : ''}`;
+  const label = `${name}, ${level}${attachment.bound ? ', account-bound' : ''}`;
+  return <div className={`mailbox-reward ${rarity ? `rarity-${rarity}` : ''} ${attachment.claimed ? 'is-claimed' : ''}`} title={label} aria-label={label}>
+    <span className="mailbox-reward-art">{item ? <ItemArtwork itemId={item.id} name={item.name} fallback={item.icon} />
+      : hero ? <img src={heroThumbSrc(hero.id, hero.heroClass, hero.rarity, hero.color)} alt="" className="h-full w-full object-cover" /> : <Sparkles size={26} />}</span>
+    <b style={rarity ? { color: RARITY_COLORS[rarity] } : undefined}>{level}</b>
+    <small className="mailbox-reward-name">{name}</small>
+    {attachment.bound && <small className="mailbox-reward-bound">Bound</small>}
     {attachment.claimed && <i aria-label="Claimed">✓</i>}
   </div>;
 }
@@ -104,6 +125,7 @@ export function MailboxScreen({ loadMail, claimMail, readMail, deleteReadMail, f
     else if (result.chestsFull) setMessage(result.claimed ? 'Your chest storage is full. The rest stays in the Mailbox.' : ERRORS.chests_full);
     else if (result.itemsFull) setMessage('Your bag is full. The rest stays in the Mailbox.');
     else if (result.resourcesFull) setMessage('A resource is at its limit. That reward stays in the Mailbox.');
+    else if (result.heroesFull) setMessage('Your hero roster is full. That hero stays in the Mailbox.');
     await refresh();
     setBusy(false);
   };

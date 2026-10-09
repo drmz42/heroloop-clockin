@@ -40,6 +40,8 @@ export interface OwnedHero {
   xp: number;
   locked?: boolean;
   isNew?: boolean;
+  /** Account-bound (Founder 2026-10-09): never tradeable; player_bound_heroes is the authority. */
+  bound?: boolean;
 }
 
 // ── Items ──────────────────────────────────────────────────────────────────
@@ -73,6 +75,8 @@ export interface OwnedItem {
   stats: ItemStatRoll[];
   power: number;
   serverOwned?: boolean;
+  /** Account-bound (Founder 2026-10-09): never tradeable; player_items.bound is the authority. */
+  bound?: boolean;
   locked?: boolean;
   isNew?: boolean;
   enchantLevel: number;   // 0–20; Balance v4 uses four non-compounding stat bands

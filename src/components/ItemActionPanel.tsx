@@ -70,6 +70,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
         <div className="flex-1 min-w-0">
           <div className="font-bold ui-text-medium" style={{ color: rc }}>{base.name} {item.enchantLevel > 0 && <span className="text-amber-400">+{item.enchantLevel}</span>}</div>
           <div className="ui-text-small text-slate-500 uppercase">{SLOT_LABEL[base.slot]} · {RARITY_LABEL[base.rarity]} · Lv {item.level}</div>
+          {item.bound && <div className="ui-text-small font-bold text-amber-300" title="This item stays on your account: it cannot be listed on the Market.">Account-bound · not tradeable</div>}
           {base.heroClass && <div className="mt-0.5 ui-text-small font-black uppercase tracking-wide text-amber-200">{CLASS_LABEL[base.heroClass]} only</div>}
           <div className="ui-text-small text-slate-400">⚡{combatPower} Gear Power {item.rerollCount > 0 && `· ${item.rerollCount} rerolls`}</div>
         </div>

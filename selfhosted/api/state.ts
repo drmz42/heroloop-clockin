@@ -287,6 +287,7 @@ function canonicalItem(item: JsonRecord, ledgerById: Map<string, JsonRecord>): J
     rerollCount: Number(row.reroll_count),
     enchantStatsVersion: Number(row.enchant_stats_version),
     itemRollVersion: Number(row.item_roll_version),
+    bound: row.bound === true,
   };
 }
 

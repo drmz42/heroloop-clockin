@@ -2127,7 +2127,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
       } catch (error) {
         const code = databaseErrorCode(error, [
-          "idempotency_conflict", "invalid_market_price", "market_test_limit_reached", "market_test_item_required",
+          "idempotency_conflict", "invalid_market_price", "item_bound", "market_test_limit_reached", "market_test_item_required",
           "market_listing_unavailable", "market_self_purchase", "market_seller_limit_reached", "insufficient_tokens",
           "item_not_found", "item_locked", "item_equipped", "item_state_mismatch", "item_capacity_exceeded", "save_not_found",
         ]);
