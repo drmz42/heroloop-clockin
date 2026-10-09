@@ -3,6 +3,13 @@ set -euo pipefail
 
 container=${1:?usage: apply-selfhosted-baseline.sh <postgres-container-id>}
 repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+through_selfhosted=
+if (( $# > 1 )); then
+  [[ $# == 3 && $2 == --through-selfhosted && $3 =~ ^[0-9]{14}_[a-z0-9_]+\.sql$ && -f $repo/selfhosted/postgres/migrations/$3 ]] || {
+    echo 'invalid self-hosted fixture migration boundary' >&2; exit 2;
+  }
+  through_selfhosted=$3
+fi
 manifest=$repo/selfhosted/postgres/baseline-satisfied.tsv
 docker_cmd=(docker)
 if ! docker info >/dev/null 2>&1; then docker_cmd=(sudo -n docker); fi
@@ -106,6 +113,7 @@ diff -u "$expected_versions" "$actual_versions"
 
 for file in "$repo"/selfhosted/postgres/migrations/*.sql; do
   filename=${file##*/}
+  [[ -z $through_selfhosted || $filename < $through_selfhosted || $filename == "$through_selfhosted" ]] || continue
   version=${filename%.sql}
   checksum=$(sha256sum "$file" | awk '{print $1}')
   existing=$(psql_command -Atq -c "SELECT checksum_sha256 FROM heroloop_migrations.applied_migrations WHERE version='selfhosted:$version'")
