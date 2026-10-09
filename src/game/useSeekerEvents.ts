@@ -70,9 +70,12 @@ export function useSeekerEvents(enabled: boolean, onState: (state: unknown, revi
     setBusy(`${kind}:${id}`); setMessage('');
     let error = '';
     try {
-      const result = await playerSync<{ reward: EventReward; state: unknown; revision: number }>('seeker_event_claim',
+      const result = await playerSync<{ reward: EventReward; state: unknown; revision: number; mailed?: boolean }>('seeker_event_claim',
         { kind, id, idempotency_key: crypto.randomUUID() }, (code) => { error = code; });
-      if (result?.state) onState(result.state, result.revision);
+      if (result?.state) {
+        onState(result.state, result.revision);
+        if (result.mailed) setMessage('Rewards sent to Mailbox. Claim them there when you have room.');
+      }
       else setMessage(ERRORS[error] ?? 'The reward could not be claimed. Try again.');
       await refresh();
       return result?.reward ?? null;

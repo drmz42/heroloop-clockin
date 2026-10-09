@@ -708,6 +708,7 @@ function App() {
       {game.chestOpenResult && (
         <ChestOpenModal
           items={game.chestOpenResult}
+          mailed={game.chestRewardsMailed}
           game={game}
           heroes={game.state.ownedHeroes}
           onClose={game.closeChestResult}

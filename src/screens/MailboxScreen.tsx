@@ -7,6 +7,7 @@ import { ItemArtwork } from '@/components/ItemArtwork';
 import { RARITY_COLORS } from '@/game/heroes';
 import { ITEM_MAP, displayItemPower } from '@/game/items';
 import { formatNum } from '@/game/state';
+import type { OwnedItem } from '@/game/types';
 import type { MailAttachment, MailClaimResult, MailEntry, MailItemEntry } from '@/game/useGame';
 import './mailbox.css';
 
@@ -18,6 +19,7 @@ const ITEM_SOURCE: Record<MailItemEntry['source'], string> = {
   market_purchase: 'Market purchase',
   market_return: 'Returned from Market',
   store_overflow: 'Store purchase',
+  chest_reward: 'Chest reward',
 };
 const ERRORS: Record<string, string> = {
   item_capacity_exceeded: 'Your bag is full. Free a slot to claim items.',
@@ -35,6 +37,7 @@ const hasUnclaimed = (entry: MailEntry) => entry.kind === 'item' || entry.attach
 const isRead = (entry: MailEntry) => entry.kind === 'letter' && entry.read && !hasUnclaimed(entry);
 
 function AttachmentTile({ attachment }: { attachment: MailAttachment }) {
+  if (attachment.kind === 'item') return <div className={attachment.claimed ? 'is-claimed' : ''}><ItemTile item={attachment.item} />{attachment.claimed && <i aria-label="Claimed">✓</i>}</div>;
   const title = attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss Chest' : 'Chest'}, Location ${attachment.chest.stage}`
     : attachment.kind === 'resource' ? `${formatNum(attachment.amount)} × ${attachment.title}` : `${formatNum(attachment.amount)} Gold`;
   return <div className={`mailbox-reward ${attachment.claimed ? 'is-claimed' : ''}`} title={title} aria-label={title}>
@@ -55,12 +58,12 @@ function ResourceArt({ resourceId }: { resourceId: string }) {
   return src ? <img src={versionedAsset(src)} alt="" className="h-full w-full object-contain" /> : <Sparkles size={26} />;
 }
 
-function ItemTile({ entry }: { entry: MailItemEntry }) {
-  const base = ITEM_MAP[entry.item.itemId];
+function ItemTile({ item }: { item: OwnedItem }) {
+  const base = ITEM_MAP[item.itemId];
   if (!base) return null;
   return <div className={`mailbox-reward rarity-${base.rarity}`} title={base.name}>
     <span className="mailbox-reward-art"><ItemArtwork itemId={base.id} name={base.name} fallback={base.icon} /></span>
-    <b style={{ color: RARITY_COLORS[base.rarity] }}>Lv {entry.item.level}</b>
+    <b style={{ color: RARITY_COLORS[base.rarity] }}>Lv {item.level}</b>
   </div>;
 }
 
@@ -142,7 +145,7 @@ export function MailboxScreen({ loadMail, claimMail, readMail, deleteReadMail, f
           {entries === null ? <p className="mailbox-empty">Loading…</p> : entries.length === 0 ? <p className="mailbox-empty">The Mailbox is empty.</p> : entries.map((entry) => {
             const read = isRead(entry) || (entry.kind === 'letter' && entry.read);
             const gift = hasUnclaimed(entry);
-            const title = entry.kind === 'letter' ? entry.title : ITEM_MAP[entry.item.itemId]?.name ?? 'Item delivery';
+            const title = entry.kind === 'letter' ? entry.title : ITEM_MAP[item.itemId]?.name ?? 'Item delivery';
             const sub = entry.kind === 'letter' ? entry.sender : ITEM_SOURCE[entry.source] ?? 'Delivery';
             return <button type="button" key={entry.id} onClick={() => open(entry)} className={`mailbox-row ${read ? 'is-read' : ''}`}>
               <span className={`mailbox-row-icon ${gift ? 'has-gift' : ''}`}>{gift ? <Gift size={22} /> : read ? <MailOpen size={22} /> : <Mail size={22} />}</span>
@@ -160,7 +163,7 @@ export function MailboxScreen({ loadMail, claimMail, readMail, deleteReadMail, f
         {(opened.kind === 'item' || opened.attachments.length > 0) && <>
           <h4>Rewards</h4>
           <div className="mailbox-rewards">
-            {opened.kind === 'item' ? <ItemTile entry={opened} /> : opened.attachments.map((attachment) => <AttachmentTile key={attachment.id} attachment={attachment} />)}
+            {opened.kind === 'item' ? <ItemTile item={opened.item} /> : opened.attachments.map((attachment) => <AttachmentTile key={attachment.id} attachment={attachment} />)}
           </div>
           <button type="button" disabled={busy || !hasUnclaimed(opened)} onClick={() => void claim(opened.id)} className="game-control game-primary mailbox-claim">{busy ? 'Claiming…' : hasUnclaimed(opened) ? 'Claim' : 'Claimed'}</button>
         </>}
