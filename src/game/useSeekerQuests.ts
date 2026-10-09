@@ -21,7 +21,8 @@ export function useSeekerQuests(enabled: boolean, claim: (id: string) => Promise
   }, []);
   useEffect(() => {
     if (!enabled) return;
-    const timer = window.setInterval(() => void refresh(), 30_000);
+    // Quest progress also reloads on every revision change; the timer only catches server-side changes.
+    const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void refresh(); }, 60_000);
     return () => window.clearInterval(timer);
   }, [enabled, refresh]);
   useEffect(() => { if (enabled) void refresh(); }, [enabled, refresh, revision]);

@@ -359,7 +359,7 @@ html[data-hl-platform='android'] .mo-v3 .mo-keep { padding-top: 10px; }
 @media (prefers-reduced-motion: no-preference) {
   html[data-hl-motion='on'] .game-shell:not(.game-motion-off) .mo-wallet::after { opacity: 1; animation: mo-sheen 5.5s ease-in-out 1s infinite; }
 }
-@keyframes mo-sheen { 0%, 70% { left: -40%; } 100% { left: 130%; } }
+@keyframes mo-sheen { 0%, 70% { translate: 0 0; } 100% { translate: 567% 0; } }
 .mo-art-training { --mo-art: url('/assets/screens/training-camp-v1.webp'); --mo-tile-pos: 50% 45%; }
 .mo-pair-short > .mo-tile.mo-art-refer { --mo-tile-pos: 50% 58%; }
 .mo-body > .mo-pair.mo-pair-short { flex: 0 0 auto; }

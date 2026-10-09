@@ -392,6 +392,11 @@ function App() {
     setServerStateRevision(resourceRevision);
   }, [resourceState, resourceRevision, serverStateRevision, mergeServerResourceState]);
 
+  // The animation setting also budgets decorative CSS loops across the page, portals included (motion-budget.css).
+  useEffect(() => {
+    document.documentElement.dataset.hlAnim = game.state.battleAnimationMode;
+  }, [game.state.battleAnimationMode]);
+
   useEffect(() => {
     if (pendingTokens < 1 || autoClaimingRef.current) return;
     autoClaimingRef.current = true;

@@ -1,10 +1,11 @@
 import { editionStorageKey } from './editionStorage';
 
-// Post-tutorial "Next step" tour on the Seeker battle screen: Mine, then the $SKR Store.
+// Post-tutorial "Next step" tour on the Seeker battle screen: Mine, the $SKR Store, then the graphics setting.
 // Presentation only; a step counts as seen once its screen has been opened on this device.
-export type SeekerTourStep = 'mine' | 'store';
+export type SeekerTourStep = 'mine' | 'store' | 'graphics';
 export const SEEKER_TOUR_EVENT = 'hl:seeker-tour';
 export const MINE_OPEN_EVENT = 'hl:mine-open';
+export const SETTINGS_OPEN_EVENT = 'hl:settings-open';
 
 const key = (step: SeekerTourStep) => editionStorageKey(`seeker-tour-${step}`);
 

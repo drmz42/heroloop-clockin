@@ -14,7 +14,7 @@ import { Fragment, useCallback, useEffect, useState, useMemo, useRef, useSyncExt
 import { createPortal } from 'react-dom';
 import { isAndroidLayout } from '@/platform/platform';
 import { SEEKER_SAMPLE_INCOME } from '@/game/seekerSampleIncome';
-import { MINE_OPEN_EVENT, SEEKER_TOUR_EVENT, seekerTourSeen } from '@/game/seekerTour';
+import { MINE_OPEN_EVENT, SEEKER_TOUR_EVENT, SETTINGS_OPEN_EVENT, seekerTourSeen } from '@/game/seekerTour';
 import { COMMANDER_OPEN_EVENT, BATTLE_ACTIONS_SLOT, OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { Package, PackageMinus, FlaskConical, Lock as LockIcon, Star, X, Coins, CheckCircle2, Circle, ArrowUpDown, Wand2, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Info, Settings2, Rocket, DoorOpen, Menu, HeartPulse, Gem, Skull, BookOpen, ArrowRight } from 'lucide-react';
 import { Arena, locationArtStyle } from '@/components/Arena';
@@ -1979,7 +1979,10 @@ function NextStepCard({ game, nextLocation, onQuestsClick, onStoreClick }: { gam
           ? { kicker: 'Next step', label: 'Try the ORE Mine', progress: null, cta: 'Open', onClick: () => window.dispatchEvent(new Event(MINE_OPEN_EVENT)) }
           : !seekerTourSeen('store')
             ? { kicker: 'Next step', label: 'Spend $SKR in the Store', progress: null, cta: 'Open', onClick: onStoreClick }
-            : null;
+            : isAndroidLayout && !seekerTourSeen('graphics')
+              // Maximum graphics by default; the tour shows where Medium/Minimum save battery.
+              ? { kicker: 'Battery tip', label: 'Phone warm? Lower the battle graphics', progress: null, cta: 'Settings', onClick: () => window.dispatchEvent(new Event(SETTINGS_OPEN_EVENT)) }
+              : null;
   if (!step) return null;
   return <button type="button" onClick={step.onClick} className={`hl-next-step game-control absolute top-2 z-30 flex min-h-11 items-center gap-2 px-2.5 py-1.5 text-left ${step.cta ? 'is-ready' : ''}`} aria-label={`${step.kicker}: ${step.label}`}>
     <span className="min-w-0 flex-1">

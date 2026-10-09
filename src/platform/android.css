@@ -216,7 +216,6 @@ html[data-hl-platform='android'] .hl-tabbar.hl-tabbar-5 { grid-template-columns:
   font-weight: 900;
   line-height: 1;
   letter-spacing: 0;
-  animation: hl-tabbar-badge-pulse 2.2s ease-in-out infinite;
 }
 /* Alert mark without a number (a Store sale): a smaller crimson gem with "!". */
 .hl-tabbar-alert {
@@ -235,17 +234,19 @@ html[data-hl-platform='android'] .hl-tabbar.hl-tabbar-5 { grid-template-columns:
   font-size: 9px;
   font-weight: 900;
   line-height: 1;
-  animation: hl-tabbar-badge-pulse 2.2s ease-in-out infinite;
 }
-@keyframes hl-tabbar-badge-pulse { 50% { box-shadow: 0 0 0 1px rgba(0, 0, 0, .7), 0 0 13px rgba(255, 110, 70, .9); } }
-.game-motion-off :is(.hl-tabbar-badge, .hl-tabbar-alert, .hl-tabbar-mine svg) { animation: none; }
+/* The pulse fades a pre-painted glow (opacity is compositor-only) instead of repainting box-shadow every frame. */
+:is(.hl-tabbar-badge, .hl-tabbar-alert)::after { content: ''; position: absolute; inset: -1px; border-radius: inherit; box-shadow: 0 0 13px rgba(255, 110, 70, .9); opacity: 0; pointer-events: none; animation: hl-tabbar-badge-pulse 2.2s ease-in-out infinite; }
+@keyframes hl-tabbar-badge-pulse { 50% { opacity: 1; } }
+.game-motion-off :is(.hl-tabbar-badge, .hl-tabbar-alert)::after, .game-motion-off .hl-tabbar-mine svg { animation: none; }
 /* The ready-rewards item keeps the quiet bar: the badge carries the signal, not a glowing box. */
 html[data-hl-platform='android'] .hl-tabbar-item.has-badge { color: #e9c77a; }
 /* The upcoming $ORE Mine: a soft gold glow and a "Soon" tag, never louder than the active tab. */
 .hl-tabbar-mine { color: #d9b46a; }
-.hl-tabbar-mine svg { filter: drop-shadow(0 0 4px rgba(255, 196, 92, .5)); animation: hl-mine-glow 2.8s ease-in-out infinite; }
+.hl-tabbar-mine svg { filter: drop-shadow(0 0 6px rgba(255, 196, 92, .75)); animation: hl-mine-glow 2.8s ease-in-out infinite; }
 .hl-mine-badge { position: absolute; top: -8px; left: calc(100% - 10px); padding: 0 3px; border: 1px solid rgba(36, 23, 11, .8); background: linear-gradient(180deg, #f2cc80, #c79e61); color: #24170b; font-size: 7px; line-height: 11px; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
-@keyframes hl-mine-glow { 50% { filter: drop-shadow(0 0 7px rgba(255, 196, 92, .85)); } }
+/* The glow is painted once; the breath scales and fades the layer instead of re-blurring it every frame. */
+@keyframes hl-mine-glow { 0%, 100% { opacity: .78; scale: 1; } 50% { opacity: 1; scale: 1.06; } }
 
 /* ── More sheet ── */
 .hl-more-sheet {
@@ -286,7 +287,7 @@ html[data-hl-platform='android'] .hl-tabbar-item.has-badge { color: #e9c77a; }
 
 @media (prefers-reduced-motion: reduce) {
   .hl-tabbar-item, .hl-tabbar-icon svg { transition: none; }
-  .hl-tabbar-mine svg, .hl-tabbar-badge, .hl-tabbar-alert { animation: none; }
+  .hl-tabbar-mine svg, .hl-tabbar-badge::after, .hl-tabbar-alert::after { animation: none; }
 }
 
 /* Battle HUD fits 360 px: Dungeons shows its icon only (the label stays for screen readers). */

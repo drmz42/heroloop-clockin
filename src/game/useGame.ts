@@ -400,7 +400,6 @@ export function useGame() {
   const [autoProgress, setAutoProgress] = useState(true);
   const [paused, setPaused] = useState(false);
   const [respawnCountdowns, setRespawnCountdowns] = useState<Record<string, number>>({});
-  const [presentationNow, setPresentationNow] = useState(Date.now);
   const [chestOpenResult, setChestOpenResult] = useState<OwnedItem[] | null>(null);
   const [chestRewardsMailed, setChestRewardsMailed] = useState(false);
   const [chestOpening, setChestOpening] = useState(false);
@@ -1185,14 +1184,18 @@ export function useGame() {
       const st = stateRef.current;
       if (!st.walletAddress) return;
       const now = Date.now();
-      setPresentationNow(now);
       const countdown: Record<string, number> = {};
       let finished = false;
       st.ownedHeroes.forEach((h) => {
         if (h.respawnAt && h.respawnAt > now) countdown[h.uid] = Math.ceil((h.respawnAt - now) / 1000);
         else if (h.respawnAt && h.respawnAt <= now) finished = true;
       });
-      setRespawnCountdowns(countdown);
+      // Keep the previous object when nothing changed: a fresh one every second
+      // re-rendered the whole game screen and the Arena, heating phones.
+      setRespawnCountdowns((prev) => {
+        const keys = Object.keys(countdown);
+        return keys.length === Object.keys(prev).length && keys.every((uid) => prev[uid] === countdown[uid]) ? prev : countdown;
+      });
       if (finished) setState((prev) => ({ ...prev, ownedHeroes: prev.ownedHeroes.map((h) => h.respawnAt && h.respawnAt <= now ? { ...h, respawnAt: undefined } : h) }));
     };
     const syncRespawnClock = () => {
@@ -3241,7 +3244,7 @@ export function useGame() {
 
   return {
     state, hydrationVersion, summonPity, ascensionFocus, summonError, serverRevisionHint, trainingIncomeRevision, battleResult, combatRecovery, autoProgress, paused, chestOpening, storeBusy, itemUpgradeBusy,
-    offlineEarnings, respawnCountdowns, presentationNow, chestOpenResult, chestRewardsMailed, enchantResult,
+    offlineEarnings, respawnCountdowns, chestOpenResult, chestRewardsMailed, enchantResult,
     getCombatPresentationSnapshot, subscribeCombatPresentation,
     starUpHero, promoteAllHeroes, seekerPromoteAll, releaseHero, quoteHeroCapacity, upgradeHeroCapacity, toggleHeroLock, markHeroSeen,
     applySeekerPurchase, accountBonus, refreshAccountBonus, buyRewardBoost, buyShopBundle, quoteInventoryBag, buyInventoryBag,

@@ -1,5 +1,5 @@
 import { isolatedHackathon } from '@/game/editionStorage';
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Trophy, Crown, Medal, Swords, Skull, ChevronUp, UserRound, Sparkles, Star, Flag } from 'lucide-react';
 import { formatNum } from '@/game/state';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
@@ -20,9 +20,13 @@ export function LeaderboardScreen({ game, leaderboard, refreshLeaderboard }: { g
   const loading = leaderboard === null;
   const [reportTarget, setReportTarget] = useState<{ playerId: string; username: string } | null>(null);
 
+  // The 30 s timer reads the latest stats from a ref: listing every stat as a dependency
+  // re-sent the sync and reloaded the board after every kill while Ranks was open.
+  const stateRef = useRef(state); stateRef.current = state;
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
+      const state = stateRef.current;
       try {
         await playerSync('sync', {
           power: teamPower(state.ownedHeroes, state.inventory), account_level: state.accountLevel,
@@ -36,9 +40,9 @@ export function LeaderboardScreen({ game, leaderboard, refreshLeaderboard }: { g
       } catch { /* Keep the last confirmed standings when a refresh fails. */ }
     };
     void load();
-    const timer = setInterval(load, 30_000);
+    const timer = setInterval(() => { if (document.visibilityState === 'visible') void load(); }, 30_000);
     return () => { cancelled = true; clearInterval(timer); };
-  }, [refreshLeaderboard, state.ownedHeroes, state.inventory, state.accountLevel, state.username, state.totalKills, state.totalBossKills, state.session.chestsOpened, state.highestLocation, state.avatarHeroId, state.summons, state.totalTokensEarned, state.team]);
+  }, [refreshLeaderboard]);
 
   const myRank = board.findIndex((player) => player.player_id === myId) + 1;
   const myRow = myId ? board.find((player) => player.player_id === myId) : undefined;

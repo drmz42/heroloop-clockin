@@ -4,6 +4,7 @@ import './index.css';
 import './theme/premium/premium-game.css';
 import './platform/android.css';
 import './theme/motion/game-motion.css';
+import './theme/motion/motion-budget.css';
 import { captureSignupAttribution } from './game/signupAttribution';
 import { applyUiTheme, resolveUiTheme } from './theme/uiTheme';
 import { applyUiMotion, resolveUiMotion } from './theme/motion/gameMotion';

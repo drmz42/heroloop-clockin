@@ -20,11 +20,13 @@ export function skrError(error: unknown): string {
     market_chest_limit_reached:'You already have 20 active chest listings.',
   } as Record<string,string>)[code]??'The purchase could not finish. Check Wallet history before trying again.';
 }
-// One shared 30 s rate poll for every price on screen (hero cards, item panels, Store, Market).
+// One shared 60 s rate poll for every price on screen (hero cards, item panels, Store, Market);
+// it sleeps while the app is hidden, so the phone radio is not woken for nothing.
 let sharedRate: string | null = null;
 let rateTimer: ReturnType<typeof setInterval> | undefined;
 const rateListeners = new Set<(rate: string | null) => void>();
 function refreshSharedRate() {
+  if (document.visibilityState !== 'visible' && sharedRate !== null) return;
   void loadSkrRate().then(r => r.usd_micros_per_skr, () => null).then(rate => {
     sharedRate = rate;
     rateListeners.forEach(listener => listener(rate));
@@ -36,7 +38,7 @@ export function useSkrRate(enabled = true) {
     if (!enabled) return;
     rateListeners.add(setRate);
     setRate(sharedRate);
-    if (rateListeners.size === 1) { refreshSharedRate(); rateTimer = setInterval(refreshSharedRate, 30_000); }
+    if (rateListeners.size === 1) { refreshSharedRate(); rateTimer = setInterval(refreshSharedRate, 60_000); }
     return ()=>{
       rateListeners.delete(setRate);
       if (rateListeners.size === 0) { clearInterval(rateTimer); rateTimer = undefined; }

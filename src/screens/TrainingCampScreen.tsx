@@ -2,7 +2,7 @@ import { AsyncActionButton } from '@/components/AsyncActionButton';
 import { createPortal } from 'react-dom';
 import { isolatedHackathon } from '@/game/editionStorage';
 import { isAndroidLayout } from '@/platform/platform';
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Axe, ChevronDown, Clock3, Crosshair, Dumbbell, Info, LockKeyhole, Shield, ShieldCheck, Sparkles, Swords, Target, UserRoundPlus, X } from 'lucide-react';
 import { GameSelect } from '@/components/GameSelect';
 import { HeroPortrait } from '@/components/HeroPortrait';
@@ -56,7 +56,12 @@ function formatBoostTime(milliseconds: number): string {
 
 export function TrainingCampScreen({ game }: { game: Game }) {
   const { state } = game;
-  const now = game.presentationNow;
+  // A local clock keeps the boost countdown ticking without re-rendering the whole game.
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = window.setInterval(() => { if (document.visibilityState === 'visible') setNow(Date.now()); }, 1_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [sort, setSort] = useState<SortKey>('power');
   const [classFilter, setClassFilter] = useState<'all' | HeroClass>('all');

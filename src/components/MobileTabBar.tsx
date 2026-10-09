@@ -7,7 +7,7 @@ import { setMobileSection, type MobileSection } from '@/platform/platform';
 import '@/theme/scene/sheets.css';
 import { SeekerMinePanel } from '@/components/SeekerMinePanel';
 import { buildVersionLabel } from '@/platform/buildInfo';
-import { MINE_OPEN_EVENT, markSeekerTourStep } from '@/game/seekerTour';
+import { MINE_OPEN_EVENT, SETTINGS_OPEN_EVENT, markSeekerTourStep } from '@/game/seekerTour';
 import { closeAndroidOverlayThen, useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
 import { shortWalletAddress } from '@/components/walletAddress';
 
@@ -93,6 +93,13 @@ export function MobileTabBar({
     window.addEventListener(MINE_OPEN_EVENT, openMine);
     return () => window.removeEventListener(MINE_OPEN_EVENT, openMine);
   }, [onMoreOpen]);
+  // The battle screen's battery tip opens Settings on the graphics choice.
+  useEffect(() => {
+    const openSettings = () => { setSoon(null); onMoreOpen(true); setSettingsOpen(true); };
+    window.addEventListener(SETTINGS_OPEN_EVENT, openSettings);
+    return () => window.removeEventListener(SETTINGS_OPEN_EVENT, openSettings);
+  }, [onMoreOpen]);
+  useEffect(() => { if (moreOpen && settingsOpen) markSeekerTourStep('graphics'); }, [moreOpen, settingsOpen]);
   useEffect(() => { if (soon === 'mine') markSeekerTourStep('mine'); }, [soon]);
   useEffect(() => { if (tab === 'shop') markSeekerTourStep('store'); }, [tab]);
   useEffect(() => { setMobileSection(section); }, [section]);

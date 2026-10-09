@@ -1,0 +1,17 @@
+/* Battery budget for the in-game animation setting (html[data-hl-anim], set from App.tsx).
+   Maximum keeps every effect. Medium lets decorative loops (glows, sheens, pulses) play once
+   and rest, so the phone stops redrawing them every frame; battle feedback and tutorial
+   highlights stay. Minimum finishes every animation at once. Loading spinners always turn,
+   so a wait never looks frozen. */
+html[data-hl-anim='light'] body *:not([class*='spin'], .animate-spin, .chest-tutorial-guide, .auto-pot-guide, [data-guide]),
+html[data-hl-anim='light'] body *:not([class*='spin'], .animate-spin, .chest-tutorial-guide, .auto-pot-guide, [data-guide])::before,
+html[data-hl-anim='light'] body *:not([class*='spin'], .animate-spin, .chest-tutorial-guide, .auto-pot-guide, [data-guide])::after {
+  animation-iteration-count: 1 !important;
+}
+html[data-hl-anim='off'] body *:not([class*='spin'], .animate-spin),
+html[data-hl-anim='off'] body *:not([class*='spin'], .animate-spin)::before,
+html[data-hl-anim='off'] body *:not([class*='spin'], .animate-spin)::after {
+  animation-duration: .01ms !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+}
