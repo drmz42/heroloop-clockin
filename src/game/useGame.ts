@@ -2695,13 +2695,14 @@ export function useGame() {
     if (chestOpeningRef.current) return;
     const st = stateRef.current;
     const freeSlots = inventoryCapacity(st) - bagItemCount(st);
-    const mailDelivery = tokenomicsEnabled && isolatedHackathon;
-    if ((!mailDelivery && freeSlots <= 0) || st.chests.length === 0) return;
+    if (freeSlots <= 0 && st.chests.length > 0) return 'inventory-full' as const;
+    if (st.chests.length === 0) return;
     chestOpeningRef.current = true;
     setChestOpening(true);
     try {
-      let openCount = Math.min(mailDelivery ? CHEST_OPEN_BATCH_SIZE : freeSlots, st.chests.length);
+      let openCount = Math.min(freeSlots, st.chests.length);
       let mailed = false;
+      let inventoryFull = false;
       let results: OwnedItem[] = [];
       let revision: number | null = null;
       if (tokenomicsEnabled) {
@@ -2717,6 +2718,7 @@ export function useGame() {
               count: batchCount,
               idempotency_key: idempotencyKey,
             }, (message) => { error = message; });
+            if (error === 'item_capacity_exceeded') inventoryFull = true;
             if (response || error !== 'chest_count_exceeded' || attempt === 2) break;
             await new Promise((resolve) => window.setTimeout(resolve, 900));
           }
@@ -2729,7 +2731,7 @@ export function useGame() {
           results = [...results, ...batch];
           if (Number.isSafeInteger(response.revision)) revision = response.revision;
         }
-        if (results.length === 0) return;
+        if (results.length === 0) return inventoryFull ? 'inventory-full' as const : undefined;
         openCount = results.length;
       } else {
         for (let i = 0; i < openCount; i++) {
@@ -2763,6 +2765,7 @@ export function useGame() {
         milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'chest-', openCount),
         tutorial: openedTutorial ? { ...prev.tutorial, chestCompleted: true } : prev.tutorial,
       }));
+      if (inventoryFull) return 'inventory-full' as const;
     } finally {
       chestOpeningRef.current = false;
       setChestOpening(false);

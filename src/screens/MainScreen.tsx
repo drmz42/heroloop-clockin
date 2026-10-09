@@ -1046,8 +1046,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             <div className="flex flex-row gap-1 sm:flex-col sm:gap-1.5">
               <button type="button" onClick={onBoostClick} className={`pm-boost game-control flex h-7 w-auto shrink-0 items-center sm:h-8 sm:w-36 justify-center gap-1 px-1.5 py-0.5 sm:px-2 ui-text-small font-black ${state.boost.active ? 'boost-max-active' : 'boost-max-ready'}`} title="Boost your offline earnings to 24/7"><Rocket size={15} /><span>{state.boost.active ? 'BOOST ON' : 'BOOST MAX'}</span></button>
               <button
-                onClick={() => {
-                  void game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem);
+                onClick={async () => {
+                  const result = await game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem);
+                  if (result === 'inventory-full') { playSfx('error'); setShowInventoryFull(true); }
                 }}
                 disabled={state.chests.length === 0 || game.chestOpening}
                 className="pm-chest reward-cta game-control flex h-7 w-auto shrink-0 items-center sm:h-8 sm:w-36 justify-center gap-1 px-1.5 py-0.5 sm:px-2 ui-text-small font-black disabled:opacity-55"
