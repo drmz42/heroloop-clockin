@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, Gift, Mail, MailOpen, Trash2 } from 'lucide-react';
+import { ChevronLeft, Gift, Mail, MailOpen, Sparkles, Trash2 } from 'lucide-react';
+import { versionedAsset } from '@/game/assetVersion';
 import { ChestCollectIcon } from '@/components/ChestCollectIcon';
 import { GoldIcon } from '@/components/GoldIcon';
 import { ItemArtwork } from '@/components/ItemArtwork';
@@ -34,11 +35,24 @@ const hasUnclaimed = (entry: MailEntry) => entry.kind === 'item' || entry.attach
 const isRead = (entry: MailEntry) => entry.kind === 'letter' && entry.read && !hasUnclaimed(entry);
 
 function AttachmentTile({ attachment }: { attachment: MailAttachment }) {
-  return <div className={`mailbox-reward ${attachment.claimed ? 'is-claimed' : ''}`} title={attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss Chest' : 'Chest'}, Location ${attachment.chest.stage}` : `${formatNum(attachment.amount)} Gold`}>
-    <span className="mailbox-reward-art">{attachment.kind === 'chest' ? <ChestCollectIcon size={44} /> : <GoldIcon size={30} />}</span>
+  const title = attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss Chest' : 'Chest'}, Location ${attachment.chest.stage}`
+    : attachment.kind === 'resource' ? `${formatNum(attachment.amount)} × ${attachment.title}` : `${formatNum(attachment.amount)} Gold`;
+  return <div className={`mailbox-reward ${attachment.claimed ? 'is-claimed' : ''}`} title={title}>
+    <span className="mailbox-reward-art">{attachment.kind === 'chest' ? <ChestCollectIcon size={44} /> : attachment.kind === 'resource' ? <ResourceArt resourceId={attachment.resourceId} /> : <GoldIcon size={30} />}</span>
     <b>{attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss · ' : ''}L${attachment.chest.stage}` : formatNum(attachment.amount)}</b>
+    {attachment.kind === 'resource' && <small className="mailbox-reward-name">{attachment.title}</small>}
     {attachment.claimed && <i aria-label="Claimed">✓</i>}
   </div>;
+}
+
+// Ledger resources in a letter use the game's own art where it exists.
+const RESOURCE_ART: Record<string, string> = {
+  summon_scroll: '/assets/ui/summon-scroll-v1.webp', boss_key: '/assets/ui/boss-key-v2.webp', potion_xs: '/assets/ui/potion-v1.webp',
+  premium_potion_weak: '/assets/ui/potion-v1.webp', premium_potion_strong: '/assets/ui/potion-v1.webp',
+};
+function ResourceArt({ resourceId }: { resourceId: string }) {
+  const src = RESOURCE_ART[resourceId];
+  return src ? <img src={versionedAsset(src)} alt="" className="h-full w-full object-contain" /> : <Sparkles size={26} />;
 }
 
 function ItemTile({ entry }: { entry: MailItemEntry }) {
@@ -89,6 +103,7 @@ export function MailboxScreen({ loadMail, claimMail, readMail, deleteReadMail, f
     else if (result.chestsFull && result.itemsFull) setMessage('Your bag and chest storage are full. The rest stays in the Mailbox.');
     else if (result.chestsFull) setMessage(result.claimed ? 'Your chest storage is full. The rest stays in the Mailbox.' : ERRORS.chests_full);
     else if (result.itemsFull) setMessage('Your bag is full. The rest stays in the Mailbox.');
+    else if (result.resourcesFull) setMessage('A resource is at its limit. That reward stays in the Mailbox.');
     await refresh();
     setBusy(false);
   };
