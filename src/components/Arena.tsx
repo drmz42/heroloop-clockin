@@ -84,6 +84,10 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   const wasAlive = useRef(unit.alive);
   const [artFailed, setArtFailed] = useState(false);
   const [figureFailed, setFigureFailed] = useState(false);
+  // A failed figure load (network blip, WebView dropping a hidden image) used to leave a hero on the old square
+  // card for the rest of the session (Founder 2026-10-09: remove the old cards). The fighter keeps its figure
+  // box and plate (the art stays empty meanwhile) and keeps retrying the figure with a new URL.
+  const [figureAttempt, setFigureAttempt] = useState(0);
   // Dungeon playback ids are timestamps and normal combat ids count from zero; a fighter that survives the switch
   // must not ignore the new sequence (the gap only appears on that switch, never between pruned floaters).
   const latestFloaterId = floaters.reduce((latest, f) => Math.max(latest, f.id), 0);
@@ -159,7 +163,14 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
     const base = heroData ? HERO_MAP[heroData.heroId] : undefined;
     return base ? heroFigureSrc(base.heroClass) : null;
   })();
-  const showFigure = Boolean(figureSrc) && !figureFailed;
+  const showFigure = Boolean(figureSrc);
+  useEffect(() => { setFigureFailed(false); setFigureAttempt(0); }, [figureSrc]);
+  useEffect(() => {
+    if (!figureFailed) return undefined;
+    const retry = setTimeout(() => { setFigureAttempt((attempt) => attempt + 1); setFigureFailed(false); }, Math.min(10_000, 1000 + figureAttempt * 2000));
+    return () => clearTimeout(retry);
+  }, [figureFailed, figureAttempt]);
+  const figureUrl = figureSrc && figureAttempt > 0 ? `${figureSrc}${figureSrc.includes('?') ? '&' : '?'}retry=${figureAttempt}` : figureSrc;
   const portraitCrop = heroData && HERO_MAP[heroData.heroId]
     ? heroPortraitStyle(heroData.heroId, HERO_MAP[heroData.heroId].heroClass)
     : undefined;
@@ -240,7 +251,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
         <div className={`arena-figure ${hit ? (side === 'enemy' ? 'hl-recoil-right' : 'hl-recoil-left') : ''}`} data-combat-side={side} style={{ '--figure-color': portraitColor } as React.CSSProperties}>
           <span className="arena-figure-ground" aria-hidden="true" />
           <div className="arena-portrait-impact-layer absolute inset-0">
-            <img src={figureSrc ?? undefined} alt="" decoding="async" className="arena-figure-art" style={{ filter: unit.alive ? undefined : 'grayscale(1) brightness(.7)' }} onError={() => setFigureFailed(true)} />
+            {!figureFailed && <img src={figureUrl ?? undefined} alt="" decoding="async" className="arena-figure-art" style={{ filter: unit.alive ? undefined : 'grayscale(1) brightness(.7)' }} onError={() => setFigureFailed(true)} />}
             {!unit.alive && <span className="arena-figure-dead"><Skull size={30} className="text-[#d9d1c3] drop-shadow-[0_0_8px_rgba(0,0,0,.9)]" />{side === 'hero' && Boolean(respawnSeconds) && <strong className="mt-0.5 rounded bg-black/75 px-1.5 py-0.5 ui-text-small tabular-nums text-rose-300">{respawnSeconds}s</strong>}<span className="sr-only">Dead</span></span>}
             {unitEffects}
           </div>
