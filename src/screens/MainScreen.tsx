@@ -1390,7 +1390,10 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
     const bossFight = startState.kind === 'shared_boss';
     // Boss frames stay at 36: the cast bars read playback ticks 3-6 and 9-15 (Heavy Strike lands on 15).
     const totalFrames = bossFight ? 36 : 24;
-    const authoritativeDuration = Math.max(totalFrames * 450, Number(finalState.elapsed_ms ?? totalFrames * 450));
+    // The checkpoint contains aggregate HP, not an attack timeline. Keep Boss presentation beats
+    // at 450ms instead of stretching twelve staged swings over a potentially four-minute result.
+    // Server elapsed time still owns the summary and the relative placement of potion events.
+    const authoritativeDuration = bossFight ? totalFrames * 450 : Math.max(totalFrames * 450, Number(finalState.elapsed_ms ?? totalFrames * 450));
     const frameDuration = authoritativeDuration / totalFrames;
     const playback = planDungeonPlayback(resolved.room, startState, finalState, totalFrames);
     let pulseId = Date.now() * 32;
@@ -1427,12 +1430,14 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
           playback_tick: frame,
         },
       });
-      // Hits that share a frame land one after another inside it rather than as one simultaneous volley.
+      // Boss fighters have independent beats; hits sharing a beat must land together.
+      // Keep the existing stagger for ordinary Dungeon rooms.
       for (let order = 0; order < pulses.length; order += 1) {
-        if (order > 0) await waitForFeedback((frameDuration * 0.7) / pulses.length);
+        if (!bossFight && order > 0) await waitForFeedback((frameDuration * 0.7) / pulses.length);
         shown.push({ ...pulses[order], id: pulseId++, born: performance.now() });
-        publishPulses();
+        if (!bossFight) publishPulses();
       }
+      if (bossFight) publishPulses();
       const rest = frameDuration - (performance.now() - frameStarted);
       if (frame < totalFrames && rest > 0) await waitForFeedback(rest);
     }
@@ -1531,6 +1536,9 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engaged, autoKey, busy, error]);
 
+  // Keep the controller mounted while its async playback runs, without covering the Boss arena.
+  if (checkpoint.type === 'boss_hunt' && (busy || roomState?.status === 'resolving')) return null;
+
   return <aside className="dungeon-battle-panel" aria-label={checkpoint.type === 'boss_hunt' ? 'Boss Hunt controls' : 'Dungeon battle controls'}>
     <div className="dungeon-panel-head flex items-center justify-between ui-text-small font-black uppercase tracking-wide text-[#b7a9c0]"><span>{roomState?.modifier?.split('_').join(' ') ?? (roomState?.kind?.split('_').join(' ') || 'Ready')}</span><span className="flex items-center gap-1">{checkpoint.type === 'boss_hunt' ? <><BossKeyIcon size={16} /> 1 Boss Key spent</> : attempts ? `${attempts.remaining}/${attempts.max} attempts` : '— attempts'}</span></div>
     <div className="dungeon-panel-body grid w-full gap-2">
@@ -1544,7 +1552,7 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
       {primary && <button type="button" disabled={busy} onClick={() => { setEngaged(true); void primary.action(); }} className="dungeon-panel-primary game-control game-primary min-h-11 px-3 ui-text-medium font-black"><Skull size={17} className="mr-2 inline" />{primary.label}</button>}
       {error && <div role="alert" className="text-center ui-text-small font-bold text-rose-300">{error.split('_').join(' ')}</div>}
       {/* Founder 2026-10-08: a won fight waiting for its Claim has nothing to abandon. */}
-      {roomState?.status !== 'reward_locked' && <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="dungeon-panel-abandon game-control min-h-10 px-3 ui-text-medium font-bold text-rose-300">{confirmAbandon ? 'Confirm exit · no refund' : checkpoint.type === 'boss_hunt' ? 'Abandon Boss Hunt' : 'Exit Dungeon'}</button>}
+      {checkpoint.type === 'dungeon' && roomState?.status !== 'reward_locked' && <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="dungeon-panel-abandon game-control min-h-10 px-3 ui-text-medium font-bold text-rose-300">{confirmAbandon ? 'Confirm exit · no refund' : 'Exit Dungeon'}</button>}
     </div>
   </aside>;
 }
