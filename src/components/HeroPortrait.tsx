@@ -51,7 +51,7 @@ export function HeroPortrait({
         width={size}
         height={size}
         loading={priority ? 'eager' : 'lazy'}
-        fetchPriority={priority ? 'high' : undefined}
+        {...{ fetchpriority: priority ? 'high' : undefined }}
         decoding="async"
         className="w-full h-full object-cover"
         style={imgError ? undefined : heroPortraitStyle(heroId, heroClass)}

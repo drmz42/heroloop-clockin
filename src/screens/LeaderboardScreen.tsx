@@ -10,19 +10,18 @@ import { playerSync } from '@/game/backend';
 import { teamPower } from '@/game/engine';
 import { PlayerReportModal } from '@/components/PlayerReportModal';
 import { isAndroidLayout } from '@/platform/platform';
+import type { LeaderRow, LeaderboardSnapshot } from '@/game/useLeaderboard';
 import '@/theme/scene/scene.css';
 
-interface RankHero { hero_id: string; level: number; stars: number; }
-interface LeaderRow { player_id: string; username: string; account_level: number; power: number; collection_power: number; total_kills: number; boss_kills: number; online: boolean; lineup: RankHero[]; avatar_hero_id: string; summons: number; total_tokens_earned: number; }
-
-export function LeaderboardScreen({ game }: { game: GameApi }) {
+export function LeaderboardScreen({ game, leaderboard, refreshLeaderboard }: { game: GameApi; leaderboard: LeaderboardSnapshot | null; refreshLeaderboard: () => Promise<void> }) {
   const { state } = game;
-  const [board, setBoard] = useState<LeaderRow[]>([]);
-  const [myId, setMyId] = useState('');
-  const [loading, setLoading] = useState(true);
+  const board = leaderboard?.players ?? [];
+  const myId = leaderboard?.me ?? '';
+  const loading = leaderboard === null;
   const [reportTarget, setReportTarget] = useState<{ playerId: string; username: string } | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       try {
         await playerSync('sync', {
@@ -33,14 +32,13 @@ export function LeaderboardScreen({ game }: { game: GameApi }) {
           lineup: state.team.map((uid) => state.ownedHeroes.find((hero) => hero.uid === uid)).filter((hero) => Boolean(hero)).map((hero) => ({ hero_id: hero!.heroId, level: hero!.level, stars: hero!.stars })),
           avatar_hero_id: state.avatarHeroId, summons: state.summons, total_tokens_earned: state.totalTokensEarned,
         });
-        const data = await playerSync<{ players: LeaderRow[]; me: string }>('leaderboard');
-        if (data) { setBoard(data.players ?? []); setMyId(data.me ?? ''); }
-      } finally { setLoading(false); }
+        if (!cancelled) await refreshLeaderboard();
+      } catch { /* Keep the last confirmed standings when a refresh fails. */ }
     };
     void load();
     const timer = setInterval(load, 30_000);
-    return () => clearInterval(timer);
-  }, [state.ownedHeroes, state.inventory, state.accountLevel, state.username, state.totalKills, state.totalBossKills, state.session.chestsOpened, state.highestLocation, state.avatarHeroId, state.summons, state.totalTokensEarned, state.team]);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [refreshLeaderboard, state.ownedHeroes, state.inventory, state.accountLevel, state.username, state.totalKills, state.totalBossKills, state.session.chestsOpened, state.highestLocation, state.avatarHeroId, state.summons, state.totalTokensEarned, state.team]);
 
   const myRank = board.findIndex((player) => player.player_id === myId) + 1;
   const myRow = myId ? board.find((player) => player.player_id === myId) : undefined;

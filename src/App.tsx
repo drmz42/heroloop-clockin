@@ -35,6 +35,7 @@ import { ShopScreen } from '@/screens/ShopScreen';
 import { CraftingScreen } from '@/screens/CraftingScreen';
 import { MarketplaceScreen } from '@/screens/MarketplaceScreen';
 import { LeaderboardScreen } from '@/screens/LeaderboardScreen';
+import { useLeaderboard } from '@/game/useLeaderboard';
 import { ReferralsScreen } from '@/screens/ReferralsScreen';
 import { GuidesScreen } from '@/screens/GuidesScreen';
 import type { Tab } from '@/components/TopMenu';
@@ -64,6 +65,7 @@ function App() {
   const mergeServerResourceState = game.mergeServerResourceState;
   const applyServerRevision = game.applyServerRevision;
   const [accountGate, setAccountGate] = useState<'landing' | 'checking' | 'verified' | 'error'>(tokenomicsEnabled ? 'checking' : (walletAddress ? 'verified' : 'landing'));
+  const leaderboard = useLeaderboard(accountGate === 'verified' ? game.state.walletAddress : null);
   const [accountCheckAttempt, setAccountCheckAttempt] = useState(0);
   const [legacyWalletMode, setLegacyWalletMode] = useState<'link' | 'import' | null>(null);
   const [serverStateReady, setServerStateReady] = useState(false);
@@ -657,7 +659,7 @@ function App() {
                 {tab === 'crafting'    && <CraftingScreen />}
                 {tab === 'shop'        && <ShopScreen game={game} />}
                 {tab === 'market'      && <MarketplaceScreen game={game} tokenomics={tokenomics} />}
-                {tab === 'leaderboard' && <LeaderboardScreen game={game} />}
+                {tab === 'leaderboard' && <LeaderboardScreen game={game} leaderboard={leaderboard.snapshot} refreshLeaderboard={leaderboard.refresh} />}
                 {tab === 'referrals'   && <ReferralsScreen game={game} />}
                 {tab === 'events'      && <SeekerEventsPage events={seekerEvents} tab={eventsTab} onTab={setEventsTab} onState={(state, revision) => { game.hydrateServerState(state); game.applyServerRevision(revision); }} onClose={() => setTab('main')} />}
                 {tab === 'mail'        && <MailboxScreen loadMail={game.loadMail} claimMail={game.claimMail} readMail={game.readMail} deleteReadMail={game.deleteReadMail} freeSlots={inventoryCapacity(game.state) - bagItemCount(game.state)} chestCount={game.state.chests.length} />}
