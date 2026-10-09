@@ -2,8 +2,8 @@
 // (staging2/seeker) build runs it on dist only; public/assets keeps the
 // original art for the web version. File names and formats never change,
 // so every code and CSS reference stays valid.
-import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { createHash, randomUUID } from 'node:crypto';
+import { lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, extname, join, relative } from 'node:path';
 import sharp from 'sharp';
 
@@ -20,12 +20,40 @@ export const UNREFERENCED_SOURCE_IMAGES = [
   'public/assets/items/rusty-blade-v2.png',
   'public/assets/items/v4/source-grid.png',
 ];
-const encoders = {
-  '.png': (image) => image.png({ palette: true, quality: 90, effort: 7, dither: 0.8, compressionLevel: 9 }),
-  '.webp': (image) => image.webp({ quality: 86, alphaQuality: 90, effort: 5, smartSubsample: true }),
-  '.jpg': (image) => image.jpeg({ quality: 84, mozjpeg: true }),
-  '.jpeg': (image) => image.jpeg({ quality: 84, mozjpeg: true }),
+const encoderSettings = {
+  '.png': { palette: true, quality: 90, effort: 7, dither: 0.8, compressionLevel: 9 },
+  '.webp': { quality: 86, alphaQuality: 90, effort: 5, smartSubsample: true },
+  '.jpg': { quality: 84, mozjpeg: true },
+  '.jpeg': { quality: 84, mozjpeg: true },
 };
+const encoders = Object.fromEntries(Object.entries(encoderSettings).map(([extension, settings]) =>
+  [extension, (image) => image[extension === '.jpg' || extension === '.jpeg' ? 'jpeg' : extension.slice(1)](settings)]));
+const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+
+// Cache is optional, reproducible public output. Read/write failures always
+// take the normal encoder path. The envelope commits both key and payload.
+function cachedImage(cacheDir, key) {
+  try {
+    if (!lstatSync(cacheDir).isDirectory()) return null;
+    const path = join(cacheDir, `${key}.json`);
+    if (!lstatSync(path).isFile()) return null;
+    const entry = JSON.parse(readFileSync(path, 'utf8'));
+    const output = Buffer.from(entry.output, 'base64');
+    return entry.key === key && output.length > 0 && sha256(output) === entry.sha256 ? output : null;
+  } catch { return null; }
+}
+
+function cacheImage(cacheDir, key, output) {
+  let temp;
+  try {
+    mkdirSync(cacheDir, { recursive: true, mode: 0o700 });
+    if (!lstatSync(cacheDir).isDirectory()) return;
+    temp = join(cacheDir, `.${key}.${process.pid}.${randomUUID()}.tmp`);
+    writeFileSync(temp, JSON.stringify({ key, sha256: sha256(output), output: output.toString('base64') }), { flag: 'wx', mode: 0o600 });
+    renameSync(temp, join(cacheDir, `${key}.json`));
+  } catch { /* Cache loss must not block a release. */ }
+  finally { if (temp) { try { unlinkSync(temp); } catch { /* Already renamed or absent. */ } } }
+}
 
 function walk(directory, files = []) {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
@@ -73,8 +101,13 @@ export function versionAssetUrls(code, versions) {
   });
 }
 
-export async function compressBuildImages(outDir, { unreferenced = [] } = {}) {
-  sharp.concurrency(1);
+export async function compressBuildImages(outDir, {
+  unreferenced = [], cacheDir = process.env.HEROLOOP_IMAGE_CACHE,
+} = {}) {
+  sharp.concurrency(2);
+  const started = performance.now();
+  let cacheHits = 0;
+  let cacheMisses = 0;
   const files = walk(outDir);
   const removedBytes = removeUnreferenced(outDir, files, unreferenced);
   let before = 0;
@@ -85,6 +118,18 @@ export async function compressBuildImages(outDir, { unreferenced = [] } = {}) {
     let input;
     try { input = readFileSync(path); } catch { continue; }
     before += input.length;
+    const extension = extname(path).toLowerCase();
+    const key = sha256(JSON.stringify({ version: 1, input: sha256(input), extension,
+      settings: encoderSettings[extension], maxSide: MAX_SIDE, versions: sharp.versions,
+      concurrency: 2, minimumSaving: 0.05 }));
+    const cached = cacheDir ? cachedImage(cacheDir, key) : null;
+    if (cached) {
+      writeFileSync(path, cached);
+      after += cached.length;
+      cacheHits += 1;
+      continue;
+    }
+    cacheMisses += 1;
     const meta = await sharp(input).metadata();
     if ((meta.pages ?? 1) > 1) { after += input.length; continue; }
     let image = sharp(input);
@@ -92,14 +137,12 @@ export async function compressBuildImages(outDir, { unreferenced = [] } = {}) {
       image = image.resize({ width: MAX_SIDE, height: MAX_SIDE, fit: 'inside', withoutEnlargement: true });
     }
     const output = await encode(image).toBuffer();
-    if (output.length < input.length * 0.95) {
-      writeFileSync(path, output);
-      after += output.length;
-    } else {
-      after += input.length;
-    }
+    const selected = output.length < input.length * 0.95 ? output : input;
+    if (selected !== input) writeFileSync(path, selected);
+    after += selected.length;
+    if (cacheDir) cacheImage(cacheDir, key, selected);
   }
-  return { before, after, removedBytes, outDir: relative(process.cwd(), outDir) || '.' };
+  return { before, after, removedBytes, cacheHits, cacheMisses, elapsedMs: Math.round(performance.now() - started), outDir: relative(process.cwd(), outDir) || '.' };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

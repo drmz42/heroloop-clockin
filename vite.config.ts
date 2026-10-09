@@ -102,7 +102,7 @@ export default defineConfig(({ mode }) => {
         const result = await compressBuildImages(buildOutputDir, {
           unreferenced: UNREFERENCED_SOURCE_IMAGES,
         });
-        console.log(`hackathon images: ${result.before} -> ${result.after} bytes, removed ${result.removedBytes} unreferenced bytes`);
+        console.log(`hackathon images: ${result.before} -> ${result.after} bytes, removed ${result.removedBytes} unreferenced bytes; cache hits=${result.cacheHits} misses=${result.cacheMisses}, elapsed=${result.elapsedMs}ms`);
       },
     }] : []),
     react(), qaEndpoint(),
