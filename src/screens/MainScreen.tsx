@@ -1,4 +1,4 @@
-import { PremiumPotionWorkshop, PremiumPotionBattleControls, type PremiumPotionChoice, type PremiumPotionEvent } from '@/components/PremiumPotions';
+import { type PremiumPotionEvent } from '@/components/PremiumPotions';
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { SkrUsd } from '@/components/SkrUsd';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
@@ -523,7 +523,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const comparisonItem = selectedItemSource === 'bag' && selectedHero && liveSelectedBase
     ? state.inventory.find((item) => item.uid === selectedHero.equipped[liveSelectedBase.slot]) ?? null
     : null;
-  const visiblePotions = POTIONS.filter((p) => state.potions[p.tier] > 0);
+  const ordinaryStock = Object.values(state.potions).reduce((sum, count) => sum + count, 0);
+  const visiblePotions = isolatedHackathon
+    ? ordinaryStock > 0 ? [{ ...POTIONS[0], name: 'Ordinary Potion' }] : []
+    : POTIONS.filter((p) => state.potions[p.tier] > 0);
   const resourceSlotCount = 3 + visiblePotions.length;
   const bossChestCount = state.chests.filter((chest) => chest.boss).length;
   const activeBag = inventoryTab === 'resources' ? 1 : inventoryTab;
@@ -568,9 +571,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     <>
       {isolatedHackathon && <section className="mb-2 border-b border-[#80683f]/50 pb-2" aria-label="Healing settings">
         <h3 className="ui-text-medium font-bold text-emerald-300">Automatic healing</h3>
-        <p className="my-1 ui-text-small leading-relaxed text-[#c4bba7]">Stored potions are used first below 35% HP. Gold buys instant healing only when stock runs out.</p>
+        <p className="my-1 ui-text-small leading-relaxed text-[#c4bba7]">At 50% HP or below, a hero drinks one Ordinary Potion. It restores 100% maximum HP over 20 seconds, with a 30-second cooldown from drinking.</p>
         <label className="flex items-center gap-2 py-1 ui-text-medium text-[#e8decd]"><input type="checkbox" checked={goldHealingEnabled(state.autoPot)} onChange={event => game.setAutoPot({ enabled: true, goldHealingOptOut: !event.target.checked, healingInfoSeen: true })} className="h-4 w-4 accent-emerald-400" /> Spend Gold on healing</label>
-        <p className="ui-text-small leading-relaxed text-[#9e9687]">XS / S / M / L / XL / XXL: 1 / 1 / 1 / 2 / 4 / 10 Gold. Not enough Gold means no purchase. Normal battles only; changes apply next wave.</p>
+        <p className="ui-text-small leading-relaxed text-[#9e9687]">Stock first; then 3 Gold per bottle if enabled. Healing arrives every 5 seconds. Damage continues during healing. Normal battles only; no potions in Boss Hunts or Dungeons. Changes apply next wave.</p>
       </section>}
       <div className="mb-1.5 ui-text-small font-black uppercase tracking-[.14em] text-[#efd18a]">Battle graphics</div>
       {([
@@ -583,7 +586,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const battleSettingsControl = (
     <div className="hl-battle-settings relative">
       <button type="button" onClick={() => setShowBattleSettings((value) => !value)} className="game-control flex h-7 items-center gap-1.5 px-2 ui-text-small font-black uppercase" aria-label={isolatedHackathon ? 'Battle settings' : 'Battle graphics quality settings'} aria-expanded={showBattleSettings}><Settings2 size={14} /><span className="hidden sm:inline">{battleAnimationLabel}</span></button>
-      {showBattleSettings && <div className="absolute left-0 top-full z-[111] mt-1 w-56 rounded-lg border border-[#80683f] bg-[#11130f]/97 p-2 shadow-2xl backdrop-blur-sm">{battleSettingsContent}</div>}
+      {showBattleSettings && <div className="absolute left-0 top-full z-[111] mt-1 w-56 rounded-lg border border-[#80683f] bg-[#11130f] p-2 shadow-2xl backdrop-blur-sm">{battleSettingsContent}</div>}
     </div>
   );
   const battleMenuRef = useRef<HTMLDivElement>(null);
@@ -903,7 +906,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               <div className="section-kicker mb-1">Tutorial Quests · {ordinal}/10</div>
               <div className={`quest-card px-2 py-1 ${done ? 'border-[#b48a43]' : ''}`}>
                 <div className="flex items-center gap-1.5"><Circle size={11} className={done ? 'fill-amber-400/30 text-amber-400' : 'text-slate-600'} /><span className="ui-text-medium min-w-0 flex-1 leading-tight text-px-text">{isolatedHackathon && quest[0] === 'enable-auto-pot' ? 'Automatic healing' : quest[1]}</span></div>
-                <div className="mt-1 flex items-center gap-1.5"><div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, progress / quest[2] * 100)}%` }} /></div><span className="ui-text-small shrink-0 text-px-dim">{progress}/{quest[2]}</span><span className="ui-text-small shrink-0 text-[#e7c579]">{quest[3]}</span></div>
+                <div className="mt-1 flex items-center gap-1.5"><div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, progress / quest[2] * 100)}%` }} /></div><span className="ui-text-small shrink-0 text-px-dim">{progress}/{quest[2]}</span><span className="ui-text-small shrink-0 text-[#e7c579]">{isolatedHackathon ? quest[3].replace('XS Potions', 'Ordinary Potions') : quest[3]}</span></div>
                 {done && <button type="button" disabled={tutorialClaimBusy} aria-busy={tutorialClaimBusy} onClick={async () => {
                   setTutorialClaimBusy(true); setTutorialClaimError('');
                   try {
@@ -985,7 +988,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           {isolatedHackathon && !activeDungeon && <NextStepCard game={game} nextLocation={nextLocationAvailable ? nextLocation : null} onQuestsClick={onQuestsClick} onStoreClick={onRewardBoostClick} />}
           {isAndroidLayout && <div ref={battleMenuRef} className="hl-battle-menu pointer-events-none absolute bottom-2 right-2 top-2 z-[112] flex flex-col items-end gap-1">
             <button type="button" onClick={() => setBattleMenuOpen((open) => !open)} data-guide="boss" className="hl-battle-menu-toggle game-control pointer-events-auto grid h-11 w-11 shrink-0 place-items-center p-0" aria-label="Battle menu" aria-haspopup="dialog" aria-expanded={battleMenuOpen}>{battleMenuOpen ? <X size={20} /> : <Menu size={20} />}</button>
-            {battleMenuOpen && <div role="dialog" aria-label="Battle menu" className="hl-battle-menu-panel pointer-events-auto min-h-0 w-64 max-w-[calc(100vw-24px)] overflow-y-auto overscroll-contain rounded-lg border border-[#80683f] bg-[#11130f]/97 p-2 shadow-2xl">
+            {battleMenuOpen && <div role="dialog" aria-label="Battle menu" className="hl-battle-menu-panel pointer-events-auto min-h-0 w-64 max-w-[calc(100vw-24px)] overflow-y-auto overscroll-contain rounded-lg border border-[#80683f] bg-[#11130f] p-2 shadow-2xl">
               {!activeDungeon && <div className="mb-2 grid grid-cols-2 gap-1.5 border-b border-[#80683f]/50 pb-2">
                 <button type="button" onClick={() => { setBattleMenuOpen(false); setShowDungeonInfo(true); }} className="pm-socket game-control flex min-h-11 items-center justify-center gap-1.5 px-2 ui-text-small font-bold text-[#d7c6ea]"><DoorOpen size={15} aria-hidden="true" /> DUNGEONS</button>
                 <button type="button" onClick={() => void handleSummonBoss()} data-guide="boss" disabled={summonBusy || state.bossKeys < 1 || state.bossBattleActive} className="pm-socket game-control flex min-h-11 items-center justify-center gap-1 px-2 ui-text-small font-bold disabled:opacity-50"><BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}</button>
@@ -1127,7 +1130,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             <button onClick={() => scrollLocations(1)} className="game-control grid place-items-center" aria-label="Next locations"><ChevronRight size={20} /></button>
           </div>
           </div>
-        </div> : activeDungeon.type === 'boss_hunt' ? <div className="hl-encounter-strip material-panel mt-1.5 shrink-0 p-3"><div className="flex items-center justify-between gap-3"><span className="section-kicker">Boss Hunt</span><span className="ui-text-small font-black uppercase tracking-widest text-violet-300">Server combat · reload-safe · premium potions optional</span></div><div className="mt-2 grid grid-cols-2 gap-1.5"><div className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room_state?.kind === 'retinue' ? 'border-violet-400 bg-violet-950/40 text-violet-100' : 'border-emerald-700/60 bg-emerald-950/25 text-emerald-300'}`}>1. Retinue</div><div className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room_state?.kind === 'shared_boss' ? 'border-violet-400 bg-violet-950/40 text-violet-100' : 'border-white/10 bg-black/20 text-[#77706f]'}`}>2. Shared Boss</div></div></div> : <div className="hl-encounter-strip material-panel mt-1.5 shrink-0 p-3"><div className="flex items-center justify-between gap-3"><span className="section-kicker">Cursed Citadel</span><span className="ui-text-small font-black uppercase tracking-widest text-violet-300">HP persists · potions disabled</span></div><div className="mt-2 grid grid-cols-4 gap-1.5">{['Guards', 'Elite', 'Crossroads', 'Boss'].map((label, index) => <div key={label} className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room === index + 1 ? 'border-violet-400 bg-violet-950/40 text-violet-100' : activeDungeon.room > index + 1 ? 'border-emerald-700/60 bg-emerald-950/25 text-emerald-300' : 'border-white/10 bg-black/20 text-[#77706f]'}`}>{index + 1}. {label}</div>)}</div></div>}
+        </div> : activeDungeon.type === 'boss_hunt' ? <div className="hl-encounter-strip material-panel mt-1.5 shrink-0 p-3"><div className="flex items-center justify-between gap-3"><span className="section-kicker">Boss Hunt</span><span className="ui-text-small font-black uppercase tracking-widest text-violet-300">Server combat · reload-safe · potions disabled</span></div><div className="mt-2 grid grid-cols-2 gap-1.5"><div className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room_state?.kind === 'retinue' ? 'border-violet-400 bg-violet-950/40 text-violet-100' : 'border-emerald-700/60 bg-emerald-950/25 text-emerald-300'}`}>1. Retinue</div><div className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room_state?.kind === 'shared_boss' ? 'border-violet-400 bg-violet-950/40 text-violet-100' : 'border-white/10 bg-black/20 text-[#77706f]'}`}>2. Shared Boss</div></div></div> : <div className="hl-encounter-strip material-panel mt-1.5 shrink-0 p-3"><div className="flex items-center justify-between gap-3"><span className="section-kicker">Cursed Citadel</span><span className="ui-text-small font-black uppercase tracking-widest text-violet-300">HP persists · potions disabled</span></div><div className="mt-2 grid grid-cols-4 gap-1.5">{['Guards', 'Elite', 'Crossroads', 'Boss'].map((label, index) => <div key={label} className={`rounded-lg border px-2 py-2 text-center ui-text-small font-black uppercase ${activeDungeon.room === index + 1 ? 'border-violet-400 bg-violet-950/40 text-violet-100' : activeDungeon.room > index + 1 ? 'border-emerald-700/60 bg-emerald-950/25 text-emerald-300' : 'border-white/10 bg-black/20 text-[#77706f]'}`}>{index + 1}. {label}</div>)}</div></div>}
 
       </div>
 
@@ -1237,11 +1240,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             <button type="button" aria-label={`Summon Scrolls: ${formatNum(state.summonScrolls)}`} aria-pressed={selectedResource === 'summon-scroll'} onClick={() => setSelectedResource((current) => current === 'summon-scroll' ? null : 'summon-scroll')} className={`item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-violet-400/55 ${selectedResource === 'summon-scroll' ? 'ring-2 ring-violet-300 ring-offset-1 ring-offset-black' : ''}`} title={`Summon Scrolls: ${formatNum(state.summonScrolls)}`}><span className="resource-slot-art" aria-hidden="true"><SummonScrollArtwork size={48} /></span><span className="ui-text-small absolute bottom-0 right-0 z-10 min-w-3 rounded-tl bg-violet-400 px-px text-center font-bold leading-3 text-black">{formatNum(state.summonScrolls)}</span></button>
             <button type="button" aria-label={`Boss Keys: ${formatNum(state.bossKeys)}`} aria-pressed={selectedResource === 'boss-key'} onClick={() => setSelectedResource((current) => current === 'boss-key' ? null : 'boss-key')} className={`item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-amber-400/55 ${selectedResource === 'boss-key' ? 'ring-2 ring-amber-300 ring-offset-1 ring-offset-black' : ''}`} title={`Boss Keys: ${formatNum(state.bossKeys)}`}><span className="resource-slot-art" aria-hidden="true"><BossKeyIcon size={48} /></span><span className="ui-text-small absolute bottom-0 right-0 z-10 min-w-3 rounded-tl bg-amber-400 px-px text-center font-bold leading-3 text-black">{formatNum(state.bossKeys)}</span></button>
             <button type="button" aria-label={`Chests: ${state.chests.length}, Boss Chests: ${bossChestCount}`} aria-pressed={selectedResource === 'chests'} onClick={() => setSelectedResource((current) => current === 'chests' ? null : 'chests')} className={`item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-amber-400/55 ${selectedResource === 'chests' ? 'ring-2 ring-amber-300 ring-offset-1 ring-offset-black' : ''}`} title={`Chests: ${state.chests.length} · Boss: ${bossChestCount}`}><span className="resource-slot-art" aria-hidden="true"><ChestCollectIcon size={48} /></span><span className="ui-text-small absolute bottom-0 right-0 z-10 min-w-3 rounded-tl bg-amber-400 px-px text-center font-bold leading-3 text-black">{formatNum(state.chests.length)}</span></button>
-            {visiblePotions.map((potion) => <button type="button" key={potion.tier} className="item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-emerald-500/50" title={`${potion.name}: ${state.potions[potion.tier]}`}><ItemArtwork itemId={`potion-${potion.tier}`} name={potion.name} fallback="Potion" /><span className="ui-text-small absolute bottom-0 right-0 z-10 min-w-3 rounded-tl bg-emerald-500 px-px text-center font-bold leading-3 text-black">{state.potions[potion.tier]}</span></button>)}
+            {visiblePotions.map((potion) => <button type="button" key={potion.tier} className="item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-emerald-500/50" title={`${potion.name}: ${isolatedHackathon ? ordinaryStock : state.potions[potion.tier]}`}><ItemArtwork itemId={`potion-${potion.tier}`} name={potion.name} fallback="Potion" /><span className="ui-text-small absolute bottom-0 right-0 z-10 min-w-3 rounded-tl bg-emerald-500 px-px text-center font-bold leading-3 text-black">{isolatedHackathon ? ordinaryStock : state.potions[potion.tier]}</span></button>)}
             {Array.from({ length: GRID_SIZE - resourceSlotCount }, (_, index) => <div key={`resource-empty-${index}`} className="item-slot aspect-square min-w-0 w-full border" style={{ borderColor: 'rgba(128,119,100,0.11)', background: 'linear-gradient(145deg,#151612,#0c0e0d)' }} />)}
             </div>
             {selectedResource && selectedResource !== 'chests' && <div className={`mt-2 rounded-lg border p-2 ${selectedResource === 'summon-scroll' ? 'border-violet-400/45 bg-violet-950/20' : 'border-amber-400/45 bg-amber-950/20'}`}><div className="flex items-center gap-2">{selectedResource === 'summon-scroll' ? <SummonScrollArtwork size={40} /> : <BossKeyIcon size={40} />}<div className="min-w-0"><strong className="ui-text-large block text-[#efe4ce]">{selectedResource === 'summon-scroll' ? 'Summon Scroll' : 'Boss Key'}</strong><span className="ui-text-small text-[#9b9283]">Owned: {formatNum(selectedResource === 'summon-scroll' ? state.summonScrolls : state.bossKeys)}</span></div></div><p className="ui-text-medium mt-1.5 leading-snug text-[#c9c0b1]">{selectedResource === 'summon-scroll' ? 'Persistent consumable for one future Free Summon. Scroll spending is not available until server-authoritative Free Summon launches.' : 'Non-deletable resource used only to summon a Boss. One summon consumes one key; a Boss Chest is awarded only after victory.'}</p></div>}
-            {isolatedHackathon && <PremiumPotionWorkshop onHydrate={(remote, revision) => { game.mergeServerResourceState(remote); if (revision) game.applyServerRevision(revision); }} />}
             {selectedResource === 'chests' && <div className="mt-2 rounded-lg border border-amber-400/45 bg-amber-950/20 p-2"><strong className="ui-text-large block text-[#efe4ce]">Chests</strong><p className="ui-text-medium mt-1.5 text-[#c9c0b1]">Owned: {state.chests.length} · Boss Chests: {bossChestCount}. Boss Hunt rewards enter this chest queue after Claim Boss Rewards.</p><button type="button" disabled={state.chests.length === 0 || game.chestOpening} onClick={() => { if (bagItemCount(state) >= inventoryCapacity(state)) { setShowInventoryFull(true); return; } void game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem); }} className="game-control game-primary mt-2 !min-h-[44px] px-3 py-2 ui-text-medium font-bold disabled:opacity-55">{game.chestOpening ? 'OPENING…' : 'OPEN CHESTS'}</button></div>}
           </div> : <div className={`hl-equipment-grid grid min-w-0 grid-cols-8 gap-px overflow-hidden ${inventoryLockMode ? 'inventory-lock-cursor' : ''}`}>
             {cells.slice(0, bagOpenSlots).map((item, i) => {
@@ -1343,8 +1345,6 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [confirmAbandon, setConfirmAbandon] = useState(false);
-  const [premiumGate, setPremiumGate] = useState('');
-  const premiumAvailability = useCallback((available: boolean) => setPremiumGate(`${checkpoint.revision}:${available ? 'stock' : 'empty'}`), [checkpoint.revision]);
   const roomState = checkpoint.room_state;
   const rewardCount = (value: unknown) => {
     const count = Number(value);
@@ -1461,7 +1461,7 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
     }
   };
 
-  const startBattle = async (premium?: PremiumPotionChoice) => {
+  const startBattle = async () => {
     if (busy) return;
     setBusy(true); setError(''); setConfirmAbandon(false);
     let ready = checkpoint;
@@ -1475,10 +1475,10 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
       onChange(ready);
     }
     if (ready.room_state?.status !== 'ready') { setBusy(false); return; }
-    const resolved = await requestAction(premium ? 'premium_potion_use' : 'dungeon_room_action', {
+    const resolved = await requestAction('dungeon_room_action', {
       encounter_id: ready.encounter_id,
       expected_revision: ready.revision,
-      ...(premium ?? { command: 'resolve' }),
+      command: 'resolve',
     });
     if (resolved?.state) onHydrate(resolved.state);
     if (resolved) await playServerCombat(ready, resolved);
@@ -1514,8 +1514,7 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
   // own; only the Room 3 path choice, a defeat and the reward Claim wait for a press. A run restored on app
   // load waits for one press first.
   const [engaged, setEngaged] = useState(autoRun);
-  const premiumChoicePending = isolatedHackathon && checkpoint.room === 4 && roomState?.kind === 'shared_boss' && roomState.status === 'ready' && premiumGate !== `${checkpoint.revision}:empty`;
-  const autoStep = premiumChoicePending ? null : roomState?.status === 'reward_locked' || roomState?.status === 'failed' || roomState?.status === 'resolving' ? null
+  const autoStep = roomState?.status === 'reward_locked' || roomState?.status === 'failed' || roomState?.status === 'resolving' ? null
     : !roomState ? (checkpoint.room === 3 ? null : 'start')
       : roomState.status === 'ready' ? 'start'
         : roomState.status === 'cleared' || roomState.status === 'boss_locked' ? 'advance' : null;
@@ -1540,7 +1539,6 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
       {roomState?.status === 'failed' && <div className="dungeon-panel-status text-center ui-text-medium font-black uppercase tracking-wider text-rose-300">Formation defeated</div>}
       {busy && <div className="dungeon-panel-status text-center ui-text-medium font-black uppercase tracking-wide text-violet-200">Battle in progress…</div>}
       {checkpoint.room === 3 && !roomState && <div className="grid grid-cols-2 gap-2"><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'recovery' })} className="game-control min-h-11 px-2 ui-text-small font-black text-emerald-300"><HeartPulse size={15} className="mx-auto mb-1" />Recovery · +25% HP</button><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'treasure' })} className="game-control min-h-11 px-2 ui-text-small font-black text-amber-300"><Gem size={15} className="mx-auto mb-1" />Treasure fight</button></div>}
-      {isolatedHackathon && checkpoint.room === 4 && roomState?.status === 'ready' && <PremiumPotionBattleControls key={`${checkpoint.encounter_id}:${checkpoint.revision}`} heroes={roomState.heroes ?? []} busy={busy} onAvailability={premiumAvailability} onUse={(choice) => { setEngaged(true); void startBattle(choice); }} />}
       {checkpoint.room === 4 && roomState?.boss && <div className="dungeon-panel-boss-line rounded-lg border border-amber-800/45 bg-amber-950/20 px-3 py-2 text-center ui-text-small font-bold text-amber-200">{roomState.boss.name} · {roomState.status === 'reward_locked' ? 'Defeated · Rewards locked' : roomState.kind === 'shared_boss' ? 'Vulnerable · Shared target' : roomState.status === 'boss_locked' ? 'Retinue defeated · Boss vulnerable' : 'Protected by Retinue'}</div>}
       {/* Founder 2026-10-05: a won run goes straight to Claim; the run summary covered the party. */}
       {roomState?.status === 'cleared' && checkpoint.room < 4 && <div className="rounded border border-amber-700/35 bg-amber-950/20 px-2 py-1.5 text-center ui-text-small font-bold text-amber-200">Room reward preview · Gold + XP · settlement disabled in testing</div>}
@@ -1917,15 +1915,11 @@ function AvatarPicker({ game, onClose }: { game: GameApi; onClose: () => void })
 }
 
 function AutomaticHealingStatus({ game }: { game: GameApi }) {
-  const { units } = useSyncExternalStore(game.subscribeCombatPresentation, game.getCombatPresentationSnapshot, game.getCombatPresentationSnapshot);
-  const heroes = units.filter(unit => unit.side === 'hero' && unit.hp > 0);
-  const hero = heroes.find(unit => unit.hp < unit.maxHp * .35) ?? heroes[0];
-  const potion = POTIONS.find(item => item.hpRestore >= (hero?.maxHp ?? 0) * .5) ?? POTIONS[POTIONS.length - 1];
   const stock = Object.values(game.state.potions).some(count => count > 0);
   const label = !game.state.autoPot.healingInfoSeen || !goldHealingEnabled(game.state.autoPot)
     ? 'Healing · stored potions only'
-    : stock ? 'Healing · stock first' : game.state.gold < potion.cost
-      ? `Healing · not enough Gold (needs ${potion.cost})` : 'Healing · automatic Gold';
+    : stock ? 'Healing · stock first' : game.state.gold < 3
+      ? 'Healing · not enough Gold (needs 3)' : 'Healing · automatic Gold';
   return <div role="status" className="hl-healing-status pointer-events-none absolute right-3 top-3 z-30 max-w-[65%] rounded-md border border-emerald-500/30 bg-[#11130f]/90 px-2 py-1 ui-text-small text-emerald-200">{label}</div>;
 }
 
@@ -1948,9 +1942,9 @@ function HealingIntroduction({ game }: { game: GameApi }) {
       }
     }}>
       <h2 id="healing-intro-title" className="font-vt text-2xl font-bold text-emerald-300">Your heroes heal automatically</h2>
-      <p className="mt-3 ui-text-medium leading-relaxed text-[#e8decd]">Below 35% HP, heroes instantly use stored potions first. When stock runs out, Gold buys the smallest potion that restores at least half their maximum HP, up to XXL.</p>
-      <div className="my-4 grid grid-cols-3 gap-2">{POTIONS.map(potion => <div key={potion.tier} className="rounded-md border border-white/10 bg-black/25 p-2 text-center ui-text-medium text-[#efd18a]">{potion.name}<span className="block text-[#c4bba7]">{potion.cost} Gold</span></div>)}</div>
-      <p className="ui-text-medium leading-relaxed text-[#c4bba7]">Not enough Gold? No purchase is made. Heroes keep their remaining HP between waves. Potions do not revive heroes and are unavailable in Dungeons and Boss Hunts.</p>
+      <p className="mt-3 ui-text-medium leading-relaxed text-[#e8decd]">At 50% HP or below, a living hero uses one Ordinary Potion. It restores 100% maximum HP in four ticks over 20 seconds. The first tick arrives after 5 seconds. Each hero has a 30-second cooldown from drinking.</p>
+      <p className="my-4 ui-text-medium text-[#efd18a]">Stock is used first. When empty, one bottle costs 3 Gold if Gold healing is enabled.</p>
+      <p className="ui-text-medium leading-relaxed text-[#c4bba7]">Not enough Gold? No purchase is made. Damage continues during healing. Remaining healing, cooldowns and HP carry between waves. Death cancels remaining healing. Potions do not revive heroes and are unavailable in Dungeons and Boss Hunts.</p>
       <p className="mt-3 ui-text-small leading-relaxed text-[#9e9687]">You can turn Gold spending off in Battle settings. Changes apply from the next wave.</p>
       <button ref={firstButton} type="button" style={{ minHeight: 44 }} className="game-control mt-4 min-h-11 w-full border-emerald-500/60 text-emerald-200" onClick={() => game.setAutoPot({ enabled: true, goldHealingOptOut: !goldHealingEnabled(game.state.autoPot), healingInfoSeen: true })}>Got it</button>
       <button type="button" style={{ minHeight: 44 }} className="game-control mt-2 min-h-11 w-full text-[#c4bba7]" onClick={stockOnly}>Use stored potions only</button>

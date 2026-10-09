@@ -1,5 +1,6 @@
 import { SEEKER_PROGRESSION_VERSION, SEEKER_PROGRESSION_BALANCE_VERSION } from './seeker-progression.mjs';
 import { resolveCombat } from './combat-step.mjs';
+import { ORDINARY_POTION_POLICY, ORDINARY_POTION_BALANCE_VERSION, ordinaryPotionSession } from './ordinary-potion.mjs';
 import { AUTOMATIC_HEALING_POLICY, AUTOMATIC_HEALING_BALANCE_VERSION, AUTOMATIC_HEALING_PRICES, automaticHealingConfig } from './automatic-healing.mjs';
 import { COMBAT_TIMELINE_VERSION, serializeCombatTimeline } from './combat-timeline.mjs';
 import { COMBAT_EFFECTS_V2_VERSION, serverEffectForClass } from './combat-effects-v2.mjs';
@@ -175,7 +176,7 @@ export function buildNormalCombat(state, ledgerItems, location, seed, resourceSn
   if (combatEffectsVersion !== null && combatEffectsVersion !== COMBAT_EFFECTS_V2_VERSION) {
     throw new Error('normal_combat_invalid_effects_version');
   }
-  if (healingPolicy !== null && (healingPolicy !== AUTOMATIC_HEALING_POLICY || combatEffectsVersion !== COMBAT_EFFECTS_V2_VERSION)) {
+  if (healingPolicy !== null && (![AUTOMATIC_HEALING_POLICY, ORDINARY_POTION_POLICY].includes(healingPolicy) || combatEffectsVersion !== COMBAT_EFFECTS_V2_VERSION)) {
     throw new Error('normal_combat_invalid_healing_policy');
   }
   if (!record(state) || !Array.isArray(state.team) || !Array.isArray(state.ownedHeroes)
@@ -202,7 +203,18 @@ export function buildNormalCombat(state, ledgerItems, location, seed, resourceSn
   const autoBuyTier = POTION_TIERS_ASC.includes(config.autoBuyTier) ? config.autoBuyTier : 'sm';
   let availableGold = Math.max(0, Math.floor(finite(state.gold)));
   const autoPotions = [];
+  const healingContext = record(state.normalCombatHealing)
+    ? Object.fromEntries(Object.entries(state.normalCombatHealing).filter(([uid]) => heroesByUid.has(uid))) : {};
+  const ordinary = healingPolicy === ORDINARY_POTION_POLICY
+    ? ordinaryPotionSession(healingContext, savedConfig, startedAtMs, stock.xs, availableGold) : null;
+  if (ordinary) {
+    // Mature prepaid doses during the handoff before a new enemy can strike.
+    // Their HP is part of the initial snapshot, so playback must not add them twice.
+    initialUnits.splice(0, initialUnits.length, ...ordinary.step(initialUnits, 0, false));
+    ordinary.ticks.length = 0;
+  }
   const resolved = resolveCombat(initialUnits, seed, 20, 120000, (units, elapsedMs) => {
+    if (ordinary) return ordinary.step(units, elapsedMs);
     if (config.enabled !== true) return units;
     const hero = units.find((unit) => unit.side === 'hero' && unit.alive && unit.hp / unit.maxHp < threshold);
     if (!hero) return units;
@@ -227,8 +239,12 @@ export function buildNormalCombat(state, ledgerItems, location, seed, resourceSn
     });
     return units.map((unit) => unit.uid === hero.uid ? { ...unit, hp: hpAfter } : unit);
   });
+  if (ordinary) {
+    resolved.units = ordinary.step(resolved.units, resolved.elapsedMs, false);
+    autoPotions.push(...ordinary.purchases);
+  }
   return {
-    seed, balance_version: progressionVersion === SEEKER_PROGRESSION_VERSION ? SEEKER_PROGRESSION_BALANCE_VERSION : healingPolicy === AUTOMATIC_HEALING_POLICY ? AUTOMATIC_HEALING_BALANCE_VERSION : combatEffectsVersion === COMBAT_EFFECTS_V2_VERSION ? COMBAT_EFFECTS_V2_BALANCE_VERSION : BALANCE_VERSION,
+    seed, balance_version: ordinary ? ORDINARY_POTION_BALANCE_VERSION : progressionVersion === SEEKER_PROGRESSION_VERSION ? SEEKER_PROGRESSION_BALANCE_VERSION : healingPolicy === AUTOMATIC_HEALING_POLICY ? AUTOMATIC_HEALING_BALANCE_VERSION : combatEffectsVersion === COMBAT_EFFECTS_V2_VERSION ? COMBAT_EFFECTS_V2_BALANCE_VERSION : BALANCE_VERSION,
     initial_units: initialUnits,
     reward_bonuses: {
       gold: built.reduce((sum, hero) => sum + hero.goldBonus, 0),
@@ -236,6 +252,7 @@ export function buildNormalCombat(state, ledgerItems, location, seed, resourceSn
     },
     outcome: {
       ...(healingPolicy === AUTOMATIC_HEALING_POLICY ? { healing_policy: AUTOMATIC_HEALING_POLICY } : {}),
+      ...(ordinary ? { healing_policy: ORDINARY_POTION_POLICY, ordinary_potion_state: ordinary.timers } : {}),
       status: resolved.resolution.allCleared ? 'cleared' : 'failed',
       elapsed_ms: resolved.elapsedMs,
       timed_out: resolved.timedOut,
@@ -247,7 +264,7 @@ export function buildNormalCombat(state, ledgerItems, location, seed, resourceSn
       auto_potions: autoPotions,
       auto_pot_gold_cost: autoPotions.reduce((sum, event) => sum + event.gold_cost, 0),
       timeline_version: COMBAT_TIMELINE_VERSION,
-      timeline: serializeCombatTimeline(resolved.events, autoPotions),
+      timeline: ordinary ? serializeCombatTimeline([...resolved.events, ...ordinary.ticks]) : serializeCombatTimeline(resolved.events, autoPotions),
     },
   };
 }

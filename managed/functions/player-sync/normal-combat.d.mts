@@ -1,4 +1,5 @@
 import type { CombatStepUnit } from './combat-step.mjs';
+import type { OrdinaryPotionContext } from './ordinary-potion.mjs';
 export interface NormalCombatBuild {
   seed: number;
   initial_units: CombatStepUnit[];
@@ -9,6 +10,7 @@ export interface NormalCombatBuild {
     cleared_lanes: number; all_cleared: boolean;
     timeline_version: number; timeline: unknown[];
     healing_policy?: string;
+    ordinary_potion_state?: OrdinaryPotionContext;
     auto_pot_gold_cost: number;
     auto_potions: { elapsed_ms: number; hero_uid: string; tier: string; hp_restore: number; from_stock: boolean; gold_cost: number }[];
   };

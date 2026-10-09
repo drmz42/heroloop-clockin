@@ -3,6 +3,7 @@ import { Pool } from "@db/postgres";
 import { BALANCE_VERSION, COMBAT_EFFECTS_V2_BALANCE_VERSION, buildNormalCombat } from "/app/shared/normal-combat.mjs";
 import { COMBAT_EFFECTS_V2_VERSION } from "/app/shared/combat-effects-v2.mjs";
 import { AUTOMATIC_HEALING_POLICY, AUTOMATIC_HEALING_BALANCE_VERSION } from "/app/shared/automatic-healing.mjs";
+import { ORDINARY_POTION_POLICY, ORDINARY_POTION_BALANCE_VERSION } from "/app/shared/ordinary-potion.mjs";
 import { handleSiwsChallenge } from "./siws_challenge_endpoint.ts";
 import {
   handleSiwsAccountLogin,
@@ -104,7 +105,7 @@ if (!["combat-effects-v1", COMBAT_EFFECTS_V2_VERSION].includes(combatEffectsVers
 }
 const seekerProgressionBalanceVersion = SEEKER_PROGRESSION_BALANCE_VERSION;
 const normalCombatBalanceVersion = edition === "seeker" && combatEffectsVersion === COMBAT_EFFECTS_V2_VERSION
-  ? seekerProgressionBalanceVersion : combatEffectsVersion === COMBAT_EFFECTS_V2_VERSION
+  ? ORDINARY_POTION_BALANCE_VERSION : combatEffectsVersion === COMBAT_EFFECTS_V2_VERSION
   ? COMBAT_EFFECTS_V2_BALANCE_VERSION
   : BALANCE_VERSION;
 const databasePool = new Pool({
@@ -2191,7 +2192,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
               if (!isRecord(prepared.state) || !Array.isArray(prepared.ledger_items)) {
                 throw new Error("invalid normal combat simulation context");
               }
-              if (![BALANCE_VERSION, COMBAT_EFFECTS_V2_BALANCE_VERSION, AUTOMATIC_HEALING_BALANCE_VERSION, seekerProgressionBalanceVersion].includes(String(prepared.balance_version))) {
+              if (![BALANCE_VERSION, COMBAT_EFFECTS_V2_BALANCE_VERSION, AUTOMATIC_HEALING_BALANCE_VERSION, seekerProgressionBalanceVersion, ORDINARY_POTION_BALANCE_VERSION].includes(String(prepared.balance_version))) {
                 throw new Error("normal combat balance version mismatch");
               }
               const startKey = String(prepared.start_key ?? "");
@@ -2202,6 +2203,12 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
                 || !Number.isFinite(startedAtMs)) {
                 throw new Error("invalid normal combat simulation identity");
               }
+              if (prepared.balance_version === ORDINARY_POTION_BALANCE_VERSION) {
+                const context = await client.queryObject<{ result: unknown }>(
+                  "SELECT heroloop_api.ordinary_potion_context($1::uuid, $2::uuid) AS result", [identity.playerId, startKey]);
+                if (!isRecord(context.rows[0]?.result)) throw new Error("invalid ordinary potion context");
+                prepared.state.normalCombatHealing = context.rows[0].result;
+              }
               const resourcesQuery = await client.queryObject<{ result: unknown }>(
                 "SELECT heroloop_api.resource_snapshot($1::uuid) AS result",
                 [identity.playerId],
@@ -2210,11 +2217,12 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
               if (resourcesQuery.rows.length !== 1 || !isRecord(resources)) {
                 throw new Error("invalid normal combat resource snapshot");
               }
-              const preparedEffectsVersion = [COMBAT_EFFECTS_V2_BALANCE_VERSION, AUTOMATIC_HEALING_BALANCE_VERSION, seekerProgressionBalanceVersion].includes(String(prepared.balance_version))
+              const preparedEffectsVersion = [COMBAT_EFFECTS_V2_BALANCE_VERSION, AUTOMATIC_HEALING_BALANCE_VERSION, seekerProgressionBalanceVersion, ORDINARY_POTION_BALANCE_VERSION].includes(String(prepared.balance_version))
                 ? COMBAT_EFFECTS_V2_VERSION
                 : null;
-              const healingPolicy = [AUTOMATIC_HEALING_BALANCE_VERSION, seekerProgressionBalanceVersion].includes(String(prepared.balance_version)) ? AUTOMATIC_HEALING_POLICY : null;
-              const combat = buildNormalCombat(prepared.state, prepared.ledger_items, preparedLocation, seed, resources, startedAtMs, preparedEffectsVersion, healingPolicy, prepared.balance_version === seekerProgressionBalanceVersion ? SEEKER_PROGRESSION_VERSION : null);
+              const healingPolicy = prepared.balance_version === ORDINARY_POTION_BALANCE_VERSION ? ORDINARY_POTION_POLICY
+                : [AUTOMATIC_HEALING_BALANCE_VERSION, seekerProgressionBalanceVersion].includes(String(prepared.balance_version)) ? AUTOMATIC_HEALING_POLICY : null;
+              const combat = buildNormalCombat(prepared.state, prepared.ledger_items, preparedLocation, seed, resources, startedAtMs, preparedEffectsVersion, healingPolicy, [seekerProgressionBalanceVersion, ORDINARY_POTION_BALANCE_VERSION].includes(String(prepared.balance_version)) ? SEEKER_PROGRESSION_VERSION : null);
               const storedQuery = await client.queryObject<{ result: unknown }>(
                 "SELECT heroloop_api.normal_combat_store_outcome($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, $5::jsonb) AS result",
                 [
@@ -2294,7 +2302,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         return errorResponse(400, payloadError ?? "invalid_dungeon_request", requestId);
       }
       try {
-        const functionName = action === "boss_claim" && edition === "seeker" ? "premium_boss_claim" : action;
+        const functionName = action;
         const query = action === "dungeon_room_action"
           ? `SELECT heroloop_api.${functionName}($1::uuid, $2::uuid, $3::bigint, $4::text, $5::uuid) AS result`
           : action === "dungeon_room_choose"
@@ -2324,37 +2332,9 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       }
     }
     if (String(parsed.value.action).startsWith("premium_potion_")) {
-      if (edition !== "seeker") return errorResponse(409, "unavailable_in_standard_edition", requestId);
-      const action = String(parsed.value.action);
-      const fields = action === "premium_potion_status" ? [] : action === "premium_potion_upgrade"
-        ? ["recipe"] : ["encounter_id", "expected_revision", "tier", "hero_uid", "delay_ms"];
-      const invalid = validatePayloadFields(payload, fields);
-      if (invalid) return errorResponse(400, invalid, requestId);
-      const key = idempotencyKey(parsed.value);
-      if (action !== "premium_potion_status" && !key) return errorResponse(400, "invalid_premium_potion", requestId);
-      try {
-        let result: JsonRecord;
-        if (action === "premium_potion_status") {
-          result = await databaseJson("SELECT heroloop_api.premium_potion_status($1::uuid) AS result", [identity.playerId]);
-        } else if (action === "premium_potion_upgrade") {
-          if (!["brew", "merge"].includes(String(payload.recipe))) return errorResponse(400, "invalid_premium_potion", requestId);
-          result = await databaseJson("SELECT heroloop_api.premium_potion_upgrade($1::uuid,$2::text,$3::uuid) AS result",
-            [identity.playerId, payload.recipe, key]);
-        } else {
-          if (typeof payload.encounter_id !== "string" || !uuidPattern.test(payload.encounter_id)
-            || typeof payload.hero_uid !== "string" || payload.hero_uid.length > 128
-            || !Number.isSafeInteger(payload.expected_revision) || Number(payload.expected_revision) < 1
-            || !["weak", "strong"].includes(String(payload.tier)) || ![0, 5000, 10000].includes(Number(payload.delay_ms))
-            || typeof payload.delay_ms !== "number") return errorResponse(400, "invalid_premium_potion", requestId);
-          result = await databaseJson("SELECT heroloop_api.premium_potion_use($1::uuid,$2::uuid,$3::bigint,$4::text,$5::text,$6::integer,$7::uuid) AS result",
-            [identity.playerId, payload.encounter_id, payload.expected_revision, payload.tier, payload.hero_uid, payload.delay_ms, key]);
-        }
-        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
-      } catch (error) {
-        const code = databaseErrorCode(error, ["invalid_premium_potion", "premium_encounter_not_ready", "premium_invalid_target",
-          "dungeon_revision_conflict", "resource_insufficient_balance", "resource_idempotency_conflict", "resource_balance_cap", "premium_potion_reserved_stock"]);
-        return errorResponse(code === "invalid_premium_potion" ? 400 : code ? 409 : 503, code ?? "premium_potion_failed", requestId);
-      }
+      return edition === "seeker"
+        ? errorResponse(410, "premium_potions_retired", requestId)
+        : errorResponse(409, "unavailable_in_standard_edition", requestId);
     }
     if (parsed.value.action === "leaderboard") {
       const payloadError = validatePayloadFields(payload, []);

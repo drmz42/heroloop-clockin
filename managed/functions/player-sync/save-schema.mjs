@@ -180,7 +180,7 @@ function authoritativeShapeError(state) {
   if (!text(state.tokenDayKey, 10, DAY_PATTERN)) return "token_day_key";
   if (typeof state.starterBalanceV2 !== "boolean") return "starter_balance";
   if (!keysExact(state.potions, POTION_TIERS)) return "potions_fields";
-  if (![...POTION_TIERS].every((tier) => finite(state.potions[tier], 0, 1_000_000_000))) return "potions_quantity";
+  if (![...POTION_TIERS].every((tier) => finite(state.potions[tier], 0, tier === 'xs' ? 8_000_000_000 : 1_000_000_000))) return "potions_quantity";
   if (!keysExact(state.tutorial, new Set(["welcomeCompleted", "autoPotCompleted", "chestGranted", "chestCompleted", "questOrdinal", "questCompleted", "openedCount", "chestBalance", "bossKillsAtKeyGrant"])) ||
       !["welcomeCompleted", "autoPotCompleted", "chestGranted", "chestCompleted"].every((field) => typeof state.tutorial[field] === "boolean") ||
       (state.tutorial.questCompleted !== undefined && typeof state.tutorial.questCompleted !== "boolean") ||
@@ -303,7 +303,7 @@ export function applyResourceSnapshot(value, snapshot) {
   };
   const bossKeys = read("boss_key", 1_000_000);
   const summonScrolls = read("summon_scroll", 1_000_000_000);
-  const potions = Object.fromEntries([...POTION_TIERS].map((tier) => [tier, read(`potion_${tier}`, 1_000_000_000)]));
+  const potions = Object.fromEntries([...POTION_TIERS].map((tier) => [tier, read(`potion_${tier}`, tier === 'xs' ? 8_000_000_000 : 1_000_000_000)]));
   if (bossKeys === null || summonScrolls === null || Object.values(potions).some((amount) => amount === null)) return { ok: false };
   const state = structuredClone(value);
   state.bossKeys = bossKeys;

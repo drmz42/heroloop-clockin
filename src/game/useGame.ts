@@ -230,6 +230,8 @@ interface NormalCombatWave {
   autoPotions: NormalCombatAutoPotion[];
   timeline: CombatTimelineEvent[] | null;
   nextTimeline: number;
+  potionTicks: CombatTimelineEvent[] | null;
+  nextPotionTick: number;
 }
 
 interface NormalCombatAutoPotion {
@@ -255,7 +257,7 @@ interface NormalCombatStartResult {
   seed: number;
   available_at: string;
   initial_units: Array<Partial<CombatUnit> & Pick<CombatUnit, 'uid' | 'side'> & { lane: number }>;
-  outcome?: { auto_potions?: NormalCombatAutoPotion[]; elapsed_ms?: number; timeline_version?: number; timeline?: unknown };
+  outcome?: { healing_policy?: string; auto_potions?: NormalCombatAutoPotion[]; elapsed_ms?: number; timeline_version?: number; timeline?: unknown };
 }
 
 function combatFloater(event: {
@@ -604,11 +606,13 @@ export function useGame() {
         autoPotions: Array.isArray(started.outcome?.auto_potions) ? started.outcome.auto_potions : [],
         timeline: null,
         nextTimeline: 0,
+        potionTicks: started.outcome?.healing_policy === 'ordinary-potion-v1' ? [] : null,
+        nextPotionTick: 0,
       };
       const timelinePayload = started.outcome?.timeline;
       const timelineVersion = Number(started.outcome?.timeline_version);
       const timelineElapsed = Number(started.outcome?.elapsed_ms);
-      if (timelinePayload !== undefined || started.outcome?.timeline_version !== undefined) {
+      if (timelinePayload !== undefined || started.outcome?.timeline_version !== undefined || started.outcome?.healing_policy === 'ordinary-potion-v1') {
         const timeline = timelineVersion === COMBAT_TIMELINE_VERSION && Number.isSafeInteger(timelineElapsed)
           ? parseCombatTimeline(timelinePayload, new Set(nextUnits.map((unit) => unit.uid)), timelineElapsed)
           : null;
@@ -617,6 +621,7 @@ export function useGame() {
           return;
         }
         normalCombatWaveRef.current.timeline = timeline;
+        if (normalCombatWaveRef.current.potionTicks) normalCombatWaveRef.current.potionTicks = timeline.filter(event => event.kind === 'potion');
       }
       combatRandomRef.current = seededCombatRandom(serverSeed);
       combatAccumulatorRef.current = 0;
@@ -955,7 +960,15 @@ export function useGame() {
             const serverWave = normalCombatWaveRef.current;
             if (serverWave) {
               serverWave.elapsedMs += 20;
-              if (!combatResolution(finalUnits)) {
+              if (serverWave.potionTicks) {
+                while (serverWave.nextPotionTick < serverWave.potionTicks.length
+                  && serverWave.potionTicks[serverWave.nextPotionTick].elapsedMs <= serverWave.elapsedMs) {
+                  const tick = serverWave.potionTicks[serverWave.nextPotionTick++];
+                  finalUnits = finalUnits.map(unit => unit.uid === tick.targetUid && unit.alive
+                    ? { ...unit, hp: Math.min(unit.maxHp, unit.hp + (tick.amount ?? 0)) } : unit);
+                  pendingPotionFx = { uid: tick.targetUid, born: now };
+                }
+              } else if (!combatResolution(finalUnits)) {
                 while (serverWave.nextAutoPotion < serverWave.autoPotions.length
                   && serverWave.autoPotions[serverWave.nextAutoPotion].elapsed_ms <= serverWave.elapsedMs) {
                   const potion = serverWave.autoPotions[serverWave.nextAutoPotion++];

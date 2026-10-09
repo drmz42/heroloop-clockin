@@ -104,7 +104,7 @@ function RewardBoostSection({ game }: { game: GameApi }) {
 const BUNDLE_NAMES: Record<ShopBundleOffer['resourceId'], string> = {
   summon_scroll: 'Summon Scroll',
   boss_key: 'Boss Key',
-  potion_md: 'Medium Potion',
+  potion_md: isolatedHackathon ? 'Ordinary Potion' : 'Medium Potion',
 };
 
 function usd(cents: number): string {

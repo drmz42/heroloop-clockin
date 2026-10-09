@@ -272,8 +272,8 @@ BEGIN
    'v_state := v_save.state; v_seeker_before_state := v_save.state; v_seeker_before_xp := COALESCE((v_save.state->>''accountXp'')::bigint,0);');
  n := replace(n, 'UPDATE public.player_saves SET state = v_state,',
    'v_seeker_bypass := COALESCE(current_setting(''heroloop.seeker_xp_bypass'',true),'''');
-    PERFORM set_config(''heroloop.seeker_xp_bypass'', CASE WHEN v_event.balance_version=' ||
-      quote_literal(new_version) || ' THEN ''false'' ELSE ''true'' END,true);
+    PERFORM set_config(''heroloop.seeker_xp_bypass'', CASE WHEN v_event.balance_version IN (' ||
+      quote_literal(new_version) || ',''seeker-200-2026.10.09-v1-combat-effects-v2-ordinary-potion-v1'') THEN ''false'' ELSE ''true'' END,true);
     UPDATE public.player_saves SET state = v_state,');
  n := replace(n, 'v_result := jsonb_build_object(',
    'PERFORM set_config(''heroloop.seeker_xp_bypass'', v_seeker_bypass, true);
