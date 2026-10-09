@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, Gift, Mail, MailOpen, Sparkles, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Gift, Mail, MailOpen, Sparkles, Trash2 } from 'lucide-react';
 import { versionedAsset } from '@/game/assetVersion';
 import { ChestCollectIcon } from '@/components/ChestCollectIcon';
 import { GoldIcon } from '@/components/GoldIcon';
@@ -8,6 +8,7 @@ import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { heroThumbSrc } from '@/game/portraits';
 import { ITEM_MAP, displayItemPower } from '@/game/items';
 import { formatNum } from '@/game/state';
+import { groupMailEntries } from '@/game/mailGrouping';
 import type { OwnedItem } from '@/game/types';
 import type { MailAttachment, MailClaimResult, MailEntry, MailItemEntry } from '@/game/useGame';
 import './mailbox.css';
@@ -99,6 +100,7 @@ export function MailboxScreen({ loadMail, claimMail, readMail, deleteReadMail, f
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     const result = await loadMail();
@@ -145,6 +147,19 @@ export function MailboxScreen({ loadMail, claimMail, readMail, deleteReadMail, f
   const opened = entries?.find((entry) => entry.id === openId) ?? null;
   const claimable = (entries ?? []).filter(hasUnclaimed).length;
   const readCount = (entries ?? []).filter(isRead).length;
+  const groups = groupMailEntries(entries ?? []);
+
+  const deliveryRow = (entry: MailEntry) => {
+    const read = isRead(entry) || (entry.kind === 'letter' && entry.read);
+    const gift = hasUnclaimed(entry);
+    const title = entry.kind === 'letter' ? entry.title : ITEM_MAP[entry.item.itemId]?.name ?? 'Item delivery';
+    const sub = entry.kind === 'letter' ? entry.sender : ITEM_SOURCE[entry.source] ?? 'Delivery';
+    return <button type="button" key={entry.id} onClick={() => open(entry)} className={`mailbox-row ${read ? 'is-read' : ''}`}>
+      <span className={`mailbox-row-icon ${gift ? 'has-gift' : ''}`}>{gift ? <Gift size={22} /> : read ? <MailOpen size={22} /> : <Mail size={22} />}</span>
+      <span className="mailbox-row-text"><b>{title}</b><small>{sub} · {dateLabel(entry.created_at)}</small></span>
+      {!read && <i className="mailbox-row-dot" aria-label="Unread" />}
+    </button>;
+  };
 
   return (
     <div className="mailbox-screen" aria-labelledby="mailbox-title">
@@ -162,16 +177,21 @@ export function MailboxScreen({ loadMail, claimMail, readMail, deleteReadMail, f
           <button type="button" disabled={busy || readCount === 0} onClick={() => setConfirmDelete(true)} className="game-control mailbox-bin" aria-label="Delete read letters"><Trash2 size={18} /></button>
         </div>
         <div className="mailbox-list">
-          {entries === null ? <p className="mailbox-empty">Loading…</p> : entries.length === 0 ? <p className="mailbox-empty">The Mailbox is empty.</p> : entries.map((entry) => {
-            const read = isRead(entry) || (entry.kind === 'letter' && entry.read);
-            const gift = hasUnclaimed(entry);
-            const title = entry.kind === 'letter' ? entry.title : ITEM_MAP[entry.item.itemId]?.name ?? 'Item delivery';
-            const sub = entry.kind === 'letter' ? entry.sender : ITEM_SOURCE[entry.source] ?? 'Delivery';
-            return <button type="button" key={entry.id} onClick={() => open(entry)} className={`mailbox-row ${read ? 'is-read' : ''}`}>
-              <span className={`mailbox-row-icon ${gift ? 'has-gift' : ''}`}>{gift ? <Gift size={22} /> : read ? <MailOpen size={22} /> : <Mail size={22} />}</span>
-              <span className="mailbox-row-text"><b>{title}</b><small>{sub} · {dateLabel(entry.created_at)}</small></span>
-              {!read && <i className="mailbox-row-dot" aria-label="Unread" />}
-            </button>;
+          {entries === null ? <p className="mailbox-empty">Loading…</p> : entries.length === 0 ? <p className="mailbox-empty">The Mailbox is empty.</p> : groups.map((group) => {
+            const entry = group.entries[0];
+            if (group.entries.length === 1 || entry.kind !== 'letter') return deliveryRow(entry);
+            const expanded = expandedGroup === group.id;
+            const read = group.entries.every((letter) => letter.kind === 'letter' && letter.read);
+            const gift = group.entries.some(hasUnclaimed);
+            const pending = group.entries.reduce((total, letter) => total + (letter.kind === 'letter' ? letter.attachments.filter((reward) => !reward.claimed).length : 1), 0);
+            return <div className="mailbox-group" key={group.id}>
+              <button type="button" className={`mailbox-row ${read ? 'is-read' : ''}`} aria-expanded={expanded} aria-controls={`mail-group-${group.id}`} onClick={() => setExpandedGroup(expanded ? null : group.id)}>
+                <span className={`mailbox-row-icon ${gift ? 'has-gift' : ''}`}>{gift ? <Gift size={22} /> : <MailOpen size={22} />}</span>
+                <span className="mailbox-row-text"><b>{entry.title}</b><small>{entry.sender} · {group.entries.length} letters · {pending} rewards waiting{!read ? ' · Unread' : ''}</small></span>
+                <span className="mailbox-group-count">×{group.entries.length}<ChevronDown size={16} className={expanded ? 'is-expanded' : ''} /></span>
+              </button>
+              {expanded && <div className="mailbox-group-entries" id={`mail-group-${group.id}`}>{group.entries.map(deliveryRow)}</div>}
+            </div>;
           })}
         </div>
       </>}

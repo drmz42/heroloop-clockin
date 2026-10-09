@@ -22,6 +22,10 @@
 
 /* Letters: forged cards on stone; unread ones glow brass with a crimson wax seal, read ones are grey. */
 .mailbox-list { display: grid; gap: 8px; }
+.mailbox-group { min-width: 0; }
+.mailbox-group-count { display: flex; flex-shrink: 0; align-items: center; gap: 4px; font-size: 12px; font-weight: 900; color: var(--mb-brass-hi); }
+.mailbox-group-count .is-expanded { transform: rotate(180deg); }
+.mailbox-group-entries { display: grid; gap: 6px; margin: 6px 0 0 10px; padding-left: 6px; border-left: 1px solid var(--mb-brass-lo); }
 .mailbox-empty { padding: 28px 0; text-align: center; font-family: var(--mb-display); font-size: 13px; letter-spacing: .06em; color: var(--mb-muted); }
 .mailbox-row {
   position: relative; display: flex; align-items: center; gap: 11px; width: 100%; min-height: 64px; padding: 9px 12px; text-align: left;
