@@ -290,7 +290,7 @@
 .ev-menu-text small { overflow: hidden; color: #dccfb5; font: italic 12.5px/1.15 'EB Garamond', Georgia, serif; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 2px #000; }
 .ev-menu-chev { position: relative; flex: none; color: #f2cc80; filter: drop-shadow(0 1px 2px #000); }
 .ev-ready-pill { position: relative; flex: none; border: 0 solid transparent; border-width: 6px 9px; border-image: url('../theme/premium/assets/btn-crimson-play-9.webp') 24 56 26 fill / 5px 11px 6px / 0 3px stretch;
-  width: 44px; color: #fff3d6; font: 700 8.5px/1 'Cinzel', Georgia, serif; letter-spacing: .12em; text-align: center; text-shadow: 0 1px 2px #000; text-transform: uppercase; }
+  width: 56px; color: #fff3d6; font: 700 8.5px/1 'Cinzel', Georgia, serif; letter-spacing: .12em; text-align: center; text-shadow: 0 1px 2px #000; text-transform: uppercase; }
 .ev-menu-sub { display: flex; align-items: center; gap: 8px; margin-top: 2px; color: #c9b089; font: 700 9px/1 'Cinzel', Georgia, serif; letter-spacing: .24em; text-transform: uppercase; }
 .ev-menu-sub::before, .ev-menu-sub::after { content: ''; height: 1px; flex: 1; background: linear-gradient(90deg, transparent, rgba(199, 158, 97, .55)); }
 .ev-menu-sub::after { transform: scaleX(-1); }
