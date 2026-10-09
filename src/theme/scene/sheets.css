@@ -67,6 +67,10 @@
 /* Like the Summon temple: the sheet fills the screen above the tab bar, the keep art shows through
    the open upper part and the banners sit in the lower part, growing on tall phones. */
 .mo-v3 { align-items: stretch; background: #050403; }
+/* Founder 2026-10-09: the sheet starts under the fixed top bar. Painted beneath it, the breathing keep
+   art made the Gold/Events bar flicker on phones and hid the More title. */
+html[data-hl-platform='android'] .hl-more-sheet.mo-v3 { top: calc(var(--game-progress-height) + env(safe-area-inset-top, 0px)); }
+html[data-hl-platform='android'] .mo-v3 .mo-keep { padding-top: 10px; }
 .mo-keep {
   isolation: isolate;
   border-top: 0;
