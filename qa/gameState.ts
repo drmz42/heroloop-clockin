@@ -67,6 +67,9 @@ export function makeQaGameState(now = Date.now()): GameState {
     },
     boost: {
       active: true,
+      chestProgressSeconds: 0,
+      goldProgressSeconds: 0,
+      combatProgressSeconds: 0,
       progress: 100,
       bonusPct: 100,
       conditions: {
