@@ -275,6 +275,11 @@
 .ev-menu-card.ev-art-calendar { --ev-art: url('/assets/screens/ranks-hall-v1.webp'); --ev-pos: 50% 40%; }
 .ev-menu-card.ev-art-weekly { --ev-art: url('/assets/screens/dungeon-throne-abyss-v1.webp'); --ev-pos: 60% 45%; }
 .ev-menu-card.ev-art-pass { --ev-art: url('/assets/screens/more-pass.webp'); --ev-pos: 80% 62%; }
+.ev-menu-card.ev-art-worldboss { --ev-art: url('/assets/screens/dungeon-room-4-abyss-throne-v2.webp'); --ev-pos: 50% 35%; }
+.ev-menu-card.is-soon { cursor: default; filter: saturate(.75); }
+.ev-menu-card.is-soon:active { transform: none; filter: saturate(.75); }
+.ev-soon-pill { position: relative; flex: none; margin-right: 6px; border: 1px solid #9a7a45; border-radius: 4px; padding: 4px 7px; background: rgba(10, 7, 4, .78);
+  color: #f2cc80; font: 700 8.5px/1 'Cinzel', Georgia, serif; letter-spacing: .14em; text-shadow: 0 1px 2px #000; text-transform: uppercase; }
 .ev-menu-card.is-ready { box-shadow: 0 6px 14px rgba(0, 0, 0, .6), 0 0 14px rgba(255, 140, 60, .35); }
 .ev-menu-card::after { content: ''; position: absolute; top: -10px; bottom: -10px; left: -40%; width: 26%; transform: skewX(-18deg); background: linear-gradient(90deg, transparent, rgba(255, 230, 170, .16), transparent); opacity: 0; pointer-events: none; }
 .ev-seal { position: relative; display: grid; width: 32px; height: 32px; flex: none; place-items: center; transform: rotate(45deg); border: 1px solid #c79e61;
