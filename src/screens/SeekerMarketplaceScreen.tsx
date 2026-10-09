@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { Clock3, List, Lock, PackageSearch, Search, ShieldCheck, Swords, Shield, Gem, PawPrint, Users } from 'lucide-react';
+import { Clock3, HelpCircle, List, Lock, PackageSearch, Search, ShieldCheck, Swords, Shield, Gem, PawPrint, Users } from 'lucide-react';
 import { GameSelect } from '@/components/GameSelect';
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { SkrUsd } from '@/components/SkrUsd';
@@ -7,10 +7,11 @@ import { skrPrice, skrListingPriceCents, useSkrRate } from '@/game/skrPurchase';
 import { ItemArtwork } from '@/components/ItemArtwork';
 import { heroPortraitSrc, heroPortraitStyle, heroThumbSrc } from '@/game/portraits';
 import { ItemCompareStats } from '@/components/ItemActionPanel';
-import { HERO_MAP, RARITY_COLORS, RARITY_LABEL } from '@/game/heroes';
+import { CLASS_LABEL, HERO_MAP, RARITY_COLORS, RARITY_LABEL } from '@/game/heroes';
 import { ITEM_MAP, STAT_LABEL, displayItemPower, formatStatValue, isMarketEligibleEquipment } from '@/game/items';
-import { formatNum } from '@/game/state';
-import type { OwnedHero, OwnedItem, Rarity } from '@/game/types';
+import { formatNum, MAX_HERO_STARS, MAX_LEVEL } from '@/game/state';
+import { MAX_ENCHANT_LEVEL } from '@/game/enchant';
+import type { HeroClass, OwnedHero, OwnedItem, Rarity } from '@/game/types';
 import type { GameApi, ServerMarketHeroListing, ServerMarketListing, ServerMarketSnapshot } from '@/game/useGame';
 import { teamPower } from '@/game/engine';
 import type { TokenomicsApi } from '@/game/useTokenomics';
@@ -21,14 +22,20 @@ import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
 
 type MarketTab = 'browse' | 'activity' | 'history' | 'supply' | 'listings' | 'sell';
 type Category = 'all' | 'weapons' | 'armor' | 'accessories' | 'heroes' | 'pets';
-type LevelFilter = 'all' | 'my' | 'usable' | 'upgrades' | 'endgame';
+type LevelFilter = 'all' | 'my' | 'usable' | 'upgrades' | `band-${number}`;
 type Listing = { id: string; kind: 'item' | 'hero'; sourceId: string; name: string; rarity: Rarity; level: number; enchantLevel: number; stars?: number; power: number; price: number; seller: string; createdAt: number; stats: string[]; owned?: OwnedItem | OwnedHero };
 
 const MARKET_PAGE = 40;
+const HERO_CLASSES = Object.keys(CLASS_LABEL) as HeroClass[];
+// Level and star filters use bands of 10 levels and 5 stars up to the live caps.
+const LEVEL_BANDS = Array.from({ length: Math.ceil(MAX_LEVEL / 10) }, (_, index) => index * 10 + 1);
+const STAR_BANDS = Array.from({ length: Math.ceil(MAX_HERO_STARS / 5) }, (_, index) => index * 5 + 1);
+const ENCHANT_STEPS = [1, 5, 10, 15].filter((step) => step < MAX_ENCHANT_LEVEL);
+const bandLabel = (start: number, max: number, suffix = '') => `${start}–${Math.min(start + (suffix ? 4 : 9), max)}${suffix}`;
 
 const TABS: { id: MarketTab; label: string }[] = [
   { id: 'browse', label: 'Browse' }, { id: 'activity', label: 'Activity' }, { id: 'history', label: 'History' },
-  { id: 'sell', label: 'Sell' }, { id: 'listings', label: 'My Listings' }, { id: 'supply', label: 'Supply' },
+  { id: 'sell', label: 'Sell' }, { id: 'listings', label: 'Mine' }, { id: 'supply', label: 'Supply' },
 ];
 
 function ownedRows(game: GameApi): Listing[] {
@@ -76,7 +83,7 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
   const rate = useSkrRate();
   const [tab, setTab] = useState<MarketTab>('browse'); const [query, setQuery] = useState(''); const [selectedId, setSelectedId] = useState<string | null>(null); const [price, setPrice] = useState(''); const [notice, setNotice] = useState('');
   const [market, setMarket] = useState<ServerMarketSnapshot | null>(null); const [marketBusy, setMarketBusy] = useState(false);
-  const [category, setCategory] = useState<Category>('all'); const [rarity, setRarity] = useState<Rarity | 'all'>('all'); const [enchant, setEnchant] = useState(0); const [levelFilter, setLevelFilter] = useState<LevelFilter>('all'); const [comparisonHeroUid, setComparisonHeroUid] = useState(game.state.team[0] ?? game.state.ownedHeroes[0]?.uid ?? '');
+  const [category, setCategory] = useState<Category>('all'); const [rarity, setRarity] = useState<Rarity | 'all'>('all'); const [enchant, setEnchant] = useState(0); const [levelFilter, setLevelFilter] = useState<LevelFilter>('all'); const [heroClass, setHeroClass] = useState<HeroClass | 'all'>('all'); const [starBand, setStarBand] = useState(0); const [feeOpen, setFeeOpen] = useState(false); const [comparisonHeroUid, setComparisonHeroUid] = useState(game.state.team[0] ?? game.state.ownedHeroes[0]?.uid ?? '');
   const fetchSupply = tokenomics.fetchStatus;
   useEffect(() => { if (tab !== 'supply') return; void fetchSupply(); const timer = window.setInterval(() => void fetchSupply(), 60_000); return () => window.clearInterval(timer); }, [tab, fetchSupply]);
   const loadMarket = game.loadMarket;
@@ -95,16 +102,19 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
   const [shown, setShown] = useState(MARKET_PAGE);
   // Android Back closes the item/hero detail and stays in the Market (Founder 2026-10-08).
   useAndroidOverlayHistory(selectedId !== null, () => setSelectedId(null));
-  const filterKey = [tab, query, category, rarity, enchant, levelFilter, comparisonHeroUid].join('|');
+  const filterKey = [tab, query, category, rarity, enchant, levelFilter, heroClass, starBand, comparisonHeroUid].join('|');
   useEffect(() => setShown(MARKET_PAGE), [filterKey]);
   const rows = (tab === 'browse' ? browse : tab === 'listings' ? mine : tab === 'sell' ? sellable : []).filter((row) => {
     if (query && !row.name.toLowerCase().includes(query.toLowerCase())) return false;
     if (!matchesCategory(row) || (rarity !== 'all' && row.rarity !== rarity)) return false;
+    // A class filter keeps heroes of that class and class-only equipment for it.
+    if (heroClass !== 'all' && (row.kind === 'hero' ? HERO_MAP[row.sourceId]?.heroClass : ITEM_MAP[row.sourceId]?.heroClass) !== heroClass) return false;
     if (row.kind === 'item' && row.enchantLevel < enchant) return false;
+    if (row.kind === 'hero' && starBand && ((row.stars ?? 0) < starBand || (row.stars ?? 0) > starBand + 4)) return false;
+    if (levelFilter.startsWith('band-')) { const start = Number(levelFilter.slice(5)); if (row.level < start || row.level > start + 9) return false; }
     if (row.kind === 'item' && levelFilter === 'my' && Math.abs(row.level - comparisonLevel) > 3) return false;
     if (row.kind === 'item' && levelFilter === 'usable' && row.level > comparisonLevel) return false;
     if (row.kind === 'item' && levelFilter === 'upgrades' && row.level <= comparisonLevel) return false;
-    if (row.kind === 'item' && levelFilter === 'endgame' && row.level < 80) return false;
     return true;
   });
   const selected = rows.find((row) => row.id === selectedId) ?? null;
@@ -135,16 +145,17 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
       <div className="sc-stage-art" aria-hidden="true" />
       <div className="sc-glow" aria-hidden="true" />
       {!still && <div className="sc-embers" aria-hidden="true">{[0, 1, 2, 3, 4, 5, 6].map((i) => <i key={i} style={{ '--i': i } as CSSProperties} />)}</div>}
-      <header className="sc-head mv-head"><span className="sc-kicker">Merchant's Vault</span><h2 className="sc-title">Market</h2><p className="sc-lede">Trade equipment with other Seekers · 20 listings per seller</p></header>
-      <nav aria-label="Market sections" className="mv-tabs">{TABS.map((item) => <button key={item.id} type="button" aria-pressed={tab === item.id} onClick={() => { setTab(item.id); setSelectedId(null); setPrice(''); }} className="sc-chip mv-tab">{item.label}</button>)}</nav>
+      <header className="sc-head mv-head"><span className="sc-kicker">Merchant's Vault</span><h2 className="sc-title">Market</h2></header>
+      <button type="button" className="mv-help" aria-label="Market fees and rules" aria-expanded={feeOpen} aria-controls="mv-fee" onClick={() => setFeeOpen((open) => !open)}><HelpCircle size={16} /></button>
+      <nav aria-label="Market sections" className="mv-tabs">{TABS.map((item) => <button key={item.id} type="button" aria-pressed={tab === item.id} onClick={() => { setTab(item.id); setSelectedId(null); setPrice(''); setFeeOpen(false); }} className="sc-chip mv-tab">{item.label}</button>)}</nav>
     </section>
     <div className="sc-body mv-body">
-      <p className="mv-fee">Listing fee: {skrPrice(2, rate)}<SkrUsd cents={2} />. Non-refundable after listing, including cancellation. Sale fee: 10%; the seller receives 90% in SKR. Purchases arrive in Mailbox. The final SKR amount is shown before confirmation.</p>
+      {feeOpen && <div id="mv-fee" role="note" className="mv-fee"><p>Listing fee: {skrPrice(2, rate)}<SkrUsd cents={2} />. Non-refundable after listing, including cancellation.</p><p>Sale fee: 10%; the seller receives 90% in SKR. Up to 20 listings per seller.</p><p><ShieldCheck size={11} /> Server escrow. Items arrive in Mailbox, heroes join your roster. The final SKR amount is shown before confirmation.</p></div>}
       {notice && <div role="status" className="mv-notice">{notice}</div>}
       {(tab === 'browse' || tab === 'sell' || tab === 'listings') && <>
         <section className="sc-panel market-filter-panel mv-filters-panel">
-          <div className="mv-categories">{categories.map((item) => <button type="button" key={item.id} aria-pressed={category === item.id} onClick={() => { setCategory(item.id); setRarity('all'); }} className="sc-chip mv-cat">{item.icon}{item.label}</button>)}<button type="button" disabled className="sc-chip mv-cat"><PawPrint size={11} />Pets · Soon</button></div>
-          <div className="mv-filters"><label className="mv-search"><Search size={13} /><input aria-label="Search items" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search..." className="mv-input" /></label><GameSelect<Rarity | 'all'> ariaLabel="Rarity" value={rarity} onChange={setRarity} options={[{ value: 'all' as const, label: 'All Rarities' }, ...(category === 'heroes' ? heroRarities : allRarities).map((value) => ({ value, label: RARITY_LABEL[value], disabled: ['cursed', 'immortal', 'god'].includes(value), badge: ['cursed', 'immortal', 'god'].includes(value) ? 'Soon' : undefined }))]} className="mv-input" /><GameSelect ariaLabel="Minimum enchant" value={enchant} onChange={setEnchant} disabled={category === 'heroes'} options={[{ value: 0, label: 'Any +Level' }, { value: 3, label: '+3 or more' }, { value: 5, label: '+5 or more' }, { value: 7, label: '+7 or more' }, { value: 10, label: '+10 only' }]} className="mv-input" /><GameSelect<LevelFilter> ariaLabel="Item level" value={levelFilter} onChange={setLevelFilter} disabled={category === 'heroes'} options={[{ value: 'all' as const, label: 'All Levels' }, { value: 'my' as const, label: 'My Level ±3' }, { value: 'usable' as const, label: 'Usable Now' }, { value: 'upgrades' as const, label: 'Upgrades' }, { value: 'endgame' as const, label: 'Endgame 80+' }]} className="mv-input" />{category !== 'heroes' ? <GameSelect ariaLabel="Comparison hero" value={comparisonHeroUid} onChange={setComparisonHeroUid} placeholder="Compare hero" options={[{ value: '', label: 'Compare hero', disabled: true }, ...game.state.ownedHeroes.map((hero) => ({ value: hero.uid, label: `${HERO_MAP[hero.heroId]?.name ?? 'Hero'} · Lv ${hero.level}` }))]} className="mv-input" /> : <div className="mv-input mv-input-note">Hero filters need no comparison</div>}</div>
+          <div className="mv-categories">{categories.map((item) => <button type="button" key={item.id} aria-pressed={category === item.id} onClick={() => { setCategory(item.id); setRarity('all'); if (item.id === 'heroes') { setEnchant(0); if (!levelFilter.startsWith('band-')) setLevelFilter('all'); } else setStarBand(0); }} className="sc-chip mv-cat">{item.icon}{item.label}</button>)}<button type="button" disabled className="sc-chip mv-cat"><PawPrint size={11} />Pets · Soon</button></div>
+          <div className={`mv-filters${category === 'heroes' ? ' is-heroes' : ''}`}><label className="mv-search"><Search size={13} /><input aria-label="Search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search..." className="mv-input" /></label><GameSelect<Rarity | 'all'> ariaLabel="Rarity" value={rarity} onChange={setRarity} options={[{ value: 'all' as const, label: 'All Rarities' }, ...(category === 'heroes' ? heroRarities : allRarities).map((value) => ({ value, label: RARITY_LABEL[value], disabled: ['cursed', 'immortal', 'god'].includes(value), badge: ['cursed', 'immortal', 'god'].includes(value) ? 'Soon' : undefined }))]} className="mv-input" /><GameSelect<HeroClass | 'all'> ariaLabel="Hero class" value={heroClass} onChange={setHeroClass} options={[{ value: 'all' as const, label: 'All Classes' }, ...HERO_CLASSES.map((value) => ({ value, label: CLASS_LABEL[value] }))]} className="mv-input" /><GameSelect<LevelFilter> ariaLabel="Level" value={levelFilter} onChange={setLevelFilter} options={[{ value: 'all' as const, label: 'All Levels' }, ...(category === 'heroes' ? [] : [{ value: 'my' as const, label: 'My Level ±3' }, { value: 'usable' as const, label: 'Usable Now' }, { value: 'upgrades' as const, label: 'Upgrades' }]), ...LEVEL_BANDS.map((start) => ({ value: `band-${start}` as const, label: `Lv ${bandLabel(start, MAX_LEVEL)}` }))]} className="mv-input" />{category === 'heroes' ? <GameSelect ariaLabel="Stars" value={starBand} onChange={setStarBand} options={[{ value: 0, label: 'All Stars' }, ...STAR_BANDS.map((start) => ({ value: start, label: bandLabel(start, MAX_HERO_STARS, '★') }))]} className="mv-input" /> : <><GameSelect ariaLabel="Minimum enhancement" value={enchant} onChange={setEnchant} options={[{ value: 0, label: 'Any Enhance' }, ...ENCHANT_STEPS.map((step) => ({ value: step, label: `+${step} or more` })), { value: MAX_ENCHANT_LEVEL, label: `+${MAX_ENCHANT_LEVEL} only` }]} className="mv-input" /><GameSelect ariaLabel="Comparison hero" value={comparisonHeroUid} onChange={setComparisonHeroUid} placeholder="Compare hero" options={[{ value: '', label: 'Compare hero', disabled: true }, ...game.state.ownedHeroes.map((hero) => ({ value: hero.uid, label: `vs ${HERO_MAP[hero.heroId]?.name ?? 'Hero'} · Lv ${hero.level}` }))]} className="mv-input mv-compare-select" /></>}</div>
         </section>
         <main className="mv-main">
           <section className="market-rows mv-grid" aria-label={tab === 'sell' ? 'Your equipment' : 'Listings'}>{rows.slice(0, shown).map((row) => <Row key={row.id} row={row} rate={rate} selling={tab === 'sell'} active={selected?.id === row.id} onClick={() => { setSelectedId(row.id); setPrice(''); }} />)}{rows.length > shown && <button type="button" className="sc-chip mv-more" onClick={() => setShown((count) => count + MARKET_PAGE)}>Show more · {shown} of {rows.length}</button>}{rows.length === 0 && <Empty text={tab === 'listings' ? 'You have no active listings' : tab === 'sell' ? 'No eligible equipment matches these filters' : 'Nothing available'} />}</section>
@@ -159,7 +170,6 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
         const supply = limited ? tokenomics.status?.rarity_supply?.[key as 'divine' | 'celestial' | 'cursed' | 'immortal' | 'god'] : undefined;
         return <div key={key} className={`mv-supply-tile rarity-${key}`} style={{ '--mv-color': RARITY_COLORS[key] } as CSSProperties}><b className={`rarity-title rarity-${key}`}>{RARITY_LABEL[key]}</b><strong>{limited ? `${supply ? formatNum(supply.existing) : '—'} / ${formatNum(supply?.max ?? limits[key] ?? 0)}` : 'No global limit'}</strong><span>{limited ? 'Existing / maximum' : 'Uncapped rarity'} · {['cursed', 'immortal', 'god'].includes(key) ? 'Crafting only' : 'Level-gated drops'}</span></div>;
       })}</div></section>}
-      <footer className="mv-foot"><ShieldCheck size={12} /> Server escrow · buyer pays in SKR · seller receives 90% · items arrive in Mailbox, heroes join your roster.</footer>
     </div>
   </div>;
 }
