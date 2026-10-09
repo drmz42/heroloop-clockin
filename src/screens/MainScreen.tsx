@@ -51,7 +51,7 @@ import { versionedAsset } from '@/game/assetVersion';
 import { BattleAmbience } from '@/components/BattleAmbience';
 import { ActionFx } from '@/theme/motion/ActionFx';
 import { flyCoins } from '@/theme/motion/flyCoins';
-import { installGameAudio, playSfx } from '@/audio/gameAudio';
+import { installGameAudio, playSfx, setMusicScene } from '@/audio/gameAudio';
 import { BossIntro } from '@/theme/motion/BossIntro';
 import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
 
@@ -377,6 +377,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   }, [battleResult]);
 
   useEffect(() => installGameAudio(), []);
+  const encounterMusic = Boolean(activeDungeon) || state.bossBattleActive;
+  useEffect(() => {
+    setMusicScene(encounterMusic ? 'encounter' : 'main');
+  }, [encounterMusic]);
 
   // Tutorial Chests open only when every item fits; otherwise explain the full bag instead of doing nothing.
   const openTutorialChestsChecked = (count: 1 | 10) => {
