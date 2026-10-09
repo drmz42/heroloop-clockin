@@ -9,6 +9,9 @@ import { readyQuestCount, currentTutorialObjective } from '@/game/tutorialProgre
 import { TUTORIAL_GO_EVENT, tutorialGuide, useTutorialGuide, type TutorialDestination } from '@/game/tutorialGuide';
 import { FooterBar } from '@/components/FooterBar';
 import { MobileTabBar } from '@/components/MobileTabBar';
+import { BattleSettings } from '@/components/BattleSettings';
+import { SeekerEventsSheet } from '@/components/SeekerEvents';
+import { useSeekerEvents, type EventTab } from '@/game/useSeekerEvents';
 import { markStoreNoticeSeen, storeNoticeUnseen } from '@/game/storeNotice';
 import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
 import { isAndroidLayout, isAppShell, type MobileSection } from '@/platform/platform';
@@ -464,6 +467,13 @@ function App() {
   });
   useEffect(() => { if (moreReturn && !moreChildOpen) setMoreReturn(false); }, [moreReturn, moreChildOpen]);
   const [showMail, setShowMail] = useState(false);
+  // Seeker Events (Calendar, Weekly Event, Premium Pass) open over the battle from the burger or More.
+  const [eventsTab, setEventsTab] = useState<EventTab | null>(null);
+  const seekerEvents = useSeekerEvents(isolatedHackathon && accountGate === 'verified', (state, revision) => {
+    game.hydrateServerState(state);
+    game.applyServerRevision(revision);
+  });
+  useAndroidOverlayHistory(eventsTab !== null, () => setEventsTab(null));
   const setCombatPresentationVisible = game.setCombatPresentationVisible;
   // Founder 2026-10-03: a button in the top bar or tab bar first closes whatever is open (Commander, battle
   // menu, More/Mine sheets, Wallet, Mail, Boost and other modals), so layers never stack and the chosen page
@@ -474,7 +484,7 @@ function App() {
     // More and Mine toggle their own sheets (and close each other); closing them here as well reopened More.
     const sheetToggle = Boolean(target.closest('[aria-expanded]'));
     const commanderToggle = Boolean(target.closest('.game-progress-commander, .tb-commander'));
-    setShowBoost(false); setShowWallet(false); setShowPromoCode(false); setShowSupport(false); setShowMail(false);
+    setShowBoost(false); setShowWallet(false); setShowPromoCode(false); setShowSupport(false); setShowMail(false); setEventsTab(null);
     if (!sheetToggle) setMoreOpen(false);
     window.dispatchEvent(new CustomEvent(OVERLAYS_CLOSE_EVENT, { detail: { sheetToggle, commanderToggle } }));
   };
@@ -619,7 +629,7 @@ function App() {
       {/* The window overlay lives in the Play area's host: fixed on the web, but on the Android layout
           (android.css) it fills exactly the Play area, so every menu item reads as a page like the Bag. */}
       <div className="game-main-host flex-1 min-h-0 overflow-hidden">
-        <MainScreen game={game} tokenomics={tokenomics} onBoostClick={() => setShowBoost(true)} onGuidesClick={openWiki} onRewardBoostClick={() => setTab('shop')} onQuestsClick={openQuests} />
+        <MainScreen game={game} tokenomics={tokenomics} onBoostClick={() => setShowBoost(true)} onGuidesClick={openWiki} onRewardBoostClick={() => setTab('shop')} onQuestsClick={openQuests} events={isolatedHackathon ? seekerEvents : undefined} onEventsOpen={setEventsTab} />
         {tab !== 'main' && (
           <div
             className="game-window-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-[5px]"
@@ -670,6 +680,8 @@ function App() {
           onCode={() => { if (moreOpen) setMoreReturn(true); setShowPromoCode(true); }}
           onSupport={() => { if (moreOpen) setMoreReturn(true); setShowSupport(true); }}
           onLogout={() => void logout()}
+          onPass={isolatedHackathon ? () => setEventsTab('pass') : undefined}
+          settings={isolatedHackathon ? <BattleSettings game={game} /> : undefined}
         />
       ) : (
         <FooterBar onLogout={() => void logout()} onGuidesClick={openWiki} onCodeClick={() => setShowPromoCode(true)} onSupportClick={() => setShowSupport(true)} />
@@ -711,6 +723,7 @@ function App() {
       {/* Both close on Escape, which is how Android Back reaches them: opened from More, they return to More. */}
       {showPromoCode && <PromoCodeModal onClose={() => { setShowPromoCode(false); if (moreReturn) setMoreOpen(true); }} onRedeemed={applyPromoRedemption} />}
       {showSupport && <SupportTicketModal onClose={() => { setShowSupport(false); if (moreReturn) setMoreOpen(true); }} />}
+      {eventsTab && <SeekerEventsSheet events={seekerEvents} tab={eventsTab} onTab={setEventsTab} onClose={() => setEventsTab(null)} onState={(state, revision) => { game.hydrateServerState(state); game.applyServerRevision(revision); }} />}
       {showMail && <MailboxModal onClose={() => setShowMail(false)} loadMail={game.loadMail} claimMail={game.claimMail} freeSlots={inventoryCapacity(game.state) - bagItemCount(game.state)} />}
     </div>
   );

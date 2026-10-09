@@ -1,0 +1,78 @@
+/* Seeker Events sheet (2026-10-09): opens over the battle above the tab bar, reusing the More stone panel. */
+.ev-sheet { z-index: 131; }
+.ev-panel { display: flex; max-height: 100%; flex-direction: column; }
+.ev-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 10px; }
+.ev-tabs button { min-height: 40px; border: 1px solid rgba(199, 158, 97, .35); border-radius: 8px; background: rgba(0, 0, 0, .35); color: #b9ab92; font: 700 11px/1.1 'Cinzel', Georgia, serif; letter-spacing: .05em; text-transform: uppercase; }
+.ev-tabs button.is-active { border-color: #f2cc80; background: linear-gradient(180deg, rgba(120, 82, 34, .55), rgba(40, 26, 12, .8)); color: #fff0c8; box-shadow: 0 0 10px rgba(242, 204, 128, .25); }
+.ev-tabs button:focus-visible, .ev-menu-card:focus-visible { outline: 2px solid #fff0a2; outline-offset: 2px; }
+.ev-section { display: grid; gap: 10px; }
+.ev-muted { margin: 0; color: #9b9283; font-size: 11px; line-height: 1.45; }
+.ev-warn { margin: 0; border: 1px solid rgba(240, 120, 90, .5); border-radius: 8px; background: rgba(80, 20, 10, .35); padding: 7px 9px; color: #ffc2a8; font-size: 11px; }
+.ev-message { margin: 0 0 8px; color: #f0d9a8; font-size: 12px; }
+.ev-hero { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid rgba(199, 158, 97, .45); border-radius: 10px; padding: 10px 12px;
+  background: radial-gradient(ellipse at 0 0, rgba(255, 170, 80, .2), transparent 60%), rgba(0, 0, 0, .4); }
+.ev-hero-weekly { background: radial-gradient(ellipse at 0 0, rgba(170, 70, 50, .3), transparent 60%), rgba(0, 0, 0, .4); }
+.ev-hero-pass { background: radial-gradient(ellipse at 0 0, rgba(150, 90, 220, .3), transparent 60%), rgba(0, 0, 0, .4); }
+.ev-hero > div:first-child { display: grid; min-width: 0; gap: 2px; }
+.ev-hero strong { color: #fff0c8; font: 700 18px/1.15 'Cinzel', Georgia, serif; }
+.ev-hero small { display: flex; align-items: center; gap: 4px; color: #c9bfa9; font-size: 11px; }
+.ev-kicker { color: #d9b46a; font-size: 10px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.ev-timer { display: grid; flex-shrink: 0; text-align: right; color: #9b9283; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+.ev-timer b { color: #f2cc80; font-size: 13px; letter-spacing: 0; }
+.ev-chips { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; color: #efe4ce; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.ev-chips > span { display: inline-flex; align-items: center; gap: 2px; }
+.ev-chips.is-compact { font-size: 10px; gap: 1px 4px; }
+.ev-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; margin: 0; padding: 0; list-style: none; }
+.ev-grid li { position: relative; display: grid; min-height: 52px; align-content: start; justify-items: center; gap: 2px; border: 1px solid rgba(199, 158, 97, .25); border-radius: 6px; background: rgba(0, 0, 0, .4); padding: 3px 1px; text-align: center; }
+.ev-grid li .ev-chips { flex-direction: column; }
+.ev-grid li.is-big { border-color: rgba(242, 204, 128, .55); background: linear-gradient(180deg, rgba(90, 60, 24, .45), rgba(0, 0, 0, .45)); }
+.ev-grid li.is-done { opacity: .45; }
+.ev-grid li.is-done::after { content: '✓'; position: absolute; right: 3px; top: 1px; color: #7fd68f; font-size: 10px; font-weight: 900; }
+.ev-grid li.is-today { border-color: #fff0a2; box-shadow: 0 0 0 1px #fff0a2, 0 0 12px rgba(255, 220, 120, .45); animation: ev-glow 2.4s ease-in-out infinite; }
+.ev-day { display: inline-flex; align-items: center; gap: 1px; color: #d9b46a; font-size: 10px; font-weight: 900; }
+.ev-day svg { color: #6d6252; }
+.ev-day svg.is-on { color: #f2cc80; }
+.ev-claim { min-height: 46px; width: 100%; font-weight: 900; }
+.ev-claim:disabled, .ev-small:disabled { opacity: .5; }
+.ev-quests { display: grid; gap: 6px; }
+.ev-quest { display: grid; gap: 6px; border: 1px solid rgba(199, 158, 97, .25); border-radius: 8px; background: rgba(0, 0, 0, .4); padding: 8px 10px; }
+.ev-quest.is-ready { border-color: #f2cc80; box-shadow: 0 0 10px rgba(242, 204, 128, .25); }
+.ev-quest.is-claimed { opacity: .5; }
+.ev-quest-top, .ev-quest-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ev-quest-top strong { color: #efe4ce; font-size: 12px; }
+.ev-quest-foot small { color: #9b9283; font-size: 11px; font-variant-numeric: tabular-nums; }
+.ev-small { min-height: 36px; min-width: 96px; padding: 0 10px; font-size: 11px; font-weight: 800; }
+.ev-bar { height: 7px; overflow: hidden; border-radius: 4px; background: rgba(255, 255, 255, .08); }
+.ev-bar i { display: block; height: 100%; background: linear-gradient(90deg, #b9823c, #f2cc80); }
+.ev-bar-pass i { background: linear-gradient(90deg, #7b4fc8, #d6a8ff); }
+.ev-buys { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
+.ev-buy { display: grid; align-content: start; gap: 3px; border: 1px solid rgba(214, 168, 255, .45); border-radius: 10px; background: linear-gradient(180deg, rgba(70, 40, 110, .45), rgba(0, 0, 0, .5)); padding: 9px; }
+.ev-buy-collector { border-color: rgba(242, 204, 128, .7); background: linear-gradient(180deg, rgba(110, 72, 24, .5), rgba(0, 0, 0, .5)); }
+.ev-buy strong { color: #fff0c8; font: 700 14px/1.2 'Cinzel', Georgia, serif; }
+.ev-buy small { color: #c9bfa9; font-size: 10.5px; line-height: 1.35; }
+.ev-price { margin: 2px 0 0; color: #f2cc80; font-size: 13px; font-weight: 900; }
+.ev-track-head, .ev-track li { display: grid; grid-template-columns: 34px 1fr 1fr; gap: 4px; align-items: center; }
+.ev-track-head { color: #9b9283; font-size: 10px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.ev-track-head span:last-child { display: inline-flex; align-items: center; gap: 3px; color: #d6a8ff; }
+.ev-track { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; }
+.ev-track li > b { display: grid; height: 30px; place-items: center; border-radius: 50%; background: rgba(0, 0, 0, .45); color: #7d7364; font-size: 12px; }
+.ev-track li.is-reached > b { background: radial-gradient(circle, #6a4a1e, #2a1c0c); color: #f2cc80; box-shadow: 0 0 0 1px #c79e61; }
+.ev-cell { display: flex; min-height: 34px; align-items: center; justify-content: space-between; gap: 4px; border: 1px solid rgba(199, 158, 97, .18); border-radius: 6px; background: rgba(0, 0, 0, .35); padding: 3px 6px; }
+.ev-cell.is-ready { border-color: #f2cc80; background: rgba(90, 60, 24, .4); }
+.ev-cell.is-claimed { opacity: .4; }
+.ev-cell.is-locked { color: #7d7364; }
+.ev-cell.is-locked .ev-chips { opacity: .6; }
+/* Burger entry cards */
+.ev-menu { display: grid; gap: 4px; margin-bottom: 8px; border-bottom: 1px solid rgba(128, 104, 63, .5); padding-bottom: 8px; }
+.ev-menu-kicker { color: #efd18a; font-size: 11px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+.ev-menu-card { position: relative; display: flex; min-height: 46px; align-items: center; gap: 8px; border: 1px solid rgba(199, 158, 97, .4); border-radius: 8px; background: linear-gradient(90deg, rgba(70, 48, 20, .55), rgba(0, 0, 0, .4)); padding: 4px 8px; text-align: left; }
+.ev-art-weekly { background: linear-gradient(90deg, rgba(90, 30, 22, .6), rgba(0, 0, 0, .4)); }
+.ev-art-pass { background: linear-gradient(90deg, rgba(60, 34, 100, .6), rgba(0, 0, 0, .4)); }
+.ev-menu-card i { display: grid; width: 30px; height: 30px; flex-shrink: 0; place-items: center; border-radius: 50%; background: rgba(0, 0, 0, .5); color: #f2cc80; box-shadow: 0 0 0 1px rgba(199, 158, 97, .55); }
+.ev-menu-card span { display: grid; min-width: 0; }
+.ev-menu-card strong { color: #efe4ce; font-size: 12px; }
+.ev-menu-card small { overflow: hidden; color: #b9ab92; font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+.ev-dot, .hl-battle-menu-dot { position: absolute; right: 6px; top: 6px; width: 9px; height: 9px; border-radius: 50%; background: #ff5a3c; box-shadow: 0 0 0 2px #11130f, 0 0 8px rgba(255, 90, 60, .8); }
+.hl-battle-menu-dot { right: -2px; top: -2px; }
+@keyframes ev-glow { 50% { box-shadow: 0 0 0 1px #fff0a2, 0 0 18px rgba(255, 220, 120, .7); } }
+@media (prefers-reduced-motion: reduce) { .ev-grid li.is-today { animation: none; } }

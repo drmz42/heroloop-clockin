@@ -276,3 +276,11 @@
 
 /* The teaser shows the treasure behind its copy, so only the light shafts and fires live there. */
 .mo-teaser.mo-art-pass > :is(.mo-life-s1, .mo-life-s2, .mo-life-s3, .mo-life-s4, .mo-life-s5, .mo-life-s6) { display: none; }
+/* Battle settings in More (Seeker Events, 2026-10-09). */
+.mo-settings { margin: 10px 0 2px; border: 1px solid rgba(199, 158, 97, .35); border-radius: 10px; background: rgba(0, 0, 0, .35); }
+.mo-settings summary { display: flex; min-height: 44px; align-items: center; gap: 8px; padding: 0 12px; color: #ebdfca; font-size: 13px; font-weight: 800; cursor: pointer; list-style: none; }
+.mo-settings summary::-webkit-details-marker { display: none; }
+.mo-settings summary .mo-chev { margin-left: auto; transition: transform .2s; }
+.mo-settings[open] summary .mo-chev { transform: rotate(90deg); }
+.mo-settings summary:focus-visible { outline: 2px solid #fff0a2; outline-offset: 2px; }
+.mo-settings-body { padding: 0 12px 12px; }

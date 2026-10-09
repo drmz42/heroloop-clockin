@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Backpack, BookOpen, Castle, ChevronLeft, ChevronRight, Crosshair, Crown, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, PawPrint, Pickaxe, ScrollText, Send, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, Twitter, UserPlus, X, Volume2, VolumeX, Music } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Backpack, BookOpen, Castle, ChevronLeft, ChevronRight, Crosshair, Crown, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, PawPrint, Pickaxe, ScrollText, Send, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, Twitter, UserPlus, X, Volume2, VolumeX, Music, Settings2 } from 'lucide-react';
 import { setMusicEnabled, setSfxEnabled, useAudioSettings } from '@/audio/gameAudio';
 import type { Tab } from './TopMenu';
 import { OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
@@ -41,7 +41,7 @@ function MoLife({ id }: { id: string }) {
 
 export function MobileTabBar({
   tab, section, moreOpen, onTab, onSection, onMoreOpen, onGuides, onCode, onSupport, onLogout, readyQuests = 0, badges = {}, alerts = {},
-  claimQuest, motionOff = false, onSheetOpenChange,
+  claimQuest, motionOff = false, onSheetOpenChange, onPass, settings,
 }: {
   tab: Tab;
   section: MobileSection;
@@ -60,6 +60,10 @@ export function MobileTabBar({
   claimQuest?: (id: string) => Promise<boolean>;
   motionOff?: boolean;
   onSheetOpenChange?: (open: boolean) => void;
+  /** Seeker: the Season Pass banner opens the live Premium Pass in Events. */
+  onPass?: () => void;
+  /** Seeker: automatic healing and battle graphics (moved out of the battle burger). */
+  settings?: ReactNode;
 }) {
   const [soon, setSoon] = useState<'mine' | 'pvp' | null>(null);
   const audioSettings = useAudioSettings();
@@ -147,10 +151,10 @@ export function MobileTabBar({
               </div>
             ) : (
               <div className="mo-body">
-                <button type="button" className="mo-banner mo-banner-hero mo-art-pass" onClick={() => setTeaser('pass')}>
+                <button type="button" className="mo-banner mo-banner-hero mo-art-pass" onClick={() => { if (onPass) { onMoreOpen(false); onPass(); } else setTeaser('pass'); }}>
                   <MoLife id="pass" />
-                  <span className="mo-banner-text"><span className="mo-kicker">{UPCOMING.pass.kicker}</span><strong>Season Pass</strong><span>{UPCOMING.pass.line}</span></span>
-                  <em className="mo-soon">Season 2</em><ChevronRight className="mo-chev" size={18} aria-hidden="true" />
+                  <span className="mo-banner-text"><span className="mo-kicker">{onPass ? 'Season 1 · 40 ranks' : UPCOMING.pass.kicker}</span><strong>{onPass ? 'Premium Pass' : 'Season Pass'}</strong><span>{onPass ? 'Free and Premium reward tracks. Open Events.' : UPCOMING.pass.line}</span></span>
+                  <em className="mo-soon">{onPass ? 'Live' : 'Season 2'}</em><ChevronRight className="mo-chev" size={18} aria-hidden="true" />
                 </button>
                 <div className="mo-pair">
                   {(['guilds', 'pets'] as const).map((id) => {
@@ -170,6 +174,10 @@ export function MobileTabBar({
                   <span className="mo-banner-text"><strong>Refer friends</strong><span>Invite allies and share the spoils.</span></span>
                   <ChevronRight className="mo-chev" size={18} aria-hidden="true" />
                 </button>
+                {settings && <details className="mo-settings">
+                  <summary><Settings2 size={16} aria-hidden="true" /> Battle settings<ChevronRight className="mo-chev" size={16} aria-hidden="true" /></summary>
+                  <div className="mo-settings-body">{settings}</div>
+                </details>}
                 <div className="mo-links">
                   <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onGuides(); }}><i aria-hidden="true"><BookOpen size={17} /></i>Guides</button>
                   <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onCode(); }}><i aria-hidden="true"><KeyRound size={17} /></i>Code</button>

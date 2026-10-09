@@ -196,6 +196,8 @@ const commandActions = new Set([
   "mine_stop",
   "mine_board",
   "premium_potion_status",
+  "seeker_event_status",
+  "seeker_event_claim",
   "premium_potion_upgrade",
   "premium_potion_use",
   "promo_redeem",
@@ -984,6 +986,8 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         edition === "seeker" && requestedAction === "hero_summon" && payload.payment_method === "scroll"
           ? "seeker_scroll_summon"
           : requestedAction.startsWith("premium_potion_") ? (requestedAction === "premium_potion_status" ? "status" : "item_upgrade")
+          : requestedAction === "seeker_event_status" ? "status"
+          : requestedAction === "seeker_event_claim" ? "quest_claim"
           : requestedAction === "skr_boost_status" ? "status"
           : ["skr_quest_status", "skr_purchase_quote", "skr_purchase_commit"].includes(requestedAction) ? "status"
           : Object.hasOwn(walletActions, requestedAction) ? "status"
@@ -1022,6 +1026,29 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         return json(200, {ok:true, contract_version:1, request_id:requestId, result});
       } catch { return errorResponse(503, 'quest_status_unavailable', requestId); }
     }
+    if (parsed.value.action === "seeker_event_status" || parsed.value.action === "seeker_event_claim") {
+      if (edition !== "seeker") return errorResponse(409, "unavailable_in_standard_edition", requestId);
+      const claiming = parsed.value.action === "seeker_event_claim";
+      const payloadError = validatePayloadFields(payload, claiming ? ["kind", "id"] : []);
+      const key = idempotencyKey(parsed.value);
+      if (payloadError || (claiming && (!key || !["calendar", "weekly", "pass"].includes(String(payload.kind))
+        || typeof payload.id !== "string" || !/^[a-z0-9-]{0,40}$/.test(payload.id)))) {
+        return errorResponse(400, payloadError ?? "invalid_event_claim", requestId);
+      }
+      try {
+        if (walletServiceUrl && (!claiming || payload.kind === "weekly")) await syncMineRounds(identity.playerId).catch(() => undefined);
+        const result = claiming
+          ? await databaseJson("SELECT heroloop_api.seeker_event_claim($1::uuid,$2::uuid,$3::text,$4::text) AS result",
+            [identity.playerId, key, payload.kind, payload.id])
+          : await databaseJson("SELECT heroloop_api.seeker_event_status($1::uuid) AS result", [identity.playerId]);
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["invalid_event_claim", "idempotency_conflict", "event_already_claimed",
+          "event_quest_unknown", "event_quest_incomplete", "event_nothing_to_claim", "chest_capacity_exceeded",
+          "save_not_found", "account_restricted", "resource_balance_cap"]);
+        return errorResponse(code === "invalid_event_claim" ? 400 : code ? 409 : 503, code ?? "seeker_event_unavailable", requestId);
+      }
+    }
     if (['skr_purchase_quote','skr_purchase_commit'].includes(String(parsed.value.action))) {
       if (edition!=='seeker' || !walletServiceUrl || walletServiceToken.length<32) return errorResponse(409,'unavailable_in_standard_edition',requestId);
       const quoting=parsed.value.action==='skr_purchase_quote';
@@ -1047,7 +1074,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
           'skr_insufficient_balance_or_overflow','skr_quote_not_found','skr_quote_expired','skr_purchase_refunded',
           'stale_skr_rate','account_restricted','market_listing_unavailable','market_self_purchase','item_not_found',
           'invalid_market_price','store_offer_expired','store_offer_sold','invalid_store_slot',
-          'skr_product_changed','target_not_found','maximum_stars','insufficient_duplicates','unsupported_rarity','hero_capacity_quote_stale','hero_capacity_exceeded','invalid_summon','maximum_enchant','insufficient_gold','invalid_item_upgrade','bag_step_unavailable','invalid_shop_bundle_purchase','invalid_reward_boost_purchase','training_boost_queue_full','item_in_market_escrow']);
+          'skr_product_changed','target_not_found','maximum_stars','insufficient_duplicates','unsupported_rarity','hero_capacity_quote_stale','hero_capacity_exceeded','invalid_summon','maximum_enchant','insufficient_gold','invalid_item_upgrade','bag_step_unavailable','invalid_shop_bundle_purchase','invalid_reward_boost_purchase','training_boost_queue_full','item_in_market_escrow','event_pass_owned','chest_capacity_exceeded']);
         if(code) return errorResponse(409,code,requestId);
         return errorResponse(503,'skr_purchase_pending',requestId);
       }

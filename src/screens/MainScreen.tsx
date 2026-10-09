@@ -1,5 +1,8 @@
 import { PremiumPotionWorkshop, PremiumPotionBattleControls, type PremiumPotionChoice, type PremiumPotionEvent } from '@/components/PremiumPotions';
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
+import { BattleSettings } from '@/components/BattleSettings';
+import { EventMenuCards } from '@/components/SeekerEvents';
+import { readyEventCount, type EventTab, type SeekerEventsApi } from '@/game/useSeekerEvents';
 import { SkrUsd } from '@/components/SkrUsd';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
 import { editionStorageKey, isolatedHackathon } from '../game/editionStorage';
@@ -305,7 +308,7 @@ function emptySlotArtworkId(slot: ItemSlot, heroClass: HeroClass): string {
   return `${slot}-common`;
 }
 
-export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRewardBoostClick, onQuestsClick }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void; onRewardBoostClick: () => void; onQuestsClick?: () => void }) {
+export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRewardBoostClick, onQuestsClick, events, onEventsOpen }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void; onRewardBoostClick: () => void; onQuestsClick?: () => void; events?: SeekerEventsApi; onEventsOpen?: (tab: EventTab) => void }) {
   const { state, battleResult, respawnCountdowns, paused, setPaused } = game;
   const tok = tokenomics;
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
@@ -314,6 +317,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const [showPotSettings, setShowPotSettings] = useState(false);
   const [showBattleSettings, setShowBattleSettings] = useState(false);
   const [battleMenuOpen, setBattleMenuOpen] = useState(false);
+  const eventsReady = readyEventCount(events?.status ?? null);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [autoGearNotice, setAutoGearNotice] = useState<string | null>(null);
   const autoGearNoticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -564,22 +568,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
 
   // Android: Dungeons, Boss and the battle settings live in the burger menu at the stage's top right
   // (Founder 2026-10-03); the web keeps the settings button in the battle HUD.
-  const battleSettingsContent = (
-    <>
-      {isolatedHackathon && <section className="mb-2 border-b border-[#80683f]/50 pb-2" aria-label="Healing settings">
-        <h3 className="ui-text-medium font-bold text-emerald-300">Automatic healing</h3>
-        <p className="my-1 ui-text-small leading-relaxed text-[#c4bba7]">Stored potions are used first below 35% HP. Gold buys instant healing only when stock runs out.</p>
-        <label className="flex items-center gap-2 py-1 ui-text-medium text-[#e8decd]"><input type="checkbox" checked={goldHealingEnabled(state.autoPot)} onChange={event => game.setAutoPot({ enabled: true, goldHealingOptOut: !event.target.checked, healingInfoSeen: true })} className="h-4 w-4 accent-emerald-400" /> Spend Gold on healing</label>
-        <p className="ui-text-small leading-relaxed text-[#9e9687]">XS / S / M / L / XL / XXL: 1 / 1 / 1 / 2 / 4 / 10 Gold. Not enough Gold means no purchase. Normal battles only; changes apply next wave.</p>
-      </section>}
-      <div className="mb-1.5 ui-text-small font-black uppercase tracking-[.14em] text-[#efd18a]">Battle graphics</div>
-      {([
-        ['spectacular', 'Maximum', 'Full battle movement and effects'],
-        ['light', 'Medium', 'Standard battle movement and effects'],
-        ['off', 'Minimum', 'Static portraits; essential feedback only'],
-      ] as const).map(([mode, label, description]) => <button key={mode} type="button" onClick={() => { game.setBattleAnimationMode(mode); setShowBattleSettings(false); setBattleMenuOpen(false); }} className={`mt-1 w-full rounded-md border px-2 py-1.5 text-left ${state.battleAnimationMode === mode ? 'border-amber-400/60 bg-amber-400/12' : 'border-white/10 bg-black/25 hover:border-white/20'}`} aria-pressed={state.battleAnimationMode === mode}><span className="block ui-text-small font-black text-[#e8decd]">{label}</span><span className="block ui-text-small text-[#8f887b]">{description}</span></button>)}
-    </>
-  );
+  const battleSettingsContent = <BattleSettings game={game} onPicked={() => { setShowBattleSettings(false); setBattleMenuOpen(false); }} />;
   const battleSettingsControl = (
     <div className="hl-battle-settings relative">
       <button type="button" onClick={() => setShowBattleSettings((value) => !value)} className="game-control flex h-7 items-center gap-1.5 px-2 ui-text-small font-black uppercase" aria-label={isolatedHackathon ? 'Battle settings' : 'Battle graphics quality settings'} aria-expanded={showBattleSettings}><Settings2 size={14} /><span className="hidden sm:inline">{battleAnimationLabel}</span></button>
@@ -984,13 +973,13 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           {isolatedHackathon && !activeDungeon && <AutomaticHealingStatus game={game} />}
           {isolatedHackathon && !activeDungeon && <NextStepCard game={game} nextLocation={nextLocationAvailable ? nextLocation : null} onQuestsClick={onQuestsClick} onStoreClick={onRewardBoostClick} />}
           {isAndroidLayout && <div ref={battleMenuRef} className="hl-battle-menu pointer-events-none absolute bottom-2 right-2 top-2 z-[112] flex flex-col items-end gap-1">
-            <button type="button" onClick={() => setBattleMenuOpen((open) => !open)} data-guide="boss" className="hl-battle-menu-toggle game-control pointer-events-auto grid h-11 w-11 shrink-0 place-items-center p-0" aria-label="Battle menu" aria-haspopup="dialog" aria-expanded={battleMenuOpen}>{battleMenuOpen ? <X size={20} /> : <Menu size={20} />}</button>
+            <button type="button" onClick={() => setBattleMenuOpen((open) => !open)} data-guide="boss" className="hl-battle-menu-toggle game-control pointer-events-auto relative grid h-11 w-11 shrink-0 place-items-center p-0" aria-label={eventsReady ? 'Battle menu, event rewards ready' : 'Battle menu'} aria-haspopup="dialog" aria-expanded={battleMenuOpen}>{battleMenuOpen ? <X size={20} /> : <Menu size={20} />}{eventsReady > 0 && !battleMenuOpen && <b className="hl-battle-menu-dot" aria-hidden="true" />}</button>
             {battleMenuOpen && <div role="dialog" aria-label="Battle menu" className="hl-battle-menu-panel pointer-events-auto min-h-0 w-64 max-w-[calc(100vw-24px)] overflow-y-auto overscroll-contain rounded-lg border border-[#80683f] bg-[#11130f]/97 p-2 shadow-2xl">
               {!activeDungeon && <div className="mb-2 grid grid-cols-2 gap-1.5 border-b border-[#80683f]/50 pb-2">
                 <button type="button" onClick={() => { setBattleMenuOpen(false); setShowDungeonInfo(true); }} className="pm-socket game-control flex min-h-11 items-center justify-center gap-1.5 px-2 ui-text-small font-bold text-[#d7c6ea]"><DoorOpen size={15} aria-hidden="true" /> DUNGEONS</button>
                 <button type="button" onClick={() => void handleSummonBoss()} data-guide="boss" disabled={summonBusy || state.bossKeys < 1 || state.bossBattleActive} className="pm-socket game-control flex min-h-11 items-center justify-center gap-1 px-2 ui-text-small font-bold disabled:opacity-50"><BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}</button>
               </div>}
-              {battleSettingsContent}
+              {events && onEventsOpen ? <EventMenuCards events={events} onOpen={(tab) => { setBattleMenuOpen(false); onEventsOpen(tab); }} /> : battleSettingsContent}
             </div>}
           </div>}
           {!activeDungeon && banner && (
