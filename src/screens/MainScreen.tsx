@@ -819,7 +819,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           const base = hero ? HERO_MAP[hero.heroId] : null;
           return hero && base ? <button key={slot} type="button" className={`commander-squad-slot ${selectedHeroUid === hero.uid ? 'is-selected' : ''}`} aria-pressed={selectedHeroUid === hero.uid} aria-label={`Select ${base.name}, level ${hero.level}`} onClick={() => { setSelectedHeroUid(hero.uid); setShowHeroDetails(false); }}>
             <HeroPortrait heroId={base.id} heroClass={base.heroClass} rarity={base.rarity} color={base.color} size={112} active={selectedHeroUid === hero.uid} />
-            <span className="commander-squad-name" style={{ color: selectedHeroUid === hero.uid ? RARITY_COLORS[base.rarity] : undefined }}>{base.name}</span>
+            <span className="commander-squad-name" style={{ color: RARITY_COLORS[base.rarity] }}>{base.name}</span>
             <span className="commander-xp">Level {hero.level}</span>
           </button> : <div key={slot} className="commander-squad-slot"><div className="commander-squad-empty">Empty slot</div></div>;
         })}

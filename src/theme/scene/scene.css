@@ -683,7 +683,7 @@ button.sc-chip { cursor: pointer; }
 .hv-detail-hero::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 80% 40%, color-mix(in srgb, var(--hv-color) 28%, transparent), transparent 60%), linear-gradient(90deg, rgba(8, 6, 5, .96) 30%, rgba(8, 6, 5, .35) 70%, rgba(8, 6, 5, .1)), linear-gradient(0deg, rgba(8, 6, 5, .9), transparent 40%); }
 .hv-detail-copy { display: grid; max-width: 62%; gap: 5px; justify-items: start; }
 .hv-detail-rarity { color: var(--hv-color); font: 700 9px/1.2 var(--sc-display); letter-spacing: .26em; text-transform: uppercase; text-shadow: 0 0 10px color-mix(in srgb, var(--hv-color) 60%, transparent); }
-.hv-detail-hero .hv-detail-name { margin: 0; color: #fff6e2; font: 700 22px/1.1 var(--sc-display); letter-spacing: .04em; text-shadow: 0 0 16px color-mix(in srgb, var(--hv-color) 55%, transparent), 0 2px 3px #000; }
+.hv-detail-hero .hv-detail-name { margin: 0; color: var(--hv-color); font: 700 22px/1.1 var(--sc-display); letter-spacing: .04em; text-shadow: 0 0 16px color-mix(in srgb, var(--hv-color) 55%, transparent), 0 2px 3px #000; }
 .hv-detail-power { display: flex; align-items: baseline; gap: 6px; border: 0 solid transparent; border-width: 7px 11px; border-image: url('../premium/assets/btn-bronze-9.webp') 85 150 fill / 7px 11px / 0 2px stretch; padding: 0 6px; }
 .hv-detail-power b { color: #f2cc80; font: 700 18px/1 var(--sc-display); }
 .hv-detail-power span { color: #a39987; font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
