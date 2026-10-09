@@ -300,6 +300,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
   const sharedBoss = sharedBossUnit?.alive ? sharedBossUnit : undefined;
   const laneEnemies = sharedBossUnit ? enemies.filter((unit) => unit.uid !== sharedBossUnit.uid) : enemies.filter((unit) => !unit.uid.endsWith('-dungeon-protected'));
   const bossArt = dungeonBossScene ? enemyArtSrc(`e0-${DUNGEON_BOSS_ART[dungeonBossScene.bossId] ?? 'boss-lich'}`) : null;
+  const bossFigure = dungeonBossScene ? enemyFigureSrc(`e0-${DUNGEON_BOSS_ART[dungeonBossScene.bossId] ?? 'boss-lich'}`) : null;
   // Full-body figures stand in a staggered column (each lane steps toward the centre) while a lane holds at most
   // three fighters per side; the shared Boss phase keeps its compact hero strip.
   const sharedPhase = dungeonBossScene?.phase === 'shared';
@@ -361,7 +362,9 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
       {dungeonRoom && !dungeonBossScene && <div className="dungeon-room-title"><DoorOpen size={14} /><span>DEPTH {dungeonRoom.depth} · ROOM {dungeonRoom.room}/4</span><strong>{dungeonRoom.label}</strong></div>}
       {dungeonBossScene?.phase === 'retinue' && <div className="dungeon-throne-boss" aria-label={`${dungeonBossScene.bossName}, protected behind the Retinue`}>
         <div className="dungeon-throne-haze" />
-        <span className="dungeon-throne-portrait">{bossArt ? <img src={bossArt} alt="" /> : <Skull aria-hidden="true" />}<span className="boss-frame" aria-hidden="true" /></span>
+        {/* Founder 2026-10-09: the protected Boss is no framed portrait; it stands full height in darkness and smoke, watching. */}
+        {bossFigure ? <span className="dungeon-throne-figure" aria-hidden="true"><img src={bossFigure} alt="" /><i className="dungeon-throne-smoke" /><i className="dungeon-throne-smoke is-front" /></span>
+          : <span className="dungeon-throne-portrait">{bossArt ? <img src={bossArt} alt="" /> : <Skull aria-hidden="true" />}<span className="boss-frame" aria-hidden="true" /></span>}
         <div className="dungeon-throne-state"><Shield size={12} /> PROTECTED BY RETINUE</div>
         <strong>{dungeonBossScene.bossName}</strong>
       </div>}

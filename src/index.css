@@ -747,6 +747,16 @@ html { scroll-behavior: smooth; }
 .dungeon-throne-haze { position:absolute;z-index:1;inset:15% -25% -8%;background:radial-gradient(ellipse,rgba(92,54,128,.3),transparent 68%);filter:blur(8px); }
 .dungeon-throne-state { position:relative;z-index:3;display:flex;align-items:center;gap:5px;margin-top:-10px;padding:4px 8px;border:1px solid #876f45;border-radius:5px;background:#100d0de8;font-size:var(--ui-text-small);font-weight:900;letter-spacing:.08em; }
 .dungeon-throne-boss strong { position:relative;z-index:3;margin-top:3px;font-family:var(--font-vt);font-size:var(--ui-text-medium);text-shadow:0 2px 4px #000; }
+.dungeon-throne-figure { position:relative;z-index:2;display:block;width:var(--throne-figure-w,clamp(120px,18vw,190px));aspect-ratio:4/5;line-height:0; }
+.dungeon-throne-boss .dungeon-throne-figure img { width:100%;height:100%;border:0;border-radius:0;box-shadow:none;object-fit:contain;object-position:50% 100%;filter:brightness(.55) saturate(.45) contrast(1.15) drop-shadow(0 0 16px rgba(0,0,0,.9));-webkit-mask-image:linear-gradient(180deg,#000 50%,transparent 97%);mask-image:linear-gradient(180deg,#000 50%,transparent 97%);animation:throne-watch 6s ease-in-out infinite; }
+.dungeon-throne-boss:has(> .dungeon-throne-figure) .dungeon-throne-haze { inset:-8% -30% 6%;background:radial-gradient(ellipse 50% 52% at 50% 46%,rgba(0,0,0,.86),rgba(0,0,0,.5) 58%,transparent 80%);filter:blur(10px); }
+.dungeon-throne-smoke { position:absolute;z-index:1;left:-45%;right:-45%;bottom:-8%;height:64%;pointer-events:none;background:radial-gradient(ellipse 34% 46% at 24% 68%,rgba(150,142,162,.34),transparent 70%),radial-gradient(ellipse 40% 42% at 74% 60%,rgba(124,114,140,.3),transparent 72%),radial-gradient(ellipse 62% 34% at 50% 92%,rgba(92,86,104,.5),transparent 76%);filter:blur(9px);animation:throne-smoke 9s ease-in-out infinite alternate; }
+.dungeon-throne-smoke.is-front { z-index:3;height:36%;bottom:-12%;opacity:.9;animation-duration:12s;animation-direction:alternate-reverse; }
+.dungeon-throne-figure + .dungeon-throne-state { margin-top:-6px; }
+@keyframes throne-smoke { from { transform:translateX(-7%) scaleY(.94); } to { transform:translateX(7%) scaleY(1.08); } }
+@keyframes throne-watch { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-1.5%); } }
+:is(.arena-mode-off, .game-motion-off) :is(.dungeon-throne-figure img, .dungeon-throne-smoke) { animation:none!important; }
+@media (prefers-reduced-motion:reduce) { :is(.dungeon-throne-figure img, .dungeon-throne-smoke) { animation:none!important; } }
 .dungeon-boss-phase-shared { justify-content:flex-end; }
 .dungeon-boss-phase-shared .arena-lanes { grid-template-columns:1fr;z-index:30;padding-right:min(43%,260px); }
 .dungeon-boss-phase-shared .arena-lanes>.arena-roster:first-child { flex-direction:column;align-items:flex-end;justify-content:center;gap:5px; }

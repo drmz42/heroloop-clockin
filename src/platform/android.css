@@ -958,10 +958,12 @@ html[data-hl-platform='android'] .dungeon-boss-phase-shared .arena-lanes .arena-
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-route { display: none; }
 html[data-hl-platform='android'][data-hl-encounter] .arena-stage-inner.dungeon-panel-open:not(.dungeon-boss-phase-shared) { justify-content: flex-end; padding: 64px 10px calc(84px + 9dvh); }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-retinue .dungeon-throne-boss { top: 64px; right: auto; left: 50%; width: 180px; transform: translateX(-50%); }
-html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-retinue .dungeon-throne-boss img { width: clamp(120px, 38vw, 160px); height: clamp(120px, 38vw, 160px); }
+html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-retinue .dungeon-throne-portrait img { width: clamp(120px, 38vw, 160px); height: clamp(120px, 38vw, 160px); }
+html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-retinue .dungeon-throne-boss { --throne-figure-w: clamp(150px, 46vw, 190px); }
 /* Phase banners stay on one line; the Retinue one covers the protected Boss's label instead of the raised party. */
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-phase-banner { max-width: calc(100vw - 16px); white-space: nowrap; font-size: 13px; letter-spacing: .06em; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-retinue .dungeon-phase-banner { top: calc(64px + clamp(120px, 38vw, 160px) + 30px); }
+html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-retinue:has(.dungeon-throne-figure) .dungeon-phase-banner { top: calc(64px + clamp(150px, 46vw, 190px) * 1.25 + 20px); }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-retinue:has(> .dungeon-phase-banner) .dungeon-throne-boss > :is(.dungeon-throne-state, strong) { visibility: hidden; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .arena-lanes .dungeon-target-label { top: -32px; }
 
