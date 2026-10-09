@@ -82,7 +82,7 @@ export function EventMenuCards({ events, onOpen, children }: { events: SeekerEve
     <div style={{ '--ev-i': TABS.length } as CSSProperties} className="ev-menu-card ev-art-worldboss is-soon" aria-disabled="true">
       <i className="ev-seal" aria-hidden="true"><Skull size={17} /></i>
       <span className="ev-menu-text"><strong>World Boss</strong><small>Rally every hero against one titan</small></span>
-      <b className="ev-soon-pill">Soon</b>
+      <b className="ev-ready-pill ev-soon-pill">Soon</b>
     </div>
     {children && <><div className="ev-menu-sub" aria-hidden="true"><span>Battle</span></div>{children}</>}
   </div>;

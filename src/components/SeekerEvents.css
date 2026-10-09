@@ -278,8 +278,7 @@
 .ev-menu-card.ev-art-worldboss { --ev-art: url('/assets/screens/dungeon-room-4-abyss-throne-v2.webp'); --ev-pos: 50% 35%; }
 .ev-menu-card.is-soon { cursor: default; filter: saturate(.75); }
 .ev-menu-card.is-soon:active { transform: none; filter: saturate(.75); }
-.ev-soon-pill { position: relative; flex: none; margin-right: 6px; border: 1px solid #9a7a45; border-radius: 4px; padding: 4px 7px; background: rgba(10, 7, 4, .78);
-  color: #f2cc80; font: 700 8.5px/1 'Cinzel', Georgia, serif; letter-spacing: .14em; text-shadow: 0 1px 2px #000; text-transform: uppercase; }
+.ev-soon-pill { filter: grayscale(.85) brightness(.8); }
 .ev-menu-card.is-ready { box-shadow: 0 6px 14px rgba(0, 0, 0, .6), 0 0 14px rgba(255, 140, 60, .35); }
 .ev-menu-card::after { content: ''; position: absolute; top: -10px; bottom: -10px; left: -40%; width: 26%; transform: skewX(-18deg); background: linear-gradient(90deg, transparent, rgba(255, 230, 170, .16), transparent); opacity: 0; pointer-events: none; }
 .ev-seal { position: relative; display: grid; width: 32px; height: 32px; flex: none; place-items: center; transform: rotate(45deg); border: 1px solid #c79e61;
@@ -291,7 +290,7 @@
 .ev-menu-text small { overflow: hidden; color: #dccfb5; font: italic 12.5px/1.15 'EB Garamond', Georgia, serif; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 2px #000; }
 .ev-menu-chev { position: relative; flex: none; color: #f2cc80; filter: drop-shadow(0 1px 2px #000); }
 .ev-ready-pill { position: relative; flex: none; border: 0 solid transparent; border-width: 6px 9px; border-image: url('../theme/premium/assets/btn-crimson-play-9.webp') 24 56 26 fill / 5px 11px 6px / 0 3px stretch;
-  color: #fff3d6; font: 700 8.5px/1 'Cinzel', Georgia, serif; letter-spacing: .12em; text-shadow: 0 1px 2px #000; text-transform: uppercase; }
+  width: 44px; color: #fff3d6; font: 700 8.5px/1 'Cinzel', Georgia, serif; letter-spacing: .12em; text-align: center; text-shadow: 0 1px 2px #000; text-transform: uppercase; }
 .ev-menu-sub { display: flex; align-items: center; gap: 8px; margin-top: 2px; color: #c9b089; font: 700 9px/1 'Cinzel', Georgia, serif; letter-spacing: .24em; text-transform: uppercase; }
 .ev-menu-sub::before, .ev-menu-sub::after { content: ''; height: 1px; flex: 1; background: linear-gradient(90deg, transparent, rgba(199, 158, 97, .55)); }
 .ev-menu-sub::after { transform: scaleX(-1); }
