@@ -1,10 +1,10 @@
 /**
  * Item-roll v5 runtime contract — GENERATED FILE. Do not edit by hand.
  * Regenerate: node scripts/generate-item-roll-runtime.mjs
- * Runtime stamp: item-roll-v5@sha256:3d2b8aad5127f2d1f22a34187a4524a9b465f8030d658e6262a970f809f1c469
+ * Runtime stamp: item-roll-v5@sha256:d220d07f68a951e3e505de0ed1b855830ee6b60a0ee1b9d0d23d5506ab617f13
  * Sources:
  *   config/balance/hero-power-model.v1.json sha256:4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc
- *   config/balance/balance-v4.v1.json sha256:81562e8826497182508dd4f60dbe7ec6ba4a4b56652f484373e3b0e4aa28faf2
+ *   config/balance/balance-v4.v1.json sha256:b23d7390b37ae9c1bcd39dae44316f3958a3e382cf70717735e88f6916ecd501
  *   config/economy/enchant-v4.v1.json sha256:4c18f4186df22256327f9377c373335cf63a83517fc38a3d20e393ff9abfc359
  *
  * Option-A base rolls (founder-approved normalized equipment), six approved
@@ -14,14 +14,14 @@
  * authoritative for every item roll.
  */
 export const ITEM_ROLL_V5_RUNTIME_STAMP =
-  'item-roll-v5@sha256:3d2b8aad5127f2d1f22a34187a4524a9b465f8030d658e6262a970f809f1c469' as const;
+  'item-roll-v5@sha256:d220d07f68a951e3e505de0ed1b855830ee6b60a0ee1b9d0d23d5506ab617f13' as const;
 
 export const ITEM_ROLL_V5_CONTRACT_JSON = `
 {
   "version": "item-roll-v5",
   "sources": {
     "heroPowerModel": "4ce9d1cacaa3b100e8fcf361ab7328b2bec96bba8807cc7cc6f98695b629efdc",
-    "balanceV4": "81562e8826497182508dd4f60dbe7ec6ba4a4b56652f484373e3b0e4aa28faf2",
+    "balanceV4": "b23d7390b37ae9c1bcd39dae44316f3958a3e382cf70717735e88f6916ecd501",
     "enchantV4": "4c18f4186df22256327f9377c373335cf63a83517fc38a3d20e393ff9abfc359"
   },
   "modelVersion": "hero-power-proposal-2026.08.12-v3",
@@ -316,8 +316,8 @@ export const ITEM_ROLL_V5_CONTRACT_JSON = `
       }
     ]
   },
-  "runtimeStamp": "item-roll-v5@sha256:3d2b8aad5127f2d1f22a34187a4524a9b465f8030d658e6262a970f809f1c469",
-  "contractSha": "3d2b8aad5127f2d1f22a34187a4524a9b465f8030d658e6262a970f809f1c469"
+  "runtimeStamp": "item-roll-v5@sha256:d220d07f68a951e3e505de0ed1b855830ee6b60a0ee1b9d0d23d5506ab617f13",
+  "contractSha": "d220d07f68a951e3e505de0ed1b855830ee6b60a0ee1b9d0d23d5506ab617f13"
 }
 ` as const;
 

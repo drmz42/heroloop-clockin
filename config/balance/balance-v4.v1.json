@@ -61,14 +61,14 @@
       "id": "economy-attribution",
       "owner": "economy",
       "path": "config/economy/source-sink-registry.v1.json",
-      "sha256": "a78c896d0327e2d0e4280812833fda12d141ef2522e7f74cc0ab283f2b2205d8",
+      "sha256": "b15228f926e146ce629397b82ddbef337576716b82ab5316c699b13a2620fcb9",
       "includes": ["gold", "hero", "xp", "items", "chests", "resources", "faucets", "sinks"]
     },
     {
       "id": "telemetry-acceptance",
       "owner": "telemetry",
       "path": "config/telemetry/economy-v1.json",
-      "sha256": "faeba26bce64f66583faf652685e921258d2b5e30e13ec60b25b919e55bf688f",
+      "sha256": "155f21136ec0edf5eecb4bd84c504d1b986098eb43c68a02e4ca0b3fd0403aab",
       "includes": ["server-stamped-version", "retention", "privacy", "minimum-cohorts"]
     }
   ],
