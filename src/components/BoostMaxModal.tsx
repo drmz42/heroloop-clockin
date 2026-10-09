@@ -71,7 +71,7 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
   };
 
   return createPortal(
-    <div className={`hl-portal fixed inset-0 z-[9999] flex items-center justify-center anim-fade ${isolatedHackathon ? 'bg-[#100f0c]' : 'bg-black/70 p-3 backdrop-blur-[2px]'}`} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <div className={`hl-portal fixed inset-0 z-[9999] flex items-center justify-center anim-fade ${isolatedHackathon ? 'bg-[#100f0c]' : 'bg-black/70 p-3 backdrop-blur-[2px]'}`} style={isolatedHackathon ? { padding: 0, bottom: 0 } : undefined} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div className={`relative flex w-full flex-col overflow-hidden ${isolatedHackathon ? 'h-full' : 'px-panel-raised max-h-[92vh] max-w-lg rounded-2xl'}`} role="dialog" aria-modal="true" aria-label="Rewards and Tokenomics">
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[#5d4a2f] px-4 py-3" style={isolatedHackathon ? { paddingTop: 'max(0.75rem, env(safe-area-inset-top))', paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' } : undefined}>
           <div>
