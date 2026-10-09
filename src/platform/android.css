@@ -919,7 +919,7 @@ html[data-hl-platform='android'] .dungeon-boss-phase-shared > .pointer-events-no
 html[data-hl-platform='android'][data-hl-encounter] { --game-progress-height: 0px; --hl-tabbar-h: env(safe-area-inset-bottom, 0px); }
 html[data-hl-platform='android'][data-hl-encounter] :is(.hl-topbar, .hl-tabbar, .hl-encounter-strip) { display: none !important; }
 html[data-hl-platform='android'][data-hl-encounter] .game-shell { padding-bottom: env(safe-area-inset-bottom, 0px); }
-html[data-hl-platform='android'][data-hl-encounter] .dungeon-battle-panel { left: 8px; right: 8px; bottom: 8px; gap: 6px; padding: 6px; background: linear-gradient(155deg, rgba(31, 22, 40, .82), rgba(12, 12, 16, .86)); }
+html[data-hl-platform='android'][data-hl-encounter] .dungeon-battle-panel { left: 8px; right: 8px; bottom: 8px; gap: 6px; padding: 6px; border: 0; background: none; box-shadow: none; backdrop-filter: none; }
 html[data-hl-platform='android'][data-hl-encounter] :is(.dungeon-panel-head, .dungeon-panel-boss-line) { display: none; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-panel-body { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-panel-body > * { flex: 1 1 100%; }
@@ -938,7 +938,7 @@ html[data-hl-platform='android'][data-hl-encounter] .arena-stage-inner.dungeon-b
    width for its size (1-3, 4 or 5 heroes) and the Boss is sized down to match. */
 html[data-hl-platform='android'][data-hl-encounter] .arena-stage-inner.dungeon-boss-phase-shared:has(.arena-lanes > .arena-roster:first-child > :nth-child(4)) { --hl-hero-size: clamp(70px, 21vw, 92px); }
 html[data-hl-platform='android'][data-hl-encounter] .arena-stage-inner.dungeon-boss-phase-shared:has(.arena-lanes > .arena-roster:first-child > :nth-child(5)) { --hl-hero-size: min(calc((100vw - 48px) / 5), 84px); }
-html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .dungeon-boss-hud { margin-right: 52px; padding: 6px 9px; }
+html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .dungeon-boss-hud { margin-inline: 0; padding: 6px 9px; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .dungeon-boss-hud > .health-track { height: 12px; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .dungeon-status-row { flex-wrap: wrap; justify-content: center; overflow: visible; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-boss-phase-shared .dungeon-status-row span { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }

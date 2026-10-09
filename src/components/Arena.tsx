@@ -93,7 +93,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   const latestFloaterId = floaters.reduce((latest, f) => Math.max(latest, f.id), 0);
   if (lastOutgoing.current - latestFloaterId > 1e9) lastOutgoing.current = 0;
   if (lastIncoming.current - latestFloaterId > 1e9) lastIncoming.current = 0;
-  const myFloaters = floaters.filter((f) => f.targetUid === unit.uid);
+  const myFloaters = floaters.filter((f) => f.targetUid === unit.uid && !f.attackOnly);
   const outgoingEvent = [...floaters].reverse().find((event) => event.sourceUid === unit.uid && event.id > lastOutgoing.current);
   const incomingEvent = [...myFloaters].reverse().find((event) => event.id > lastIncoming.current);
   const motionEnabled = animationMode !== 'off';
@@ -323,7 +323,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
     const stage = stageRef.current;
     if (!fresh.length || !stage || !stage.getClientRects().length || document.querySelector('.game-window-overlay')) return;
     if (fresh.some((f) => f.crit && !f.heal)) playSfx('crit');
-    else if (fresh.some((f) => !f.heal && !f.miss && !f.effect && f.value > 0)) playSfx('hit');
+    else if (fresh.some((f) => !f.attackOnly && !f.heal && !f.miss && !f.effect && f.value > 0)) playSfx('hit');
     if (fresh.some((f) => f.heal && f.value > 0)) playSfx('heal');
     if (fresh.some((f) => f.miss)) playSfx('miss');
   }, [floaters]);

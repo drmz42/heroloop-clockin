@@ -107,7 +107,7 @@ type DungeonCheckpoint = {
 };
 type DungeonUnitState = {
   uid?: string; unit_id?: string; position?: number; lane?: number; current_hp: number; max_hp: number; alive: boolean;
-  atk?: number; def?: number; speed?: number; attack_speed_bonus?: number; heavy_damage_taken?: number;
+  atk?: number; def?: number; speed?: number; attack_speed_bonus?: number; heavy_damage_taken?: number; attacks?: number;
 };
 
 // The Arena unit uid for a server enemy; combat playback pulses must target and attribute the same uids.
@@ -232,6 +232,7 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
 
   const timeline: DungeonPlaybackFrame[] = [];
   const spent = new Map<PlaybackFighter, number>();
+  let bossAttacksShown = 0;
   for (let frame = 1; frame <= frames; frame += 1) {
     const pulses: DungeonPlaybackFrame['pulses'] = [];
     const snapshot = (fighter: PlaybackFighter): DungeonUnitState => {
@@ -244,11 +245,21 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
       const hp = Math.max(0, Math.min(Number(fighter.unit.max_hp), Math.round(fighter.startHp - (spent.get(fighter) ?? 0))));
       return { ...fighter.unit, current_hp: hp, alive: frame < fighter.death && hp > 0 };
     };
-    timeline.push({
-      heroes: heroes.map(snapshot),
-      enemies: enemies.filter((fighter) => frame > fighter.spawn || frame === frames).map(snapshot),
-      pulses,
-    });
+    const nextHeroes = heroes.map(snapshot);
+    const nextEnemies = enemies.filter((fighter) => frame > fighter.spawn || frame === frames).map(snapshot);
+    if (boss && pulses.some((pulse) => pulse.sourceUid === boss.uid)) bossAttacksShown += 1;
+    // Net HP cannot reveal attacks absorbed by shields or offset by healing. Keep server-confirmed
+    // Boss attempts visible without inventing damage, misses, or changing the authoritative HP.
+    if (boss && canAct(boss, frame) && boss.strikes.has(frame)
+      && bossAttacksShown < Number(boss.unit.attacks ?? 0)
+      && !pulses.some((pulse) => pulse.sourceUid === boss.uid)) {
+      const target = chooseTarget(boss, frame);
+      if (target) {
+        pulses.push({ sourceUid: boss.uid, targetUid: target.uid, value: 0, crit: false, heal: false, attackOnly: true });
+        bossAttacksShown += 1;
+      }
+    }
+    timeline.push({ heroes: nextHeroes, enemies: nextEnemies, pulses });
   }
   return timeline;
 }

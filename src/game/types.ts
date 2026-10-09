@@ -177,6 +177,7 @@ export interface FloatingNumber {
   label?: string;
   effect?: boolean;
   delayMs?: number;
+  attackOnly?: boolean;
 }
 
 // ── Daily Quests ──────────────────────────────────────────────────────────
