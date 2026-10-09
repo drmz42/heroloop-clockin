@@ -954,7 +954,8 @@ html:has(.battle-income-popover:not([hidden])) .hl-battle-banner { display:none;
 .promo-ceremony-list:focus-visible { outline:2px solid #f2cc80;outline-offset:-2px; }
 .promo-row { position:relative;display:flex;align-items:center;gap:12px;padding:8px 6px 8px 4px;background:linear-gradient(90deg,color-mix(in srgb,var(--promo-color) 20%,transparent),color-mix(in srgb,var(--promo-color) 5%,transparent) 45%,transparent 85%);animation:promo-row .5s cubic-bezier(.2,.9,.25,1.1) var(--promo-delay) both; }
 .promo-row + .promo-row::before { content:'';position:absolute;left:8%;right:8%;top:-1px;height:1px;background:linear-gradient(90deg,transparent,rgba(199,158,97,.28),transparent); }
-.promo-row-portrait { flex:none;box-shadow:0 0 16px color-mix(in srgb,var(--promo-color) 45%,transparent),0 6px 12px rgba(0,0,0,.7); }
+.promo-row-portrait { flex:none;display:block;line-height:0;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--promo-color) 55%,transparent)) drop-shadow(0 6px 8px rgba(0,0,0,.7)); }
+.promo-row-portrait > .hero-portrait-rarity { clip-path:inset(3px); }
 .promo-row-body { display:grid;min-width:0;flex:1;gap:1px; }
 .promo-row-body b { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Cinzel',Georgia,serif;font-size:15px;font-weight:700;text-shadow:0 1px 2px #000; }
 .promo-row-body small { display:flex;align-items:center;gap:3px;font-size:10.5px;color:#a79f90; }
