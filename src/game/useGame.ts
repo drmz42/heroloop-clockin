@@ -204,7 +204,7 @@ export interface ServerMarketHeroListing {
   hero: { heroId: string; level: number; stars: number };
 }
 
-// Boss Chests are fungible; a listing sells `quantity` of them as one lot (Founder 2026-10-09).
+// Boss and Dungeon Chests are fungible; a listing sells `quantity` of one kind as one lot (Founder 2026-10-09).
 export interface ServerMarketChestListing {
   id: string;
   price: number;
@@ -212,7 +212,7 @@ export interface ServerMarketChestListing {
   seller: string;
   is_own: boolean;
   created_at: string;
-  chest: { kind: 'boss'; quantity: number };
+  chest: { kind: 'boss' | 'dungeon_d1' | 'dungeon_d2' | 'dungeon_d3'; quantity: number };
 }
 
 export interface ServerMarketSnapshot {

@@ -118,5 +118,44 @@ BEGIN
     r := heroloop_api.seeker_purchase_prepare(b,gen_random_uuid(),'market_buy_listing',jsonb_build_object('listing_id',listing));
     IF NOT (r->'context' @> '{"kind":"chest","house_seller":true}') THEN RAISE EXCEPTION 'house chest quote wrong %',r; END IF;
   END IF;
+  -- Dungeon Chests: ledger stacks move into escrow, back on cancel and to the buyer on purchase.
+  INSERT INTO public.player_resource_state(player_id) VALUES (s),(b) ON CONFLICT DO NOTHING;
+  PERFORM public.apply_resource_entries(s,gen_random_uuid(),'dungeon_chest_reward',repeat('a',64),
+    '[{"resource_id":"dungeon_chest_d2","delta":"5","source_key":"dungeon_chest_reward"}]'::jsonb);
+  BEGIN
+    PERFORM heroloop_api.seeker_purchase_prepare(s,gen_random_uuid(),'market_list_item',jsonb_build_object('item_id','chest:dungeon2:6','price',50));
+    RAISE EXCEPTION 'six dungeon chests quoted';
+  EXCEPTION WHEN raise_exception THEN IF SQLERRM<>'chest_not_found' THEN RAISE; END IF; END;
+  k := gen_random_uuid();
+  PERFORM heroloop_api.seeker_purchase_prepare(s,k,'market_list_item',jsonb_build_object('item_id','chest:dungeon2:3','price',60));
+  r := heroloop_api.seeker_purchase_deliver(s,k);
+  IF r->>'status'<>'delivered' OR r#>>'{result,dungeon_chests,2}'<>'2' THEN RAISE EXCEPTION 'dungeon list wrong %',r; END IF;
+  listing := (r#>>'{result,listing_id}')::uuid;
+  PERFORM heroloop_api.seeker_purchase_deliver(s,k);
+  IF (public.dungeon_chest_balances(s)->>'2')::int<>2 THEN RAISE EXCEPTION 'dungeon list replay debited twice'; END IF;
+  IF NOT public.market_snapshot(b)->'chest_listings' @> jsonb_build_array(jsonb_build_object('id',listing,'chest',jsonb_build_object('kind','dungeon_d2','quantity',3))) THEN RAISE EXCEPTION 'dungeon snapshot wrong'; END IF;
+  r := heroloop_api.market_cancel_listing(s,gen_random_uuid(),listing);
+  IF (public.dungeon_chest_balances(s)->>'2')::int<>5 THEN RAISE EXCEPTION 'dungeon cancel did not return %',r; END IF;
+  k := gen_random_uuid();
+  PERFORM heroloop_api.seeker_purchase_prepare(s,k,'market_list_item',jsonb_build_object('item_id','chest:dungeon2:2','price',60));
+  listing := (heroloop_api.seeker_purchase_deliver(s,k)#>>'{result,listing_id}')::uuid;
+  k := gen_random_uuid();
+  r := heroloop_api.seeker_purchase_prepare(b,k,'market_buy_listing',jsonb_build_object('listing_id',listing));
+  IF r#>>'{context,kind}'<>'chest' OR r->'context' ? 'house_seller' THEN RAISE EXCEPTION 'dungeon buy quote wrong %',r; END IF;
+  r := heroloop_api.seeker_purchase_deliver(b,k);
+  IF r->>'status'<>'delivered' OR (public.dungeon_chest_balances(b)->>'2')::int<>2 OR (public.dungeon_chest_balances(s)->>'2')::int<>3 THEN RAISE EXCEPTION 'dungeon buy wrong %',r; END IF;
+  PERFORM heroloop_api.seeker_purchase_deliver(b,k);
+  IF (public.dungeon_chest_balances(b)->>'2')::int<>2 THEN RAISE EXCEPTION 'dungeon buy replay credited twice'; END IF;
+  IF NOT heroloop_api.seeker_market_snapshot(b)->'history' @> jsonb_build_array(jsonb_build_object('id',listing,'name','Dungeon Chest II ×2','action','bought')) THEN RAISE EXCEPTION 'dungeon sale feed wrong'; END IF;
+  IF EXISTS (SELECT 1 FROM public.resource_ledger_reconciliation()) THEN RAISE EXCEPTION 'ledger reconciliation reports %', (SELECT jsonb_agg(x) FROM public.resource_ledger_reconciliation() x); END IF;
+  -- Merchant Dungeon Chest lots are house sales and credit the buyer without a seller debit.
+  snap := public.seeker_house_dungeon_chest_market_seed('fixture-dungeon-chests', 3, 4, 1, 2, 10, 20);
+  IF (snap->>'chest_lots')::int<>4 OR public.seeker_house_dungeon_chest_market_seed('fixture-dungeon-chests', 1, 1, 1, 1, 1, 1)<>snap THEN RAISE EXCEPTION 'dungeon seed wrong %',snap; END IF;
+  SELECT id INTO listing FROM public.market_chest_listings WHERE kind='dungeon_d3' AND status='active' LIMIT 1;
+  k := gen_random_uuid();
+  r := heroloop_api.seeker_purchase_prepare(b,k,'market_buy_listing',jsonb_build_object('listing_id',listing));
+  IF NOT (r->'context' @> '{"kind":"chest","house_seller":true}') THEN RAISE EXCEPTION 'house dungeon quote wrong %',r; END IF;
+  r := heroloop_api.seeker_purchase_deliver(b,k);
+  IF r->>'status'<>'delivered' OR (public.dungeon_chest_balances(b)->>'3')::int<1 THEN RAISE EXCEPTION 'house dungeon buy wrong %',r; END IF;
   RAISE NOTICE 'Boss Chest Market fixture PASS';
 END $$;
