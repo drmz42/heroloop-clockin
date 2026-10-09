@@ -827,6 +827,29 @@ html { scroll-behavior: smooth; }
 .dungeon-reward-note{margin-top:2px;color:#8f8780!important;font-weight:700!important;letter-spacing:.04em!important}
 .dungeon-reward-empty{color:#8f8780!important}
 @media (prefers-reduced-motion:no-preference){.dungeon-complete.is-victory .dungeon-reward-card{animation:dungeon-reward-in .38s ease-out both}.dungeon-complete.is-victory .dungeon-reward-card:nth-child(2){animation-delay:.08s}.dungeon-complete.is-victory .dungeon-reward-card:nth-child(3){animation-delay:.16s}.dungeon-complete.is-victory .dungeon-reward-card:nth-child(4){animation-delay:.24s}}
+.dungeon-chest-art,.dungeon-chest-slot,.dungeon-chest-panel{--dc-edge:#c98d4a;--dc-glow:#e0a24f;--dc-ink:#ffd892;--dc-filter:none}
+:is(.dungeon-chest-art,.dungeon-chest-slot,.dungeon-chest-panel).depth-2{--dc-edge:#9d6ad6;--dc-glow:#a774ff;--dc-ink:#e3ccff;--dc-filter:hue-rotate(228deg) saturate(1.25)}
+:is(.dungeon-chest-art,.dungeon-chest-slot,.dungeon-chest-panel).depth-3{--dc-edge:#d2484d;--dc-glow:#ff4a52;--dc-ink:#ffc2bf;--dc-filter:hue-rotate(320deg) saturate(1.6) brightness(.92)}
+.dungeon-chest-art{position:relative;display:inline-grid;flex-shrink:0;place-items:center;border-radius:50%;background:radial-gradient(circle at 50% 58%,color-mix(in srgb,var(--dc-glow) 38%,transparent),transparent 68%)}
+.dungeon-chest-art img{width:86%;height:86%;object-fit:contain;filter:var(--dc-filter) drop-shadow(0 0 6px color-mix(in srgb,var(--dc-glow) 70%,transparent))}
+.dungeon-chest-art b{position:absolute;top:0;left:0;display:grid;min-width:40%;height:40%;place-items:center;padding:0 2px;border:1px solid var(--dc-edge);border-radius:999px;background:#0d0a0c;color:var(--dc-ink);font-family:var(--font-vt);font-size:max(10px,calc(var(--ui-text-small) * .95));line-height:1;box-shadow:0 0 8px color-mix(in srgb,var(--dc-glow) 55%,transparent)}
+.dungeon-chest-slot{border-color:color-mix(in srgb,var(--dc-edge) 70%,transparent)!important;background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--dc-glow) 22%,transparent),#0c0b0d 72%)!important}
+.dungeon-chest-slot.is-selected{box-shadow:0 0 0 2px var(--dc-ink),0 0 14px var(--dc-glow)}
+.dungeon-chest-count{background:var(--dc-edge);color:#0b0709}
+.dungeon-chest-panel{border-color:color-mix(in srgb,var(--dc-edge) 60%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--dc-glow) 14%,transparent),#0d0b0d 70%)}
+.dungeon-chest-odds{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:4px;margin:8px 0 0;padding:0;list-style:none}
+.dungeon-chest-odds li{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px 7px;border:1px solid currentColor;border-radius:6px;background:#0b0a0c;font-size:var(--ui-text-small);font-weight:800}
+.dungeon-chest-odds li span{opacity:.9}.dungeon-chest-odds li b{color:#f3e7cf;font-variant-numeric:tabular-nums}
+.dungeon-chest-reveal{inset:0;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--reveal-color,#c99a55) 26%,transparent),rgba(3,4,6,.95) 66%);backdrop-filter:blur(5px)}
+.dungeon-chest-reveal-card{display:grid;width:min(360px,94vw);justify-items:center;gap:6px;padding:24px 20px 20px;border:1px solid var(--reveal-color);border-radius:18px;background:#0d0c0ef2;box-shadow:0 26px 80px #000,0 0 46px color-mix(in srgb,var(--reveal-color) 45%,transparent);color:#dfc9a1;text-align:center}
+.dungeon-chest-reveal-card small{color:#c9a46a;font-size:var(--ui-text-small);font-weight:900;letter-spacing:.18em}
+.dungeon-chest-reveal-hero{margin:6px 0;border-radius:16px;box-shadow:0 0 34px color-mix(in srgb,var(--reveal-color) 60%,transparent)}
+.dungeon-chest-reveal-card em{font-size:var(--ui-text-medium);font-style:normal;font-weight:900;letter-spacing:.2em;text-transform:uppercase}
+.dungeon-chest-reveal-card strong{color:#ffe0a0;font-family:var(--font-vt);font-size:clamp(22px,5vw,32px);line-height:1.05}
+.dungeon-chest-reveal-card p{color:#a9a0a1;font-size:var(--ui-text-medium)}
+.dungeon-chest-reveal-card button{margin-top:4px;min-height:44px;padding:10px 22px;font-size:var(--ui-text-medium);font-weight:900}
+@media (prefers-reduced-motion:no-preference){.dungeon-chest-reveal-card{animation:dungeon-chest-reveal .45s cubic-bezier(.2,.9,.3,1.2) both}}
+@keyframes dungeon-chest-reveal{from{opacity:0;transform:scale(.86) translateY(10px)}to{opacity:1;transform:none}}
 @keyframes dungeon-reward-in{from{opacity:0;transform:translateY(8px) scale(.94)}to{opacity:1;transform:none}}
 @keyframes dungeon-banner { 0%{opacity:0;transform:translate(-50%,-42%) scale(.94)} 18%,75%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0} }
 .dungeon-boss-iron-warden .dungeon-shared-boss .arena-portrait { box-shadow:inset 0 0 0 4px #735f38,0 0 28px #d3a95b55!important; }

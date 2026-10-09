@@ -235,6 +235,8 @@ const commandActions = new Set([
   "tutorial_quest_claim",
   "quest_claim",
   "tutorial_chest_open",
+  "dungeon_chest_status",
+  "dungeon_chest_open",
   "item_mutate",
   "item_equip",
   "item_upgrade",
@@ -997,6 +999,8 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
           ? "seeker_scroll_summon"
           : requestedAction.startsWith("premium_potion_") ? (requestedAction === "premium_potion_status" ? "status" : "item_upgrade")
           : requestedAction === "seeker_event_status" ? "status"
+          : requestedAction === "dungeon_chest_status" ? "status"
+          : requestedAction === "dungeon_chest_open" ? "chest_open"
           : requestedAction === "seeker_event_claim" ? "quest_claim"
           : requestedAction === "skr_boost_status" ? "status"
           : ["skr_quest_status", "skr_purchase_quote", "skr_purchase_commit"].includes(requestedAction) ? "status"
@@ -1959,6 +1963,32 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       } catch (error) {
         const code = databaseErrorCode(error, ["item_capacity_exceeded", "resource_insufficient_balance", "idempotency_conflict"]);
         return code ? errorResponse(409, code, requestId) : errorResponse(400, "tutorial_chest_open_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "dungeon_chest_status") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const result = await databaseJson("SELECT heroloop_api.dungeon_chest_status($1::uuid) AS result", [identity.playerId]);
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        return errorResponse(503, "dungeon_chest_status_unavailable", requestId);
+      }
+    }
+    if (parsed.value.action === "dungeon_chest_open") {
+      const payloadError = validatePayloadFields(payload, ["depth", "expected_revision"]);
+      const requestKey = idempotencyKey(parsed.value);
+      const depth = Number(payload.depth);
+      const revision = Number(payload.expected_revision);
+      if (payloadError || !requestKey || ![1, 2, 3].includes(depth) || !Number.isSafeInteger(revision) || revision < 1) {
+        return errorResponse(400, payloadError ?? "invalid_dungeon_chest_open", requestId);
+      }
+      try {
+        const result = await databaseJson("SELECT heroloop_api.dungeon_chest_open($1::uuid,$2::uuid,$3::integer,$4::bigint) AS result", [identity.playerId, requestKey, depth, revision]);
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["state_conflict", "hero_capacity_exceeded", "resource_insufficient_balance", "idempotency_conflict", "account_restricted"]);
+        return code ? errorResponse(409, code, requestId) : errorResponse(400, "dungeon_chest_open_failed", requestId);
       }
     }
     if (parsed.value.action === "item_mutate") {

@@ -5,7 +5,7 @@ import { commitSkrPurchase } from './seekerWallet';
 import { skrError } from './skrPurchase';
 import { automaticHealingConfig } from '../../managed/functions/player-sync/automatic-healing.mjs';
 import { flushSync } from 'react-dom';
-import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey, Chest } from '@/game/types';
+import type { DungeonChestStatus, GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey, Chest } from '@/game/types';
 import {
   loadState, normalizeState, makeInitialState, starUpCost,
   MAX_TEAM, BASE_HERO_CAPACITY, MAX_HERO_CAPACITY, HERO_CAPACITY_STEP, MAX_HERO_STARS, inventoryCapacity, MAX_CHESTS, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
@@ -2995,6 +2995,61 @@ export function useGame() {
     } finally { chestOpeningRef.current = false; setChestOpening(false); }
   }, [loadMail]);
 
+  // Dungeon Chests live only in the server resource ledger; the save never carries them.
+  const [dungeonChests, setDungeonChests] = useState<DungeonChestStatus | null>(null);
+  const [dungeonChestOpening, setDungeonChestOpening] = useState(false);
+  const dungeonChestOpeningRef = useRef(false);
+  const readChestBalances = (value: unknown): DungeonChestStatus['balances'] | null => {
+    if (!value || typeof value !== 'object') return null;
+    const raw = value as Record<string, unknown>;
+    const read = (key: string) => Number.isSafeInteger(Number(raw[key])) && Number(raw[key]) >= 0 ? Number(raw[key]) : null;
+    const one = read('1'); const two = read('2'); const three = read('3');
+    return one === null || two === null || three === null ? null : { 1: one, 2: two, 3: three };
+  };
+  const loadDungeonChests = useCallback(async () => {
+    if (!tokenomicsEnabled || !isolatedHackathon) return;
+    const result = await playerSync<{ balances: unknown; odds: DungeonChestStatus['odds'] }>('dungeon_chest_status', {});
+    const balances = readChestBalances(result?.balances);
+    if (result && balances && result.odds && typeof result.odds === 'object') setDungeonChests({ balances, odds: result.odds });
+  }, []);
+  const openDungeonChest = useCallback(async (depth: 1 | 2 | 3): Promise<{ hero: OwnedHero } | { error: string }> => {
+    if (!tokenomicsEnabled || dungeonChestOpeningRef.current) return { error: 'busy' };
+    let expectedRevision = serverRevisionHint;
+    if (typeof expectedRevision !== 'number' || !Number.isSafeInteger(expectedRevision)) return { error: 'state_unavailable' };
+    const current = stateRef.current;
+    if (current.ownedHeroes.length >= current.heroCapacity) return { error: 'hero_capacity_exceeded' };
+    dungeonChestOpeningRef.current = true; setDungeonChestOpening(true);
+    try {
+      const idempotencyKey = createIdempotencyKey();
+      let failure = '';
+      const attempt = () => {
+        failure = '';
+        return playerSync<{ hero: OwnedHero; depth: number; revision: number; balances: unknown }>('dungeon_chest_open', {
+          depth, expected_revision: expectedRevision, idempotency_key: idempotencyKey,
+        }, (code) => { failure = code; });
+      };
+      let result = await attempt();
+      // Combat saves move the revision every few seconds; re-read it and retry with the same key.
+      for (let retry = 0; retry < 3 && !result && failure === 'state_conflict'; retry += 1) {
+        const refreshed = await playerSync<{ revision: number }>('game_state_load');
+        if (!refreshed || !Number.isSafeInteger(refreshed.revision)) break;
+        expectedRevision = refreshed.revision;
+        result = await attempt();
+      }
+      const hero = result?.hero;
+      const balances = readChestBalances(result?.balances);
+      if (!result || result.depth !== depth || !hero || typeof hero.uid !== 'string' || !HERO_MAP[hero.heroId]
+        || !Number.isSafeInteger(result.revision) || !balances) return { error: failure || 'invalid_server_response' };
+      setServerRevisionHint(result.revision);
+      setDungeonChests((prev) => prev ? { ...prev, balances } : prev);
+      setState((prev) => prev.ownedHeroes.some((owned) => owned.uid === hero.uid) ? prev : {
+        ...prev, ownedHeroes: [...prev.ownedHeroes, hero],
+        milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'hero-owned-', 1),
+      });
+      return { hero };
+    } finally { dungeonChestOpeningRef.current = false; setDungeonChestOpening(false); }
+  }, [serverRevisionHint]);
+
   const resetAccount = useCallback(() => {
     const initial = makeInitialState();
     combatSessionRef.current.reset();
@@ -3196,7 +3251,7 @@ export function useGame() {
     enchantItem, rerollItem, dismissEnchantResult,
     setAutoPot, setBattleAnimationMode, setCombatPresentationVisible,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
-    openChests, openTutorialChests, closeChestResult, refreshStore, buyRotatingItem, claimQuest, claimTutorialQuest, claimPartnerQuest,
+    openChests, openTutorialChests, dungeonChests, dungeonChestOpening, loadDungeonChests, openDungeonChest, closeChestResult, refreshStore, buyRotatingItem, claimQuest, claimTutorialQuest, claimPartnerQuest,
     claimReferralReward, resetAccount, hydrateServerState, mergeServerResourceState, applyServerRevision, completeWelcomeTutorial, setAvatarHero, loadMarket, mailCount, loadMail, claimMail, readMail, deleteReadMail, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
     heroStatsFor: (uid: string) => {
       const owned = state.ownedHeroes.find((h) => h.uid === uid);

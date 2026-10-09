@@ -403,3 +403,9 @@ export interface BoostState {
     holdTokens: number;     // current $HERO held
   };
 }
+
+/** Server-owned Dungeon Chest stacks per Depth and the published per-Depth Hero rarity odds in percent. */
+export interface DungeonChestStatus {
+  balances: Record<1 | 2 | 3, number>;
+  odds: Record<string, Partial<Record<Rarity, number>>>;
+}

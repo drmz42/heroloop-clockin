@@ -55,6 +55,8 @@ import { flyCoins } from '@/theme/motion/flyCoins';
 import { installGameAudio, playSfx, setMusicScene } from '@/audio/gameAudio';
 import { BossIntro } from '@/theme/motion/BossIntro';
 import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
+import { DungeonChestArt, DungeonChestPanel, DungeonChestSlot } from '@/components/DungeonChests';
+import { dungeonChestTitle, ownedDungeonChestDepths } from '@/game/dungeonChests';
 
 const SAVE_KEY = editionStorageKey('afk-heroes-save-v7');
 // Temporarily hide the first-use dialog for hackathon start-of-game recordings.
@@ -359,7 +361,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const [bagPurchaseBusy, setBagPurchaseBusy] = useState(false);
   const bagSlotsKey = state.bagSlots.join(',');
   const bagQuoteReady = Number.isSafeInteger(game.serverRevisionHint);
-  const [selectedResource, setSelectedResource] = useState<'summon-scroll' | 'boss-key' | 'chests' | null>(null);
+  const [selectedResource, setSelectedResource] = useState<'summon-scroll' | 'boss-key' | 'chests' | 'dungeon-1' | 'dungeon-2' | 'dungeon-3' | null>(null);
   const [showDropRates, setShowDropRates] = useState(false);
   const dropRatesButtonRef = useRef<HTMLButtonElement>(null);
   const [dropRatesPos, setDropRatesPos] = useState<{ right: number; bottom: number; maxHeight: number } | null>(null);
@@ -372,7 +374,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const leftDungeonId = useRef<string | null>(null);
   const [activeDungeon, setActiveDungeon] = useState<DungeonCheckpoint | null>(null);
   const [dungeonFloaters, setDungeonFloaters] = useState<FloatingNumber[]>([]);
-  const [dungeonCompletion, setDungeonCompletion] = useState<{ won: boolean; depth: number; kind: 'dungeon' | 'boss_hunt'; gold: number; scrolls: number; premium: number; mailed: boolean } | null>(null);
+  const [dungeonCompletion, setDungeonCompletion] = useState<{ won: boolean; depth: number; kind: 'dungeon' | 'boss_hunt'; gold: number; scrolls: number; premium: number; mailed: boolean; chests: number; chestDepth: number } | null>(null);
   const [dungeonAttempts, setDungeonAttempts] = useState<{ remaining: number; max: number } | null>(null);
   const dungeonPreviousPause = useRef<boolean | null>(null);
   const [selectedHeroUid, setSelectedHeroUid] = useState<string | null>(state.team[0] ?? null);
@@ -568,7 +570,11 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const visiblePotions = isolatedHackathon
     ? ordinaryStock > 0 ? [{ ...POTIONS[0], name: 'Ordinary Potion' }] : []
     : POTIONS.filter((p) => state.potions[p.tier] > 0);
-  const resourceSlotCount = 3 + visiblePotions.length;
+  const dungeonChestDepths = ownedDungeonChestDepths(game.dungeonChests);
+  const selectedDungeonDepth = selectedResource?.startsWith('dungeon-') ? Number(selectedResource.slice(8)) as 1 | 2 | 3 : null;
+  const resourceSlotCount = 3 + dungeonChestDepths.length + visiblePotions.length;
+  const { loadDungeonChests } = game;
+  useEffect(() => { if (inventoryTab === 'resources') void loadDungeonChests(); }, [inventoryTab, loadDungeonChests]);
   const bossChestCount = state.chests.filter((chest) => chest.boss).length;
   const activeBag = inventoryTab === 'resources' ? 1 : inventoryTab;
   const bagStart = state.bagSlots.slice(0, activeBag - 1).reduce((sum, slots) => sum + slots, 0);
@@ -1060,7 +1066,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               </div>
             </div>
           )}
-          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} autoRun={dungeonAutoRun.current} onChange={(next) => void handleDungeonChange(next)} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onLeave={leaveDungeon} onComplete={(won, gold = 0, scrolls = 0, premium = 0, mailed = false) => leftDungeonId.current !== activeDungeon.encounter_id && setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls, premium, mailed })} />}
+          {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} autoRun={dungeonAutoRun.current} onChange={(next) => void handleDungeonChange(next)} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onLeave={leaveDungeon} onComplete={(won, gold = 0, scrolls = 0, premium = 0, mailed = false, chests = 0, chestDepth = 0) => { if (chests > 0) void loadDungeonChests(); if (leftDungeonId.current !== activeDungeon.encounter_id) setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls, premium, mailed, chests, chestDepth: chestDepth || activeDungeon.depth }); }} />}
           {dungeonCompletion && (() => {
             const c = dungeonCompletion;
             const boss = c.kind === 'boss_hunt';
@@ -1068,9 +1074,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               { id: 'gold', amount: boss ? c.gold : 0, label: 'Gold', art: <Coins size={30} /> },
               { id: 'scrolls', amount: boss ? 0 : c.scrolls, label: c.scrolls === 1 ? 'Summon Scroll' : 'Summon Scrolls', art: <SummonScrollArtwork size={44} /> },
               { id: 'chest', amount: boss ? 1 : 0, label: 'Boss Chest', art: <img src="/assets/ui/chest-ceremony-v1.webp" alt="" width={44} height={44} decoding="async" draggable={false} /> },
+              { id: 'dungeon-chest', amount: boss ? 0 : c.chests, label: dungeonChestTitle(c.chestDepth), art: <DungeonChestArt depth={c.chestDepth} size={44} /> },
               { id: 'potion', amount: boss ? c.premium : 0, label: c.premium === 1 ? 'Weak Premium Potion' : 'Weak Premium Potions', art: <img src="/assets/ui/potion-v1.webp" alt="" width={44} height={44} decoding="async" draggable={false} /> },
             ]).filter((r) => r.amount > 0);
-            const note = rewards.length === 0 ? null : c.mailed ? 'Sent to Mailbox. Claim when you have room.' : boss ? 'Chest is in Inventory → Resources → Chests.' : 'Granted once by the server.';
+            const note = rewards.length === 0 ? null : c.mailed ? 'Sent to Mailbox. Claim when you have room.' : boss ? 'Chest is in Inventory → Resources → Chests.' : c.chests > 0 ? 'Open your Dungeon Chest in Inventory → Resources.' : 'Granted once by the server.';
             return <div className={`dungeon-complete ${c.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={c.won ? 'Encounter Complete' : 'Encounter Failed'}>
               <div className="dungeon-complete-crest">
                 <span className="dungeon-complete-sigil" aria-hidden="true">{c.won ? <Sparkles size={34} /> : <Skull size={34} />}</span>
@@ -1294,10 +1301,12 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             <button type="button" aria-label={`Summon Scrolls: ${formatNum(state.summonScrolls)}`} aria-pressed={selectedResource === 'summon-scroll'} onClick={() => setSelectedResource((current) => current === 'summon-scroll' ? null : 'summon-scroll')} className={`item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-violet-400/55 ${selectedResource === 'summon-scroll' ? 'ring-2 ring-violet-300 ring-offset-1 ring-offset-black' : ''}`} title={`Summon Scrolls: ${formatNum(state.summonScrolls)}`}><span className="resource-slot-art" aria-hidden="true"><SummonScrollArtwork size={48} /></span><span className="ui-text-small absolute bottom-0 right-0 z-10 min-w-3 rounded-tl bg-violet-400 px-px text-center font-bold leading-3 text-black">{formatNum(state.summonScrolls)}</span></button>
             <button type="button" aria-label={`Boss Keys: ${formatNum(state.bossKeys)}`} aria-pressed={selectedResource === 'boss-key'} onClick={() => setSelectedResource((current) => current === 'boss-key' ? null : 'boss-key')} className={`item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-amber-400/55 ${selectedResource === 'boss-key' ? 'ring-2 ring-amber-300 ring-offset-1 ring-offset-black' : ''}`} title={`Boss Keys: ${formatNum(state.bossKeys)}`}><span className="resource-slot-art" aria-hidden="true"><BossKeyIcon size={48} /></span><span className="ui-text-small absolute bottom-0 right-0 z-10 min-w-3 rounded-tl bg-amber-400 px-px text-center font-bold leading-3 text-black">{formatNum(state.bossKeys)}</span></button>
             <button type="button" aria-label={`Chests: ${state.chests.length}, Boss Chests: ${bossChestCount}`} aria-pressed={selectedResource === 'chests'} onClick={() => setSelectedResource((current) => current === 'chests' ? null : 'chests')} className={`item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-amber-400/55 ${selectedResource === 'chests' ? 'ring-2 ring-amber-300 ring-offset-1 ring-offset-black' : ''}`} title={`Chests: ${state.chests.length} · Boss: ${bossChestCount}`}><span className="resource-slot-art" aria-hidden="true"><ChestCollectIcon size={48} /></span><span className="ui-text-small absolute bottom-0 right-0 z-10 min-w-3 rounded-tl bg-amber-400 px-px text-center font-bold leading-3 text-black">{formatNum(state.chests.length)}</span></button>
+            {dungeonChestDepths.map((depth) => <DungeonChestSlot key={`dungeon-chest-${depth}`} depth={depth} count={game.dungeonChests?.balances[depth] ?? 0} selected={selectedDungeonDepth === depth} onSelect={() => setSelectedResource((current) => current === `dungeon-${depth}` ? null : `dungeon-${depth}`)} />)}
             {visiblePotions.map((potion) => <button type="button" key={potion.tier} className="item-slot relative flex aspect-square min-w-0 w-full items-center justify-center overflow-hidden border border-emerald-500/50" title={`${potion.name}: ${isolatedHackathon ? ordinaryStock : state.potions[potion.tier]}`}><ItemArtwork itemId={`potion-${potion.tier}`} name={potion.name} fallback="Potion" /><span className="ui-text-small absolute bottom-0 right-0 z-10 min-w-3 rounded-tl bg-emerald-500 px-px text-center font-bold leading-3 text-black">{isolatedHackathon ? ordinaryStock : state.potions[potion.tier]}</span></button>)}
             {Array.from({ length: GRID_SIZE - resourceSlotCount }, (_, index) => <div key={`resource-empty-${index}`} className="item-slot aspect-square min-w-0 w-full border" style={{ borderColor: 'rgba(128,119,100,0.11)', background: 'linear-gradient(145deg,#151612,#0c0e0d)' }} />)}
             </div>
-            {selectedResource && selectedResource !== 'chests' && <div className={`mt-2 rounded-lg border p-2 ${selectedResource === 'summon-scroll' ? 'border-violet-400/45 bg-violet-950/20' : 'border-amber-400/45 bg-amber-950/20'}`}><div className="flex items-center gap-2">{selectedResource === 'summon-scroll' ? <SummonScrollArtwork size={40} /> : <BossKeyIcon size={40} />}<div className="min-w-0"><strong className="ui-text-large block text-[#efe4ce]">{selectedResource === 'summon-scroll' ? 'Summon Scroll' : 'Boss Key'}</strong><span className="ui-text-small text-[#9b9283]">Owned: {formatNum(selectedResource === 'summon-scroll' ? state.summonScrolls : state.bossKeys)}</span></div></div><p className="ui-text-medium mt-1.5 leading-snug text-[#c9c0b1]">{selectedResource === 'summon-scroll' ? 'Persistent consumable for one future Free Summon. Scroll spending is not available until server-authoritative Free Summon launches.' : 'Non-deletable resource used only to summon a Boss. One summon consumes one key; a Boss Chest is awarded only after victory.'}</p></div>}
+            {selectedDungeonDepth && game.dungeonChests && <DungeonChestPanel depth={selectedDungeonDepth} status={game.dungeonChests} opening={game.dungeonChestOpening} onOpen={game.openDungeonChest} />}
+            {(selectedResource === 'summon-scroll' || selectedResource === 'boss-key') && <div className={`mt-2 rounded-lg border p-2 ${selectedResource === 'summon-scroll' ? 'border-violet-400/45 bg-violet-950/20' : 'border-amber-400/45 bg-amber-950/20'}`}><div className="flex items-center gap-2">{selectedResource === 'summon-scroll' ? <SummonScrollArtwork size={40} /> : <BossKeyIcon size={40} />}<div className="min-w-0"><strong className="ui-text-large block text-[#efe4ce]">{selectedResource === 'summon-scroll' ? 'Summon Scroll' : 'Boss Key'}</strong><span className="ui-text-small text-[#9b9283]">Owned: {formatNum(selectedResource === 'summon-scroll' ? state.summonScrolls : state.bossKeys)}</span></div></div><p className="ui-text-medium mt-1.5 leading-snug text-[#c9c0b1]">{selectedResource === 'summon-scroll' ? 'Persistent consumable for one future Free Summon. Scroll spending is not available until server-authoritative Free Summon launches.' : 'Non-deletable resource used only to summon a Boss. One summon consumes one key; a Boss Chest is awarded only after victory.'}</p></div>}
             {selectedResource === 'chests' && <div className="mt-2 rounded-lg border border-amber-400/45 bg-amber-950/20 p-2"><strong className="ui-text-large block text-[#efe4ce]">Chests</strong><p className="ui-text-medium mt-1.5 text-[#c9c0b1]">Owned: {state.chests.length} · Boss Chests: {bossChestCount}. {isolatedHackathon ? 'Reward chests arrive in Mailbox. Claim them there to add them to this queue.' : 'Boss Hunt rewards enter this chest queue after Claim Boss Rewards.'}</p><button type="button" disabled={state.chests.length === 0 || game.chestOpening} onClick={() => { if (!isolatedHackathon && bagItemCount(state) >= inventoryCapacity(state)) { setShowInventoryFull(true); return; } void game.openChests(tok.status?.rarity_capacity ?? {}, tok.reserveLimitedItem); }} className="game-control game-primary mt-2 !min-h-[44px] px-3 py-2 ui-text-medium font-bold disabled:opacity-55">{game.chestOpening ? 'OPENING…' : 'OPEN CHESTS'}</button></div>}
           </div> : <div className={`hl-equipment-grid grid min-w-0 grid-cols-8 gap-px overflow-hidden ${inventoryLockMode ? 'inventory-lock-cursor' : ''}`}>
             {cells.slice(0, bagOpenSlots).map((item, i) => {
@@ -1395,7 +1404,7 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
   onAttempts: (attempts: { remaining: number; max: number } | null) => void;
   onCombatPulse: (floaters: FloatingNumber[]) => void;
   onHydrate: (state: unknown) => void;
-  onComplete: (won: boolean, gold?: number, scrolls?: number, premium?: number, mailed?: boolean) => void;
+  onComplete: (won: boolean, gold?: number, scrolls?: number, premium?: number, mailed?: boolean, chests?: number, chestDepth?: number) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -1423,7 +1432,7 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
       if (result.state) onHydrate(result.state);
       if (action === 'dungeon_abandon' || (result.status && result.status !== 'active')) {
         if (attempts) onAttempts({ remaining: Number(result.attempts_remaining ?? attempts.remaining), max: attempts.max });
-        if (action !== 'dungeon_abandon') onComplete(result.status === 'completed', Number(result.gold) || 0, Number(result.scrolls_awarded) || 0, Number(result.premium_potions_awarded) || 0, result.rewards_mailed === true || result.gold_delivered_to === 'mail');
+        if (action !== 'dungeon_abandon') onComplete(result.status === 'completed', Number(result.gold) || 0, Number(result.scrolls_awarded) || 0, Number(result.premium_potions_awarded) || 0, result.rewards_mailed === true || result.gold_delivered_to === 'mail', Number(result.dungeon_chests_awarded) || 0, Number(result.dungeon_chest_depth) || 0);
         onChange(null);
       } else {
         onChange(checkpointFromResult(checkpoint, result));
@@ -1509,7 +1518,7 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
       });
       if (revealed?.status && revealed.status !== 'active') {
         if (revealed.state) onHydrate(revealed.state);
-        onComplete(revealed.status === 'completed', Number(revealed.gold) || 0, Number(revealed.scrolls_awarded) || 0, Number(revealed.premium_potions_awarded) || 0, revealed.rewards_mailed === true || revealed.gold_delivered_to === 'mail');
+        onComplete(revealed.status === 'completed', Number(revealed.gold) || 0, Number(revealed.scrolls_awarded) || 0, Number(revealed.premium_potions_awarded) || 0, revealed.rewards_mailed === true || revealed.gold_delivered_to === 'mail', Number(revealed.dungeon_chests_awarded) || 0, Number(revealed.dungeon_chest_depth) || 0);
         onChange(null);
       } else if (revealed) onChange(checkpointFromResult(resolved, revealed));
     }

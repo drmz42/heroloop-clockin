@@ -45,7 +45,8 @@
     { "id": "timed_standard_chest", "asset": "standard_chest", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "chest_flow" },
     { "id": "tutorial_chest", "asset": "tutorial_chest", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "chest_flow" },
     { "id": "boss_chest", "asset": "boss_chest", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "chest_flow" },
-    { "id": "dungeon_chest", "asset": "dungeon_chest", "direction": "faucet", "status": "proposal", "authority": "server", "telemetryAggregate": "chest_flow" },
+    { "id": "dungeon_chest", "asset": "dungeon_chest", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "chest_flow" },
+    { "id": "dungeon_chest_open", "asset": "dungeon_chest", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "chest_flow" },
     { "id": "chest_open", "asset": "chest", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "chest_flow" },
     { "id": "tutorial_chest_open", "asset": "tutorial_chest", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "chest_flow" },
 
