@@ -1,6 +1,6 @@
 import { useSkrRate } from '@/game/skrPurchase';
 import { useEffect, useState } from 'react';
-import { X, CalendarDays, Timer, Crown, CheckCircle2, Circle, Gift, Clock3, Layers, Trophy, Zap, ShoppingBag, Wallet, Pickaxe, Send, AtSign } from 'lucide-react';
+import { CalendarDays, Timer, Crown, CheckCircle2, Circle, Gift, Clock3, Layers, Trophy, Zap, ShoppingBag, Wallet, Pickaxe, Send, AtSign } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import type { GameApi } from '@/game/useGame';
 import type { TokenomicsApi } from '@/game/useTokenomics';
@@ -79,7 +79,6 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
             <h2 className="mt-1 flex items-center gap-2 text-2xl font-black text-[#f1d188]"><Gift size={22} /> Rewards &amp; Tokenomics</h2>
             <p className="mt-1 text-xs text-[#aaa397]">Shared reward pool, your Boost Max and your standing.</p>
           </div>
-          <button type="button" onClick={onClose} className="game-control grid h-9 w-9 place-items-center" aria-label="Close Rewards and Tokenomics"><X size={16} /></button>
         </header>
 
         <div className="game-scrollbar min-h-0 space-y-3 overflow-y-auto p-4">

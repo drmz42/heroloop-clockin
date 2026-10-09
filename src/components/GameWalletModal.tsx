@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Check, Copy, History, Lock, ShieldCheck, UserRound, Wallet, X,
+  AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Check, Copy, History, Lock, ShieldCheck, UserRound, Wallet,
 } from 'lucide-react';
 import { formatNum } from '@/game/state';
 import { HeroTokenIcon } from '@/components/HeroTokenIcon';
@@ -108,7 +108,6 @@ export function GameWalletModal({
               <HeroTokenIcon size={14} />
               <span className="text-sm font-black tabular-nums text-lime-300">{formatNum(balance)}</span>
             </div>}
-            <button type="button" onClick={onClose} className="game-control grid h-9 w-9 place-items-center" aria-label="Close wallet"><X size={16} /></button>
           </div>
         </header>
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Backpack, BookOpen, Castle, ChevronLeft, ChevronRight, Crosshair, Crown, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, PawPrint, Pickaxe, ScrollText, Send, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, Twitter, UserPlus, Wallet, X, Volume2, VolumeX, Music, Settings2 } from 'lucide-react';
+import { Backpack, BookOpen, Castle, ChevronLeft, ChevronRight, Crosshair, Crown, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, PawPrint, Pickaxe, ScrollText, Send, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, Twitter, UserPlus, Wallet, Volume2, VolumeX, Music, Settings2 } from 'lucide-react';
 import { setMusicEnabled, setMusicVolume, setSfxEnabled, setSfxVolume, useAudioSettings } from '@/audio/gameAudio';
 import type { Tab } from './TopMenu';
 import { OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
@@ -140,7 +140,6 @@ export function MobileTabBar({
             <div className="mo-head">
               {(teaser || settingsOpen) && <button type="button" className="mo-close mo-back" onClick={() => { setTeaser(null); setSettingsOpen(false); }} aria-label="Back"><ChevronLeft size={20} /></button>}
               <span className="mo-title">{settingsOpen ? 'Settings' : teaser ? UPCOMING[teaser].title : 'More'}</span>
-              <button type="button" className="mo-close" onClick={() => onMoreOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
             {/* The list scrolls; the footer row (socials, Settings, Logout) stays put (Founder 2026-10-09). */}
             <div className="mo-scroll">
@@ -234,7 +233,6 @@ export function MobileTabBar({
           <div className="mo-panel mo-pvp">
             <div className="mo-head">
               <span className="mo-title">PvP</span>
-              <button type="button" className="mo-close" onClick={() => setMineOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
             <div className="mo-arena">
               <span className="mo-medal" aria-hidden="true"><Swords size={36} /></span>
