@@ -45,13 +45,29 @@ function enqueue(paths: Iterable<string>) {
 const allPaths = () => Object.keys(assetVersions ?? {});
 const under = (...prefixes: string[]) => allPaths().filter((path) => prefixes.some((prefix) => path.startsWith(prefix)));
 
+// All current avatars share five small class portraits. Start these before the idle
+// queue, so Ranks does not wait behind locations, enemies, screen art and inventory.
+function preloadAvatarImages() {
+  if (!assetVersions || connection()?.saveData) return;
+  for (const path of under('/assets/heroes/v5/thumb/')) {
+    if (queued.has(path)) continue;
+    queued.add(path);
+    const image = new Image();
+    image.decoding = 'async';
+    image.fetchPriority = 'high';
+    image.src = versionedAsset(path);
+  }
+}
+
 /** Stage 1, on the entry screen: art the first game screen shows. */
 export function preloadEntryImages() {
+  preloadAvatarImages();
   enqueue(under('/assets/locations/', '/assets/enemies/v4/', '/assets/ui/', '/assets/brand/'));
 }
 
 /** Stages 2 and 3, once the game is shown: the player's own art, then everything else on unmetered networks. */
 export function preloadGameImages(state: Pick<GameState, 'ownedHeroes' | 'inventory'>) {
+  preloadAvatarImages();
   const heroes = state.ownedHeroes.flatMap((hero) => {
     const heroClass = /^(shepherd|assassin|knight|druid|archer)-/.exec(hero.heroId)?.[1];
     return heroClass ? [`/assets/heroes/v5/thumb/${heroClass}.webp`, `/assets/heroes/v5/${heroClass}.webp`] : [];

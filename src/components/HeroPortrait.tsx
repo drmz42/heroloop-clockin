@@ -15,11 +15,12 @@ interface HeroPortraitProps {
   badge?: string | number;
   respawn?: number; // seconds remaining
   className?: string;
+  priority?: boolean;
 }
 
 export function HeroPortrait({
   heroClass, heroId, rarity, color, size = 64,
-  onClick, active, badge, respawn, className = '',
+  onClick, active, badge, respawn, className = '', priority = false,
 }: HeroPortraitProps) {
   const [imgError, setImgError] = useState(false);
   const rc = RARITY_COLORS[rarity];
@@ -49,7 +50,8 @@ export function HeroPortrait({
         alt=""
         width={size}
         height={size}
-        loading="lazy"
+        loading={priority ? 'eager' : 'lazy'}
+        fetchPriority={priority ? 'high' : undefined}
         decoding="async"
         className="w-full h-full object-cover"
         style={imgError ? undefined : heroPortraitStyle(heroId, heroClass)}

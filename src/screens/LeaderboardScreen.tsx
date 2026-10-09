@@ -126,7 +126,7 @@ function PodiumCard({ rank, player }: { rank: number; player?: LeaderRow }) {
   const avatar = player ? HERO_MAP[player.avatar_hero_id] ?? HERO_MAP[lineup[0]?.hero_id] : undefined;
   return <div className={`rk-seat rk-seat-${rank}`}>
     <span className="rk-seat-crest">{rank === 1 ? <Crown size={16} /> : <Medal size={14} />}</span>
-    <span className="rk-seat-hero">{avatar ? <HeroPortrait heroId={avatar.id} heroClass={avatar.heroClass} rarity={avatar.rarity} color={avatar.color} size={rank === 1 ? 74 : 60} /> : <span className="rk-seat-empty">{player ? player.username.slice(0, 2).toUpperCase() : '?'}</span>}</span>
+    <span className="rk-seat-hero">{avatar ? <HeroPortrait priority heroId={avatar.id} heroClass={avatar.heroClass} rarity={avatar.rarity} color={avatar.color} size={rank === 1 ? 74 : 60} /> : <span className="rk-seat-empty">{player ? player.username.slice(0, 2).toUpperCase() : '?'}</span>}</span>
     <span className="rk-seat-plinth"><b>{player?.username ?? `Rank ${rank} open`}</b><small>#{rank} · {player ? `Lv ${player.account_level}` : 'Unclaimed'}</small></span>
   </div>;
 }
