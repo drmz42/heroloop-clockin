@@ -139,17 +139,17 @@ export function MobileTabBar({
               <button type="button" className="mo-close" onClick={() => onMoreOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
             {settingsOpen ? (
-              <div className="mo-body mo-settings-page">
+              <div className="mo-settings-page">
                 <section className="mo-set-group" aria-label="Sound">
                   <h4>Sound</h4>
                   {([['sfx', 'Sound effects', Volume2, audioSettings.sfx, audioSettings.sfxVolume, setSfxEnabled, setSfxVolume],
                     ['music', 'Music', Music, audioSettings.music, audioSettings.musicVolume, setMusicEnabled, setMusicVolume]] as const).map(([id, label, Icon, on, level, toggle, setLevel]) => (
                     <div key={id} className={`mo-set-row ${on ? '' : 'is-off'}`}>
-                      <button type="button" className="mo-set-toggle" aria-pressed={on} onClick={() => toggle(!on)}>
-                        <i aria-hidden="true">{on ? <Icon size={17} /> : <VolumeX size={17} />}</i><span>{label}</span><b>{on ? 'On' : 'Off'}</b>
-                      </button>
+                      <button type="button" className="mo-set-toggle" aria-pressed={on} aria-label={`${label} ${on ? 'on' : 'off'}`} onClick={() => toggle(!on)}>{on ? <Icon size={16} /> : <VolumeX size={16} />}</button>
+                      <span className="mo-set-label">{label}</span>
                       <input type="range" min={0} max={100} step={5} value={Math.round(level * 100)} disabled={!on} aria-label={`${label} volume`}
                         onChange={(event) => setLevel(Number(event.target.value) / 100)} />
+                      <b className="mo-set-value">{on ? `${Math.round(level * 100)}%` : 'Off'}</b>
                     </div>
                   ))}
                 </section>
@@ -179,7 +179,7 @@ export function MobileTabBar({
               <div className="mo-body">
                 <button type="button" className="mo-banner mo-banner-hero mo-art-pass" onClick={() => { if (onPass) { onMoreOpen(false); onPass(); } else setTeaser('pass'); }}>
                   <MoLife id="pass" />
-                  <span className="mo-banner-text"><span className="mo-kicker">{onPass ? 'Season 1 · 40 ranks' : UPCOMING.pass.kicker}</span><strong>{onPass ? 'Premium Pass' : 'Season Pass'}</strong><span>{onPass ? 'Free and Premium reward tracks. Open Events.' : UPCOMING.pass.line}</span></span>
+                  <span className="mo-banner-text"><span className="mo-kicker">{onPass ? 'Season 1 · 100 levels' : UPCOMING.pass.kicker}</span><strong>{onPass ? 'Battle Pass' : 'Season Pass'}</strong><span>{onPass ? 'Free, Empowered and Collector reward tracks.' : UPCOMING.pass.line}</span></span>
                   <em className="mo-soon">{onPass ? 'Live' : 'Season 2'}</em><ChevronRight className="mo-chev" size={18} aria-hidden="true" />
                 </button>
                 <div className="mo-pair">
@@ -200,11 +200,9 @@ export function MobileTabBar({
                   <span className="mo-banner-text"><strong>Refer friends</strong><span>Invite allies and share the spoils.</span></span>
                   <ChevronRight className="mo-chev" size={18} aria-hidden="true" />
                 </button>
-                <button type="button" className="mo-banner mo-settings-link" onClick={() => setSettingsOpen(true)}>
-                  <i className="mo-tile-icon" aria-hidden="true"><Settings2 size={18} /></i>
-                  <span className="mo-banner-text"><strong>Settings</strong><span>Healing, sound, graphics, Support, Code, Wiki</span></span>
-                  <ChevronRight className="mo-chev" size={18} aria-hidden="true" />
-                </button>
+                <div className="mo-links mo-links-single">
+                  <button type="button" className="mo-link" onClick={() => setSettingsOpen(true)}><i aria-hidden="true"><Settings2 size={17} /></i>Settings</button>
+                </div>
                 <div className="mo-footer">
                   <div className="mo-socials" role="group" aria-label="Social networks">
                     <a className="mo-social" href="https://t.me/heroloopgame" target="_blank" rel="noopener noreferrer" aria-label="Telegram" title="Telegram"><Send size={19} aria-hidden="true" /></a>
