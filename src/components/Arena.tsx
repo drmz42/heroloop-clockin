@@ -319,15 +319,19 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
   useEffect(() => {
     const latest = floaters.reduce((max, f) => Math.max(max, f.id), 0);
     if (heardFloater.current - latest > 1e9) heardFloater.current = 0;
-    const fresh = floaters.filter((f) => f.id > heardFloater.current && performance.now() - f.born < 600);
+    const fresh = floaters.filter((f) => f.id > heardFloater.current && performance.now() - f.born < 1500);
     heardFloater.current = Math.max(heardFloater.current, latest);
     const stage = stageRef.current;
     if (!fresh.length || !stage || !stage.getClientRects().length || document.querySelector('.game-window-overlay')) return;
+    // A server-confirmed swing can deal zero net damage (shield/healing); it still needs an attack cue.
+    const attacks = fresh.filter((f) => f.sourceUid && !f.heal && !f.effect);
+    if (attacks.some((f) => units.some((unit) => unit.uid === f.sourceUid && unit.side === 'hero'))) playSfx('heroAttack');
+    if (attacks.some((f) => units.some((unit) => unit.uid === f.sourceUid && unit.side === 'enemy'))) playSfx('enemyAttack');
     if (fresh.some((f) => f.crit && !f.heal)) playSfx('crit');
     else if (fresh.some((f) => !f.attackOnly && !f.heal && !f.miss && !f.effect && f.value > 0)) playSfx('hit');
     if (fresh.some((f) => f.heal && f.value > 0)) playSfx('heal');
     if (fresh.some((f) => f.miss)) playSfx('miss');
-  }, [floaters]);
+  }, [floaters, units]);
 
   useEffect(() => {
     const living = new Set(units.filter((u) => u.alive).map((u) => u.uid));
