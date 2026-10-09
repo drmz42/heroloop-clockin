@@ -817,11 +817,11 @@
   background: repeating-conic-gradient(from 0deg, transparent 0deg, color-mix(in srgb, var(--sv-color) 30%, transparent) 4deg, transparent 8deg 20deg);
   -webkit-mask: radial-gradient(circle, rgba(0, 0, 0, .9) 4%, rgba(0, 0, 0, .35) 26%, transparent 48%);
   mask: radial-gradient(circle, rgba(0, 0, 0, .9) 4%, rgba(0, 0, 0, .35) 26%, transparent 48%);
-  animation: sv-rays-in .7s ease-out both, sv-spin 28s linear infinite;
-  /* Own GPU layer: phone WebViews re-rasterized the spinning masked rays and blinked. */
-  will-change: transform, opacity;
+  /* Founder 2026-10-09: phones froze the rays when the intro scale and the spin both animated transform;
+     the intro now fades only, so the spin owns the transform. */
+  animation: sv-rays-fade .7s ease-out both, sv-spin 28s linear infinite;
 }
-.sv-spot .sv-spot-rays--counter { background: repeating-conic-gradient(from 7deg, transparent 0deg, rgba(255, 255, 255, .14) 1.5deg, transparent 3deg 24deg); animation: sv-rays-in .9s ease-out both, sv-spin 40s linear infinite reverse; }
+.sv-spot .sv-spot-rays--counter { background: repeating-conic-gradient(from 7deg, transparent 0deg, rgba(255, 255, 255, .14) 1.5deg, transparent 3deg 24deg); animation: sv-rays-fade .9s ease-out both, sv-spin 40s linear infinite reverse; }
 .sv-spot .sv-spot-flash { position: absolute; inset: 0; z-index: 3; background: radial-gradient(circle at 50% 42%, #fff, color-mix(in srgb, var(--sv-color) 60%, #fff) 35%, transparent 80%); opacity: 0; animation: sv-flash .9s ease-in-out both; pointer-events: none; }
 .sv-spot-tier-3 { animation: sv-shake .5s linear .05s both; }
 .sv-spot .sv-spot-motes { position: absolute; inset: 0; z-index: 0; }
@@ -1006,7 +1006,7 @@
 @keyframes sv-flash { 0% { opacity: 0; } 30% { opacity: .45; } 100% { opacity: 0; } }
 @keyframes sv-copy-in { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @keyframes sv-shake { 0%, 100% { transform: translate(0, 0); } 15% { transform: translate(-6px, 3px); } 30% { transform: translate(5px, -4px); } 45% { transform: translate(-4px, -2px); } 60% { transform: translate(3px, 3px); } 80% { transform: translate(-2px, 1px); } }
-@keyframes sv-rays-in { from { opacity: 0; transform: scale(.3); } to { opacity: 1; transform: scale(1); } }
+@keyframes sv-rays-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes sv-mote { 0% { opacity: 0; transform: translateY(0) scale(1); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-48vh) scale(.3); } }
 @keyframes sv-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @keyframes sv-portrait-in { 0% { opacity: 0; transform: scale(1.35) translateY(10px); } 60% { opacity: 1; } 100% { opacity: 1; transform: none; } }
