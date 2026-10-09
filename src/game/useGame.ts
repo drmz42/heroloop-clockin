@@ -270,7 +270,7 @@ function parseMailLetters(raw: RawMailLetter[] | undefined): MailLetterEntry[] {
   }));
 }
 
-export interface MailClaimResult { ok: boolean; error?: string; claimed?: number; remaining?: number; itemsFull?: boolean; chestsFull?: boolean; resourcesFull?: boolean; heroesFull?: boolean }
+export interface MailClaimResult { ok: boolean; error?: string; claimed?: number; remaining?: number; itemsFull?: boolean; chestsFull?: boolean; resourcesFull?: boolean; heroesFull?: boolean; heroesLimited?: boolean }
 
 interface NormalCombatWave {
   startKey: string;
@@ -2123,7 +2123,7 @@ export function useGame() {
   const claimMail = useCallback(async (mailId: string | null): Promise<MailClaimResult> => {
     if (!tokenomicsEnabled) return { ok: false, error: 'unavailable' };
     let error = '';
-    const result = await playerSync<{ claimed: number; remaining: number; inventory: OwnedItem[]; chests?: Chest[]; gold?: number; revision: number; items_full?: boolean; chests_full?: boolean; resources_full?: boolean; resources_changed?: boolean; heroes_full?: boolean; owned_heroes?: OwnedHero[] }>('mail_claim', {
+    const result = await playerSync<{ claimed: number; remaining: number; inventory: OwnedItem[]; chests?: Chest[]; gold?: number; revision: number; items_full?: boolean; chests_full?: boolean; resources_full?: boolean; resources_changed?: boolean; heroes_full?: boolean; heroes_limited?: boolean; owned_heroes?: OwnedHero[] }>('mail_claim', {
       mail_id: mailId, idempotency_key: createIdempotencyKey(),
     }, (message) => { error = message; });
     if (!result || !Array.isArray(result.inventory)) return { ok: false, error: error || 'mail_failed' };
@@ -2138,7 +2138,7 @@ export function useGame() {
       const refreshed = await playerSync<{ state: GameState; revision: number }>('game_state_load');
       if (refreshed?.state && Number.isSafeInteger(refreshed.revision)) { setServerRevisionHint(refreshed.revision); hydrateServerState(refreshed.state); }
     }
-    return { ok: true, claimed: result.claimed, remaining: result.remaining, itemsFull: result.items_full === true, chestsFull: result.chests_full === true, resourcesFull: result.resources_full === true, heroesFull: result.heroes_full === true };
+    return { ok: true, claimed: result.claimed, remaining: result.remaining, itemsFull: result.items_full === true, chestsFull: result.chests_full === true, resourcesFull: result.resources_full === true, heroesFull: result.heroes_full === true, heroesLimited: result.heroes_limited === true };
   }, [hydrateServerState]);
 
   const readMail = useCallback(async (letterId: string) => {

@@ -129,6 +129,7 @@ export function MailboxScreen({ loadMail, claimMail, readMail, deleteReadMail, f
     else if (result.itemsFull) setMessage('Your bag is full. The rest stays in the Mailbox.');
     else if (result.resourcesFull) setMessage('A resource is at its limit. That reward stays in the Mailbox.');
     else if (result.heroesFull) setMessage('Your hero roster is full. That hero stays in the Mailbox.');
+    else if (result.heroesLimited) setMessage('That hero tier is sold out right now. The hero stays in the Mailbox until a slot frees up.');
     await refresh();
     setBusy(false);
   };
