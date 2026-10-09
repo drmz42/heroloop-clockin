@@ -204,9 +204,21 @@ export interface ServerMarketHeroListing {
   hero: { heroId: string; level: number; stars: number };
 }
 
+// Boss Chests are fungible; a listing sells `quantity` of them as one lot (Founder 2026-10-09).
+export interface ServerMarketChestListing {
+  id: string;
+  price: number;
+  seller_id: string;
+  seller: string;
+  is_own: boolean;
+  created_at: string;
+  chest: { kind: 'boss'; quantity: number };
+}
+
 export interface ServerMarketSnapshot {
   listings: ServerMarketListing[];
   hero_listings?: ServerMarketHeroListing[];
+  chest_listings?: ServerMarketChestListing[];
   history: { id: string; name: string; price: number; createdAt: number; action: 'bought' | 'sold' }[];
   activity?: ServerMarketSnapshot['history'];
   active_limit: number;
@@ -2162,8 +2174,9 @@ export function useGame() {
     if (result.delivered_to === 'mail') void loadMail();
     if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
     const owned = (result as { owned_heroes?: unknown }).owned_heroes;
+    const chests = (result as { chests?: unknown }).chests;
     setState((prev) => ({ ...prev, inventory: result.inventory, hero: Math.max(0, Math.floor(result.token_balance)),
-      ...(Array.isArray(owned) ? { ownedHeroes: owned as OwnedHero[] } : {}) }));
+      ...(Array.isArray(owned) ? { ownedHeroes: owned as OwnedHero[] } : {}), ...(Array.isArray(chests) ? { chests: chests as Chest[] } : {}) }));
     return true;
   }, [loadMail]);
 
@@ -3147,6 +3160,7 @@ export function useGame() {
       const next={...current};
       if (Array.isArray(result.inventory)) next.inventory=result.inventory as OwnedItem[];
       if (Array.isArray(result.owned_heroes)) next.ownedHeroes=result.owned_heroes as OwnedHero[];
+      if (Array.isArray(result.chests)) next.chests=result.chests as Chest[];
       if (Number.isSafeInteger(result.hero_capacity)) next.heroCapacity=result.hero_capacity as number;
       if (typeof result.gold==='number' && Number.isFinite(result.gold)) next.gold=result.gold;
       if (Array.isArray(result.bag_slots) && result.bag_slots.length===4) next.bagSlots=result.bag_slots as GameState['bagSlots'];
