@@ -8,7 +8,7 @@ import { ItemArtwork } from '@/components/ItemArtwork';
 import { heroPortraitSrc, heroPortraitStyle, heroThumbSrc } from '@/game/portraits';
 import { ItemCompareStats } from '@/components/ItemActionPanel';
 import { CLASS_LABEL, HERO_MAP, RARITY_COLORS, RARITY_LABEL } from '@/game/heroes';
-import { ITEM_MAP, STAT_LABEL, displayItemPower, formatStatValue, isMarketEligibleEquipment } from '@/game/items';
+import { ITEM_MAP, STAT_LABEL, canClassEquipItem, displayItemPower, formatStatValue, isMarketEligibleEquipment } from '@/game/items';
 import { formatNum, MAX_HERO_STARS, MAX_LEVEL } from '@/game/state';
 import { MAX_ENCHANT_LEVEL } from '@/game/enchant';
 import type { HeroClass, OwnedHero, OwnedItem, Rarity } from '@/game/types';
@@ -20,7 +20,7 @@ import { RarityFx } from '@/components/RarityFx';
 import { formatUtcDateTime } from '@/game/numberFormat';
 import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
 
-type MarketTab = 'browse' | 'activity' | 'history' | 'supply' | 'listings' | 'sell';
+type MarketTab = 'browse' | 'activity' | 'history' | 'supply' | 'sell';
 type Category = 'all' | 'weapons' | 'armor' | 'accessories' | 'heroes' | 'pets';
 type LevelFilter = 'all' | 'my' | 'usable' | 'upgrades' | `band-${number}`;
 type Listing = { id: string; kind: 'item' | 'hero'; sourceId: string; name: string; rarity: Rarity; level: number; enchantLevel: number; stars?: number; power: number; price: number; seller: string; createdAt: number; stats: string[]; owned?: OwnedItem | OwnedHero };
@@ -31,11 +31,25 @@ const HERO_CLASSES = Object.keys(CLASS_LABEL) as HeroClass[];
 const LEVEL_BANDS = Array.from({ length: Math.ceil(MAX_LEVEL / 10) }, (_, index) => index * 10 + 1);
 const STAR_BANDS = Array.from({ length: Math.ceil(MAX_HERO_STARS / 5) }, (_, index) => index * 5 + 1);
 const ENCHANT_STEPS = [1, 5, 10, 15].filter((step) => step < MAX_ENCHANT_LEVEL);
+// Each category offers its own filters (Founder 2026-10-09); Type narrows slots inside a category.
+const TYPE_OPTIONS: Partial<Record<Category, { value: string; label: string }[]>> = {
+  weapons: [{ value: 'main', label: 'Main Weapon' }, { value: 'offhand', label: 'Off-hand' }],
+  armor: [{ value: 'helmet', label: 'Helmet' }, { value: 'chest', label: 'Chest' }, { value: 'gloves', label: 'Gloves' }, { value: 'boots', label: 'Boots' }, { value: 'shield', label: 'Shield' }],
+  accessories: [{ value: 'amulet', label: 'Amulet' }, { value: 'ring', label: 'Ring' }],
+};
+function itemType(itemId: string): string {
+  const item = ITEM_MAP[itemId];
+  if (!item) return '';
+  if (item.slot === 'offhand') return item.heroClass === 'knight' ? 'shield' : 'offhand';
+  if (item.slot === 'class_weapon' || item.slot === 'weapon') return 'main';
+  if (item.slot === 'armor') return 'chest';
+  return item.slot.startsWith('ring') ? 'ring' : item.slot;
+}
 const bandLabel = (start: number, max: number, suffix = '') => `${start}–${Math.min(start + (suffix ? 4 : 9), max)}${suffix}`;
 
 const TABS: { id: MarketTab; label: string }[] = [
   { id: 'browse', label: 'Browse' }, { id: 'activity', label: 'Activity' }, { id: 'history', label: 'History' },
-  { id: 'sell', label: 'Sell' }, { id: 'listings', label: 'Mine' }, { id: 'supply', label: 'Supply' },
+  { id: 'sell', label: 'Sell' }, { id: 'supply', label: 'Supply' },
 ];
 
 function ownedRows(game: GameApi): Listing[] {
@@ -83,7 +97,7 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
   const rate = useSkrRate();
   const [tab, setTab] = useState<MarketTab>('browse'); const [query, setQuery] = useState(''); const [selectedId, setSelectedId] = useState<string | null>(null); const [price, setPrice] = useState(''); const [notice, setNotice] = useState('');
   const [market, setMarket] = useState<ServerMarketSnapshot | null>(null); const [marketBusy, setMarketBusy] = useState(false);
-  const [category, setCategory] = useState<Category>('all'); const [rarity, setRarity] = useState<Rarity | 'all'>('all'); const [enchant, setEnchant] = useState(0); const [levelFilter, setLevelFilter] = useState<LevelFilter>('all'); const [heroClass, setHeroClass] = useState<HeroClass | 'all'>('all'); const [starBand, setStarBand] = useState(0); const [feeOpen, setFeeOpen] = useState(false); const [comparisonHeroUid, setComparisonHeroUid] = useState(game.state.team[0] ?? game.state.ownedHeroes[0]?.uid ?? '');
+  const [category, setCategory] = useState<Category>('all'); const [rarity, setRarity] = useState<Rarity | 'all'>('all'); const [enchant, setEnchant] = useState(0); const [levelFilter, setLevelFilter] = useState<LevelFilter>('all'); const [heroClass, setHeroClass] = useState<HeroClass | 'all'>('all'); const [starBand, setStarBand] = useState(0); const [itemKind, setItemKind] = useState('all'); const [feeOpen, setFeeOpen] = useState(false); const [comparisonHeroUid, setComparisonHeroUid] = useState(game.state.team[0] ?? game.state.ownedHeroes[0]?.uid ?? '');
   const fetchSupply = tokenomics.fetchStatus;
   useEffect(() => { if (tab !== 'supply') return; void fetchSupply(); const timer = window.setInterval(() => void fetchSupply(), 60_000); return () => window.clearInterval(timer); }, [tab, fetchSupply]);
   const loadMarket = game.loadMarket;
@@ -91,7 +105,6 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
   const serverListings = market?.listings ?? [];
   const browse = [...serverListings.map(listingFromServer), ...(market?.hero_listings ?? []).map(heroListingFromServer)]
     .filter((row): row is Listing => Boolean(row)).sort((a, b) => b.createdAt - a.createdAt);
-  const mine = [...serverListings.filter((entry) => entry.is_own).map(listingFromServer), ...(market?.hero_listings ?? []).filter((entry) => entry.is_own).map(heroListingFromServer)].filter((row): row is Listing => Boolean(row));
   const sellable = [...ownedRows(game), ...ownedHeroRows(game)];
   const comparisonHero = game.state.ownedHeroes.find((hero) => hero.uid === comparisonHeroUid) ?? game.state.ownedHeroes[0];
   const comparisonLevel = comparisonHero?.level ?? 1;
@@ -102,13 +115,15 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
   const [shown, setShown] = useState(MARKET_PAGE);
   // Android Back closes the item/hero detail and stays in the Market (Founder 2026-10-08).
   useAndroidOverlayHistory(selectedId !== null, () => setSelectedId(null));
-  const filterKey = [tab, query, category, rarity, enchant, levelFilter, heroClass, starBand, comparisonHeroUid].join('|');
+  const filterKey = [tab, query, category, rarity, enchant, levelFilter, heroClass, starBand, itemKind, comparisonHeroUid].join('|');
   useEffect(() => setShown(MARKET_PAGE), [filterKey]);
-  const rows = (tab === 'browse' ? browse : tab === 'listings' ? mine : tab === 'sell' ? sellable : []).filter((row) => {
+  const rows = (tab === 'browse' ? browse : tab === 'sell' ? sellable : []).filter((row) => {
     if (query && !row.name.toLowerCase().includes(query.toLowerCase())) return false;
     if (!matchesCategory(row) || (rarity !== 'all' && row.rarity !== rarity)) return false;
     // A class filter keeps heroes of that class and class-only equipment for it.
-    if (heroClass !== 'all' && (row.kind === 'hero' ? HERO_MAP[row.sourceId]?.heroClass : ITEM_MAP[row.sourceId]?.heroClass) !== heroClass) return false;
+    // Class keeps heroes of that class and every item that class can equip (class gear plus shared gear).
+    if (heroClass !== 'all' && (row.kind === 'hero' ? HERO_MAP[row.sourceId]?.heroClass !== heroClass : !ITEM_MAP[row.sourceId] || !canClassEquipItem(heroClass, ITEM_MAP[row.sourceId]))) return false;
+    if (itemKind !== 'all' && (row.kind !== 'item' || itemType(row.sourceId) !== itemKind)) return false;
     if (row.kind === 'item' && row.enchantLevel < enchant) return false;
     if (row.kind === 'hero' && starBand && ((row.stars ?? 0) < starBand || (row.stars ?? 0) > starBand + 4)) return false;
     if (levelFilter.startsWith('band-')) { const start = Number(levelFilter.slice(5)); if (row.level < start || row.level > start + 9) return false; }
@@ -139,6 +154,9 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
     finally { setMarketBusy(false); }
   };
   const still = game.state.battleAnimationMode === 'off';
+  const showClass = category === 'all' || category === 'weapons' || category === 'heroes';
+  // Filters after Search and Rarity; Compare fills the rest of its row.
+  const filterCount = (showClass ? 1 : 0) + (TYPE_OPTIONS[category] ? 1 : 0) + 2;
   const categories = [{ id: 'all', label: 'All', icon: <List size={11} /> }, { id: 'weapons', label: 'Weapons', icon: <Swords size={11} /> }, { id: 'armor', label: 'Armor', icon: <Shield size={11} /> }, { id: 'accessories', label: 'Accessories', icon: <Gem size={11} /> }, { id: 'heroes', label: 'Heroes', icon: <Users size={11} /> }] as { id: Category; label: string; icon: ReactNode }[];
   return <div ref={screenRef} data-detail={Boolean(selected)} className={`sc-root mv-root seeker-market${still ? ' sc-still' : ''}`}>
     <section className="sc-stage mv-vault" aria-label="Market vault">
@@ -147,19 +165,19 @@ export function SeekerMarketScreen({ game, tokenomics }: { game: GameApi; tokeno
       {!still && <div className="sc-embers" aria-hidden="true">{[0, 1, 2, 3, 4, 5, 6].map((i) => <i key={i} style={{ '--i': i } as CSSProperties} />)}</div>}
       <header className="sc-head mv-head"><span className="sc-kicker">Merchant's Vault</span><h2 className="sc-title">Market</h2></header>
       <button type="button" className="mv-help" aria-label="Market fees and rules" aria-expanded={feeOpen} aria-controls="mv-fee" onClick={() => setFeeOpen((open) => !open)}><HelpCircle size={16} /></button>
-      <nav aria-label="Market sections" className="mv-tabs">{TABS.map((item) => <button key={item.id} type="button" aria-pressed={tab === item.id} onClick={() => { setTab(item.id); setSelectedId(null); setPrice(''); setFeeOpen(false); }} className="sc-chip mv-tab">{item.label}</button>)}</nav>
+      <nav aria-label="Market sections" className="mv-tabs">{TABS.map((item) => <button key={item.id} type="button" aria-pressed={tab === item.id} onClick={() => { setTab(item.id); setSelectedId(null); setPrice(''); setFeeOpen(false); }} className="sc-chip mv-tab">{item.label}</button>)}<button type="button" disabled className="sc-chip mv-tab mv-tab-soon">Auction<small>Soon</small></button></nav>
     </section>
     <div className="sc-body mv-body">
       {feeOpen && <div id="mv-fee" role="note" className="mv-fee"><p>Listing fee: {skrPrice(2, rate)}<SkrUsd cents={2} />. Non-refundable after listing, including cancellation.</p><p>Sale fee: 10%; the seller receives 90% in SKR. Up to 20 listings per seller.</p><p><ShieldCheck size={11} /> Server escrow. Items arrive in Mailbox, heroes join your roster. The final SKR amount is shown before confirmation.</p></div>}
       {notice && <div role="status" className="mv-notice">{notice}</div>}
-      {(tab === 'browse' || tab === 'sell' || tab === 'listings') && <>
+      {(tab === 'browse' || tab === 'sell') && <>
         <section className="sc-panel market-filter-panel mv-filters-panel">
-          <div className="mv-categories">{categories.map((item) => <button type="button" key={item.id} aria-pressed={category === item.id} onClick={() => { setCategory(item.id); setRarity('all'); if (item.id === 'heroes') { setEnchant(0); if (!levelFilter.startsWith('band-')) setLevelFilter('all'); } else setStarBand(0); }} className="sc-chip mv-cat">{item.icon}{item.label}</button>)}<button type="button" disabled className="sc-chip mv-cat"><PawPrint size={11} />Pets · Soon</button></div>
-          <div className={`mv-filters${category === 'heroes' ? ' is-heroes' : ''}`}><label className="mv-search"><Search size={13} /><input aria-label="Search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search..." className="mv-input" /></label><GameSelect<Rarity | 'all'> ariaLabel="Rarity" value={rarity} onChange={setRarity} options={[{ value: 'all' as const, label: 'All Rarities' }, ...(category === 'heroes' ? heroRarities : allRarities).map((value) => ({ value, label: RARITY_LABEL[value], disabled: ['cursed', 'immortal', 'god'].includes(value), badge: ['cursed', 'immortal', 'god'].includes(value) ? 'Soon' : undefined }))]} className="mv-input" /><GameSelect<HeroClass | 'all'> ariaLabel="Hero class" value={heroClass} onChange={setHeroClass} options={[{ value: 'all' as const, label: 'All Classes' }, ...HERO_CLASSES.map((value) => ({ value, label: CLASS_LABEL[value] }))]} className="mv-input" /><GameSelect<LevelFilter> ariaLabel="Level" value={levelFilter} onChange={setLevelFilter} options={[{ value: 'all' as const, label: 'All Levels' }, ...(category === 'heroes' ? [] : [{ value: 'my' as const, label: 'My Level ±3' }, { value: 'usable' as const, label: 'Usable Now' }, { value: 'upgrades' as const, label: 'Upgrades' }]), ...LEVEL_BANDS.map((start) => ({ value: `band-${start}` as const, label: `Lv ${bandLabel(start, MAX_LEVEL)}` }))]} className="mv-input" />{category === 'heroes' ? <GameSelect ariaLabel="Stars" value={starBand} onChange={setStarBand} options={[{ value: 0, label: 'All Stars' }, ...STAR_BANDS.map((start) => ({ value: start, label: bandLabel(start, MAX_HERO_STARS, '★') }))]} className="mv-input" /> : <><GameSelect ariaLabel="Minimum enhancement" value={enchant} onChange={setEnchant} options={[{ value: 0, label: 'Any Enhance' }, ...ENCHANT_STEPS.map((step) => ({ value: step, label: `+${step} or more` })), { value: MAX_ENCHANT_LEVEL, label: `+${MAX_ENCHANT_LEVEL} only` }]} className="mv-input" /><GameSelect ariaLabel="Comparison hero" value={comparisonHeroUid} onChange={setComparisonHeroUid} placeholder="Compare hero" options={[{ value: '', label: 'Compare hero', disabled: true }, ...game.state.ownedHeroes.map((hero) => ({ value: hero.uid, label: `vs ${HERO_MAP[hero.heroId]?.name ?? 'Hero'} · Lv ${hero.level}` }))]} className="mv-input mv-compare-select" /></>}</div>
+          <div className="mv-categories">{categories.map((item) => <button type="button" key={item.id} aria-pressed={category === item.id} onClick={() => { setCategory(item.id); setRarity('all'); setItemKind('all'); setStarBand(0); if (item.id === 'heroes') { setEnchant(0); if (!levelFilter.startsWith('band-')) setLevelFilter('all'); } if (item.id === 'armor' || item.id === 'accessories') setHeroClass('all'); }} className="sc-chip mv-cat">{item.icon}{item.label}</button>)}<button type="button" disabled className="sc-chip mv-cat"><PawPrint size={11} />Pets · Soon</button></div>
+          <div className="mv-filters"><label className="mv-search"><Search size={13} /><input aria-label="Search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search..." className="mv-input" /></label><GameSelect<Rarity | 'all'> ariaLabel="Rarity" value={rarity} onChange={setRarity} options={[{ value: 'all' as const, label: 'All Rarities' }, ...(category === 'heroes' ? heroRarities : allRarities).map((value) => ({ value, label: RARITY_LABEL[value], disabled: ['cursed', 'immortal', 'god'].includes(value), badge: ['cursed', 'immortal', 'god'].includes(value) ? 'Soon' : undefined }))]} className="mv-input" />{showClass && <GameSelect<HeroClass | 'all'> ariaLabel="Hero class" value={heroClass} onChange={setHeroClass} options={[{ value: 'all' as const, label: 'All Classes' }, ...HERO_CLASSES.map((value) => ({ value, label: CLASS_LABEL[value] }))]} className="mv-input" />}{TYPE_OPTIONS[category] && <GameSelect ariaLabel="Item type" value={itemKind} onChange={setItemKind} options={[{ value: 'all', label: 'All Types' }, ...(TYPE_OPTIONS[category] ?? [])]} className="mv-input" />}<GameSelect<LevelFilter> ariaLabel="Level" value={levelFilter} onChange={setLevelFilter} options={[{ value: 'all' as const, label: 'All Levels' }, ...(category === 'heroes' ? [] : [{ value: 'my' as const, label: 'My Level ±3' }, { value: 'usable' as const, label: 'Usable Now' }, { value: 'upgrades' as const, label: 'Upgrades' }]), ...LEVEL_BANDS.map((start) => ({ value: `band-${start}` as const, label: `Lv ${bandLabel(start, MAX_LEVEL)}` }))]} className="mv-input" />{category === 'heroes' ? <GameSelect ariaLabel="Stars" value={starBand} onChange={setStarBand} options={[{ value: 0, label: 'All Stars' }, ...STAR_BANDS.map((start) => ({ value: start, label: bandLabel(start, MAX_HERO_STARS, '★') }))]} className="mv-input" /> : <><GameSelect ariaLabel="Minimum enhancement" value={enchant} onChange={setEnchant} options={[{ value: 0, label: 'Any Enhance' }, ...ENCHANT_STEPS.map((step) => ({ value: step, label: `+${step} or more` })), { value: MAX_ENCHANT_LEVEL, label: `+${MAX_ENCHANT_LEVEL} only` }]} className="mv-input" /><GameSelect ariaLabel="Comparison hero" value={comparisonHeroUid} onChange={setComparisonHeroUid} placeholder="Compare hero" options={[{ value: '', label: 'Compare hero', disabled: true }, ...game.state.ownedHeroes.map((hero) => ({ value: hero.uid, label: `vs ${HERO_MAP[hero.heroId]?.name ?? 'Hero'} · Lv ${hero.level}` }))]} className={`mv-input mv-compare-select${filterCount % 3 ? ' is-half' : ''}`} /></>}</div>
         </section>
         <main className="mv-main">
-          <section className="market-rows mv-grid" aria-label={tab === 'sell' ? 'Your equipment' : 'Listings'}>{rows.slice(0, shown).map((row) => <Row key={row.id} row={row} rate={rate} selling={tab === 'sell'} active={selected?.id === row.id} onClick={() => { setSelectedId(row.id); setPrice(''); }} />)}{rows.length > shown && <button type="button" className="sc-chip mv-more" onClick={() => setShown((count) => count + MARKET_PAGE)}>Show more · {shown} of {rows.length}</button>}{rows.length === 0 && <Empty text={tab === 'listings' ? 'You have no active listings' : tab === 'sell' ? 'No eligible equipment matches these filters' : 'Nothing available'} />}</section>
-          <aside ref={detailRef} tabIndex={-1} aria-label="Selected market item" className="sc-panel market-selected-detail mv-detail">{selected ? <Detail row={selected}>{tab === 'browse' ? selected.seller === 'You' ? <p className="mv-own">Your listing</p> : <><SkrPurchaseButton key={selected.id} product="market_buy_listing" params={{ listing_id: selected.id }} label={<>Buy · {skrPrice(selected.price, rate)}<SkrUsd cents={selected.price} /></>} onDelivered={delivered} />{selected.kind === 'item' && selected.owned && comparisonHero && ITEM_MAP[selected.sourceId] && <div className="mv-compare"><p className="mv-label">Compared with {HERO_MAP[comparisonHero.heroId]?.name ?? 'hero'}</p><ItemCompareStats item={selected.owned as OwnedItem} comparisonItem={game.state.inventory.find((item) => item.uid === comparisonHero.equipped[ITEM_MAP[selected.sourceId].slot]) ?? null} /></div>}</> : tab === 'sell' ? <div className="mv-sell"><p role="status" className="mv-hint">{selected.seller === 'Equipped' ? 'Unequip this item before selling.' : 'Set a sale price, then check and confirm the listing fee.'}</p><label className="mv-price">Sale price in SKR<input aria-label="Sale price in SKR" inputMode="decimal" value={price} onChange={(event) => setPrice(event.target.value)} className="mv-input" /></label><p className="mv-hint">{validPrice ? <>{skrPrice(cents, rate)}<SkrUsd cents={cents} /></> : 'Enter a SKR price'}</p><p className="sc-muted">Price uses the current rate and is rounded to the server price step. Seller receives 90% in SKR.</p><SkrPurchaseButton key={selected.id} product="market_list_item" params={{ item_id: selected.id, price: cents }} label={selected.seller === 'Ready' ? <>List · {skrPrice(2, rate)}<SkrUsd cents={2} /> fee</> : selected.seller} disabled={!validPrice || selected.seller !== 'Ready'} onDelivered={delivered} /></div> : <button type="button" onClick={() => cancel(selected)} disabled={marketBusy} className="sc-seal mv-cancel">Cancel</button>}</Detail> : <Empty text="Select an asset" />}</aside>
+          <section className="market-rows mv-grid" aria-label={tab === 'sell' ? 'Your equipment' : 'Listings'}>{rows.slice(0, shown).map((row) => <Row key={row.id} row={row} rate={rate} selling={tab === 'sell'} active={selected?.id === row.id} onClick={() => { setSelectedId(row.id); setPrice(''); }} />)}{rows.length > shown && <button type="button" className="sc-chip mv-more" onClick={() => setShown((count) => count + MARKET_PAGE)}>Show more · {shown} of {rows.length}</button>}{rows.length === 0 && <Empty text={tab === 'sell' ? 'No eligible equipment matches these filters' : 'Nothing available'} />}</section>
+          <aside ref={detailRef} tabIndex={-1} aria-label="Selected market item" className="sc-panel market-selected-detail mv-detail">{selected ? <Detail row={selected}>{tab === 'browse' ? selected.seller === 'You' ? <><p className="mv-own">Your listing</p><button type="button" onClick={() => cancel(selected)} disabled={marketBusy} className="sc-seal mv-cancel">Cancel listing</button></> : <><SkrPurchaseButton key={selected.id} product="market_buy_listing" params={{ listing_id: selected.id }} label={<>Buy · {skrPrice(selected.price, rate)}<SkrUsd cents={selected.price} /></>} onDelivered={delivered} />{selected.kind === 'item' && selected.owned && comparisonHero && ITEM_MAP[selected.sourceId] && <div className="mv-compare"><p className="mv-label">Compared with {HERO_MAP[comparisonHero.heroId]?.name ?? 'hero'}</p><ItemCompareStats item={selected.owned as OwnedItem} comparisonItem={game.state.inventory.find((item) => item.uid === comparisonHero.equipped[ITEM_MAP[selected.sourceId].slot]) ?? null} /></div>}</> : tab === 'sell' ? <div className="mv-sell"><p role="status" className="mv-hint">{selected.seller === 'Equipped' ? 'Unequip this item before selling.' : 'Set a sale price, then check and confirm the listing fee.'}</p><label className="mv-price">Sale price in SKR<input aria-label="Sale price in SKR" inputMode="decimal" value={price} onChange={(event) => setPrice(event.target.value)} className="mv-input" /></label><p className="mv-hint">{validPrice ? <>{skrPrice(cents, rate)}<SkrUsd cents={cents} /></> : 'Enter a SKR price'}</p><p className="sc-muted">Price uses the current rate and is rounded to the server price step. Seller receives 90% in SKR.</p><SkrPurchaseButton key={selected.id} product="market_list_item" params={{ item_id: selected.id, price: cents }} label={selected.seller === 'Ready' ? <>List · {skrPrice(2, rate)}<SkrUsd cents={2} /> fee</> : selected.seller} disabled={!validPrice || selected.seller !== 'Ready'} onDelivered={delivered} /></div> : <button type="button" onClick={() => cancel(selected)} disabled={marketBusy} className="sc-seal mv-cancel">Cancel</button>}</Detail> : <Empty text="Select an asset" />}</aside>
         </main>
       </>}
       {tab === 'activity' && <Records title="Latest 100 market sales" rate={rate} rows={(market?.activity ?? []).map(marketHistoryRow)} />}

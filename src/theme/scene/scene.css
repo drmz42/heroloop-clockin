@@ -350,8 +350,12 @@ button.sc-chip { cursor: pointer; }
 .mv-vault { --sc-art: url('/assets/screens/market-vault-v1.webp'); --sc-glow-y: 62%; --sc-glow-color: rgba(255, 176, 70, .22); min-height: 0; padding: 10px 10px 8px; }
 .mv-head { padding-inline: 44px; }
 .mv-root .mv-head .sc-title { margin: 2px 0 0; font-size: 21px; }
-.mv-tabs { position: relative; z-index: 1; display: grid; width: 100%; max-width: 520px; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; margin-top: 8px; }
-.mv-tab { min-height: 30px; border-width: 6px 7px; padding: 0 1px; font-size: 9px; letter-spacing: 0; }
+.mv-tabs { position: relative; z-index: 1; display: flex; width: calc(100% + 20px); gap: 3px; overflow-x: auto; margin: 8px -10px 0; padding: 0 10px; scrollbar-width: none; }
+.mv-tabs::-webkit-scrollbar { display: none; }
+@media (min-width: 560px) { .mv-tabs { justify-content: center; } }
+.mv-tab { flex: none; min-height: 30px; border-width: 6px 8px; padding: 0 3px; font-size: 9px; letter-spacing: .02em; }
+.mv-tab-soon { gap: 4px; opacity: .55; }
+.mv-tab-soon small { border-radius: 2px; padding: 1px 3px; background: rgba(242, 204, 128, .18); color: var(--sc-gold); font-size: 7px; }
 .mv-help { position: absolute; z-index: 3; top: 6px; right: 6px; display: grid; width: 32px; height: 32px; place-items: center; border: 1px solid rgba(199, 158, 97, .5); border-radius: 50%; padding: 0; background: rgba(6, 5, 4, .78); color: var(--sc-gold); cursor: pointer; }
 .mv-help[aria-expanded='true'] { border-color: var(--sc-gold); box-shadow: 0 0 10px rgba(242, 204, 128, .35); }
 .mv-help:focus-visible { outline: 2px solid var(--sc-gold); outline-offset: 2px; }
@@ -368,8 +372,9 @@ button.sc-chip { cursor: pointer; }
 .mv-cat svg { color: var(--sc-gold); }
 .mv-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
 .mv-filters > :first-child { grid-column: span 2; }
-.mv-filters:not(.is-heroes) > :last-child { grid-column: 1 / -1; }
-@media (min-width: 760px) { .mv-filters { grid-template-columns: minmax(140px, 1fr) repeat(5, minmax(0, 112px)); } .mv-filters > :first-child, .mv-filters:not(.is-heroes) > :last-child { grid-column: auto; } .mv-filters.is-heroes { grid-template-columns: minmax(140px, 1fr) repeat(4, minmax(0, 120px)); } }
+.mv-filters > .mv-compare-select { grid-column: 1 / -1; }
+.mv-filters > .mv-compare-select.is-half { grid-column: span 2; }
+@media (min-width: 760px) { .mv-filters { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .mv-root .mv-input {
   width: 100%;
   min-width: 0;
