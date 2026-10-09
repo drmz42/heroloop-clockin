@@ -308,7 +308,7 @@ function emptySlotArtworkId(slot: ItemSlot, heroClass: HeroClass): string {
   return `${slot}-common`;
 }
 
-export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRewardBoostClick, onQuestsClick, events, onEventsOpen }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void; onRewardBoostClick: () => void; onQuestsClick?: () => void; events?: SeekerEventsApi; onEventsOpen?: (tab: EventTab) => void }) {
+export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRewardBoostClick, onQuestsClick, events, onEventsOpen, eventsMenuOpen, onEventsMenuOpen }: { game: GameApi; tokenomics: TokenomicsApi; onBoostClick: () => void; onGuidesClick: () => void; onRewardBoostClick: () => void; onQuestsClick?: () => void; events?: SeekerEventsApi; onEventsOpen?: (tab: EventTab) => void; eventsMenuOpen?: boolean; onEventsMenuOpen?: (open: boolean) => void }) {
   const { state, battleResult, respawnCountdowns, paused, setPaused } = game;
   const tok = tokenomics;
   const accountXpCurrent = accountXpProgress(state.accountXp, state.accountLevel);
@@ -316,7 +316,10 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const [banner, setBanner] = useState<typeof battleResult>(null);
   const [showPotSettings, setShowPotSettings] = useState(false);
   const [showBattleSettings, setShowBattleSettings] = useState(false);
-  const [battleMenuOpen, setBattleMenuOpen] = useState(false);
+  // Seeker (Founder 2026-10-09): the top bar's Events plate owns this menu; elsewhere the battle burger does.
+  const [localBattleMenuOpen, setLocalBattleMenuOpen] = useState(false);
+  const battleMenuOpen = onEventsMenuOpen ? Boolean(eventsMenuOpen) : localBattleMenuOpen;
+  const setBattleMenuOpen = onEventsMenuOpen ?? setLocalBattleMenuOpen;
   const eventsReady = readyEventCount(events?.status ?? null);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [autoGearNotice, setAutoGearNotice] = useState<string | null>(null);
@@ -581,12 +584,13 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   const battleMenuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!battleMenuOpen) return;
-    const close = (event: PointerEvent) => { if (!battleMenuRef.current?.contains(event.target as Node)) setBattleMenuOpen(false); };
+    // The top bar's Events plate toggles the menu itself on click.
+    const close = (event: PointerEvent) => { if (!battleMenuRef.current?.contains(event.target as Node) && !(event.target as Element).closest?.('.tb-events')) setBattleMenuOpen(false); };
     const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setBattleMenuOpen(false); };
     document.addEventListener('pointerdown', close);
     document.addEventListener('keydown', escape);
     return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', escape); };
-  }, [battleMenuOpen]);
+  }, [battleMenuOpen, setBattleMenuOpen]);
 
   // Opening the collapsed hackathon path scrolls the battle column so the whole path is on screen at once.
   useEffect(() => {
@@ -763,7 +767,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     };
     window.addEventListener(OVERLAYS_CLOSE_EVENT, close);
     return () => window.removeEventListener(OVERLAYS_CLOSE_EVENT, close);
-  }, []);
+  }, [setBattleMenuOpen]);
 
   // Commander panel: in the Quests column on desktop; on a phone it opens from the avatar in the
   // top bar (Founder 2026-10-02).
@@ -976,14 +980,21 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
           {isolatedHackathon && !activeDungeon && <AutomaticHealingStatus game={game} />}
           {isolatedHackathon && !activeDungeon && <NextStepCard game={game} nextLocation={nextLocationAvailable ? nextLocation : null} onQuestsClick={onQuestsClick} onStoreClick={onRewardBoostClick} />}
           {isAndroidLayout && <div ref={battleMenuRef} className="hl-battle-menu pointer-events-none absolute bottom-2 right-2 top-2 z-[112] flex flex-col items-end gap-1">
-            <button type="button" onClick={() => setBattleMenuOpen((open) => !open)} data-guide="boss" className="hl-battle-menu-toggle game-control pointer-events-auto relative grid h-11 w-11 shrink-0 place-items-center p-0" aria-label={eventsReady ? 'Battle menu, event rewards ready' : 'Battle menu'} aria-haspopup="dialog" aria-expanded={battleMenuOpen}>{battleMenuOpen ? <X size={20} /> : <Menu size={20} />}{eventsReady > 0 && !battleMenuOpen && <b className="hl-battle-menu-dot" aria-hidden="true" />}</button>
-            {battleMenuOpen && <div role="dialog" aria-label="Battle menu" className="hl-battle-menu-panel pointer-events-auto min-h-0 w-64 max-w-[calc(100vw-24px)] overflow-y-auto overscroll-contain rounded-lg border border-[#80683f] bg-[#11130f] p-2 shadow-2xl">
+            {!onEventsMenuOpen && <button type="button" onClick={() => setBattleMenuOpen(!battleMenuOpen)} data-guide="boss" className="hl-battle-menu-toggle game-control pointer-events-auto relative grid h-11 w-11 shrink-0 place-items-center p-0" aria-label={eventsReady ? 'Battle menu, event rewards ready' : 'Battle menu'} aria-haspopup="dialog" aria-expanded={battleMenuOpen}>{battleMenuOpen ? <X size={20} /> : <Menu size={20} />}{eventsReady > 0 && !battleMenuOpen && <b className="hl-battle-menu-dot" aria-hidden="true" />}</button>}
+            {battleMenuOpen && (events && onEventsOpen ? <div role="dialog" aria-label="Events" className="ev-menu-panel pointer-events-auto">
+              <EventMenuCards events={events} onOpen={(tab) => { setBattleMenuOpen(false); onEventsOpen(tab); }}>
+                {!activeDungeon && <div className="ev-menu-battle">
+                  <button type="button" onClick={() => { setBattleMenuOpen(false); setShowDungeonInfo(true); }} className="ev-menu-btn ev-menu-btn-dungeon"><DoorOpen size={16} aria-hidden="true" /><span>Dungeons</span></button>
+                  <button type="button" onClick={() => void handleSummonBoss()} data-guide="boss" disabled={summonBusy || state.bossKeys < 1 || state.bossBattleActive} className="ev-menu-btn ev-menu-btn-boss"><BossKeyIcon size={22} /><span>{state.bossBattleActive ? 'Boss active' : `Boss · ${state.bossKeys}`}</span></button>
+                </div>}
+              </EventMenuCards>
+            </div> : <div role="dialog" aria-label="Battle menu" className="hl-battle-menu-panel pointer-events-auto min-h-0 w-64 max-w-[calc(100vw-24px)] overflow-y-auto overscroll-contain rounded-lg border border-[#80683f] bg-[#11130f] p-2 shadow-2xl">
               {!activeDungeon && <div className="mb-2 grid grid-cols-2 gap-1.5 border-b border-[#80683f]/50 pb-2">
                 <button type="button" onClick={() => { setBattleMenuOpen(false); setShowDungeonInfo(true); }} className="pm-socket game-control flex min-h-11 items-center justify-center gap-1.5 px-2 ui-text-small font-bold text-[#d7c6ea]"><DoorOpen size={15} aria-hidden="true" /> DUNGEONS</button>
                 <button type="button" onClick={() => void handleSummonBoss()} data-guide="boss" disabled={summonBusy || state.bossKeys < 1 || state.bossBattleActive} className="pm-socket game-control flex min-h-11 items-center justify-center gap-1 px-2 ui-text-small font-bold disabled:opacity-50"><BossKeyIcon size={22} /> {state.bossBattleActive ? 'BOSS ACTIVE' : `BOSS · ${state.bossKeys}`}</button>
               </div>}
-              {events && onEventsOpen ? <EventMenuCards events={events} onOpen={(tab) => { setBattleMenuOpen(false); onEventsOpen(tab); }} /> : battleSettingsContent}
-            </div>}
+              {battleSettingsContent}
+            </div>)}
           </div>}
           {!activeDungeon && banner && (
             <div className="hl-battle-banner absolute inset-x-0 top-1/4 flex flex-col items-center z-30 pointer-events-none">

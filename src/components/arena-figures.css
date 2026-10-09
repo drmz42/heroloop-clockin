@@ -1,17 +1,18 @@
 /* Full-body 2.5D battle figures (Founder 2026-10-08). Each side is one column of up to three lanes; lower lanes
-   step toward the centre and overlap the lane above a little, so no figure hides another. Name/HP plates stay
-   in a straight outer column. Every hero uses the same figure box; Bosses are slightly larger. */
+   overlap the lane above a little. Founder 2026-10-09: every lane lines up under the top hero/monster (no step
+   toward the centre). Name/HP plates stay in a straight outer column. Every hero uses the same figure box;
+   Bosses are slightly larger. */
 .arena-stage-inner:has(.arena-figures) { container-type: size; }
 .arena-lanes.arena-figures {
   /* Three overlapping lanes plus a Boss need about 2.6 figure heights, so the stage height also bounds them. */
   --fig-h: clamp(96px, min(34vw, 34cqh), 168px);
   --fig-w: calc(var(--fig-h) * .68);
-  --fig-step: clamp(6px, 2.4vw, 16px);
+  --fig-step: 0px;
   --fig-overlap: .32;
   column-gap: clamp(12px, calc(8vw - 20px), 90px) !important;
 }
 @media (min-width: 1024px) {
-  .arena-lanes.arena-figures { --fig-h: clamp(150px, min(22vh, 34cqh), 260px); --fig-step: clamp(18px, 1.6vw, 34px); }
+  .arena-lanes.arena-figures { --fig-h: clamp(150px, min(22vh, 34cqh), 260px); }
 }
 .arena-lanes.arena-figures .arena-unit.has-figure { z-index: calc(1 + var(--lane, 0)); }
 .arena-lanes.arena-figures .arena-roster > .arena-unit.has-figure + .arena-unit.has-figure { margin-top: calc(var(--fig-h) * -1 * var(--fig-overlap)); }

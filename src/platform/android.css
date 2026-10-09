@@ -174,6 +174,11 @@ html[data-hl-platform='android'] .hl-tabbar::before {
 /* Second row: the same language, one step quieter. */
 html[data-hl-platform='android'] .hl-tabbar-item:nth-child(n + 7) { gap: 3px; font-size: 8.5px; }
 html[data-hl-platform='android'] .hl-tabbar-item:nth-child(n + 7) .hl-tabbar-icon svg { width: 18px; height: 18px; }
+/* Five-item second row (Founder 2026-10-09: Training moved into More): six wide cells above, five below. */
+html[data-hl-platform='android'] .hl-tabbar.hl-tabbar-5 { grid-template-columns: repeat(30, minmax(0, 1fr)); }
+.hl-tabbar-5 > .hl-tabbar-item { grid-column: span 5; }
+.hl-tabbar-5 > .hl-tabbar-item:nth-child(n + 7) { grid-column: span 6; }
+.hl-tabbar-5 > .hl-tabbar-item:last-child::after { display: none; }
 .hl-tabbar-item.is-active { color: #f2cc80; }
 .hl-tabbar-item.is-active .hl-tabbar-icon svg { color: #ffd98a; transform: translateY(-1px); filter: drop-shadow(0 0 6px rgba(242, 204, 128, .55)); }
 /* Active marker: a brass diamond on the item's top edge with a soft glow below it. */
