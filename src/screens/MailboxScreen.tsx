@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, Gift, Mail, MailOpen, Trash2 } from 'lucide-react';
+import { ChevronLeft, Gift, Mail, MailOpen, Sparkles, Trash2 } from 'lucide-react';
+import { versionedAsset } from '@/game/assetVersion';
 import { ChestCollectIcon } from '@/components/ChestCollectIcon';
 import { GoldIcon } from '@/components/GoldIcon';
-import { BossKeyIcon } from '@/components/BossKeyIcon';
-import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 import { ItemArtwork } from '@/components/ItemArtwork';
 import { RARITY_COLORS } from '@/game/heroes';
 import { ITEM_MAP, displayItemPower } from '@/game/items';
@@ -36,15 +35,24 @@ const hasUnclaimed = (entry: MailEntry) => entry.kind === 'item' || entry.attach
 const isRead = (entry: MailEntry) => entry.kind === 'letter' && entry.read && !hasUnclaimed(entry);
 
 function AttachmentTile({ attachment }: { attachment: MailAttachment }) {
-  const label = attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss Chest' : 'Chest'}, Location ${attachment.chest.stage}`
-    : `${formatNum(attachment.amount)} ${attachment.kind === 'gold' ? 'Gold' : attachment.resourceId === 'boss_key' ? 'Boss Keys' : 'Summon Scrolls'}`;
-  const art = attachment.kind === 'chest' ? <ChestCollectIcon size={44} /> : attachment.kind === 'gold' ? <GoldIcon size={30} />
-    : attachment.resourceId === 'boss_key' ? <BossKeyIcon size={36} /> : <SummonScrollArtwork size={36} />;
-  return <div className={`mailbox-reward ${attachment.claimed ? 'is-claimed' : ''}`} title={label} aria-label={label}>
-    <span className="mailbox-reward-art">{art}</span>
+  const title = attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss Chest' : 'Chest'}, Location ${attachment.chest.stage}`
+    : attachment.kind === 'resource' ? `${formatNum(attachment.amount)} × ${attachment.title}` : `${formatNum(attachment.amount)} Gold`;
+  return <div className={`mailbox-reward ${attachment.claimed ? 'is-claimed' : ''}`} title={title} aria-label={title}>
+    <span className="mailbox-reward-art">{attachment.kind === 'chest' ? <ChestCollectIcon size={44} /> : attachment.kind === 'resource' ? <ResourceArt resourceId={attachment.resourceId} /> : <GoldIcon size={30} />}</span>
     <b>{attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss · ' : ''}L${attachment.chest.stage}` : formatNum(attachment.amount)}</b>
+    {attachment.kind === 'resource' && <small className="mailbox-reward-name">{attachment.title}</small>}
     {attachment.claimed && <i aria-label="Claimed">✓</i>}
   </div>;
+}
+
+// Ledger resources in a letter use the game's own art where it exists.
+const RESOURCE_ART: Record<string, string> = {
+  summon_scroll: '/assets/ui/summon-scroll-v1.webp', boss_key: '/assets/ui/boss-key-v2.webp', potion_xs: '/assets/ui/potion-v1.webp',
+  premium_potion_weak: '/assets/ui/potion-v1.webp', premium_potion_strong: '/assets/ui/potion-v1.webp',
+};
+function ResourceArt({ resourceId }: { resourceId: string }) {
+  const src = RESOURCE_ART[resourceId];
+  return src ? <img src={versionedAsset(src)} alt="" className="h-full w-full object-contain" /> : <Sparkles size={26} />;
 }
 
 function ItemTile({ entry }: { entry: MailItemEntry }) {
@@ -92,10 +100,10 @@ export function MailboxScreen({ loadMail, claimMail, readMail, deleteReadMail, f
     setMessage('');
     const result = await claimMail(mailId);
     if (!result.ok) setMessage(ERRORS[result.error ?? ''] ?? 'The reward could not be claimed. Please try again.');
-    else if (result.resourcesFull) setMessage('Some rewards could not fit. They stay attached in the Mailbox.');
     else if (result.chestsFull && result.itemsFull) setMessage('Your bag and chest storage are full. The rest stays in the Mailbox.');
     else if (result.chestsFull) setMessage(result.claimed ? 'Your chest storage is full. The rest stays in the Mailbox.' : ERRORS.chests_full);
     else if (result.itemsFull) setMessage('Your bag is full. The rest stays in the Mailbox.');
+    else if (result.resourcesFull) setMessage('A resource is at its limit. That reward stays in the Mailbox.');
     await refresh();
     setBusy(false);
   };
