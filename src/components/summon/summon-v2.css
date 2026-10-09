@@ -664,7 +664,6 @@
   opacity: .28;
   transform: scale(1.5);
   pointer-events: none;
-  will-change: transform, opacity;
 }
 .sv-reveal[data-phase='portal']::before { animation: sv-push-in 2.8s cubic-bezier(.5, 0, .9, .6) forwards; }
 .sv-reveal::after {
@@ -723,7 +722,6 @@
   border-radius: 50%;
   transform: translate(-50%, -50%);
   animation: sv-ring-in .9s cubic-bezier(.2, .8, .2, 1) both, sv-spin-centered 7s linear infinite;
-  will-change: transform, opacity;
 }
 .sv-portal-ring--b { width: min(60vw, 320px); border: 1px dotted rgba(205, 140, 255, .9); animation: sv-ring-in 1s cubic-bezier(.2, .8, .2, 1) .1s both, sv-spin-centered-rev 5s linear infinite; }
 .sv-portal-beam {
@@ -810,18 +808,21 @@
   left: 50%;
   top: 42%;
   z-index: 0;
-  width: 150vmax;
-  height: 150vmax;
-  margin: -75vmax 0 0 -75vmax;
+  /* Founder 2026-10-09: two screen-sized masked ray layers ran phones out of GPU memory and Cosmic+ cards dropped
+     out; one smaller layer with the same reach remains. */
+  width: 120vmax;
+  height: 120vmax;
+  margin: -60vmax 0 0 -60vmax;
   border-radius: 50%;
   background: repeating-conic-gradient(from 0deg, transparent 0deg, color-mix(in srgb, var(--sv-color) 30%, transparent) 4deg, transparent 8deg 20deg);
-  -webkit-mask: radial-gradient(circle, rgba(0, 0, 0, .9) 4%, rgba(0, 0, 0, .35) 26%, transparent 48%);
-  mask: radial-gradient(circle, rgba(0, 0, 0, .9) 4%, rgba(0, 0, 0, .35) 26%, transparent 48%);
+  -webkit-mask: radial-gradient(circle, rgba(0, 0, 0, .9) 5%, rgba(0, 0, 0, .35) 32.5%, transparent 60%);
+  mask: radial-gradient(circle, rgba(0, 0, 0, .9) 5%, rgba(0, 0, 0, .35) 32.5%, transparent 60%);
   /* Founder 2026-10-09: phones froze the rays when the intro scale and the spin both animated transform;
      the intro now fades only, so the spin owns the transform. */
   animation: sv-rays-fade .7s ease-out both, sv-spin 28s linear infinite;
 }
-.sv-spot .sv-spot-rays--counter { background: repeating-conic-gradient(from 7deg, transparent 0deg, rgba(255, 255, 255, .14) 1.5deg, transparent 3deg 24deg); animation: sv-rays-fade .9s ease-out both, sv-spin 40s linear infinite reverse; }
+.sv-spot .sv-spot-rays--counter { display: none; }
+.sv-spot-tier-3 .sv-spot-rays { background: repeating-conic-gradient(from 0deg, transparent 0deg, color-mix(in srgb, var(--sv-color) 45%, transparent) 4deg, transparent 8deg 20deg); }
 .sv-spot .sv-spot-flash { position: absolute; inset: 0; z-index: 3; background: radial-gradient(circle at 50% 42%, #fff, color-mix(in srgb, var(--sv-color) 60%, #fff) 35%, transparent 80%); opacity: 0; animation: sv-flash .9s ease-in-out both; pointer-events: none; }
 .sv-spot-tier-3 { animation: sv-shake .5s linear .05s both; }
 .sv-spot .sv-spot-motes { position: absolute; inset: 0; z-index: 0; }
