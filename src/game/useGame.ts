@@ -2527,19 +2527,21 @@ export function useGame() {
     return true;
   }, [spawnBattle]);
 
-  const toggleItemLock = useCallback(async (itemUid: string) => {
+  const toggleItemLock = useCallback(async (itemUid: string): Promise<boolean> => {
     const current = stateRef.current.inventory.find((item) => item.uid === itemUid);
-    if (tokenomicsEnabled && current?.serverOwned) {
+    if (!current) return false;
+    if (tokenomicsEnabled && current.serverOwned) {
       const locked = !current.locked;
       const result = await playerSync<{ item_ids: string[]; locked: boolean; revision: number }>('item_mutate', {
         operation: 'lock', item_uids: [itemUid], locked, idempotency_key: createIdempotencyKey(),
       });
-      if (!result || result.locked !== locked || result.item_ids?.[0] !== itemUid) return;
+      if (!result || result.locked !== locked || result.item_ids?.[0] !== itemUid) return false;
       if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
       setState((prev) => ({ ...prev, inventory: prev.inventory.map((item) => item.uid === itemUid ? { ...item, locked } : item) }));
-      return;
+      return true;
     }
     setState((prev) => ({ ...prev, inventory: prev.inventory.map((i) => i.uid === itemUid ? { ...i, locked: !i.locked } : i) }));
+    return true;
   }, []);
 
   // FIXED: sellAllUnlocked only sells UNEQUIPPED, UNLOCKED items (not potions, not equipped)

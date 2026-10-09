@@ -23,7 +23,7 @@ export function AsyncActionButton({ onClick, disabled, children, style, pendingL
       setFailed(false);
       setPending(true);
       try {
-        await onClick?.(event);
+        if (await onClick?.(event) === false) setFailed(true);
       } catch {
         setFailed(true);
       } finally {

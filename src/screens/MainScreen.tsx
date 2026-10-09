@@ -963,7 +963,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     <div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} /></div>
                     <span className="ui-text-small shrink-0 text-px-dim">{groupNumber(q.progress)}/{groupNumber(q.target)}</span>
                   </div>
-                  {done && !q.claimed && <AsyncActionButton onClick={() => game.claimQuest(q.id).then((ok) => { if (ok) playSfx('claim'); })} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold">Claim reward</AsyncActionButton>}
+                  {done && !q.claimed && <AsyncActionButton onClick={() => game.claimQuest(q.id).then((ok) => { if (ok) playSfx('claim'); return ok; })} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold">Claim reward</AsyncActionButton>}
                 </div>
               );
             })}
@@ -984,7 +984,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     <span className="ui-text-small shrink-0 text-px-dim">{formatNum(q.progress)}/{formatNum(q.target)}</span>
                     <span className="ui-text-small shrink-0 font-bold uppercase text-[#8e887b]">T{(q.tier ?? 0) + 1}</span>
                   </div>
-                  {done && <AsyncActionButton onClick={() => game.claimQuest(q.id).then((ok) => { if (ok) playSfx('claim'); })} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold">Claim & unlock next</AsyncActionButton>}
+                  {done && <AsyncActionButton onClick={() => game.claimQuest(q.id).then((ok) => { if (ok) playSfx('claim'); return ok; })} className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold">Claim & unlock next</AsyncActionButton>}
                 </div>
               );
             })}
@@ -1305,11 +1305,11 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               const gridIndex = i;
               return (
                 <Fragment key={item ? item.uid : `e${i}`}>
-                <button
+                <AsyncActionButton pendingLabel="…"
                   data-inventory-item-uid={item?.uid}
                   aria-label={i >= bagOpenSlots ? `Bag ${activeBag} slot ${i + 1} locked` : item ? undefined : `Bag ${activeBag} slot ${i + 1} empty`}
                   disabled={i >= bagOpenSlots}
-                  onClick={item ? () => { if (inventoryLockMode) { game.toggleItemLock(item.uid); showToast(item.locked ? 'Item unlocked' : 'Item locked'); return; } setSelectedItem(item); setSelectedItemSource('bag'); setSelectedItemSlot(null); } : undefined}
+                  onClick={item ? async () => { if (inventoryLockMode) { const accepted = await game.toggleItemLock(item.uid); if (accepted) showToast(item.locked ? 'Item unlocked' : 'Item locked'); return accepted; } setSelectedItem(item); setSelectedItemSource('bag'); setSelectedItemSlot(null); } : undefined}
                   className={`item-slot aspect-square min-w-0 w-full flex items-center justify-center overflow-hidden text-xl border transition hover:-translate-y-0.5 relative ${item && rarity ? `rarity-${rarity}` : ''} ${selectedItem?.uid === item?.uid ? 'ring-1 ring-[#d9ad5b]' : ''} ${i >= bagOpenSlots ? 'opacity-70' : ''}`}
                   style={item ? { borderColor: rc ? `${rc}99` : 'rgba(255,255,255,0.08)' } : { borderColor: i >= bagOpenSlots ? 'rgba(130,103,63,0.35)' : 'rgba(128,119,100,0.11)', background: i >= bagOpenSlots ? 'linear-gradient(145deg,#181612,#080909)' : 'linear-gradient(145deg,#151612,#0c0e0d)' }}
                 >
@@ -1322,7 +1322,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                   {item && <ActionFx watch={item.enchantLevel} scope={item.uid} variant="enchant" downVariant="unequip" />}
                   {itemBase?.heroClass && <ClassGlyph heroClass={itemBase.heroClass} className="absolute right-0 top-0" />}
                   {item && <span className="item-level-label ui-text-small absolute bottom-0 right-0 min-w-3 rounded-tl px-px text-center font-bold leading-3 text-black" style={{ background: rc ?? RARITY_COLORS.common }} title={`Item level ${item.level}`}>{item.level}</span>}
-                </button>
+                </AsyncActionButton>
                 {gridIndex === selectedBagRowEnd && liveSelectedItem && selectedItemSource === 'bag' && <div className="col-span-8 rounded-lg border border-[#6e5837] bg-[#10120f] p-2 shadow-inner"><ItemActionPanel item={liveSelectedItem} game={game} equippedSlot={null} comparisonItem={comparisonItem} equipDisabledReason={selectedEquipReason} onEquip={async (slot) => { if (!selectedHero) return; if (await game.equipItem(selectedHero.uid, liveSelectedItem.uid, slot)) { setSelectedItem(null); showToast('Item equipped'); } else showToast(equipmentFailure('Equip')); }} onBeforeSell={async (selected) => { if (selected.serverOwned) return true; const selectedRarity = ITEM_MAP[selected.itemId]?.rarity; return selectedRarity === 'divine' || selectedRarity === 'celestial' ? tok.removeLimitedItem(selected.uid) : true; }} onClose={() => setSelectedItem(null)} /></div>}
                 </Fragment>
               );
