@@ -1522,7 +1522,7 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
       action: () => runAction('dungeon_room_complete', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }),
     };
     if (roomState?.status === 'reward_locked') return {
-      label: checkpoint.type === 'boss_hunt' ? 'Claim Boss Rewards' : rewardPreview?.reward_table_version === 'dungeon-reward-v3' && rewardCount(rewardPreview?.summon_scrolls) === 2 ? 'Claim 2 Scrolls' : 'Finish test run',
+      label: checkpoint.type === 'boss_hunt' ? 'Claim Boss Rewards' : 'Finish',
       action: () => runAction(checkpoint.type === 'boss_hunt' ? 'boss_claim' : 'dungeon_room_complete', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }),
     };
     if (roomState?.status === 'resolving') return null;
