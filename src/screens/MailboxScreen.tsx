@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { ChevronLeft, Gift, Mail, MailOpen, Trash2 } from 'lucide-react';
 import { ChestCollectIcon } from '@/components/ChestCollectIcon';
 import { GoldIcon } from '@/components/GoldIcon';
+import { BossKeyIcon } from '@/components/BossKeyIcon';
+import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 import { ItemArtwork } from '@/components/ItemArtwork';
 import { RARITY_COLORS } from '@/game/heroes';
 import { ITEM_MAP, displayItemPower } from '@/game/items';
@@ -34,8 +36,12 @@ const hasUnclaimed = (entry: MailEntry) => entry.kind === 'item' || entry.attach
 const isRead = (entry: MailEntry) => entry.kind === 'letter' && entry.read && !hasUnclaimed(entry);
 
 function AttachmentTile({ attachment }: { attachment: MailAttachment }) {
-  return <div className={`mailbox-reward ${attachment.claimed ? 'is-claimed' : ''}`} title={attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss Chest' : 'Chest'}, Location ${attachment.chest.stage}` : `${formatNum(attachment.amount)} Gold`}>
-    <span className="mailbox-reward-art">{attachment.kind === 'chest' ? <ChestCollectIcon size={44} /> : <GoldIcon size={30} />}</span>
+  const label = attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss Chest' : 'Chest'}, Location ${attachment.chest.stage}`
+    : `${formatNum(attachment.amount)} ${attachment.kind === 'gold' ? 'Gold' : attachment.resourceId === 'boss_key' ? 'Boss Keys' : 'Summon Scrolls'}`;
+  const art = attachment.kind === 'chest' ? <ChestCollectIcon size={44} /> : attachment.kind === 'gold' ? <GoldIcon size={30} />
+    : attachment.resourceId === 'boss_key' ? <BossKeyIcon size={36} /> : <SummonScrollArtwork size={36} />;
+  return <div className={`mailbox-reward ${attachment.claimed ? 'is-claimed' : ''}`} title={label} aria-label={label}>
+    <span className="mailbox-reward-art">{art}</span>
     <b>{attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss · ' : ''}L${attachment.chest.stage}` : formatNum(attachment.amount)}</b>
     {attachment.claimed && <i aria-label="Claimed">✓</i>}
   </div>;
@@ -86,6 +92,7 @@ export function MailboxScreen({ loadMail, claimMail, readMail, deleteReadMail, f
     setMessage('');
     const result = await claimMail(mailId);
     if (!result.ok) setMessage(ERRORS[result.error ?? ''] ?? 'The reward could not be claimed. Please try again.');
+    else if (result.resourcesFull) setMessage('Some rewards could not fit. They stay attached in the Mailbox.');
     else if (result.chestsFull && result.itemsFull) setMessage('Your bag and chest storage are full. The rest stays in the Mailbox.');
     else if (result.chestsFull) setMessage(result.claimed ? 'Your chest storage is full. The rest stays in the Mailbox.' : ERRORS.chests_full);
     else if (result.itemsFull) setMessage('Your bag is full. The rest stays in the Mailbox.');
