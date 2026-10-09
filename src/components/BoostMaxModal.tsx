@@ -71,9 +71,9 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
   };
 
   return createPortal(
-    <div className="hl-portal fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-3 backdrop-blur-[2px] anim-fade" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <div className="px-panel-raised relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl" role="dialog" aria-modal="true" aria-label="Rewards and Tokenomics">
-        <header className="flex items-start justify-between gap-3 border-b border-[#5d4a2f] px-4 py-3">
+    <div className={`hl-portal fixed inset-0 z-[9999] flex items-center justify-center anim-fade ${isolatedHackathon ? 'bg-[#100f0c]' : 'bg-black/70 p-3 backdrop-blur-[2px]'}`} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <div className={`relative flex w-full flex-col overflow-hidden ${isolatedHackathon ? 'h-full' : 'px-panel-raised max-h-[92vh] max-w-lg rounded-2xl'}`} role="dialog" aria-modal="true" aria-label="Rewards and Tokenomics">
+        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[#5d4a2f] px-4 py-3" style={isolatedHackathon ? { paddingTop: 'max(0.75rem, env(safe-area-inset-top))', paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' } : undefined}>
           <div>
             <div className="section-kicker">{isolatedHackathon ? 'Seeker $SKR rewards' : 'Live server data'}</div>
             <h2 className="mt-1 flex items-center gap-2 text-2xl font-black text-[#f1d188]"><Gift size={22} /> Rewards &amp; Tokenomics</h2>
@@ -81,7 +81,7 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
           </div>
         </header>
 
-        <div className="game-scrollbar min-h-0 space-y-3 overflow-y-auto p-4">
+        <div className="game-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto p-4" style={isolatedHackathon ? { paddingBottom: 'max(1rem, env(safe-area-inset-bottom))', paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' } : undefined}>
           <section className="stat-tile p-4" aria-label="Reward pool">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-bold uppercase tracking-[.16em] text-[#8f887b]">Reward pool</span>
