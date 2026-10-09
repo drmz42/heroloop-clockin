@@ -924,7 +924,7 @@ html[data-hl-platform='android'][data-hl-encounter] :is(.dungeon-panel-head, .du
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-panel-body { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-panel-body > * { flex: 1 1 100%; }
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-panel-body > .dungeon-panel-primary { flex: 1 1 0; min-height: 48px; }
-html[data-hl-platform='android'][data-hl-encounter] .dungeon-panel-body > .dungeon-panel-abandon { flex: 0 1 auto; min-height: 48px; max-width: 46%; padding: 0 10px; font-size: 11px; line-height: 1.15; }
+html[data-hl-platform='android'] .dungeon-battle-panel button.dungeon-path-choice { min-height: 62px; padding: 8px 6px; line-height: 1.2; }
 /* Founder 2026-10-05: a status line ("Battle in progress", "Room cleared") on its own row grew the panel over the
    party. It now takes the primary slot beside Abandon, and gives way when a primary action is shown. */
 html[data-hl-platform='android'][data-hl-encounter] .dungeon-panel-body > .dungeon-panel-status { display: grid; flex: 1 1 0; min-height: 48px; place-items: center; line-height: 1.15; }

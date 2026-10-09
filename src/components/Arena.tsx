@@ -406,7 +406,8 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
         </div>
         <div className="arena-roster flex min-w-0 flex-col items-start justify-center gap-2">
           {laneEnemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive) || (dungeonFight && heroes.some((hero) => hero.alive))} animationMode={animationMode} rank={enemyRank(u, locationId, dungeonRoom?.depth)} figure={figureLanes} lane={lane} />)}
-          {laneEnemies.length === 0 && !sharedBoss && <div className="intentional-empty p-4 ui-text-medium">Enemies defeated</div>}
+          {/* Founder 2026-10-09: the Room 3 path choice has no enemies yet; leave the arena side clear. */}
+          {laneEnemies.length === 0 && !sharedBoss && dungeonRoom?.room !== 3 && <div className="intentional-empty p-4 ui-text-medium">Enemies defeated</div>}
         </div>
       </div>
     </div>

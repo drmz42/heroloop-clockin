@@ -1355,7 +1355,6 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [confirmAbandon, setConfirmAbandon] = useState(false);
   const roomState = checkpoint.room_state;
   const rewardCount = (value: unknown) => {
     const count = Number(value);
@@ -1379,7 +1378,7 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
 
   const runAction = async (action: string, payload: Record<string, unknown>) => {
     if (busy) return;
-    setBusy(true); setError(''); setConfirmAbandon(false);
+    setBusy(true); setError('');
     const result = await requestAction(action, payload);
     if (result) {
       if (result.state) onHydrate(result.state);
@@ -1479,7 +1478,7 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
 
   const startBattle = async () => {
     if (busy) return;
-    setBusy(true); setError(''); setConfirmAbandon(false);
+    setBusy(true); setError('');
     let ready = checkpoint;
     if (!ready.room_state) {
       const started = await requestAction('dungeon_room_start', {
@@ -1557,14 +1556,12 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
       {roomState?.status === 'cleared' && <div className="dungeon-panel-status text-center ui-text-medium font-black uppercase tracking-wider text-emerald-300">Room cleared</div>}
       {roomState?.status === 'failed' && <div className="dungeon-panel-status text-center ui-text-medium font-black uppercase tracking-wider text-rose-300">Formation defeated</div>}
       {busy && <div className="dungeon-panel-status text-center ui-text-medium font-black uppercase tracking-wide text-violet-200">Battle in progress…</div>}
-      {checkpoint.room === 3 && !roomState && <div className="grid grid-cols-2 gap-2"><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'recovery' })} className="game-control min-h-11 px-2 ui-text-small font-black text-emerald-300"><HeartPulse size={15} className="mx-auto mb-1" />Recovery · +25% HP</button><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'treasure' })} className="game-control min-h-11 px-2 ui-text-small font-black text-amber-300"><Gem size={15} className="mx-auto mb-1" />Treasure fight</button></div>}
+      {checkpoint.room === 3 && !roomState && <div className="grid grid-cols-2 gap-2"><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'recovery' })} className="dungeon-path-choice game-control px-2 ui-text-small font-black text-emerald-300"><HeartPulse size={15} className="mx-auto mb-1" />Recovery · +25% HP</button><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision, choice: 'treasure' })} className="dungeon-path-choice game-control px-2 ui-text-small font-black text-amber-300"><Gem size={15} className="mx-auto mb-1" />Treasure fight</button></div>}
       {checkpoint.room === 4 && roomState?.boss && <div className="dungeon-panel-boss-line rounded-lg border border-amber-800/45 bg-amber-950/20 px-3 py-2 text-center ui-text-small font-bold text-amber-200">{roomState.boss.name} · {roomState.status === 'reward_locked' ? 'Defeated · Rewards locked' : roomState.kind === 'shared_boss' ? 'Vulnerable · Shared target' : roomState.status === 'boss_locked' ? 'Retinue defeated · Boss vulnerable' : 'Protected by Retinue'}</div>}
       {/* Founder 2026-10-05: a won run goes straight to Claim; the run summary covered the party. */}
       {roomState?.status === 'cleared' && checkpoint.room < 4 && <div className="rounded border border-amber-700/35 bg-amber-950/20 px-2 py-1.5 text-center ui-text-small font-bold text-amber-200">Room reward preview · Gold + XP · settlement disabled in testing</div>}
       {primary && <button type="button" disabled={busy} onClick={() => { setEngaged(true); void primary.action(); }} className="dungeon-panel-primary game-control game-primary min-h-11 px-3 ui-text-medium font-black"><Skull size={17} className="mr-2 inline" />{primary.label}</button>}
       {error && <div role="alert" className="text-center ui-text-small font-bold text-rose-300">{error.split('_').join(' ')}</div>}
-      {/* Founder 2026-10-08: a won fight waiting for its Claim has nothing to abandon. */}
-      {checkpoint.type === 'dungeon' && roomState?.status !== 'reward_locked' && <button type="button" disabled={busy} onClick={() => confirmAbandon ? void runAction('dungeon_abandon', { encounter_id: checkpoint.encounter_id, expected_revision: checkpoint.revision }) : setConfirmAbandon(true)} className="dungeon-panel-abandon game-control min-h-10 px-3 ui-text-medium font-bold text-rose-300">{confirmAbandon ? 'Confirm exit · no refund' : 'Exit Dungeon'}</button>}
     </div>
   </aside>;
 }
@@ -1646,36 +1643,51 @@ function DungeonPreviewModal({ onStatus, onClose, onGuidesClick }: { accountLeve
       action: () => runAction('dungeon_room_complete', { encounter_id: active.encounter_id, expected_revision: active.revision }),
     };
   })();
+  const depthNames = ['Ruined Fortress', 'Inner Keep', 'Abyss Foundation'];
+  const rooms = [
+    { room: 1, title: 'Guards', note: 'Three-lane formation', art: 'dungeon-room-1-outer-bastion-v2' },
+    { room: 2, title: 'Elite', note: 'One cursed modifier', art: 'dungeon-room-2-guard-hall-v2' },
+    { room: 3, title: 'Crossroads', note: 'Recovery or Treasure', art: 'dungeon-room-3-crossroads-v2' },
+    { room: 4, title: 'Boss', note: 'Retinue, then the Boss', art: 'dungeon-room-4-abyss-throne-v2' },
+  ];
+  // Founder 2026-10-09: the entry window was rebuilt as one dark-fantasy gate: art banner, Depth seals,
+  // the four-room path with room art, compact rules and a single large Enter action.
   return (
     <div className="fixed inset-0 z-[9999] grid place-items-center bg-black/80 p-3 backdrop-blur-[5px]" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="dungeon-preview-title" className="dungeon-gate-modal game-scrollbar max-h-[96vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-[#76569b] p-3 shadow-[0_28px_100px_rgba(0,0,0,.85),0_0_38px_rgba(118,86,155,.18)]">
-        <header className="dungeon-gate-header flex items-start gap-3">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[#8965ad] bg-[#281d33] text-[#d8b4fe] shadow-[inset_0_1px_rgba(255,255,255,.08),0_0_18px_rgba(168,85,247,.15)]"><DoorOpen size={23} /></div>
-          <div className="min-w-0 flex-1"><div className="section-kicker">Live testing</div><div className="mt-1 flex flex-wrap items-center gap-2"><h2 id="dungeon-preview-title" className="font-vt ui-text-large font-black text-[#f0e5ce]">Dungeons</h2><span className="rounded-full border border-emerald-700/60 bg-emerald-950/35 px-2 py-0.5 ui-text-small font-black uppercase tracking-wider text-emerald-300">Server active</span></div><p className="mt-1 ui-text-medium leading-5 text-[#aca1b2]">Level 30+ testing · persistent HP · 100 Attempts each week · only the first 3 entries can earn Boss Scrolls.</p></div>
-          <aside className="dungeon-gate-quick"><span>Weekly attempts</span><b>{status ? `${status.attempts_remaining} / ${status.attempts_max}` : 'Loading…'}</b>{active && <small>Depth {active.depth} · Room {active.room} of 4</small>}</aside>
-          <button type="button" autoFocus onClick={onClose} className="game-control grid h-9 w-9 shrink-0 place-items-center" aria-label="Close Dungeons information"><X size={15} /></button>
+      <section role="dialog" aria-modal="true" aria-labelledby="dungeon-preview-title" className="dungeon-gate-modal game-scrollbar max-h-[96vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-[#76569b] p-3">
+        <header className="dg-hero">
+          <div className="dg-hero-text">
+            <span className="dg-kicker">Depth {active?.depth ?? depth} · {depthNames[(active?.depth ?? depth) - 1] ?? ''}</span>
+            <h2 id="dungeon-preview-title" className="font-vt">Dungeons</h2>
+            <p>Four rooms. Persistent HP. One Boss.</p>
+          </div>
+          <div className="dg-attempts" aria-label="Weekly attempts"><span>Attempts</span><b>{status ? `${status.attempts_remaining}/${status.attempts_max}` : '…'}</b><small>this week</small></div>
+          <button type="button" autoFocus onClick={onClose} className="dg-close" aria-label="Close Dungeons"><X size={16} /></button>
         </header>
 
-        {!active && <div className="dungeon-depth-picker" aria-label="Dungeon depth">{[1, 2, 3].map((value) => <button key={value} type="button" disabled={busy} onClick={() => setDepth(value)} className={depth === value ? 'is-selected' : ''}><span>Depth {value}</span><small>{value === 1 ? 'Ruined Fortress' : value === 2 ? 'Inner Keep' : 'Abyss Foundation'}</small></button>)}</div>}
+        {!active && <div className="dg-depths" role="radiogroup" aria-label="Dungeon depth">{[1, 2, 3].map((value) => <button key={value} type="button" role="radio" aria-checked={depth === value} disabled={busy} onClick={() => setDepth(value)} className={depth === value ? 'is-selected' : ''}><i>{['I', 'II', 'III'][value - 1]}</i><span>{depthNames[value - 1]}</span></button>)}</div>}
 
-        <div className="dungeon-route-preview relative mx-auto mt-2 max-w-3xl">
-          <ol className="relative grid gap-1.5">
-            <li className="flex gap-3"><span className="z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#8965ad] bg-[#241b2c] text-[#d8b4fe]"><DoorOpen size={16} /></span><div><span className="ui-text-small font-black uppercase tracking-widest text-[#8e729f]">Room 1</span><strong className="block ui-text-medium text-[#eee3d2]">Guards</strong><p className="ui-text-small leading-4 text-[#978d9b]">Three-lane formation</p></div></li>
-            <li className="flex gap-3"><span className="z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#8965ad] bg-[#241b2c] text-[#d8b4fe]"><Sparkles size={16} /></span><div><span className="ui-text-small font-black uppercase tracking-widest text-[#8e729f]">Room 2</span><strong className="block ui-text-medium text-[#eee3d2]">Elite</strong><p className="ui-text-small leading-4 text-[#978d9b]">One cursed modifier</p></div></li>
-            <li className="dungeon-fork flex gap-3"><span className="z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#8965ad] bg-[#241b2c] text-[#d8b4fe]"><Gem size={16} /></span><div className="min-w-0 flex-1"><span className="ui-text-small font-black uppercase tracking-[.16em] text-[#d5b8ec]">Room 3 · Choose your path</span><div className="mt-1 grid grid-cols-2 gap-2"><div className="dungeon-fork-door is-recovery"><strong className="flex items-center gap-1.5 ui-text-small text-emerald-300"><HeartPulse size={13} /> Recovery Shrine</strong><p className="ui-text-small leading-3 text-[#b9c7ba]">Survivors restore 25% HP</p></div><div className="dungeon-fork-door is-treasure"><strong className="flex items-center gap-1.5 ui-text-small text-amber-300"><Gem size={13} /> Treasure Vault</strong><p className="ui-text-small leading-3 text-[#c9b89d]">Harder fight, extra reward</p></div></div></div></li>
-            <li className="flex gap-3"><span className="z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#ad8250] bg-[#2b2118] text-[#efbd79]"><Skull size={17} /></span><div><span className="ui-text-small font-black uppercase tracking-widest text-[#9f815d]">Room 4 · Final</span><strong className="block ui-text-medium text-[#f1dfc5]">Retinue → Boss</strong><p className="ui-text-small leading-4 text-[#a4998b]">Boss waits behind</p></div></li>
-          </ol>
-        </div>
+        <ol className="dg-path" aria-label="Dungeon rooms">
+          {rooms.map((room) => <li key={room.room} className={`${room.room === 4 ? 'is-boss' : room.room === 3 ? 'is-fork' : ''}${active?.room === room.room ? ' is-current' : ''}`} style={{ backgroundImage: `url('/assets/screens/${room.art}.webp')` }}>
+            <span className="dg-room-no">{room.room === 4 ? <Skull size={13} /> : room.room}</span>
+            <div><strong>{room.title}</strong><small>{room.note}</small></div>
+          </li>)}
+        </ol>
 
-        <div className="mt-2 border-t border-[#4d3c57]/70 pt-2 ui-text-small leading-4 text-[#a89eaa]"><p><b className="text-rose-300">Rules:</b> Level 30+ · all Depths open · persistent HP/deaths · formation locked · potions disabled · first 3 weekly entries can earn 2 final-Boss Scrolls; other Dungeon rewards are preview-only.</p><span className="sr-only">All four rooms, Retinue and shared Boss combat are server-authoritative. Only eligible final Boss claims mint two Summon Scrolls; other Dungeon rewards remain previews.</span>{error && <p role="alert" className="mt-1 font-bold text-rose-300">{error.split('_').join(' ')}</p>}</div>
+        <ul className="dg-rules" aria-label="Dungeon rules">
+          <li><HeartPulse size={13} /> Persistent HP</li>
+          <li><DoorOpen size={13} /> Formation locked</li>
+          <li><X size={13} /> No potions</li>
+          <li className="is-reward"><Gem size={13} /> 2 Scrolls · first 3 runs/week</li>
+        </ul>
+        <span className="sr-only">All four rooms, Retinue and shared Boss combat are server-authoritative. Only eligible final Boss claims mint two Summon Scrolls; other Dungeon rewards remain previews.</span>
+        {error && <p role="alert" className="mt-2 text-center ui-text-small font-bold text-rose-300">{error.split('_').join(' ')}</p>}
 
-        <footer className="dungeon-gate-actions mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <button type="button" onClick={onGuidesClick} className="game-control flex min-h-9 items-center justify-center gap-2 px-3 py-1.5 ui-text-small font-black"><BookOpen size={14} /> Dungeon guide</button>
-          <div className="grid gap-2">
-            {active?.room === 3 && !active.room_state && <div className="grid grid-cols-2 gap-2"><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: active.encounter_id, expected_revision: active.revision, choice: 'recovery' })} className="game-control min-h-11 px-2 py-2 ui-text-small font-black text-emerald-300"><HeartPulse size={14} className="mx-auto mb-1" />Recovery · +25% HP</button><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: active.encounter_id, expected_revision: active.revision, choice: 'treasure' })} className="game-control min-h-11 px-2 py-2 ui-text-small font-black text-amber-300"><Gem size={14} className="mx-auto mb-1" />Treasure · no healing</button></div>}
-            <button type="button" disabled={primary.disabled || busy} onClick={primary.action} className="game-control game-primary flex min-h-11 items-center justify-center gap-2 px-5 py-2 ui-text-medium font-black"><DoorOpen size={16} /> {busy ? 'Server confirming…' : primary.label}</button>
-            {active && <button type="button" disabled={busy} onClick={() => runAction('dungeon_abandon', { encounter_id: active.encounter_id, expected_revision: active.revision })} className="game-control flex min-h-9 items-center justify-center px-3 py-1 ui-text-small font-bold text-rose-300">Abandon run · no Attempt refund</button>}
-          </div>
+        <footer className="dg-actions">
+          {active?.room === 3 && !active.room_state && <div className="grid grid-cols-2 gap-2"><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: active.encounter_id, expected_revision: active.revision, choice: 'recovery' })} className="game-control min-h-14 px-2 py-2 ui-text-small font-black text-emerald-300"><HeartPulse size={14} className="mx-auto mb-1" />Recovery · +25% HP</button><button type="button" disabled={busy} onClick={() => runAction('dungeon_room_choose', { encounter_id: active.encounter_id, expected_revision: active.revision, choice: 'treasure' })} className="game-control min-h-14 px-2 py-2 ui-text-small font-black text-amber-300"><Gem size={14} className="mx-auto mb-1" />Treasure · no healing</button></div>}
+          <button type="button" disabled={primary.disabled || busy} onClick={primary.action} className="dg-enter game-control game-primary"><span><DoorOpen size={18} /> {busy ? 'Server confirming…' : primary.label.replace(' · Uses 1 Attempt', '')}</span>{!active && status && !busy && <small>Uses 1 Attempt</small>}</button>
+          {active && <button type="button" disabled={busy} onClick={() => runAction('dungeon_abandon', { encounter_id: active.encounter_id, expected_revision: active.revision })} className="game-control flex min-h-9 items-center justify-center px-3 py-1 ui-text-small font-bold text-rose-300">Abandon run · no Attempt refund</button>}
+          <button type="button" onClick={onGuidesClick} className="dg-guide"><BookOpen size={13} /> Dungeon guide</button>
         </footer>
       </section>
     </div>
