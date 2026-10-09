@@ -778,6 +778,11 @@ html[data-hl-platform='android'] .heroes-head > .mt-0\.5 { padding-right: 0; }
 
 /* No dark band between the Play content and the tab bar: the Battle and Bag columns run to the menu. */
 html[data-hl-platform='android'] .game-main { padding-bottom: 0 !important; }
+/* The battlefield fills the frame's former gutter in every encounter mode. */
+html[data-hl-platform='android'][data-hl-section='battle'] .game-main { padding: 0 !important; }
+html[data-hl-platform='android'][data-hl-section='battle'] .hl-col-center { scrollbar-width: none; }
+html[data-hl-platform='android'][data-hl-section='battle'] .hl-col-center::-webkit-scrollbar { display: none; }
+html[data-hl-platform='android'] .battle-stage { border-radius: 0; box-shadow: none; }
 html[data-hl-platform='android'][data-hl-section] .game-main > :is(.hl-col-left, .hl-col-center, .hl-col-right) { padding-bottom: 0; }
 html[data-hl-platform='android'] .hl-col-right > .game-scrollbar { padding-bottom: 4px; }
 html[data-hl-platform='android'] .hl-locations { margin-bottom: 0; }
