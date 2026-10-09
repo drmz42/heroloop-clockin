@@ -218,9 +218,32 @@ export interface ServerMarketSnapshot {
 
 export interface MarketActionResult { ok: boolean; error?: string; mailed?: boolean }
 export interface MailItemEntry { kind: 'item'; id: string; source: 'market_purchase' | 'market_return' | 'store_overflow'; created_at: string; item: OwnedItem }
-// Founder 2026-10-08: rewards arrive in the Mailbox first; a chest moves into the 500-chest queue when claimed.
-export interface MailChestEntry { kind: 'chest'; id: string; source: 'boss_reward'; created_at: string; chest: Chest }
-export type MailEntry = MailItemEntry | MailChestEntry;
+// Founder 2026-10-08: rewards arrive in the Mailbox as letters (sender, title, text, attachments); a chest
+// attachment moves into the 500-chest queue only when there is room, Gold always lands.
+export type MailAttachment = { id: string; claimed: boolean } & ({ kind: 'chest'; chest: Chest } | { kind: 'gold'; amount: number });
+export interface MailLetterEntry {
+  kind: 'letter'; id: string; source: 'boss_reward' | 'compensation' | 'admin' | 'system'; sender: string; title: string; body: string;
+  created_at: string; read: boolean; claimed: boolean; attachments: MailAttachment[];
+}
+export type MailEntry = MailItemEntry | MailLetterEntry;
+type RawMailLetter = Omit<MailLetterEntry, 'kind' | 'attachments'> & { attachments?: { id: string; kind: string; claimed: boolean; payload: Record<string, unknown> }[] };
+
+function parseMailLetters(raw: RawMailLetter[] | undefined): MailLetterEntry[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((letter) => typeof letter?.id === 'string' && typeof letter.title === 'string').map((letter) => ({
+    ...letter, kind: 'letter', body: String(letter.body ?? ''), sender: String(letter.sender ?? 'HeroLoop'), read: letter.read === true, claimed: letter.claimed === true,
+    attachments: (Array.isArray(letter.attachments) ? letter.attachments : []).flatMap((attachment): MailAttachment[] => {
+      if (attachment?.kind === 'chest' && Number.isSafeInteger(Number(attachment.payload?.stage))) {
+        return [{ id: attachment.id, claimed: attachment.claimed === true, kind: 'chest', chest: { stage: Number(attachment.payload.stage), boss: attachment.payload.boss === true } }];
+      }
+      if (attachment?.kind === 'gold' && Number.isSafeInteger(Number(attachment.payload?.amount))) {
+        return [{ id: attachment.id, claimed: attachment.claimed === true, kind: 'gold', amount: Number(attachment.payload.amount) }];
+      }
+      return [];
+    }),
+  }));
+}
+
 export interface MailClaimResult { ok: boolean; error?: string; claimed?: number; remaining?: number; itemsFull?: boolean; chestsFull?: boolean }
 
 interface NormalCombatWave {
@@ -2061,30 +2084,42 @@ export function useGame() {
   // claimed; the claim result carries the canonical inventory and revision.
   const loadMail = useCallback(async (): Promise<MailEntry[] | null> => {
     if (!tokenomicsEnabled) return null;
-    const result = await playerSync<{ count: number; items: Omit<MailItemEntry, 'kind'>[]; rewards?: { id: string; kind: string; source: string; created_at: string; payload: Chest }[] }>('mail_list');
+    const result = await playerSync<{ count: number; items: Omit<MailItemEntry, 'kind'>[]; letters?: RawMailLetter[] }>('mail_list');
     if (!result || !Array.isArray(result.items)) return null;
     setMailCount(Math.max(0, Math.floor(Number(result.count) || 0)));
-    const chests: MailEntry[] = (Array.isArray(result.rewards) ? result.rewards : [])
-      .filter((entry) => entry?.kind === 'chest' && entry.source === 'boss_reward' && Number.isSafeInteger(Number(entry.payload?.stage)))
-      .map((entry) => ({ kind: 'chest', id: entry.id, source: 'boss_reward', created_at: entry.created_at, chest: { stage: Number(entry.payload.stage), boss: entry.payload.boss === true } }));
     const items: MailEntry[] = result.items
       .filter((entry) => entry?.item?.serverOwned === true && Boolean(ITEM_MAP[entry.item.itemId]))
       .map((entry) => ({ ...entry, kind: 'item' }));
-    return [...chests, ...items];
+    return [...parseMailLetters(result.letters), ...items];
   }, []);
 
   const claimMail = useCallback(async (mailId: string | null): Promise<MailClaimResult> => {
     if (!tokenomicsEnabled) return { ok: false, error: 'unavailable' };
     let error = '';
-    const result = await playerSync<{ claimed: number; remaining: number; inventory: OwnedItem[]; chests?: Chest[]; revision: number; items_full?: boolean; chests_full?: boolean }>('mail_claim', {
+    const result = await playerSync<{ claimed: number; remaining: number; inventory: OwnedItem[]; chests?: Chest[]; gold?: number; revision: number; items_full?: boolean; chests_full?: boolean }>('mail_claim', {
       mail_id: mailId, idempotency_key: createIdempotencyKey(),
     }, (message) => { error = message; });
     if (!result || !Array.isArray(result.inventory)) return { ok: false, error: error || 'mail_failed' };
     if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
     const chests = Array.isArray(result.chests) ? result.chests : null;
-    setState((prev) => ({ ...prev, inventory: result.inventory, ...(chests ? { chests } : {}) }));
+    const gold = Number.isSafeInteger(result.gold) ? Number(result.gold) : null;
+    setState((prev) => ({ ...prev, inventory: result.inventory, ...(chests ? { chests } : {}), ...(gold !== null ? { gold } : {}) }));
     setMailCount(Math.max(0, Math.floor(Number(result.remaining) || 0)));
     return { ok: true, claimed: result.claimed, remaining: result.remaining, itemsFull: result.items_full === true, chestsFull: result.chests_full === true };
+  }, []);
+
+  const readMail = useCallback(async (letterId: string) => {
+    if (!tokenomicsEnabled) return;
+    const result = await playerSync<{ count: number }>('mail_read', { mail_id: letterId });
+    if (result) setMailCount(Math.max(0, Math.floor(Number(result.count) || 0)));
+  }, []);
+
+  const deleteReadMail = useCallback(async (): Promise<number | null> => {
+    if (!tokenomicsEnabled) return null;
+    const result = await playerSync<{ deleted: number; count: number }>('mail_delete_read', {});
+    if (!result) return null;
+    setMailCount(Math.max(0, Math.floor(Number(result.count) || 0)));
+    return Math.max(0, Math.floor(Number(result.deleted) || 0));
   }, []);
 
   // Load once the server save is known, then recheck every minute and on return to the app: rewards and
@@ -3106,7 +3141,7 @@ export function useGame() {
     setAutoPot, setBattleAnimationMode, setCombatPresentationVisible,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
     openChests, openTutorialChests, closeChestResult, refreshStore, buyRotatingItem, claimQuest, claimTutorialQuest, claimPartnerQuest,
-    claimReferralReward, resetAccount, hydrateServerState, mergeServerResourceState, applyServerRevision, completeWelcomeTutorial, setAvatarHero, loadMarket, mailCount, loadMail, claimMail, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
+    claimReferralReward, resetAccount, hydrateServerState, mergeServerResourceState, applyServerRevision, completeWelcomeTutorial, setAvatarHero, loadMarket, mailCount, loadMail, claimMail, readMail, deleteReadMail, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
     heroStatsFor: (uid: string) => {
       const owned = state.ownedHeroes.find((h) => h.uid === uid);
       if (!owned) return null;

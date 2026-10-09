@@ -1,0 +1,40 @@
+/* Mailbox page (Founder 2026-10-08): list of letters, one letter view, Claim all and the read-letter bin. */
+.mailbox-screen { position: relative; display: flex; flex-direction: column; gap: 10px; min-height: 100%; padding: 12px 12px 16px; color: #e9dfcd; }
+.mailbox-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; padding-right: 44px; }
+.mailbox-title { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 900; color: #f0dfbb; }
+.mailbox-back { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; padding: 0 12px 0 6px; font-size: 13px; font-weight: 800; }
+.mailbox-room { flex-shrink: 0; font-size: 11px; color: #a99d89; }
+.mailbox-message { border: 1px solid rgba(154, 106, 34, .6); border-radius: 6px; background: rgba(0, 0, 0, .3); padding: 8px 10px; font-size: 12px; color: #f0d9a8; }
+.mailbox-actions { display: flex; gap: 8px; }
+.mailbox-claim-all { flex: 1 1 auto; min-height: 46px; font-size: 14px; font-weight: 900; }
+.mailbox-bin { display: grid; width: 46px; height: 46px; flex-shrink: 0; place-items: center; }
+.mailbox-list { display: grid; gap: 6px; }
+.mailbox-empty { padding: 24px 0; text-align: center; font-size: 13px; color: #a99d89; }
+.mailbox-row {
+  position: relative; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 60px; padding: 8px 10px; text-align: left;
+  border: 1px solid #6b5431; border-radius: 6px; background: linear-gradient(180deg, rgba(58, 44, 24, .92), rgba(24, 19, 12, .92));
+}
+.mailbox-row.is-read { border-color: #3d3529; background: rgba(20, 18, 15, .85); filter: grayscale(.85); opacity: .62; }
+.mailbox-row-icon { display: grid; width: 40px; height: 40px; flex-shrink: 0; place-items: center; border-radius: 6px; background: rgba(0, 0, 0, .35); color: #c9b48a; }
+.mailbox-row-icon.has-gift { color: #f3c64e; }
+.mailbox-row-text { display: grid; min-width: 0; gap: 3px; }
+.mailbox-row-text b { overflow: hidden; font-size: 13px; font-weight: 800; color: #f1e6d2; text-overflow: ellipsis; white-space: nowrap; }
+.mailbox-row-text small { overflow: hidden; font-size: 11px; color: #a99d89; text-overflow: ellipsis; white-space: nowrap; }
+.mailbox-row-dot { position: absolute; top: 8px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: #e0453a; box-shadow: 0 0 0 2px rgba(0, 0, 0, .5); }
+.mailbox-letter { display: flex; flex-direction: column; gap: 10px; border: 1px solid #6b5431; border-radius: 8px; background: linear-gradient(180deg, rgba(40, 31, 18, .95), rgba(16, 13, 9, .95)); padding: 14px 14px 16px; }
+.mailbox-letter h3 { text-align: center; font-size: 16px; font-weight: 900; color: #f3d9a0; }
+.mailbox-letter-body { white-space: pre-line; font-size: 13px; line-height: 1.5; color: #e2d6c1; }
+.mailbox-letter-from { text-align: right; font-size: 12px; font-style: italic; color: #b9ab93; }
+.mailbox-letter h4 { margin-top: 4px; border-top: 1px solid rgba(201, 162, 90, .35); padding-top: 10px; text-align: center; font-size: 13px; font-weight: 900; color: #e7c98a; }
+.mailbox-rewards { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.mailbox-reward { position: relative; display: grid; width: 72px; justify-items: center; gap: 2px; border: 1px solid #8a6a36; border-radius: 6px; background: radial-gradient(circle at 50% 35%, rgba(201, 162, 90, .22), rgba(0, 0, 0, .45)); padding: 6px 4px 4px; }
+.mailbox-reward.is-claimed { opacity: .45; filter: grayscale(.8); }
+.mailbox-reward-art { display: grid; width: 48px; height: 48px; place-items: center; overflow: hidden; }
+.mailbox-reward b { font-size: 11px; font-weight: 900; color: #fff; text-shadow: 0 1px 2px #000; }
+.mailbox-reward i { position: absolute; top: 2px; right: 4px; font-style: normal; font-weight: 900; color: #7fd18a; }
+.mailbox-claim { align-self: center; min-width: 160px; min-height: 46px; margin-top: 4px; font-size: 14px; font-weight: 900; }
+.mailbox-confirm { position: fixed; inset: 0; z-index: 10050; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, .65); }
+.mailbox-confirm-card { display: grid; gap: 16px; width: min(340px, 100%); border: 1px solid #9a6a22; border-radius: 10px; background: linear-gradient(180deg, #2a2116, #120f0a); padding: 20px 16px 16px; text-align: center; box-shadow: 0 20px 60px rgba(0, 0, 0, .7); }
+.mailbox-confirm-card p { font-size: 14px; font-weight: 800; color: #f0dfbb; }
+.mailbox-confirm-card div { display: flex; gap: 10px; }
+.mailbox-confirm-card button { flex: 1; min-height: 46px; font-size: 14px; font-weight: 900; }

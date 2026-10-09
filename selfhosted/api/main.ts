@@ -210,6 +210,8 @@ const commandActions = new Set([
   "partner_quest_claim",
   "mail_list",
   "mail_claim",
+  "mail_read",
+  "mail_delete_read",
   "tester_credit_tokens",
   "tester_credit_gold",
   "tester_credit_account_xp",
@@ -1496,6 +1498,33 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         const code = databaseErrorCode(error, ["mail_not_found", "item_capacity_exceeded", "idempotency_conflict", "save_not_found"]);
         if (code) return errorResponse(409, code, requestId);
         console.error("mail_claim database adapter failed", { requestId });
+        return errorResponse(503, "mail_failed", requestId);
+      }
+    }
+    // Mailbox letters (Founder 2026-10-08): opening marks a letter read; "Delete read" removes read letters
+    // with nothing left to claim.
+    if (parsed.value.action === "mail_read") {
+      const payloadError = validatePayloadFields(payload, ["mail_id"]);
+      const mailId = payload.mail_id;
+      if (payloadError || typeof mailId !== "string" || !uuidPattern.test(mailId)) return errorResponse(400, payloadError ?? "invalid_mail_read", requestId);
+      try {
+        const result = await databaseJson("SELECT heroloop_api.mail_read($1::uuid,$2::uuid) AS result", [identity.playerId, mailId]);
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch (error) {
+        const code = databaseErrorCode(error, ["mail_not_found"]);
+        if (code) return errorResponse(409, code, requestId);
+        console.error("mail_read database adapter failed", { requestId });
+        return errorResponse(503, "mail_failed", requestId);
+      }
+    }
+    if (parsed.value.action === "mail_delete_read") {
+      const payloadError = validatePayloadFields(payload, []);
+      if (payloadError) return errorResponse(400, payloadError, requestId);
+      try {
+        const result = await databaseJson("SELECT heroloop_api.mail_delete_read($1::uuid) AS result", [identity.playerId]);
+        return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
+      } catch {
+        console.error("mail_delete_read database adapter failed", { requestId });
         return errorResponse(503, "mail_failed", requestId);
       }
     }

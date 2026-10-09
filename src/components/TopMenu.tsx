@@ -1,6 +1,6 @@
 import { Sword, Users, Sparkles, Store, ShoppingCart, Trophy, Gift, Dumbbell } from 'lucide-react';
 
-export type Tab = 'main' | 'heroes' | 'summon' | 'training' | 'crafting' | 'shop' | 'market' | 'leaderboard' | 'referrals' | 'guides';
+export type Tab = 'main' | 'heroes' | 'summon' | 'training' | 'crafting' | 'shop' | 'market' | 'leaderboard' | 'referrals' | 'guides' | 'mail';
 
 const TABS: { id: Tab; label: string; icon: typeof Sword }[] = [
   { id: 'main',        label: 'Play',    icon: Sword    },
