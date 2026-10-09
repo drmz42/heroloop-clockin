@@ -213,7 +213,7 @@ function PassTab({ events, now, onState }: { events: SeekerEventsApi; now: numbe
       <div className="ev-track-wrap">
         <div className="ev-track-labels">
           {TRACKS.map(({ id, title, price, Icon }) => <div key={id} className={`ev-track-label ev-label-${id} ${id === 'free' || p.tiers.includes(id) ? 'is-owned' : ''}`}>
-            <Icon size={20} aria-hidden="true" /><strong>{title}</strong>{price && !p.tiers.includes(id as PassTier) && <small>{price}</small>}
+            <i className="ev-track-seal" aria-hidden="true"><Icon size={13} /></i><strong>{title}</strong>{price && !p.tiers.includes(id as PassTier) && <small>{price}</small>}
             {id !== 'free' && p.tiers.includes(id as PassTier) && <small className="is-on">Active</small>}
           </div>)}
         </div>
