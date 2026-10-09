@@ -10,9 +10,9 @@ export function BattleSettings({ game, onPicked }: { game: GameApi; onPicked?: (
     <>
       {isolatedHackathon && <section className="mb-2 border-b border-[#80683f]/50 pb-2" aria-label="Healing settings">
         <h3 className="ui-text-medium font-bold text-emerald-300">Automatic healing</h3>
-        <p className="my-1 ui-text-small leading-relaxed text-[#c4bba7]">Stored potions are used first below 35% HP. Gold buys instant healing only when stock runs out.</p>
+        <p className="my-1 ui-text-small leading-relaxed text-[#c4bba7]">At 50% HP or below, a hero drinks one Ordinary Potion. It restores 100% maximum HP over 20 seconds, with a 30-second cooldown from drinking.</p>
         <label className="flex items-center gap-2 py-1 ui-text-medium text-[#e8decd]"><input type="checkbox" checked={goldHealingEnabled(state.autoPot)} onChange={event => game.setAutoPot({ enabled: true, goldHealingOptOut: !event.target.checked, healingInfoSeen: true })} className="h-4 w-4 accent-emerald-400" /> Spend Gold on healing</label>
-        <p className="ui-text-small leading-relaxed text-[#9e9687]">XS / S / M / L / XL / XXL: 1 / 1 / 1 / 2 / 4 / 10 Gold. Not enough Gold means no purchase. Normal battles only; changes apply next wave.</p>
+        <p className="ui-text-small leading-relaxed text-[#9e9687]">Stock first; then 3 Gold per bottle if enabled. Healing arrives every 5 seconds. Damage continues during healing. Normal battles only; no potions in Boss Hunts or Dungeons. Changes apply next wave.</p>
       </section>}
       <div className="mb-1.5 ui-text-small font-black uppercase tracking-[.14em] text-[#efd18a]">Battle graphics</div>
       {([

@@ -66,3 +66,19 @@ export function itemArtStyle(itemId: string): Record<string, string> | null {
     top: `${-((13 + row * 149) / 130) * 100}%`,
   };
 }
+
+// Full-body battle figures on transparent backgrounds (2.5D, heroes face right, enemies face left).
+const ENEMY_FIGURES = new Set(['goblin', 'skeleton', 'bat', 'slime', 'wolf', 'ghost', 'spider', 'orc', 'boss-ogre', 'boss-lich', 'boss-dragon', 'boss-titan']);
+const ENDGAME_ROLE_FIGURE: Record<NonNullable<import('./types').CombatUnit['role']>, string> = {
+  tank: 'boss-titan', striker: 'orc', skirmisher: 'bat', support: 'ghost', caster: 'boss-lich',
+};
+
+export function heroFigureSrc(heroClass: import('./types').HeroClass): string {
+  return versionedAsset(`/assets/figures/${heroClass}.webp`);
+}
+
+export function enemyFigureSrc(unitUid: string, role?: import('./types').CombatUnit['role']): string | null {
+  const id = unitUid.replace(/^e\d+-/, '');
+  const base = ENEMY_FIGURES.has(id) ? id : id.match(/^(boss-(?:ogre|lich|dragon|titan))/)?.[1] ?? (id.startsWith('endgame-') && role ? ENDGAME_ROLE_FIGURE[role] : null);
+  return base ? versionedAsset(`/assets/figures/${base}.webp`) : null;
+}

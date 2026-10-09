@@ -1,4 +1,4 @@
-import { parseAdditionalSiwsUris, siwsSiteForRequest } from "./siws_site.ts";
+import { parseAdditionalSiwsUris, siwsOriginAllowed, siwsSiteForRequest } from "./siws_site.ts";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -14,6 +14,19 @@ function throws(run: () => unknown, message: string) {
 
 const primary = { chainId: "solana:mainnet", domain: "staging.heroloop.xyz", hashPepper: "p", uri: "https://staging.heroloop.xyz/" };
 const request = (origin?: string) => new Request("http://api/api/v1/auth/solana/challenge", { method: "POST", headers: origin ? { origin } : {} });
+
+Deno.test("Seeker SIWS requires an exact primary or additional browser Origin", () => {
+  const extra = parseAdditionalSiwsUris("https://staging2.heroloop.xyz/");
+  for (const origin of ["https://staging.heroloop.xyz", "https://staging2.heroloop.xyz"]) {
+    assert(siwsOriginAllowed(primary, extra, request(origin)), `allowed ${origin}`);
+  }
+  for (const origin of [undefined, "null", "https://evil.example", "https://staging.heroloop.xyz/",
+    "https://staging.heroloop.xyz.evil.example", "http://staging.heroloop.xyz", "https://staging.heroloop.xyz:8443"]) {
+    assert(!siwsOriginAllowed(primary, extra, request(origin)), `rejected ${origin}`);
+  }
+  assert(!siwsOriginAllowed(primary, [], request("https://staging2.heroloop.xyz")), "unlisted site rejected");
+  assert(!siwsOriginAllowed({ domain: "", uri: "" }, [], request("https://evil.example")), "invalid config closed");
+});
 
 Deno.test("additional SIWS URIs accept only bare https site roots", () => {
   assert(parseAdditionalSiwsUris(undefined).length === 0, "empty by default");

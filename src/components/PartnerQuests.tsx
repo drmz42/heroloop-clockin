@@ -201,8 +201,8 @@ export function PartnerQuests({ claim, onOpenBoostMax, shareState, teamPower }: 
               {quest.body && <p className="ui-text-small mt-0.5 leading-snug text-[#bdb3a3]">{quest.body}</p>}
               <div className="ui-text-small mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[#f1d188]">
                 {rewards.map(([key, value]) => (
-                  <span key={key} className="flex items-center gap-0.5" title={REWARD_LABEL[key] ?? key}>
-                    {key === 'gold' ? <GoldIcon /> : REWARD_ICON[key] ?? <FlaskConical size={10} />}{formatNum(value)}{key === 'gold' ? ' Gold' : REWARD_ICON[key] ? '' : ` ${REWARD_LABEL[key] ?? key}`}
+                  <span key={key} className="flex items-center gap-0.5" title={isolatedHackathon && key.startsWith('potion_') ? 'Ordinary Potions' : REWARD_LABEL[key] ?? key}>
+                    {key === 'gold' ? <GoldIcon /> : REWARD_ICON[key] ?? <FlaskConical size={10} />}{formatNum(value)}{key === 'gold' ? ' Gold' : REWARD_ICON[key] ? '' : ` ${isolatedHackathon && key.startsWith('potion_') ? 'Ordinary Potions' : REWARD_LABEL[key] ?? key}`}
                   </span>
                 ))}
               </div>

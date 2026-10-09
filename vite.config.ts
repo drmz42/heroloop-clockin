@@ -1,7 +1,8 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type ResolvedConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath, URL } from 'node:url';
+import { resolve } from 'node:path';
 import { makeQaGameState } from './qa/gameState';
 import { compressBuildImages, readAssetVersions, versionAssetUrls, UNREFERENCED_SOURCE_IMAGES } from './scripts/compress-build-images.mjs';
 
@@ -46,6 +47,7 @@ function qaEndpoint() {
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const hackathon = ['staging2', 'seeker'].includes(mode);
+  let buildOutputDir = fileURLToPath(new URL('./dist', import.meta.url));
   const assetVersions = hackathon
     ? readAssetVersions(fileURLToPath(new URL('./public', import.meta.url)), { exclude: UNREFERENCED_SOURCE_IMAGES })
     : null;
@@ -93,8 +95,11 @@ export default defineConfig(({ mode }) => {
       // Hackathon builds ship recompressed images; public/assets keeps the web originals.
       name: 'heroloop-hackathon-image-compress',
       apply: 'build' as const,
+      configResolved(config: ResolvedConfig) {
+        buildOutputDir = resolve(config.root, config.build.outDir);
+      },
       async closeBundle() {
-        const result = await compressBuildImages(fileURLToPath(new URL('./dist', import.meta.url)), {
+        const result = await compressBuildImages(buildOutputDir, {
           unreferenced: UNREFERENCED_SOURCE_IMAGES,
         });
         console.log(`hackathon images: ${result.before} -> ${result.after} bytes, removed ${result.removedBytes} unreferenced bytes`);

@@ -5,7 +5,7 @@ import { commitSkrPurchase } from './seekerWallet';
 import { skrError } from './skrPurchase';
 import { automaticHealingConfig } from '../../managed/functions/player-sync/automatic-healing.mjs';
 import { flushSync } from 'react-dom';
-import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey } from '@/game/types';
+import type { GameState, OwnedHero, CombatUnit, FloatingNumber, ItemSlot, OwnedItem, PotionTier, DailyQuest, TrainingBoostKey, Chest } from '@/game/types';
 import {
   loadState, normalizeState, makeInitialState, starUpCost,
   MAX_TEAM, BASE_HERO_CAPACITY, MAX_HERO_CAPACITY, HERO_CAPACITY_STEP, MAX_HERO_STARS, inventoryCapacity, MAX_CHESTS, RESPAWN_TIME_MS, ROTATING_REFRESH_MS,
@@ -217,8 +217,34 @@ export interface ServerMarketSnapshot {
 }
 
 export interface MarketActionResult { ok: boolean; error?: string; mailed?: boolean }
-export interface MailEntry { id: string; source: 'market_purchase' | 'market_return' | 'store_overflow'; created_at: string; item: OwnedItem }
-export interface MailClaimResult { ok: boolean; error?: string; claimed?: number; remaining?: number }
+export interface MailItemEntry { kind: 'item'; id: string; source: 'market_purchase' | 'market_return' | 'store_overflow'; created_at: string; item: OwnedItem }
+// Founder 2026-10-08: rewards arrive in the Mailbox as letters (sender, title, text, attachments); a chest
+// attachment moves into the 500-chest queue only when there is room, Gold always lands.
+export type MailAttachment = { id: string; claimed: boolean } & ({ kind: 'chest'; chest: Chest } | { kind: 'gold'; amount: number });
+export interface MailLetterEntry {
+  kind: 'letter'; id: string; source: 'boss_reward' | 'compensation' | 'admin' | 'system'; sender: string; title: string; body: string;
+  created_at: string; read: boolean; claimed: boolean; attachments: MailAttachment[];
+}
+export type MailEntry = MailItemEntry | MailLetterEntry;
+type RawMailLetter = Omit<MailLetterEntry, 'kind' | 'attachments'> & { attachments?: { id: string; kind: string; claimed: boolean; payload: Record<string, unknown> }[] };
+
+function parseMailLetters(raw: RawMailLetter[] | undefined): MailLetterEntry[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((letter) => typeof letter?.id === 'string' && typeof letter.title === 'string').map((letter) => ({
+    ...letter, kind: 'letter', body: String(letter.body ?? ''), sender: String(letter.sender ?? 'HeroLoop'), read: letter.read === true, claimed: letter.claimed === true,
+    attachments: (Array.isArray(letter.attachments) ? letter.attachments : []).flatMap((attachment): MailAttachment[] => {
+      if (attachment?.kind === 'chest' && Number.isSafeInteger(Number(attachment.payload?.stage))) {
+        return [{ id: attachment.id, claimed: attachment.claimed === true, kind: 'chest', chest: { stage: Number(attachment.payload.stage), boss: attachment.payload.boss === true } }];
+      }
+      if (attachment?.kind === 'gold' && Number.isSafeInteger(Number(attachment.payload?.amount))) {
+        return [{ id: attachment.id, claimed: attachment.claimed === true, kind: 'gold', amount: Number(attachment.payload.amount) }];
+      }
+      return [];
+    }),
+  }));
+}
+
+export interface MailClaimResult { ok: boolean; error?: string; claimed?: number; remaining?: number; itemsFull?: boolean; chestsFull?: boolean }
 
 interface NormalCombatWave {
   startKey: string;
@@ -230,6 +256,8 @@ interface NormalCombatWave {
   autoPotions: NormalCombatAutoPotion[];
   timeline: CombatTimelineEvent[] | null;
   nextTimeline: number;
+  potionTicks: CombatTimelineEvent[] | null;
+  nextPotionTick: number;
 }
 
 interface NormalCombatAutoPotion {
@@ -255,7 +283,7 @@ interface NormalCombatStartResult {
   seed: number;
   available_at: string;
   initial_units: Array<Partial<CombatUnit> & Pick<CombatUnit, 'uid' | 'side'> & { lane: number }>;
-  outcome?: { auto_potions?: NormalCombatAutoPotion[]; elapsed_ms?: number; timeline_version?: number; timeline?: unknown };
+  outcome?: { healing_policy?: string; auto_potions?: NormalCombatAutoPotion[]; elapsed_ms?: number; timeline_version?: number; timeline?: unknown };
 }
 
 function combatFloater(event: {
@@ -604,11 +632,13 @@ export function useGame() {
         autoPotions: Array.isArray(started.outcome?.auto_potions) ? started.outcome.auto_potions : [],
         timeline: null,
         nextTimeline: 0,
+        potionTicks: started.outcome?.healing_policy === 'ordinary-potion-v1' ? [] : null,
+        nextPotionTick: 0,
       };
       const timelinePayload = started.outcome?.timeline;
       const timelineVersion = Number(started.outcome?.timeline_version);
       const timelineElapsed = Number(started.outcome?.elapsed_ms);
-      if (timelinePayload !== undefined || started.outcome?.timeline_version !== undefined) {
+      if (timelinePayload !== undefined || started.outcome?.timeline_version !== undefined || started.outcome?.healing_policy === 'ordinary-potion-v1') {
         const timeline = timelineVersion === COMBAT_TIMELINE_VERSION && Number.isSafeInteger(timelineElapsed)
           ? parseCombatTimeline(timelinePayload, new Set(nextUnits.map((unit) => unit.uid)), timelineElapsed)
           : null;
@@ -617,6 +647,7 @@ export function useGame() {
           return;
         }
         normalCombatWaveRef.current.timeline = timeline;
+        if (normalCombatWaveRef.current.potionTicks) normalCombatWaveRef.current.potionTicks = timeline.filter(event => event.kind === 'potion');
       }
       combatRandomRef.current = seededCombatRandom(serverSeed);
       combatAccumulatorRef.current = 0;
@@ -955,7 +986,15 @@ export function useGame() {
             const serverWave = normalCombatWaveRef.current;
             if (serverWave) {
               serverWave.elapsedMs += 20;
-              if (!combatResolution(finalUnits)) {
+              if (serverWave.potionTicks) {
+                while (serverWave.nextPotionTick < serverWave.potionTicks.length
+                  && serverWave.potionTicks[serverWave.nextPotionTick].elapsedMs <= serverWave.elapsedMs) {
+                  const tick = serverWave.potionTicks[serverWave.nextPotionTick++];
+                  finalUnits = finalUnits.map(unit => unit.uid === tick.targetUid && unit.alive
+                    ? { ...unit, hp: Math.min(unit.maxHp, unit.hp + (tick.amount ?? 0)) } : unit);
+                  pendingPotionFx = { uid: tick.targetUid, born: now };
+                }
+              } else if (!combatResolution(finalUnits)) {
                 while (serverWave.nextAutoPotion < serverWave.autoPotions.length
                   && serverWave.autoPotions[serverWave.nextAutoPotion].elapsed_ms <= serverWave.elapsedMs) {
                   const potion = serverWave.autoPotions[serverWave.nextAutoPotion++];
@@ -2045,29 +2084,56 @@ export function useGame() {
   // claimed; the claim result carries the canonical inventory and revision.
   const loadMail = useCallback(async (): Promise<MailEntry[] | null> => {
     if (!tokenomicsEnabled) return null;
-    const result = await playerSync<{ count: number; items: MailEntry[] }>('mail_list');
+    const result = await playerSync<{ count: number; items: Omit<MailItemEntry, 'kind'>[]; letters?: RawMailLetter[] }>('mail_list');
     if (!result || !Array.isArray(result.items)) return null;
     setMailCount(Math.max(0, Math.floor(Number(result.count) || 0)));
-    return result.items.filter((entry) => entry?.item?.serverOwned === true && Boolean(ITEM_MAP[entry.item.itemId]));
+    const items: MailEntry[] = result.items
+      .filter((entry) => entry?.item?.serverOwned === true && Boolean(ITEM_MAP[entry.item.itemId]))
+      .map((entry) => ({ ...entry, kind: 'item' }));
+    return [...parseMailLetters(result.letters), ...items];
   }, []);
 
   const claimMail = useCallback(async (mailId: string | null): Promise<MailClaimResult> => {
     if (!tokenomicsEnabled) return { ok: false, error: 'unavailable' };
     let error = '';
-    const result = await playerSync<{ claimed: number; remaining: number; inventory: OwnedItem[]; revision: number }>('mail_claim', {
+    const result = await playerSync<{ claimed: number; remaining: number; inventory: OwnedItem[]; chests?: Chest[]; gold?: number; revision: number; items_full?: boolean; chests_full?: boolean }>('mail_claim', {
       mail_id: mailId, idempotency_key: createIdempotencyKey(),
     }, (message) => { error = message; });
     if (!result || !Array.isArray(result.inventory)) return { ok: false, error: error || 'mail_failed' };
     if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
-    setState((prev) => ({ ...prev, inventory: result.inventory }));
+    const chests = Array.isArray(result.chests) ? result.chests : null;
+    const gold = Number.isSafeInteger(result.gold) ? Number(result.gold) : null;
+    setState((prev) => ({ ...prev, inventory: result.inventory, ...(chests ? { chests } : {}), ...(gold !== null ? { gold } : {}) }));
     setMailCount(Math.max(0, Math.floor(Number(result.remaining) || 0)));
-    return { ok: true, claimed: result.claimed, remaining: result.remaining };
+    return { ok: true, claimed: result.claimed, remaining: result.remaining, itemsFull: result.items_full === true, chestsFull: result.chests_full === true };
   }, []);
 
-  // Load once the server save is known; later mail only comes from own actions.
+  const readMail = useCallback(async (letterId: string) => {
+    if (!tokenomicsEnabled) return;
+    const result = await playerSync<{ count: number }>('mail_read', { mail_id: letterId });
+    if (result) setMailCount(Math.max(0, Math.floor(Number(result.count) || 0)));
+  }, []);
+
+  const deleteReadMail = useCallback(async (): Promise<number | null> => {
+    if (!tokenomicsEnabled) return null;
+    const result = await playerSync<{ deleted: number; count: number }>('mail_delete_read', {});
+    if (!result) return null;
+    setMailCount(Math.max(0, Math.floor(Number(result.count) || 0)));
+    return Math.max(0, Math.floor(Number(result.deleted) || 0));
+  }, []);
+
+  // Load once the server save is known, then recheck every minute and on return to the app: rewards and
+  // deliveries also arrive from the server on their own (Founder 2026-10-08).
   const serverSaveKnown = serverRevisionHint !== null;
   useEffect(() => {
     if (tokenomicsEnabled && serverSaveKnown) void loadMail();
+  }, [serverSaveKnown, loadMail]);
+  useEffect(() => {
+    if (!tokenomicsEnabled || !serverSaveKnown) return undefined;
+    const refresh = () => { if (document.visibilityState === 'visible') void loadMail(); };
+    const timer = window.setInterval(refresh, 60_000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', refresh); };
   }, [serverSaveKnown, loadMail]);
 
   const applyMarketState = useCallback((result: { inventory: OwnedItem[]; token_balance: number; revision: number; delivered_to?: string }) => {
@@ -3075,7 +3141,7 @@ export function useGame() {
     setAutoPot, setBattleAnimationMode, setCombatPresentationVisible,
     setTrainingHero, unlockTrainingSlot, buyTrainingBoost,
     openChests, openTutorialChests, closeChestResult, refreshStore, buyRotatingItem, claimQuest, claimTutorialQuest, claimPartnerQuest,
-    claimReferralReward, resetAccount, hydrateServerState, mergeServerResourceState, applyServerRevision, completeWelcomeTutorial, setAvatarHero, loadMarket, mailCount, loadMail, claimMail, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
+    claimReferralReward, resetAccount, hydrateServerState, mergeServerResourceState, applyServerRevision, completeWelcomeTutorial, setAvatarHero, loadMarket, mailCount, loadMail, claimMail, readMail, deleteReadMail, buyMarketAsset, createMarketListing, cancelMarketListing, activateBoost, deactivateBoost, toggleBoostCondition, sortInventory, autoEquipBest, creditTestGold, creditTestAccountXp, creditTestFormationXp,
     heroStatsFor: (uid: string) => {
       const owned = state.ownedHeroes.find((h) => h.uid === uid);
       if (!owned) return null;

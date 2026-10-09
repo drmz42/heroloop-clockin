@@ -60,6 +60,7 @@
     { "id": "seeker_event_scroll", "asset": "summon_scroll", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "seeker_event_chest", "asset": "standard_chest", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "seeker_event_boss_key", "asset": "boss_key", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
+    { "id": "ordinary_potion_conversion", "asset": "potion", "direction": "internal", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "potion_use", "asset": "potion", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "promo_boss_key", "asset": "boss_key", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },
     { "id": "tutorial_boss_key", "asset": "boss_key", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "resource_flow" },

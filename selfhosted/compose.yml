@@ -181,6 +181,7 @@ services:
       - ../managed/functions/player-sync/combat-timeline.mjs:/app/shared/combat-timeline.mjs:ro
       - ../managed/functions/player-sync/normal-combat.mjs:/app/shared/normal-combat.mjs:ro
       - ../managed/functions/player-sync/automatic-healing.mjs:/app/shared/automatic-healing.mjs:ro
+      - ../managed/functions/player-sync/ordinary-potion.mjs:/app/shared/ordinary-potion.mjs:ro
       - ../managed/functions/player-sync/registration.js:/app/shared/registration.js:ro
       - ../managed/functions/player-sync/save-schema.mjs:/app/shared/save-schema.mjs:ro
       - ./deno.json:/app/deno.json:ro
