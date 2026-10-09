@@ -36,7 +36,7 @@ const isRead = (entry: MailEntry) => entry.kind === 'letter' && entry.read && !h
 function AttachmentTile({ attachment }: { attachment: MailAttachment }) {
   return <div className={`mailbox-reward ${attachment.claimed ? 'is-claimed' : ''}`} title={attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss Chest' : 'Chest'}, Location ${attachment.chest.stage}` : `${formatNum(attachment.amount)} Gold`}>
     <span className="mailbox-reward-art">{attachment.kind === 'chest' ? <ChestCollectIcon size={44} /> : <GoldIcon size={30} />}</span>
-    <b>{attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss' : ''} L${attachment.chest.stage}` : formatNum(attachment.amount)}</b>
+    <b>{attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss · ' : ''}L${attachment.chest.stage}` : formatNum(attachment.amount)}</b>
     {attachment.claimed && <i aria-label="Claimed">✓</i>}
   </div>;
 }
