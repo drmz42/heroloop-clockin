@@ -392,6 +392,7 @@ function idempotencyKey(envelope: JsonRecord): string | null {
 
 function databaseErrorCode(error: unknown, allowed: readonly string[]): string | null {
   const message = error instanceof Error ? error.message : String(error ?? "");
+  if (message.includes("item_in_mail")) return "item_in_mail";
   if (message.includes("item_in_market_escrow")) return "item_in_market_escrow";
   if (message.includes("account_restricted")) return "account_restricted";
   return allowed.find((code) => message.includes(code)) ?? null;
@@ -1083,7 +1084,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
           'skr_insufficient_balance_or_overflow','skr_quote_not_found','skr_quote_expired','skr_purchase_refunded',
           'stale_skr_rate','account_restricted','market_listing_unavailable','market_self_purchase','item_not_found',
           'invalid_market_price','store_offer_expired','store_offer_sold','invalid_store_slot',
-          'skr_product_changed','target_not_found','maximum_stars','insufficient_duplicates','unsupported_rarity','hero_capacity_quote_stale','hero_capacity_exceeded','invalid_summon','maximum_enchant','insufficient_gold','invalid_item_upgrade','bag_step_unavailable','invalid_shop_bundle_purchase','invalid_reward_boost_purchase','training_boost_queue_full','item_in_market_escrow','event_pass_owned','chest_capacity_exceeded']);
+          'skr_product_changed','target_not_found','maximum_stars','insufficient_duplicates','unsupported_rarity','hero_capacity_quote_stale','hero_capacity_exceeded','invalid_summon','maximum_enchant','insufficient_gold','invalid_item_upgrade','bag_step_unavailable','invalid_shop_bundle_purchase','invalid_reward_boost_purchase','training_boost_queue_full','item_in_mail','item_in_market_escrow','event_pass_owned','chest_capacity_exceeded']);
         if(code) return errorResponse(409,code,requestId);
         return errorResponse(503,'skr_purchase_pending',requestId);
       }
@@ -1979,7 +1980,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         );
         return json(200, { ok: true, contract_version: 1, request_id: requestId, result });
       } catch (error) {
-        const code = databaseErrorCode(error, ["item_in_market_escrow", "item_not_found", "item_locked", "item_state_mismatch", "idempotency_conflict"]);
+        const code = databaseErrorCode(error, ["item_in_mail", "item_in_market_escrow", "item_not_found", "item_locked", "item_state_mismatch", "idempotency_conflict"]);
         if (code) return errorResponse(409, code, requestId);
         return errorResponse(400, "item_mutation_failed", requestId);
       }
@@ -2607,7 +2608,8 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
         }
         return json(200, { ok: true, contract_version: 1, request_id: requestId, revision, result });
       } catch (error) {
-        if (databaseErrorCode(error, ["item_in_market_escrow"]) === "item_in_market_escrow") return errorResponse(409, "item_in_market_escrow", requestId);
+        const code = databaseErrorCode(error, ["item_in_mail", "item_in_market_escrow"]);
+        if (code) return errorResponse(409, code, requestId);
         console.error("game_state_save database adapter failed", { requestId });
         return errorResponse(503, "state_unavailable", requestId);
       }

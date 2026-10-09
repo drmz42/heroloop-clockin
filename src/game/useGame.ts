@@ -2116,7 +2116,7 @@ export function useGame() {
     setState((prev) => ({ ...prev, inventory: result.inventory, ...(chests ? { chests } : {}), ...(gold !== null ? { gold } : {}) }));
     setMailCount(Math.max(0, Math.floor(Number(result.remaining) || 0)));
     // Scrolls, keys, potions and materials live in the server resource ledger: reload the save so they show at once.
-    if (result.resources_changed) {
+    if (result.claimed > 0 || result.resources_changed) {
       const refreshed = await playerSync<{ state: GameState; revision: number }>('game_state_load');
       if (refreshed?.state && Number.isSafeInteger(refreshed.revision)) { setServerRevisionHint(refreshed.revision); hydrateServerState(refreshed.state); }
     }
@@ -2865,8 +2865,9 @@ export function useGame() {
     if (!result?.state || !Number.isSafeInteger(result.revision)) return false;
     setServerRevisionHint(result.revision);
     hydrateServerState(result.state);
+    if (result.claimed) void loadMail();
     return result.claimed === true;
-  }, [hydrateServerState, serverRevisionHint]);
+  }, [hydrateServerState, loadMail, serverRevisionHint]);
 
   // Partner Quests: the reward was approved in the Founder panel; the claim is
   // the only step that changes the save, with the same revision retry as quests.
@@ -2936,8 +2937,9 @@ export function useGame() {
       bossKeys: read('boss_key', prev.bossKeys), summonScrolls: read('summon_scroll', prev.summonScrolls),
       potions: { ...prev.potions, xs: read('potion_xs', prev.potions.xs) },
     }));
+    if (result.mailed) void loadMail();
     return null;
-  }, [hydrateServerState, serverRevisionHint]);
+  }, [hydrateServerState, loadMail, serverRevisionHint]);
 
   const openTutorialChests = useCallback(async (requestedCount: 1 | 10): Promise<boolean> => {
     if (!tokenomicsEnabled || chestOpeningRef.current) return false;

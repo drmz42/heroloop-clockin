@@ -37,7 +37,7 @@ const hasUnclaimed = (entry: MailEntry) => entry.kind === 'item' || entry.attach
 const isRead = (entry: MailEntry) => entry.kind === 'letter' && entry.read && !hasUnclaimed(entry);
 
 function AttachmentTile({ attachment }: { attachment: MailAttachment }) {
-  if (attachment.kind === 'item') return <div className={attachment.claimed ? 'is-claimed' : ''}><ItemTile item={attachment.item} />{attachment.claimed && <i aria-label="Claimed">✓</i>}</div>;
+  if (attachment.kind === 'item') return <ItemTile item={attachment.item} claimed={attachment.claimed} />;
   const title = attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss Chest' : 'Chest'}, Location ${attachment.chest.stage}`
     : attachment.kind === 'resource' ? `${formatNum(attachment.amount)} × ${attachment.title}` : `${formatNum(attachment.amount)} Gold`;
   return <div className={`mailbox-reward ${attachment.claimed ? 'is-claimed' : ''}`} title={title} aria-label={title}>
@@ -58,12 +58,13 @@ function ResourceArt({ resourceId }: { resourceId: string }) {
   return src ? <img src={versionedAsset(src)} alt="" className="h-full w-full object-contain" /> : <Sparkles size={26} />;
 }
 
-function ItemTile({ item }: { item: OwnedItem }) {
+function ItemTile({ item, claimed = false }: { item: OwnedItem; claimed?: boolean }) {
   const base = ITEM_MAP[item.itemId];
   if (!base) return null;
-  return <div className={`mailbox-reward rarity-${base.rarity}`} title={base.name}>
+  return <div className={`mailbox-reward rarity-${base.rarity} ${claimed ? 'is-claimed' : ''}`} title={base.name} aria-label={base.name}>
     <span className="mailbox-reward-art"><ItemArtwork itemId={base.id} name={base.name} fallback={base.icon} /></span>
     <b style={{ color: RARITY_COLORS[base.rarity] }}>Lv {item.level}</b>
+    {claimed && <i aria-label="Claimed">✓</i>}
   </div>;
 }
 
@@ -145,7 +146,7 @@ export function MailboxScreen({ loadMail, claimMail, readMail, deleteReadMail, f
           {entries === null ? <p className="mailbox-empty">Loading…</p> : entries.length === 0 ? <p className="mailbox-empty">The Mailbox is empty.</p> : entries.map((entry) => {
             const read = isRead(entry) || (entry.kind === 'letter' && entry.read);
             const gift = hasUnclaimed(entry);
-            const title = entry.kind === 'letter' ? entry.title : ITEM_MAP[item.itemId]?.name ?? 'Item delivery';
+            const title = entry.kind === 'letter' ? entry.title : ITEM_MAP[entry.item.itemId]?.name ?? 'Item delivery';
             const sub = entry.kind === 'letter' ? entry.sender : ITEM_SOURCE[entry.source] ?? 'Delivery';
             return <button type="button" key={entry.id} onClick={() => open(entry)} className={`mailbox-row ${read ? 'is-read' : ''}`}>
               <span className={`mailbox-row-icon ${gift ? 'has-gift' : ''}`}>{gift ? <Gift size={22} /> : read ? <MailOpen size={22} /> : <Mail size={22} />}</span>

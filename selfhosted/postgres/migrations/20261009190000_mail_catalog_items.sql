@@ -92,6 +92,8 @@ BEGIN
   END IF;
   IF p_attachment->>'kind' = 'chest' THEN$new$);
   EXECUTE d;
+  -- Item templates can be minted earlier in this same send statement.
+  ALTER FUNCTION public.mail_attachment_payload(jsonb) VOLATILE;
   d:=pg_get_functiondef('public.mail_send_letter(uuid,text,text,text,text,text,jsonb)'::regprocedure);
   d:=pg_temp.mail_patch(d,'  INSERT INTO public.player_mail_letters(',
     $new$  -- Catalog rows are resolved once, inside the letter's atomic transaction.
@@ -120,7 +122,39 @@ BEGIN
           v_free:=v_free-1;
         END IF;
       ELSIF v_reward.kind = 'gold' THEN$new$);
+  d:=pg_temp.mail_patch(d,'          v_resources_changed := true;',
+    $new$          v_resources_changed := true;
+          v_state:=jsonb_set(v_state,'{tutorial}',COALESCE(v_state->'tutorial','{}')||jsonb_build_object('chestBalance',(v_resource#>>'{balances,tutorial_chest}')::bigint),true);$new$);
   EXECUTE d;
 END
 $patch$;
+-- The already-installed Seeker admin-mail adapter predates item templates. Resolve
+-- each recipient's catalog rows inside mail_send_letter, never mint one shared uid
+-- for a broadcast. No Control Center service or permission is changed here.
+DO $adapter$
+DECLARE d text;
+BEGIN
+ IF to_regprocedure('admin_mail.send_letters(uuid,uuid,text,uuid,text,text,text,jsonb)') IS NULL THEN RETURN; END IF;
+ d:=pg_get_functiondef('admin_mail.send_letters(uuid,uuid,text,uuid,text,text,text,jsonb)'::regprocedure);
+ d:=pg_temp.mail_patch(d,$old$  FOR v_reward IN SELECT value FROM jsonb_array_elements(COALESCE(p_rewards, '[]'::jsonb)) LOOP
+    SELECT * INTO v_entry FROM public.reward_catalog WHERE id = v_reward->>'catalog_id' AND enabled;
+    IF NOT FOUND OR jsonb_typeof(v_reward->'amount') <> 'number' OR (v_reward->>'amount')::numeric <> trunc((v_reward->>'amount')::numeric)
+      OR (v_reward->>'amount')::numeric NOT BETWEEN 1 AND v_entry.max_per_grant THEN RAISE EXCEPTION 'invalid_mail_rewards'; END IF;
+    v_amount := (v_reward->>'amount')::bigint;
+    IF v_entry.kind = 'gold' THEN
+      v_attachments := v_attachments || jsonb_build_array(jsonb_build_object('kind', 'gold', 'amount', v_amount));
+    ELSIF v_entry.kind = 'resource' THEN
+      v_attachments := v_attachments || jsonb_build_array(jsonb_build_object('kind', 'resource', 'resource_id', v_entry.resource_id, 'amount', v_amount, 'title', v_entry.title));
+    ELSE
+      FOR i IN 1..v_amount LOOP
+        v_attachments := v_attachments || jsonb_build_array(jsonb_build_object('kind', 'chest', 'stage', v_entry.chest_stage, 'boss', v_entry.chest_boss));
+      END LOOP;
+    END IF;
+  END LOOP;
+$old$,$new$  -- Catalog validation and recipient-specific item rolls are atomic with each letter.
+  v_attachments:=COALESCE(p_rewards,'[]'::jsonb);
+$new$);
+ EXECUTE d;
+END
+$adapter$;
 COMMIT;
