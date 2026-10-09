@@ -1059,7 +1059,31 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
             </div>
           )}
           {activeDungeon && <DungeonBattleControls checkpoint={activeDungeon} attempts={dungeonAttempts} autoRun={dungeonAutoRun.current} onChange={(next) => void handleDungeonChange(next)} onAttempts={setDungeonAttempts} onCombatPulse={setDungeonFloaters} onHydrate={game.hydrateServerState} onLeave={leaveDungeon} onComplete={(won, gold = 0, scrolls = 0, premium = 0, mailed = false) => leftDungeonId.current !== activeDungeon.encounter_id && setDungeonCompletion({ won, depth: activeDungeon.depth, kind: activeDungeon.type, gold, scrolls, premium, mailed })} />}
-          {dungeonCompletion && <div className={`dungeon-complete ${dungeonCompletion.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={dungeonCompletion.won ? 'Encounter Complete' : 'Encounter Failed'}><div className="dungeon-complete-crest"><Skull size={38} /><small>{dungeonCompletion.kind === 'boss_hunt' ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${dungeonCompletion.depth}`}</small><strong>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong><p>{dungeonCompletion.won ? (dungeonCompletion.kind === 'boss_hunt' ? 'The server verified and settled every Boss reward.' : 'The Abyss throne is silent. Server reward result:') : 'The formation has fallen.'}</p>{dungeonCompletion.won && <div className="dungeon-reward-preview">{dungeonCompletion.kind === 'boss_hunt' ? <><span><Coins size={14} /> {formatNum(dungeonCompletion.gold)} GOLD</span><span><Package size={14} /> 1 BOSS CHEST</span>{dungeonCompletion.premium > 0 && <span><FlaskConical size={14} /> {dungeonCompletion.premium} WEAK PREMIUM POTION</span>}<small>{dungeonCompletion.mailed ? 'Rewards sent to Mailbox. Claim them there when you have room.' : 'Granted once · Find your chest in Inventory → Resources → Chests'}</small></> : <><span><SummonScrollArtwork size={18} /> {dungeonCompletion.scrolls} SUMMON SCROLLS</span><span><Package size={14} /> 1 DUNGEON CHEST PREVIEW</span><small>{dungeonCompletion.mailed ? 'Scrolls sent to Mailbox. Claim them there; Dungeon Chest is not yet granted' : dungeonCompletion.scrolls === 2 ? 'Scrolls granted exactly once by the server; Dungeon Chest is not yet granted' : 'No Scrolls granted for this run; Dungeon Chest is not yet granted'}</small></>}</div>}<button type="button" className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button></div></div>}
+          {dungeonCompletion && (() => {
+            const c = dungeonCompletion;
+            const boss = c.kind === 'boss_hunt';
+            const rewards = !c.won ? [] : ([
+              { id: 'gold', amount: boss ? c.gold : 0, label: 'Gold', art: <Coins size={30} /> },
+              { id: 'scrolls', amount: boss ? 0 : c.scrolls, label: c.scrolls === 1 ? 'Summon Scroll' : 'Summon Scrolls', art: <SummonScrollArtwork size={44} /> },
+              { id: 'chest', amount: boss ? 1 : 0, label: 'Boss Chest', art: <img src="/assets/ui/chest-ceremony-v1.webp" alt="" width={44} height={44} decoding="async" draggable={false} /> },
+              { id: 'potion', amount: boss ? c.premium : 0, label: c.premium === 1 ? 'Weak Premium Potion' : 'Weak Premium Potions', art: <img src="/assets/ui/potion-v1.webp" alt="" width={44} height={44} decoding="async" draggable={false} /> },
+            ]).filter((r) => r.amount > 0);
+            const note = rewards.length === 0 ? null : c.mailed ? 'Sent to Mailbox. Claim when you have room.' : boss ? 'Chest is in Inventory → Resources → Chests.' : 'Granted once by the server.';
+            return <div className={`dungeon-complete ${c.won ? 'is-victory' : 'is-defeat'}`} role="dialog" aria-modal="true" aria-label={c.won ? 'Encounter Complete' : 'Encounter Failed'}>
+              <div className="dungeon-complete-crest">
+                <span className="dungeon-complete-sigil" aria-hidden="true">{c.won ? <Sparkles size={34} /> : <Skull size={34} />}</span>
+                <small>{boss ? 'BOSS HUNT' : `CURSED CITADEL · DEPTH ${c.depth}`}</small>
+                <strong>{c.won ? (boss ? 'BOSS DEFEATED' : 'DUNGEON COMPLETE') : 'THE ENEMY ENDURES'}</strong>
+                <p>{c.won ? (boss ? 'The Boss has fallen.' : 'The Abyss throne is silent.') : 'The formation has fallen. Regroup and try again.'}</p>
+                {c.won && (rewards.length > 0 ? <>
+                  <div className="dungeon-complete-divider"><span>REWARDS</span></div>
+                  <ul className="dungeon-reward-grid" data-count={rewards.length}>{rewards.map((r) => <li key={r.id} className={`dungeon-reward-card is-${r.id}`}><span className="dungeon-reward-art">{r.art}</span><b>{formatNum(r.amount)}</b><em>{r.label}</em></li>)}</ul>
+                  {note && <small className="dungeon-reward-note">{note}</small>}
+                </> : <p className="dungeon-reward-empty">No rewards this run.</p>)}
+                <button type="button" autoFocus className="game-control game-primary" onClick={() => setDungeonCompletion(null)}>RETURN TO BATTLE</button>
+              </div>
+            </div>;
+          })()}
           {!activeDungeon && import.meta.env.MODE === 'staging' && <TestControls game={game} />}
           {!activeDungeon && <div className="hl-battle-footer normal-battle-footer relative z-30 flex shrink-0 flex-wrap items-end justify-between gap-3 px-3 pb-3">
             <TokenEarningsPanel status={tok.status} stale={tok.incomeStale} today={game.state.tokensEarnedToday} />
