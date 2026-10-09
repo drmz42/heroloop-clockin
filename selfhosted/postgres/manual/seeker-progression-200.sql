@@ -116,7 +116,16 @@ END $$;
 DO $$ DECLARE oid regprocedure; d text; n text; BEGIN
  oid:=to_regprocedure('admin.game_registry_hero_power(text,numeric,numeric,jsonb)');
  IF oid IS NOT NULL THEN
-  d:=pg_get_functiondef(oid); n:=regexp_replace(d,'\mleast\(99,','least(200,','gi');
+  d:=pg_get_functiondef(oid);
+  -- The versioned Admin migration may already have installed the complete curve.
+  -- Accept only its exact cap/mastery/item expressions; unknown definitions fail below.
+  n:=regexp_replace(lower(d), '\s', '', 'g');
+  IF position('v_levelinteger:=least(200,greatest(1,floor(coalesce(p_level,0))::integer))' IN n)>0
+    AND position('v_item_level:=least(200,' IN n)>0
+    AND position('v_mastery:=power(1::doubleprecision+0.014::doubleprecision,least(99,v_level)-1)*(1+greatest(0,v_level-99)*0.007::doubleprecision);' IN n)>0
+    AND position('((1::doubleprecision+0.008::doubleprecision*(least(99,v_item_level)-1))*power(1::doubleprecision+0.014::doubleprecision,least(99,v_item_level)-1)*(1+greatest(0,v_item_level-99)*0.009::doubleprecision))' IN n)>0
+  THEN RETURN; END IF;
+  n:=regexp_replace(d,'\mleast\(99,','least(200,','gi');
   n:=replace(n,'((1::double precision + 0.008::double precision * (v_item_level - 1)) * power(1::double precision + 0.014::double precision, v_item_level - 1))',
     '((1::double precision + 0.008::double precision * (least(99,v_item_level) - 1)) * power(1::double precision + 0.014::double precision, least(99,v_item_level) - 1) * (1 + greatest(0,v_item_level-99)*0.009))');
   n:=replace(n,'v_mastery := power(1::double precision + 0.014::double precision, v_level - 1);',
