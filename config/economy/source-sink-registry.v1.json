@@ -77,7 +77,7 @@
     { "id": "paid_summon_hero_instance", "asset": "hero_instance", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "hero_flow" },
     { "id": "free_summon_hero_instance", "asset": "hero_instance", "direction": "faucet", "status": "proposal", "authority": "server", "telemetryAggregate": "hero_flow" },
     { "id": "ascension_duplicate_consumption", "asset": "hero_instance", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "hero_flow" },
-    { "id": "mail_catalog_item", "asset": "equipment", "direction": "faucet", "status": "staging-only-server", "authority": "server", "telemetryAggregate": "item_flow" },
+    { "id": "mail_catalog_item", "asset": "equipment", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "item_flow" },
     { "id": "chest_item", "asset": "equipment", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "item_flow" },
     { "id": "store_item", "asset": "equipment", "direction": "faucet", "status": "implemented-server", "authority": "server", "telemetryAggregate": "item_flow" },
     { "id": "item_sale_removal", "asset": "equipment", "direction": "sink", "status": "implemented-server", "authority": "server", "telemetryAggregate": "item_flow" },
