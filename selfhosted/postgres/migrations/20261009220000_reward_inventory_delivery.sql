@@ -13,12 +13,27 @@ BEGIN
 END
 $patch$;
 
-CREATE FUNCTION public.settle_gameplay_delivery(p_player uuid, p_since timestamptz)
+-- Capture only letters created by this source transaction, without changing its
+-- encounter/save/player lock order or sweeping another request's pending rewards.
+DO $capture$
+DECLARE d text; old text := '  RETURN v_id;';
+BEGIN
+  d:=pg_get_functiondef('public.mail_send_letter(uuid,text,text,text,text,text,jsonb)'::regprocedure);
+  IF length(d)-length(replace(d,old,''))<>length(old) THEN RAISE EXCEPTION 'reward_delivery_capture_anchor_mismatch'; END IF;
+  EXECUTE replace(d,old,$new$  IF NULLIF(current_setting('heroloop.gameplay_delivery_ids',true),'') IS NOT NULL THEN
+    PERFORM set_config('heroloop.gameplay_delivery_ids',
+      (current_setting('heroloop.gameplay_delivery_ids')::jsonb||to_jsonb(v_id))::text,true);
+  END IF;
+  RETURN v_id;$new$);
+END
+$capture$;
+
+CREATE FUNCTION public.settle_gameplay_delivery(p_player uuid, p_letters uuid[])
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $function$
 DECLARE letter record; result jsonb; pending boolean; chest_pending boolean; gold_pending boolean; resource_pending boolean;
 BEGIN
   FOR letter IN SELECT id, claimed_at FROM public.player_mail_letters
-    WHERE player_id=p_player AND created_at>=p_since AND source IN ('system','boss_reward')
+    WHERE player_id=p_player AND id=ANY(p_letters) AND source IN ('system','boss_reward')
     ORDER BY created_at,id
   LOOP
     IF letter.claimed_at IS NULL THEN
@@ -37,11 +52,11 @@ BEGIN
     count(*) FILTER(WHERE r.kind='gold')>0, count(*) FILTER(WHERE r.kind='resource')>0
   INTO pending,chest_pending,gold_pending,resource_pending
   FROM public.player_mail_rewards r JOIN public.player_mail_letters l ON l.id=r.letter_id
-  WHERE l.player_id=p_player AND l.created_at>=p_since AND l.source IN ('system','boss_reward') AND r.claimed_at IS NULL;
+  WHERE l.player_id=p_player AND l.id=ANY(p_letters) AND l.source IN ('system','boss_reward') AND r.claimed_at IS NULL;
   RETURN jsonb_build_object('mailed',pending,'chests_mailed',chest_pending,'gold_mailed',gold_pending,'resources_mailed',resource_pending);
 END
 $function$;
-REVOKE ALL ON FUNCTION public.settle_gameplay_delivery(uuid,timestamptz) FROM PUBLIC,anon,authenticated,service_role,heroloop_api,heroloop_worker;
+REVOKE ALL ON FUNCTION public.settle_gameplay_delivery(uuid,uuid[]) FROM PUBLIC,anon,authenticated,service_role,heroloop_api,heroloop_worker;
 
 -- Wrap only reviewed gameplay sources, keeping original signatures, owners and ACLs.
 -- The private copies retain eligibility, amounts, rolls, request validation and replay.
@@ -73,21 +88,23 @@ BEGIN
     SELECT string_agg(quote_ident(arg),',') INTO calls FROM unnest(fn.proargnames) arg;
     receipt_sql:=''; replay_sql:='';
     IF spec.receipt_table IS NOT NULL THEN
-      replay_sql:=format('IF NOT EXISTS(SELECT 1 FROM public.player_mail_letters WHERE player_id=%1$I AND created_at>=started AND source IN (''system'',''boss_reward'')) THEN SELECT %2$I->''inventory_delivery'' INTO prior_delivery FROM %3$s WHERE player_id=%1$I AND %4$I=%5$I; delivery:=COALESCE(prior_delivery,delivery); END IF;',
+      replay_sql:=format('IF cardinality(letters)=0 THEN SELECT %2$I->''inventory_delivery'' INTO prior_delivery FROM %3$s WHERE player_id=%1$I AND %4$I=%5$I; delivery:=COALESCE(prior_delivery,delivery); END IF;',
         spec.player_arg,spec.receipt_column,spec.receipt_table,spec.key_column,spec.key_arg);
       -- Compact receipts retain delivery flags only; never add another save snapshot.
       receipt_sql:=format('UPDATE %1$s SET %2$I=%2$I||jsonb_build_object(''inventory_delivery'',delivery) WHERE player_id=%3$I AND %4$I=%5$I;',
         spec.receipt_table,spec.receipt_column,spec.player_arg,spec.key_column,spec.key_arg);
     END IF;
     body:=format($body$
-DECLARE started timestamptz; r jsonb; delivery jsonb; prior_delivery jsonb; save public.player_saves;
+DECLARE prior_ids text; captured jsonb; letters uuid[]; r jsonb; delivery jsonb; prior_delivery jsonb; save public.player_saves;
 BEGIN
   IF to_regclass('public.seeker_progression_settings') IS NULL THEN RETURN %2$I.%3$I(%4$s); END IF;
-  PERFORM 1 FROM public.players WHERE player_id=%1$I FOR UPDATE;
-  PERFORM 1 FROM public.player_saves WHERE player_id=%1$I FOR UPDATE;
-  started:=clock_timestamp();
+  prior_ids:=NULLIF(current_setting('heroloop.gameplay_delivery_ids',true),'');
+  PERFORM set_config('heroloop.gameplay_delivery_ids','[]',true);
   r:=%2$I.%3$I(%4$s);
-  delivery:=public.settle_gameplay_delivery(%1$I,started);
+  captured:=current_setting('heroloop.gameplay_delivery_ids')::jsonb;
+  SELECT COALESCE(array_agg(value::uuid),ARRAY[]::uuid[]) INTO letters FROM jsonb_array_elements_text(captured);
+  PERFORM set_config('heroloop.gameplay_delivery_ids',CASE WHEN prior_ids IS NULL THEN '' ELSE (prior_ids::jsonb||captured)::text END,true);
+  delivery:=public.settle_gameplay_delivery(%1$I,letters);
   %5$s
   %6$s
   SELECT * INTO save FROM public.player_saves WHERE player_id=%1$I;
