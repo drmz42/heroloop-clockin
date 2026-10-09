@@ -27,11 +27,13 @@ BEGIN
   SELECT id INTO target FROM public.player_mail_letters l
     WHERE l.player_id=incoming.player_id AND l.deleted_at IS NULL AND l.claimed_at IS NULL
       AND l.source=incoming.source AND l.sender=incoming.sender AND l.title=incoming.title AND l.body=incoming.body
-      AND (l.created_at,l.id)<(incoming.created_at,incoming.id)
+      AND l.id<>p_letter
       AND public.mail_stack_signature(l.id)=signature
     ORDER BY l.created_at,l.id LIMIT 1 FOR UPDATE;
   IF target IS NULL THEN RETURN p_letter; END IF;
   UPDATE public.player_mail_rewards SET letter_id=target WHERE letter_id=p_letter AND claimed_at IS NULL;
+  -- Flatten older aliases as well, including grants committed in a different timestamp order.
+  UPDATE public.player_mail_letters SET merged_into=target WHERE merged_into=p_letter;
   UPDATE public.player_mail_letters SET read_at=NULL WHERE id=target;
   -- Keep the donor as a hidden receipt so its source_ref and old client id survive.
   UPDATE public.player_mail_letters SET merged_into=target,deleted_at=clock_timestamp(),
@@ -125,7 +127,7 @@ DO $backfill$
 DECLARE letter record;
 BEGIN
   FOR letter IN SELECT id FROM public.player_mail_letters
-    WHERE deleted_at IS NULL AND claimed_at IS NULL ORDER BY player_id,created_at,id
+    WHERE deleted_at IS NULL AND claimed_at IS NULL ORDER BY player_id,created_at DESC,id DESC
   LOOP PERFORM public.mail_stack_letter(letter.id); END LOOP;
 END $backfill$;
 COMMIT;
