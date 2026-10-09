@@ -57,6 +57,8 @@
   background: var(--pm-surface-deep) !important;
   box-shadow: 0 30px 90px rgba(0, 0, 0, .85), 0 0 80px rgba(143, 31, 18, .14) !important;
 }
+/* Wallet: plain sheet without the forged frame (Founder 2026-10-09). */
+[data-hl-theme=premium] .px-panel-raised.wallet-sheet { border: 0 !important; border-image: none !important; }
 [data-hl-theme=premium] .game-window { overflow: visible !important; }
 [data-hl-theme=premium] .game-window > .min-h-0 { overflow: auto; }
 [data-hl-theme=premium] .game-window::before,
