@@ -15,6 +15,9 @@ export function skrError(error: unknown): string {
     item_locked:'Unlock the item before listing.',item_equipped:'Unequip the item before listing.',
     market_seller_limit_reached:'You already have 20 active listings.',
     store_offer_expired:'The equipment offer expired. Refresh the Store.',
+    chest_not_found:'Not enough tradable Boss Chests. Any charge was refunded.',
+    chest_capacity_exceeded:'Your chest queue is full. Open chests first.',
+    market_chest_limit_reached:'You already have 20 active chest listings.',
   } as Record<string,string>)[code]??'The purchase could not finish. Check Wallet history before trying again.';
 }
 // One shared 30 s rate poll for every price on screen (hero cards, item panels, Store, Market).
