@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Backpack, BookOpen, Castle, ChevronLeft, ChevronRight, Crosshair, Crown, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, PawPrint, Pickaxe, ScrollText, Send, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, Twitter, UserPlus, X, Volume2, VolumeX, Music } from 'lucide-react';
-import { setMusicEnabled, setSfxEnabled, useAudioSettings } from '@/audio/gameAudio';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Backpack, BookOpen, Castle, ChevronLeft, ChevronRight, Crosshair, Crown, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, PawPrint, Pickaxe, ScrollText, Send, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, Twitter, UserPlus, X, Volume2, VolumeX, Music, Settings2 } from 'lucide-react';
+import { setMusicEnabled, setMusicVolume, setSfxEnabled, setSfxVolume, useAudioSettings } from '@/audio/gameAudio';
 import type { Tab } from './TopMenu';
 import { OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { setMobileSection, type MobileSection } from '@/platform/platform';
@@ -41,7 +41,7 @@ function MoLife({ id }: { id: string }) {
 
 export function MobileTabBar({
   tab, section, moreOpen, onTab, onSection, onMoreOpen, onGuides, onCode, onSupport, onLogout, readyQuests = 0, badges = {}, alerts = {},
-  claimQuest, motionOff = false, onSheetOpenChange,
+  claimQuest, motionOff = false, onSheetOpenChange, onPass, settings,
 }: {
   tab: Tab;
   section: MobileSection;
@@ -60,6 +60,10 @@ export function MobileTabBar({
   claimQuest?: (id: string) => Promise<boolean>;
   motionOff?: boolean;
   onSheetOpenChange?: (open: boolean) => void;
+  /** Seeker: the Season Pass banner opens the live Premium Pass in Events. */
+  onPass?: () => void;
+  /** Seeker: automatic healing and battle graphics (moved out of the battle burger). */
+  settings?: ReactNode;
 }) {
   const [soon, setSoon] = useState<'mine' | 'pvp' | null>(null);
   const audioSettings = useAudioSettings();
@@ -69,6 +73,10 @@ export function MobileTabBar({
   // Back from a Season Pass/feature teaser returns to the More list.
   useAndroidOverlayHistory(moreOpen && teaser !== null, () => setTeaser(null));
   useEffect(() => { if (!moreOpen) setTeaser(null); }, [moreOpen]);
+  // Settings (Founder 2026-10-09): healing, sound mixer, battle graphics, Support, Code and Wiki.
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  useAndroidOverlayHistory(moreOpen && settingsOpen, () => setSettingsOpen(false));
+  useEffect(() => { if (!moreOpen) setSettingsOpen(false); }, [moreOpen]);
   const setMineOpen = (open: boolean) => { if (!open) setSoon(null); };
   useEffect(() => {
     const close = (event: Event) => { if (!(event as CustomEvent<{ sheetToggle?: boolean }>).detail?.sheetToggle) setSoon(null); };
@@ -126,11 +134,33 @@ export function MobileTabBar({
           <div className="mo-panel mo-keep">
             <div className="mo-keep-art" aria-hidden="true" />
             <div className="mo-head">
-              {teaser && <button type="button" className="mo-close mo-back" onClick={() => setTeaser(null)} aria-label="Back"><ChevronLeft size={20} /></button>}
-              <span className="mo-title">{teaser ? UPCOMING[teaser].title : 'More'}</span>
+              {(teaser || settingsOpen) && <button type="button" className="mo-close mo-back" onClick={() => { setTeaser(null); setSettingsOpen(false); }} aria-label="Back"><ChevronLeft size={20} /></button>}
+              <span className="mo-title">{settingsOpen ? 'Settings' : teaser ? UPCOMING[teaser].title : 'More'}</span>
               <button type="button" className="mo-close" onClick={() => onMoreOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
-            {teaser ? (
+            {settingsOpen ? (
+              <div className="mo-settings-page">
+                <section className="mo-set-group" aria-label="Sound">
+                  <h4>Sound</h4>
+                  {([['sfx', 'Sound effects', Volume2, audioSettings.sfx, audioSettings.sfxVolume, setSfxEnabled, setSfxVolume],
+                    ['music', 'Music', Music, audioSettings.music, audioSettings.musicVolume, setMusicEnabled, setMusicVolume]] as const).map(([id, label, Icon, on, level, toggle, setLevel]) => (
+                    <div key={id} className={`mo-set-row ${on ? '' : 'is-off'}`}>
+                      <button type="button" className="mo-set-toggle" aria-pressed={on} aria-label={`${label} ${on ? 'on' : 'off'}`} onClick={() => toggle(!on)}>{on ? <Icon size={16} /> : <VolumeX size={16} />}</button>
+                      <span className="mo-set-label">{label}</span>
+                      <input type="range" min={0} max={100} step={5} value={Math.round(level * 100)} disabled={!on} aria-label={`${label} volume`}
+                        onChange={(event) => setLevel(Number(event.target.value) / 100)} />
+                      <b className="mo-set-value">{on ? `${Math.round(level * 100)}%` : 'Off'}</b>
+                    </div>
+                  ))}
+                </section>
+                {settings && <section className="mo-set-group" aria-label="Battle">{settings}</section>}
+                <div className="mo-links">
+                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onSupport(); }}><i aria-hidden="true"><MessageCircle size={17} /></i>Support</button>
+                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onCode(); }}><i aria-hidden="true"><KeyRound size={17} /></i>Code</button>
+                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onGuides(); }}><i aria-hidden="true"><BookOpen size={17} /></i>Wiki</button>
+                </div>
+              </div>
+            ) : teaser ? (
               <div className={`mo-teaser mo-art-${teaser}`}>
                 <div className="mo-teaser-art" aria-hidden="true" />
                 <MoLife id={teaser} />
@@ -147,10 +177,10 @@ export function MobileTabBar({
               </div>
             ) : (
               <div className="mo-body">
-                <button type="button" className="mo-banner mo-banner-hero mo-art-pass" onClick={() => setTeaser('pass')}>
+                <button type="button" className="mo-banner mo-banner-hero mo-art-pass" onClick={() => { if (onPass) { onMoreOpen(false); onPass(); } else setTeaser('pass'); }}>
                   <MoLife id="pass" />
-                  <span className="mo-banner-text"><span className="mo-kicker">{UPCOMING.pass.kicker}</span><strong>Season Pass</strong><span>{UPCOMING.pass.line}</span></span>
-                  <em className="mo-soon">Season 2</em><ChevronRight className="mo-chev" size={18} aria-hidden="true" />
+                  <span className="mo-banner-text"><span className="mo-kicker">{onPass ? 'Season 1 · 100 levels' : UPCOMING.pass.kicker}</span><strong>{onPass ? 'Battle Pass' : 'Season Pass'}</strong><span>{onPass ? 'Free, Empowered and Collector reward tracks.' : UPCOMING.pass.line}</span></span>
+                  <em className="mo-soon">{onPass ? 'Live' : 'Season 2'}</em><ChevronRight className="mo-chev" size={18} aria-hidden="true" />
                 </button>
                 <div className="mo-pair">
                   {(['guilds', 'pets'] as const).map((id) => {
@@ -170,17 +200,13 @@ export function MobileTabBar({
                   <span className="mo-banner-text"><strong>Refer friends</strong><span>Invite allies and share the spoils.</span></span>
                   <ChevronRight className="mo-chev" size={18} aria-hidden="true" />
                 </button>
-                <div className="mo-links">
-                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onGuides(); }}><i aria-hidden="true"><BookOpen size={17} /></i>Guides</button>
-                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onCode(); }}><i aria-hidden="true"><KeyRound size={17} /></i>Code</button>
-                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onSupport(); }}><i aria-hidden="true"><MessageCircle size={17} /></i>Support</button>
+                <div className="mo-links mo-links-single">
+                  <button type="button" className="mo-link" onClick={() => setSettingsOpen(true)}><i aria-hidden="true"><Settings2 size={17} /></i>Settings</button>
                 </div>
                 <div className="mo-footer">
                   <div className="mo-socials" role="group" aria-label="Social networks">
                     <a className="mo-social" href="https://t.me/heroloopgame" target="_blank" rel="noopener noreferrer" aria-label="Telegram" title="Telegram"><Send size={19} aria-hidden="true" /></a>
                     <a className="mo-social" href="https://x.com/heroloopgame" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" title="X (Twitter)"><Twitter size={19} aria-hidden="true" /></a>
-                    <button type="button" className={`mo-social mo-audio ${audioSettings.sfx ? '' : 'is-off'}`} aria-pressed={audioSettings.sfx} aria-label={audioSettings.sfx ? 'Sound effects on' : 'Sound effects off'} title={audioSettings.sfx ? 'Sound effects on' : 'Sound effects off'} onClick={() => setSfxEnabled(!audioSettings.sfx)}>{audioSettings.sfx ? <Volume2 size={19} aria-hidden="true" /> : <VolumeX size={19} aria-hidden="true" />}</button>
-                    <button type="button" className={`mo-social mo-audio ${audioSettings.music ? '' : 'is-off'}`} aria-pressed={audioSettings.music} aria-label={audioSettings.music ? 'Music on' : 'Music off'} title={audioSettings.music ? 'Music on' : 'Music off'} onClick={() => setMusicEnabled(!audioSettings.music)}><Music size={19} aria-hidden="true" /></button>
                   </div>
                   <button type="button" className="mo-logout" onClick={() => { onMoreOpen(false); onLogout(); }}><LogOut size={14} aria-hidden="true" /> Logout</button>
                 </div>
