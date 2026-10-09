@@ -864,8 +864,8 @@ html[data-hl-platform='android'] { --game-progress-height: 102px; }
 
 /* Battle burger menu (MainScreen.tsx): Dungeons, Boss, healing and graphics. The healing notice keeps clear of it. */
 html[data-hl-platform='android'] .hl-battle-menu-toggle { background-color: rgba(17, 19, 15, .9); }
-/* Next-step prompt spans the stage top, clear of the burger menu on the right. */
-html[data-hl-platform='android'] .hl-next-step { left: 8px; right: 60px; width: auto; transform: none; }
+/* Next-step prompt spans the stage top with matching side gutters. */
+html[data-hl-platform='android'] .hl-next-step { left: 8px; right: 8px; width: auto; transform: none; }
 html[data-hl-platform='android'] .hl-healing-status { right: 60px; max-width: calc(100% - 128px); }
 
 
