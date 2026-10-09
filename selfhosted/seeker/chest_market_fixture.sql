@@ -102,5 +102,21 @@ BEGIN
     PERFORM heroloop_api.seeker_purchase_prepare(s,gen_random_uuid(),'market_list_item',jsonb_build_object('item_id',gen_random_uuid(),'price',90));
     RAISE EXCEPTION 'unknown item quoted';
   EXCEPTION WHEN raise_exception THEN IF SQLERRM<>'item_not_found' THEN RAISE; END IF; END;
+  -- House merchants: a seeded lot is quoted as a house sale (treasury), and a seed tag runs once.
+  INSERT INTO auth.users(instance_id,id,aud,role,created_at,updated_at)
+    VALUES ('00000000-0000-0000-0000-000000000000','31000000-0000-4000-8000-000000000003','authenticated','authenticated',now(),now());
+  INSERT INTO public.players(player_id,username) VALUES ('31000000-0000-4000-8000-000000000003','ChestMerchant');
+  INSERT INTO public.seeker_house_sellers(player_id) VALUES ('31000000-0000-4000-8000-000000000003') ON CONFLICT DO NOTHING;
+  snap := public.seeker_house_chest_market_seed('fixture-chests', 20);
+  IF (snap->>'chest_lots')::int<>20 OR public.seeker_house_chest_market_seed('fixture-chests', 3)<>snap THEN RAISE EXCEPTION 'chest seed wrong %',snap; END IF;
+  IF EXISTS (SELECT 1 FROM public.market_chest_listings l JOIN public.seeker_house_sellers h ON h.player_id=l.seller_id
+    WHERE l.quantity NOT BETWEEN 1 AND 5 OR l.price NOT BETWEEN 2*l.quantity AND 5*l.quantity
+      OR EXISTS (SELECT 1 FROM jsonb_array_elements(l.chests) c WHERE NOT public.market_tradable_boss_chest(c))) THEN RAISE EXCEPTION 'chest seed lot invalid'; END IF;
+  SELECT l.id INTO listing FROM public.market_chest_listings l JOIN public.seeker_house_sellers h ON h.player_id=l.seller_id
+    WHERE l.status='active' AND l.seller_id='31000000-0000-4000-8000-000000000003' LIMIT 1;
+  IF listing IS NOT NULL THEN
+    r := heroloop_api.seeker_purchase_prepare(b,gen_random_uuid(),'market_buy_listing',jsonb_build_object('listing_id',listing));
+    IF NOT (r->'context' @> '{"kind":"chest","house_seller":true}') THEN RAISE EXCEPTION 'house chest quote wrong %',r; END IF;
+  END IF;
   RAISE NOTICE 'Boss Chest Market fixture PASS';
 END $$;
