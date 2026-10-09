@@ -1,0 +1,42 @@
+.boost-max-sheet > header { padding-block: 8px; }
+.boost-max-sheet > header .section-kicker { display: none; }
+.boost-max-sheet > header h2 { margin-top: 0; font-size: 20px; }
+.boost-max-sheet > header p { margin-top: 2px; font-size: 11px; }
+.boost-max-sheet > .game-scrollbar { padding: 10px; }
+.boost-max-objectives { padding: 12px; border: 1px solid #6eb679; background: radial-gradient(ellipse at top, #203323 0, #0f1711 72%); box-shadow: inset 0 1px #b3ffc326, 0 0 18px #65d88716; }
+.boost-max-objectives h3 { color: #d0ffb3; font-size: 15px; }
+.boost-max-objectives > .mt-2 { font-size: 11px; }
+.boost-max-objectives > .mt-3 { margin-top: 10px; }
+.boost-max-progress { height: 11px; }
+.boost-max-objectives .ev-bar i { transition: width .3s ease; }
+.boost-max-task { min-height: 58px; padding: 8px; border: 1px solid #476d43; border-left: 3px solid #a0dd78; background: linear-gradient(110deg, #304125a6, #121913); box-shadow: inset 0 1px #e0ffbe0c; }
+.boost-max-task .text-xs { font-size: 12px; line-height: 16px; }
+.boost-max-task .text-xs > span:first-child { color: #edffda; }
+.boost-max-task .text-xs > span:last-child { color: #bbc3ab; }
+.boost-max-task .boost-max-task-icon { border-color: #8bad67; color: #d5f59d; background: #243523; box-shadow: 0 0 10px #a0dd781f; }
+.boost-max-task.is-done { border-color: #369572; border-left-color: #60e6b1; background: linear-gradient(110deg, #194b37, #111c16); }
+.boost-max-task.is-pending { border-color: #48423a; border-left-color: #81715b; background: #1b1916; }
+.boost-max-task.is-pending .boost-max-task-icon { color: #b4a58a; border-color: #625747; background: #29241c; box-shadow: none; }
+.boost-max-task-progress { height: 4px; }
+.boost-max-task-details { margin-top: 10px; color: #b4baa9; font-size: 10px; line-height: 15px; }
+.boost-max-task-details summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: #d5e8bb; }
+.boost-max-task-details summary::before { content: '+'; margin-right: 8px; font-size: 16px; }
+.boost-max-task-details[open] summary::before { content: '−'; }
+.boost-max-task-details summary:focus-visible { outline: 2px solid #c1f199; outline-offset: 2px; }
+.boost-max-task-details dl > div { margin-bottom: 8px; }
+.boost-max-task-details dt { color: #e4eace; font-weight: 700; }
+.boost-max-task-details dd { margin: 2px 0 0; }
+.boost-max-sheet section[aria-label='Reward pool'],
+.boost-max-sheet section[aria-label='Your standing'] { padding: 12px; }
+.boost-max-sheet section[aria-label='Reward pool'] > p { display: none; }
+.boost-max-sheet section[aria-label='Reward pool'] > .text-3xl { font-size: 24px; }
+
+/* Reuse Events' moving stripes, including the same motion preferences. Portals live outside the game shell. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-hl-motion='on']:not(:has(.game-motion-off)) .boost-max-sheet .ev-bar i::after { animation: ev-flow 1.6s linear infinite; }
+  html[data-hl-motion='on']:not(:has(.game-motion-off)) .boost-max-task.is-required .boost-max-task-icon { animation: boost-task-glow 3s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .boost-max-objectives .ev-bar i { transition: none; }
+}
+@keyframes boost-task-glow { 50% { box-shadow: 0 0 12px #a0dd7866; } }

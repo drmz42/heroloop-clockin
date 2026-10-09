@@ -12,6 +12,8 @@ import { isolatedHackathon } from '@/game/editionStorage';
 import { SEEKER_SAMPLE_INCOME } from '@/game/seekerSampleIncome';
 import { playerSync } from '@/game/backend';
 import { skrBoostTasks, type SkrBoostStatus } from '@/game/skrBoost';
+import './SeekerEvents.css';
+import './BoostMaxModal.css';
 
 type BoostTask = {
   key: string; label: string; icon: React.ReactNode; done: boolean;
@@ -35,6 +37,15 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
     });
     return () => { cancelled = true; };
   }, []);
+  useEffect(() => {
+    const handleBack = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      event.preventDefault();
+      onClose();
+    };
+    window.addEventListener('keydown', handleBack);
+    return () => window.removeEventListener('keydown', handleBack);
+  }, [onClose]);
   const status = isolatedHackathon ? null : tokenomics.status;
   // Seeker shows the shared temporary sample figures (display only); see seekerSampleIncome.ts.
   const sample = isolatedHackathon ? SEEKER_SAMPLE_INCOME : null;
@@ -72,16 +83,61 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
 
   return createPortal(
     <div className={`hl-portal fixed inset-0 z-[9999] flex items-center justify-center anim-fade ${isolatedHackathon ? 'bg-[#100f0c]' : 'bg-black/70 p-3 backdrop-blur-[2px]'}`} style={isolatedHackathon ? { padding: 0, bottom: 0 } : undefined} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <div className={`relative flex w-full flex-col overflow-hidden ${isolatedHackathon ? 'h-full' : 'px-panel-raised max-h-[92vh] max-w-lg rounded-2xl'}`} role="dialog" aria-modal="true" aria-label="Rewards and Tokenomics">
+      <div className={`relative flex w-full flex-col overflow-hidden ${isolatedHackathon ? 'boost-max-sheet h-full' : 'px-panel-raised max-h-[92vh] max-w-lg rounded-2xl'}`} role="dialog" aria-modal="true" aria-label="Rewards and Tokenomics">
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[#5d4a2f] px-4 py-3" style={isolatedHackathon ? { paddingTop: 'max(0.75rem, env(safe-area-inset-top))', paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' } : undefined}>
           <div>
             <div className="section-kicker">{isolatedHackathon ? 'Seeker $SKR rewards' : 'Live server data'}</div>
-            <h2 className="mt-1 flex items-center gap-2 text-2xl font-black text-[#f1d188]"><Gift size={22} /> Rewards &amp; Tokenomics</h2>
-            <p className="mt-1 text-xs text-[#aaa397]">Shared reward pool, your Boost Max and your standing.</p>
+            <h2 className="mt-1 flex items-center gap-2 text-2xl font-black text-[#f1d188]">{isolatedHackathon ? <Crown size={20} /> : <Gift size={22} />} {isolatedHackathon ? 'BOOST MAX' : 'Rewards & Tokenomics'}</h2>
+            <p className="mt-1 text-xs text-[#aaa397]">{isolatedHackathon ? 'Complete the requirements. Unlock your boost.' : 'Shared reward pool, your Boost Max and your standing.'}</p>
           </div>
         </header>
 
         <div className="game-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto p-4" style={isolatedHackathon ? { paddingBottom: 'max(1rem, env(safe-area-inset-bottom))', paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' } : undefined}>
+          <section className={`${isolatedHackathon ? 'boost-max-objectives' : 'stat-tile p-4'} ${active ? 'boost-progress-active' : ''}`} aria-label="Boost Max">
+            <div className="flex items-start justify-between gap-3">
+              <h3 className={`flex items-center gap-2 text-lg font-black ${active ? 'boost-max-title-active' : 'text-[#f1d188]'}`}><Crown size={19} /> {isolatedHackathon ? 'Boost requirements' : 'Boost Max'}</h3>
+              <div className="rounded-lg border border-[#54462f] bg-black/30 px-2.5 py-1 text-right">
+                <div className="text-[9px] font-bold uppercase tracking-wider text-[#8f887b]">Status</div>
+                <div className={`text-sm font-black ${active ? 'text-emerald-300' : ready ? 'text-[#f1c862]' : 'text-[#a29b8e]'}`}>{stateLabel}</div>
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#b9b09d]">
+              <span className="flex items-center gap-1.5"><Layers size={13} className="text-[#dcb55f]" /> 2× reward score</span>
+              <span className="flex items-center gap-1.5"><Clock3 size={13} className="text-[#9f91d7]" /> No 8h offline cap</span>
+            </div>
+            <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-[#8f887b]"><span>Activation progress</span><span className="tabular-nums text-emerald-300">{active ? 'ACTIVE' : `${completedTasks}/${requiredTasks.length} · ${progress}%`}</span></div>
+            <div className={isolatedHackathon ? 'ev-bar boost-max-progress mt-1.5' : 'boost-progress-track mt-1.5'} role="progressbar" aria-label="Boost Max activation progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
+              {isolatedHackathon ? <i style={{ width: `${progress}%` }} /> : tasks.map((task, index) => <span key={task.key} className={`boost-progress-segment ${task.done ? 'boost-progress-segment-done' : ''}`}><i>{index + 1}</i></span>)}
+            </div>
+
+            <ul className="mt-3 space-y-2">
+              {(isolatedHackathon ? [...requiredTasks, ...tasks.filter(task => task.pending)] : tasks).map((task) => (
+                <li key={task.key} className={`flex items-center gap-2.5 ${isolatedHackathon ? `boost-max-task ${task.done ? 'is-done' : task.pending ? 'is-pending' : 'is-required'}` : ''}`}>
+                  <span className={`boost-max-task-icon grid h-8 w-8 shrink-0 place-items-center rounded-lg border ${task.done ? 'border-emerald-700/60 bg-emerald-950/35 text-emerald-300' : 'border-[#51442f] bg-black/20 text-[#a79b86]'}`}>{task.icon}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2 text-xs font-bold text-[#e3dccf]">
+                      <span className={isolatedHackathon ? 'min-w-0' : 'truncate'}>{task.label}</span>
+                      <span className="shrink-0 tabular-nums text-[10px] text-[#8f887b]">{task.done ? 'Done' : task.progress ? (task.pending ? task.progress : task.key === 'telegram' || task.key === 'x' ? (links ? 'Not linked' : 'Checking…') : skrStatus?.status === 'verified' ? `${Math.round(task.value)}%` : 'Unverified') : `${formatNum(task.value)}/${formatNum(task.goal)}${task.unit ? ` ${task.unit}` : ''}`}</span>
+                    </div>
+                    {isolatedHackathon ? <div className="ev-bar boost-max-task-progress mt-1"><i style={{ width: `${Math.round((task.value / task.goal) * 100)}%` }} /></div> : <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-black/50"><div className={`h-full ${task.done ? 'bg-emerald-400' : 'bg-[#d9a441]'}`} style={{ width: `${Math.round((task.value / task.goal) * 100)}%` }} /></div>}
+                    {!isolatedHackathon && task.detail && <p className="mt-1 text-[10px] font-normal leading-4 text-[#8f887b]">{task.detail}</p>}
+                    {task.progress && !task.pending && task.key !== 'telegram' && task.key !== 'x' && <p className="mt-1 text-[10px] text-[#8f887b]">{task.progress}</p>}
+                  </div>
+                  {task.done ? <CheckCircle2 size={17} className="shrink-0 text-emerald-400" /> : <Circle size={16} className="shrink-0 text-[#625b50]" />}
+                </li>
+              ))}
+            </ul>
+
+            {isolatedHackathon && <details className="boost-max-task-details"><summary>What counts toward Boost</summary><dl>{tasks.filter(task => task.detail).map(task => <div key={task.key}><dt>{task.label}</dt><dd>{task.detail}</dd></div>)}</dl><p>ORE mining is not required until it becomes available.</p></details>}
+
+            <div className="mt-4 flex gap-2">
+              {active && <button type="button" disabled={updating} onClick={() => void setActive(false)} className="game-control px-4 text-xs font-bold disabled:opacity-40">Disable</button>}
+              <button type="button" disabled={updating || !ready || active} onClick={() => void setActive(true)} className={`game-control flex flex-1 items-center justify-center gap-2 px-4 font-black disabled:cursor-not-allowed disabled:opacity-45 ${active ? 'boost-max-active' : ready ? 'boost-max-ready' : ''}`}><Crown size={17} /> {updating ? 'Updating…' : active ? 'Boost Max Active' : ready ? 'Activate Boost Max' : `${progress}% Complete`}</button>
+            </div>
+          </section>
+
+          <LinkedAccounts onLinksChange={isolatedHackathon ? setLinks : undefined} />
+
           <section className="stat-tile p-4" aria-label="Reward pool">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-bold uppercase tracking-[.16em] text-[#8f887b]">Reward pool</span>
@@ -95,49 +151,6 @@ export function BoostMaxModal({ game, tokenomics, onClose }: { game: GameApi; to
             </div>
             <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-[#b9b09d]"><Zap size={14} className="mt-0.5 shrink-0 text-[#e0a83c]" /> {isolatedHackathon ? 'Your $SKR income follows your Reward Power and how deep your farming location is. Push deeper and gear up to earn a bigger share of the daily pool.' : 'Income follows your Reward Power and how deep your farming location is. Push deeper and gear up to earn a bigger share.'}</p>
           </section>
-
-          <section className={`stat-tile p-4 ${active ? 'boost-progress-active' : ''}`} aria-label="Boost Max">
-            <div className="flex items-start justify-between gap-3">
-              <h3 className={`flex items-center gap-2 text-lg font-black ${active ? 'boost-max-title-active' : 'text-[#f1d188]'}`}><Crown size={19} /> Boost Max</h3>
-              <div className="rounded-lg border border-[#54462f] bg-black/30 px-2.5 py-1 text-right">
-                <div className="text-[9px] font-bold uppercase tracking-wider text-[#8f887b]">Status</div>
-                <div className={`text-sm font-black ${active ? 'text-emerald-300' : ready ? 'text-[#f1c862]' : 'text-[#a29b8e]'}`}>{stateLabel}</div>
-              </div>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#b9b09d]">
-              <span className="flex items-center gap-1.5"><Layers size={13} className="text-[#dcb55f]" /> 2× reward score</span>
-              <span className="flex items-center gap-1.5"><Clock3 size={13} className="text-[#9f91d7]" /> No 8h offline cap</span>
-            </div>
-            <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-[#8f887b]"><span>Activation progress</span><span className="tabular-nums text-emerald-300">{active ? 'ACTIVE' : `${completedTasks}/${requiredTasks.length} · ${progress}%`}</span></div>
-            <div className="boost-progress-track mt-1.5" role="progressbar" aria-label="Boost Max activation progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
-              {tasks.map((task, index) => <span key={task.key} className={`boost-progress-segment ${task.done ? 'boost-progress-segment-done' : ''}`}><i>{index + 1}</i></span>)}
-            </div>
-
-            <ul className="mt-3 space-y-2">
-              {tasks.map((task) => (
-                <li key={task.key} className="flex items-center gap-2.5">
-                  <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg border ${task.done ? 'border-emerald-700/60 bg-emerald-950/35 text-emerald-300' : 'border-[#51442f] bg-black/20 text-[#a79b86]'}`}>{task.icon}</span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2 text-xs font-bold text-[#e3dccf]">
-                      <span className={isolatedHackathon ? 'min-w-0' : 'truncate'}>{task.label}</span>
-                      <span className="shrink-0 tabular-nums text-[10px] text-[#8f887b]">{task.done ? 'Done' : task.progress ? (task.pending ? task.progress : task.key === 'telegram' || task.key === 'x' ? (links ? 'Not linked' : 'Checking…') : skrStatus?.status === 'verified' ? `${Math.round(task.value)}%` : 'Unverified') : `${formatNum(task.value)}/${formatNum(task.goal)}${task.unit ? ` ${task.unit}` : ''}`}</span>
-                    </div>
-                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-black/50"><div className={`h-full ${task.done ? 'bg-emerald-400' : 'bg-[#d9a441]'}`} style={{ width: `${Math.round((task.value / task.goal) * 100)}%` }} /></div>
-                    {task.detail && <p className="mt-1 text-[10px] font-normal leading-4 text-[#8f887b]">{task.detail}</p>}
-                    {task.progress && !task.pending && task.key !== 'telegram' && task.key !== 'x' && <p className="mt-1 text-[10px] text-[#8f887b]">{task.progress}</p>}
-                  </div>
-                  {task.done ? <CheckCircle2 size={17} className="shrink-0 text-emerald-400" /> : <Circle size={16} className="shrink-0 text-[#625b50]" />}
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-4 flex gap-2">
-              {active && <button type="button" disabled={updating} onClick={() => void setActive(false)} className="game-control px-4 text-xs font-bold disabled:opacity-40">Disable</button>}
-              <button type="button" disabled={updating || !ready || active} onClick={() => void setActive(true)} className={`game-control flex flex-1 items-center justify-center gap-2 px-4 font-black disabled:cursor-not-allowed disabled:opacity-45 ${active ? 'boost-max-active' : ready ? 'boost-max-ready' : ''}`}><Crown size={17} /> {updating ? 'Updating…' : active ? 'Boost Max Active' : ready ? 'Activate Boost Max' : `${progress}% Complete`}</button>
-            </div>
-          </section>
-
-          <LinkedAccounts onLinksChange={isolatedHackathon ? setLinks : undefined} />
 
           <section className="stat-tile p-4" aria-label="Your standing">
             <h3 className="flex items-center gap-2 text-sm font-black text-[#f1d188]"><Trophy size={16} /> Your standing</h3>
