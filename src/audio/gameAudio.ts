@@ -20,7 +20,16 @@ function writeFlag(key: string, on: boolean) {
   try { window.localStorage.setItem(key, on ? 'on' : 'off'); } catch { /* storage unavailable */ }
 }
 
-let settings = { sfx: readFlag(SFX_KEY), music: readFlag(MUSIC_KEY) };
+const SFX_VOLUME_KEY = 'hl-audio-sfx-volume';
+const MUSIC_VOLUME_KEY = 'hl-audio-music-volume';
+function readLevel(key: string): number {
+  try { const value = Number(window.localStorage.getItem(key)); return window.localStorage.getItem(key) !== null && value >= 0 && value <= 1 ? value : 1; } catch { return 1; }
+}
+function writeLevel(key: string, value: number) {
+  try { window.localStorage.setItem(key, String(value)); } catch { /* storage unavailable */ }
+}
+
+let settings = { sfx: readFlag(SFX_KEY), music: readFlag(MUSIC_KEY), sfxVolume: readLevel(SFX_VOLUME_KEY), musicVolume: readLevel(MUSIC_VOLUME_KEY) };
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((listener) => listener());
 
@@ -42,7 +51,7 @@ function audio(): AudioContext | null {
     ctx = new Ctor();
     const compressor = ctx.createDynamicsCompressor();
     compressor.threshold.value = -14; compressor.knee.value = 12; compressor.ratio.value = 4;
-    master = ctx.createGain(); master.gain.value = 0.62;
+    master = ctx.createGain(); master.gain.value = 0.62 * settings.sfxVolume;
     master.connect(compressor); compressor.connect(ctx.destination);
     noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const data = noise.getChannelData(0);
@@ -203,7 +212,7 @@ function fadeMusic(target: number, ms: number, pauseAtEnd = false) {
   }, 40);
 }
 
-function musicTarget() { return performance.now() < duckUntil ? MUSIC_VOLUME * 0.35 : MUSIC_VOLUME; }
+function musicTarget() { return (performance.now() < duckUntil ? MUSIC_VOLUME * 0.35 : MUSIC_VOLUME) * settings.musicVolume; }
 
 function syncMusic() {
   if (!installed || !unlocked) return;
@@ -219,12 +228,23 @@ function syncMusic() {
 /** Lowers the music while a big moment (chest, summon) plays its own sound. */
 export function duckMusic(ms: number) {
   duckUntil = performance.now() + ms;
-  if (music && !music.paused) fadeMusic(MUSIC_VOLUME * 0.35, 250);
+  if (music && !music.paused) fadeMusic(MUSIC_VOLUME * 0.35 * settings.musicVolume, 250);
   window.setTimeout(() => { if (performance.now() >= duckUntil) syncMusic(); }, ms + 20);
 }
 
 export function setSfxEnabled(on: boolean) { settings = { ...settings, sfx: on }; writeFlag(SFX_KEY, on); emit(); if (on) playSfx('tap'); }
 export function setMusicEnabled(on: boolean) { settings = { ...settings, music: on }; writeFlag(MUSIC_KEY, on); emit(); syncMusic(); }
+/** Volume mixer (More → Settings): 0..1 per channel, saved on this device. */
+export function setSfxVolume(value: number) {
+  const level = Math.max(0, Math.min(1, value));
+  settings = { ...settings, sfxVolume: level }; writeLevel(SFX_VOLUME_KEY, level); emit();
+  if (master) master.gain.value = 0.62 * level;
+}
+export function setMusicVolume(value: number) {
+  const level = Math.max(0, Math.min(1, value));
+  settings = { ...settings, musicVolume: level }; writeLevel(MUSIC_VOLUME_KEY, level); emit();
+  if (music && !music.paused) { window.clearInterval(musicFade); music.volume = musicTarget(); }
+}
 
 export function useAudioSettings() {
   return useSyncExternalStore((listener) => { listeners.add(listener); return () => listeners.delete(listener); }, () => settings, () => settings);

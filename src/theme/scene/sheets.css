@@ -284,3 +284,17 @@
 .mo-settings[open] summary .mo-chev { transform: rotate(90deg); }
 .mo-settings summary:focus-visible { outline: 2px solid #fff0a2; outline-offset: 2px; }
 .mo-settings-body { padding: 0 12px 12px; }
+/* More → Settings (2026-10-09): sound mixer, battle settings and help links. */
+.mo-settings-link { min-height: 56px; }
+.mo-settings-page { display: grid; gap: 10px; }
+.mo-set-group { border: 1px solid rgba(199, 158, 97, .35); border-radius: 4px; background: rgba(0, 0, 0, .38); padding: 10px 12px; }
+.mo-set-group h4 { margin: 0 0 6px; color: #efd18a; font: 700 12px/1 'Cinzel', Georgia, serif; letter-spacing: .14em; text-transform: uppercase; }
+.mo-set-row { display: grid; gap: 4px; padding: 4px 0; }
+.mo-set-toggle { display: flex; min-height: 44px; align-items: center; gap: 10px; border: 0; background: transparent; color: #ebdfca; font-size: 13px; font-weight: 700; text-align: left; }
+.mo-set-toggle i { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; background: rgba(0, 0, 0, .5); color: #f2cc80; box-shadow: 0 0 0 1px rgba(199, 158, 97, .55); }
+.mo-set-toggle span { flex: 1; }
+.mo-set-toggle b { min-width: 42px; border: 1px solid rgba(127, 214, 143, .6); border-radius: 12px; padding: 4px 8px; color: #7fd68f; font-size: 11px; text-align: center; }
+.mo-set-row.is-off .mo-set-toggle b { border-color: rgba(200, 120, 100, .5); color: #d79a88; }
+.mo-set-row input[type='range'] { width: 100%; height: 28px; accent-color: #e0a64f; }
+.mo-set-row input[type='range']:disabled { opacity: .4; }
+.mo-set-toggle:focus-visible, .mo-set-row input:focus-visible { outline: 2px solid #fff0a2; outline-offset: 2px; }

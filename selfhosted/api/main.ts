@@ -1040,7 +1040,7 @@ Deno.serve({ hostname: "0.0.0.0", port: 8080 }, async (request, info) => {
       const claiming = parsed.value.action === "seeker_event_claim";
       const payloadError = validatePayloadFields(payload, claiming ? ["kind", "id"] : []);
       const key = idempotencyKey(parsed.value);
-      if (payloadError || (claiming && (!key || !["calendar", "weekly", "pass"].includes(String(payload.kind))
+      if (payloadError || (claiming && (!key || !["calendar", "weekly", "pass", "pass_quest"].includes(String(payload.kind))
         || typeof payload.id !== "string" || !/^[a-z0-9-]{0,40}$/.test(payload.id)))) {
         return errorResponse(400, payloadError ?? "invalid_event_claim", requestId);
       }

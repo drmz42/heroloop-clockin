@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Backpack, BookOpen, Castle, ChevronLeft, ChevronRight, Crosshair, Crown, Dumbbell, KeyRound, LogOut, Menu, MessageCircle, PawPrint, Pickaxe, ScrollText, Send, Shield, ShoppingBag, Sparkles, Store, Swords, Trophy, Twitter, UserPlus, X, Volume2, VolumeX, Music, Settings2 } from 'lucide-react';
-import { setMusicEnabled, setSfxEnabled, useAudioSettings } from '@/audio/gameAudio';
+import { setMusicEnabled, setMusicVolume, setSfxEnabled, setSfxVolume, useAudioSettings } from '@/audio/gameAudio';
 import type { Tab } from './TopMenu';
 import { OVERLAYS_CLOSE_EVENT } from '@/components/GameProgressBar';
 import { setMobileSection, type MobileSection } from '@/platform/platform';
@@ -73,6 +73,10 @@ export function MobileTabBar({
   // Back from a Season Pass/feature teaser returns to the More list.
   useAndroidOverlayHistory(moreOpen && teaser !== null, () => setTeaser(null));
   useEffect(() => { if (!moreOpen) setTeaser(null); }, [moreOpen]);
+  // Settings (Founder 2026-10-09): healing, sound mixer, battle graphics, Support, Code and Wiki.
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  useAndroidOverlayHistory(moreOpen && settingsOpen, () => setSettingsOpen(false));
+  useEffect(() => { if (!moreOpen) setSettingsOpen(false); }, [moreOpen]);
   const setMineOpen = (open: boolean) => { if (!open) setSoon(null); };
   useEffect(() => {
     const close = (event: Event) => { if (!(event as CustomEvent<{ sheetToggle?: boolean }>).detail?.sheetToggle) setSoon(null); };
@@ -130,11 +134,33 @@ export function MobileTabBar({
           <div className="mo-panel mo-keep">
             <div className="mo-keep-art" aria-hidden="true" />
             <div className="mo-head">
-              {teaser && <button type="button" className="mo-close mo-back" onClick={() => setTeaser(null)} aria-label="Back"><ChevronLeft size={20} /></button>}
-              <span className="mo-title">{teaser ? UPCOMING[teaser].title : 'More'}</span>
+              {(teaser || settingsOpen) && <button type="button" className="mo-close mo-back" onClick={() => { setTeaser(null); setSettingsOpen(false); }} aria-label="Back"><ChevronLeft size={20} /></button>}
+              <span className="mo-title">{settingsOpen ? 'Settings' : teaser ? UPCOMING[teaser].title : 'More'}</span>
               <button type="button" className="mo-close" onClick={() => onMoreOpen(false)} aria-label="Close"><X size={18} /></button>
             </div>
-            {teaser ? (
+            {settingsOpen ? (
+              <div className="mo-body mo-settings-page">
+                <section className="mo-set-group" aria-label="Sound">
+                  <h4>Sound</h4>
+                  {([['sfx', 'Sound effects', Volume2, audioSettings.sfx, audioSettings.sfxVolume, setSfxEnabled, setSfxVolume],
+                    ['music', 'Music', Music, audioSettings.music, audioSettings.musicVolume, setMusicEnabled, setMusicVolume]] as const).map(([id, label, Icon, on, level, toggle, setLevel]) => (
+                    <div key={id} className={`mo-set-row ${on ? '' : 'is-off'}`}>
+                      <button type="button" className="mo-set-toggle" aria-pressed={on} onClick={() => toggle(!on)}>
+                        <i aria-hidden="true">{on ? <Icon size={17} /> : <VolumeX size={17} />}</i><span>{label}</span><b>{on ? 'On' : 'Off'}</b>
+                      </button>
+                      <input type="range" min={0} max={100} step={5} value={Math.round(level * 100)} disabled={!on} aria-label={`${label} volume`}
+                        onChange={(event) => setLevel(Number(event.target.value) / 100)} />
+                    </div>
+                  ))}
+                </section>
+                {settings && <section className="mo-set-group" aria-label="Battle">{settings}</section>}
+                <div className="mo-links">
+                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onSupport(); }}><i aria-hidden="true"><MessageCircle size={17} /></i>Support</button>
+                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onCode(); }}><i aria-hidden="true"><KeyRound size={17} /></i>Code</button>
+                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onGuides(); }}><i aria-hidden="true"><BookOpen size={17} /></i>Wiki</button>
+                </div>
+              </div>
+            ) : teaser ? (
               <div className={`mo-teaser mo-art-${teaser}`}>
                 <div className="mo-teaser-art" aria-hidden="true" />
                 <MoLife id={teaser} />
@@ -174,21 +200,15 @@ export function MobileTabBar({
                   <span className="mo-banner-text"><strong>Refer friends</strong><span>Invite allies and share the spoils.</span></span>
                   <ChevronRight className="mo-chev" size={18} aria-hidden="true" />
                 </button>
-                {settings && <details className="mo-settings">
-                  <summary><Settings2 size={16} aria-hidden="true" /> Battle settings<ChevronRight className="mo-chev" size={16} aria-hidden="true" /></summary>
-                  <div className="mo-settings-body">{settings}</div>
-                </details>}
-                <div className="mo-links">
-                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onGuides(); }}><i aria-hidden="true"><BookOpen size={17} /></i>Guides</button>
-                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onCode(); }}><i aria-hidden="true"><KeyRound size={17} /></i>Code</button>
-                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onSupport(); }}><i aria-hidden="true"><MessageCircle size={17} /></i>Support</button>
-                </div>
+                <button type="button" className="mo-banner mo-settings-link" onClick={() => setSettingsOpen(true)}>
+                  <i className="mo-tile-icon" aria-hidden="true"><Settings2 size={18} /></i>
+                  <span className="mo-banner-text"><strong>Settings</strong><span>Healing, sound, graphics, Support, Code, Wiki</span></span>
+                  <ChevronRight className="mo-chev" size={18} aria-hidden="true" />
+                </button>
                 <div className="mo-footer">
                   <div className="mo-socials" role="group" aria-label="Social networks">
                     <a className="mo-social" href="https://t.me/heroloopgame" target="_blank" rel="noopener noreferrer" aria-label="Telegram" title="Telegram"><Send size={19} aria-hidden="true" /></a>
                     <a className="mo-social" href="https://x.com/heroloopgame" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" title="X (Twitter)"><Twitter size={19} aria-hidden="true" /></a>
-                    <button type="button" className={`mo-social mo-audio ${audioSettings.sfx ? '' : 'is-off'}`} aria-pressed={audioSettings.sfx} aria-label={audioSettings.sfx ? 'Sound effects on' : 'Sound effects off'} title={audioSettings.sfx ? 'Sound effects on' : 'Sound effects off'} onClick={() => setSfxEnabled(!audioSettings.sfx)}>{audioSettings.sfx ? <Volume2 size={19} aria-hidden="true" /> : <VolumeX size={19} aria-hidden="true" />}</button>
-                    <button type="button" className={`mo-social mo-audio ${audioSettings.music ? '' : 'is-off'}`} aria-pressed={audioSettings.music} aria-label={audioSettings.music ? 'Music on' : 'Music off'} title={audioSettings.music ? 'Music on' : 'Music off'} onClick={() => setMusicEnabled(!audioSettings.music)}><Music size={19} aria-hidden="true" /></button>
                   </div>
                   <button type="button" className="mo-logout" onClick={() => { onMoreOpen(false); onLogout(); }}><LogOut size={14} aria-hidden="true" /> Logout</button>
                 </div>

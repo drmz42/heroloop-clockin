@@ -1,16 +1,19 @@
-import { useEffect, useState } from 'react';
-import { CalendarDays, Crown, Flame, Lock, Package, Swords, X } from 'lucide-react';
-import { BossKeyIcon } from '@/components/BossKeyIcon';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { CalendarDays, Check, Crown, Flame, Gem, Lock, ScrollText, Skull, Swords, X } from 'lucide-react';
 import { GoldIcon } from '@/components/GoldIcon';
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
 import { SkrUsd } from '@/components/SkrUsd';
-import { SummonScrollArtwork } from '@/components/SummonScrollArtwork';
 import { formatNum } from '@/game/state';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
-import { type EventReward, type EventTab, type PassTier, type SeekerEventsApi } from '@/game/useSeekerEvents';
+import { passQuestsReady, passReady, type EventReward, type EventTab, type PassTier, type PassTrack, type SeekerEventsApi } from '@/game/useSeekerEvents';
 import './SeekerEvents.css';
 
-const TABS: Array<[EventTab, string]> = [['calendar', 'Calendar'], ['weekly', 'Weekly Event'], ['pass', 'Premium Pass']];
+const TABS: Array<[EventTab, string, typeof CalendarDays]> = [['calendar', 'Calendar', CalendarDays], ['weekly', 'Weekly Event', Swords], ['pass', 'Battle Pass', Crown]];
+const TRACKS: Array<{ id: PassTrack; title: string; price: string; Icon: typeof Skull }> = [
+  { id: 'free', title: 'Free', price: '', Icon: Skull },
+  { id: 'premium', title: 'Empowered', price: '$4.99', Icon: Gem },
+  { id: 'collector', title: 'Collector', price: '$14.99', Icon: Crown },
+];
 
 function useNow() {
   const [now, setNow] = useState(() => Date.now());
@@ -22,118 +25,131 @@ function left(until: string, now: number) {
   const days = Math.floor(minutes / 1440), hours = Math.floor(minutes / 60) % 24;
   return days > 0 ? `${days}d ${hours}h` : `${hours}h ${minutes % 60}m`;
 }
-
 const short = (n: number) => n >= 1000 ? `${Number((n / 1000).toFixed(n % 1000 ? 1 : 0))}k` : String(n);
 
-export function RewardChips({ reward, compact = false }: { reward: EventReward; compact?: boolean }) {
-  const size = compact ? 14 : 18;
-  return <span className={`ev-chips ${compact ? 'is-compact' : ''}`}>
-    {reward.gold > 0 && <span><GoldIcon size={size - 2} />{compact ? short(reward.gold) : formatNum(reward.gold)}</span>}
-    {reward.scrolls > 0 && <span><SummonScrollArtwork size={size} />{reward.scrolls}</span>}
-    {reward.chests > 0 && <span><Package size={size - 4} aria-hidden="true" />{reward.chests}</span>}
-    {reward.boss_keys > 0 && <span><BossKeyIcon size={size} />{reward.boss_keys}</span>}
+type RewardKind = 'gold' | 'scrolls' | 'chests' | 'boss_keys';
+const ART: Record<Exclude<RewardKind, 'gold'>, string> = {
+  scrolls: '/assets/ui/summon-scroll-v1.webp', chests: '/assets/ui/chest-ceremony-v1.webp', boss_keys: '/assets/ui/boss-key-v2.webp',
+};
+const LABEL: Record<RewardKind, string> = { gold: 'Gold', scrolls: 'Summon Scrolls', chests: 'Chests', boss_keys: 'Boss Keys' };
+function rewardParts(reward: EventReward): Array<[RewardKind, number]> {
+  return (['boss_keys', 'scrolls', 'chests', 'gold'] as RewardKind[]).filter((kind) => reward[kind] > 0).map((kind) => [kind, reward[kind]]);
+}
+
+/** One reward socket: art, amount, and claimed / ready / locked state. */
+function RewardTile({ kind, amount, state = '' }: { kind: RewardKind; amount: number; state?: string }) {
+  return <span className={`ev-tile ev-tile-${kind} ${state}`} title={`${formatNum(amount)} ${LABEL[kind]}`}>
+    {kind === 'gold' ? <GoldIcon size={26} /> : <img src={ART[kind]} alt="" draggable={false} />}
+    <b>{short(amount)}</b>
+    {state.includes('is-locked') && <Lock className="ev-tile-lock" size={11} aria-label="Locked" />}
+    {state.includes('is-claimed') && <Check className="ev-tile-check" size={14} aria-label="Claimed" />}
   </span>;
 }
 
-/** Three entry cards inside the battle burger; each opens the Events sheet on its tab. */
+export function RewardChips({ reward }: { reward: EventReward }) {
+  return <span className="ev-chips">{rewardParts(reward).map(([kind, amount]) => <span key={kind}>
+    {kind === 'gold' ? <GoldIcon size={13} /> : <img src={ART[kind]} alt="" />}{short(amount)}</span>)}</span>;
+}
+
+/** Three entry cards inside the battle burger; each opens the Events page on its tab. */
 export function EventMenuCards({ events, onOpen }: { events: SeekerEventsApi; onOpen: (tab: EventTab) => void }) {
   const status = events.status;
-  const weeklyDone = status?.weekly.quests.filter((quest) => quest.claimed).length ?? 0;
   const ready = (tab: EventTab) => {
     if (!status) return false;
     if (tab === 'calendar') return !status.calendar.claimed_today;
     if (tab === 'weekly') return status.weekly.quests.some((quest) => !quest.claimed && quest.progress >= quest.target);
-    return status.pass.rewards.some((entry) => !entry.claimed && entry.rank <= status.pass.rank && (entry.track === 'free' || status.pass.tier !== null));
+    return passReady(status) + passQuestsReady(status) > 0;
   };
-  const cards: Array<[EventTab, typeof CalendarDays, string, string]> = [
-    ['calendar', CalendarDays, 'Calendar', status ? `Day ${status.calendar.next_day ?? status.calendar.claimed_days}/28 · ×${status.calendar.multiplier}` : 'Daily check-in'],
-    ['weekly', Swords, 'Weekly Event', status ? `${status.weekly.title} · ${weeklyDone}/${status.weekly.quests.length}` : 'Friday quests'],
-    ['pass', Crown, 'Premium Pass', status ? `Rank ${status.pass.rank}/${status.pass.max_rank}` : '40 ranks'],
-  ];
+  const line = (tab: EventTab) => !status ? '' : tab === 'calendar'
+    ? `Day ${status.calendar.next_day ?? status.calendar.claimed_days}/28 · ×${status.calendar.multiplier}`
+    : tab === 'weekly' ? `${status.weekly.title} · ${status.weekly.quests.filter((quest) => quest.claimed).length}/${status.weekly.quests.length}`
+      : `Level ${status.pass.level}/${status.pass.max_level}`;
   return <div className="ev-menu" aria-label="Events">
     <div className="ev-menu-kicker">Events</div>
-    {cards.map(([tab, Icon, title, line]) => <button key={tab} type="button" className={`ev-menu-card ev-art-${tab}`} onClick={() => onOpen(tab)}>
+    {TABS.map(([tab, title, Icon]) => <button key={tab} type="button" className={`ev-menu-card ev-art-${tab}`} onClick={() => onOpen(tab)}>
       <i aria-hidden="true"><Icon size={17} /></i>
-      <span><strong>{title}</strong><small>{line}</small></span>
+      <span><strong>{title}</strong><small>{line(tab)}</small></span>
       {ready(tab) && <b className="ev-dot" aria-label="Reward ready" />}
     </button>)}
   </div>;
 }
 
-
-export function SeekerEventsSheet({ events, tab, onTab, onClose, onState }: {
-  events: SeekerEventsApi; tab: EventTab; onTab: (tab: EventTab) => void; onClose: () => void;
-  onState: (state: unknown, revision: number) => void;
+export function SeekerEventsPage({ events, tab, onTab, onState, onClose }: {
+  events: SeekerEventsApi; tab: EventTab; onTab: (tab: EventTab) => void; onState: (state: unknown, revision: number) => void; onClose: () => void;
 }) {
   const now = useNow();
   const status = events.status;
   useEffect(() => { void events.refresh(); }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-  return <div className="hl-more-sheet mo-sheet ev-sheet" role="dialog" aria-modal="true" aria-label="Events" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
-    <div className="mo-panel ev-panel">
-      <div className="mo-head"><span className="mo-title">Events</span><button type="button" className="mo-close" onClick={onClose} aria-label="Close"><X size={18} /></button></div>
-      <div className="ev-tabs" role="tablist">
-        {TABS.map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-active' : ''} onClick={() => onTab(id)}>{label}</button>)}
-      </div>
-      {events.message && <p role="status" className="ev-message">{events.message}</p>}
-      {!status ? <p className="ev-muted">Loading…</p>
-        : tab === 'calendar' ? <CalendarTab events={events} now={now} />
-          : tab === 'weekly' ? <WeeklyTab events={events} now={now} />
-            : <PassTab events={events} now={now} onState={onState} />}
-    </div>
+  return <div className="ev-page">
+    <header className="ev-page-head"><span className="ev-ornament" aria-hidden="true" /><h2>Events</h2><span className="ev-ornament" aria-hidden="true" />
+      <button type="button" className="ev-close" onClick={onClose} aria-label="Close Events"><X size={18} /></button></header>
+    <nav className="ev-tabs" role="tablist">
+      {TABS.map(([id, label, Icon]) => <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-active' : ''} onClick={() => onTab(id)}>
+        <Icon size={15} aria-hidden="true" />{label}</button>)}
+    </nav>
+    {events.message && <p role="status" className="ev-message">{events.message}</p>}
+    {!status ? <p className="ev-muted ev-pad">Loading…</p>
+      : tab === 'calendar' ? <CalendarTab events={events} now={now} />
+        : tab === 'weekly' ? <WeeklyTab events={events} now={now} />
+          : <PassTab events={events} now={now} onState={onState} />}
   </div>;
 }
 
 function CalendarTab({ events, now }: { events: SeekerEventsApi; now: number }) {
   const c = events.status!.calendar;
-  const premium = events.status!.pass.tier !== null;
-  const shownDone = c.claimed_days;
-  return <section className="ev-section">
-    <div className="ev-hero">
+  const paid = events.status!.pass.tiers.length > 0;
+  return <section className="ev-scroll ev-pad">
+    <div className="ev-hero ev-hero-calendar">
       <div><span className="ev-kicker">Login calendar · cycle {c.cycle}</span><strong>Day {c.next_day ?? c.claimed_days} of 28</strong>
         <small><Flame size={13} aria-hidden="true" /> Streak {c.streak} · ×{c.multiplier} rewards</small></div>
-      <div className="ev-timer">{c.claimed_today ? <>Next in<b>{left(c.resets_at, now)}</b></> : <>Ends in<b>{left(c.resets_at, now)}</b></>}</div>
+      <div className="ev-timer">{c.claimed_today ? 'Next in' : 'Ends in'}<b>{left(c.resets_at, now)}</b></div>
     </div>
     {c.streak_lost && <p className="ev-warn">You missed a day. Calendar progress is kept, but the multiplier restarts at ×1.</p>}
-    <p className="ev-muted">Week 1 ×1 · Week 2 ×1.5 · Week 3 ×2 · Week 4 ×3 in a row. <Crown size={11} aria-hidden="true" /> days are doubled with a Premium Pass.</p>
+    <p className="ev-muted">Week 1 ×1 · Week 2 ×1.5 · Week 3 ×2 · Week 4 ×3 in a row. Crown days are doubled with any Battle Pass.</p>
     <ol className="ev-grid">
       {c.days.map((entry) => {
-        const done = entry.day <= shownDone;
+        const done = entry.day <= c.claimed_days;
         const today = entry.day === c.next_day;
+        const [kind, amount] = rewardParts(entry.reward)[0];
         return <li key={entry.day} className={`${done ? 'is-done' : ''} ${today ? 'is-today' : ''} ${entry.day % 7 === 0 ? 'is-big' : ''}`}>
-          <span className="ev-day">{entry.day}{entry.marked && <Crown size={10} className={premium ? 'is-on' : ''} aria-label="Premium doubles" />}</span>
-          <RewardChips reward={entry.reward} compact />
+          <span className="ev-day">{entry.day}{entry.marked && <Crown size={10} className={paid ? 'is-on' : ''} aria-label="Battle Pass doubles" />}</span>
+          <RewardTile kind={kind} amount={amount} state={done ? 'is-claimed' : today ? 'is-ready' : ''} />
         </li>;
       })}
     </ol>
-    <button type="button" className="game-control game-primary ev-claim" disabled={c.claimed_today || events.busy !== null} onClick={() => void events.claim('calendar')}>
+    <button type="button" className="ev-btn ev-btn-primary" disabled={c.claimed_today || events.busy !== null} onClick={() => void events.claim('calendar')}>
       {c.claimed_today ? 'Checked in today' : events.busy ? 'Claiming…' : `Check in · Day ${c.next_day}`}
     </button>
   </section>;
 }
 
+function QuestRow({ label, progress, target, done, claimed, reward, busy, onClaim }: {
+  label: string; progress: number; target: number; done: boolean; claimed: boolean; reward: ReactNode; busy: boolean; onClaim: () => void;
+}) {
+  return <article className={`ev-quest ${claimed ? 'is-claimed' : done ? 'is-ready' : ''}`}>
+    <div className="ev-quest-main">
+      <strong>{label}</strong>
+      <div className="ev-bar"><i style={{ width: `${Math.min(100, progress / target * 100)}%` }} /></div>
+      <small>{formatNum(progress)} / {formatNum(target)}</small>
+    </div>
+    <div className="ev-quest-side">{reward}
+      <button type="button" className={`ev-btn ev-btn-small ${done && !claimed ? 'ev-btn-primary' : ''}`} disabled={!done || claimed || busy} onClick={onClaim}>
+        {claimed ? 'Done' : done ? 'Claim' : 'In progress'}</button>
+    </div>
+  </article>;
+}
+
 function WeeklyTab({ events, now }: { events: SeekerEventsApi; now: number }) {
   const w = events.status!.weekly;
-  return <section className="ev-section">
+  return <section className="ev-scroll ev-pad">
     <div className="ev-hero ev-hero-weekly">
       <div><span className="ev-kicker">Weekly Event</span><strong>{w.title}</strong><small>New quests every Friday 01:00 UTC</small></div>
       <div className="ev-timer">Ends in<b>{left(w.ends_at, now)}</b></div>
     </div>
     <div className="ev-quests">
-      {w.quests.map((quest) => {
-        const done = quest.progress >= quest.target;
-        return <article key={quest.id} className={`ev-quest ${quest.claimed ? 'is-claimed' : done ? 'is-ready' : ''}`}>
-          <div className="ev-quest-top"><strong>{quest.label}</strong><RewardChips reward={quest.reward} compact /></div>
-          <div className="ev-bar" aria-label={`${quest.progress} of ${quest.target}`}><i style={{ width: `${Math.min(100, quest.progress / quest.target * 100)}%` }} /></div>
-          <div className="ev-quest-foot"><small>{formatNum(quest.progress)} / {formatNum(quest.target)}</small>
-            <button type="button" className="game-control ev-small" disabled={!done || quest.claimed || events.busy !== null} onClick={() => void events.claim('weekly', quest.id)}>
-              {quest.claimed ? 'Claimed' : done ? 'Claim' : 'In progress'}</button></div>
-        </article>;
-      })}
+      {w.quests.map((quest) => <QuestRow key={quest.id} label={quest.label} progress={quest.progress} target={quest.target}
+        done={quest.progress >= quest.target} claimed={quest.claimed} busy={events.busy !== null}
+        reward={<RewardChips reward={quest.reward} />} onClaim={() => void events.claim('weekly', quest.id)} />)}
     </div>
   </section>;
 }
@@ -141,46 +157,78 @@ function WeeklyTab({ events, now }: { events: SeekerEventsApi; now: number }) {
 function PassTab({ events, now, onState }: { events: SeekerEventsApi; now: number; onState: (state: unknown, revision: number) => void }) {
   const p = events.status!.pass;
   const rate = useSkrRate(true);
-  const into = p.rank >= p.max_rank ? p.xp_per_rank : p.xp - p.rank * p.xp_per_rank;
-  const readyCount = p.rewards.filter((entry) => !entry.claimed && entry.rank <= p.rank && (entry.track === 'free' || p.tier !== null)).length;
-  const ranks = Array.from({ length: p.max_rank }, (_, index) => index + 1);
+  const [view, setView] = useState<'rewards' | 'quests'>('rewards');
+  const [buying, setBuying] = useState<PassTier | null>(null);
+  const strip = useRef<HTMLDivElement>(null);
+  const into = p.level >= p.max_level ? p.xp_per_level : p.xp - p.level * p.xp_per_level;
+  const ready = passReady(events.status!);
+  const questsReady = passQuestsReady(events.status!);
+  const levels = Array.from({ length: p.max_level }, (_, index) => index + 1);
+  const byKey = new Map(p.rewards.map((entry) => [`${entry.track}:${entry.level}`, entry]));
+  // Open the strip at the player's level, like the in-game Battle Pass track.
+  useLayoutEffect(() => {
+    const node = strip.current?.querySelector<HTMLElement>(`[data-level="${Math.max(1, p.level)}"]`);
+    if (node && strip.current) strip.current.scrollLeft = Math.max(0, node.offsetLeft - strip.current.offsetLeft - 4);
+  }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
   const delivered = (result: Record<string, unknown>) => {
     if (result.state && typeof result.revision === 'number') onState(result.state, result.revision);
+    setBuying(null);
     void events.refresh();
   };
-  const buy = (tier: PassTier, title: string, perks: string) => <article className={`ev-buy ev-buy-${tier}`}>
-    <strong>{title}</strong><small>{perks}</small>
-    <p className="ev-price">{skrPrice(p.prices[tier], rate)}<SkrUsd cents={p.prices[tier]} /></p>
-    <SkrPurchaseButton product="event_pass_buy" params={{ tier }} label={`Buy ${title}`} onDelivered={delivered} />
-  </article>;
-  return <section className="ev-section">
-    <div className="ev-hero ev-hero-pass">
-      <div><span className="ev-kicker">Season {p.season} · {p.tier === 'collector' ? 'Collector' : p.tier === 'premium' ? 'Premium' : 'Free'} track</span>
-        <strong>Rank {p.rank} / {p.max_rank}</strong>
-        <small>{p.rank >= p.max_rank ? 'Max rank reached' : `${formatNum(into)} / ${p.xp_per_rank} Pass XP`}</small></div>
-      <div className="ev-timer">Season ends<b>{left(p.ends_at, now)}</b></div>
+  return <section className="ev-pass">
+    <div className="ev-pass-head">
+      <div className="ev-pass-title"><span className="ev-kicker">Season {p.season} · ends in {left(p.ends_at, now)}</span><strong>Battle Pass</strong></div>
+      <div className="ev-pass-level" aria-label={`Level ${p.level}`}><b>{p.level}</b></div>
     </div>
-    <div className="ev-bar ev-bar-pass"><i style={{ width: `${Math.min(100, into / p.xp_per_rank * 100)}%` }} /></div>
-    <p className="ev-muted">Pass XP: won battles 1 (up to 150 a day), daily quests 20, Boss victories 40, check-ins 50, weekly quests 100.</p>
-    {p.tier !== 'collector' && <div className="ev-buys">
-      {p.tier === null && buy('premium', 'Premium Pass', 'Premium track · ×2 on crown calendar days')}
-      {buy('collector', p.tier === 'premium' ? 'Collector upgrade' : 'Collector Pass', 'Premium + 10 ranks now + 15 Scrolls + 2 Boss Keys')}
+    <div className="ev-pass-xp"><div className="ev-bar ev-bar-pass"><i style={{ width: `${Math.min(100, into / p.xp_per_level * 100)}%` }} /></div>
+      <small>{p.level >= p.max_level ? 'Max level' : `${formatNum(into)} / ${p.xp_per_level} XP · level ${p.level}/${p.max_level}`}</small></div>
+    <div className="ev-subtabs" role="tablist">
+      <button type="button" role="tab" aria-selected={view === 'rewards'} className={view === 'rewards' ? 'is-active' : ''} onClick={() => setView('rewards')}>Rewards{ready > 0 && <b className="ev-count">{ready}</b>}</button>
+      <button type="button" role="tab" aria-selected={view === 'quests'} className={view === 'quests' ? 'is-active' : ''} onClick={() => setView('quests')}>Quests{questsReady > 0 && <b className="ev-count">{questsReady}</b>}</button>
+    </div>
+    {view === 'rewards' ? <>
+      <div className="ev-track-wrap">
+        <div className="ev-track-labels">
+          {TRACKS.map(({ id, title, price, Icon }) => <div key={id} className={`ev-track-label ev-label-${id} ${id === 'free' || p.tiers.includes(id) ? 'is-owned' : ''}`}>
+            <Icon size={20} aria-hidden="true" /><strong>{title}</strong>{price && !p.tiers.includes(id as PassTier) && <small>{price}</small>}
+            {id !== 'free' && p.tiers.includes(id as PassTier) && <small className="is-on">Active</small>}
+          </div>)}
+        </div>
+        <div className="ev-track" ref={strip}>
+          {levels.map((level) => <div key={level} className={`ev-col ${level <= p.level ? 'is-reached' : ''}`} data-level={level}>
+            {TRACKS.map(({ id }) => {
+              const entry = byKey.get(`${id}:${level}`)!;
+              const locked = id !== 'free' && !p.tiers.includes(id as PassTier);
+              const state = entry.claimed ? 'is-claimed' : locked ? 'is-locked' : level <= p.level ? 'is-ready' : '';
+              return <div key={id} className={`ev-cell ev-cell-${id} ${state}`}>
+                {rewardParts(entry.reward).map(([kind, amount]) => <RewardTile key={kind} kind={kind} amount={amount} state={state} />)}
+              </div>;
+            }).flatMap((cell, index) => index === 0 ? [cell, <div key="level" className="ev-level"><b><span>{level}</span></b></div>] : [cell])}
+          </div>)}
+        </div>
+      </div>
+      {buying && <div className="ev-buy" role="dialog" aria-label={`Buy ${buying === 'premium' ? 'Empowered' : 'Collector'} Pass`}>
+        <button type="button" className="ev-buy-close" onClick={() => setBuying(null)} aria-label="Close"><X size={16} /></button>
+        <strong>{buying === 'premium' ? 'Empowered Pass' : 'Collector Pass'}</strong>
+        <small>{buying === 'premium' ? 'Unlocks the Empowered column for this season and doubles crown calendar days.' : 'Unlocks the Collector column for this season and doubles crown calendar days. Bought separately from Empowered.'}</small>
+        <p className="ev-price">{skrPrice(p.prices[buying], rate)}<SkrUsd cents={p.prices[buying]} /></p>
+        <SkrPurchaseButton product="event_pass_buy" params={{ tier: buying }} label="Get SKR quote" onDelivered={delivered} />
+      </div>}
+      <div className="ev-pass-bar">
+        <button type="button" className="ev-btn ev-btn-primary" disabled={ready === 0 || events.busy !== null} onClick={() => void events.claim('pass')}>
+          {events.busy ? 'Claiming…' : ready ? `Claim all (${ready})` : 'Claim all'}</button>
+        {(['premium', 'collector'] as PassTier[]).map((tier) => p.tiers.includes(tier)
+          ? <span key={tier} className={`ev-owned ev-owned-${tier}`}><Check size={14} aria-hidden="true" />{tier === 'premium' ? 'Empowered' : 'Collector'}</span>
+          : <button key={tier} type="button" className={`ev-btn ev-btn-buy ev-buy-${tier}`} onClick={() => setBuying(tier)}>{tier === 'premium' ? '$4.99' : '$14.99'}<small>SKR</small></button>)}
+      </div>
+    </> : <div className="ev-scroll ev-pad">
+      {(['daily', 'season'] as const).map((period) => <div key={period} className="ev-quest-group">
+        <h3>{period === 'daily' ? 'Daily quests' : 'Season quests'}<small>{period === 'daily' ? `Reset in ${left(p.daily_resets_at, now)}` : `Ends in ${left(p.ends_at, now)}`}</small></h3>
+        {p.quests.filter((quest) => quest.period === period).map((quest) => <QuestRow key={quest.id} label={quest.label} progress={quest.progress}
+          target={quest.target} done={quest.progress >= quest.target} claimed={quest.claimed} busy={events.busy !== null}
+          reward={<span className="ev-xp">+{formatNum(quest.xp)} XP</span>} onClaim={() => void events.claim('pass_quest', quest.id)} />)}
+      </div>)}
+      <p className="ev-muted"><ScrollText size={12} aria-hidden="true" /> Battle Pass XP comes only from these quests. {p.xp_per_level} XP per level.</p>
     </div>}
-    <button type="button" className="game-control game-primary ev-claim" disabled={readyCount === 0 || events.busy !== null} onClick={() => void events.claim('pass')}>
-      {events.busy ? 'Claiming…' : readyCount ? `Claim all (${readyCount})` : 'Reach the next rank to claim'}
-    </button>
-    <div className="ev-track-head"><span>Rank</span><span>Free</span><span><Crown size={12} aria-hidden="true" /> Premium</span></div>
-    <ol className="ev-track">
-      {ranks.map((rank) => {
-        const cell = (track: 'free' | 'premium') => {
-          const entry = p.rewards.find((reward) => reward.rank === rank && reward.track === track)!;
-          const locked = track === 'premium' && p.tier === null;
-          return <div className={`ev-cell ${entry.claimed ? 'is-claimed' : rank <= p.rank && !locked ? 'is-ready' : ''} ${locked ? 'is-locked' : ''}`}>
-            <RewardChips reward={entry.reward} compact />{locked && <Lock size={11} aria-label="Premium only" />}
-          </div>;
-        };
-        return <li key={rank} className={rank <= p.rank ? 'is-reached' : ''}><b>{rank}</b>{cell('free')}{cell('premium')}</li>;
-      })}
-    </ol>
   </section>;
 }

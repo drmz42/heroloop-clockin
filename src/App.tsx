@@ -10,7 +10,7 @@ import { TUTORIAL_GO_EVENT, tutorialGuide, useTutorialGuide, type TutorialDestin
 import { FooterBar } from '@/components/FooterBar';
 import { MobileTabBar } from '@/components/MobileTabBar';
 import { BattleSettings } from '@/components/BattleSettings';
-import { SeekerEventsSheet } from '@/components/SeekerEvents';
+import { SeekerEventsPage } from '@/components/SeekerEvents';
 import { useSeekerEvents, type EventTab } from '@/game/useSeekerEvents';
 import { markStoreNoticeSeen, storeNoticeUnseen } from '@/game/storeNotice';
 import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
@@ -468,12 +468,12 @@ function App() {
   useEffect(() => { if (moreReturn && !moreChildOpen) setMoreReturn(false); }, [moreReturn, moreChildOpen]);
   // The Mailbox is a page (tab "mail"); its old modal flag is gone.
   // Seeker Events (Calendar, Weekly Event, Premium Pass) open over the battle from the burger or More.
-  const [eventsTab, setEventsTab] = useState<EventTab | null>(null);
+  const [eventsTab, setEventsTab] = useState<EventTab>('calendar');
+  const openEvents = (next: EventTab) => { setEventsTab(next); setMoreOpen(false); setTab('events'); };
   const seekerEvents = useSeekerEvents(isolatedHackathon && accountGate === 'verified', (state, revision) => {
     game.hydrateServerState(state);
     game.applyServerRevision(revision);
   });
-  useAndroidOverlayHistory(eventsTab !== null, () => setEventsTab(null));
   const setCombatPresentationVisible = game.setCombatPresentationVisible;
   // Founder 2026-10-03: a button in the top bar or tab bar first closes whatever is open (Commander, battle
   // menu, More/Mine sheets, Wallet, Mail, Boost and other modals), so layers never stack and the chosen page
@@ -484,7 +484,7 @@ function App() {
     // More and Mine toggle their own sheets (and close each other); closing them here as well reopened More.
     const sheetToggle = Boolean(target.closest('[aria-expanded]'));
     const commanderToggle = Boolean(target.closest('.game-progress-commander, .tb-commander'));
-    setShowBoost(false); setShowWallet(false); setShowPromoCode(false); setShowSupport(false); setEventsTab(null);
+    setShowBoost(false); setShowWallet(false); setShowPromoCode(false); setShowSupport(false);
     if (!sheetToggle) setMoreOpen(false);
     window.dispatchEvent(new CustomEvent(OVERLAYS_CLOSE_EVENT, { detail: { sheetToggle, commanderToggle } }));
   };
@@ -629,7 +629,7 @@ function App() {
       {/* The window overlay lives in the Play area's host: fixed on the web, but on the Android layout
           (android.css) it fills exactly the Play area, so every menu item reads as a page like the Bag. */}
       <div className="game-main-host flex-1 min-h-0 overflow-hidden">
-        <MainScreen game={game} tokenomics={tokenomics} onBoostClick={() => setShowBoost(true)} onGuidesClick={openWiki} onRewardBoostClick={() => setTab('shop')} onQuestsClick={openQuests} events={isolatedHackathon ? seekerEvents : undefined} onEventsOpen={setEventsTab} />
+        <MainScreen game={game} tokenomics={tokenomics} onBoostClick={() => setShowBoost(true)} onGuidesClick={openWiki} onRewardBoostClick={() => setTab('shop')} onQuestsClick={openQuests} events={isolatedHackathon ? seekerEvents : undefined} onEventsOpen={openEvents} />
         {tab !== 'main' && (
           <div
             className="game-window-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-[5px]"
@@ -637,7 +637,7 @@ function App() {
               if (event.currentTarget === event.target) setTab('main');
             }}
           >
-            <section className={`game-window relative flex max-h-[calc(100vh-24px)] w-full flex-col overflow-hidden rounded-xl border border-[#9a6a22] bg-[#100f0c] shadow-[0_24px_90px_rgba(0,0,0,.8),0_0_32px_rgba(199,135,31,.12)] ${tab === 'summon' ? 'h-[calc(100vh-32px)] max-w-[1225px]' : tab === 'training' ? 'h-[calc(100vh-32px)] max-w-[1120px]' : tab === 'shop' || tab === 'referrals' || tab === 'mail' ? 'max-w-[760px]' : 'max-w-[980px]'}`}>
+            <section className={`game-window relative flex max-h-[calc(100vh-24px)] w-full flex-col overflow-hidden rounded-xl border border-[#9a6a22] bg-[#100f0c] shadow-[0_24px_90px_rgba(0,0,0,.8),0_0_32px_rgba(199,135,31,.12)] ${tab === 'summon' ? 'h-[calc(100vh-32px)] max-w-[1225px]' : tab === 'training' ? 'h-[calc(100vh-32px)] max-w-[1120px]' : tab === 'events' ? 'h-[calc(100vh-32px)] max-w-[760px]' : tab === 'shop' || tab === 'referrals' || tab === 'mail' ? 'max-w-[760px]' : 'max-w-[980px]'}`}>
               <button
                 type="button"
                 className="game-control game-window-close absolute right-3 top-3 z-20 grid h-9 w-9 place-items-center"
@@ -655,6 +655,7 @@ function App() {
                 {tab === 'market'      && <MarketplaceScreen game={game} tokenomics={tokenomics} />}
                 {tab === 'leaderboard' && <LeaderboardScreen game={game} />}
                 {tab === 'referrals'   && <ReferralsScreen game={game} />}
+                {tab === 'events'      && <SeekerEventsPage events={seekerEvents} tab={eventsTab} onTab={setEventsTab} onState={(state, revision) => { game.hydrateServerState(state); game.applyServerRevision(revision); }} onClose={() => setTab('main')} />}
                 {tab === 'mail'        && <MailboxScreen loadMail={game.loadMail} claimMail={game.claimMail} readMail={game.readMail} deleteReadMail={game.deleteReadMail} freeSlots={inventoryCapacity(game.state) - bagItemCount(game.state)} chestCount={game.state.chests.length} />}
               </div>
             </section>
@@ -681,7 +682,7 @@ function App() {
           onCode={() => { if (moreOpen) setMoreReturn(true); setShowPromoCode(true); }}
           onSupport={() => { if (moreOpen) setMoreReturn(true); setShowSupport(true); }}
           onLogout={() => void logout()}
-          onPass={isolatedHackathon ? () => setEventsTab('pass') : undefined}
+          onPass={isolatedHackathon ? () => openEvents('pass') : undefined}
           settings={isolatedHackathon ? <BattleSettings game={game} /> : undefined}
         />
       ) : (
@@ -724,7 +725,6 @@ function App() {
       {/* Both close on Escape, which is how Android Back reaches them: opened from More, they return to More. */}
       {showPromoCode && <PromoCodeModal onClose={() => { setShowPromoCode(false); if (moreReturn) setMoreOpen(true); }} onRedeemed={applyPromoRedemption} />}
       {showSupport && <SupportTicketModal onClose={() => { setShowSupport(false); if (moreReturn) setMoreOpen(true); }} />}
-      {eventsTab && <SeekerEventsSheet events={seekerEvents} tab={eventsTab} onTab={setEventsTab} onClose={() => setEventsTab(null)} onState={(state, revision) => { game.hydrateServerState(state); game.applyServerRevision(revision); }} />}
     </div>
   );
 }
