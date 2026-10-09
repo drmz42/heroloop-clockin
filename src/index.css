@@ -10,6 +10,8 @@
     --ui-text-large: 1.125rem;
   }
   html, body, #root { height: 100%; }
+  /* Dispatch taps without waiting for double-tap zoom; retain scrolling and pinch zoom. */
+  button, a, input, select, textarea, [role="button"], [role="tab"] { touch-action: manipulation; }
 body {
     margin: 0;
     background: #060708;

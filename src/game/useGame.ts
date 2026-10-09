@@ -2489,15 +2489,16 @@ export function useGame() {
     spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
   }, [settleHeroSpend, spawnBattle]);
 
-  const sellItem = useCallback(async (itemUid: string) => {
+  const sellItem = useCallback(async (itemUid: string): Promise<boolean> => {
+    if (!stateRef.current.inventory.some((item) => item.uid === itemUid && !item.locked)) return false;
     const current = stateRef.current.inventory.find((item) => item.uid === itemUid);
     if (tokenomicsEnabled && current?.serverOwned) {
-      if (current.locked) return;
+      if (current.locked) return false;
       const result = await playerSync<{ item_ids: string[]; gold_refund: number; revision: number }>('item_mutate', {
         operation: 'sell', item_uids: [itemUid], idempotency_key: createIdempotencyKey(),
       });
       if (!result || !Array.isArray(result.item_ids) || result.item_ids.length !== 1 || result.item_ids[0] !== itemUid
-        || !Number.isSafeInteger(result.gold_refund) || result.gold_refund < 0) return;
+        || !Number.isSafeInteger(result.gold_refund) || result.gold_refund < 0) return false;
       if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
       setState((prev) => ({
         ...prev,
@@ -2509,7 +2510,7 @@ export function useGame() {
         })),
       }));
       spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
-      return;
+      return true;
     }
     setState((prev) => {
       const item = prev.inventory.find((i) => i.uid === itemUid);
@@ -2523,6 +2524,7 @@ export function useGame() {
       return { ...prev, gold: prev.gold + refund, inventory: prev.inventory.filter((i) => i.uid !== itemUid), ownedHeroes: newHeroes };
     });
     spawnBattle(stateRef.current.currentLocation, stateRef.current.team);
+    return true;
   }, [spawnBattle]);
 
   const toggleItemLock = useCallback(async (itemUid: string) => {
@@ -3055,6 +3057,9 @@ export function useGame() {
       Object.values(candidate.equipped).forEach((uid) => { if (uid) reservedByReserve.add(uid); });
     });
     const available = new Set(current.inventory.filter((item) => !reservedByReserve.has(item.uid)).map((item) => item.uid));
+    // Power derives stat arrays; compute it once per item instead of on every sort comparison.
+    const powerByUid = new Map(current.inventory.filter((item) => available.has(item.uid))
+      .map((item) => [item.uid, displayItemPower(item)]));
     const slots: ItemSlot[] = ['class_weapon', 'offhand', 'helmet', 'chest', 'gloves', 'boots', 'ring', 'amulet'];
     const equippedByUid = new Map<string, Partial<Record<ItemSlot, string>>>();
     for (const hero of teamHeroes) {
@@ -3070,7 +3075,7 @@ export function useGame() {
               && canClassEquipItem(heroBase.heroClass, itemBase)
               && meetsItemLevelRequirement(item, current.accountLevel);
           })
-          .sort((a, b) => displayItemPower(b) - displayItemPower(a) || b.level - a.level)[0];
+          .sort((a, b) => (powerByUid.get(b.uid) ?? 0) - (powerByUid.get(a.uid) ?? 0) || b.level - a.level)[0];
         if (best) {
           equipped[slot] = best.uid;
           available.delete(best.uid);
@@ -3087,6 +3092,9 @@ export function useGame() {
     };
     const before = JSON.stringify(serverEquipmentAssignments(current));
     const after = JSON.stringify(serverEquipmentAssignments(nextState));
+    // Already wearing the best gear: do not restart combat or schedule another save.
+    if (before === after && current.ownedHeroes.every((hero, index) =>
+      JSON.stringify(hero.equipped) === JSON.stringify(nextState.ownedHeroes[index].equipped))) return true;
     if (before !== after && !(await settleServerEquipment(nextState))) return false;
     stateRef.current = nextState;
     setState(nextState);

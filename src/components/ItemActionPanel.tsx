@@ -1,3 +1,4 @@
+import { AsyncActionButton } from '@/components/AsyncActionButton';
 import { isolatedHackathon } from '@/game/editionStorage';
 import { RarityFx } from '@/components/RarityFx';
 import { SkrPurchaseButton } from '@/components/SkrPurchaseButton';
@@ -21,8 +22,8 @@ interface Props {
   game: GameApi;
   equippedSlot?: ItemSlot | null;
   comparisonItem?: OwnedItem | null;
-  onEquip?: (slot: ItemSlot) => void;
-  onUnequip?: () => void;
+  onEquip?: (slot: ItemSlot) => void | Promise<void>;
+  onUnequip?: () => void | Promise<void>;
   onBeforeSell?: (item: OwnedItem) => Promise<boolean>;
   equipDisabledReason?: string;
   onClose: () => void;
@@ -86,19 +87,19 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
         {/* Row 1: Equip, Lock, Sell; row 2: Enchant and Reroll at half width each so label and cost fit (Founder 2026-10-03). */}
         <div className={`item-act-grid grid gap-1 ${ringSlot ? 'item-act-grid--rings grid-cols-4' : 'grid-cols-3'}`}>
           {equippedSlot ? (
-            <button data-item-action="unequip" onClick={onUnequip} className="item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-sky-500/30 bg-sky-500/10 px-0.5 ui-text-small font-black text-sky-300 transition hover:bg-sky-500/20" title={`Unequip from ${SLOT_LABEL[equippedSlot]}`}>
+            <AsyncActionButton data-item-action="unequip" onClick={onUnequip} className="item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-sky-500/30 bg-sky-500/10 px-0.5 ui-text-small font-black text-sky-300 transition hover:bg-sky-500/20" title={`Unequip from ${SLOT_LABEL[equippedSlot]}`}>
               <span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><ArrowUp size={12} className="rotate-180" /><span>Unequip</span></span>
-            </button>
+            </AsyncActionButton>
           ) : ringSlot ? <>
-            <button disabled={Boolean(equipDisabledReason)} onClick={() => onEquip('ring1')} className="item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-0.5 ui-text-small font-black text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={equipDisabledReason || 'Equip in Ring 1'}><span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><ArrowUp size={12} /><span>Ring 1</span></span></button>
-            <button disabled={Boolean(equipDisabledReason)} onClick={() => onEquip('ring2')} className="item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-0.5 ui-text-small font-black text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={equipDisabledReason || 'Equip in Ring 2'}><span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><ArrowUp size={12} /><span>Ring 2</span></span></button>
+            <AsyncActionButton disabled={Boolean(equipDisabledReason)} onClick={() => onEquip('ring1')} className="item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-0.5 ui-text-small font-black text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={equipDisabledReason || 'Equip in Ring 1'}><span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><ArrowUp size={12} /><span>Ring 1</span></span></AsyncActionButton>
+            <AsyncActionButton disabled={Boolean(equipDisabledReason)} onClick={() => onEquip('ring2')} className="item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-0.5 ui-text-small font-black text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={equipDisabledReason || 'Equip in Ring 2'}><span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><ArrowUp size={12} /><span>Ring 2</span></span></AsyncActionButton>
           </> : onEquip ? (
-            <button data-item-action="equip" disabled={Boolean(equipDisabledReason)} onClick={() => onEquip(base.slot)} className="item-act item-act--primary flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-0.5 ui-text-small font-black text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={equipDisabledReason || `Equip ${SLOT_LABEL[base.slot]}`}><span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><ArrowUp size={12} /><span>Equip</span></span></button>
+            <AsyncActionButton data-item-action="equip" disabled={Boolean(equipDisabledReason)} onClick={() => onEquip(base.slot)} className="item-act item-act--primary flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-0.5 ui-text-small font-black text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={equipDisabledReason || `Equip ${SLOT_LABEL[base.slot]}`}><span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0"><ArrowUp size={12} /><span>Equip</span></span></AsyncActionButton>
           ) : <div />}
 
-          <button onClick={() => game.toggleItemLock(item.uid)} aria-pressed={item.locked} className={`item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border px-0.5 ui-text-small font-black ${item.locked ? 'border-amber-500/40 bg-amber-500/15 text-amber-200' : 'border-white/10 bg-slate-800 text-slate-300'}`} title={item.locked ? 'Unlock item' : 'Lock item'}>
+          <AsyncActionButton onClick={() => game.toggleItemLock(item.uid)} aria-pressed={item.locked} className={`item-act flex min-h-10 min-w-0 flex-col items-center justify-center rounded-md border px-0.5 ui-text-small font-black ${item.locked ? 'border-amber-500/40 bg-amber-500/15 text-amber-200' : 'border-white/10 bg-slate-800 text-slate-300'}`} title={item.locked ? 'Unlock item' : 'Lock item'}>
             <span className="flex min-w-0 max-w-full items-center justify-center gap-0.5 leading-tight [&>svg]:shrink-0">{item.locked ? <Lock size={12} /> : <Unlock size={12} className="text-slate-400" />}<span>{item.locked ? 'Unlock' : 'Lock'}</span></span>
-          </button>
+          </AsyncActionButton>
 
           <div className="relative min-w-0">
             <button disabled={item.locked} onClick={() => setShowSellConfirm((value) => !value)} className="item-act item-act--danger flex min-h-10 w-full min-w-0 flex-col items-center justify-center rounded-md border border-rose-500/30 bg-rose-500/10 px-0.5 ui-text-small font-black text-rose-300 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-40" title={item.locked ? 'Unlock item before selling' : `Sell for ${formatNum(refund)} Gold`}>
@@ -108,7 +109,7 @@ export function ItemActionPanel({ item, game, equippedSlot, comparisonItem, onEq
               <p className="ui-text-small font-bold text-[#ead9bf]">Sell for {formatNum(refund)} Gold?</p>
               <div className="mt-1.5 grid grid-cols-2 gap-1">
                 <button type="button" onClick={() => setShowSellConfirm(false)} className="game-control py-1 ui-text-small font-bold">Cancel</button>
-                <button type="button" onClick={async (event) => { const coinAnchor = document.querySelector(`[data-inventory-item-uid="${item.uid}"], [data-equipped-item-uid="${item.uid}"]`) ?? event.currentTarget.closest('.item-act-grid'); if (!onBeforeSell || await onBeforeSell(item)) { flyCoins(coinAnchor); game.sellItem(item.uid); onClose(); } }} className="item-act-confirm item-act--danger rounded border border-rose-500/45 bg-rose-500/15 py-1 ui-text-small font-black text-rose-200">Sell</button>
+                <AsyncActionButton type="button" onClick={async (event) => { const coinAnchor = document.querySelector(`[data-inventory-item-uid="${item.uid}"], [data-equipped-item-uid="${item.uid}"]`) ?? event.currentTarget.closest('.item-act-grid'); if (onBeforeSell && !(await onBeforeSell(item))) throw new Error('Sale unavailable'); if (!(await game.sellItem(item.uid))) throw new Error('Sale failed'); flyCoins(coinAnchor); onClose(); }} className="item-act-confirm item-act--danger rounded border border-rose-500/45 bg-rose-500/15 py-1 ui-text-small font-black text-rose-200">Sell</AsyncActionButton>
               </div>
             </div>}
           </div>
