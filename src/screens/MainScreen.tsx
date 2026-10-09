@@ -173,6 +173,9 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
   // When the other side is wiped out, this side's losses land before that final kill.
   for (const [side, foes] of [[heroes, enemies], [enemies, heroes]] as const) {
     const falling = side.filter((fighter) => !fighter.unit.alive && fighter.death > frames && fighter.spawn <= frames);
+    // In a cleared shared fight, finish the summons before showing the Boss's final blow.
+    // Stable sorting preserves every other fighter's death order and the exact server end state.
+    if (bossFight && side === enemies) falling.sort((a, b) => Number(a.boss) - Number(b.boss));
     const last = foes.some((foe) => foe.unit.alive) ? frames : frames - period;
     falling.forEach((fighter, order) => {
       const earliest = Math.max(fighter.spawn + period, Math.round(frames * 0.4));
