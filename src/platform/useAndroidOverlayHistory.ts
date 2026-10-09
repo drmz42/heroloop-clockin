@@ -10,6 +10,19 @@ const stack: Entry[] = [];
 let ignoredPops = 0;
 let listening = false;
 
+// Finish closing a nested sheet before its action navigates. Otherwise its delayed
+// Back (including unmount cleanup) can undo the destination opened by that action.
+export function closeAndroidOverlayThen(history: { current: Entry }, next: () => void) {
+  const entry = history.current;
+  if (!isAndroidLayout || !entry.pushed) { next(); return; }
+  const index = stack.indexOf(entry);
+  if (index >= 0) stack.splice(index, 1);
+  entry.pushed = false;
+  ignoredPops += 1;
+  window.addEventListener('popstate', next, { once: true });
+  window.history.back();
+}
+
 function onPop() {
   if (ignoredPops > 0) { ignoredPops -= 1; return; }
   while (stack.length > 0) {

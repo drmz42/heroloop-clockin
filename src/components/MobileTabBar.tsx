@@ -8,7 +8,7 @@ import '@/theme/scene/sheets.css';
 import { SeekerMinePanel } from '@/components/SeekerMinePanel';
 import { buildVersionLabel } from '@/platform/buildInfo';
 import { MINE_OPEN_EVENT, markSeekerTourStep } from '@/game/seekerTour';
-import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
+import { closeAndroidOverlayThen, useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
 import { shortWalletAddress } from '@/components/walletAddress';
 
 // Android layout only (src/platform/platform.ts): the phone's primary navigation, two rows
@@ -79,7 +79,7 @@ export function MobileTabBar({
   useEffect(() => { if (!moreOpen) setTeaser(null); }, [moreOpen]);
   // Settings (Founder 2026-10-09): healing, sound mixer, battle graphics, Support, Code and Wiki.
   const [settingsOpen, setSettingsOpen] = useState(false);
-  useAndroidOverlayHistory(moreOpen && settingsOpen, () => setSettingsOpen(false));
+  const settingsHistory = useAndroidOverlayHistory(moreOpen && settingsOpen, () => setSettingsOpen(false));
   useEffect(() => { if (!moreOpen) setSettingsOpen(false); }, [moreOpen]);
   const setMineOpen = (open: boolean) => { if (!open) setSoon(null); };
   useEffect(() => {
@@ -163,7 +163,10 @@ export function MobileTabBar({
                 <div className="mo-links">
                   <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onSupport(); }}><i aria-hidden="true"><MessageCircle size={17} /></i>Support</button>
                   <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onCode(); }}><i aria-hidden="true"><KeyRound size={17} /></i>Code</button>
-                  <button type="button" className="mo-link" onClick={() => { onMoreOpen(false); onGuides(); }}><i aria-hidden="true"><BookOpen size={17} /></i>Wiki</button>
+                  <button type="button" className="mo-link" onClick={() => {
+                    setSettingsOpen(false);
+                    closeAndroidOverlayThen(settingsHistory, () => { onMoreOpen(false); onGuides(); });
+                  }}><i aria-hidden="true"><BookOpen size={17} /></i>Wiki</button>
                 </div>
               </div>
             ) : teaser ? (
