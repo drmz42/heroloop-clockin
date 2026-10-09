@@ -173,6 +173,10 @@ html .sv-spot-portrait:has(> .rx-tcg) > .sv-spot-sheen { display: none; }
 /* Divine+ inner rays carry their own mask inside the card's mask; phones still dropped the card every few seconds. */
 html .sv-spot-portrait:has(> .rx-tcg) .rx-rays { display: none; }
 html .sv-spot-portrait:has(> .rx-tcg) { box-shadow: none !important; }
+/* The card itself animates in, so a mask on it became its own GPU mask layer that phones still dropped (Divine,
+   2026-10-09 video). The still picture and frame carry the silhouette instead; the card box stays unmasked. */
+html .sv-spot-portrait:has(> .rx-tcg) { -webkit-mask: none; mask: none; }
+html .sv-spot-portrait:has(> .rx-tcg) > :is(img, .rx) { -webkit-mask: var(--rx-host-tcg) center / 100% 100% no-repeat; mask: var(--rx-host-tcg) center / 100% 100% no-repeat; }
 /* Summon reveal (Founder 2026-10-05): the rare-tier halo was a rectangle around the whole cell, leaving an empty dark
    band between it and the shaped card; it now follows the card's own silhouette. */
 .sv-card:is(.sv-card-tier-2, .sv-card-tier-3):has(.rx-tcg)::before { display: none; }
