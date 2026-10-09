@@ -170,6 +170,8 @@ html .sv-spot-portrait:has(> .rx-tcg) :is(.rx span, .rx i),
 html .sv-spot-portrait:has(> .rx-tcg) .rx-glint::before,
 html .sv-spot-portrait:has(> .rx-tcg) > .sv-spot-sheen { animation: none !important; }
 html .sv-spot-portrait:has(> .rx-tcg) > .sv-spot-sheen { display: none; }
+/* Divine+ inner rays carry their own mask inside the card's mask; phones still dropped the card every few seconds. */
+html .sv-spot-portrait:has(> .rx-tcg) .rx-rays { display: none; }
 html .sv-spot-portrait:has(> .rx-tcg) { box-shadow: none !important; }
 /* Summon reveal (Founder 2026-10-05): the rare-tier halo was a rectangle around the whole cell, leaving an empty dark
    band between it and the shaped card; it now follows the card's own silhouette. */
