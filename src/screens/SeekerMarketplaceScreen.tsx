@@ -247,6 +247,10 @@ function marketError(code?: string): string {
   return messages[code ?? ''] ?? 'Market action failed';
 }
 
+// Sales name an equipment base id, a hero catalogue id or a Boss Chest lot ('Boss Chest ×N').
 function marketHistoryRow(row: { id: string; name: string; price: number; createdAt: number; action: 'bought' | 'sold' }) {
-  return { ...row, rarity: ITEM_MAP[row.name]?.rarity, name: ITEM_MAP[row.name] ? `${ITEM_MAP[row.name].name} · ${RARITY_LABEL[ITEM_MAP[row.name].rarity]}` : row.name };
+  const item = ITEM_MAP[row.name]; const hero = HERO_MAP[row.name];
+  if (item) return { ...row, rarity: item.rarity, name: `${item.name} · ${RARITY_LABEL[item.rarity]}` };
+  if (hero) return { ...row, rarity: hero.rarity, name: `${hero.name} · Hero` };
+  return row.name.startsWith('Boss Chest') ? { ...row, rarity: 'epic' as Rarity } : row;
 }

@@ -69,6 +69,16 @@ BEGIN
   PERFORM heroloop_api.seeker_purchase_deliver(b,k);
   IF jsonb_array_length((SELECT state->'chests' FROM public.player_saves WHERE player_id=b))<>2 THEN RAISE EXCEPTION 'buy replay granted twice'; END IF;
   IF (SELECT status FROM public.market_chest_listings WHERE id=listing)<>'sold' THEN RAISE EXCEPTION 'listing not sold'; END IF;
+  -- The sale shows in Activity and in both players' history.
+  snap := heroloop_api.seeker_market_snapshot(b);
+  IF NOT snap->'activity' @> jsonb_build_array(jsonb_build_object('id',listing,'name','Boss Chest ×1','price',70,'action','sold'))
+    OR NOT snap->'history' @> jsonb_build_array(jsonb_build_object('id',listing,'action','bought')) THEN RAISE EXCEPTION 'buyer feed wrong %',snap->'history'; END IF;
+  IF NOT heroloop_api.seeker_market_snapshot(s)->'history' @> jsonb_build_array(jsonb_build_object('id',listing,'action','sold')) THEN RAISE EXCEPTION 'seller history missing'; END IF;
+  -- Hero sales join the same feed under the hero catalogue id.
+  INSERT INTO public.market_hero_listings(seller_id,hero,price,status,buyer_id,completed_at)
+    VALUES (s,'{"heroId":"fixture-hero","level":3,"stars":1}',40,'sold',b,now()+interval '1 second');
+  snap := heroloop_api.seeker_market_snapshot(b);
+  IF snap#>>'{activity,0,name}'<>'fixture-hero' OR snap#>>'{history,0,action}'<>'bought' THEN RAISE EXCEPTION 'hero sale missing %',snap->'activity'; END IF;
 
   -- A sold listing is refused at quote and, if quoted earlier, rejected (refunded) at delivery.
   k := gen_random_uuid();
