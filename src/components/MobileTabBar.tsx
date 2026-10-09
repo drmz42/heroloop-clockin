@@ -13,9 +13,9 @@ import { shortWalletAddress } from '@/components/walletAddress';
 
 // Android layout only (src/platform/platform.ts): the phone's primary navigation, two rows
 // (Founder 2026-10-02). Row 1: Battle, Quests and Bag switch the Play screen between its three
-// columns; Heroes, Summon and Market open their windows. Row 2: PvP ("Season 2"), Store, the
-// upcoming $ORE Mine (its own sheet), Ranks, and More with the wallet, Training, Refer and the footer links
-// (Founder 2026-10-09: PvP took Training's place, Training moved into More; the row holds five items). Any item can
+// columns; Heroes, Summon and Market open their windows. Row 2: PvP ("Season 2"), Wallet, the
+// upcoming $ORE Mine (its own sheet), Store, Ranks, and More with Training, Refer and the footer links
+// (Founder 2026-10-09: Wallet moved from More between PvP and Mine). Any item can
 // carry a count badge on its icon (`badges`; Quests shows its ready rewards) or a red mark without a
 // number (`alerts`, e.g. a Store sale).
 
@@ -65,7 +65,7 @@ export function MobileTabBar({
   onPass?: () => void;
   /** Seeker: automatic healing and battle graphics (moved out of the battle burger). */
   settings?: ReactNode;
-  /** Seeker: the wallet plate heads the More list (Founder 2026-10-09: the top bar slot went to Events). */
+  /** Seeker: Wallet opens from the bottom row between PvP and Mine. */
   walletAddress?: string | null;
   onWallet?: () => void;
 }) {
@@ -183,11 +183,6 @@ export function MobileTabBar({
               </div>
             ) : (
               <div className="mo-body">
-                {onWallet && <button type="button" className="mo-wallet" onClick={() => { onMoreOpen(false); onWallet(); }} aria-label={walletAddress ? `Open wallet ${shortWalletAddress(walletAddress)}` : 'Open account'} title={walletAddress ?? 'Account'}>
-                  <i className="mo-wallet-seal" aria-hidden="true"><Wallet size={19} /></i>
-                  <span className="mo-wallet-text"><span className="mo-kicker">{walletAddress ? 'Solana wallet' : 'Account'}</span><strong>{walletAddress ? shortWalletAddress(walletAddress) : 'Open account'}</strong></span>
-                  <em className="mo-wallet-cta">{walletAddress ? 'Open' : 'Connect'}</em>
-                </button>}
                 <button type="button" className="mo-banner mo-banner-hero mo-art-pass" onClick={() => { if (onPass) { onMoreOpen(false); onPass(); } else setTeaser('pass'); }}>
                   <MoLife id="pass" />
                   <span className="mo-banner-text"><span className="mo-kicker">{onPass ? 'Season 1 · 100 levels' : UPCOMING.pass.kicker}</span><strong>{onPass ? 'Battle Pass' : 'Season Pass'}</strong><span>{onPass ? 'Free, Empowered and Collector reward tracks.' : UPCOMING.pass.line}</span></span>
@@ -252,7 +247,7 @@ export function MobileTabBar({
           <SeekerMinePanel onClose={() => setMineOpen(false)} claimQuest={claimQuest} still={motionOff} />
         </div>
       )}
-      <nav className="hl-tabbar hl-tabbar-5" aria-label="Game navigation">
+      <nav className={`hl-tabbar${onWallet ? '' : ' hl-tabbar-5'}`} aria-label="Game navigation">
         {sectionButton('battle', 'Battle', Swords)}
         {sectionButton('quests', 'Quests', ScrollText)}
         {sectionButton('bag', 'Bag', Backpack)}
@@ -262,10 +257,13 @@ export function MobileTabBar({
         <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'pvp' ? 'is-active' : ''}`} aria-expanded={soon === 'pvp'} aria-label="PvP, Season 2" onClick={() => { onMoreOpen(false); setSoon(soon === 'pvp' ? null : 'pvp'); }}>
           <i className="hl-tabbar-icon" aria-hidden="true"><Crosshair size={20} /><b className="hl-mine-badge">Season 2</b></i><span>PvP</span>
         </button>
-        {windowButton('shop', 'Store', ShoppingBag, 'SKR')}
+        {onWallet && <button type="button" className="hl-tabbar-item" onClick={() => { onMoreOpen(false); setMineOpen(false); onWallet(); }} aria-label={walletAddress ? `Open wallet ${shortWalletAddress(walletAddress)}` : 'Open account'} title={walletAddress ?? 'Account'}>
+          {icon(Wallet, 0)}<span>Wallet</span>
+        </button>}
         <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'mine' ? 'is-active' : ''}`} aria-expanded={soon === 'mine'} aria-label="$ORE Mine" onClick={() => { onMoreOpen(false); setSoon(soon === 'mine' ? null : 'mine'); }}>
           <i className="hl-tabbar-icon" aria-hidden="true"><Pickaxe size={20} /><b className="hl-mine-badge">ORE</b></i><span>Mine</span>
         </button>
+        {windowButton('shop', 'Store', ShoppingBag, 'SKR')}
         {windowButton('leaderboard', 'Ranks', Trophy)}
         <button type="button" className={`hl-tabbar-item ${moreOpen || tab === 'referrals' || tab === 'training' ? 'is-active' : ''}`} aria-expanded={moreOpen} onClick={() => { setMineOpen(false); onMoreOpen(!moreOpen); }}>
           {icon(Menu, 0)}<span>More</span>

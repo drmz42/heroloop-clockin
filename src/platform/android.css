@@ -174,7 +174,7 @@ html[data-hl-platform='android'] .hl-tabbar::before {
 /* Second row: the same language, one step quieter. */
 html[data-hl-platform='android'] .hl-tabbar-item:nth-child(n + 7) { gap: 3px; font-size: 8.5px; }
 html[data-hl-platform='android'] .hl-tabbar-item:nth-child(n + 7) .hl-tabbar-icon svg { width: 18px; height: 18px; }
-/* Five-item second row (Founder 2026-10-09: Training moved into More): six wide cells above, five below. */
+/* Layout without the Seeker Wallet entry: six cells above, five below. */
 html[data-hl-platform='android'] .hl-tabbar.hl-tabbar-5 { grid-template-columns: repeat(30, minmax(0, 1fr)); }
 .hl-tabbar-5 > .hl-tabbar-item { grid-column: span 5; }
 .hl-tabbar-5 > .hl-tabbar-item:nth-child(n + 7) { grid-column: span 6; }
