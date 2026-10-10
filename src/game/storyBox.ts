@@ -29,7 +29,7 @@ export interface BoxFighter {
 
 /** All Story Box tuning in one place. */
 export const STORY_BOX = {
-  boss: { name: 'The Wretched Giant', hp: 9000, atk: 160, def: 30, interval: 1600, slamEvery: 3, slamMultiplier: 1.6 },
+  boss: { name: 'Morvane, the Forsaken', hp: 9000, atk: 160, def: 30, interval: 1600, slamEvery: 3, slamMultiplier: 1.6 },
   skeleton: { name: 'Skeleton', hp: 140, atk: 18, def: 4, interval: 1300 },
   waves: 3,
   hero: {

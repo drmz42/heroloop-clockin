@@ -75,7 +75,8 @@
 /* ── Battle ── */
 .sb-battle { background-position:center; }
 .sb-battle.is-slam { animation:sb-shake .45s ease-out 1; }
-.sb-banner { position:absolute; z-index:6; top:16%; left:0; right:0; text-align:center; color:#e9c27a; font-size:24px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; text-shadow:0 0 18px #000, 0 2px 4px #000; animation:sb-in .6s ease-out both; }
+.sb-banner { position:absolute; z-index:6; top:16%; left:0; right:0; text-align:center; color:#e9c27a; font-size:20px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; text-shadow:0 0 18px #000, 0 2px 4px #000; animation:sb-in .6s ease-out both; }
+.sb-banner small { display:block; margin-top:6px; color:#d8cdb8; font-size:15px; font-weight:700; letter-spacing:.02em; text-transform:none; font-style:italic; }
 .sb-lanes { position:absolute; z-index:4; left:0; right:0; bottom:calc(14% + env(safe-area-inset-bottom)); height:56%; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:end; padding:0 8px; }
 .sb-side { display:flex; flex-direction:column; justify-content:flex-end; gap:6px; height:100%; }
 .sb-side.heroes { align-items:flex-start; }

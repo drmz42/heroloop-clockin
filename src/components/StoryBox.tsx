@@ -105,8 +105,8 @@ function Awaken({ hero, lines, objective, reveal, onNext }: { hero: HeroClass; l
 
 interface Floater { key: string; id: string; amount: number; crit: boolean }
 
-function Battle({ fighters, seed, scene, fallback, title, onEnd }: {
-  fighters: BoxFighter[]; seed: number; scene: string; fallback: string; title?: string; onEnd: (won: boolean) => void;
+function Battle({ fighters, seed, scene, fallback, title, line, onEnd }: {
+  fighters: BoxFighter[]; seed: number; scene: string; fallback: string; title?: string; line?: string; onEnd: (won: boolean) => void;
 }) {
   const fight = useMemo(() => resolveBoxFight(fighters, seed), [fighters, seed]);
   const [time, setTime] = useState(-1200);
@@ -158,7 +158,7 @@ function Battle({ fighters, seed, scene, fallback, title, onEnd }: {
   };
   return (
     <section className={`sb-scene sb-battle ${slamming ? 'is-slam' : ''}`} style={bg(scene, fallback)}>
-      {title && time < 0 && <div className="sb-banner">{title}</div>}
+      {title && time < 0 && <div className="sb-banner">{title}{line && <small>{line}</small>}</div>}
       <div className="sb-lanes">
         <div className="sb-side heroes">{fighters.filter((fighter) => fighter.side === 'hero').map(unit)}</div>
         <div className="sb-side enemies">{fighters.filter((fighter) => fighter.side === 'enemy').map(unit)}</div>
@@ -346,7 +346,7 @@ export function StoryBox({ state, startStage, onDone }: { state: GameState; star
       {stage === 'awaken' && <Awaken hero={hero} reveal lines={['I died. I know I did.', '…Then why am I still here?', 'No answers. Move.']} objective="Fight your way out." onNext={go('waves')} />}
       {stage === 'waves' && <Waves hero={hero} heroName={heroName} onNext={go('chest')} />}
       {stage === 'chest' && <Chest onNext={go('trial')} />}
-      {stage === 'trial' && <Battle fighters={trial} seed={7} scene="gate-battle" fallback="/assets/screens/dungeon-room-1-outer-bastion-v2.webp" title={STORY_BOX.boss.name} onEnd={() => { playSfx('defeat'); setStage('awaken-again'); }} />}
+      {stage === 'trial' && <Battle fighters={trial} seed={7} scene="gate-battle" fallback="/assets/screens/dungeon-room-1-outer-bastion-v2.webp" title={STORY_BOX.boss.name} line="“You came back.”" onEnd={() => { playSfx('defeat'); setStage('awaken-again'); }} />}
       {stage === 'awaken-again' && <Awaken hero={hero} lines={['Again.', 'Still alive.']} objective="Grow stronger. Return when you're ready." onNext={go('growth')} />}
       {stage === 'growth' && <Growth hero={hero} onNext={go('final')} />}
       {stage === 'final' && <Battle fighters={final} seed={21} scene="gate-battle" fallback="/assets/screens/dungeon-room-1-outer-bastion-v2.webp" title={STORY_BOX.boss.name} onEnd={(won) => setStage(won ? 'victory' : 'growth')} />}
