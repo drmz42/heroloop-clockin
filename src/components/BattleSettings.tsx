@@ -1,5 +1,6 @@
 import { goldHealingEnabled } from '../../managed/functions/player-sync/automatic-healing.mjs';
 import { isolatedHackathon } from '@/game/editionStorage';
+import { STORY_BOX_REPLAY_EVENT } from '@/game/storyBox';
 import type { GameApi } from '@/game/useGame';
 
 // Automatic healing and battle graphics. Seeker shows them in More (Founder 2026-10-08);
@@ -20,6 +21,10 @@ export function BattleSettings({ game, onPicked }: { game: GameApi; onPicked?: (
         ['light', 'Medium', 'Battle effects stay; decorative glows rest. Saves battery'],
         ['off', 'Minimum', 'Static portraits; essential feedback only. Best battery life'],
       ] as const).map(([mode, label, description]) => <button key={mode} type="button" onClick={() => { game.setBattleAnimationMode(mode); onPicked?.(); }} className={`mt-1 w-full rounded-md border px-2 py-1.5 text-left ${state.battleAnimationMode === mode ? 'border-amber-400/60 bg-amber-400/12' : 'border-white/10 bg-black/25 hover:border-white/20'}`} aria-pressed={state.battleAnimationMode === mode}><span className="block ui-text-small font-black text-[#e8decd]">{label}</span><span className="block ui-text-small text-[#8f887b]">{description}</span></button>)}
+      {isolatedHackathon && <>
+        <div className="mb-1.5 mt-3 ui-text-small font-black uppercase tracking-[.14em] text-[#efd18a]">Story</div>
+        <button type="button" onClick={() => { onPicked?.(); window.dispatchEvent(new Event(STORY_BOX_REPLAY_EVENT)); }} className="w-full rounded-md border border-white/10 bg-black/25 px-2 py-1.5 text-left hover:border-white/20"><span className="block ui-text-small font-black text-[#e8decd]">Replay intro story</span><span className="block ui-text-small text-[#8f887b]">Watch the opening again. Nothing in your game changes.</span></button>
+      </>}
     </>
   );
 }

@@ -159,3 +159,11 @@
 @media (prefers-reduced-motion: reduce) {
   .story-box *, .story-box *::before, .story-box *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
 }
+
+/* ── Title card ── */
+.sb-title { display:grid; place-content:center; justify-items:center; gap:10px; width:100%; border:0; padding:0; color:inherit; font:inherit; background-size:auto 100%; background-position:center top; cursor:pointer; }
+.sb-title::after { background:linear-gradient(0deg,#000e 0%,#0008 45%,#0006 100%); }
+.sb-title > * { position:relative; z-index:2; }
+.sb-title-mark { width:min(72vw, 300px); height:auto; filter:drop-shadow(0 6px 18px #000); }
+.sb-title-sub { color:#d9b264; font-size:14px; font-weight:800; letter-spacing:.32em; text-transform:uppercase; text-shadow:0 2px 6px #000; }
+.sb-title-tap { margin-top:28vh; color:#efe4cf; font-size:13px; font-weight:800; letter-spacing:.2em; text-transform:uppercase; animation:sb-pulse 1.8s ease-in-out infinite; }

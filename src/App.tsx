@@ -45,7 +45,7 @@ import { demoTokenomicsEnabled, playerSync, authClient, tokenomicsEnabled } from
 import { isAuthTransient, runAuthCall } from '@/game/authTransient';
 import { clearLegacyState, inventoryCapacity } from '@/game/state';
 import { preloadEntryImages, preloadGameImages } from '@/game/imagePreload';
-import { storyBoxStartStage, type StoryBoxStage } from '@/game/storyBox';
+import { STORY_BOX_REPLAY_EVENT, storyBoxStartStage, type StoryBoxStage } from '@/game/storyBox';
 
 const StoryBox = lazy(() => import('@/components/StoryBox').then((module) => ({ default: module.StoryBox })));
 import {
@@ -77,6 +77,11 @@ function App() {
   useEffect(() => {
     if (accountGate === 'verified' && storyBox === undefined) setStoryBox(storyBoxStartStage(game.state));
   }, [accountGate, storyBox, game.state]);
+  useEffect(() => {
+    const replay = () => setStoryBox('betrayal');
+    window.addEventListener(STORY_BOX_REPLAY_EVENT, replay);
+    return () => window.removeEventListener(STORY_BOX_REPLAY_EVENT, replay);
+  }, []);
   const [serverStateRevision, setServerStateRevision] = useState<number | null>(null);
   const serverStateRevisionRef = useRef<number | null>(null);
   const saveTimerRef = useRef<number | null>(null);

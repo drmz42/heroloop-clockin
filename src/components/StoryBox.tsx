@@ -324,8 +324,20 @@ function Clue({ onDone }: { onDone: () => void }) {
 
 // ── Flow ───────────────────────────────────────────────────────────────────
 
+// The first tap also unlocks audio on Android WebView, so the opening plays with sound.
+function TitleCard({ onStart }: { onStart: () => void }) {
+  return (
+    <button type="button" className="sb-scene sb-title" onClick={() => { playSfx('tap'); onStart(); }} style={bg('gate-arena', '/assets/screens/dungeon-room-1-outer-bastion-v2.webp')}>
+      <img className="sb-title-mark" src={asset('/assets/brand/heroloop-wordmark.webp')} alt="HeroLoop" />
+      <span className="sb-title-sub">The Last Seeker</span>
+      <span className="sb-title-tap">Tap to begin</span>
+    </button>
+  );
+}
+
 export function StoryBox({ state, startStage, onDone }: { state: GameState; startStage: StoryBoxStage; onDone: () => void }) {
   const [stage, setStage] = useState<StoryBoxStage>(startStage);
+  const [started, setStarted] = useState(startStage !== 'betrayal');
   const account = storyBoxAccount(state);
   const hero = protagonistClass(state);
   const heroName = state.username || CLASS_LABEL[hero];
@@ -344,6 +356,8 @@ export function StoryBox({ state, startStage, onDone }: { state: GameState; star
 
   return (
     <div className="story-box" role="dialog" aria-modal="true" aria-label="Story">
+      {!started && <TitleCard onStart={() => setStarted(true)} />}
+      {started && <>
       {stage === 'betrayal' && <Betrayal hero={hero} onNext={go('awaken')} />}
       {stage === 'awaken' && <Awaken hero={hero} reveal lines={['I died. I know I did.', '…Then why am I still here?', 'No answers. Move.']} objective="Fight your way out." onNext={go('waves')} />}
       {stage === 'waves' && <Waves hero={hero} heroName={heroName} onNext={go('chest')} />}
@@ -355,6 +369,7 @@ export function StoryBox({ state, startStage, onDone }: { state: GameState; star
       {stage === 'victory' && <Victory squad={[hero, ...recruits]} onNext={go('clue')} />}
       {stage === 'clue' && <Clue onDone={finish} />}
       {['waves', 'chest', 'growth'].includes(stage) && <button type="button" className="sb-skip" onClick={finish}>Skip story</button>}
+      </>}
     </div>
   );
 }

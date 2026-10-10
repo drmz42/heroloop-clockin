@@ -66,6 +66,9 @@ export function writeStoryBox(account: string, value: StoryBoxStage | 'done'): v
   try { window.localStorage.setItem(storageKey(account), value); } catch { /* storage blocked: the box restarts next launch */ }
 }
 
+/** Settings "Replay intro story" dispatches this; App reopens the box from the start. */
+export const STORY_BOX_REPLAY_EVENT = 'hl:story-replay';
+
 /** `?story=replay` (or `#story`) replays the box for filming on any account. */
 export function storyBoxReplayRequested(): boolean {
   try {
