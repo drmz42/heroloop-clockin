@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
 import { bagItemCount, useGame } from '@/game/useGame';
 import { AndroidTopBar } from '@/components/AndroidTopBar';
@@ -45,6 +45,9 @@ import { demoTokenomicsEnabled, playerSync, authClient, tokenomicsEnabled } from
 import { isAuthTransient, runAuthCall } from '@/game/authTransient';
 import { clearLegacyState, inventoryCapacity } from '@/game/state';
 import { preloadEntryImages, preloadGameImages } from '@/game/imagePreload';
+import { storyBoxStartStage, type StoryBoxStage } from '@/game/storyBox';
+
+const StoryBox = lazy(() => import('@/components/StoryBox').then((module) => ({ default: module.StoryBox })));
 import {
   compatibleSolanaWallets,
   restoreSolanaWalletSession,
@@ -69,6 +72,11 @@ function App() {
   const [accountCheckAttempt, setAccountCheckAttempt] = useState(0);
   const [legacyWalletMode, setLegacyWalletMode] = useState<'link' | 'import' | null>(null);
   const [serverStateReady, setServerStateReady] = useState(false);
+  // Story Box: undefined until the verified save is known, then the start stage or null.
+  const [storyBox, setStoryBox] = useState<StoryBoxStage | null | undefined>(undefined);
+  useEffect(() => {
+    if (accountGate === 'verified' && storyBox === undefined) setStoryBox(storyBoxStartStage(game.state));
+  }, [accountGate, storyBox, game.state]);
   const [serverStateRevision, setServerStateRevision] = useState<number | null>(null);
   const serverStateRevisionRef = useRef<number | null>(null);
   const saveTimerRef = useRef<number | null>(null);
@@ -587,6 +595,14 @@ function App() {
     if (accountGate === 'landing' && isAppShell) return <AppEntryScreen game={game} legacyWalletMode={legacyWalletMode} onAccountReady={() => setAccountCheckAttempt((value) => value + 1)} />;
     if (accountGate === 'landing') return <LandingScreen game={game} legacyWalletMode={legacyWalletMode} onAccountReady={() => setAccountCheckAttempt((value) => value + 1)} />;
     return <AppLoadingScreen onRetry={accountGate === 'error' ? () => setAccountCheckAttempt((value) => value + 1) : undefined} />;
+  }
+
+  if (storyBox) {
+    return (
+      <Suspense fallback={<AppLoadingScreen />}>
+        <StoryBox state={game.state} startStage={storyBox} onDone={() => setStoryBox(null)} />
+      </Suspense>
+    );
   }
 
   return (
