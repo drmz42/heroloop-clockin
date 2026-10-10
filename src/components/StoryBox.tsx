@@ -20,7 +20,15 @@ const emblem: CSSProperties = { backgroundImage: `url('${asset('/assets/brand/he
 
 function Figure({ src, fallback, className, alt = '' }: { src: string; fallback?: string; className: string; alt?: string }) {
   const [current, setCurrent] = useState(src);
-  return <img className={className} src={current} alt={alt} draggable={false} onError={() => { if (fallback && current !== fallback) setCurrent(fallback); }} />;
+  return <img className={className} src={current} alt={alt} draggable={false} data-fallback={current === src ? undefined : ''} onError={() => { if (fallback && current !== fallback) setCurrent(fallback); }} />;
+}
+
+type HeroPose = 'stand' | 'wounded' | 'fallen';
+// Class-specific story poses; a missing pose falls back to the class battle figure.
+function HeroFigure({ hero, pose, className = '' }: { hero: HeroClass; pose: HeroPose; className?: string }) {
+  return pose === 'stand'
+    ? <img key="stand" className={`sb-pose is-stand ${className}`} src={heroFigureSrc(hero)} alt="" draggable={false} />
+    : <Figure key={pose} className={`sb-pose is-${pose} ${className}`} src={art(`${hero}-${pose}`)} fallback={heroFigureSrc(hero)} />;
 }
 
 type GiantPose = 'idle' | 'slam' | 'kneel';
@@ -68,7 +76,7 @@ function Betrayal({ hero, onNext }: { hero: HeroClass; onNext: () => void }) {
         <Figure className="sb-elyra" src={art('elyra')} fallback={heroFigureSrc('shepherd')} />
       </div>
       <div className="sb-layer sb-gate-clip"><div className="sb-portcullis" style={bg('gate-portcullis', '/assets/screens/dungeon-room-2-guard-hall-v2.webp')} /></div>
-      <div className="sb-layer sb-protagonist"><img src={heroFigureSrc(hero)} alt="" draggable={false} /><span className="sb-mark" style={emblem} /></div>
+      <div className="sb-layer sb-protagonist"><HeroFigure hero={hero} pose={beat >= 6 ? 'fallen' : beat >= 2 && beat <= 4 ? 'wounded' : 'stand'} /><span className="sb-mark" style={emblem} /></div>
       <Figure className="sb-layer sb-hollow" src={art('hollow-one')} />
       <div className="sb-flash" />
       <div className="sb-blackout"><span className="sb-emblem" style={emblem} /></div>
@@ -91,7 +99,7 @@ function Awaken({ hero, lines, objective, reveal, onNext }: { hero: HeroClass; l
     <section className={`sb-scene sb-awaken ${showExit ? 'is-exit' : ''}`} data-beat={beat}>
       <div className="sb-layer sb-altar" style={bg('crypt-altar', '/assets/screens/dungeon-room-3-crossroads-v2.webp')}>
         <span className="sb-altar-mark" style={emblem} />
-        <img className="sb-waking" src={heroFigureSrc(hero)} alt="" draggable={false} />
+        <HeroFigure hero={hero} className="sb-waking" pose={beat <= (reveal ? 1 : 0) ? 'fallen' : beat === (reveal ? 2 : 1) ? 'wounded' : 'stand'} />
       </div>
       <div className="sb-layer sb-exit" style={bg('crypt-exit', '/assets/locations/standard/location-3.webp')}>
         {[0, 1, 2].map((index) => <Figure key={index} className={`sb-exit-skeleton s${index}`} src={art('skeleton')} fallback={asset('/assets/figures/skeleton.webp')} />)}
