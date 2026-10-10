@@ -59,6 +59,13 @@
 @keyframes sb-shake { 0%,100% { transform:none } 20% { transform:translate(-6px,4px) } 40% { transform:translate(6px,-3px) } 60% { transform:translate(-4px,2px) } 80% { transform:translate(3px,-1px) } }
 @keyframes sb-pulse { 0%,100% { opacity:.55 } 50% { opacity:1 } }
 
+/* Morvane: slow, pained breathing until a sudden strike. */
+.sb-giant-img.is-idle { transform-origin:60% 100%; animation:sb-breathe 4.6s ease-in-out infinite alternate; }
+.sb-giant-img.is-slam { transform-origin:60% 100%; animation:sb-slam .32s cubic-bezier(.2,1.8,.4,1) both; }
+.sb-giant-img.is-kneel { animation:sb-in .4s ease-out both; }
+@keyframes sb-breathe { from { transform:rotate(-.8deg) translateY(0) } to { transform:rotate(1deg) translateY(1.2%) } }
+@keyframes sb-slam { from { transform:translateY(-3%) scale(.97) } to { transform:none } }
+
 /* ── S01 / S05 awakening ── */
 .sb-awaken .sb-altar, .sb-awaken .sb-exit { inset:0; background-size:cover; background-position:center; transition:opacity 1.4s ease, transform 3.2s ease; }
 .sb-awaken .sb-exit { opacity:0; transform:scale(1.12); background-position:center; }
@@ -136,11 +143,10 @@
 
 /* ── S08 victory, S09 clue ── */
 .sb-victory .sb-giant { right:-10%; top:6%; transition:transform 1.6s cubic-bezier(.5,0,.8,.4), filter 1.6s ease, opacity 1.4s ease; }
-.sb-victory[data-beat="1"] .sb-giant { transform:translate(4%, 12%) rotate(8deg) scale(.96); filter:brightness(.7) drop-shadow(0 18px 30px #000c); }
+.sb-victory[data-beat="1"] .sb-giant, .sb-victory[data-beat="2"] .sb-giant, .sb-victory[data-beat="3"] .sb-giant { transform:translate(-6%, -2%) scale(.86); filter:brightness(.8) drop-shadow(0 18px 30px #000c); }
 .sb-victory[data-beat="1"] .sb-flash { animation:sb-flash .6s ease-out .2s both; }
-.sb-victory[data-beat="2"] .sb-giant, .sb-victory[data-beat="3"] .sb-giant { transform:translate(12%, 46%) rotate(24deg); opacity:0; filter:brightness(.3); }
-.sb-trio { z-index:4; left:0; right:0; bottom:6%; height:34%; display:flex; justify-content:center; align-items:flex-end; gap:0; opacity:0; transform:translateY(8%); transition:opacity 1.2s ease, transform 1.2s ease; }
-.sb-trio img { height:100%; width:auto; margin:0 -9%; filter:drop-shadow(0 12px 18px #000d); }
+.sb-trio { z-index:4; left:0; right:0; bottom:4%; height:27%; display:flex; justify-content:flex-start; padding-left:4%; align-items:flex-end; gap:0; opacity:0; transform:translateY(8%); transition:opacity 1.2s ease, transform 1.2s ease; }
+.sb-trio img { height:100%; width:auto; margin:0 -14% 0 0; filter:drop-shadow(0 12px 18px #000d); }
 .sb-trio img:nth-child(1) { height:108%; z-index:2; }
 .sb-victory[data-beat="2"] .sb-trio, .sb-victory[data-beat="3"] .sb-trio { opacity:1; transform:none; }
 .sb-clue { display:grid; place-items:center; }

@@ -23,7 +23,9 @@ function Figure({ src, fallback, className, alt = '' }: { src: string; fallback?
   return <img className={className} src={current} alt={alt} draggable={false} onError={() => { if (fallback && current !== fallback) setCurrent(fallback); }} />;
 }
 
-const giantFigure = (strike = false) => <Figure key={strike ? 'strike' : 'idle'} className="sb-giant-img" src={art(strike ? 'giant-strike' : 'giant-idle')} fallback={asset('/assets/figures/boss-titan.webp')} />;
+type GiantPose = 'idle' | 'slam' | 'kneel';
+// Morvane keeps three landmarks across all encounters: white hair, one massive arm, iron restraints.
+const giantFigure = (pose: GiantPose = 'idle') => <Figure key={pose} className={`sb-giant-img is-${pose}`} src={art(`morvane-${pose}`)} fallback={asset('/assets/figures/boss-titan.webp')} />;
 
 function useTimeline(durations: number[], onDone: () => void) {
   const [beat, setBeat] = useState(0);
@@ -60,7 +62,7 @@ function Betrayal({ hero, onNext }: { hero: HeroClass; onNext: () => void }) {
   }, [beat]);
   return (
     <section className="sb-scene sb-cine sb-betrayal" data-beat={beat} style={bg('gate-arena', '/assets/screens/dungeon-room-1-outer-bastion-v2.webp')}>
-      <div className="sb-layer sb-giant">{giantFigure(beat === 1 || beat === 5)}</div>
+      <div className="sb-layer sb-giant">{giantFigure(beat === 1 || beat === 5 ? 'slam' : 'idle')}</div>
       <div className="sb-layer sb-friends">
         <Figure className="sb-garrick" src={art('garrick')} fallback={heroFigureSrc('knight')} />
         <Figure className="sb-elyra" src={art('elyra')} fallback={heroFigureSrc('shepherd')} />
@@ -148,7 +150,7 @@ function Battle({ fighters, seed, scene, fallback, title, line, onEnd }: {
     return (
       <div key={fighter.id} className={`sb-unit ${fighter.side} ${fighter.boss ? 'is-boss' : ''} ${dead ? 'is-dead' : ''} ${attacking.has(fighter.id) ? 'is-attacking' : ''}`}>
         <div className="sb-unit-figure">
-          {fighter.boss ? giantFigure(slamming) : src ? <img src={src} alt="" draggable={false} /> : <Figure className="" src={art('skeleton')} fallback={asset('/assets/figures/skeleton.webp')} />}
+          {fighter.boss ? giantFigure(slamming ? 'slam' : 'idle') : src ? <img src={src} alt="" draggable={false} /> : <Figure className="" src={art('skeleton')} fallback={asset('/assets/figures/skeleton.webp')} />}
           {floaters.filter((floater) => floater.id === fighter.id).map((floater) => <span key={floater.key} className={`sb-float ${floater.crit ? 'is-crit' : ''}`}>-{floater.amount}</span>)}
         </div>
         <div className="sb-hp"><i style={{ width: `${(current / fighter.hp) * 100}%` }} /></div>
@@ -294,7 +296,7 @@ function Victory({ squad, onNext }: { squad: HeroClass[]; onNext: () => void }) 
   }, [beat]);
   return (
     <section className="sb-scene sb-cine sb-victory" data-beat={beat} style={bg('gate-arena', '/assets/screens/dungeon-room-1-outer-bastion-v2.webp')}>
-      <div className="sb-layer sb-giant">{giantFigure(false)}</div>
+      <div className="sb-layer sb-giant">{giantFigure(beat >= 1 ? 'kneel' : 'idle')}</div>
       <div className="sb-layer sb-gate-clip"><div className="sb-portcullis is-closed" style={bg('gate-portcullis', '/assets/screens/dungeon-room-2-guard-hall-v2.webp')} /></div>
       <div className="sb-layer sb-trio">{squad.map((heroClass, index) => <img key={`${heroClass}-${index}`} src={heroFigureSrc(heroClass)} alt="" draggable={false} />)}</div>
       <div className="sb-flash" />
