@@ -80,6 +80,34 @@ These flows were run by the team with two test wallets (`5vWcJZVsh1KTfp8bRMhGawo
 
 The verification code is in `selfhosted/seeker/` (deposit intents, finalized-receipt checks, payout outbox) and `selfhosted/api/skr_quote.ts`.
 
+## Wallet flow on a real device
+
+Frames from the demo video, recorded on an Android phone with the release APK.
+
+| Loading | Sign in | MWA approval | Deposit pending | Verified on chain | Payout finalized |
+| --- | --- | --- | --- | --- | --- |
+| <img src="pitch/screens/device/loading.jpg" width="160" alt="Splash and loading"> | <img src="pitch/screens/device/sign-in.jpg" width="160" alt="Sign in with the Seeker wallet, wallet chooser"> | <img src="pitch/screens/device/mwa-confirm.jpg" width="160" alt="Mobile Wallet Adapter confirmation"> | <img src="pitch/screens/device/deposit-pending.jpg" width="160" alt="Deposit waiting for the network"> | <img src="pitch/screens/device/deposit-verified.jpg" width="160" alt="Deposit verified on Solana"> | <img src="pitch/screens/device/withdraw-paid.jpg" width="160" alt="Withdrawal paid with finalized payout link"> |
+
+## Mobile-native, not a web page in a wrapper
+
+- **Mobile Wallet Adapter session that survives the wallet hand-off.** Android freezes a background app within seconds, so `WalletSessionService` runs a short foreground service while the wallet app is in front; the game receives the wallet's answer instead of hanging.
+- **HTTPS only.** `network_security_config.xml` forbids cleartext traffic except the phone's own loopback, which MWA wallets use to answer the game.
+- **Edge-to-edge layout.** `MainActivity` passes system bar, display cutout and keyboard insets to the page as CSS variables, so the portrait UI respects Android 15 edge-to-edge and the on-screen keyboard.
+- **Android back button** closes the open sheet or dialog first, the way a native app does, instead of leaving the game.
+- **Offline banner** when the connection drops, and haptic feedback on Boss entrances and Summon reveals.
+- **Verified in-app updates.** `AppUpdater` downloads a new APK from `latest.json`, checks its SHA-256 and installs it through Android's `PackageInstaller`.
+
+## Exactly-once SKR, proven by tests
+
+Examples from the 85 passing Deno tests in `selfhosted/seeker/` and `selfhosted/api/`:
+
+- `duplicate settlement/quote/refund/ledger rows refuse replay inflation`
+- `balanced canonical legs reject duplicates, unknown fields and numeric amounts`
+- `SKR deposit accepted only with exact amount, payer, reference and mint`
+- `deposit window and malformed transactions fail closed`
+- `withdrawal reservation reduces available holding immediately; no client balance substitution`
+- `pending deploys reuse stored bytes and require actual expiry before releasing reserve`
+
 ## Live now and roadmap
 
 **Live in the Seeker app today**
