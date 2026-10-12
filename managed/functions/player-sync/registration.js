@@ -13,7 +13,7 @@ export function buildRegisteredState(source, username, playerId, starterHeroId, 
 
   const state = JSON.parse(JSON.stringify(source));
   const safeBalance = Math.min(1_000_000_000_000, Math.max(0, Math.floor(Number(tokenBalance) || 0)));
-  state.gold = 500;
+  state.gold = 0;
   state.hero = safeBalance;
   state.accountXp = 0;
   state.accountLevel = 1;
