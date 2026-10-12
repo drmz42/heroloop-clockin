@@ -125,11 +125,14 @@ Usage since the Seeker backend opened on 1 October 2026, team testing included: 
 
 **Roadmap**
 
-- Play to earn: farming SKR through gameplay, scaled by squad power and upgrades.
+- Endgame hero upgrades (Essence and more) on top of the live endgame locations.
+- A sixth hero class, introduced through the story.
+- Crafting for the rarest gear: rarity tiers 10 to 12.
+- Pets, new skills and auras, plus lots of cosmetics.
+- 20 story-driven regions, 200+ enemies and 20 Bosses; chapter two follows Elyra to Blackthorn.
+- Season 2: Battle Pass v2, World Boss, PvP arena and Guilds.
 - ORE Mine: claiming ORE winnings to the player balance.
-- More endgame progression on top of the live endgame locations, with many more upgrades.
-- 20 story-driven regions, 200+ enemies and 20 Bosses; story chapter two.
-- Season 2: Battle Pass v2, PvP arena, Guilds and Pets.
+- Play to earn: farming SKR through gameplay, scaled by squad power and upgrades.
 - New animations, better graphics and sound, performance work.
 - Solana dApp Store release.
 
