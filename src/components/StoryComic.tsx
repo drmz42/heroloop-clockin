@@ -94,6 +94,13 @@ export function ComicScene({ pages: initialPages, onDone, objective, finale }: {
   const advanceRef = useRef(advance);
   advanceRef.current = advance;
 
+  // Decode the next painted frames ahead, so a page never opens on an empty panel.
+  useEffect(() => {
+    pages.slice(page, page + 4).forEach((next) => next.panels.forEach((item) => {
+      [item.art, item.bg].forEach((src) => { if (src) new Image().src = art(src); });
+    }));
+  }, [page, pages]);
+
   useEffect(() => {
     if (!panel || ending) return;
     const timers = (panel.sound ?? []).map(([name, delay]) => window.setTimeout(() => playSfx(name), delay));
