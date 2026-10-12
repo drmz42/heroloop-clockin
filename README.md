@@ -13,7 +13,25 @@ HeroLoop is an idle team RPG: you assemble a hero squad, it fights through locat
 3. Review `selfhosted/api/siws_verify_endpoint.ts` for wallet authentication, `selfhosted/api/seeker_edition.ts` for edition boundaries, and `selfhosted/seeker/` for the separate SKR ledger.
 4. Run the wallet and SKR tests below. The debug APK and these automated checks are separate from physical-device acceptance of the submitted release APK.
 
-The pitch deck is included in this source snapshot. The final signed APK, demo video and submission links are supplied with the hackathon entry.
+The pitch deck is included in this source snapshot.
+
+**Install the app:** [heroloop-seeker-0.2.21-lab-25.apk](https://seeker.heroloop.xyz/download/heroloop-seeker-0.2.21-lab-25.apk) (version 0.2.21, versionCode 25, SHA-256 `a2898a6e7c5c72e7ea4f928f918ba2871914057435d846de4a46240ef2ae3d70`). The installed app updates itself from `https://seeker.heroloop.xyz/download/latest.json` and verifies the SHA-256 before installing.
+
+## Why HeroLoop is different
+
+- **Heroes that mine.** The squad you build in an idle RPG enters real ORE protocol rounds on Solana from inside the game (beta).
+- **SKR as the native currency.** One token for the whole edition: deposits, Store, player Market and withdrawals, all checked against the chain.
+- **Server-authoritative economy.** A separate double-entry SKR ledger, finalized-receipt verification and exactly-once settlement, not client-side balances.
+- **Wallet-native on Seeker.** Mobile Wallet Adapter sign-in with Seed Vault and other wallets; no passwords, no email.
+- **A story you play.** A painted, voiced motion comic that hands control back to real combat, gear and summons.
+
+## Screens (Seeker app, phone width)
+
+| Story | Battle | Heroes | Summon |
+| --- | --- | --- | --- |
+| <img src="pitch/screens/forgive.jpg" width="180" alt="Story motion comic"> | <img src="pitch/screens/battle.jpg" width="180" alt="AFK battle"> | <img src="pitch/screens/heroes.jpg" width="180" alt="Heroes"> | <img src="pitch/screens/summon.jpg" width="180" alt="Summon"> |
+| **Events** | **SKR Store** | **ORE Mine** | |
+| <img src="pitch/screens/events.jpg" width="180" alt="Events hub"> | <img src="pitch/screens/store.jpg" width="180" alt="SKR Store"> | <img src="pitch/screens/mine.jpg" width="180" alt="ORE Mine"> | |
 
 ## What is in the box
 
@@ -116,6 +134,16 @@ docker run --rm -v "$PWD/selfhosted:/app:ro" -w /app denoland/deno:2.9.4 \
   test --config=/app/deno.json --cached-only seeker/ api/skr_quote_test.ts api/seeker_edition_test.ts   # SKR ledger, quotes, edition gate
 ```
 
+Last run on 2026-10-12 against this source: wallet sign-in and session tests **30/30 passed**; SKR ledger, quote and edition-gate tests **85/85 passed**; `npm ci` and `npm run build:web` succeed.
+
 ## Security
 
 No credentials, keys or production configuration are stored in this repository. Every secret is generated per environment at install time.
+
+### Notes on the automated security audit (2026-10-12, commit 80ef329)
+
+- **sharp advisories (dev dependency):** fixed. `sharp` is a build-time image tool that never ships to players; it is now `^0.35.5`, and the build was re-run.
+- **`VITE_SUPABASE_ANON_KEY` and other `VITE_` variables:** not secrets. They are public client settings by design (a public Auth identifier and feature flags). Every secret is read on the server only.
+- **Hardcoded `http://` endpoints:** `http://www.w3.org/2000/svg` is the SVG XML namespace, not a network call; `http://auth:9999` and `http://auth-wallet:9999` are internal Docker service names that never leave the private network. The legacy CORS list no longer includes plain-HTTP origins.
+- **Exported `MainActivity`:** required, because it is the launcher activity. It handles no deep links or wallet intents; the update receiver and wallet service are `exported="false"`.
+- **Install-confirmation intent in `AppUpdater`:** the receiver is not exported and is reachable only through this app's own explicit `PendingIntent` handed to Android's `PackageInstaller`, so only the system can deliver the confirmation intent it starts.

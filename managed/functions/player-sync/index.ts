@@ -5,7 +5,7 @@ import { allowedGoldCredit, applyTrainingPurchases, deriveServerSummary, preserv
 import { applyResourceSnapshot, validRegistrationShell, validateAndMigrateGameState } from "./save-schema.mjs";
 
 const ALLOWED_ORIGINS = new Set(
-  (Deno.env.get("ALLOWED_ORIGINS") ?? "http://heroloop.xyz,http://www.heroloop.xyz,https://heroloop.xyz,https://www.heroloop.xyz")
+  (Deno.env.get("ALLOWED_ORIGINS") ?? "https://heroloop.xyz,https://www.heroloop.xyz")
     .split(",")
     .map((o) => o.trim())
     .filter(Boolean),
