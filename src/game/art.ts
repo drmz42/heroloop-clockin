@@ -87,13 +87,23 @@ export function enemyFigureSrc(unitUid: string, role?: import('./types').CombatU
 }
 
 // Seeker story (Founder 2026-10-12): Location 1 is the Ashen Crypt the hero climbs out of after the
-// intro. Its server enemies (skeleton, bat, slime) keep their stats and only wear crypt skins.
+// intro. Its server enemies keep their stats and rewards; they only wear crypt undead skins that
+// change from wave to wave, with the stronger-looking undead joining in later waves.
 export const CRYPT_LOCATION = 1;
-const CRYPT_SKINS: Record<string, { figure: string; name: string }> = {
-  skeleton: { figure: 'skeleton', name: 'Skeleton' },
-  bat: { figure: 'skeleton', name: 'Risen Guard' },
-  slime: { figure: 'ghost', name: 'Crypt Wraith' },
-};
-const cryptSkin = (unitUid: string) => CRYPT_SKINS[unitUid.replace(/^e\d+-/, '')] ?? CRYPT_SKINS.skeleton;
-export const cryptEnemyName = (unitUid: string) => cryptSkin(unitUid).name;
-export const cryptEnemyFigureSrc = (unitUid: string) => versionedAsset(`/assets/figures/${cryptSkin(unitUid).figure}.webp`);
+const CRYPT_ROSTER: { figure: string; name: string }[] = [
+  { figure: 'skeleton', name: 'Skeleton' },
+  { figure: 'crypt-skeleton-warrior', name: 'Skeleton Warrior' },
+  { figure: 'crypt-bat', name: 'Crypt Bat' },
+  { figure: 'crypt-skeleton-archer', name: 'Skeleton Archer' },
+  { figure: 'crypt-bone-hound', name: 'Bone Hound' },
+  { figure: 'crypt-skeleton-mage', name: 'Skeleton Mage' },
+  { figure: 'crypt-zombie', name: 'Crypt Zombie' },
+  { figure: 'ghost', name: 'Crypt Wraith' },
+  { figure: 'crypt-vampire', name: 'Vampire' },
+  { figure: 'crypt-lich', name: 'Lich' },
+];
+export function cryptEnemy(lane: number, wave: number): { name: string; figureSrc: string } {
+  const available = Math.min(CRYPT_ROSTER.length, 4 + wave);
+  const skin = CRYPT_ROSTER[(wave * 5 + lane * 3) % available];
+  return { name: skin.name, figureSrc: versionedAsset(`/assets/figures/${skin.figure}.webp`) };
+}

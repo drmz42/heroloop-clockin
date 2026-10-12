@@ -7,7 +7,7 @@ import { readyEventCount, type EventTab, type SeekerEventsApi } from '@/game/use
 import { SkrUsd } from '@/components/SkrUsd';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
 import { editionStorageKey, isolatedHackathon } from '../game/editionStorage';
-import { readStory, storyAccount } from '@/game/storyBox';
+import { readStory, storyAccount, storyHoldsTutorialBundle } from '@/game/storyBox';
 import { goldHealingEnabled } from '../../managed/functions/player-sync/automatic-healing.mjs';
 import { currentTutorialObjective, readyQuestCount, tutorialProgress } from '@/game/tutorialProgress';
 import { TUTORIAL_GO_EVENT, tutorialDestination, tutorialGuide } from '@/game/tutorialGuide';
@@ -85,22 +85,22 @@ function CombatPresentationLayer({ game, activeDungeon, dungeonUnits, dungeonFlo
   return (
     <>
       {!activeDungeon && potionFx && <div key={potionFx.born} className="absolute inset-0 pointer-events-none anim-fade" style={{ background: 'radial-gradient(circle at 50% 70%, rgba(74,222,128,0.15), transparent 60%)' }} />}
-      <Arena units={activeDungeon ? dungeonUnits : units} floaters={activeDungeon ? dungeonFloaters : floaters} ownedHeroes={game.state.ownedHeroes} inventory={game.state.inventory} potionFx={activeDungeon ? null : potionFx} respawnCountdowns={activeDungeon ? {} : game.respawnCountdowns} animationMode={game.state.battleAnimationMode} dungeonPanelOpen={Boolean(activeDungeon)} locationId={activeDungeon ? undefined : game.state.currentLocation} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
+      <Arena units={activeDungeon ? dungeonUnits : units} floaters={activeDungeon ? dungeonFloaters : floaters} ownedHeroes={game.state.ownedHeroes} inventory={game.state.inventory} potionFx={activeDungeon ? null : potionFx} respawnCountdowns={activeDungeon ? {} : game.respawnCountdowns} animationMode={game.state.battleAnimationMode} dungeonPanelOpen={Boolean(activeDungeon)} locationId={activeDungeon ? undefined : game.state.currentLocation} cryptWave={Math.floor(game.state.totalKills / 3)} dungeonBossScene={dungeonBossScene} dungeonRoom={dungeonRoom} />
     </>
   );
 }
 const TUTORIAL_QUESTS = [
-  // Seeker tutorial rewards (Founder 2026-10-12): items, 2 Summon Scrolls and the Boss Key only.
-  ['defeat-10-enemies', 'Defeat 10 enemies', 10, '10 Tutorial Chests'],
+  // Seeker story (Founder 2026-10-12): one bundle after the second death, nothing else.
+  ['defeat-10-enemies', 'Defeat 10 enemies', 10, '20 Chests · 2 Scrolls · 1 Key'],
   ['open-10-tutorial-chests', 'Open 10 Tutorial Chests', 10, ''],
-  ['equip-active-hero', 'Equip one item on an active hero', 1, '2 Summon Scrolls'],
+  ['equip-active-hero', 'Equip one item on an active hero', 1, ''],
   ['summon-two-heroes', 'Summon two heroes', 2, ''],
   ['fill-active-formation', 'Fill the three-hero Active Formation', 3, ''],
-  ['summon-reserve-hero', 'Summon one reserve hero', 3, ''],
-  ['defeat-25-enemies', 'Defeat 25 enemies', 25, ''],
-  ['enable-auto-pot', 'Enable Auto-pot', 1, '1 Boss Key'],
-  ['defeat-50-enemies', 'Defeat 50 enemies', 50, ''],
-  ['defeat-tutorial-boss', 'Use the granted key and defeat one summoned Boss', 1, ''],
+  ['summon-reserve-hero', 'Field your summoned heroes', 2, ''],
+  ['defeat-25-enemies', 'Defeat 10 enemies with your squad', 10, ''],
+  ['enable-auto-pot', 'Enable Auto-pot', 1, ''],
+  ['defeat-50-enemies', 'Keep fighting with your squad', 10, ''],
+  ['defeat-tutorial-boss', 'Use the key and defeat one summoned Boss', 1, ''],
 ] as const;
 const DUNGEON_BOSS_ART: Record<string, string> = { 'iron-warden': 'boss-titan', 'ash-warlock': 'boss-lich', 'thorn-shaman': 'boss-ogre', 'rift-behemoth': 'boss-dragon', 'grave-necromancer': 'boss-lich' };
 
@@ -944,7 +944,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
               <div className={`quest-card px-2 py-1 ${done ? 'border-[#b48a43]' : ''}`}>
                 <div className="flex items-center gap-1.5"><Circle size={11} className={done ? 'fill-amber-400/30 text-amber-400' : 'text-slate-600'} /><span className="ui-text-medium min-w-0 flex-1 leading-tight text-px-text">{isolatedHackathon && quest[0] === 'enable-auto-pot' ? 'Automatic healing' : quest[1]}</span></div>
                 <div className="mt-1 flex items-center gap-1.5"><div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, progress / quest[2] * 100)}%` }} /></div><span className="ui-text-small shrink-0 text-px-dim">{progress}/{quest[2]}</span><span className="ui-text-small shrink-0 text-[#e7c579]">{isolatedHackathon ? quest[3].replace('XS Potions', 'Ordinary Potions') : quest[3]}</span></div>
-                {done && <button type="button" disabled={tutorialClaimBusy} aria-busy={tutorialClaimBusy} onClick={async () => {
+                {done && storyHoldsTutorialBundle(state) && <p className="ui-text-small mt-1 text-px-dim">The reward waits until after Morvane.</p>}
+                {done && !storyHoldsTutorialBundle(state) && <button type="button" disabled={tutorialClaimBusy} aria-busy={tutorialClaimBusy} onClick={async () => {
                   setTutorialClaimBusy(true); setTutorialClaimError('');
                   try {
                     const error = await game.claimTutorialQuest(quest[0]);

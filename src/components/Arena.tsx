@@ -5,7 +5,7 @@ import './arena-figures.css';
 import type { CombatUnit, FloatingNumber, GameState, OwnedHero, OwnedItem } from '@/game/types';
 import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
-import { CRYPT_LOCATION, cryptEnemyFigureSrc, cryptEnemyName, enemyArtSrc, enemyFigureSrc, heroFigureSrc } from '@/game/art';
+import { CRYPT_LOCATION, cryptEnemy, enemyArtSrc, enemyFigureSrc, heroFigureSrc } from '@/game/art';
 import { isolatedHackathon } from '@/game/editionStorage';
 import { RarityFx } from '@/components/RarityFx';
 import { Crosshair, Shield, Skull, Star, Swords, DoorOpen, Flame, Timer, Users } from 'lucide-react';
@@ -44,6 +44,8 @@ interface ArenaProps {
   animationMode: GameState['battleAnimationMode'];
   dungeonPanelOpen?: boolean;
   locationId?: number;
+  /** Seeker crypt: which wave of undead skins to show on Location 1. */
+  cryptWave?: number;
   dungeonBossScene?: {
     phase: 'retinue' | 'shared'; bossId: string; bossName: string; artId?: string; targetUid?: string;
     cast?: { name: string; remaining: number; impact: boolean } | null;
@@ -294,9 +296,8 @@ export function locationArtStyle(locationId: number): React.CSSProperties {
   return { '--location-arena-art': `url('${versionedAsset(`/assets/locations/${locationId > 10 ? 'endgame' : 'standard'}/location-${locationId}.webp`)}')` } as React.CSSProperties;
 }
 
-function ArenaInner({ units: rawUnits, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode, dungeonPanelOpen, locationId, dungeonBossScene, dungeonRoom }: ArenaProps) {
+function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode, dungeonPanelOpen, locationId, dungeonBossScene, dungeonRoom, cryptWave = 0 }: ArenaProps) {
   const crypt = isolatedHackathon && locationId === CRYPT_LOCATION && !dungeonRoom && !dungeonBossScene;
-  const units = crypt ? rawUnits.map((unit) => unit.side === 'enemy' && !/boss/i.test(unit.uid) ? { ...unit, name: cryptEnemyName(unit.uid) } : unit) : rawUnits;
   const heroes = units.filter((u) => u.side === 'hero');
   const enemies = units.filter((u) => u.side === 'enemy');
   // Dungeon playback lets a fighter strike any living opponent, not only its lane partner.
@@ -415,7 +416,10 @@ function ArenaInner({ units: rawUnits, floaters, ownedHeroes, inventory, potionF
           {heroes.length === 0 && <div className="intentional-empty p-4 ui-text-medium">Assemble a team to fight</div>}
         </div>
         <div className="arena-roster flex min-w-0 flex-col items-start justify-center gap-2">
-          {laneEnemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive) || (dungeonFight && heroes.some((hero) => hero.alive))} animationMode={animationMode} rank={enemyRank(u, locationId, dungeonRoom?.depth)} figure={figureLanes} lane={lane} figureOverride={crypt && !/boss/i.test(u.uid) ? cryptEnemyFigureSrc(u.uid) : undefined} />)}
+          {laneEnemies.map((u, lane) => {
+            const skin = crypt && !/boss/i.test(u.uid) ? cryptEnemy(lane, cryptWave) : null;
+            return <UnitView key={u.uid} unit={skin ? { ...u, name: skin.name } : u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive) || (dungeonFight && heroes.some((hero) => hero.alive))} animationMode={animationMode} rank={enemyRank(u, locationId, dungeonRoom?.depth)} figure={figureLanes} lane={lane} figureOverride={skin?.figureSrc} />;
+          })}
           {/* Founder 2026-10-09: the Room 3 path choice has no enemies yet; leave the arena side clear. */}
           {laneEnemies.length === 0 && !sharedBoss && dungeonRoom?.room !== 3 && <div className="intentional-empty p-4 ui-text-medium">Enemies defeated</div>}
         </div>
