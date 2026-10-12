@@ -104,9 +104,9 @@ export function storyStartStage(state: GameState): StoryStage | null {
   const early = state.tutorial.questOrdinal <= 1 && !state.tutorial.questCompleted && state.ownedHeroes.length === 1 && state.totalBossKills === 0;
   const unbound = (() => { try { return !(window.localStorage.getItem(storageKey(storyAccount(state))) ?? '').includes('@'); } catch { return false; } })();
   const reset = early && (!saved ? readStory(storyAccount(state)) !== null : unbound && saved !== 'intro' && saved !== 'hunt' && saved !== 'done');
-  const fresh = isFreshStoryAccount(state) || reset;
+  const fresh = isFreshStoryAccount(state) || reset || (early && !heroGeared(state) && !saved);
   // A reset account is fresh again while this device still remembers a later stage: start over.
-  if (fresh && saved !== 'intro' && saved !== 'hunt') return 'intro';
+  if (reset) return 'intro';
   if (saved) return saved === 'done' ? null : saved;
   return fresh ? 'intro' : null;
 }

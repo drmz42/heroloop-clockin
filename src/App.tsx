@@ -47,7 +47,7 @@ import { isAuthTransient, runAuthCall } from '@/game/authTransient';
 import { clearLegacyState, inventoryCapacity } from '@/game/state';
 import { preloadEntryImages, preloadGameImages } from '@/game/imagePreload';
 import {
-  STORY_BOX_REPLAY_EVENT, STORY_NEXT, isFreshStoryAccount, isStoryScene, readStoryBossBase, readStoryHuntBase, storyAccount, storyEpoch, storyReplayRequest, storyStartStage, storyTrigger,
+  STORY_BOX_REPLAY_EVENT, STORY_NEXT, isStoryScene, readStoryBossBase, readStoryHuntBase, storyAccount, storyEpoch, storyReplayRequest, storyStartStage, storyTrigger,
   writeStory, writeStoryBossBase, writeStoryHuntBase, type StorySceneStage, type StoryStage,
 } from '@/game/storyBox';
 import { StoryRewardCard } from '@/components/StoryRewardCard';
@@ -84,30 +84,26 @@ function App() {
   const [storyScene, setStoryScene] = useState<{ stage: StorySceneStage; replay: boolean } | null>(null);
   const [storyStarted, setStoryStarted] = useState(false);
   const storyAcct = storyAccount(game.state);
+  const storyEpochRef = useRef<string | null>(null);
   useEffect(() => {
-    if (accountGate !== 'verified' || story !== undefined) return;
+    if (accountGate !== 'verified' || (tokenomicsEnabled && !serverStateReady)) return;
+    const epoch = storyEpoch(game.state);
+    if (story !== undefined && storyEpochRef.current === epoch) return;
+    storyEpochRef.current = epoch;
     const start = storyStartStage(game.state);
     const replay = isolatedHackathon ? storyReplayRequest() : null;
     setStory(start);
+    setStoryStarted(false);
     if (replay) setStoryScene({ stage: replay, replay: true });
-    else if (start && isStoryScene(start)) setStoryScene({ stage: start, replay: false });
-  }, [accountGate, story, game.state]);
-  // Combat waits while a story scene is on screen, so the hero does not fight (and bleed) unseen.
+    else setStoryScene(start && isStoryScene(start) ? { stage: start, replay: false } : null);
+  }, [accountGate, serverStateReady, story, game.state]);
+  // Wait for authoritative hydration and story selection before ordinary combat starts.
   const storyOnScreen = Boolean(storyScene);
   const { setPaused } = game;
   useEffect(() => {
     if (!isolatedHackathon) return;
-    setPaused(storyOnScreen);
-  }, [storyOnScreen, setPaused]);
-  // A reset account (fresh again while this session still holds a later story stage) restarts the story.
-  const freshAccount = isolatedHackathon && accountGate === 'verified' && isFreshStoryAccount(game.state);
-  useEffect(() => {
-    if (!freshAccount || story === undefined || story === 'intro' || story === 'hunt' || storyScene?.replay) return;
-    writeStory(storyAcct, 'intro', storyEpoch(game.state));
-    setStory('intro');
-    setStoryStarted(false);
-    setStoryScene({ stage: 'intro', replay: false });
-  }, [freshAccount, story, storyScene, storyAcct]);
+    setPaused(storyOnScreen || story === undefined || accountGate !== 'verified');
+  }, [storyOnScreen, story, accountGate, setPaused]);
   useEffect(() => {
     const replay = () => { setStoryStarted(false); setStoryScene({ stage: 'intro', replay: true }); };
     window.addEventListener(STORY_BOX_REPLAY_EVENT, replay);
