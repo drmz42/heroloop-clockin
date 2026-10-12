@@ -2,7 +2,7 @@
 
 HeroLoop is an idle team RPG: you assemble a hero squad, it fights through locations on its own (also while you are away), and you return to collect rewards, open chests, equip and enchant items and push into dungeons. This repository is the **Seeker edition** built for Solana Mobile: an Android app for the Seeker phone with Solana wallet sign-in and an isolated, SKR-only economy.
 
-> **About this repository.** HeroLoop is developed in our private main repository since July 2026. This is a filtered export of the Seeker edition: it preserves the development chronology and commit dates for the game client, backend and Android app, and leaves out internal operations, infrastructure and planning files. Exported commit IDs differ from the private repository; author identities are normalized and messages and source text are sanitized and translated into English where needed. Work during CLOCK IN (from 8 September 2026) focused on the Android app, Solana wallet sign-in through the Mobile Wallet Adapter and the SKR economy.
+> **About this repository.** HeroLoop is developed in our private main repository since 31 July 2026 (first commit), so the whole game was built in under three months. This is a filtered export of the Seeker edition: it preserves the development chronology and commit dates for the game client, backend and Android app, and leaves out internal operations, infrastructure and planning files. Exported commit IDs differ from the private repository; author identities are normalized and messages and source text are sanitized and translated into English where needed. Work during CLOCK IN (from 8 September 2026) focused on the Android app, Solana wallet sign-in through the Mobile Wallet Adapter and the SKR economy.
 
 ## Judges: 60-second check
 
