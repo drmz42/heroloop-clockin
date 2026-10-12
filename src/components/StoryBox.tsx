@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 import type { GameState } from '@/game/types';
 import { playSfx, setMusicScene } from '@/audio/gameAudio';
 import { versionedAsset } from '@/game/assetVersion';
-import { protagonistClass, squadClasses, type StorySceneStage } from '@/game/storyBox';
-import { fallenPages, gatePages, introPages, victoryPages } from '@/game/storyComic';
+import type { StorySceneStage } from '@/game/storyBox';
+import { STORY_TITLE_ART, fallenPages, gatePages, introPages, victoryPages } from '@/game/storyComic';
 import { ComicScene } from '@/components/StoryComic';
 import { StoryTrial } from '@/components/StoryTrial';
 import '@/theme/story/story-box.css';
@@ -25,7 +25,7 @@ function SceneCard({ kicker, title, text, action, onAction }: { kicker: string; 
 // The first tap also unlocks audio on Android WebView, so the opening plays with sound.
 function TitleCard({ onStart }: { onStart: () => void }) {
   return (
-    <button type="button" className="sb-scene sb-title" onClick={() => { playSfx('tap'); onStart(); }} style={{ backgroundImage: `url('${versionedAsset('/assets/story/comic/betrayal-forgive-me.webp')}')` }}>
+    <button type="button" className="sb-scene sb-title" onClick={() => { playSfx('tap'); onStart(); }} style={{ backgroundImage: `url('${versionedAsset(STORY_TITLE_ART)}')` }}>
       <img className="sb-title-mark" src={versionedAsset('/assets/brand/heroloop-wordmark.webp')} alt="HeroLoop" />
       <span className="sb-title-sub">The Last Seeker</span>
       <span className="sb-title-tap">Tap to begin</span>
@@ -36,17 +36,16 @@ function TitleCard({ onStart }: { onStart: () => void }) {
 export function StoryBox({ state, stage, started, onStart, onDone }: {
   state: GameState; stage: StorySceneStage; started: boolean; onStart: () => void; onDone: () => void;
 }) {
-  const hero = protagonistClass(state);
   useEffect(() => { setMusicScene('encounter'); return () => setMusicScene('main'); }, []);
   return (
     <div className="story-box" role="dialog" aria-modal="true" aria-label="Story">
       {stage === 'intro' && !started && <TitleCard onStart={onStart} />}
-      {stage === 'intro' && started && <ComicScene key="intro" pages={introPages(hero)} objective="Fight your way out of the crypt." onDone={onDone} />}
+      {stage === 'intro' && started && <ComicScene key="intro" pages={introPages()} objective="Fight your way out of the crypt." onDone={onDone} />}
       {stage === 'gate' && <ComicScene key="gate" pages={gatePages()} onDone={onDone}
         finale={<SceneCard kicker="Boss" title="Morvane, the Forsaken" text="He waits at the Broken Gate. You are alone." action="Face Morvane" onAction={onDone} />} />}
       {stage === 'trial' && <StoryTrial state={state} onDone={onDone} />}
-      {stage === 'fallen' && <ComicScene key="fallen" pages={fallenPages(hero)} objective="Grow stronger. Summon allies." onDone={onDone} />}
-      {stage === 'victory' && <ComicScene key="victory" pages={victoryPages(squadClasses(state))} onDone={onDone}
+      {stage === 'fallen' && <ComicScene key="fallen" pages={fallenPages()} objective="Grow stronger. Summon allies." onDone={onDone} />}
+      {stage === 'victory' && <ComicScene key="victory" pages={victoryPages()} onDone={onDone}
         finale={<SceneCard kicker="New quest" title="The Mage's Trail" text="Elyra returned to the fortress after your death. Find out why she went to Blackthorn." action="Continue" onAction={onDone} />} />}
     </div>
   );

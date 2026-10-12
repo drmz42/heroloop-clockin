@@ -15,6 +15,12 @@ const EMBERS: CSSProperties[] = Array.from({ length: 14 }, (_, index) => ({
   left: `${(index * 37) % 100}%`, animationDelay: `${(index * 530) % 3600}ms`, animationDuration: `${3200 + (index * 410) % 2400}ms`,
   '--drift': `${((index * 23) % 40) - 20}px`, width: `${2 + (index % 3)}px`, height: `${2 + (index % 3)}px`,
 } as CSSProperties));
+// Stone chips thrown toward the camera on impact beats (fixed layout, like the embers).
+const DEBRIS: CSSProperties[] = Array.from({ length: 18 }, (_, index) => ({
+  left: `${8 + (index * 41) % 84}%`, top: `${40 + (index * 17) % 30}%`, animationDelay: `${450 + (index * 37) % 220}ms`,
+  '--dx': `${((index * 53) % 120) - 60}cqw`, '--dy': `${-30 - (index * 29) % 50}cqh`, '--spin': `${((index * 97) % 720) - 360}deg`,
+  width: `${6 + (index * 7) % 14}px`, height: `${5 + (index * 5) % 11}px`,
+} as CSSProperties));
 
 function Panel({ panel, shown }: { panel: ComicPanel; shown: boolean }) {
   const fx = panel.fx ?? [];
@@ -36,6 +42,8 @@ function Panel({ panel, shown }: { panel: ComicPanel; shown: boolean }) {
         </div>
         {fx.includes('glow') && <span className="cp-glow" style={{ backgroundImage: `url('${art('/assets/brand/heroloop-emblem.png')}')` }} />}
         {fx.includes('dust') && <span className="cp-dust" />}
+        {fx.includes('debris') && <span className="cp-debris">{DEBRIS.map((rock, index) => <i key={index} style={rock} />)}</span>}
+        {fx.includes('breath') && <span className="cp-breath" />}
         {fx.includes('mist') && <span className="cp-mist" />}
         {fx.includes('embers') && <span className="cp-embers">{EMBERS.map((ember, index) => <i key={index} style={ember} />)}</span>}
         {fx.includes('flicker') && <span className="cp-flicker" />}
@@ -94,7 +102,7 @@ export function ComicScene({ pages, onDone, objective, finale }: {
 
   return (
     <section className="cp-stage" onClick={advance}>
-      <div key={page} className={`cp-page ${current.rows === 'auto' ? 'is-fit' : ''} ${ending ? 'is-ending' : ''}`} style={{ gridTemplateAreas: current.areas, gridTemplateRows: current.rows, gridTemplateColumns: current.cols ?? '1fr 1fr' }}>
+      <div key={page} className={`cp-page ${current.rows === 'auto' ? 'is-fit' : ''} ${current.rows === 'full' ? 'is-full' : ''} ${ending ? 'is-ending' : ''}`} style={{ gridTemplateAreas: current.areas, gridTemplateRows: current.rows === 'full' ? '1fr' : current.rows, gridTemplateColumns: current.cols ?? '1fr 1fr' }}>
         {current.panels.map((item, index) => <Panel key={index} panel={item} shown={index <= beat} />)}
       </div>
       {ending && objective && <div className="cp-objective"><small>Objective</small>{objective}</div>}
