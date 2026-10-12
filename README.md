@@ -45,6 +45,8 @@ Real transactions settled by the Seeker edition's wallet service. Each one is ve
 | SKR withdrawal, signed payout | 2026-10-04 | [`3YK9zQbH…`](https://solscan.io/tx/3YK9zQbHMsMs2DtYLc98d86ds2pwyxdqRZfHm5yxdzNANKsHKWJVTX9pCC3rDyT1rJbCJ4g4VGnwb8aUajL6pCcC) |
 | SKR withdrawal, signed payout | 2026-10-12 | [`4qyiAQMS…`](https://solscan.io/tx/4qyiAQMSZen3nQgvKXBrY8h3ubpCuKcjUy6HDR2e2Q6caDJEpQMFgtHDs6FwBMuYUFGPmGzDvZooTKRdQUyQVLZG) |
 
+These flows were run by the team with two test wallets (`5vWcJZVsh1KTfp8bRMhGawoibYMfMfRu7ZoDdMWZjtWR` and `714yHZvDGqvtDHvmFZMufhECdXVfhPSjEPqFXndKbYwa`). `6a3wjyTn1wqkh1nVYtv3CAisNrbXrHVLP52fUyihenJT` is the game's custody wallet and `4yREaLUn5H1BQUfh9nZpSYnrSU1gzJiXvG2CMcjrS1xQ` the project treasury, which also collects fees. The two test accounts also traded an item with each other on the Market; Market trades settle inside the SKR ledger and need no on-chain transaction.
+
 The verification code is in `selfhosted/seeker/` (deposit intents, finalized-receipt checks, payout outbox) and `selfhosted/api/skr_quote.ts`.
 
 ## Live now and roadmap
