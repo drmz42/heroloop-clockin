@@ -4,6 +4,17 @@ HeroLoop is an idle team RPG: you assemble a hero squad, it fights through locat
 
 > **About this repository.** HeroLoop is developed in our private main repository since July 2026. This is a filtered export of the Seeker edition: it preserves the development chronology and commit dates for the game client, backend and Android app, and leaves out internal operations, infrastructure and planning files. Exported commit IDs differ from the private repository; author identities are normalized and messages and source text are sanitized and translated into English where needed. Work during CLOCK IN (from 8 September 2026) focused on the Android app, Solana wallet sign-in through the Mobile Wallet Adapter and the SKR economy.
 
+## Judges: 60-second check
+
+| What | Where |
+| --- | --- |
+| Watch | [Demo video](https://youtube.com/shorts/LsFQqYnza3s) |
+| Install | [Android APK](https://heroloop.xyz/download/heroloop-seeker-0.2.21-lab-25.apk), SHA-256 `a2898a6e…3d70` |
+| Read | [Pitch deck](pitch/HeroLoop-Pitch-Deck.pdf) |
+| Verify on chain | [SKR deposit](https://solscan.io/tx/5MYUgZdSNbN9fKZYXPfofZg5nQondpJjWufqwWjtATZGJAfKXjqszttTUiatHqcgoeg1Z5fKB4qhZYpJJmyNmQr6) · [SKR withdrawal](https://solscan.io/tx/4qyiAQMSZen3nQgvKXBrY8h3ubpCuKcjUy6HDR2e2Q6caDJEpQMFgtHDs6FwBMuYUFGPmGzDvZooTKRdQUyQVLZG) |
+| Review code | Wallet sign-in `selfhosted/api/siws_verify_endpoint.ts`, SKR ledger `selfhosted/seeker/`, Android `android/seeker-app/` |
+| Live vs roadmap | [Live now and roadmap](#live-now-and-roadmap) |
+
 **Demo video:** [https://youtube.com/shorts/LsFQqYnza3s](https://youtube.com/shorts/LsFQqYnza3s)
 
 **Pitch deck:** [pitch/HeroLoop-Pitch-Deck.pdf](pitch/HeroLoop-Pitch-Deck.pdf)
