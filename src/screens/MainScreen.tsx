@@ -1974,7 +1974,10 @@ function NextStepCard({ game, nextLocation, onQuestsClick, onStoreClick }: { gam
   }, []);
   const objective = currentTutorialObjective(state);
   const ready = readyQuestCount(state);
-  const step = objective
+  const bundleHeld = storyHoldsTutorialBundle(state);
+  const step = objective && bundleHeld
+    ? { kicker: 'Next step', label: 'Fight your way out of the crypt', progress: null, cta: null, onClick: () => undefined }
+    : objective
     ? { kicker: `Next step · ${Math.max(1, Math.min(10, state.tutorial.questOrdinal))}/10`, label: objective.ready ? 'Done! Claim your reward' : objective.label, progress: objective.ready ? null : objective, cta: objective.ready ? 'Claim' : null, onClick: () => { const guide = tutorialGuide(state); if (!guide || guide === 'claim' || !isAndroidLayout) onQuestsClick?.(); else window.dispatchEvent(new CustomEvent(TUTORIAL_GO_EVENT, { detail: tutorialDestination(guide) })); } }
     : ready > 0
       ? { kicker: 'Next step', label: `${ready} reward${ready === 1 ? '' : 's'} ready`, progress: null, cta: 'Claim', onClick: onQuestsClick }

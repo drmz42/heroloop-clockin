@@ -8,7 +8,7 @@ import { editionStorageKey, isolatedHackathon } from './editionStorage';
 // is the ordinary server-owned Tutorial Quest claim, shown here as a story reward card.
 //
 //   intro   comic: betrayal, first death, first awakening            → hunt
-//   hunt    REAL game: first kills, Tutorial Chests, equip real gear   → gate (an item is equipped)
+//   hunt    REAL game: the first 10 kills in the Ashen Crypt           → gate
 //   gate    comic: the road back to the gate, "Face Morvane"           → trial
 //   trial   REAL battlefield: the geared hero against Morvane, a loss  → fallen
 //   fallen  comic: "You came back", second awakening                   → grow
@@ -87,7 +87,8 @@ export function heroGeared(state: GameState): boolean {
 
 /** The next stage a real game event unlocks, or null while the player keeps playing. */
 export function storyTrigger(stage: StoryStage, state: GameState, bossBase: number | null): StoryStage | null {
-  if (stage === 'hunt' && (heroGeared(state) || state.tutorial.questOrdinal >= 4 || state.tutorial.questCompleted)) return 'gate';
+  // The hero leaves the crypt after the first 10 kills; gear now arrives with the bundle after the trial.
+  if (stage === 'hunt' && (state.totalKills >= 10 || heroGeared(state) || state.tutorial.questOrdinal >= 2 || state.tutorial.questCompleted)) return 'gate';
   if (stage === 'grow' && (state.tutorial.questCompleted || (bossBase !== null && state.totalBossKills > bossBase))) return 'victory';
   return null;
 }
