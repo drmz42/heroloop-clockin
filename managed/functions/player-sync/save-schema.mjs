@@ -142,7 +142,8 @@ function ownedCollectionsError(state, allowMissingTeamReferences = false) {
   if (!Array.isArray(state.inventory) || state.inventory.length > 1_000) return "inventory_bounds";
   const invalidItem = state.inventory.find((entry) => itemError(entry) !== null);
   if (invalidItem !== undefined) return `item_shape:${itemError(invalidItem)}`;
-  if (!Array.isArray(state.chests) || state.chests.length > 500) return "chests_bounds";
+  // Seeker market and mail can fill the chest queue to 1,000 (20261010130000_seeker_dungeon_chest_market).
+  if (!Array.isArray(state.chests) || state.chests.length > 1_000) return "chests_bounds";
   if (!state.chests.every(chest)) return "chest_shape";
   if (!Array.isArray(state.team) || state.team.length > 3 || !state.team.every((uid) => text(uid, 128))) return "team_shape";
   const heroUids = state.ownedHeroes.map((entry) => entry.uid);
