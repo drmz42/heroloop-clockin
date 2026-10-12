@@ -7,7 +7,8 @@ export type SfxName =
   | 'heroAttack' | 'enemyAttack'
   | 'tap' | 'tab' | 'sheet' | 'hit' | 'crit' | 'heal' | 'miss' | 'death' | 'victory' | 'defeat'
   | 'coin' | 'claim' | 'purchase' | 'error' | 'levelUp' | 'equip' | 'summon'
-  | 'chestCharge' | 'chestRattle' | 'chestBurst' | 'cardFly' | 'bossIntro' | 'bossPhase';
+  | 'chestCharge' | 'chestRattle' | 'chestBurst' | 'cardFly' | 'bossIntro' | 'bossPhase'
+  | 'gateSlam' | 'roar' | 'knock' | 'whoosh' | 'wind' | 'heartbeat';
 
 const MUSIC_SOURCES = {
   main: ['/assets/audio/shadows-of-the-void-v1.mp3', '/assets/audio/somber-drone-v1.mp3'],
@@ -171,7 +172,39 @@ const PLAYERS: Record<SfxName, (tier: number) => void> = {
     tone(147, 1.4, { type: 'sawtooth', gain: 0.07, filter: 700, attack: 0.5, at: 0.85 });
   },
   bossPhase: () => { tone(65, 0.7, { gain: 0.45, to: 34 }); tone(131, 1.1, { type: 'sawtooth', gain: 0.07, filter: 800, attack: 0.3, at: 0.1 }); },
+  // Story sounds: an iron gate, Morvane's growl, the Hollow One's knock, a blade, crypt wind, a heartbeat.
+  gateSlam: () => {
+    for (let i = 0; i < 6; i++) hiss(0.05, { type: 'bandpass', freq: vary(3200), q: 3, gain: 0.08, at: i * 0.07 });
+    tone(46, 1.3, { gain: 0.7, to: 26, at: 0.45 }); hiss(1.1, { freq: 2600, to: 160, gain: 0.32, at: 0.45 });
+    bell(173, 1.6, 0.06, 0.47); bell(241, 1.3, 0.04, 0.5);
+  },
+  roar: () => {
+    tone(72, 1.7, { type: 'sawtooth', gain: 0.22, filter: 480, to: 48, attack: 0.25 });
+    tone(108, 1.5, { type: 'sawtooth', gain: 0.12, filter: 620, to: 70, attack: 0.3, detune: 18 });
+    hiss(1.5, { type: 'bandpass', freq: 320, to: 180, q: 1.4, gain: 0.2, attack: 0.3 });
+  },
+  knock: () => { tone(vary(190, 0.04), 0.09, { gain: 0.22, to: 120 }); hiss(0.05, { type: 'bandpass', freq: 900, q: 2, gain: 0.08 }); },
+  whoosh: () => hiss(0.38, { type: 'bandpass', freq: 280, to: 2600, q: 1.1, gain: 0.16, attack: 0.12 }),
+  wind: () => { hiss(3.2, { freq: 520, to: 260, gain: 0.07, attack: 1.1 }); hiss(2.6, { type: 'bandpass', freq: 900, to: 400, q: 6, gain: 0.03, attack: 0.9, at: 0.5 }); },
+  heartbeat: () => { tone(58, 0.16, { gain: 0.5, to: 40 }); tone(52, 0.2, { gain: 0.42, to: 36, at: 0.26 }); },
 };
+
+/** Story voice lines: recorded clips that follow the sound switch and volume and duck the music. */
+let voice: HTMLAudioElement | null = null;
+export function playVoice(src: string) {
+  if (!settings.sfx || !unlocked || document.visibilityState === 'hidden') return;
+  try {
+    voice?.pause();
+    voice = new Audio(src);
+    voice.volume = Math.max(0, Math.min(1, settings.sfxVolume));
+    duckMusic(3200);
+    void voice.play().catch(() => undefined);
+  } catch { /* media unavailable */ }
+}
+export function stopVoice() {
+  try { voice?.pause(); } catch { /* media unavailable */ }
+  voice = null;
+}
 
 /** Rarity sting for one revealed card: higher tiers ring higher and add a choir pad. */
 export function playReveal(tier: number) {

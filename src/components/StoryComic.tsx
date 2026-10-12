@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { versionedAsset } from '@/game/assetVersion';
-import { duckMusic, playSfx, vibrate } from '@/audio/gameAudio';
-import type { ComicPage, ComicPanel } from '@/game/storyComic';
+import { duckMusic, playSfx, playVoice, stopVoice, vibrate } from '@/audio/gameAudio';
+import { voiceSrc, type ComicPage, type ComicPanel } from '@/game/storyComic';
 import '@/theme/story/story-comic.css';
 
 // Motion comic player for the Story Box: pages of inked panels revealed one beat at a time, with
@@ -79,10 +79,11 @@ export function ComicScene({ pages, onDone, objective, finale }: {
 
   useEffect(() => {
     if (!panel || ending) return;
-    if (panel.sound) panel.sound.forEach(([name, delay]) => window.setTimeout(() => playSfx(name), delay));
+    const timers = (panel.sound ?? []).map(([name, delay]) => window.setTimeout(() => playSfx(name), delay));
+    if (panel.voice) { const [line, delay] = panel.voice; timers.push(window.setTimeout(() => playVoice(art(voiceSrc(line))), delay)); }
     if (panel.fx?.includes('shake')) { vibrate(60); duckMusic(1400); }
-    const timer = window.setTimeout(() => advanceRef.current(), panel.hold);
-    return () => window.clearTimeout(timer);
+    timers.push(window.setTimeout(() => advanceRef.current(), panel.hold));
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
   }, [page, beat, panel, ending]);
 
   useEffect(() => {
@@ -99,7 +100,7 @@ export function ComicScene({ pages, onDone, objective, finale }: {
       {ending && objective && <div className="cp-objective"><small>Objective</small>{objective}</div>}
       {ending && finale}
       <div className="cp-progress" aria-hidden>{pages.map((_, index) => <i key={index} className={index < page ? 'is-done' : index === page ? 'is-now' : ''} />)}</div>
-      <button type="button" className="sb-skip" onClick={(event) => { event.stopPropagation(); done.current(); }}>Skip</button>
+      <button type="button" className="sb-skip" onClick={(event) => { event.stopPropagation(); stopVoice(); done.current(); }}>Skip</button>
       {!ending && <span className="cp-hint">Tap to continue</span>}
     </section>
   );

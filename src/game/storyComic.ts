@@ -28,8 +28,15 @@ export interface ComicPanel {
   fx?: ComicFx[];
   word?: string;
   sound?: [SfxName, number][];
+  /** Recorded voice line (file id under /assets/story/voice) and its delay in ms. */
+  voice?: [VoiceLine, number];
 }
 export interface ComicPage { areas: string; rows: string; cols?: string; panels: ComicPanel[] }
+
+// Story voice lines, rendered offline (Piper TTS) into /assets/story/voice/<id>.mp3.
+export type VoiceLine = 'n-broken-gate' | 'n-gate-closed' | 'n-fought-on' | 'n-nothing' | 'n-road' | 'n-waiting' | 'n-together'
+  | 'n-elyra' | 'n-cloak' | 'h-garrick' | 'h-died' | 'h-move' | 'h-again' | 'h-not-alone' | 'g-forgive' | 'm-came-back' | 'm-silence';
+export const voiceSrc = (line: VoiceLine) => `/assets/story/voice/${line}.mp3`;
 
 const story = (name: string) => `/assets/story/${name}.webp`;
 const MORVANE = { idle: story('morvane-idle'), slam: story('morvane-slam'), kneel: story('morvane-kneel') };
@@ -49,13 +56,14 @@ function poses(hero: HeroClass) {
   return { stand: heroFigureSrc(hero), wounded: story(`${hero}-wounded`), fallen: story(`${hero}-fallen`) };
 }
 
-function altarPanel(hero: HeroClass, area: string, text: string, caption?: string): ComicPanel {
+function altarPanel(hero: HeroClass, area: string, text: string, line: VoiceLine, caption?: string): ComicPanel {
   return {
-    area, hold: 3200, bg: BG.altar, bgPos: 'center 72%', cam: 'push', tone: 'bone', fx: ['glow', 'mist'],
+    area, hold: 4000, bg: BG.altar, bgPos: 'center 72%', cam: 'push', tone: 'bone', fx: ['glow', 'mist'],
     figs: [{ src: poses(hero).fallen, x: 50, y: 30, h: 22 }],
     caption: caption ? { text: caption } : undefined,
     bubbles: [{ text, x: 46, y: 36, tail: 'down-left', kind: 'thought' }],
-    sound: [['levelUp', 300]],
+    sound: [['wind', 0], ['heartbeat', 200], ['levelUp', 900]],
+    voice: [line, 1100],
   };
 }
 
@@ -68,7 +76,7 @@ export function introPages(hero: HeroClass): ComicPage[] {
       areas: '"a a" "b c"', rows: '1.3fr 1fr',
       panels: [
         {
-          area: 'a', hold: 3800, bg: BG.arena, bgPos: 'center 62%', cam: 'push', tone: 'night', fx: ['embers'],
+          area: 'a', hold: 4400, bg: BG.arena, bgPos: 'center 62%', cam: 'push', tone: 'night', fx: ['embers'], voice: ['n-broken-gate', 700],
           caption: { text: 'The Broken Gate. Three of us came to end Morvane.' },
           figs: [
             { src: MORVANE.idle, x: 60, y: 14, h: 92, z: 1, dim: true, anim: 'breathe' },
@@ -82,25 +90,25 @@ export function introPages(hero: HeroClass): ComicPage[] {
           area: 'b', hold: 2600, bg: BG.battle, bgPos: 'center 70%', cam: 'pull', tone: 'ember', fx: ['shake', 'flash', 'dust'],
           figs: [{ src: MORVANE.slam, x: 58, y: -30, h: 160, anim: 'lunge' }],
           sfx: { text: 'KRA-KOOM!', x: 4, y: 10, rot: -10, size: 44 },
-          sound: [['crit', 120], ['bossPhase', 500]],
+          sound: [['roar', 0], ['crit', 450], ['bossPhase', 700]],
         },
         {
           area: 'c', hold: 2600, bg: BG.battle, bgPos: '30% 80%', cam: 'still', tone: 'ember', fx: ['dust', 'embers'],
           figs: [{ src: me.wounded, x: 50, y: -6, h: 104, anim: 'recoil' }],
-          bubbles: [{ text: 'Garrick…!', x: 8, y: 8, tail: 'down-right', kind: 'shout' }],
+          bubbles: [{ text: 'Garrick…!', x: 8, y: 8, tail: 'down-right', kind: 'shout' }], voice: ['h-garrick', 500],
         },
       ],
     },
     {
       areas: '"a" "b"', rows: '1.75fr 1fr', cols: '1fr',
       panels: [
-        { area: 'a', hold: 4200, art: ART.forgiveMe, cam: 'push', tone: 'clear', fx: ['embers', 'flicker'], sound: [['bossIntro', 200]] },
+        { area: 'a', hold: 4400, art: ART.forgiveMe, cam: 'push', tone: 'clear', fx: ['embers', 'flicker'], sound: [['heartbeat', 200]], voice: ['g-forgive', 900] },
         {
           area: 'b', hold: 3400, bg: BG.arena, bgPos: 'center 28%', cam: 'push', tone: 'night', fx: ['gate-close', 'shake'],
           figs: [],
           sfx: { text: 'CLANG!', x: 60, y: 46, rot: 8, size: 52 },
-          caption: { text: 'Then the gate closed.' },
-          sound: [['bossPhase', 1700], ['crit', 2300]],
+          caption: { text: 'Then the gate closed.' }, voice: ['n-gate-closed', 300],
+          sound: [['gateSlam', 1200]],
         },
       ],
     },
@@ -115,7 +123,8 @@ export function introPages(hero: HeroClass): ComicPage[] {
             { src: me.stand, x: 26, y: -2, h: 64, anim: 'lunge' },
           ],
           sfx: { text: 'THOOM!', x: 30, y: 24, rot: -6, size: 64 },
-          sound: [['heroAttack', 0], ['crit', 700], ['death', 1500]],
+          voice: ['n-fought-on', 200],
+          sound: [['whoosh', 0], ['roar', 500], ['crit', 900], ['death', 1600]],
         },
         {
           area: 'b', hold: 3600, bg: BG.battle, bgPos: 'center 92%', cam: 'still', tone: 'black', fx: ['desaturate', 'mist'],
@@ -124,22 +133,22 @@ export function introPages(hero: HeroClass): ComicPage[] {
             { src: story('hollow-one'), x: 90, y: 34, h: 26, dim: true },
           ],
           sfx: { text: 'tok… tok… tok…', x: 48, y: 12, rot: 0, size: 18 },
-          sound: [['tap', 600], ['tap', 1250], ['tap', 1900]],
+          sound: [['wind', 0], ['knock', 700], ['knock', 1350], ['knock', 2000]],
         },
-        { area: 'c', hold: 2600, tone: 'black', cam: 'still', fx: ['glow', 'blackout'], figs: [], caption: { text: 'And then — nothing.', at: 'bottom' } },
+        { area: 'c', hold: 2800, tone: 'black', cam: 'still', fx: ['glow', 'blackout'], figs: [], caption: { text: 'And then — nothing.', at: 'bottom' }, voice: ['n-nothing', 400] },
       ],
     },
     {
       areas: '"a" "b"', rows: '1fr 1.7fr', cols: '1fr',
       panels: [
-        altarPanel(hero, 'a', 'I died. I know I did.', 'Ashen Crypt.'),
-        { area: 'b', hold: 3800, art: ART.move, cam: 'push', tone: 'clear', fx: ['mist', 'flicker'] },
+        altarPanel(hero, 'a', 'I died. I know I did.', 'h-died', 'Ashen Crypt.'),
+        { area: 'b', hold: 3800, art: ART.move, cam: 'push', tone: 'clear', fx: ['mist', 'flicker'], voice: ['h-move', 700] },
       ],
     },
     {
       areas: '"a"', rows: 'auto', cols: '1fr',
       panels: [
-        { area: 'a', hold: 3400, art: ART.slash, cam: 'pull', tone: 'clear', fx: ['shake', 'dust'], sfx: { text: 'CRACK!', x: 58, y: 8, rot: 8, size: 58 }, sound: [['heroAttack', 300], ['crit', 600]] },
+        { area: 'a', hold: 3400, art: ART.slash, cam: 'pull', tone: 'clear', fx: ['shake', 'dust'], sfx: { text: 'CRACK!', x: 58, y: 8, rot: 8, size: 58 }, sound: [['whoosh', 200], ['crit', 550], ['death', 900]] },
       ],
     },
   ];
@@ -151,9 +160,9 @@ export function gatePages(): ComicPage[] {
   return [{
     areas: '"a"', rows: 'auto', cols: '1fr',
     panels: [{
-      area: 'a', hold: 4200, art: ART.road, cam: 'push', tone: 'clear', fx: ['mist'],
+      area: 'a', hold: 4400, art: ART.road, cam: 'push', tone: 'clear', fx: ['mist'],
       caption: { text: 'Armed again, I took the grave road back to the gate.' },
-      sound: [['bossIntro', 400]],
+      sound: [['wind', 0], ['bossIntro', 3400]], voice: ['n-road', 500],
     }],
   }];
 }
@@ -165,14 +174,14 @@ export function fallenPages(hero: HeroClass): ComicPage[] {
   return [
     {
       areas: '"a"', rows: 'auto', cols: '1fr',
-      panels: [{ area: 'a', hold: 4200, art: ART.cameBack, cam: 'push', tone: 'clear', fx: ['embers', 'flicker'], caption: { text: 'He was waiting for me.', at: 'bottom' }, sound: [['bossPhase', 300], ['death', 1600]] }],
+      panels: [{ area: 'a', hold: 4600, art: ART.cameBack, cam: 'push', tone: 'clear', fx: ['embers', 'flicker'], caption: { text: 'He was waiting for me.', at: 'bottom' }, sound: [['roar', 200], ['heartbeat', 3000]], voice: ['n-waiting', 600] }],
     },
     {
       areas: '"a" "b"', rows: '1.2fr 1fr', cols: '1fr',
       panels: [
-        altarPanel(hero, 'a', 'Again.', 'The altar. Again.'),
+        altarPanel(hero, 'a', 'Again.', 'h-again', 'The altar. Again.'),
         {
-          area: 'b', hold: 3200, bg: BG.altar, bgPos: 'center 85%', cam: 'rise', tone: 'bone', fx: ['mist'],
+          area: 'b', hold: 4200, bg: BG.altar, bgPos: 'center 85%', cam: 'rise', tone: 'bone', fx: ['mist'], voice: ['h-not-alone', 500],
           figs: [{ src: me.wounded, x: 50, y: -8, h: 110, anim: 'rise' }],
           bubbles: [{ text: 'Alone I can’t win. Then I won’t be alone.', x: 6, y: 8, tail: 'down-right', kind: 'thought' }],
         },
@@ -190,17 +199,17 @@ export function victoryPages(squad: HeroClass[]): ComicPage[] {
       areas: '"a" "b"', rows: '1.15fr 1fr', cols: '1fr',
       panels: [
         {
-          area: 'a', hold: 3200, bg: BG.battle, bgPos: 'center 75%', cam: 'push', tone: 'ember', fx: ['shake', 'flash', 'dust', 'embers'],
+          area: 'a', hold: 5000, bg: BG.battle, bgPos: 'center 75%', cam: 'push', tone: 'ember', fx: ['shake', 'flash', 'dust', 'embers'],
           figs: [{ src: MORVANE.kneel, x: 54, y: -8, h: 116, anim: 'fall' }],
           sfx: { text: 'KRRAK!', x: 6, y: 12, rot: -8, size: 60 },
           bubbles: [{ who: 'Morvane', text: 'At last… silence…', x: 54, y: 8, tail: 'down-left', kind: 'whisper' }],
-          sound: [['crit', 0], ['bossPhase', 600]],
+          sound: [['crit', 0], ['roar', 300]], voice: ['m-silence', 1300],
         },
         {
-          area: 'b', hold: 3400, bg: BG.arena, bgPos: 'center 30%', cam: 'pull', tone: 'night', fx: ['gate-close'],
+          area: 'b', hold: 4000, bg: BG.arena, bgPos: 'center 30%', cam: 'pull', tone: 'night', fx: ['gate-close'],
           figs: squad.map((heroClass, index) => ({ src: heroFigureSrc(heroClass), x: xs[index] ?? 50, y: -4, h: 64 })),
           caption: { text: 'Where I fell alone, we stand together.', at: 'bottom' },
-          sound: [['victory', 300]],
+          sound: [['victory', 300]], voice: ['n-together', 900],
         },
       ],
     },
@@ -208,12 +217,12 @@ export function victoryPages(squad: HeroClass[]): ComicPage[] {
       areas: '"a" "b"', rows: '1.3fr .7fr', cols: '1fr',
       panels: [
         {
-          area: 'a', hold: 3600, bg: BG.arena, bgPos: 'center 30%', cam: 'push', tone: 'violet', fx: ['glow'],
+          area: 'a', hold: 5000, bg: BG.arena, bgPos: 'center 30%', cam: 'push', tone: 'violet', fx: ['glow'], voice: ['n-cloak', 500],
           figs: [{ src: story('cloak-scrap'), x: 50, y: 6, h: 70, anim: 'sway' }],
           caption: { text: 'Caught on the inside of the gate: a scrap of Elyra’s cloak.' },
           sound: [['summon', 200]],
         },
-        { area: 'b', hold: 3000, tone: 'black', cam: 'still', figs: [], word: 'Blackthorn', caption: { text: 'She came back here. After I died.', at: 'bottom' } },
+        { area: 'b', hold: 3800, tone: 'black', cam: 'still', figs: [], word: 'Blackthorn', caption: { text: 'She came back here. After I died.', at: 'bottom' }, voice: ['n-elyra', 900] },
       ],
     },
   ];

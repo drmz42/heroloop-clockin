@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CombatUnit, FloatingNumber, GameState } from '@/game/types';
 import { Arena } from '@/components/Arena';
 import { makeUnit, ownedToUnit } from '@/game/engine';
-import { playSfx, setMusicScene } from '@/audio/gameAudio';
+import { playSfx, playVoice, setMusicScene } from '@/audio/gameAudio';
 import { versionedAsset } from '@/game/assetVersion';
 import { advanceCombatFrame, combatResolution, seededCombatRandom } from '../../managed/functions/player-sync/combat-step.mjs';
 
@@ -65,9 +65,10 @@ export function StoryTrial({ state, onDone }: { state: GameState; onDone: () => 
 
   useEffect(() => {
     setMusicScene('encounter');
-    playSfx('bossIntro');
-    const timer = window.setTimeout(() => setPhase('fight'), 2200);
-    return () => { window.clearTimeout(timer); setMusicScene('main'); };
+    playSfx('roar');
+    const line = window.setTimeout(() => playVoice(versionedAsset('/assets/story/voice/m-came-back.mp3')), 500);
+    const timer = window.setTimeout(() => setPhase('fight'), 2800);
+    return () => { window.clearTimeout(timer); window.clearTimeout(line); setMusicScene('main'); };
   }, []);
 
   useEffect(() => {
