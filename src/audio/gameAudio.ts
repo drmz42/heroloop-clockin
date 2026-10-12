@@ -13,6 +13,8 @@ export type SfxName =
 const MUSIC_SOURCES = {
   main: ['/assets/audio/shadows-of-the-void-v1.mp3', '/assets/audio/somber-drone-v1.mp3'],
   encounter: '/assets/audio/subterranean-drone-v1.mp3',
+  // Story comic: the sadder second main track, looped.
+  story: '/assets/audio/somber-drone-v1.mp3',
 };
 export type MusicScene = keyof typeof MUSIC_SOURCES;
 let musicScene: MusicScene = 'main';
@@ -263,16 +265,17 @@ function fadeMusic(target: number, ms: number, pauseAtEnd = false) {
 
 function musicTarget() { return (performance.now() < duckUntil ? MUSIC_VOLUME * 0.35 : MUSIC_VOLUME) * settings.musicVolume; }
 
-function syncMusic() {
-  if (!installed || !unlocked) return;
+// `attempt` tries to start before the first tap; the WebView may refuse until a gesture unlocks audio.
+function syncMusic(attempt = false) {
+  if (!installed || (!unlocked && !attempt)) return;
   if (settings.music && settings.musicVolume > 0 && document.visibilityState !== 'hidden') {
     const el = musicElement();
-    const source = musicScene === 'main' ? MUSIC_SOURCES.main[mainTrackIndex] : MUSIC_SOURCES.encounter;
+    const source = musicScene === 'main' ? MUSIC_SOURCES.main[mainTrackIndex] : MUSIC_SOURCES[musicScene];
     if (loadedMusicSource !== source) {
       window.clearInterval(musicFade);
       el.pause();
       el.volume = 0;
-      el.loop = musicScene === 'encounter';
+      el.loop = musicScene !== 'main';
       el.src = source;
       loadedMusicSource = source;
       musicRequest += 1;
@@ -302,6 +305,9 @@ export function setMusicScene(scene: MusicScene) {
   music?.pause();
   syncMusic();
 }
+
+/** Start the current scene's music now if the platform allows it; otherwise the first tap starts it. */
+export function primeMusic() { syncMusic(true); }
 
 /** Lowers the music while a big moment (chest, summon) plays its own sound. */
 export function duckMusic(ms: number) {

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import type { GameState } from '@/game/types';
-import { playSfx, setMusicScene } from '@/audio/gameAudio';
+import { installGameAudio, playSfx, primeMusic, setMusicScene } from '@/audio/gameAudio';
 import { versionedAsset } from '@/game/assetVersion';
 import type { StorySceneStage } from '@/game/storyBox';
 import { STORY_TITLE_ART, fallenPages, gatePages, introPages, victoryPages } from '@/game/storyComic';
@@ -36,7 +36,13 @@ function TitleCard({ onStart }: { onStart: () => void }) {
 export function StoryBox({ state, stage, started, onStart, onDone }: {
   state: GameState; stage: StorySceneStage; started: boolean; onStart: () => void; onDone: () => void;
 }) {
-  useEffect(() => { setMusicScene('encounter'); return () => setMusicScene('main'); }, []);
+  // The story replaces the game screen, so it installs the game audio itself: music runs from the title card.
+  useEffect(() => {
+    const stop = installGameAudio();
+    setMusicScene('story');
+    primeMusic();
+    return () => { setMusicScene('main'); stop(); };
+  }, []);
   return (
     <div className="story-box" role="dialog" aria-modal="true" aria-label="Story">
       {stage === 'intro' && !started && <TitleCard onStart={onStart} />}

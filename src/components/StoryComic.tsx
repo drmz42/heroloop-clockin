@@ -40,7 +40,7 @@ function Panel({ panel, shown }: { panel: ComicPanel; shown: boolean }) {
             );
           })}
         </div>
-        {fx.includes('glow') && <span className="cp-glow" style={{ backgroundImage: `url('${art('/assets/brand/heroloop-emblem.png')}')` }} />}
+        {fx.includes('glow') && !panel.glow && <span className="cp-glow" style={{ backgroundImage: `url('${art('/assets/brand/heroloop-emblem.png')}')` }} />}
         {fx.includes('dust') && <span className="cp-dust" />}
         {fx.includes('debris') && <span className="cp-debris">{DEBRIS.map((rock, index) => <i key={index} style={rock} />)}</span>}
         {fx.includes('breath') && <span className="cp-breath" />}
@@ -48,6 +48,11 @@ function Panel({ panel, shown }: { panel: ComicPanel; shown: boolean }) {
         {fx.includes('embers') && <span className="cp-embers">{EMBERS.map((ember, index) => <i key={index} style={ember} />)}</span>}
         {fx.includes('flicker') && <span className="cp-flicker" />}
       </div>
+      {/* A placed glow sits outside the world, so a desaturated scene keeps its gold. */}
+      {panel.glow && fx.includes('glow') && <span className={`cp-glow ${panel.glow.dim ? 'is-dim' : ''}`} style={{
+        backgroundImage: `url('${art('/assets/brand/heroloop-emblem.png')}')`, left: `${panel.glow.x}%`, top: `${panel.glow.y}%`, width: `${panel.glow.size}%`,
+        ...(panel.glow.flat ? { aspectRatio: '2.6', backgroundSize: '100% 100%' } : {}),
+      }} />}
       <span className="cp-halftone" />
       {panel.word && <span className="cp-word">{panel.word}</span>}
       {panel.caption && <figcaption className={`cp-caption at-${panel.caption.at ?? 'top'}`}>{panel.caption.text}</figcaption>}
@@ -63,9 +68,11 @@ function Panel({ panel, shown }: { panel: ComicPanel; shown: boolean }) {
   );
 }
 
-export function ComicScene({ pages, onDone, objective, finale }: {
+export function ComicScene({ pages: initialPages, onDone, objective, finale }: {
   pages: ComicPage[]; onDone: () => void; objective?: string; finale?: ReactNode;
 }) {
+  // The parent rebuilds pages on every game tick; keeping the first set stops beats (and voice) restarting.
+  const [pages] = useState(initialPages);
   const [page, setPage] = useState(0);
   const [beat, setBeat] = useState(0);
   const [ending, setEnding] = useState(false);
