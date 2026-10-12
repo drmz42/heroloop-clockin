@@ -108,10 +108,10 @@ type DungeonCheckpoint = {
   type: 'dungeon' | 'boss_hunt'; encounter_id: string; boss_encounter_id?: string; depth: number; room: number; revision: number;
   roster_snapshot?: Array<{ uid: string; hero_id: string; stats?: Record<string, number> }>;
   run_state?: { heroes?: DungeonUnitState[]; rooms_cleared?: number; tutorial_boss?: boolean };
-  room_state: null | { status: string; kind?: string; choice?: string; modifier?: string; heroes?: DungeonUnitState[]; enemies?: DungeonUnitState[]; boss?: { boss_id: string; name: string; status: string; current_hp?: number; max_hp?: number }; reward_preview?: { summon_scrolls?: number; dungeon_chests?: number; settled?: boolean; reward_table_version?: string }; playback_tick?: number; elapsed_ms?: number; premium_potion_events?: PremiumPotionEvent[]; heavy_target_uid?: string; heavy_casts?: number; identity_ability?: string; identity_casts?: number };
+  room_state: null | { status: string; kind?: string; choice?: string; modifier?: string; heroes?: DungeonUnitState[]; enemies?: DungeonUnitState[]; boss?: { boss_id: string; name: string; status: string; current_hp?: number; max_hp?: number }; reward_preview?: { summon_scrolls?: number; dungeon_chests?: number; settled?: boolean; reward_table_version?: string }; playback_tick?: number; elapsed_ms?: number; premium_potion_events?: PremiumPotionEvent[]; effect_events?: Array<{ elapsed_ms: number; effect_id: string; target_uid: string; amount?: number }>; heavy_target_uid?: string; heavy_casts?: number; identity_ability?: string; identity_casts?: number };
 };
 type DungeonUnitState = {
-  uid?: string; unit_id?: string; position?: number; lane?: number; current_hp: number; max_hp: number; alive: boolean;
+  uid?: string; hero_id?: string; unit_id?: string; position?: number; lane?: number; current_hp: number; max_hp: number; alive: boolean;
   atk?: number; def?: number; speed?: number; attack_speed_bonus?: number; heavy_damage_taken?: number; attacks?: number;
 };
 
@@ -155,7 +155,15 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
     return {
       side: 'hero', index, uid: unit.uid ?? `dungeon-hero-${index}`, lane: Number(unit.position ?? index), boss: false,
       strikes: strikeFrames(unit.uid ?? `hero-${index}`, unit.speed, 0),
-      unit, startHp: Number(before?.current_hp ?? unit.current_hp), spawn: before && !before.alive ? frames + 1 : 0, death: frames + 1,
+      unit, startHp: (() => {
+        const hp = Number(before?.current_hp ?? unit.current_hp);
+        // Shared Boss v2 applies the class HP bonus after the ready checkpoint.
+        // Match its rounded max HP before scaling the starting HP; unchanged snapshots stay unchanged.
+        const heroClass = String(unit.hero_id ?? '').split('-')[0];
+        const scale = heroClass === 'knight' ? 1.15 : heroClass === 'druid' ? 1.10 : 1;
+        return bossFight && before && Math.round(Number(before.max_hp) * scale) === Number(unit.max_hp)
+          ? Math.round(hp * scale) : hp;
+      })(), spawn: before && !before.alive ? frames + 1 : 0, death: frames + 1,
     };
   });
   const enemies: PlaybackFighter[] = (final.enemies ?? []).map((unit, index) => {
@@ -174,6 +182,28 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
       ? new Set(Array.from({ length: frames }, (_, frame) => frame + 1).filter((frame) => (frame + 1) % period === 0))
       : strikeFrames(String(fighter.unit.unit_id ?? fighter.uid), fighter.unit.speed, fighter.spawn);
   }
+  type ConfirmedHeal = { frame: number; value: number; label?: string };
+  const confirmedHeals = new Map<PlaybackFighter, ConfirmedHeal[]>();
+  if (bossFight) {
+    const duration = Math.max(1, Number(final.elapsed_ms) || frames * 450);
+    for (const hero of heroes) {
+      const heals: ConfirmedHeal[] = [];
+      const add = (elapsed: number, amount: number | undefined, label?: string) => {
+        if (!Number.isSafeInteger(amount) || Number(amount) <= 0 || !Number.isFinite(elapsed)) return;
+        heals.push({ frame: Math.max(1, Math.min(frames, Math.round(elapsed / duration * frames))), value: Number(amount), label });
+      };
+      if (start.heroes?.some(unit => unit.uid === hero.unit.uid)) {
+        for (const event of final.effect_events ?? []) {
+          if (event.effect_id === 'team.druid.wild-growth-heal' && event.target_uid === hero.unit.uid) add(event.elapsed_ms, event.amount);
+        }
+        for (const event of final.premium_potion_events ?? []) {
+          if (event.hero_uid === hero.unit.uid) add(event.elapsed_ms, event.amount, `PREMIUM +${Math.round(event.amount)}`);
+        }
+      }
+      confirmedHeals.set(hero, heals);
+    }
+  }
+  const healingTotal = (fighter: PlaybackFighter) => (confirmedHeals.get(fighter) ?? []).reduce((sum, heal) => sum + heal.value, 0);
   // When the other side is wiped out, this side's losses land before that final kill.
   for (const [side, foes] of [[heroes, enemies], [enemies, heroes]] as const) {
     const falling = side.filter((fighter) => !fighter.unit.alive && fighter.death > frames && fighter.spawn <= frames);
@@ -193,7 +223,7 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
     if (bossFight && attacker.boss) {
       // A shared Boss can damage any Hero. Spread its staged hits across the actual
       // recipients; lane-zero targeting otherwise postpones off-lane HP loss to the last frame.
-      const damaged = foes.filter((foe) => foe.side === 'hero' && foe.startHp > Number(foe.unit.current_hp));
+      const damaged = foes.filter((foe) => foe.side === 'hero' && foe.startHp + healingTotal(foe) > Number(foe.unit.current_hp));
       if (damaged.length) return damaged[(Math.max(1, Math.floor(frame / period)) - 1) % damaged.length];
     }
     const guards = foes.filter((foe) => !foe.boss);
@@ -210,12 +240,12 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
     }
   }
 
-  const changes = new Map<PlaybackFighter, Array<{ frame: number; value: number; heal: boolean; crit: boolean; source?: PlaybackFighter }>>();
+  const changes = new Map<PlaybackFighter, Array<{ frame: number; value: number; heal: boolean; crit: boolean; source?: PlaybackFighter; label?: string; heavy?: boolean }>>();
   const boss = enemies.find((fighter) => fighter.boss);
   for (const fighter of [...heroes, ...enemies]) {
     if (fighter.spawn > frames) continue;
-    const net = Math.round(fighter.startHp - Number(fighter.unit.current_hp));
-    const list: Array<{ frame: number; value: number; heal: boolean; crit: boolean; source?: PlaybackFighter }> = [];
+    const net = Math.round(fighter.startHp + healingTotal(fighter) - Number(fighter.unit.current_hp));
+    const list: Array<{ frame: number; value: number; heal: boolean; crit: boolean; source?: PlaybackFighter; label?: string; heavy?: boolean }> = [];
     if (net < 0) {
       // Healing (Druid growth, Recovery) arrives in a few soft pulses.
       const beats = [0.25, 0.5, 0.75, 1].map((share) => Math.max(fighter.spawn + 1, Math.round(frames * share)));
@@ -228,7 +258,7 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
         ? Math.min(damage, Math.max(0, Math.round(Number(fighter.unit.heavy_damage_taken ?? 0)))) : 0;
       if (heavy > 0) {
         damage -= heavy;
-        list.push({ frame: Math.min(15, lastFrame), value: heavy, heal: false, crit: true, source: boss });
+        list.push({ frame: Math.min(15, lastFrame), value: heavy, heal: false, crit: true, source: boss, heavy: true });
       }
       if (received.length === 0 || (fighter.death <= frames && !received.some((hit) => hit.frame === fighter.death))) {
         // A target the staged duel never reached still shows its loss, and a falling fighter takes the last blow.
@@ -241,7 +271,28 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
         if (value > 0) list.push({ frame: hit.frame, value, heal: false, crit: hit.source?.side === 'hero' && order % 5 === 4, source: hit.source });
       });
     }
-    changes.set(fighter, list);
+    for (const heal of confirmedHeals.get(fighter) ?? []) list.push({ ...heal, heal: true, crit: false });
+    // Effective server heals cannot overflow HP. If staged attack beats are later than
+    // an actual heal, bring forward the required ordinary damage without changing its total.
+    let healed = 0;
+    for (const heal of [...(confirmedHeals.get(fighter) ?? [])].sort((a, b) => a.frame - b.frame)) {
+      const priorDamage = list.filter(change => !change.heal && change.frame <= heal.frame).reduce((sum, change) => sum + change.value, 0);
+      let needed = Math.max(0, fighter.startHp - priorDamage + healed + heal.value - Number(fighter.unit.max_hp));
+      for (const future of list.filter(change => !change.heal && !change.heavy && change.frame > heal.frame)) {
+        if (needed <= 0) break;
+        const moved = Math.min(needed, future.value);
+        future.value -= moved;
+        needed -= moved;
+        let earlier = [...list].reverse().find(change => !change.heal && !change.heavy && change.frame < heal.frame);
+        if (!earlier) {
+          earlier = { frame: Math.max(1, heal.frame - 1), value: 0, heal: false, crit: false, source: future.source };
+          list.push(earlier);
+        }
+        earlier.value += moved;
+      }
+      healed += heal.value;
+    }
+    changes.set(fighter, list.filter(change => change.value > 0));
   }
 
   const timeline: DungeonPlaybackFrame[] = [];
@@ -253,7 +304,7 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
       for (const change of changes.get(fighter) ?? []) {
         if (change.frame !== frame) continue;
         spent.set(fighter, (spent.get(fighter) ?? 0) + (change.heal ? -change.value : change.value));
-        pulses.push({ sourceUid: change.source?.uid, targetUid: fighter.uid, value: change.value, crit: change.crit, heal: change.heal });
+        pulses.push({ sourceUid: change.source?.uid, targetUid: fighter.uid, value: change.value, crit: change.crit, heal: change.heal, label: change.label });
       }
       if (frame === frames) return fighter.unit;
       const hp = Math.max(0, Math.min(Number(fighter.unit.max_hp), Math.round(fighter.startHp - (spent.get(fighter) ?? 0))));
@@ -1468,7 +1519,8 @@ function DungeonBattleControls({ checkpoint, attempts, autoRun, onChange, onAtte
     const playback = planDungeonPlayback(resolved.room, startState, finalState, totalFrames);
     let pulseId = Date.now() * 32;
     let nextPremiumEvent = 0;
-    const premiumEvents = finalState.premium_potion_events ?? [];
+    // Shared playback already includes premium healing in both HP and feedback.
+    const premiumEvents = bossFight ? [] : finalState.premium_potion_events ?? [];
     // Keep each number for the same 1.5 seconds as ordinary combat, across playback frames.
     let shown: FloatingNumber[] = [];
     const publishPulses = () => {
