@@ -8,7 +8,8 @@ import { compactNumber } from './numberFormat';
 
 const STORAGE_KEY = editionStorageKey('afk-heroes-save-v7');
 
-export const STARTER_HERO_ID = 'shepherd-common';
+// Seeker story protagonist (Founder 2026-10-12): the Warrior.
+export const STARTER_HERO_ID = 'knight-common';
 export const RESPAWN_TIME_MS = 15_000;
 export const MAX_TEAM = 3;
 export const BASE_HERO_CAPACITY = 500;

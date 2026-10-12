@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Wallet } from '@wallet-standard/base';
 import {
   ArrowDown, ArrowRight, Check, ChevronRight, Coins, Gamepad2,
@@ -308,7 +308,8 @@ function reportSignInStep(step: string) {
 
 export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onClose, persistent = false }: { game: GameApi; legacyWalletMode?: 'link' | 'import' | null; onAccountReady: () => void; onClose: () => void; persistent?: boolean }) {
   const [step, setStep] = useState(1);
-  const [starter, setStarter] = useState<StarterId>('shepherd-common');
+  // Seeker story (Founder 2026-10-12): every player starts as the Warrior from the cinematic; no class choice.
+  const starter: StarterId = 'knight-common';
   const [username, setUsername] = useState('');
   const [hasAttribution] = useState(() => readSignupAttribution() !== null);
   const [guestReady, setGuestReady] = useState(false);
@@ -332,10 +333,6 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
   const blockedName = hasBlockedUsernameLanguage(username);
   const validName = /^[a-zA-Z0-9_]{3,16}$/.test(username) && !blockedName;
 
-  const heroCards = useMemo(() => STARTERS.map(s => {
-    const hero = HERO_MAP[s.id];
-    return { ...s, hero, svg: heroPortraitSrc(hero.id, hero.heroClass, hero.rarity, hero.color) };
-  }), []);
 
   useEffect(() => {
     if (!solanaAuthEnabled) return;
@@ -401,7 +398,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
       }
       setGuestReady(true);
       setGuestId(`game-${account.account_id}`);
-      setStep(2);
+      setStep(3);
     } catch (reason) {
       const code = reason && typeof reason === 'object' && 'code' in reason ? String(reason.code) : '';
       const detail = reason instanceof Error && 'detail' in reason && typeof reason.detail === 'string' && reason.detail
@@ -440,7 +437,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         return;
       }
       setGuestId(temporaryGuestId);
-      setStep(2);
+      setStep(3);
     } catch {
       setError('Account service is unavailable. Please try again.');
     } finally {
@@ -485,7 +482,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
 
   // Visual only (Founder 2026-10-03): forged dark-fantasy sign-in. Every handler, state
   // transition and copy line above is unchanged; only markup and onboarding.css changed.
-  const stepTitles = [solanaAuthEnabled ? 'Verify wallet' : 'Guest account', 'First hero', 'Your name'];
+  const stepTitles = [solanaAuthEnabled ? 'Verify wallet' : 'Guest account', 'Your name'];
   return (
     <div className="hl-onboarding onb-overlay fixed inset-0 z-50 grid place-items-center overflow-y-auto p-3 sm:p-4">
       <div className="onb-card relative my-auto w-full max-w-4xl">
@@ -494,11 +491,11 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         </button>}
         <div className="onb-head">
           <div className="onb-kicker">{step === 1 ? (solanaAuthEnabled ? 'Verify wallet ownership' : 'Check guest account') : 'Create your account'}</div>
-          <ol className="onb-steps" aria-label={`Step ${step} of 3`}>
-            {[1, 2, 3].map(n => (
+          <ol className="onb-steps" aria-label={`Step ${step === 1 ? 1 : 2} of 2`}>
+            {[1, 3].map((n, index) => (
               <li key={n} className={`onb-step ${n < step ? 'is-done' : ''} ${n === step ? 'is-active' : ''}`} aria-current={n === step ? 'step' : undefined}>
-                <span className="onb-step-gem"><span>{n < step ? <Check size={12} strokeWidth={3} /> : ['I', 'II', 'III'][n - 1]}</span></span>
-                <span className="onb-step-label">{stepTitles[n - 1]}</span>
+                <span className="onb-step-gem"><span>{n < step ? <Check size={12} strokeWidth={3} /> : ['I', 'II'][index]}</span></span>
+                <span className="onb-step-label">{stepTitles[index]}</span>
               </li>
             ))}
           </ol>
@@ -541,29 +538,6 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
             </div>
           )}
 
-          {step === 2 && (
-            <div>
-              <h2 className="onb-title onb-title-left">CHOOSE YOUR FIRST HERO</h2>
-              <p className="onb-copy onb-copy-left">Your starter defines the opening playstyle. You can summon every other class later.</p>
-              <div className="onb-heroes">
-                {heroCards.map(({ id, role, tagline, stat, hero, svg }) => {
-                  const active = starter === id;
-                  return (
-                    <button key={id} onClick={() => setStarter(id)} aria-pressed={active} className={`onb-hero ${active ? 'is-active' : ''}`}>
-                      {active && <span className="onb-hero-check"><Check size={14} strokeWidth={3} /></span>}
-                      <div className="onb-hero-art">
-                        <img src={svg} alt={`${hero.name}, ${role}`} style={heroPortraitStyle(hero.id, hero.heroClass)} />
-                      </div>
-                      <div className="onb-hero-role">{role}</div>
-                      <div className="onb-hero-tagline">{tagline}</div>
-                      <div className="onb-hero-stat">{stat}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {step === 3 && (
             <div className="mx-auto max-w-lg py-4">
               <h2 className="onb-title onb-title-left">CLAIM YOUR NAME</h2>
@@ -589,7 +563,7 @@ export function Onboarding({ game, legacyWalletMode = null, onAccountReady, onCl
         </div>
 
         <div className="onb-foot">
-          {persistent && step === 1 ? <span /> : <button onClick={() => step === 1 ? onClose() : setStep(step - 1)} className="onb-back">
+          {persistent && step === 1 ? <span /> : <button onClick={() => step === 1 ? onClose() : setStep(1)} className="onb-back">
             {step === 1 ? 'Cancel' : 'Back'}
           </button>}
           {step === 2 ? (
