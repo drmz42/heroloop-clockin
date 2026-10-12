@@ -4,6 +4,8 @@ HeroLoop is an idle team RPG: you assemble a hero squad, it fights through locat
 
 > **About this repository.** HeroLoop is developed in our private main repository since July 2026. This is a filtered export of the Seeker edition: it keeps the original commits, dates and messages for the game client, backend and Android app, and leaves out internal operations, infrastructure and planning files. Work during CLOCK IN (from 8 September 2026) focused on the Android app, Solana wallet sign-in through the Mobile Wallet Adapter and the SKR economy.
 
+**Pitch deck:** [pitch/HeroLoop-Pitch-Deck.pdf](pitch/HeroLoop-Pitch-Deck.pdf)
+
 ## What is in the box
 
 | Path | What it is |
