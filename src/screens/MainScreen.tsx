@@ -90,16 +90,17 @@ function CombatPresentationLayer({ game, activeDungeon, dungeonUnits, dungeonFlo
   );
 }
 const TUTORIAL_QUESTS = [
+  // Seeker tutorial rewards (Founder 2026-10-12): items, 2 Summon Scrolls and the Boss Key only.
   ['defeat-10-enemies', 'Defeat 10 enemies', 10, '10 Tutorial Chests'],
-  ['open-10-tutorial-chests', 'Open 10 Tutorial Chests', 10, '500 Gold'],
+  ['open-10-tutorial-chests', 'Open 10 Tutorial Chests', 10, ''],
   ['equip-active-hero', 'Equip one item on an active hero', 1, '2 Summon Scrolls'],
-  ['summon-two-heroes', 'Summon two heroes', 2, '1 Summon Scroll'],
-  ['fill-active-formation', 'Fill the three-hero Active Formation', 3, '3 XS Potions'],
-  ['summon-reserve-hero', 'Summon one reserve hero', 3, '500 Gold'],
-  ['defeat-25-enemies', 'Defeat 25 enemies', 25, '3 XS Potions'],
+  ['summon-two-heroes', 'Summon two heroes', 2, ''],
+  ['fill-active-formation', 'Fill the three-hero Active Formation', 3, ''],
+  ['summon-reserve-hero', 'Summon one reserve hero', 3, ''],
+  ['defeat-25-enemies', 'Defeat 25 enemies', 25, ''],
   ['enable-auto-pot', 'Enable Auto-pot', 1, '1 Boss Key'],
-  ['defeat-50-enemies', 'Defeat 50 enemies', 50, `${groupNumber(1000)} Gold`],
-  ['defeat-tutorial-boss', 'Use the granted key and defeat one summoned Boss', 1, '1 Summon Scroll'],
+  ['defeat-50-enemies', 'Defeat 50 enemies', 50, ''],
+  ['defeat-tutorial-boss', 'Use the granted key and defeat one summoned Boss', 1, ''],
 ] as const;
 const DUNGEON_BOSS_ART: Record<string, string> = { 'iron-warden': 'boss-titan', 'ash-warlock': 'boss-lich', 'thorn-shaman': 'boss-ogre', 'rift-behemoth': 'boss-dragon', 'grave-necromancer': 'boss-lich' };
 
@@ -927,7 +928,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     <div className="game-main flex h-full flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
       {/* ── LEFT COLUMN ── */}
       <div className="hl-col-left material-panel game-scrollbar order-2 flex w-full shrink-0 flex-col overflow-y-auto lg:order-none lg:w-60 xl:w-64">
-        {tutorialFinished && createPortal(<div className="hl-portal dungeon-complete is-victory" style={{ position: 'fixed', zIndex: 9999 }} role="dialog" aria-modal="true" aria-label="Tutorial complete"><div className="dungeon-complete-crest"><Sparkles size={38} /><small>TUTORIAL · 10/10</small><strong>TUTORIAL COMPLETE</strong><p>Your team is built, geared and has beaten its first Boss.</p><div className="dungeon-reward-preview"><span><SummonScrollArtwork size={18} /> 1 SUMMON SCROLL</span><span><CheckCircle2 size={14} /> DAILY QUESTS NEXT</span><small>Final reward granted exactly once by the server</small></div><button type="button" autoFocus className="game-control game-primary" onClick={() => setTutorialFinished(false)}>CONTINUE</button></div></div>, document.body)}
+        {tutorialFinished && createPortal(<div className="hl-portal dungeon-complete is-victory" style={{ position: 'fixed', zIndex: 9999 }} role="dialog" aria-modal="true" aria-label="Tutorial complete"><div className="dungeon-complete-crest"><Sparkles size={38} /><small>TUTORIAL · 10/10</small><strong>TUTORIAL COMPLETE</strong><p>Your team is built, geared and has beaten its first Boss.</p><div className="dungeon-reward-preview"><span><CheckCircle2 size={14} /> DAILY QUESTS NEXT</span></div><button type="button" autoFocus className="game-control game-primary" onClick={() => setTutorialFinished(false)}>CONTINUE</button></div></div>, document.body)}
         {!isAndroidLayout && commanderPanel}
 
         <div id="game-quest-list" className="hl-quest-list flex-1 p-2">
@@ -950,9 +951,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
                     if (error) setTutorialClaimError(error === 'state_conflict' ? 'Your game changed. Please try claiming again.' : error === 'tutorial_quest_incomplete' ? 'The server has not confirmed this task yet. Please try again.' : error === 'tutorial_quest_locked' || error === 'tutorial_completed' ? 'This tutorial step is no longer available. Reload the game.' : 'Could not claim the reward. Please try again.');
                     else playSfx('claim');
                     if (!error && quest[0] === 'defeat-tutorial-boss') setTutorialFinished(true);
-                    else if (!error) showToast('Tutorial reward claimed');
+                    else if (!error) showToast(quest[3] ? 'Tutorial reward claimed' : 'Tutorial step complete');
                   } finally { setTutorialClaimBusy(false); }
-                }} data-guide="claim" className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold disabled:opacity-50">{tutorialClaimBusy ? 'Claiming…' : 'Claim & unlock next'}</button>}
+                }} data-guide="claim" className="quest-reward-ready game-control game-primary ui-text-medium mt-1 min-h-11 w-full px-2 py-0.5 font-bold disabled:opacity-50">{tutorialClaimBusy ? 'Claiming…' : quest[3] ? 'Claim & unlock next' : 'Continue'}</button>}
                 {tutorialClaimError && <p role="alert" className="mt-1 ui-text-small text-red-300">{tutorialClaimError}</p>}
               </div>
               {state.tutorial.chestBalance > 0 && <div className="quest-card mt-1 px-2 py-1"><div className="ui-text-medium flex justify-between"><span>Tutorial Chests</span><b>{state.tutorial.chestBalance}</b></div><div className="mt-1 grid grid-cols-2 gap-1"><button disabled={state.tutorial.chestBalance < 1 || game.chestOpening} onClick={() => openTutorialChestsChecked(1)} className="game-control min-h-7 ui-text-small font-bold">Open 1</button><button disabled={state.tutorial.chestBalance < 10 || game.chestOpening} onClick={() => openTutorialChestsChecked(10)} data-guide="open-chests" className="game-control min-h-7 ui-text-small font-bold">Open 10</button></div></div>}
