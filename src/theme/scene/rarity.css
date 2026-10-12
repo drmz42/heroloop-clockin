@@ -68,7 +68,8 @@ html .market-detail-art:has(> .rx)::before, html .market-detail-art:has(> .rx)::
 .sv-card-front:has(> .rx) { box-shadow: none !important; }
 .sv-card-front:has(> .rx-tcg) .sv-card-plate { inset: auto 16% 3% 16%; z-index: 4; height: 11.5%; align-content: center; padding: 0; background: none; }
 .sv-card-front:has(> .rx-tcg) .sv-card-plate small { display: none; }
-.sv-card-front:has(> .rx) .sv-card-new { z-index: 4; }
+/* The NEW tag sits on top of the rarity frame, inside its border (Founder 2026-10-12). */
+.sv-card-front:has(> .rx) .sv-card-new { z-index: 10; left: calc(var(--rx-bw, 14px) + 2px); top: calc(var(--rx-bw, 14px) + 2px); box-shadow: 0 1px 4px #000c; }
 .sv-spot-portrait:has(> .rx) { background: none !important; border: 0 !important; box-shadow: 0 0 36px color-mix(in srgb, var(--sv-color) 60%, transparent), 0 12px 30px rgba(0, 0, 0, .7) !important; }
 /* Corner badges sit inside the frame opening */
 html .item-slot:has(> .rx) .item-enchant-label { left: 9%; top: 9%; }

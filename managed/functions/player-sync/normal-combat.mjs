@@ -140,8 +140,15 @@ function heroUnit(hero, lane, itemMap, carriedHp, startedAtMs, combatEffectsVers
 const ENDGAME_ENEMY_SPEED = 103;
 const ENDGAME_ROLES = ['tank', 'striker', 'skirmisher', 'support', 'caster'];
 const ELITE_AFFIXES = ['guard-aura', 'mending', 'barrier', 'enrage', 'curse', 'lane-blast', 'summoner'];
-function enemyUnits(location, teamSize, seed, progressionVersion) {
-  const { hp: baseHp, atk: baseAtk, def: baseDef } = v6EnemyBase(location, progressionVersion === SEEKER_PROGRESSION_VERSION);
+// Seeker story (Founder 2026-10-12): the hero must not die to the first crypt undead, so the first
+// three kills of a new account face weakened enemies (a third of the HP, half the attack).
+const STORY_OPENING_KILLS = 3;
+function enemyUnits(location, teamSize, seed, progressionVersion, totalKills = Infinity) {
+  const base = v6EnemyBase(location, progressionVersion === SEEKER_PROGRESSION_VERSION);
+  const opening = progressionVersion === SEEKER_PROGRESSION_VERSION && location === 1 && totalKills < STORY_OPENING_KILLS;
+  const baseHp = opening ? base.hp / 3 : base.hp;
+  const baseAtk = opening ? base.atk / 2 : base.atk;
+  const baseDef = base.def;
   if (location > 10) {
     const baseSpeed = ENDGAME_ENEMY_SPEED;
     const elite = Math.abs(seed) % 20 === 0 ? ELITE_AFFIXES[Math.abs(seed >>> 5) % ELITE_AFFIXES.length] : null;
@@ -188,7 +195,7 @@ export function buildNormalCombat(state, ledgerItems, location, seed, resourceSn
   const savedHp = record(state.normalCombatHp) ? state.normalCombatHp : {};
   const built = state.team.map((uid, lane) => heroUnit(heroesByUid.get(uid), lane, items, savedHp[uid], startedAtMs, combatEffectsVersion));
   const initialUnits = [...built.map(({ unit }) => unit), ...enemyUnits(location, built.length, seed,
-    Number(state.accountLevel) >= (location - 1) * 10 + 1 ? progressionVersion : null)];
+    Number(state.accountLevel) >= (location - 1) * 10 + 1 ? progressionVersion : null, Math.max(0, Number(state.totalKills) || 0))];
   const savedConfig = record(state.autoPot) ? state.autoPot : {};
   const config = healingPolicy === AUTOMATIC_HEALING_POLICY ? automaticHealingConfig(savedConfig) : savedConfig;
   const potions = healingPolicy === AUTOMATIC_HEALING_POLICY

@@ -92,6 +92,13 @@ function App() {
     if (replay) setStoryScene({ stage: replay, replay: true });
     else if (start && isStoryScene(start)) setStoryScene({ stage: start, replay: false });
   }, [accountGate, story, game.state]);
+  // Combat waits while a story scene is on screen, so the hero does not fight (and bleed) unseen.
+  const storyOnScreen = Boolean(storyScene);
+  const { setPaused } = game;
+  useEffect(() => {
+    if (!isolatedHackathon) return;
+    setPaused(storyOnScreen);
+  }, [storyOnScreen, setPaused]);
   // A reset account (fresh again while this session still holds a later story stage) restarts the story.
   const freshAccount = isolatedHackathon && accountGate === 'verified' && isFreshStoryAccount(game.state);
   useEffect(() => {

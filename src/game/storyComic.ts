@@ -156,6 +156,11 @@ export function fallenPages(): ComicPage[] {
       bubbles: [{ who: 'Morvane', text: 'You came back.', x: 46, y: 10, tail: 'down-left', kind: 'whisper' }],
       sound: [['roar', 200], ['heartbeat', 3000]],
     }),
+    // The second death, shown as clearly as the first, so the return to the altar follows.
+    full({ hold: 3400, art: frame('pinned'), cam: 'push', fx: ['breath', 'embers'], caption: { text: 'Not strong enough. Not yet.', at: 'bottom' }, sound: [['heartbeat', 0], ['roar', 1400]] }),
+    full({ hold: 3200, art: frame('death-pov'), cam: 'push', fx: ['shake', 'breath'], caption: { text: 'The claw again.', at: 'bottom' }, sound: [['crit', 800], ['death', 1200]] }),
+    full({ hold: 2600, tone: 'black', cam: 'still', fx: ['blackout'], caption: { text: 'Darkness. Again.', at: 'bottom' } }),
+    full({ hold: 3800, art: frame('mark-awakens'), cam: 'push', fx: ['mist', 'breath'], sound: [['summon', 600]] }),
     full({
       hold: 3800, art: frame('altar-wake'), cam: 'push', fx: ['mist', 'flicker'],
       caption: { text: 'The altar. Again.' }, bubbles: [{ text: 'Again.', x: 44, y: 44, tail: 'down-left', kind: 'thought' }],
