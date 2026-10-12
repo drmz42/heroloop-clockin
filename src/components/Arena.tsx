@@ -418,7 +418,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
         <div className="arena-roster flex min-w-0 flex-col items-start justify-center gap-2">
           {laneEnemies.map((u, lane) => {
             const skin = crypt && !/boss/i.test(u.uid) ? cryptEnemy(lane, cryptWave) : null;
-            return <UnitView key={u.uid} unit={skin ? { ...u, name: skin.name } : u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive) || (dungeonFight && heroes.some((hero) => hero.alive))} animationMode={animationMode} rank={enemyRank(u, locationId, dungeonRoom?.depth)} figure={figureLanes} lane={lane} figureOverride={skin?.figureSrc} />;
+            return <UnitView key={u.uid} unit={skin ? { ...u, name: skin.name } : u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive) || (dungeonFight && heroes.some((hero) => hero.alive))} animationMode={animationMode} rank={isolatedHackathon && locationId === CRYPT_LOCATION && !dungeonFight ? undefined : enemyRank(u, locationId, dungeonRoom?.depth)} figure={figureLanes} lane={lane} figureOverride={skin?.figureSrc} />;
           })}
           {/* Founder 2026-10-09: the Room 3 path choice has no enemies yet; leave the arena side clear. */}
           {laneEnemies.length === 0 && !sharedBoss && dungeonRoom?.room !== 3 && <div className="intentional-empty p-4 ui-text-medium">Enemies defeated</div>}

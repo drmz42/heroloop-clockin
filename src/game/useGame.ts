@@ -1,6 +1,7 @@
 import { seekerXpReward } from '../../managed/functions/player-sync/seeker-progression.mjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { isolatedHackathon } from './editionStorage';
+import { tutorialObjectiveAt } from './tutorialProgress';
 import { commitSkrPurchase } from './seekerWallet';
 import { skrError } from './skrPurchase';
 import { automaticHealingConfig } from '../../managed/functions/player-sync/automatic-healing.mjs';
@@ -2980,32 +2981,72 @@ export function useGame() {
     return null;
   }, [hydrateServerState, loadMail, serverRevisionHint]);
 
-  const openTutorialChests = useCallback(async (requestedCount: 1 | 10): Promise<boolean> => {
-    if (!tokenomicsEnabled || chestOpeningRef.current) return false;
+  // No-reward tutorial steps confirm canonical actions without a player Claim click.
+  // Keep the legacy server chain and its eligibility checks; only the visible Seeker flow is shorter.
+  const automaticTutorialObjective = isolatedHackathon && tokenomicsEnabled && state.tutorial.questOrdinal > 1
+    ? tutorialObjectiveAt(state, state.tutorial.questOrdinal) : null;
+  const automaticTutorialId = automaticTutorialObjective?.ready ? automaticTutorialObjective.id : null;
+  const automaticTutorialBusy = useRef(false);
+  const tutorialClaimRef = useRef(claimTutorialQuest);
+  tutorialClaimRef.current = claimTutorialQuest;
+  const [tutorialRetry, setTutorialRetry] = useState(0);
+  useEffect(() => {
+    if (!automaticTutorialId) return;
+    let disposed = false;
+    const timer = window.setTimeout(() => {
+      if (automaticTutorialBusy.current) return;
+      automaticTutorialBusy.current = true;
+      void tutorialClaimRef.current(automaticTutorialId).catch(() => 'unavailable').then((error) => {
+        automaticTutorialBusy.current = false;
+        if (!disposed) setTutorialRetry((retry) => error ? retry + 1 : 0);
+      });
+    }, tutorialRetry > 0 ? Math.min(60_000, 5_000 * tutorialRetry) : 300);
+    return () => { disposed = true; window.clearTimeout(timer); };
+  }, [automaticTutorialId, tutorialRetry]);
+
+  const openTutorialChests = useCallback(async (requestedCount: 1 | 10 | 20): Promise<boolean> => {
+    if (!tokenomicsEnabled || chestOpeningRef.current || (!isolatedHackathon && requestedCount === 20)) return false;
     const current = stateRef.current;
     const count = Math.min(requestedCount, current.tutorial.chestBalance, isolatedHackathon ? requestedCount : inventoryCapacity(current) - bagItemCount(current));
-    if (count !== 1 && count !== 10) return false;
+    if (count !== 1 && count !== 10 && count !== 20) return false;
     chestOpeningRef.current = true; setChestOpening(true);
+    const opened: OwnedItem[] = [];
+    let tutorial: GameState['tutorial'] | null = null;
+    let mailed = false;
+    let revision: number | null = null;
     try {
-      const result = await playerSync<{ items: OwnedItem[]; chest_count: number; revision: number; mailed?: boolean; tutorial: GameState['tutorial'] }>('tutorial_chest_open', {
-        count, idempotency_key: createIdempotencyKey(),
-      });
-      if (!result || result.chest_count !== count || !Array.isArray(result.items) || result.items.length !== count || !result.tutorial) return false;
-      const items = result.items.filter((item) => item?.serverOwned === true && typeof item.uid === 'string' && Boolean(ITEM_MAP[item.itemId]));
-      if (items.length !== count) return false;
-      if (Number.isSafeInteger(result.revision)) setServerRevisionHint(result.revision);
-      flushSync(() => { setChestRewardsMailed(result.mailed === true); setChestOpenResult(items); });
-      if (result.mailed) void loadMail();
-      setState((prev) => ({
-        ...prev, tutorial: result.tutorial,
-        inventory: [...prev.inventory, ...(result.mailed ? [] : items.map((item) => shouldAutoLockItem(item) ? { ...item, locked: true } : item))]
-          .sort((a, b) => RARITY_INDEX[ITEM_MAP[b.itemId]?.rarity ?? 'common'] - RARITY_INDEX[ITEM_MAP[a.itemId]?.rarity ?? 'common'] || displayItemPower(b) - displayItemPower(a)),
-        session: { ...prev.session, chestsOpened: prev.session.chestsOpened + count },
-        dailyQuests: updateQuestProgress(prev.dailyQuests, 'chest-', count),
-        milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'chest-', count),
-      }));
-      return true;
-    } finally { chestOpeningRef.current = false; setChestOpening(false); }
+      // The server remains atomic per supported 1/10 batch. One Open all action keeps both
+      // confirmed receipts and presents every item, including a committed partial batch on failure.
+      for (const batchCount of count === 20 ? [10, 10] : [count]) {
+        const result = await playerSync<{ items: OwnedItem[]; chest_count: number; revision: number; mailed?: boolean; tutorial: GameState['tutorial'] }>('tutorial_chest_open', {
+          count: batchCount, idempotency_key: createIdempotencyKey(),
+        });
+        if (!result || result.chest_count !== batchCount || !Array.isArray(result.items) || result.items.length !== batchCount || !result.tutorial) break;
+        const items = result.items.filter((item) => item?.serverOwned === true && typeof item.uid === 'string' && Boolean(ITEM_MAP[item.itemId]));
+        if (items.length !== batchCount) break;
+        opened.push(...items);
+        tutorial = result.tutorial;
+        mailed = result.mailed === true;
+        if (Number.isSafeInteger(result.revision)) revision = result.revision;
+      }
+    } finally {
+      if (opened.length > 0 && tutorial) {
+        if (revision !== null) setServerRevisionHint(revision);
+        flushSync(() => { setChestRewardsMailed(mailed); setChestOpenResult(opened); });
+        if (mailed) void loadMail();
+        const confirmedTutorial = tutorial;
+        setState((prev) => ({
+          ...prev, tutorial: confirmedTutorial,
+          inventory: [...prev.inventory, ...(mailed ? [] : opened.map((item) => shouldAutoLockItem(item) ? { ...item, locked: true } : item))]
+            .sort((a, b) => RARITY_INDEX[ITEM_MAP[b.itemId]?.rarity ?? 'common'] - RARITY_INDEX[ITEM_MAP[a.itemId]?.rarity ?? 'common'] || displayItemPower(b) - displayItemPower(a)),
+          session: { ...prev.session, chestsOpened: prev.session.chestsOpened + opened.length },
+          dailyQuests: updateQuestProgress(prev.dailyQuests, 'chest-', opened.length),
+          milestoneQuests: updateQuestProgress(prev.milestoneQuests, 'chest-', opened.length),
+        }));
+      }
+      chestOpeningRef.current = false; setChestOpening(false);
+    }
+    return opened.length === count;
   }, [loadMail]);
 
   // Dungeon Chests live only in the server resource ledger; the save never carries them.

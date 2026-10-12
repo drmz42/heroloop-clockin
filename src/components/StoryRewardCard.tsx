@@ -33,17 +33,9 @@ export function StoryRewardCard({ game }: { game: GameApi }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [hidden, setHidden] = useState<string | null>(null);
-  const key = reward ? `claim:${objective?.id}` : chests > 0 ? `chests:${chests >= 10 ? 10 : 1}` : null;
+  const openCount = chests >= 20 ? 20 : chests >= 10 ? 10 : 1;
+  const key = reward ? `claim:${objective?.id}` : chests > 0 ? `chests:${chests}` : null;
   useEffect(() => { setError(''); }, [key]);
-  // A finished step with no reward is claimed silently so the story moves on.
-  const silentStep = objective?.ready && !REWARDS[objective.id] ? objective.id : null;
-  useEffect(() => {
-    if (!silentStep || busy) return;
-    setBusy(true);
-    // A refused claim (e.g. the server has not counted the progress yet) retries after a pause, not in a loop.
-    void game.claimTutorialQuest(silentStep).then((failure) => { if (failure) window.setTimeout(() => setBusy(false), 5000); else setBusy(false); }, () => window.setTimeout(() => setBusy(false), 5000));
-    // busy is a dependency: the next silent step must start once the previous claim settles.
-  }, [silentStep, busy]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!key || hidden === key || game.chestOpening || game.chestOpenResult || state.bossBattleActive) return null;
 
   const claim = async () => {
@@ -59,10 +51,14 @@ export function StoryRewardCard({ game }: { game: GameApi }) {
       }
     } finally { setBusy(false); }
   };
-  const open = (count: 1 | 10) => {
+  const open = async (count: 1 | 10 | 20) => {
     if (inventoryCapacity(state) - bagItemCount(state) < count) { setError('Your bag is full. Make room first.'); return; }
     playSfx('chestBurst');
-    void game.openTutorialChests(count);
+    setBusy(true); setError('');
+    try {
+      if (!await game.openTutorialChests(count)) setError('Could not open every chest. Please try the remaining chests again.');
+    } catch { setError('Could not open the chests. Please try again.'); }
+    finally { setBusy(false); }
   };
 
   return (
@@ -75,7 +71,7 @@ export function StoryRewardCard({ game }: { game: GameApi }) {
         {error && <p role="alert" className="sr-error">{error}</p>}
         {reward
           ? <button type="button" className="game-control game-primary sb-cta" disabled={busy} onClick={claim}>{busy ? 'Claiming…' : 'Claim'}</button>
-          : <button type="button" className="game-control game-primary sb-cta" onClick={() => open(chests >= 10 ? 10 : 1)}>{chests >= 10 ? 'Open 10' : 'Open'}</button>}
+          : <button type="button" className="game-control game-primary sb-cta" disabled={busy} onClick={() => void open(openCount)}>{busy ? 'Opening…' : openCount === chests ? `Open all ${openCount}` : `Open ${openCount} of ${chests}`}</button>}
         <button type="button" className="sr-later" onClick={() => setHidden(key)}>Later</button>
       </div>
     </div>

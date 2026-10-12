@@ -254,7 +254,9 @@
     "check:automatic-healing": "node scripts/check-automatic-healing.mjs",
     "build:web": "vite build --mode staging2",
     "apk:debug": "bash scripts/clockin-build-apk-debug.sh",
-    "backend:local": "bash scripts/clockin-local-backend.sh"
+    "backend:local": "bash scripts/clockin-local-backend.sh",
+    "check:seeker-story-opening": "node scripts/check-seeker-story-opening.mjs",
+    "check:seeker-story-ui": "node scripts/check-seeker-story-ui.mjs"
   },
   "dependencies": {
     "@mui/icons-material": "9.4.0",

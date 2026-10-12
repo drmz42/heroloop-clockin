@@ -9,7 +9,7 @@ import { skrPrice, useSkrRate } from '@/game/skrPurchase';
 import { editionStorageKey, isolatedHackathon } from '../game/editionStorage';
 import { readStory, storyAccount, storyEpoch, storyHoldsTutorialBundle } from '@/game/storyBox';
 import { goldHealingEnabled } from '../../managed/functions/player-sync/automatic-healing.mjs';
-import { currentTutorialObjective, readyQuestCount, tutorialProgress } from '@/game/tutorialProgress';
+import { currentTutorialObjective, readyQuestCount, tutorialProgress, tutorialDisplayOrdinal, tutorialStepCount, tutorialStepNumber } from '@/game/tutorialProgress';
 import { TUTORIAL_GO_EVENT, tutorialDestination, tutorialGuide } from '@/game/tutorialGuide';
 import { Fragment, useCallback, useEffect, useState, useMemo, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
@@ -190,6 +190,12 @@ function planDungeonPlayback(room: number, start: DungeonRoomState, final: Dunge
   const canBeHit = (fighter: PlaybackFighter, frame: number) => frame > fighter.spawn && frame <= fighter.death;
   const chooseTarget = (attacker: PlaybackFighter, frame: number) => {
     const foes = (attacker.side === 'hero' ? enemies : heroes).filter((foe) => canBeHit(foe, frame));
+    if (bossFight && attacker.boss) {
+      // A shared Boss can damage any Hero. Spread its staged hits across the actual
+      // recipients; lane-zero targeting otherwise postpones off-lane HP loss to the last frame.
+      const damaged = foes.filter((foe) => foe.side === 'hero' && foe.startHp > Number(foe.unit.current_hp));
+      if (damaged.length) return damaged[(Math.max(1, Math.floor(frame / period)) - 1) % damaged.length];
+    }
     const guards = foes.filter((foe) => !foe.boss);
     return guards.find((foe) => foe.lane === attacker.lane) ?? guards[0] ?? foes.find((foe) => foe.lane === attacker.lane) ?? foes[0];
   };
@@ -928,24 +934,24 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     <div className="game-main flex h-full flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
       {/* ── LEFT COLUMN ── */}
       <div className="hl-col-left material-panel game-scrollbar order-2 flex w-full shrink-0 flex-col overflow-y-auto lg:order-none lg:w-60 xl:w-64">
-        {tutorialFinished && createPortal(<div className="hl-portal dungeon-complete is-victory" style={{ position: 'fixed', zIndex: 9999 }} role="dialog" aria-modal="true" aria-label="Tutorial complete"><div className="dungeon-complete-crest"><Sparkles size={38} /><small>TUTORIAL · 10/10</small><strong>TUTORIAL COMPLETE</strong><p>Your team is built, geared and has beaten its first Boss.</p><div className="dungeon-reward-preview"><span><CheckCircle2 size={14} /> DAILY QUESTS NEXT</span></div><button type="button" autoFocus className="game-control game-primary" onClick={() => setTutorialFinished(false)}>CONTINUE</button></div></div>, document.body)}
+        {tutorialFinished && createPortal(<div className="hl-portal dungeon-complete is-victory" style={{ position: 'fixed', zIndex: 9999 }} role="dialog" aria-modal="true" aria-label="Tutorial complete"><div className="dungeon-complete-crest"><Sparkles size={38} /><small>TUTORIAL · {tutorialStepCount}/{tutorialStepCount}</small><strong>TUTORIAL COMPLETE</strong><p>Your team is built, geared and has beaten its first Boss.</p><div className="dungeon-reward-preview"><span><CheckCircle2 size={14} /> DAILY QUESTS NEXT</span></div><button type="button" autoFocus className="game-control game-primary" onClick={() => setTutorialFinished(false)}>CONTINUE</button></div></div>, document.body)}
         {!isAndroidLayout && commanderPanel}
 
         <div id="game-quest-list" className="hl-quest-list flex-1 p-2">
           {isolatedHackathon && <SeekerQuestChallenge board={seekerQuestBoard} />}
           <PartnerQuests claim={game.claimPartnerQuest} onOpenBoostMax={onBoostClick} shareState={state} teamPower={power} />
           {!state.tutorial.questCompleted && (() => {
-            const ordinal = Math.max(1, Math.min(10, state.tutorial.questOrdinal));
+            const ordinal = tutorialDisplayOrdinal(Math.max(1, Math.min(10, state.tutorial.questOrdinal)));
             const quest = TUTORIAL_QUESTS[ordinal - 1];
             const progress = tutorialProgress(state, ordinal);
             const done = progress >= quest[2];
             return <section className="mb-2" aria-label="Tutorial Quests">
-              <div className="section-kicker mb-1">Tutorial Quests · {ordinal}/10</div>
+              <div className="section-kicker mb-1">Tutorial Quests · {tutorialStepNumber(ordinal)}/{tutorialStepCount}</div>
               <div className={`quest-card px-2 py-1 ${done ? 'border-[#b48a43]' : ''}`}>
                 <div className="flex items-center gap-1.5"><Circle size={11} className={done ? 'fill-amber-400/30 text-amber-400' : 'text-slate-600'} /><span className="ui-text-medium min-w-0 flex-1 leading-tight text-px-text">{isolatedHackathon && quest[0] === 'enable-auto-pot' ? 'Automatic healing' : quest[1]}</span></div>
                 <div className="mt-1 flex items-center gap-1.5"><div className="health-track h-1 flex-1 overflow-hidden"><div className="h-full bg-[linear-gradient(90deg,#765022,#d4a449)]" style={{ width: `${Math.min(100, progress / quest[2] * 100)}%` }} /></div><span className="ui-text-small shrink-0 text-px-dim">{progress}/{quest[2]}</span><span className="ui-text-small shrink-0 text-[#e7c579]">{isolatedHackathon ? quest[3].replace('XS Potions', 'Ordinary Potions') : quest[3]}</span></div>
                 {done && storyHoldsTutorialBundle(state) && <p className="ui-text-small mt-1 text-px-dim">The reward waits until after Morvane.</p>}
-                {done && !storyHoldsTutorialBundle(state) && <button type="button" disabled={tutorialClaimBusy} aria-busy={tutorialClaimBusy} onClick={async () => {
+                {done && !storyHoldsTutorialBundle(state) && (!isolatedHackathon || Boolean(quest[3])) && <button type="button" disabled={tutorialClaimBusy} aria-busy={tutorialClaimBusy} onClick={async () => {
                   setTutorialClaimBusy(true); setTutorialClaimError('');
                   try {
                     const error = await game.claimTutorialQuest(quest[0]);
@@ -1978,7 +1984,7 @@ function NextStepCard({ game, nextLocation, onQuestsClick, onStoreClick }: { gam
   const step = objective && bundleHeld
     ? { kicker: 'Next step', label: 'Fight your way out of the crypt', progress: null, cta: null, onClick: () => undefined }
     : objective
-    ? { kicker: `Next step · ${Math.max(1, Math.min(10, state.tutorial.questOrdinal))}/10`, label: objective.ready ? 'Done! Claim your reward' : objective.label, progress: objective.ready ? null : objective, cta: objective.ready ? 'Claim' : null, onClick: () => { const guide = tutorialGuide(state); if (!guide || guide === 'claim' || !isAndroidLayout) onQuestsClick?.(); else window.dispatchEvent(new CustomEvent(TUTORIAL_GO_EVENT, { detail: tutorialDestination(guide) })); } }
+    ? { kicker: `Next step · ${tutorialStepNumber(state.tutorial.questOrdinal)}/${tutorialStepCount}`, label: objective.ready ? isolatedHackathon && state.tutorial.questOrdinal > 1 ? 'Step complete' : 'Done! Claim your reward' : objective.label, progress: objective.ready ? null : objective, cta: objective.ready && (!isolatedHackathon || state.tutorial.questOrdinal === 1) ? 'Claim' : null, onClick: () => { const guide = tutorialGuide(state); if (!guide || guide === 'claim' || !isAndroidLayout) onQuestsClick?.(); else window.dispatchEvent(new CustomEvent(TUTORIAL_GO_EVENT, { detail: tutorialDestination(guide) })); } }
     : ready > 0
       ? { kicker: 'Next step', label: `${ready} reward${ready === 1 ? '' : 's'} ready`, progress: null, cta: 'Claim', onClick: onQuestsClick }
       : nextLocation

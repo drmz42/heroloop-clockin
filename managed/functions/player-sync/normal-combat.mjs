@@ -141,11 +141,13 @@ const ENDGAME_ENEMY_SPEED = 103;
 const ENDGAME_ROLES = ['tank', 'striker', 'skirmisher', 'support', 'caster'];
 const ELITE_AFFIXES = ['guard-aura', 'mending', 'barrier', 'enrage', 'curse', 'lane-blast', 'summoner'];
 // Seeker story (Founder 2026-10-12): the hero must not die to the first crypt undead, so the first
-// three kills of a new account face weakened enemies (a third of the HP, half the attack).
+// visible crypt fights face weakened enemies (one third of normal HP, half the attack).
+// Background progression can advance totalKills before the story hunt starts. Keep the bare
+// starter protected until the first tutorial bundle is claimed, using the canonical save.
 const STORY_OPENING_KILLS = 3;
-function enemyUnits(location, teamSize, seed, progressionVersion, totalKills = Infinity) {
+function enemyUnits(location, teamSize, seed, progressionVersion, totalKills = Infinity, storyStarter = false) {
   const base = v6EnemyBase(location, progressionVersion === SEEKER_PROGRESSION_VERSION);
-  const opening = progressionVersion === SEEKER_PROGRESSION_VERSION && location === 1 && totalKills < STORY_OPENING_KILLS;
+  const opening = progressionVersion === SEEKER_PROGRESSION_VERSION && location === 1 && (totalKills < STORY_OPENING_KILLS || storyStarter);
   const baseHp = opening ? base.hp / 3 : base.hp;
   const baseAtk = opening ? base.atk / 2 : base.atk;
   const baseDef = base.def;
@@ -194,8 +196,11 @@ export function buildNormalCombat(state, ledgerItems, location, seed, resourceSn
   const heroesByUid = new Map(state.ownedHeroes.map((hero) => [hero?.uid, hero]));
   const savedHp = record(state.normalCombatHp) ? state.normalCombatHp : {};
   const built = state.team.map((uid, lane) => heroUnit(heroesByUid.get(uid), lane, items, savedHp[uid], startedAtMs, combatEffectsVersion));
+  const storyStarter = record(state.tutorial) && state.tutorial.questCompleted === false
+    && Number(state.tutorial.questOrdinal) === 1 && state.ownedHeroes.length === 1
+    && built.length === 1 && Object.keys(state.ownedHeroes[0].equipped ?? {}).length === 0;
   const initialUnits = [...built.map(({ unit }) => unit), ...enemyUnits(location, built.length, seed,
-    Number(state.accountLevel) >= (location - 1) * 10 + 1 ? progressionVersion : null, Math.max(0, Number(state.totalKills) || 0))];
+    Number(state.accountLevel) >= (location - 1) * 10 + 1 ? progressionVersion : null, Math.max(0, Number(state.totalKills) || 0), storyStarter)];
   const savedConfig = record(state.autoPot) ? state.autoPot : {};
   const config = healingPolicy === AUTOMATIC_HEALING_POLICY ? automaticHealingConfig(savedConfig) : savedConfig;
   const potions = healingPolicy === AUTOMATIC_HEALING_POLICY

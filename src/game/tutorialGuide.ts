@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { GameState } from './types';
+import { isolatedHackathon } from './editionStorage';
 import { currentTutorialObjective } from './tutorialProgress';
 import { storyHoldsTutorialBundle } from './storyBox';
 
@@ -24,7 +25,7 @@ export function tutorialGuide(state: GameState): TutorialGuide | null {
   const objective = currentTutorialObjective(state);
   if (!objective) return null;
   // The step-1 bundle waits for the story's second death; keep the player fighting meanwhile.
-  if (objective.ready) return storyHoldsTutorialBundle(state) ? 'battle' : 'claim';
+  if (objective.ready) return storyHoldsTutorialBundle(state) ? 'battle' : isolatedHackathon && state.tutorial.questOrdinal > 1 ? null : 'claim';
   return GUIDE_BY_QUEST[objective.id] ?? null;
 }
 
