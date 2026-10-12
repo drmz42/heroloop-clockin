@@ -44,7 +44,7 @@ function AttachmentTile({ attachment }: { attachment: MailAttachment }) {
   const title = attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss Chest' : 'Chest'}, Location ${attachment.chest.stage}`
     : attachment.kind === 'resource' ? `${formatNum(attachment.amount)} × ${attachment.title}` : `${formatNum(attachment.amount)} Gold`;
   return <div className={`mailbox-reward ${attachment.claimed ? 'is-claimed' : ''}`} title={title} aria-label={title}>
-    <span className="mailbox-reward-art">{attachment.kind === 'chest' ? <ChestCollectIcon size={44} /> : attachment.kind === 'resource' ? <ResourceArt resourceId={attachment.resourceId} /> : <GoldIcon size={30} />}</span>
+    <span className="mailbox-reward-art">{attachment.kind === 'chest' ? <ChestCollectIcon size={44} /> : attachment.kind === 'resource' ? <ResourceArt resourceId={attachment.resourceId} /> : <GoldIcon size={34} stack />}</span>
     <b>{attachment.kind === 'chest' ? `${attachment.chest.boss ? 'Boss · ' : ''}L${attachment.chest.stage}` : formatNum(attachment.amount)}</b>
     {attachment.kind === 'resource' && <small className="mailbox-reward-name">{attachment.title}</small>}
     {attachment.claimed && <i aria-label="Claimed">✓</i>}

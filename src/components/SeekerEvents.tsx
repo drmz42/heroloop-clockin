@@ -41,7 +41,7 @@ function rewardParts(reward: EventReward): Array<[RewardKind, number]> {
 /** One reward socket: art, amount, and claimed / ready / locked state. */
 function RewardTile({ kind, amount, state = '' }: { kind: RewardKind; amount: number; state?: string }) {
   return <span className={`ev-tile ev-tile-${kind} ${state}`} title={`${formatNum(amount)} ${LABEL[kind]}`}>
-    {kind === 'gold' ? <GoldIcon size={26} /> : <img src={ART[kind]} alt="" draggable={false} />}
+    {kind === 'gold' ? <GoldIcon size={32} stack /> : <img src={ART[kind]} alt="" draggable={false} />}
     <b>{short(amount)}</b>
     {state.includes('is-locked') && <Lock className="ev-tile-lock" size={11} aria-label="Locked" />}
     {state.includes('is-claimed') && <Check className="ev-tile-check" size={14} aria-label="Claimed" />}

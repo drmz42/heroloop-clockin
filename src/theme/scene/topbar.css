@@ -43,7 +43,7 @@ html[data-hl-platform='android'] .game-progress-bar.tb-bar {
 .tb-gold { flex-grow: 1.5; }
 .tb-skr { flex-grow: .85; }
 .tb-power { flex-grow: 1.1; }
-.tb-coin { width: 12px; height: 12px; flex: none; border: 1px solid rgba(253, 230, 138, .7); border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff1a5 0%, #e8ad21 38%, #89520a 78%); box-shadow: 0 0 6px rgba(245, 184, 45, .5); }
+.tb-coin { flex: none; }
 .tb-skr { cursor: pointer; }
 .tb-gold .tb-val { letter-spacing: -.01em; }
 .tb-skr .tb-val { color: #ebdfca; }
