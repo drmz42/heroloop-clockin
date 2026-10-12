@@ -55,8 +55,31 @@ function full(panel: Omit<ComicPanel, 'area'>): ComicPage {
 export function introPages(): ComicPage[] {
   return [
     full({
-      hold: 4800, art: frame('opening-trio'), cam: 'drift', fx: ['embers', 'flicker', 'breath'],
-      caption: { text: 'The Broken Gate. Three of us came to end Morvane.' }, sound: [['bossIntro', 0]],
+      hold: 4400, art: frame('approach'), cam: 'drift', fx: ['mist', 'embers'],
+      caption: { text: 'The Broken Gate. Three of us came to end Morvane.' }, sound: [['wind', 0]],
+    }),
+    full({
+      hold: 4400, art: frame('opening-trio'), cam: 'push', fx: ['embers', 'flicker', 'breath'],
+      caption: { text: 'Every company before us had died here.' }, sound: [['bossIntro', 0], ['roar', 900]],
+    }),
+    full({
+      hold: 3800, art: frame('fight-block'), cam: 'whip', fx: ['shake', 'flash', 'debris', 'embers'],
+      sfx: { text: 'KLANG!', x: 52, y: 20, rot: 8, size: 56 },
+      bubbles: [{ who: 'Garrick', text: 'Hold the line!', x: 6, y: 58, tail: 'up-right', kind: 'shout' }],
+      sound: [['crit', 300], ['hit', 500]],
+    }),
+    full({
+      hold: 4000, art: frame('fight-bind'), cam: 'drift', fx: ['flicker', 'embers'],
+      caption: { text: 'Elyra pinned his arm. I went for the strike.' }, sound: [['summon', 200], ['whoosh', 1800]],
+    }),
+    full({
+      hold: 4200, art: frame('fight-cut'), cam: 'whip', fx: ['shake', 'flash', 'embers'],
+      sfx: { text: 'SHHK!', x: 8, y: 24, rot: -8, size: 54 },
+      caption: { text: 'The wound closed before my eyes.', at: 'bottom' }, sound: [['crit', 200], ['roar', 1400]],
+    }),
+    full({
+      hold: 4600, art: frame('spent'), cam: 'push', fx: ['mist', 'breath', 'embers'],
+      caption: { text: 'Elyra’s power ran dry. Garrick’s shield split. He kept coming.' }, sound: [['heartbeat', 300]],
     }),
     full({
       hold: 3600, art: frame('claw-slam'), cam: 'whip', fx: ['shake', 'flash', 'dust', 'debris', 'embers'],
@@ -65,9 +88,17 @@ export function introPages(): ComicPage[] {
       sound: [['roar', 0], ['crit', 450], ['bossPhase', 700]],
     }),
     full({
+      hold: 4800, art: frame('garrick-choice'), artPos: '92% center', cam: 'push', fx: ['flicker', 'breath'],
+      caption: { text: 'The way out was behind them. Morvane stood between us.' }, sound: [['heartbeat', 200]],
+    }),
+    full({
       hold: 4800, art: frame('forgive'), cam: 'push', fx: ['embers', 'flicker'],
       bubbles: [{ who: 'Garrick', text: 'Forgive me, old friend.', x: 40, y: 14, tail: 'down-right' }],
       sound: [['heartbeat', 200]], voice: ['g-forgive', 900],
+    }),
+    full({
+      hold: 3800, art: frame('elyra-no'), cam: 'pull', fx: ['flicker', 'embers'],
+      bubbles: [{ who: 'Elyra', text: 'No! He’s still alive!', x: 40, y: 12, tail: 'down-left', kind: 'shout' }],
     }),
     full({
       hold: 4000, art: frame('gate-closes'), cam: 'pull', fx: ['shake', 'dust', 'flicker'],
@@ -75,8 +106,12 @@ export function introPages(): ComicPage[] {
       caption: { text: 'Then the gate closed.' }, sound: [['gateSlam', 900]],
     }),
     full({
+      hold: 4000, art: frame('rise-alone'), cam: 'rise', fx: ['mist', 'embers', 'breath'],
+      caption: { text: 'Alone, I fought on.' }, sound: [['heartbeat', 0], ['roar', 2200]],
+    }),
+    full({
       hold: 3800, art: frame('last-stand'), cam: 'whip', fx: ['shake', 'flash', 'dust', 'debris', 'embers'],
-      caption: { text: 'Alone, I fought on.' }, sfx: { text: 'THOOM!', x: 8, y: 42, rot: -6, size: 70 },
+      sfx: { text: 'THOOM!', x: 8, y: 42, rot: -6, size: 70 },
       sound: [['whoosh', 0], ['roar', 500], ['crit', 900], ['death', 1700]],
     }),
     full({

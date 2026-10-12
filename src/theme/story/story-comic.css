@@ -124,8 +124,8 @@
 /* Chrome around the page. */
 .cp-hint { position:absolute; left:50%; bottom:calc(14px + env(safe-area-inset-bottom)); transform:translateX(-50%); color:#a99572aa; font-size:10px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; animation:cp-hint 2s ease-in-out infinite; pointer-events:none; }
 @keyframes cp-hint { 0%,100% { opacity:.35 } 50% { opacity:.9 } }
-.cp-progress { position:absolute; top:calc(22px + env(safe-area-inset-top)); left:16px; display:flex; gap:5px; pointer-events:none; }
-.cp-progress i { width:18px; height:3px; border-radius:2px; background:#c9a35a33; }
+.cp-progress { position:absolute; top:calc(22px + env(safe-area-inset-top)); left:16px; right:96px; display:flex; gap:4px; pointer-events:none; }
+.cp-progress i { flex:1 1 0; max-width:18px; height:3px; border-radius:2px; background:#c9a35a33; }
 .cp-progress i.is-done { background:#c9a35a99; }
 .cp-progress i.is-now { background:#f0d08a; }
 .cp-objective { position:absolute; z-index:12; left:50%; top:50%; translate:-50% -50%; width:max-content; max-width:calc(100% - 40px); padding:14px 22px; border:2px solid #c9a35a; background:linear-gradient(180deg,#1d1710f2,#0b0907f2); box-shadow:0 10px 40px #000; color:#f4dfaa; font-family:'Cinzel', Georgia, serif; font-size:18px; font-weight:800; text-align:center; animation:cp-pop .45s cubic-bezier(.2,1.4,.4,1) both; }
