@@ -40,8 +40,10 @@ export function StoryRewardCard({ game }: { game: GameApi }) {
   useEffect(() => {
     if (!silentStep || busy) return;
     setBusy(true);
-    void game.claimTutorialQuest(silentStep).finally(() => setBusy(false));
-  }, [silentStep]); // eslint-disable-line react-hooks/exhaustive-deps
+    // A refused claim (e.g. the server has not counted the progress yet) retries after a pause, not in a loop.
+    void game.claimTutorialQuest(silentStep).then((failure) => { if (failure) window.setTimeout(() => setBusy(false), 5000); else setBusy(false); }, () => window.setTimeout(() => setBusy(false), 5000));
+    // busy is a dependency: the next silent step must start once the previous claim settles.
+  }, [silentStep, busy]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!key || hidden === key || game.chestOpening || game.chestOpenResult || state.bossBattleActive) return null;
 
   const claim = async () => {
@@ -50,7 +52,11 @@ export function StoryRewardCard({ game }: { game: GameApi }) {
     try {
       const failure = await game.claimTutorialQuest(objective.id);
       if (failure) setError('Could not claim the reward. Please try again.');
-      else playSfx('claim');
+      else {
+        playSfx('claim');
+        // Seeker mails quest rewards; the story bundle is taken from the Mail at once so the chests are ready.
+        await game.claimMail(null);
+      }
     } finally { setBusy(false); }
   };
   const open = (count: 1 | 10) => {
