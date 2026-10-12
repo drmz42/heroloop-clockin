@@ -25,6 +25,7 @@ export const isStoryScene = (stage: StoryStage | null): stage is StorySceneStage
 
 const storageKey = (account: string) => editionStorageKey(`story-box:${account}`);
 const bossBaseKey = (account: string) => editionStorageKey(`story-box-boss:${account}`);
+const huntBaseKey = (account: string) => editionStorageKey(`story-box-hunt:${account}`);
 
 export function storyAccount(state: GameState): string {
   return state.walletAddress || state.username || 'local';
@@ -53,6 +54,19 @@ export function readStoryBossBase(account: string): number | null {
 
 export function writeStoryBossBase(account: string, kills: number): void {
   try { window.localStorage.setItem(bossBaseKey(account), String(kills)); } catch { /* storage blocked */ }
+}
+
+/** Kills when the crypt stage began: combat keeps running behind the intro, so the crypt counts its own kills. */
+export function readStoryHuntBase(account: string): number | null {
+  try {
+    const raw = window.localStorage.getItem(huntBaseKey(account));
+    const value = Number(raw);
+    return raw !== null && Number.isSafeInteger(value) ? value : null;
+  } catch { return null; }
+}
+
+export function writeStoryHuntBase(account: string, kills: number): void {
+  try { window.localStorage.setItem(huntBaseKey(account), String(kills)); } catch { /* storage blocked */ }
 }
 
 /** Settings "Replay intro story" dispatches this; App replays the opening without moving the story. */
@@ -90,9 +104,9 @@ export function heroGeared(state: GameState): boolean {
 }
 
 /** The next stage a real game event unlocks, or null while the player keeps playing. */
-export function storyTrigger(stage: StoryStage, state: GameState, bossBase: number | null): StoryStage | null {
-  // The hero leaves the crypt after the first 10 kills; gear now arrives with the bundle after the trial.
-  if (stage === 'hunt' && (state.totalKills >= 10 || heroGeared(state) || state.tutorial.questOrdinal >= 2 || state.tutorial.questCompleted)) return 'gate';
+export function storyTrigger(stage: StoryStage, state: GameState, bossBase: number | null, huntBase: number | null = null): StoryStage | null {
+  // The hero leaves the crypt after 10 kills made in the crypt itself (not the ones behind the intro).
+  if (stage === 'hunt' && (state.totalKills - (huntBase ?? 0) >= 10 || state.tutorial.questOrdinal >= 2 || state.tutorial.questCompleted)) return 'gate';
   if (stage === 'grow' && (state.tutorial.questCompleted || (bossBase !== null && state.totalBossKills > bossBase))) return 'victory';
   return null;
 }

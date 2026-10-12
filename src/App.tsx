@@ -47,8 +47,8 @@ import { isAuthTransient, runAuthCall } from '@/game/authTransient';
 import { clearLegacyState, inventoryCapacity } from '@/game/state';
 import { preloadEntryImages, preloadGameImages } from '@/game/imagePreload';
 import {
-  STORY_BOX_REPLAY_EVENT, STORY_NEXT, isFreshStoryAccount, isStoryScene, readStoryBossBase, storyAccount, storyReplayRequest, storyStartStage, storyTrigger,
-  writeStory, writeStoryBossBase, type StorySceneStage, type StoryStage,
+  STORY_BOX_REPLAY_EVENT, STORY_NEXT, isFreshStoryAccount, isStoryScene, readStoryBossBase, readStoryHuntBase, storyAccount, storyReplayRequest, storyStartStage, storyTrigger,
+  writeStory, writeStoryBossBase, writeStoryHuntBase, type StorySceneStage, type StoryStage,
 } from '@/game/storyBox';
 import { StoryRewardCard } from '@/components/StoryRewardCard';
 
@@ -106,7 +106,7 @@ function App() {
     window.addEventListener(STORY_BOX_REPLAY_EVENT, replay);
     return () => window.removeEventListener(STORY_BOX_REPLAY_EVENT, replay);
   }, []);
-  const storyNext = story && !storyScene ? storyTrigger(story, game.state, readStoryBossBase(storyAcct)) : null;
+  const storyNext = story && !storyScene ? storyTrigger(story, game.state, readStoryBossBase(storyAcct), readStoryHuntBase(storyAcct)) : null;
   useEffect(() => {
     if (!storyNext || !isStoryScene(storyNext)) return;
     // A short beat so the real game moment (equip, Boss win) lands before the scene opens.
@@ -123,6 +123,7 @@ function App() {
     const next = STORY_NEXT[storyScene.stage];
     writeStory(storyAcct, next);
     if (next === 'grow') writeStoryBossBase(storyAcct, game.state.totalBossKills);
+    if (next === 'hunt') writeStoryHuntBase(storyAcct, game.state.totalKills);
     setStory(next === 'done' ? null : next);
     setStoryScene(isStoryScene(next) ? { stage: next, replay: false } : null);
   };
