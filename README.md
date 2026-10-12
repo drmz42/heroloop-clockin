@@ -34,6 +34,40 @@ The pitch deck is included in this source snapshot. The final signed APK, demo v
 - **SKR token** (`SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3`, 6 decimals, mainnet) is the only on-chain token used by this edition; gameplay resources such as Gold remain in-game. Amounts are integers in minimal units; the ledger is idempotent and balanced per event.
 - **The server is the authority.** Rewards, balances, inventory and combat results are computed on the server; the client never sends values the server trusts.
 
+### On-chain evidence (Solana mainnet)
+
+Real transactions settled by the Seeker edition's wallet service. Each one is verified as finalized on chain before the SKR ledger records it, and each signature can settle only one ledger event.
+
+| Flow | Date (UTC) | Transaction |
+| --- | --- | --- |
+| SKR deposit, wallet to game | 2026-10-03 | [`3q2RGvYJ…`](https://solscan.io/tx/3q2RGvYJh8kxeGkKPswqrPoKe1Sn8zHRSh57wznqxKKfaQdfMy9PwFtDRn576VAAaK82kdiFUPHmvejbVF2aH6fF) |
+| SKR deposit, wallet to game | 2026-10-12 | [`5MYUgZdS…`](https://solscan.io/tx/5MYUgZdSNbN9fKZYXPfofZg5nQondpJjWufqwWjtATZGJAfKXjqszttTUiatHqcgoeg1Z5fKB4qhZYpJJmyNmQr6) |
+| SKR withdrawal, signed payout | 2026-10-04 | [`3YK9zQbH…`](https://solscan.io/tx/3YK9zQbHMsMs2DtYLc98d86ds2pwyxdqRZfHm5yxdzNANKsHKWJVTX9pCC3rDyT1rJbCJ4g4VGnwb8aUajL6pCcC) |
+| SKR withdrawal, signed payout | 2026-10-12 | [`4qyiAQMS…`](https://solscan.io/tx/4qyiAQMSZen3nQgvKXBrY8h3ubpCuKcjUy6HDR2e2Q6caDJEpQMFgtHDs6FwBMuYUFGPmGzDvZooTKRdQUyQVLZG) |
+
+The verification code is in `selfhosted/seeker/` (deposit intents, finalized-receipt checks, payout outbox) and `selfhosted/api/skr_quote.ts`.
+
+## Live now and roadmap
+
+**Live in the Seeker app today**
+
+- Android APK with Sign in with Solana through the Mobile Wallet Adapter.
+- Story opening (painted, voiced motion comic) with a guided tutorial.
+- AFK squad combat, five classes, three-hero formation, chests, gear upgrades and enchanting, hero summons and star promotion.
+- Bosses, Boss Keys and four-room dungeons; 28-day login calendar and weekly events; Ranks.
+- SKR economy: on-chain deposits, player Market, SKR Store, BOOST MAX quests and withdrawals (an operator approves each withdrawal; the payout is then signed and verified automatically).
+- ORE Mine (beta): heroes enter real ORE protocol rounds paid from the player's in-game SOL.
+
+**Roadmap**
+
+- Play to earn: farming SKR through gameplay, scaled by squad power and upgrades.
+- ORE Mine: claiming ORE winnings to the player balance.
+- Endgame progression (partly live) with many more upgrades.
+- 20 story-driven regions, 200+ enemies and 20 Bosses; story chapter two.
+- Season 2: PvP arena, Season Pass, Guilds and Pets.
+- New animations, better graphics and sound, performance work.
+- Solana dApp Store release.
+
 ## Requirements
 
 - Node.js 22 and npm 10
