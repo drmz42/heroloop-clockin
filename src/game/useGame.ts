@@ -758,13 +758,23 @@ export function useGame() {
         return total + (hero ? getEquippedItems(hero, st.inventory).reduce((sum, item) => sum + item.stats.length, 0) : 0);
       }, 0);
       void (async () => {
-        const delay = Math.max(0, serverWave.availableAt - Date.now());
+        // A small margin: phone clocks with automatic time can still run a fraction of a second ahead.
+        const delay = Math.max(0, serverWave.availableAt - Date.now() + 400);
         if (delay > 0) await new Promise((resolve) => window.setTimeout(resolve, delay));
         let completionError = 'complete_failed';
-        const completed = await playerSync<NormalCombatCompleteResult>('normal_combat_complete', {
+        const complete = () => playerSync<NormalCombatCompleteResult>('normal_combat_complete', {
           start_key: serverWave.startKey,
           idempotency_key: serverWave.completionKey,
         }, (message) => { completionError = message; });
+        let completed = await complete();
+        // A phone clock running ahead of the server makes the wave end "too early": wait and retry
+        // the same completion quietly instead of showing the battle-link recovery banner.
+        for (let retry = 0; !completed && completionError === 'normal_combat_too_early' && retry < 6; retry += 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 1500));
+          if (!combatSessionRef.current.isCurrent(combatGeneration)) return;
+          completionError = 'complete_failed';
+          completed = await complete();
+        }
         if (!combatSessionRef.current.isCurrent(combatGeneration)) return;
         if (!completed) {
           queueCombatRecovery(combatGeneration, completionError);
