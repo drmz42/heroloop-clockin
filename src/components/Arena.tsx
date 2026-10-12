@@ -5,7 +5,8 @@ import './arena-figures.css';
 import type { CombatUnit, FloatingNumber, GameState, OwnedHero, OwnedItem } from '@/game/types';
 import { HERO_MAP, RARITY_COLORS } from '@/game/heroes';
 import { heroPortraitSrc, heroPortraitStyle } from '@/game/portraits';
-import { enemyArtSrc, enemyFigureSrc, heroFigureSrc } from '@/game/art';
+import { CRYPT_LOCATION, cryptEnemyFigureSrc, cryptEnemyName, enemyArtSrc, enemyFigureSrc, heroFigureSrc } from '@/game/art';
+import { isolatedHackathon } from '@/game/editionStorage';
 import { RarityFx } from '@/components/RarityFx';
 import { Crosshair, Shield, Skull, Star, Swords, DoorOpen, Flame, Timer, Users } from 'lucide-react';
 import { locationLevelRange } from '@/game/engine';
@@ -288,10 +289,14 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
 /** Location art as a CSS variable; the Android battle stage reuses it so the art also fills the footer. */
 // eslint-disable-next-line react-refresh/only-export-components
 export function locationArtStyle(locationId: number): React.CSSProperties {
+  // Seeker: the first location is the crypt from the story intro.
+  if (isolatedHackathon && locationId === CRYPT_LOCATION) return { '--location-arena-art': `url('${versionedAsset('/assets/story/crypt-exit.webp')}')` } as React.CSSProperties;
   return { '--location-arena-art': `url('${versionedAsset(`/assets/locations/${locationId > 10 ? 'endgame' : 'standard'}/location-${locationId}.webp`)}')` } as React.CSSProperties;
 }
 
-function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode, dungeonPanelOpen, locationId, dungeonBossScene, dungeonRoom }: ArenaProps) {
+function ArenaInner({ units: rawUnits, floaters, ownedHeroes, inventory, potionFx, respawnCountdowns, animationMode, dungeonPanelOpen, locationId, dungeonBossScene, dungeonRoom }: ArenaProps) {
+  const crypt = isolatedHackathon && locationId === CRYPT_LOCATION && !dungeonRoom && !dungeonBossScene;
+  const units = crypt ? rawUnits.map((unit) => unit.side === 'enemy' && !/boss/i.test(unit.uid) ? { ...unit, name: cryptEnemyName(unit.uid) } : unit) : rawUnits;
   const heroes = units.filter((u) => u.side === 'hero');
   const enemies = units.filter((u) => u.side === 'enemy');
   // Dungeon playback lets a fighter strike any living opponent, not only its lane partner.
@@ -410,7 +415,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
           {heroes.length === 0 && <div className="intentional-empty p-4 ui-text-medium">Assemble a team to fight</div>}
         </div>
         <div className="arena-roster flex min-w-0 flex-col items-start justify-center gap-2">
-          {laneEnemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive) || (dungeonFight && heroes.some((hero) => hero.alive))} animationMode={animationMode} rank={enemyRank(u, locationId, dungeonRoom?.depth)} figure={figureLanes} lane={lane} />)}
+          {laneEnemies.map((u, lane) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={Boolean(heroes[lane]?.alive) || (dungeonFight && heroes.some((hero) => hero.alive))} animationMode={animationMode} rank={enemyRank(u, locationId, dungeonRoom?.depth)} figure={figureLanes} lane={lane} figureOverride={crypt && !/boss/i.test(u.uid) ? cryptEnemyFigureSrc(u.uid) : undefined} />)}
           {/* Founder 2026-10-09: the Room 3 path choice has no enemies yet; leave the arena side clear. */}
           {laneEnemies.length === 0 && !sharedBoss && dungeonRoom?.room !== 3 && <div className="intentional-empty p-4 ui-text-medium">Enemies defeated</div>}
         </div>

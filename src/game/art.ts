@@ -85,3 +85,15 @@ export function enemyFigureSrc(unitUid: string, role?: import('./types').CombatU
   const base = ENEMY_FIGURES.has(id) ? id : id.match(/^(boss-(?:ogre|lich|dragon|titan))/)?.[1] ?? (id.startsWith('endgame-') && role ? ENDGAME_ROLE_FIGURE[role] : null);
   return base ? versionedAsset(`/assets/figures/${base}.webp`) : null;
 }
+
+// Seeker story (Founder 2026-10-12): Location 1 is the Ashen Crypt the hero climbs out of after the
+// intro. Its server enemies (skeleton, bat, slime) keep their stats and only wear crypt skins.
+export const CRYPT_LOCATION = 1;
+const CRYPT_SKINS: Record<string, { figure: string; name: string }> = {
+  skeleton: { figure: 'skeleton', name: 'Skeleton' },
+  bat: { figure: 'skeleton', name: 'Risen Guard' },
+  slime: { figure: 'ghost', name: 'Crypt Wraith' },
+};
+const cryptSkin = (unitUid: string) => CRYPT_SKINS[unitUid.replace(/^e\d+-/, '')] ?? CRYPT_SKINS.skeleton;
+export const cryptEnemyName = (unitUid: string) => cryptSkin(unitUid).name;
+export const cryptEnemyFigureSrc = (unitUid: string) => versionedAsset(`/assets/figures/${cryptSkin(unitUid).figure}.webp`);

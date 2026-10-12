@@ -176,7 +176,7 @@ const BOSS_POOL: Omit<Enemy, 'hp' | 'atk' | 'def' | 'speed'>[] = [
 ];
 
 const LOCATION_NAMES = [
-  'Dusty Docks',        // 1 — Lv 1-4
+  'Ashen Crypt',        // 1 — Lv 1-4 (Seeker story: the crypt the hero escapes)
   'Greenwood Vale',     // 2 — Lv 5-9
   'Mistwood Hollow',    // 3 — Lv 10-15
   'Shadowmarsh',        // 4 — Lv 16-22
