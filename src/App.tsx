@@ -47,7 +47,7 @@ import { isAuthTransient, runAuthCall } from '@/game/authTransient';
 import { clearLegacyState, inventoryCapacity } from '@/game/state';
 import { preloadEntryImages, preloadGameImages } from '@/game/imagePreload';
 import {
-  STORY_BOX_REPLAY_EVENT, STORY_NEXT, isStoryScene, readStoryBossBase, storyAccount, storyReplayRequest, storyStartStage, storyTrigger,
+  STORY_BOX_REPLAY_EVENT, STORY_NEXT, isFreshStoryAccount, isStoryScene, readStoryBossBase, storyAccount, storyReplayRequest, storyStartStage, storyTrigger,
   writeStory, writeStoryBossBase, type StorySceneStage, type StoryStage,
 } from '@/game/storyBox';
 import { StoryRewardCard } from '@/components/StoryRewardCard';
@@ -92,6 +92,15 @@ function App() {
     if (replay) setStoryScene({ stage: replay, replay: true });
     else if (start && isStoryScene(start)) setStoryScene({ stage: start, replay: false });
   }, [accountGate, story, game.state]);
+  // A reset account (fresh again while this session still holds a later story stage) restarts the story.
+  const freshAccount = isolatedHackathon && accountGate === 'verified' && isFreshStoryAccount(game.state);
+  useEffect(() => {
+    if (!freshAccount || story === undefined || story === 'intro' || story === 'hunt' || storyScene?.replay) return;
+    writeStory(storyAcct, 'intro');
+    setStory('intro');
+    setStoryStarted(false);
+    setStoryScene({ stage: 'intro', replay: false });
+  }, [freshAccount, story, storyScene, storyAcct]);
   useEffect(() => {
     const replay = () => { setStoryStarted(false); setStoryScene({ stage: 'intro', replay: true }); };
     window.addEventListener(STORY_BOX_REPLAY_EVENT, replay);
