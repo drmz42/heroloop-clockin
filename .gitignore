@@ -45,3 +45,4 @@ dist-seeker/
 
 # CLOCK IN local backend (scripts/clockin-local-backend.sh)
 selfhosted/.clockin-storage/
+!pitch/*.pdf
