@@ -67,12 +67,14 @@ export function storyReplayRequest(): StorySceneStage | null {
   } catch { return null; }
 }
 
-/** A brand-new account (no kill, first Tutorial step, only the starter hero) starts the story. */
+/** A brand-new account (first Tutorial step unfinished, only the starter hero) starts the story. */
 export function storyStartStage(state: GameState): StoryStage | null {
   if (!isolatedHackathon) return null;
   const saved = readStory(storyAccount(state));
-  const fresh = state.totalKills === 0 && state.totalBossKills === 0 && !state.tutorial.questCompleted
-    && state.tutorial.questOrdinal <= 1 && state.ownedHeroes.length === 1;
+  // Combat starts the moment the game loads, so "new" means the first Tutorial step is not done yet
+  // (fewer than 10 kills, nothing equipped), not literally zero kills.
+  const fresh = state.totalKills < 10 && state.totalBossKills === 0 && !state.tutorial.questCompleted
+    && state.tutorial.questOrdinal <= 1 && state.ownedHeroes.length === 1 && !heroGeared(state);
   // A reset account is fresh again while this device still remembers a later stage: start over.
   if (fresh && saved !== 'intro' && saved !== 'hunt') return 'intro';
   if (saved) return saved === 'done' ? null : saved;
