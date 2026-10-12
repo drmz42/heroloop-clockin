@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties } from 'react';
 import type { GameState, HeroClass } from '@/game/types';
 import { versionedAsset } from '@/game/assetVersion';
 import { heroFigureSrc } from '@/game/art';
@@ -8,6 +8,8 @@ import {
   CLASS_LABEL, STORY_BOX, boxPower, protagonistClass, recruitClasses, resolveBoxFight, storyBoxAccount, writeStoryBox,
   type BoxFighter, type StoryBoxStage,
 } from '@/game/storyBox';
+import { ComicScene } from '@/components/StoryComic';
+import { awakenPages, betrayalPages, cluePages, victoryPages } from '@/game/storyComic';
 import '@/theme/story/story-box.css';
 
 // Story Box: the client-only story intro for new Seeker accounts (see src/game/storyBox.ts).
@@ -16,102 +18,19 @@ const art = (name: string) => versionedAsset(`/assets/story/${name}.webp`);
 const asset = (path: string) => versionedAsset(path);
 // Each scene layer falls back to existing game art while story art is missing.
 const bg = (name: string, fallback: string): CSSProperties => ({ backgroundImage: `url('${art(name)}'), url('${asset(fallback)}')` });
-const emblem: CSSProperties = { backgroundImage: `url('${asset('/assets/brand/heroloop-emblem.png')}')` };
 
 function Figure({ src, fallback, className, alt = '' }: { src: string; fallback?: string; className: string; alt?: string }) {
   const [current, setCurrent] = useState(src);
   return <img className={className} src={current} alt={alt} draggable={false} data-fallback={current === src ? undefined : ''} onError={() => { if (fallback && current !== fallback) setCurrent(fallback); }} />;
 }
 
-type HeroPose = 'stand' | 'wounded' | 'fallen';
-// Class-specific story poses; a missing pose falls back to the class battle figure.
-function HeroFigure({ hero, pose, className = '' }: { hero: HeroClass; pose: HeroPose; className?: string }) {
-  return pose === 'stand'
-    ? <img key="stand" className={`sb-pose is-stand ${className}`} src={heroFigureSrc(hero)} alt="" draggable={false} />
-    : <Figure key={pose} className={`sb-pose is-${pose} ${className}`} src={art(`${hero}-${pose}`)} fallback={heroFigureSrc(hero)} />;
-}
-
 type GiantPose = 'idle' | 'slam' | 'kneel';
 // Morvane keeps three landmarks across all encounters: white hair, one massive arm, iron restraints.
 const giantFigure = (pose: GiantPose = 'idle') => <Figure key={pose} className={`sb-giant-img is-${pose}`} src={art(`morvane-${pose}`)} fallback={asset('/assets/figures/boss-titan.webp')} />;
 
-function useTimeline(durations: number[], onDone: () => void) {
-  const [beat, setBeat] = useState(0);
-  const done = useRef(onDone);
-  done.current = onDone;
-  useEffect(() => {
-    if (beat >= durations.length) { done.current(); return; }
-    const timer = window.setTimeout(() => setBeat((value) => value + 1), durations[beat]);
-    return () => window.clearTimeout(timer);
-  }, [beat, durations]);
-  return beat;
-}
-
-function Skip({ onSkip }: { onSkip: () => void }) {
-  return <button type="button" className="sb-skip" onClick={onSkip}>Skip</button>;
-}
-
-function Caption({ who, children }: { who?: string; children: ReactNode }) {
-  return <p className="sb-caption">{who && <b>{who}</b>}{children}</p>;
-}
-
-// ── S00: betrayal and first death ──────────────────────────────────────────
-
-const BETRAYAL_BEATS = [4200, 4600, 5000, 5600, 5200, 4400, 2600, 2200];
-
-function Betrayal({ hero, onNext }: { hero: HeroClass; onNext: () => void }) {
-  const beat = useTimeline(BETRAYAL_BEATS, onNext);
-  useEffect(() => {
-    if (beat === 0) playSfx('bossIntro');
-    if (beat === 1) { playSfx('crit'); duckMusic(1800); }
-    if (beat === 4) playSfx('bossPhase');
-    if (beat === 5) { playSfx('crit'); window.setTimeout(() => playSfx('death'), 1400); }
-    if (beat === 6) [0, 650, 1300].forEach((delay) => window.setTimeout(() => playSfx('tap'), delay));
-  }, [beat]);
-  return (
-    <section className="sb-scene sb-cine sb-betrayal" data-beat={beat} style={bg('gate-arena', '/assets/screens/dungeon-room-1-outer-bastion-v2.webp')}>
-      <div className="sb-layer sb-giant">{giantFigure(beat === 1 || beat === 5 ? 'slam' : 'idle')}</div>
-      <div className="sb-layer sb-friends">
-        <Figure className="sb-garrick" src={art('garrick')} fallback={heroFigureSrc('knight')} />
-        <Figure className="sb-elyra" src={art('elyra')} fallback={heroFigureSrc('shepherd')} />
-      </div>
-      <div className="sb-layer sb-gate-clip"><div className="sb-portcullis" style={bg('gate-portcullis', '/assets/screens/dungeon-room-2-guard-hall-v2.webp')} /></div>
-      <div className="sb-layer sb-protagonist"><HeroFigure hero={hero} pose={beat >= 6 ? 'fallen' : beat >= 2 && beat <= 4 ? 'wounded' : 'stand'} /><span className="sb-mark" style={emblem} /></div>
-      <Figure className="sb-layer sb-hollow" src={art('hollow-one')} />
-      <div className="sb-flash" />
-      <div className="sb-blackout"><span className="sb-emblem" style={emblem} /></div>
-      {beat === 0 && <Caption>The Broken Gate</Caption>}
-      {beat === 2 && <Caption who="Garrick">I'm sorry.</Caption>}
-      <Skip onSkip={onNext} />
-    </section>
-  );
-}
-
-// ── S01 / S05: awakening at the altar ──────────────────────────────────────
-
-function Awaken({ hero, lines, objective, reveal, onNext }: { hero: HeroClass; lines: string[]; objective: string; reveal?: boolean; onNext: () => void }) {
-  const durations = useMemo(() => [1600, ...lines.map(() => 1900), reveal ? 3200 : 1800], [lines, reveal]);
-  const beat = useTimeline(durations, onNext);
-  const line = beat >= 1 && beat <= lines.length ? lines[beat - 1] : null;
-  const showExit = reveal && beat > lines.length;
-  useEffect(() => { if (beat === 0) playSfx('levelUp'); }, [beat]);
-  return (
-    <section className={`sb-scene sb-awaken ${showExit ? 'is-exit' : ''}`} data-beat={beat}>
-      <div className="sb-layer sb-altar" style={bg('crypt-altar', '/assets/screens/dungeon-room-3-crossroads-v2.webp')}>
-        <span className="sb-altar-mark" style={emblem} />
-        <HeroFigure hero={hero} className="sb-waking" pose={beat <= (reveal ? 1 : 0) ? 'fallen' : beat === (reveal ? 2 : 1) ? 'wounded' : 'stand'} />
-      </div>
-      <div className="sb-layer sb-exit" style={bg('crypt-exit', '/assets/locations/standard/location-3.webp')}>
-        {[0, 1, 2].map((index) => <Figure key={index} className={`sb-exit-skeleton s${index}`} src={art('skeleton')} fallback={asset('/assets/figures/skeleton.webp')} />)}
-      </div>
-      {line && <Caption>{line}</Caption>}
-      {(showExit || (!reveal && beat > lines.length)) && <div className="sb-objective"><small>Objective</small>{objective}</div>}
-      <Skip onSkip={onNext} />
-    </section>
-  );
-}
-
 // ── Battle replay ──────────────────────────────────────────────────────────
+
+const BURST_WORDS = ['SLASH!', 'CRACK!', 'THWACK!', 'SHHNK!'];
 
 interface Floater { key: string; id: string; amount: number; crit: boolean }
 
@@ -151,6 +70,9 @@ function Battle({ fighters, seed, scene, fallback, title, line, onEnd }: {
   const attacking = new Set(visible.filter((hit) => time - hit.at < 260).map((hit) => hit.from));
   const slamming = visible.some((hit) => hit.slam && time - hit.at < 500);
   const finished = time > fight.duration + 200;
+  // Comic lettering for heavy blows: crits and boss slams.
+  const burst = [...visible].reverse().find((hit) => (hit.crit || hit.slam) && time - hit.at < 700);
+  const burstOnHero = burst ? fighters.find((fighter) => fighter.id === burst.to)?.side === 'hero' : false;
   const unit = (fighter: BoxFighter) => {
     const current = hp(fighter);
     const dead = current <= 0;
@@ -173,6 +95,12 @@ function Battle({ fighters, seed, scene, fallback, title, line, onEnd }: {
         <div className="sb-side heroes">{fighters.filter((fighter) => fighter.side === 'hero').map(unit)}</div>
         <div className="sb-side enemies">{fighters.filter((fighter) => fighter.side === 'enemy').map(unit)}</div>
       </div>
+      {burst && (
+        <span key={`${burst.at}-${burst.to}`} className="cp-sfx sb-burst"
+          style={{ left: burstOnHero ? '6%' : '46%', top: burst.slam ? '22%' : '30%', fontSize: burst.slam ? '58px' : '44px', '--rot': `${burstOnHero ? -9 : 7}deg` } as CSSProperties}>
+          {burst.slam ? 'KRA-KOOM!' : BURST_WORDS[Math.floor(burst.at / 50) % BURST_WORDS.length]}
+        </span>
+      )}
       {finished && <div className={`sb-result ${fight.won ? 'won' : 'lost'}`}>{fight.won ? 'Victory' : 'Defeated'}</div>}
     </section>
   );
@@ -294,39 +222,16 @@ function Growth({ hero, onNext }: { hero: HeroClass; onNext: () => void }) {
   );
 }
 
-// ── S08 victory and S09 Elyra's trace ──────────────────────────────────────
+// ── S09 quest card after Elyra's trace ─────────────────────────────────────
 
-function Victory({ squad, onNext }: { squad: HeroClass[]; onNext: () => void }) {
-  const beat = useTimeline([1500, 1800, 2400], onNext);
-  useEffect(() => {
-    if (beat === 1) { playSfx('crit'); duckMusic(2600); }
-    if (beat === 2) playSfx('victory');
-  }, [beat]);
+function QuestCard({ onDone }: { onDone: () => void }) {
   return (
-    <section className="sb-scene sb-cine sb-victory" data-beat={beat} style={bg('gate-arena', '/assets/screens/dungeon-room-1-outer-bastion-v2.webp')}>
-      <div className="sb-layer sb-giant">{giantFigure(beat >= 1 ? 'kneel' : 'idle')}</div>
-      <div className="sb-layer sb-gate-clip"><div className="sb-portcullis is-closed" style={bg('gate-portcullis', '/assets/screens/dungeon-room-2-guard-hall-v2.webp')} /></div>
-      <div className="sb-layer sb-trio">{squad.map((heroClass, index) => <img key={`${heroClass}-${index}`} src={heroFigureSrc(heroClass)} alt="" draggable={false} />)}</div>
-      <div className="sb-flash" />
-      <Skip onSkip={onNext} />
-    </section>
-  );
-}
-
-function Clue({ onDone }: { onDone: () => void }) {
-  const [shown, setShown] = useState(false);
-  useEffect(() => { const timer = window.setTimeout(() => setShown(true), 2600); return () => window.clearTimeout(timer); }, []);
-  return (
-    <section className="sb-scene sb-clue" style={bg('gate-arena', '/assets/screens/dungeon-room-1-outer-bastion-v2.webp')}>
-      <Figure className="sb-scrap" src={art('cloak-scrap')} />
-      <Caption>A scrap of Elyra's cloak, caught on the inside of the gate.</Caption>
-      {shown && <div className="sb-card sb-quest">
-        <small className="sb-kicker">New quest</small>
-        <h2>The Mage's Trail</h2>
-        <p>Find out why Elyra returned to the fortress.</p>
-        <button type="button" className="game-control game-primary sb-cta" onClick={onDone}>Continue</button>
-      </div>}
-    </section>
+    <div className="sb-card sb-quest" onClick={(event) => event.stopPropagation()}>
+      <small className="sb-kicker">New quest</small>
+      <h2>The Mage's Trail</h2>
+      <p>Elyra returned to the fortress after your death. Find out why she went to Blackthorn.</p>
+      <button type="button" className="game-control game-primary sb-cta" onClick={onDone}>Continue</button>
+    </div>
   );
 }
 
@@ -366,16 +271,16 @@ export function StoryBox({ state, startStage, onDone }: { state: GameState; star
     <div className="story-box" role="dialog" aria-modal="true" aria-label="Story">
       {!started && <TitleCard onStart={() => setStarted(true)} />}
       {started && <>
-      {stage === 'betrayal' && <Betrayal hero={hero} onNext={go('awaken')} />}
-      {stage === 'awaken' && <Awaken hero={hero} reveal lines={['I died. I know I did.', '…Then why am I still here?', 'No answers. Move.']} objective="Fight your way out." onNext={go('waves')} />}
+      {stage === 'betrayal' && <ComicScene key="betrayal" pages={betrayalPages(hero)} onDone={go('awaken')} />}
+      {stage === 'awaken' && <ComicScene key="awaken" pages={awakenPages(hero, false)} objective="Fight your way out." onDone={go('waves')} />}
       {stage === 'waves' && <Waves hero={hero} heroName={heroName} onNext={go('chest')} />}
       {stage === 'chest' && <Chest onNext={go('trial')} />}
       {stage === 'trial' && <Battle fighters={trial} seed={7} scene="gate-battle" fallback="/assets/screens/dungeon-room-1-outer-bastion-v2.webp" title={STORY_BOX.boss.name} line="“You came back.”" onEnd={() => { playSfx('defeat'); setStage('awaken-again'); }} />}
-      {stage === 'awaken-again' && <Awaken hero={hero} lines={['Again.', 'Still alive.']} objective="Grow stronger. Return when you're ready." onNext={go('growth')} />}
+      {stage === 'awaken-again' && <ComicScene key="awaken-again" pages={awakenPages(hero, true)} objective="Grow stronger. Return when you're ready." onDone={go('growth')} />}
       {stage === 'growth' && <Growth hero={hero} onNext={go('final')} />}
       {stage === 'final' && <Battle fighters={final} seed={21} scene="gate-battle" fallback="/assets/screens/dungeon-room-1-outer-bastion-v2.webp" title={STORY_BOX.boss.name} onEnd={(won) => setStage(won ? 'victory' : 'growth')} />}
-      {stage === 'victory' && <Victory squad={[hero, ...recruits]} onNext={go('clue')} />}
-      {stage === 'clue' && <Clue onDone={finish} />}
+      {stage === 'victory' && <ComicScene key="victory" pages={victoryPages([hero, ...recruits])} onDone={go('clue')} />}
+      {stage === 'clue' && <ComicScene key="clue" pages={cluePages()} onDone={finish} finale={<QuestCard onDone={finish} />} />}
       {['waves', 'chest', 'growth'].includes(stage) && <button type="button" className="sb-skip" onClick={finish}>Skip story</button>}
       </>}
     </div>
