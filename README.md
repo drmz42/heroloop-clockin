@@ -84,6 +84,8 @@ The verification code is in `selfhosted/seeker/` (deposit intents, finalized-rec
 
 **Live in the Seeker app today**
 
+Usage since the Seeker backend opened on 1 October 2026, team testing included: 166 wallet sign-ups, 13,000+ battles and 1,000+ Market listings.
+
 - Android APK with Sign in with Solana through the Mobile Wallet Adapter.
 - Story opening (painted, voiced motion comic) with a guided tutorial.
 - AFK squad combat with a three-hero formation: 45 heroes (5 classes × 9 rarity tiers), star promotion up to 20 stars, 54 items across 9 gear slots, gear upgrades and enchanting up to +20.
