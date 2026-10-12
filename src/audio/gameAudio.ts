@@ -21,7 +21,8 @@ let musicScene: MusicScene = 'main';
 let mainTrackIndex = 0;
 let loadedMusicSource: string | null = null;
 let musicRequest = 0;
-const MUSIC_VOLUME = 0.3;
+// Keep the sustained music bed behind the short combat cues, including on phone speakers.
+const MUSIC_VOLUME = 0.14;
 const SFX_KEY = 'hl-audio-sfx';
 const MUSIC_KEY = 'hl-audio-music';
 
@@ -126,12 +127,12 @@ function bell(freq: number, dur: number, gain: number, at = 0) {
 const vary = (value: number, spread = 0.08) => value * (1 - spread + Math.random() * spread * 2);
 
 const PLAYERS: Record<SfxName, (tier: number) => void> = {
-  heroAttack: () => hiss(0.10, { type: 'bandpass', freq: vary(1800), to: 650, q: 1.2, gain: 0.12, attack: 0.015 }),
-  enemyAttack: () => { hiss(0.13, { type: 'bandpass', freq: vary(700), to: 260, gain: 0.14, attack: 0.015 }); tone(vary(110), 0.12, { gain: 0.10, to: 65 }); },
+  heroAttack: () => hiss(0.10, { type: 'bandpass', freq: vary(1800), to: 650, q: 1.2, gain: 0.24, attack: 0.015 }),
+  enemyAttack: () => { hiss(0.13, { type: 'bandpass', freq: vary(700), to: 260, gain: 0.28, attack: 0.015 }); tone(vary(110), 0.12, { gain: 0.20, to: 65 }); },
   tap: () => { hiss(0.03, { type: 'bandpass', freq: 2400, q: 1.4, gain: 0.07 }); tone(vary(540), 0.05, { gain: 0.035, to: 380 }); },
   tab: () => { hiss(0.04, { type: 'bandpass', freq: 1800, q: 1.2, gain: 0.08 }); tone(vary(220), 0.09, { gain: 0.07, to: 150 }); },
   sheet: () => hiss(0.22, { type: 'bandpass', freq: 380, to: 1700, q: 1.1, gain: 0.08, attack: 0.06 }),
-  hit: () => { tone(vary(150), 0.11, { gain: 0.32, to: 55 }); hiss(0.07, { freq: vary(1400), to: 300, gain: 0.16 }); },
+  hit: () => { tone(vary(150), 0.11, { gain: 0.42, to: 55 }); hiss(0.07, { freq: vary(1400), to: 300, gain: 0.24 }); },
   crit: () => {
     tone(vary(120), 0.2, { gain: 0.45, to: 40 });
     hiss(0.16, { type: 'highpass', freq: 2500, gain: 0.12 });

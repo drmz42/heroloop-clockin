@@ -53,7 +53,7 @@ import { versionedAsset } from '@/game/assetVersion';
 import { BattleAmbience } from '@/components/BattleAmbience';
 import { ActionFx } from '@/theme/motion/ActionFx';
 import { flyCoins } from '@/theme/motion/flyCoins';
-import { installGameAudio, playSfx, setMusicScene } from '@/audio/gameAudio';
+import { playSfx, setMusicScene } from '@/audio/gameAudio';
 import { BossIntro } from '@/theme/motion/BossIntro';
 import { useAndroidOverlayHistory } from '@/platform/useAndroidOverlayHistory';
 import { DungeonChestArt, DungeonChestPanel, DungeonChestSlot } from '@/components/DungeonChests';
@@ -398,7 +398,6 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     if (battleResult) setBanner(battleResult);
   }, [battleResult]);
 
-  useEffect(() => installGameAudio(), []);
   const encounterMusic = Boolean(activeDungeon) || state.bossBattleActive;
   useEffect(() => {
     setMusicScene(encounterMusic ? 'encounter' : 'main');

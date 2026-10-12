@@ -1,3 +1,4 @@
+import { installGameAudio } from '@/audio/gameAudio';
 import { Suspense, lazy, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
 import { bagItemCount, useGame } from '@/game/useGame';
@@ -609,6 +610,12 @@ function App() {
       window.history.replaceState(null, '', target);
     }
   }, [accountGate, routePath, directGameEntry]);
+
+  // One audio lifetime spans the story and the battle: the title-card gesture unlocks both.
+  const audioActive = accountGate === 'verified' && routePath !== '/wiki';
+  useEffect(() => {
+    if (audioActive) return installGameAudio();
+  }, [audioActive]);
 
   if (routePath === '/wiki') {
     return (
