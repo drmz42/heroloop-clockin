@@ -31,17 +31,24 @@ export function storyAccount(state: GameState): string {
   return state.walletAddress || state.username || 'local';
 }
 
-export function readStory(account: string): StoryStage | null {
+/** The story belongs to one starter hero: a reset account gets a new starter, so its story starts over. */
+export function storyEpoch(state: GameState): string {
+  return state.ownedHeroes[0]?.uid ?? '';
+}
+
+export function readStory(account: string, epoch = ''): StoryStage | null {
   try {
-    const value = window.localStorage.getItem(storageKey(account));
-    if (!value) return null;
+    const raw = window.localStorage.getItem(storageKey(account));
+    if (!raw) return null;
+    const [value, savedEpoch] = raw.split('@');
+    if (epoch && savedEpoch && savedEpoch !== epoch) return null;
     // Accounts that already played the earlier one-piece Story Box keep playing normally.
     return STAGES.includes(value as StoryStage) ? value as StoryStage : 'done';
   } catch { return null; }
 }
 
-export function writeStory(account: string, stage: StoryStage): void {
-  try { window.localStorage.setItem(storageKey(account), stage); } catch { /* storage blocked: the story restarts next launch */ }
+export function writeStory(account: string, stage: StoryStage, epoch = ''): void {
+  try { window.localStorage.setItem(storageKey(account), epoch ? `${stage}@${epoch}` : stage); } catch { /* storage blocked: the story restarts next launch */ }
 }
 
 /** Boss kills when the second half began, so only a new real Boss win ends the story. */
@@ -91,8 +98,13 @@ export function isFreshStoryAccount(state: GameState): boolean {
 /** A brand-new account (first Tutorial step unfinished, only the starter hero) starts the story. */
 export function storyStartStage(state: GameState): StoryStage | null {
   if (!isolatedHackathon) return null;
-  const saved = readStory(storyAccount(state));
-  const fresh = isFreshStoryAccount(state);
+  const saved = readStory(storyAccount(state), storyEpoch(state));
+  // A save from another starter hero means the account was reset: still on the first Tutorial step, it starts over.
+  // Saves from before the hero binding carry no hero: on that same early state they are treated alike once.
+  const early = state.tutorial.questOrdinal <= 1 && !state.tutorial.questCompleted && state.ownedHeroes.length === 1 && state.totalBossKills === 0;
+  const unbound = (() => { try { return !(window.localStorage.getItem(storageKey(storyAccount(state))) ?? '').includes('@'); } catch { return false; } })();
+  const reset = early && (!saved ? readStory(storyAccount(state)) !== null : unbound && saved !== 'intro' && saved !== 'hunt' && saved !== 'done');
+  const fresh = isFreshStoryAccount(state) || reset;
   // A reset account is fresh again while this device still remembers a later stage: start over.
   if (fresh && saved !== 'intro' && saved !== 'hunt') return 'intro';
   if (saved) return saved === 'done' ? null : saved;
@@ -134,6 +146,6 @@ export function squadClasses(state: GameState): HeroClass[] {
 /** The step-1 tutorial bundle waits until the story's second death (Founder 2026-10-12). */
 export function storyHoldsTutorialBundle(state: GameState): boolean {
   if (!isolatedHackathon || state.tutorial.questCompleted || state.tutorial.questOrdinal !== 1) return false;
-  const stage = readStory(storyAccount(state));
+  const stage = readStory(storyAccount(state), storyEpoch(state));
   return stage === 'intro' || stage === 'hunt' || stage === 'gate' || stage === 'trial' || stage === 'fallen';
 }

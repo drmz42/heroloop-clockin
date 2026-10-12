@@ -47,7 +47,7 @@ import { isAuthTransient, runAuthCall } from '@/game/authTransient';
 import { clearLegacyState, inventoryCapacity } from '@/game/state';
 import { preloadEntryImages, preloadGameImages } from '@/game/imagePreload';
 import {
-  STORY_BOX_REPLAY_EVENT, STORY_NEXT, isFreshStoryAccount, isStoryScene, readStoryBossBase, readStoryHuntBase, storyAccount, storyReplayRequest, storyStartStage, storyTrigger,
+  STORY_BOX_REPLAY_EVENT, STORY_NEXT, isFreshStoryAccount, isStoryScene, readStoryBossBase, readStoryHuntBase, storyAccount, storyEpoch, storyReplayRequest, storyStartStage, storyTrigger,
   writeStory, writeStoryBossBase, writeStoryHuntBase, type StorySceneStage, type StoryStage,
 } from '@/game/storyBox';
 import { StoryRewardCard } from '@/components/StoryRewardCard';
@@ -96,7 +96,7 @@ function App() {
   const freshAccount = isolatedHackathon && accountGate === 'verified' && isFreshStoryAccount(game.state);
   useEffect(() => {
     if (!freshAccount || story === undefined || story === 'intro' || story === 'hunt' || storyScene?.replay) return;
-    writeStory(storyAcct, 'intro');
+    writeStory(storyAcct, 'intro', storyEpoch(game.state));
     setStory('intro');
     setStoryStarted(false);
     setStoryScene({ stage: 'intro', replay: false });
@@ -111,7 +111,7 @@ function App() {
     if (!storyNext || !isStoryScene(storyNext)) return;
     // A short beat so the real game moment (equip, Boss win) lands before the scene opens.
     const timer = window.setTimeout(() => {
-      writeStory(storyAcct, storyNext);
+      writeStory(storyAcct, storyNext, storyEpoch(game.state));
       setStory(storyNext);
       setStoryScene({ stage: storyNext, replay: false });
     }, 2500);
@@ -121,7 +121,7 @@ function App() {
     if (!storyScene) return;
     if (storyScene.replay) { setStoryScene(null); return; }
     const next = STORY_NEXT[storyScene.stage];
-    writeStory(storyAcct, next);
+    writeStory(storyAcct, next, storyEpoch(game.state));
     if (next === 'grow') writeStoryBossBase(storyAcct, game.state.totalBossKills);
     if (next === 'hunt') writeStoryHuntBase(storyAcct, game.state.totalKills);
     setStory(next === 'done' ? null : next);

@@ -7,7 +7,7 @@ import { readyEventCount, type EventTab, type SeekerEventsApi } from '@/game/use
 import { SkrUsd } from '@/components/SkrUsd';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
 import { editionStorageKey, isolatedHackathon } from '../game/editionStorage';
-import { readStory, storyAccount, storyHoldsTutorialBundle } from '@/game/storyBox';
+import { readStory, storyAccount, storyEpoch, storyHoldsTutorialBundle } from '@/game/storyBox';
 import { goldHealingEnabled } from '../../managed/functions/player-sync/automatic-healing.mjs';
 import { currentTutorialObjective, readyQuestCount, tutorialProgress } from '@/game/tutorialProgress';
 import { TUTORIAL_GO_EVENT, tutorialDestination, tutorialGuide } from '@/game/tutorialGuide';
@@ -702,7 +702,7 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
   };
 
   // Seeker story: while the story's second half runs, the Boss Hunt boss is Morvane (art and name only).
-  const storyBossHunt = isolatedHackathon && activeDungeon?.type === 'boss_hunt' && readStory(storyAccount(state)) === 'grow';
+  const storyBossHunt = isolatedHackathon && activeDungeon?.type === 'boss_hunt' && readStory(storyAccount(state), storyEpoch(state)) === 'grow';
   const dungeonUnits = useMemo<CombatUnit[]>(() => {
     if (!activeDungeon) return [];
     const roomHeroes = activeDungeon.room_state?.heroes ?? activeDungeon.run_state?.heroes ?? [];
