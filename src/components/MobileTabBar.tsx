@@ -261,7 +261,7 @@ export function MobileTabBar({
         {sectionButton('bag', 'Bag', Backpack)}
         {windowButton('heroes', 'Heroes', Shield)}
         {windowButton('summon', 'Summon', Sparkles)}
-        {windowButton('market', 'Market', Store)}
+        {windowButton('market', 'Market', Store, 'SKR')}
         <button type="button" className={`hl-tabbar-item hl-tabbar-mine ${soon === 'pvp' ? 'is-active' : ''}`} aria-expanded={soon === 'pvp'} aria-label="PvP, Season 2" onClick={() => { onMoreOpen(false); setSoon(soon === 'pvp' ? null : 'pvp'); }}>
           <i className="hl-tabbar-icon" aria-hidden="true"><Crosshair size={20} /><b className="hl-mine-badge">Season</b></i><span>PvP</span>
         </button>
