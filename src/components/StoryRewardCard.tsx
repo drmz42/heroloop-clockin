@@ -3,6 +3,7 @@ import { bagItemCount, type GameApi } from '@/game/useGame';
 import { inventoryCapacity } from '@/game/state';
 import { versionedAsset } from '@/game/assetVersion';
 import { currentTutorialObjective } from '@/game/tutorialProgress';
+import { storyHoldsTutorialBundle } from '@/game/storyBox';
 import { playSfx } from '@/audio/gameAudio';
 import '@/theme/story/story-reward.css';
 
@@ -12,12 +13,10 @@ import '@/theme/story/story-reward.css';
 
 type Art = 'chests' | 'scrolls' | 'key';
 
-// Seeker tutorial rewards (Founder 2026-10-12): items, 2 Summon Scrolls and the Boss Key only.
-// Steps without a reward advance on their own, without a card.
+// Seeker tutorial rewards (Founder 2026-10-12): one bundle after the story's second death; every
+// other step pays nothing and advances on its own, without a card.
 const REWARDS: Record<string, { art: Art; amount: string; line: string }> = {
-  'defeat-10-enemies': { art: 'chests', amount: '10 Tutorial Chests', line: 'The dead fall back to dust. Their tombs still hold old steel.' },
-  'equip-active-hero': { art: 'scrolls', amount: '2 Summon Scrolls', line: 'Armed again. Somewhere, others answer a call.' },
-  'enable-auto-pot': { art: 'key', amount: '1 Boss Key', line: 'The key to the Broken Gate. Morvane is waiting.' },
+  'defeat-10-enemies': { art: 'chests', amount: '20 Tutorial Chests · 2 Summon Scrolls · 1 Boss Key', line: 'Old steel from the crypt, a call for allies, and the key to the Broken Gate.' },
 };
 
 function RewardArt({ art }: { art: Art }) {
@@ -28,7 +27,8 @@ function RewardArt({ art }: { art: Art }) {
 export function StoryRewardCard({ game }: { game: GameApi }) {
   const { state } = game;
   const objective = currentTutorialObjective(state);
-  const reward = objective?.ready ? REWARDS[objective.id] : undefined;
+  const held = storyHoldsTutorialBundle(state);
+  const reward = objective?.ready && !held ? REWARDS[objective.id] : undefined;
   const chests = state.tutorial.chestBalance;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -36,7 +36,7 @@ export function StoryRewardCard({ game }: { game: GameApi }) {
   const key = reward ? `claim:${objective?.id}` : chests > 0 ? `chests:${chests >= 10 ? 10 : 1}` : null;
   useEffect(() => { setError(''); }, [key]);
   // A finished step with no reward is claimed silently so the story moves on.
-  const silentStep = objective?.ready && !reward ? objective.id : null;
+  const silentStep = objective?.ready && !REWARDS[objective.id] ? objective.id : null;
   useEffect(() => {
     if (!silentStep || busy) return;
     setBusy(true);

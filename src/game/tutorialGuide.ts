@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import type { GameState } from './types';
 import { currentTutorialObjective } from './tutorialProgress';
+import { storyHoldsTutorialBundle } from './storyBox';
 
 // Tutorial guidance (Founder 2026-10-08): the control a new player must press next pulses.
 // Presentation only: progress, claims and rewards stay server-owned. Elements opt in with
@@ -22,7 +23,8 @@ const GUIDE_BY_QUEST: Record<string, TutorialGuide> = {
 export function tutorialGuide(state: GameState): TutorialGuide | null {
   const objective = currentTutorialObjective(state);
   if (!objective) return null;
-  if (objective.ready) return 'claim';
+  // The step-1 bundle waits for the story's second death; keep the player fighting meanwhile.
+  if (objective.ready) return storyHoldsTutorialBundle(state) ? 'battle' : 'claim';
   return GUIDE_BY_QUEST[objective.id] ?? null;
 }
 

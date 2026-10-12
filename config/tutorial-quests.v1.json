@@ -26,11 +26,18 @@
     "usesTimedStandardChestQuota": false,
     "usesOrdinaryChestQueue": false,
     "lootTable": "standard_chest_account_level",
-    "openBatchSizes": [1, 10],
+    "openBatchSizes": [
+      1,
+      10
+    ],
     "equipmentCapacity": 64,
     "countsTowardOrdinaryOpenChestProgress": true,
     "atomicConsumeAndItemCreate": true,
-    "firstOpenGuarantee": { "slot": "helmet", "maximumItemLevel": "accountLevel", "preserveRarityOdds": true }
+    "firstOpenGuarantee": {
+      "slot": "helmet",
+      "maximumItemLevel": "accountLevel",
+      "preserveRarityOdds": true
+    }
   },
   "quests": [
     {
@@ -39,7 +46,11 @@
       "label": "Defeat 10 enemies",
       "progressSource": "combat_settlement.verified_enemy_kills",
       "target": 10,
-      "reward": { "tutorialChests": 10 }
+      "reward": {
+        "tutorialChests": 20,
+        "summonScrolls": 2,
+        "bossKeys": 1
+      }
     },
     {
       "ordinal": 2,
@@ -47,7 +58,7 @@
       "label": "Open 10 Tutorial Chests",
       "progressSource": "tutorial_chest_settlement.opened_count",
       "target": 10,
-      "reward": { "gold": 500 }
+      "reward": {}
     },
     {
       "ordinal": 3,
@@ -55,7 +66,7 @@
       "label": "Equip one item on an active hero",
       "progressSource": "item_equipment_settlement.active_hero_assignments",
       "target": 1,
-      "reward": { "summonScrolls": 2 }
+      "reward": {}
     },
     {
       "ordinal": 4,
@@ -63,7 +74,7 @@
       "label": "Summon two heroes",
       "progressSource": "hero_summon_settlement.summons_after_registration",
       "target": 2,
-      "reward": { "summonScrolls": 1 }
+      "reward": {}
     },
     {
       "ordinal": 5,
@@ -71,23 +82,23 @@
       "label": "Fill the three-hero Active Formation",
       "progressSource": "persisted_formation.active_hero_count",
       "target": 3,
-      "reward": { "potions": { "xs": 3 } }
+      "reward": {}
     },
     {
       "ordinal": 6,
       "id": "summon-reserve-hero",
-      "label": "Summon one reserve hero",
+      "label": "Field your summoned heroes",
       "progressSource": "hero_summon_settlement.summons_after_registration",
-      "target": 3,
-      "reward": { "gold": 500 }
+      "target": 2,
+      "reward": {}
     },
     {
       "ordinal": 7,
       "id": "defeat-25-enemies",
-      "label": "Defeat 25 enemies",
+      "label": "Defeat 10 enemies with your squad",
       "progressSource": "combat_settlement.verified_enemy_kills",
-      "target": 25,
-      "reward": { "potions": { "xs": 3 } }
+      "target": 10,
+      "reward": {}
     },
     {
       "ordinal": 8,
@@ -95,23 +106,25 @@
       "label": "Enable Auto-pot",
       "progressSource": "persisted_auto_pot.enabled",
       "target": 1,
-      "reward": { "bossKeys": 1 }
+      "reward": {}
     },
     {
       "ordinal": 9,
       "id": "defeat-50-enemies",
-      "label": "Defeat 50 enemies",
+      "label": "Keep fighting with your squad",
       "progressSource": "combat_settlement.verified_enemy_kills",
-      "target": 50,
-      "reward": { "gold": 1000 }
+      "target": 10,
+      "reward": {}
     },
     {
       "ordinal": 10,
       "id": "defeat-tutorial-boss",
-      "label": "Use the granted key and defeat one summoned Boss",
+      "label": "Use the key and defeat one summoned Boss",
       "progressSource": "boss_completion_settlement.tutorial_key_boss_kills",
       "target": 1,
-      "reward": { "summonScrolls": 1, "tutorialComplete": true }
+      "reward": {
+        "tutorialComplete": true
+      }
     }
   ]
 }

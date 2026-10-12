@@ -111,3 +111,10 @@ export function squadClasses(state: GameState): HeroClass[] {
   const fallback = (['druid', 'archer', 'assassin', 'knight', 'shepherd'] as HeroClass[]).filter((heroClass) => heroClass !== hero);
   return [hero, ...(rest.length >= 2 ? rest : fallback).slice(0, 2)];
 }
+
+/** The step-1 tutorial bundle waits until the story's second death (Founder 2026-10-12). */
+export function storyHoldsTutorialBundle(state: GameState): boolean {
+  if (!isolatedHackathon || state.tutorial.questCompleted || state.tutorial.questOrdinal !== 1) return false;
+  const stage = readStory(storyAccount(state));
+  return stage === 'intro' || stage === 'hunt' || stage === 'gate' || stage === 'trial' || stage === 'fallen';
+}
