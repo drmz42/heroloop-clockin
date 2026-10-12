@@ -1,180 +1,109 @@
 import type { GameState, HeroClass } from './types';
 import { HERO_MAP } from './heroes';
+import { getEquippedItems } from './engine';
 import { editionStorageKey, isolatedHackathon } from './editionStorage';
 
-// Story Box (Founder 2026-10-10): a self-contained, client-only intro mode shown once to new Seeker
-// accounts before the ordinary Tutorial. It never writes the save, grants nothing and spends nothing;
-// every number below is presentation tuning for the story, not game balance.
+// Seeker story (Founder 2026-10-12): comic scenes are separate from the real game, and real game
+// events trigger the next scene. The story itself writes no save and grants nothing; every reward
+// is the ordinary server-owned Tutorial Quest claim, shown here as a story reward card.
+//
+//   intro   comic: betrayal, first death, first awakening            → hunt
+//   hunt    REAL game: first kills, Tutorial Chests, equip real gear   → gate (an item is equipped)
+//   gate    comic: the road back to the gate, "Face Morvane"           → trial
+//   trial   REAL battlefield: the geared hero against Morvane, a loss  → fallen
+//   fallen  comic: "You came back", second awakening                   → grow
+//   grow    REAL game: levels, summons, full squad, the Boss Hunt      → victory (a real Boss win)
+//   victory comic: Morvane falls, the trio at the gate, Elyra's trace  → done
 
-export type StoryBoxStage =
-  | 'betrayal' | 'awaken' | 'waves' | 'chest' | 'trial' | 'awaken-again'
-  | 'growth' | 'final' | 'victory' | 'clue';
+export type StoryStage = 'intro' | 'hunt' | 'gate' | 'trial' | 'fallen' | 'grow' | 'victory' | 'done';
+/** Stages that take over the screen; the others run inside the ordinary game. */
+export type StorySceneStage = 'intro' | 'gate' | 'trial' | 'fallen' | 'victory';
 
-export const STORY_BOX_STAGES: StoryBoxStage[] = [
-  'betrayal', 'awaken', 'waves', 'chest', 'trial', 'awaken-again', 'growth', 'final', 'victory', 'clue',
-];
-
-export interface BoxFighter {
-  id: string;
-  name: string;
-  side: 'hero' | 'enemy';
-  hp: number;
-  atk: number;
-  def: number;
-  /** Milliseconds between attacks. */
-  interval: number;
-  heroClass?: HeroClass;
-  boss?: boolean;
-}
-
-/** All Story Box tuning in one place. */
-export const STORY_BOX = {
-  boss: { name: 'Morvane, the Forsaken', hp: 9000, atk: 160, def: 30, interval: 1600, slamEvery: 3, slamMultiplier: 1.6 },
-  skeleton: { name: 'Skeleton', hp: 140, atk: 18, def: 4, interval: 1300 },
-  waves: 3,
-  hero: {
-    start: { hp: 420, atk: 46, def: 12, interval: 900 },
-    geared: { hp: 520, atk: 54, def: 16, interval: 900 },
-    final: { hp: 2400, atk: 210, def: 60, interval: 850 },
-  },
-  ally: { hp: 2000, atk: 180, def: 50, interval: 900 },
-  levels: { start: 1, afterWaves: 3, final: 30 },
-  zones: ['Ashen Crypt', 'Grave Road', 'Broken Gate'],
-} as const;
-
-export function boxPower(stats: { hp: number; atk: number; def: number }): number {
-  return Math.round(stats.hp / 4 + stats.atk * 2 + stats.def * 2);
-}
-
-// ── Eligibility and local progress ─────────────────────────────────────────
+const STAGES: StoryStage[] = ['intro', 'hunt', 'gate', 'trial', 'fallen', 'grow', 'victory', 'done'];
+export const STORY_SCENES: StorySceneStage[] = ['intro', 'gate', 'trial', 'fallen', 'victory'];
+export const isStoryScene = (stage: StoryStage | null): stage is StorySceneStage => STORY_SCENES.includes(stage as StorySceneStage);
 
 const storageKey = (account: string) => editionStorageKey(`story-box:${account}`);
+const bossBaseKey = (account: string) => editionStorageKey(`story-box-boss:${account}`);
 
-export function storyBoxAccount(state: GameState): string {
+export function storyAccount(state: GameState): string {
   return state.walletAddress || state.username || 'local';
 }
 
-export function readStoryBox(account: string): StoryBoxStage | 'done' | null {
+export function readStory(account: string): StoryStage | null {
   try {
     const value = window.localStorage.getItem(storageKey(account));
-    if (value === 'done') return 'done';
-    return STORY_BOX_STAGES.includes(value as StoryBoxStage) ? value as StoryBoxStage : null;
+    if (!value) return null;
+    // Accounts that already played the earlier one-piece Story Box keep playing normally.
+    return STAGES.includes(value as StoryStage) ? value as StoryStage : 'done';
   } catch { return null; }
 }
 
-export function writeStoryBox(account: string, value: StoryBoxStage | 'done'): void {
-  try { window.localStorage.setItem(storageKey(account), value); } catch { /* storage blocked: the box restarts next launch */ }
+export function writeStory(account: string, stage: StoryStage): void {
+  try { window.localStorage.setItem(storageKey(account), stage); } catch { /* storage blocked: the story restarts next launch */ }
 }
 
-/** Settings "Replay intro story" dispatches this; App reopens the box from the start. */
+/** Boss kills when the second half began, so only a new real Boss win ends the story. */
+export function readStoryBossBase(account: string): number | null {
+  try {
+    const value = Number(window.localStorage.getItem(bossBaseKey(account)));
+    return Number.isSafeInteger(value) && window.localStorage.getItem(bossBaseKey(account)) !== null ? value : null;
+  } catch { return null; }
+}
+
+export function writeStoryBossBase(account: string, kills: number): void {
+  try { window.localStorage.setItem(bossBaseKey(account), String(kills)); } catch { /* storage blocked */ }
+}
+
+/** Settings "Replay intro story" dispatches this; App replays the opening without moving the story. */
 export const STORY_BOX_REPLAY_EVENT = 'hl:story-replay';
 
-/** `?story=replay` (or `#story`) replays the box for filming on any account. */
-export function storyBoxReplayRequested(): boolean {
+/** `?story=replay` replays the opening; `?story=<scene>` shows one scene, for filming. */
+export function storyReplayRequest(): StorySceneStage | null {
   try {
-    return new URLSearchParams(window.location.search).get('story') === 'replay' || window.location.hash.includes('story');
-  } catch { return false; }
+    const value = new URLSearchParams(window.location.search).get('story');
+    if (value === 'replay' || window.location.hash.includes('story')) return 'intro';
+    return STORY_SCENES.includes(value as StorySceneStage) ? value as StorySceneStage : null;
+  } catch { return null; }
 }
 
-/**
- * Only a brand-new account (no kill, first Tutorial step, only the starter hero) starts the box;
- * an interrupted box resumes at its saved stage. Existing players never see it.
- */
-export function storyBoxStartStage(state: GameState): StoryBoxStage | null {
+/** A brand-new account (no kill, first Tutorial step, only the starter hero) starts the story. */
+export function storyStartStage(state: GameState): StoryStage | null {
   if (!isolatedHackathon) return null;
-  if (storyBoxReplayRequested()) return 'betrayal';
-  const saved = readStoryBox(storyBoxAccount(state));
-  if (saved === 'done') return null;
-  if (saved) return saved;
+  const saved = readStory(storyAccount(state));
+  if (saved) return saved === 'done' ? null : saved;
   const fresh = state.totalKills === 0 && state.totalBossKills === 0 && !state.tutorial.questCompleted
     && state.tutorial.questOrdinal <= 1 && state.ownedHeroes.length === 1;
-  return fresh ? 'betrayal' : null;
+  return fresh ? 'intro' : null;
 }
+
+export function heroGeared(state: GameState): boolean {
+  return state.ownedHeroes.some((hero) => state.team.includes(hero.uid) && getEquippedItems(hero, state.inventory).length > 0);
+}
+
+/** The next stage a real game event unlocks, or null while the player keeps playing. */
+export function storyTrigger(stage: StoryStage, state: GameState, bossBase: number | null): StoryStage | null {
+  if (stage === 'hunt' && (heroGeared(state) || state.tutorial.questOrdinal >= 4 || state.tutorial.questCompleted)) return 'gate';
+  if (stage === 'grow' && (state.tutorial.questCompleted || (bossBase !== null && state.totalBossKills > bossBase))) return 'victory';
+  return null;
+}
+
+export const STORY_NEXT: Record<StorySceneStage, StoryStage> = {
+  intro: 'hunt', gate: 'trial', trial: 'fallen', fallen: 'grow', victory: 'done',
+};
 
 export function protagonistClass(state: GameState): HeroClass {
   return (HERO_MAP[state.ownedHeroes[0]?.heroId ?? '']?.heroClass as HeroClass | undefined) ?? 'knight';
 }
 
-/** Two recruits of other classes; never the protagonist's class. */
-export function recruitClasses(protagonist: HeroClass): [HeroClass, HeroClass] {
-  const order: HeroClass[] = ['druid', 'archer', 'assassin', 'knight', 'shepherd'];
-  const [first, second] = order.filter((heroClass) => heroClass !== protagonist);
-  return [first, second];
-}
-
-export const CLASS_LABEL: Record<HeroClass, string> = {
-  knight: 'Warrior', shepherd: 'Mage', assassin: 'Assassin', druid: 'Druid', archer: 'Ranger',
-};
-
-// ── Deterministic box combat ───────────────────────────────────────────────
-
-export interface BoxHit {
-  at: number;
-  from: string;
-  to: string;
-  amount: number;
-  crit: boolean;
-  slam: boolean;
-}
-
-export interface BoxFight {
-  hits: BoxHit[];
-  deaths: { at: number; id: string }[];
-  duration: number;
-  won: boolean;
-}
-
-function seeded(seed: number) {
-  let state = (seed | 0) || 0x6d2b79f5;
-  return () => {
-    state = state + 0x6d2b79f5 | 0;
-    let value = Math.imul(state ^ state >>> 15, 1 | state);
-    value = value + Math.imul(value ^ value >>> 7, 61 | value) ^ value;
-    return ((value ^ value >>> 14) >>> 0) / 4294967296;
-  };
-}
-
-/**
- * Pre-resolves a whole fight so the outcome follows from the numbers; the UI then replays it.
- * Heroes strike the first living enemy; a boss strikes a random living hero and every
- * `slamEvery`-th attack slams all heroes.
- */
-export function resolveBoxFight(fighters: BoxFighter[], seed: number, maxMs = 60_000): BoxFight {
-  const random = seeded(seed);
-  const units = fighters.map((fighter, index) => ({ ...fighter, current: fighter.hp, timer: fighter.interval * (fighter.side === 'enemy' ? 0.35 : 0.55 + index * 0.12), attacks: 0 }));
-  const hits: BoxHit[] = [];
-  const deaths: { at: number; id: string }[] = [];
-  const alive = (side: 'hero' | 'enemy') => units.filter((unit) => unit.side === side && unit.current > 0);
-  const strike = (from: typeof units[number], to: typeof units[number], at: number, multiplier: number, slam: boolean) => {
-    const crit = random() < 0.12;
-    const roll = 0.9 + random() * 0.2;
-    const amount = Math.max(1, Math.round((from.atk * roll * multiplier - to.def * 0.5) * (crit ? 1.6 : 1)));
-    to.current = Math.max(0, to.current - amount);
-    hits.push({ at, from: from.id, to: to.id, amount, crit, slam });
-    if (to.current === 0) deaths.push({ at, id: to.id });
-  };
-  let at = 0;
-  const step = 50;
-  while (at < maxMs && alive('hero').length && alive('enemy').length) {
-    at += step;
-    for (const unit of units) {
-      if (unit.current <= 0) continue;
-      unit.timer -= step;
-      if (unit.timer > 0) continue;
-      unit.timer += unit.interval;
-      unit.attacks += 1;
-      if (unit.side === 'hero') {
-        const target = alive('enemy')[0];
-        if (target) strike(unit, target, at, 1, false);
-      } else if (unit.boss && unit.attacks % STORY_BOX.boss.slamEvery === 0) {
-        for (const target of alive('hero')) strike(unit, target, at, STORY_BOX.boss.slamMultiplier, true);
-      } else {
-        const targets = alive('hero');
-        const target = targets[Math.floor(random() * targets.length)];
-        if (target) strike(unit, target, at, 1, false);
-      }
-      if (!alive('hero').length || !alive('enemy').length) break;
-    }
-  }
-  return { hits, deaths, duration: at, won: alive('enemy').length === 0 && alive('hero').length > 0 };
+/** The active squad's classes, protagonist first; filming without a squad shows two companions. */
+export function squadClasses(state: GameState): HeroClass[] {
+  const hero = protagonistClass(state);
+  const team = state.team
+    .map((uid) => state.ownedHeroes.find((owned) => owned.uid === uid))
+    .map((owned) => HERO_MAP[owned?.heroId ?? '']?.heroClass as HeroClass | undefined)
+    .filter((heroClass): heroClass is HeroClass => Boolean(heroClass));
+  const rest = team.filter((heroClass, index) => !(heroClass === hero && index === team.indexOf(hero)));
+  const fallback = (['druid', 'archer', 'assassin', 'knight', 'shepherd'] as HeroClass[]).filter((heroClass) => heroClass !== hero);
+  return [hero, ...(rest.length >= 2 ? rest : fallback).slice(0, 2)];
 }

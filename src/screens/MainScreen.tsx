@@ -7,6 +7,7 @@ import { readyEventCount, type EventTab, type SeekerEventsApi } from '@/game/use
 import { SkrUsd } from '@/components/SkrUsd';
 import { skrPrice, useSkrRate } from '@/game/skrPurchase';
 import { editionStorageKey, isolatedHackathon } from '../game/editionStorage';
+import { readStory, storyAccount } from '@/game/storyBox';
 import { goldHealingEnabled } from '../../managed/functions/player-sync/automatic-healing.mjs';
 import { currentTutorialObjective, readyQuestCount, tutorialProgress } from '@/game/tutorialProgress';
 import { TUTORIAL_GO_EVENT, tutorialDestination, tutorialGuide } from '@/game/tutorialGuide';
@@ -700,6 +701,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     enterDungeonArena(status);
   };
 
+  // Seeker story: while the story's second half runs, the Boss Hunt boss is Morvane (art and name only).
+  const storyBossHunt = isolatedHackathon && activeDungeon?.type === 'boss_hunt' && readStory(storyAccount(state)) === 'grow';
   const dungeonUnits = useMemo<CombatUnit[]>(() => {
     if (!activeDungeon) return [];
     const roomHeroes = activeDungeon.room_state?.heroes ?? activeDungeon.run_state?.heroes ?? [];
@@ -727,14 +730,14 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
       const isSummon = sharedBossPhase && String(unit.unit_id ?? '').startsWith('necromancer-summon-');
       return ({
       uid: dungeonEnemyUid(activeDungeon.room, activeDungeon.room_state, unit, position),
-      name: isSharedBoss ? (activeDungeon.room_state?.boss?.name ?? 'Dungeon Boss') : isSummon ? 'Raised Guard' : activeDungeon.room === 2 ? 'Elite Guard' : activeDungeon.room === 3 ? 'Treasure Guard' : activeDungeon.room === 4 ? 'Retinue Guard' : 'Citadel Guard',
+      name: isSharedBoss ? (storyBossHunt ? 'Morvane, the Forsaken' : activeDungeon.room_state?.boss?.name ?? 'Dungeon Boss') : isSummon ? 'Raised Guard' : activeDungeon.room === 2 ? 'Elite Guard' : activeDungeon.room === 3 ? 'Treasure Guard' : activeDungeon.room === 4 ? 'Retinue Guard' : 'Citadel Guard',
       side: 'enemy', hp: Number(unit.current_hp), maxHp: Number(unit.max_hp), atk: Number(unit.atk ?? 0),
       def: Number(unit.def ?? 0), speed: Number(unit.speed ?? 100), combatSpeed: 1, critChance: 0.06,
       critDamage: 1.5, color: isSharedBoss ? '#efb85b' : isSummon ? '#7eb5cf' : activeDungeon.room === 2 ? '#c084fc' : activeDungeon.room === 4 ? '#a78bfa' : '#ef7f68', icon: isSharedBoss ? '👑' : isSummon ? '💀' : activeDungeon.room === 2 ? '👹' : '🛡️',
       attackTimer: attackBeat % 2 === 0 ? 60 : 0, attackInterval: 1, alive: Boolean(unit.alive),
     }); });
     return [...heroes, ...enemies];
-  }, [activeDungeon, state.ownedHeroes]);
+  }, [activeDungeon, state.ownedHeroes, storyBossHunt]);
 
   const dungeonBossScene = useMemo(() => {
     const room = activeDungeon?.room_state;
@@ -759,7 +762,8 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
     return {
       phase: room.kind === 'retinue' ? 'retinue' as const : 'shared' as const,
       bossId,
-      bossName: room.boss.name,
+      bossName: storyBossHunt ? 'Morvane, the Forsaken' : room.boss.name,
+      artId: storyBossHunt ? 'boss-morvane' : undefined,
       targetUid: heavyCasting ? room.heavy_target_uid : undefined,
       cast: identityCasting
         ? { name: room.identity_ability ?? 'Boss Ability', remaining, impact: tick === 6 }
@@ -770,9 +774,9 @@ export function MainScreen({ game, tokenomics, onBoostClick, onGuidesClick, onRe
       mechanic: mechanic.name, mechanicState: mechanic.state, threshold: mechanic.threshold,
       summons: bossId === 'grave-necromancer' ? (room.enemies ?? []).filter((enemy) => String(enemy.unit_id ?? '').startsWith('necromancer-summon-') && enemy.alive).length : 0,
       enrage: bossId === 'rift-behemoth' && bossRatio <= .35,
-      transition: room.kind === 'retinue' && room.status === 'cleared' ? 'RETINUE DEFEATED · BOSS VULNERABLE' : tick === 1 ? `${room.boss.name.toUpperCase()} ADVANCES` : null,
+      transition: room.kind === 'retinue' && room.status === 'cleared' ? 'RETINUE DEFEATED · BOSS VULNERABLE' : tick === 1 ? `${(storyBossHunt ? 'Morvane' : room.boss.name).toUpperCase()} ADVANCES` : null,
     };
-  }, [activeDungeon]);
+  }, [activeDungeon, storyBossHunt]);
 
   const dungeonRoom = useMemo(() => activeDungeon ? ({
     room: activeDungeon.room, depth: activeDungeon.depth, status: activeDungeon.room_state?.status,

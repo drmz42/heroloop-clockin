@@ -45,7 +45,11 @@ import { demoTokenomicsEnabled, playerSync, authClient, tokenomicsEnabled } from
 import { isAuthTransient, runAuthCall } from '@/game/authTransient';
 import { clearLegacyState, inventoryCapacity } from '@/game/state';
 import { preloadEntryImages, preloadGameImages } from '@/game/imagePreload';
-import { STORY_BOX_REPLAY_EVENT, storyBoxStartStage, type StoryBoxStage } from '@/game/storyBox';
+import {
+  STORY_BOX_REPLAY_EVENT, STORY_NEXT, isStoryScene, readStoryBossBase, storyAccount, storyReplayRequest, storyStartStage, storyTrigger,
+  writeStory, writeStoryBossBase, type StorySceneStage, type StoryStage,
+} from '@/game/storyBox';
+import { StoryRewardCard } from '@/components/StoryRewardCard';
 
 const StoryBox = lazy(() => import('@/components/StoryBox').then((module) => ({ default: module.StoryBox })));
 import {
@@ -72,16 +76,46 @@ function App() {
   const [accountCheckAttempt, setAccountCheckAttempt] = useState(0);
   const [legacyWalletMode, setLegacyWalletMode] = useState<'link' | 'import' | null>(null);
   const [serverStateReady, setServerStateReady] = useState(false);
-  // Story Box: undefined until the verified save is known, then the start stage or null.
-  const [storyBox, setStoryBox] = useState<StoryBoxStage | null | undefined>(undefined);
+  // Seeker story: undefined until the verified save is known, then the saved stage (null when none).
+  // Comic scenes take the screen; the stages between them are the real game, whose events
+  // (gear equipped, a real Boss win) start the next scene. See src/game/storyBox.ts.
+  const [story, setStory] = useState<StoryStage | null | undefined>(undefined);
+  const [storyScene, setStoryScene] = useState<{ stage: StorySceneStage; replay: boolean } | null>(null);
+  const [storyStarted, setStoryStarted] = useState(false);
+  const storyAcct = storyAccount(game.state);
   useEffect(() => {
-    if (accountGate === 'verified' && storyBox === undefined) setStoryBox(storyBoxStartStage(game.state));
-  }, [accountGate, storyBox, game.state]);
+    if (accountGate !== 'verified' || story !== undefined) return;
+    const start = storyStartStage(game.state);
+    const replay = isolatedHackathon ? storyReplayRequest() : null;
+    setStory(start);
+    if (replay) setStoryScene({ stage: replay, replay: true });
+    else if (start && isStoryScene(start)) setStoryScene({ stage: start, replay: false });
+  }, [accountGate, story, game.state]);
   useEffect(() => {
-    const replay = () => setStoryBox('betrayal');
+    const replay = () => { setStoryStarted(false); setStoryScene({ stage: 'intro', replay: true }); };
     window.addEventListener(STORY_BOX_REPLAY_EVENT, replay);
     return () => window.removeEventListener(STORY_BOX_REPLAY_EVENT, replay);
   }, []);
+  const storyNext = story && !storyScene ? storyTrigger(story, game.state, readStoryBossBase(storyAcct)) : null;
+  useEffect(() => {
+    if (!storyNext || !isStoryScene(storyNext)) return;
+    // A short beat so the real game moment (equip, Boss win) lands before the scene opens.
+    const timer = window.setTimeout(() => {
+      writeStory(storyAcct, storyNext);
+      setStory(storyNext);
+      setStoryScene({ stage: storyNext, replay: false });
+    }, 2500);
+    return () => window.clearTimeout(timer);
+  }, [storyNext, storyAcct]);
+  const finishStoryScene = () => {
+    if (!storyScene) return;
+    if (storyScene.replay) { setStoryScene(null); return; }
+    const next = STORY_NEXT[storyScene.stage];
+    writeStory(storyAcct, next);
+    if (next === 'grow') writeStoryBossBase(storyAcct, game.state.totalBossKills);
+    setStory(next === 'done' ? null : next);
+    setStoryScene(isStoryScene(next) ? { stage: next, replay: false } : null);
+  };
   const [serverStateRevision, setServerStateRevision] = useState<number | null>(null);
   const serverStateRevisionRef = useRef<number | null>(null);
   const saveTimerRef = useRef<number | null>(null);
@@ -602,10 +636,10 @@ function App() {
     return <AppLoadingScreen onRetry={accountGate === 'error' ? () => setAccountCheckAttempt((value) => value + 1) : undefined} />;
   }
 
-  if (storyBox) {
+  if (storyScene) {
     return (
       <Suspense fallback={<AppLoadingScreen />}>
-        <StoryBox state={game.state} startStage={storyBox} onDone={() => setStoryBox(null)} />
+        <StoryBox state={game.state} stage={storyScene.stage} started={storyStarted || storyScene.stage !== 'intro'} onStart={() => setStoryStarted(true)} onDone={finishStoryScene} />
       </Suspense>
     );
   }
@@ -613,6 +647,7 @@ function App() {
   return (
     <div className={`game-shell ${isolatedHackathon || isAndroidLayout ? 'has-game-progress' : ''} game-motion-${game.state.battleAnimationMode} flex h-screen flex-col overflow-hidden bg-px-bg text-px-text`}>
       <div className="contents" onClickCapture={closeOverlaysFromBar}>
+        {(story === 'hunt' || story === 'grow') && <StoryRewardCard game={game} />}
       {isAndroidLayout ? (
         <AndroidTopBar
           power={game.teamPower()}

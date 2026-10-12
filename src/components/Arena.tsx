@@ -44,7 +44,7 @@ interface ArenaProps {
   dungeonPanelOpen?: boolean;
   locationId?: number;
   dungeonBossScene?: {
-    phase: 'retinue' | 'shared'; bossId: string; bossName: string; targetUid?: string;
+    phase: 'retinue' | 'shared'; bossId: string; bossName: string; artId?: string; targetUid?: string;
     cast?: { name: string; remaining: number; impact: boolean } | null;
     momentum?: 'party' | 'even' | 'boss'; elapsedSeconds?: number;
     room: number; depth: number; status?: string; mechanic?: string; mechanicState?: string;
@@ -71,7 +71,7 @@ function floaterOffset(f: FloatingNumber): { x: number; y: number } {
   return { x: 24, y: f.id % 2 === 0 ? 0 : -14 };
 }
 
-function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAlive, animationMode, targeted = false, rank, figure = false, lane = 0 }: { unit: CombatUnit; floaters: FloatingNumber[]; side: 'hero' | 'enemy'; heroData?: OwnedHero; respawnSeconds?: number; opponentAlive: boolean; animationMode: GameState['battleAnimationMode']; targeted?: boolean; rank?: { level: number; stars: number }; figure?: boolean; lane?: number }) {
+function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAlive, animationMode, targeted = false, rank, figure = false, lane = 0, figureOverride }: { unit: CombatUnit; floaters: FloatingNumber[]; side: 'hero' | 'enemy'; heroData?: OwnedHero; respawnSeconds?: number; opponentAlive: boolean; animationMode: GameState['battleAnimationMode']; targeted?: boolean; rank?: { level: number; stars: number }; figure?: boolean; lane?: number; figureOverride?: string | null }) {
   const lastOutgoing = useRef(0);
   const lastIncoming = useRef(0);
   const [attackPhase, setAttackPhase] = useState<0 | 1 | 2>(0);
@@ -159,6 +159,7 @@ function UnitView({ unit, floaters, side, heroData, respawnSeconds, opponentAliv
   })();
   const figureSrc = (() => {
     if (!figure) return null;
+    if (figureOverride) return figureOverride;
     if (side === 'enemy') return enemyFigureSrc(unit.uid, unit.role);
     const base = heroData ? HERO_MAP[heroData.heroId] : undefined;
     return base ? heroFigureSrc(base.heroClass) : null;
@@ -299,8 +300,8 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
   const sharedBossUnit = dungeonBossScene?.phase === 'shared' ? enemies.find((unit) => unit.uid.endsWith('-dungeon-shared')) : undefined;
   const sharedBoss = sharedBossUnit?.alive ? sharedBossUnit : undefined;
   const laneEnemies = sharedBossUnit ? enemies.filter((unit) => unit.uid !== sharedBossUnit.uid) : enemies.filter((unit) => !unit.uid.endsWith('-dungeon-protected'));
-  const bossArt = dungeonBossScene ? enemyArtSrc(`e0-${DUNGEON_BOSS_ART[dungeonBossScene.bossId] ?? 'boss-lich'}`) : null;
-  const bossFigure = dungeonBossScene ? enemyFigureSrc(`e0-${DUNGEON_BOSS_ART[dungeonBossScene.bossId] ?? 'boss-lich'}`) : null;
+  const bossArt = dungeonBossScene ? enemyArtSrc(`e0-${dungeonBossScene.artId ?? DUNGEON_BOSS_ART[dungeonBossScene.bossId] ?? 'boss-lich'}`) : null;
+  const bossFigure = dungeonBossScene ? enemyFigureSrc(`e0-${dungeonBossScene.artId ?? DUNGEON_BOSS_ART[dungeonBossScene.bossId] ?? 'boss-lich'}`) : null;
   // Full-body figures stand in a staggered column (each lane steps toward the centre) while a lane holds at most
   // three fighters per side; the shared Boss phase keeps its compact hero strip.
   const sharedPhase = dungeonBossScene?.phase === 'shared';
@@ -394,7 +395,7 @@ function ArenaInner({ units, floaters, ownedHeroes, inventory, potionFx, respawn
           {dungeonBossScene.enrage && <span className="is-danger"><Flame size={10} /> ENRAGED</span>}
         </div>
         <div className="dungeon-boss-floor-sigil" />
-        <UnitView unit={sharedBoss} floaters={floaters} side="enemy" opponentAlive={heroes.some((hero) => hero.alive)} animationMode={animationMode} rank={{ ...enemyRank(sharedBoss, locationId, dungeonRoom?.depth), stars: 3 }} figure />
+        <UnitView unit={sharedBoss} floaters={floaters} side="enemy" opponentAlive={heroes.some((hero) => hero.alive)} animationMode={animationMode} rank={{ ...enemyRank(sharedBoss, locationId, dungeonRoom?.depth), stars: 3 }} figure figureOverride={dungeonBossScene.artId ? bossFigure : undefined} />
       </div>}
       {sharedSummons.length > 0 && <div className={`dungeon-summon-line ${sharedBoss ? '' : 'is-alone'}`} aria-label={`${sharedSummons.length} summoned guards`}>
         {sharedSummons.map((u) => <UnitView key={u.uid} unit={u} floaters={floaters} side="enemy" opponentAlive={heroes.some((hero) => hero.alive)} animationMode={animationMode} rank={enemyRank(u, locationId, dungeonRoom?.depth)} figure />)}

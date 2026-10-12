@@ -7,6 +7,8 @@ const ENEMY_ART: Record<string, string> = {
   spider: '/assets/enemies/v4/spider.png', orc: '/assets/enemies/v4/orc.png',
   'boss-ogre': '/assets/enemies/v4/boss-ogre.png', 'boss-lich': '/assets/enemies/v4/boss-lich.png',
   'boss-dragon': '/assets/enemies/v4/boss-dragon.png', 'boss-titan': '/assets/enemies/v4/boss-titan.png',
+  // Seeker story boss (Story Box trial and the story Boss Hunt).
+  'boss-morvane': '/assets/story/morvane-idle.webp',
 };
 
 const ITEM_ATLAS_IDS = [
@@ -79,6 +81,7 @@ export function heroFigureSrc(heroClass: import('./types').HeroClass): string {
 
 export function enemyFigureSrc(unitUid: string, role?: import('./types').CombatUnit['role']): string | null {
   const id = unitUid.replace(/^e\d+-/, '');
+  if (id === 'boss-morvane') return versionedAsset(ENEMY_ART['boss-morvane']);
   const base = ENEMY_FIGURES.has(id) ? id : id.match(/^(boss-(?:ogre|lich|dragon|titan))/)?.[1] ?? (id.startsWith('endgame-') && role ? ENDGAME_ROLE_FIGURE[role] : null);
   return base ? versionedAsset(`/assets/figures/${base}.webp`) : null;
 }

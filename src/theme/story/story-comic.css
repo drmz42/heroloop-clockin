@@ -80,6 +80,21 @@
 .fx-gate-close.is-shown.cam-pull .cp-gate { animation:none; transform:none; }
 @keyframes cp-gate { from { transform:translateY(-110%) } to { transform:none } }
 
+/* Painted panels: one illustration, brought to life by camera and ambient layers. */
+.cp-art { background-size:cover; }
+.has-art .cp-halftone { opacity:.06; }
+.tone-clear .cp-world::after { background:radial-gradient(ellipse at 50% 50%, transparent 60%, #0007 100%); }
+.cp-page.is-fit { grid-template-rows:auto !important; align-content:center; }
+.cp-page.is-fit .cp-panel { aspect-ratio:1080 / 1357; max-height:calc(100dvh - 120px); justify-self:center; width:100%; }
+.cp-mist { position:absolute; inset:-20% -40%; pointer-events:none; background:radial-gradient(ellipse at 20% 70%, #c9d2e826 0%, transparent 40%), radial-gradient(ellipse at 70% 85%, #b8c0d822 0%, transparent 38%), radial-gradient(ellipse at 45% 95%, #d6dcef1c 0%, transparent 45%); filter:blur(10px); animation:cp-mist 14s ease-in-out infinite alternate; z-index:4; }
+@keyframes cp-mist { from { transform:translateX(-8%) } to { transform:translateX(8%) } }
+.cp-embers { position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:4; }
+.cp-embers i { position:absolute; bottom:-4%; border-radius:50%; background:#ffb45a; box-shadow:0 0 6px 2px #ff7a1a99; opacity:0; animation:cp-ember linear infinite; }
+@keyframes cp-ember { 0% { opacity:0; transform:translate(0, 0) } 15% { opacity:.9 } 100% { opacity:0; transform:translate(var(--drift), -110cqh) } }
+.cp-panel { container-type:size; }
+.cp-flicker { position:absolute; inset:0; pointer-events:none; z-index:4; background:radial-gradient(ellipse at 75% 40%, #ffb05a2e, transparent 55%); mix-blend-mode:screen; animation:cp-flicker 2.6s steps(1) infinite; }
+@keyframes cp-flicker { 0%,100% { opacity:.6 } 12% { opacity:1 } 18% { opacity:.4 } 33% { opacity:.85 } 52% { opacity:.5 } 70% { opacity:1 } 85% { opacity:.7 } }
+
 /* Lettering. */
 .cp-caption { position:absolute; z-index:6; left:8px; max-width:calc(100% - 16px); margin:0; padding:6px 10px; background:linear-gradient(180deg,#e9d8a8,#d3bd85); color:#1b130a; border:2px solid #120c06; box-shadow:2px 3px 0 #000a; font-family:'Cinzel', Georgia, serif; font-size:13px; font-weight:700; line-height:1.25; opacity:0; animation:cp-pop .35s ease-out .35s both; }
 .cp-caption.at-top { top:8px; }
@@ -112,11 +127,13 @@
 .cp-progress i.is-now { background:#f0d08a; }
 .cp-objective { position:absolute; z-index:12; left:50%; top:50%; translate:-50% -50%; width:max-content; max-width:calc(100% - 40px); padding:14px 22px; border:2px solid #c9a35a; background:linear-gradient(180deg,#1d1710f2,#0b0907f2); box-shadow:0 10px 40px #000; color:#f4dfaa; font-family:'Cinzel', Georgia, serif; font-size:18px; font-weight:800; text-align:center; animation:cp-pop .45s cubic-bezier(.2,1.4,.4,1) both; }
 .cp-objective small { display:block; margin-bottom:4px; color:#a99572; font-size:10px; letter-spacing:.2em; text-transform:uppercase; }
-.cp-stage .sb-quest { z-index:12; max-width:360px; top:calc(70px + env(safe-area-inset-top)); bottom:auto; }
+.cp-stage .sb-quest { z-index:12; max-width:360px; }
 
 @media (prefers-reduced-motion: reduce) {
   .cp-page, .cp-panel.is-shown, .cp-panel.is-shown *, .cp-caption, .cp-bubble, .cp-sfx, .cp-word, .cp-hint { animation-duration:.01ms !important; animation-delay:0s !important; animation-iteration-count:1 !important; }
   .cp-panel.is-shown .cp-gate { transform:none; }
+  .cp-embers, .cp-flicker { display:none; }
+  .cp-mist { animation:none; }
 }
 
 /* Battle replay: comic lettering for heavy blows and anchored enemies. */
@@ -124,3 +141,17 @@
 .sb-side.enemies .sb-unit { justify-items:end; grid-template-columns:minmax(0,1fr); }
 .sb-side.enemies .sb-unit-figure { width:100%; min-width:0; justify-content:flex-end; }
 .sb-side.enemies .sb-unit small { padding-right:6px; }
+
+/* Story trial: Morvane on the real battlefield. */
+.story-trial { position:absolute; inset:0; background:#050506; }
+.story-trial-arena { position:absolute; inset:0; background-size:cover; background-position:center 70%; }
+.story-trial-arena::before { content:''; position:absolute; inset:0; background:linear-gradient(180deg,#0006,#0000 40%,#000a); pointer-events:none; }
+.story-trial .arena-unit.is-boss .arena-figure { scale:1.65; transform-origin:50% 100%; }
+.story-trial-arena > * { height:100%; }
+.story-trial-banner { position:absolute; z-index:20; top:calc(16px + env(safe-area-inset-top)); left:50%; translate:-50% 0; padding:8px 20px; border:2px solid #7a1b12; background:linear-gradient(180deg,#2a0d09f0,#120605f0); box-shadow:0 8px 30px #000c; text-align:center; animation:cp-pop .5s cubic-bezier(.2,1.4,.4,1) both; }
+.story-trial-banner small { display:block; color:#c9806b; font-size:10px; font-weight:800; letter-spacing:.22em; text-transform:uppercase; }
+.story-trial-banner strong { display:block; color:#f2dcc0; font-family:'Cinzel', Georgia, serif; font-size:18px; font-weight:900; letter-spacing:.04em; }
+.story-trial-line { position:absolute; z-index:21; top:22%; right:12%; max-width:56%; font-size:20px; }
+.story-trial-result { position:absolute; z-index:22; inset:0; display:grid; place-content:center; gap:6px; background:radial-gradient(ellipse at 50% 50%, #3a0a06cc, #000e 70%); text-align:center; animation:sb-in .6s ease-out both; }
+.story-trial-result strong { color:#ff8a6a; font-family:'Cinzel', Georgia, serif; font-size:44px; font-weight:900; letter-spacing:.08em; text-shadow:0 0 24px #b3200c; }
+.story-trial-result small { color:#d8c3b0; font-size:14px; }

@@ -10,17 +10,23 @@ import '@/theme/story/story-comic.css';
 // Tap advances a beat; every beat also advances on its own. Presentation only: no game state.
 
 const art = (src: string) => versionedAsset(src);
+// Fixed ember layout so panels look the same on every replay.
+const EMBERS: CSSProperties[] = Array.from({ length: 14 }, (_, index) => ({
+  left: `${(index * 37) % 100}%`, animationDelay: `${(index * 530) % 3600}ms`, animationDuration: `${3200 + (index * 410) % 2400}ms`,
+  '--drift': `${((index * 23) % 40) - 20}px`, width: `${2 + (index % 3)}px`, height: `${2 + (index % 3)}px`,
+} as CSSProperties));
 
 function Panel({ panel, shown }: { panel: ComicPanel; shown: boolean }) {
   const fx = panel.fx ?? [];
-  const classes = ['cp-panel', `cam-${panel.cam ?? 'push'}`, `tone-${panel.tone ?? 'night'}`, shown ? 'is-shown' : '', ...fx.map((name) => `fx-${name}`)];
+  const classes = ['cp-panel', `cam-${panel.cam ?? 'push'}`, `tone-${panel.tone ?? 'night'}`, panel.art ? 'has-art' : '', shown ? 'is-shown' : '', ...fx.map((name) => `fx-${name}`)];
   return (
     <figure className={classes.join(' ')} style={{ gridArea: panel.area }}>
       <div className="cp-world">
+        {panel.art && <div className="cp-bg cp-art" style={{ backgroundImage: `url('${art(panel.art)}')`, backgroundPosition: panel.artPos ?? 'center' }} />}
         {panel.bg && <div className="cp-bg" style={{ backgroundImage: `url('${art(panel.bg)}')`, backgroundPosition: panel.bgPos ?? 'center' }} />}
         {fx.includes('gate-close') && <div className="cp-gate" style={{ backgroundImage: `url('${art('/assets/story/gate-portcullis.webp')}')` }} />}
         <div className="cp-figs">
-          {panel.figs.map((fig, index) => {
+          {(panel.figs ?? []).map((fig, index) => {
             const style: CSSProperties = { left: `${fig.x}%`, bottom: `${fig.y ?? 0}%`, height: `${fig.h}%`, zIndex: fig.z ?? index + 1 };
             return (
               <img key={`${fig.src}-${index}`} className={`cp-fig ${fig.flip ? 'is-flip' : ''} ${fig.anim ? `anim-${fig.anim}` : ''} ${fig.dim ? 'is-dim' : ''}`}
@@ -30,6 +36,9 @@ function Panel({ panel, shown }: { panel: ComicPanel; shown: boolean }) {
         </div>
         {fx.includes('glow') && <span className="cp-glow" style={{ backgroundImage: `url('${art('/assets/brand/heroloop-emblem.png')}')` }} />}
         {fx.includes('dust') && <span className="cp-dust" />}
+        {fx.includes('mist') && <span className="cp-mist" />}
+        {fx.includes('embers') && <span className="cp-embers">{EMBERS.map((ember, index) => <i key={index} style={ember} />)}</span>}
+        {fx.includes('flicker') && <span className="cp-flicker" />}
       </div>
       <span className="cp-halftone" />
       {panel.word && <span className="cp-word">{panel.word}</span>}
@@ -84,7 +93,7 @@ export function ComicScene({ pages, onDone, objective, finale }: {
 
   return (
     <section className="cp-stage" onClick={advance}>
-      <div key={page} className={`cp-page ${ending ? 'is-ending' : ''}`} style={{ gridTemplateAreas: current.areas, gridTemplateRows: current.rows, gridTemplateColumns: current.cols ?? '1fr 1fr' }}>
+      <div key={page} className={`cp-page ${current.rows === 'auto' ? 'is-fit' : ''} ${ending ? 'is-ending' : ''}`} style={{ gridTemplateAreas: current.areas, gridTemplateRows: current.rows, gridTemplateColumns: current.cols ?? '1fr 1fr' }}>
         {current.panels.map((item, index) => <Panel key={index} panel={item} shown={index <= beat} />)}
       </div>
       {ending && objective && <div className="cp-objective"><small>Objective</small>{objective}</div>}
