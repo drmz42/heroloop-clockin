@@ -10,6 +10,8 @@ import '@/theme/story/story-comic.css';
 // Tap advances a beat; every beat also advances on its own. Presentation only: no game state.
 
 const art = (src: string) => versionedAsset(src);
+// Founder 2026-10-12: beats stay on screen twice as long as scripted; tap still advances at once.
+const HOLD_SCALE = 2;
 // Fixed ember layout so panels look the same on every replay.
 const EMBERS: CSSProperties[] = Array.from({ length: 14 }, (_, index) => ({
   left: `${(index * 37) % 100}%`, animationDelay: `${(index * 530) % 3600}ms`, animationDuration: `${3200 + (index * 410) % 2400}ms`,
@@ -97,7 +99,7 @@ export function ComicScene({ pages: initialPages, onDone, objective, finale }: {
     const timers = (panel.sound ?? []).map(([name, delay]) => window.setTimeout(() => playSfx(name), delay));
     if (panel.voice) { const [line, delay] = panel.voice; timers.push(window.setTimeout(() => playVoice(art(voiceSrc(line))), delay)); }
     if (panel.fx?.includes('shake')) { vibrate(60); duckMusic(1400); }
-    timers.push(window.setTimeout(() => advanceRef.current(), panel.hold));
+    timers.push(window.setTimeout(() => advanceRef.current(), panel.hold * HOLD_SCALE));
     return () => timers.forEach((timer) => window.clearTimeout(timer));
   }, [page, beat, panel, ending]);
 

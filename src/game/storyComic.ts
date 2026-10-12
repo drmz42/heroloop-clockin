@@ -28,7 +28,7 @@ export interface ComicPanel {
   /** Where the glow mark appears, in % of the panel; flat = lying on the floor. */
   glow?: { x: number; y: number; size: number; flat?: boolean; dim?: boolean };
   sound?: [SfxName, number][];
-  /** Recorded voice line, only for words a character says aloud (no narration, no thoughts). */
+  /** Recorded voice line (currently unused: the story is text only, Founder 2026-10-12). */
   voice?: [VoiceLine, number];
 }
 export interface ComicPage { areas: string; rows: string; cols?: string; panels: ComicPanel[] }
@@ -54,85 +54,85 @@ function full(panel: Omit<ComicPanel, 'area'>): ComicPage {
 
 export function introPages(): ComicPage[] {
   return [
+    // The fight: hard, and Garrick's promise.
+    full({ hold: 4400, art: frame('approach'), cam: 'drift', fx: ['mist', 'embers'], caption: { text: 'The Broken Gate. Three of us came to end Morvane.' }, sound: [['wind', 0]] }),
+    full({ hold: 4200, art: frame('opening-trio'), cam: 'push', fx: ['embers', 'flicker', 'breath'], caption: { text: 'Every company before us had died here.' }, sound: [['bossIntro', 0], ['roar', 900]] }),
     full({
-      hold: 4400, art: frame('approach'), cam: 'drift', fx: ['mist', 'embers'],
-      caption: { text: 'The Broken Gate. Three of us came to end Morvane.' }, sound: [['wind', 0]],
+      hold: 3800, art: frame('fight-block'), cam: 'whip', fx: ['shake', 'flash', 'debris', 'embers'], sfx: { text: 'KLANG!', x: 52, y: 20, rot: 8, size: 56 },
+      bubbles: [{ who: 'Garrick', text: 'Hold the line!', x: 6, y: 58, tail: 'up-right', kind: 'shout' }], sound: [['crit', 300], ['hit', 500]],
     }),
     full({
-      hold: 4400, art: frame('opening-trio'), cam: 'push', fx: ['embers', 'flicker', 'breath'],
-      caption: { text: 'Every company before us had died here.' }, sound: [['bossIntro', 0], ['roar', 900]],
+      hold: 4400, art: frame('fight-bind'), cam: 'drift', fx: ['flicker', 'embers'], caption: { text: 'Elyra pinned his arm. I went for the strike.', at: 'bottom' },
+      bubbles: [{ who: 'Garrick', text: 'Go! I’ve got your back!', x: 34, y: 10, tail: 'down-left', kind: 'shout' }], sound: [['summon', 200], ['whoosh', 2000]],
     }),
     full({
-      hold: 3800, art: frame('fight-block'), cam: 'whip', fx: ['shake', 'flash', 'debris', 'embers'],
-      sfx: { text: 'KLANG!', x: 52, y: 20, rot: 8, size: 56 },
-      bubbles: [{ who: 'Garrick', text: 'Hold the line!', x: 6, y: 58, tail: 'up-right', kind: 'shout' }],
-      sound: [['crit', 300], ['hit', 500]],
-    }),
-    full({
-      hold: 4000, art: frame('fight-bind'), cam: 'drift', fx: ['flicker', 'embers'],
-      caption: { text: 'Elyra pinned his arm. I went for the strike.' }, sound: [['summon', 200], ['whoosh', 1800]],
-    }),
-    full({
-      hold: 4200, art: frame('fight-cut'), cam: 'whip', fx: ['shake', 'flash', 'embers'],
-      sfx: { text: 'SHHK!', x: 8, y: 24, rot: -8, size: 54 },
+      hold: 4000, art: frame('fight-cut'), cam: 'whip', fx: ['shake', 'flash', 'embers'], sfx: { text: 'SHHK!', x: 8, y: 24, rot: -8, size: 54 },
       caption: { text: 'The wound closed before my eyes.', at: 'bottom' }, sound: [['crit', 200], ['roar', 1400]],
     }),
+    full({ hold: 4400, art: frame('spent'), cam: 'push', fx: ['mist', 'breath', 'embers'], caption: { text: 'Elyra’s power ran dry. Garrick’s shield split. He kept coming.' }, sound: [['heartbeat', 300]] }),
     full({
-      hold: 4600, art: frame('spent'), cam: 'push', fx: ['mist', 'breath', 'embers'],
-      caption: { text: 'Elyra’s power ran dry. Garrick’s shield split. He kept coming.' }, sound: [['heartbeat', 300]],
-    }),
-    full({
-      hold: 3600, art: frame('claw-slam'), cam: 'whip', fx: ['shake', 'flash', 'dust', 'debris', 'embers'],
-      sfx: { text: 'KRA-KOOM!', x: 6, y: 18, rot: -10, size: 58 },
-      bubbles: [{ text: 'Garrick…!', x: 52, y: 62, tail: 'down-left', kind: 'shout' }], voice: ['h-garrick', 1500],
+      hold: 3600, art: frame('claw-slam'), cam: 'whip', fx: ['shake', 'flash', 'dust', 'debris', 'embers'], sfx: { text: 'KRA-KOOM!', x: 6, y: 18, rot: -10, size: 58 },
       sound: [['roar', 0], ['crit', 450], ['bossPhase', 700]],
     }),
+    // The betrayal: he could reach me, he chose the gate, and he closed it himself.
     full({
-      hold: 4800, art: frame('garrick-choice'), artPos: '92% center', cam: 'push', fx: ['flicker', 'breath'],
-      caption: { text: 'The way out was behind them. Morvane stood between us.' }, sound: [['heartbeat', 200]],
+      hold: 4000, art: frame('hero-calls'), cam: 'push', fx: ['breath', 'embers'],
+      bubbles: [{ text: 'Garrick! Your back — I need it now!', x: 8, y: 52, tail: 'down-left', kind: 'shout' }], sound: [['heartbeat', 200]],
     }),
+    full({ hold: 4400, art: frame('garrick-choice'), artPos: '92% center', cam: 'push', fx: ['flicker', 'breath'], caption: { text: 'He could have reached me. He looked at the gate instead.' } }),
     full({
-      hold: 4800, art: frame('forgive'), cam: 'push', fx: ['embers', 'flicker'],
-      bubbles: [{ who: 'Garrick', text: 'Forgive me, old friend.', x: 40, y: 14, tail: 'down-right' }],
-      sound: [['heartbeat', 200]], voice: ['g-forgive', 900],
+      hold: 4400, art: frame('garrick-turns'), cam: 'push', fx: ['flicker'],
+      bubbles: [{ who: 'Garrick', text: 'Forgive me, old friend.', x: 30, y: 12, tail: 'down-left' }], sound: [['heartbeat', 200]],
     }),
+    full({ hold: 4000, art: frame('forgive'), cam: 'push', fx: ['embers', 'flicker'], caption: { text: 'He turned his back and dragged Elyra away.' } }),
     full({
       hold: 3800, art: frame('elyra-no'), cam: 'pull', fx: ['flicker', 'embers'],
       bubbles: [{ who: 'Elyra', text: 'No! He’s still alive!', x: 40, y: 12, tail: 'down-left', kind: 'shout' }],
     }),
+    full({ hold: 4400, art: frame('garrick-lever'), cam: 'push', fx: ['flicker', 'dust'], caption: { text: 'He looked me in the eye. Then he let the gate fall.' }, sound: [['whoosh', 1400]] }),
     full({
-      hold: 4000, art: frame('gate-closes'), cam: 'pull', fx: ['shake', 'dust', 'flicker'],
-      sfx: { text: 'CLANG!', x: 54, y: 30, rot: 8, size: 60 },
-      caption: { text: 'Then the gate closed.' }, sound: [['gateSlam', 900]],
+      hold: 3800, art: frame('gate-closes'), cam: 'pull', fx: ['shake', 'dust', 'flicker'], sfx: { text: 'CLANG!', x: 54, y: 30, rot: 8, size: 60 },
+      caption: { text: 'Locked in. With him.' }, sound: [['gateSlam', 600]],
+    }),
+    // The first death.
+    full({ hold: 3800, art: frame('rise-alone'), cam: 'rise', fx: ['mist', 'embers', 'breath'], caption: { text: 'Alone, I fought on.' }, sound: [['heartbeat', 0], ['roar', 2200]] }),
+    full({
+      hold: 3400, art: frame('last-stand'), cam: 'whip', fx: ['shake', 'flash', 'dust', 'debris', 'embers'], sfx: { text: 'THOOM!', x: 8, y: 42, rot: -6, size: 70 },
+      sound: [['whoosh', 0], ['roar', 500], ['crit', 900]],
     }),
     full({
-      hold: 4000, art: frame('rise-alone'), cam: 'rise', fx: ['mist', 'embers', 'breath'],
-      caption: { text: 'Alone, I fought on.' }, sound: [['heartbeat', 0], ['roar', 2200]],
+      hold: 3400, art: frame('sword-breaks'), cam: 'whip', fx: ['shake', 'flash', 'debris'], sfx: { text: 'KRANG!', x: 52, y: 14, rot: 8, size: 58 },
+      caption: { text: 'My blade broke on his claw.', at: 'bottom' }, sound: [['crit', 200]],
     }),
+    full({ hold: 3600, art: frame('pinned'), cam: 'push', fx: ['breath', 'embers'], sound: [['heartbeat', 0], ['roar', 1600]] }),
+    full({ hold: 3400, art: frame('death-pov'), cam: 'push', fx: ['shake', 'breath'], caption: { text: 'The last thing I saw was his claw.', at: 'bottom' }, sound: [['crit', 900], ['death', 1300]] }),
+    full({ hold: 2800, tone: 'black', cam: 'still', fx: ['blackout'], caption: { text: 'And then — nothing.', at: 'bottom' } }),
     full({
-      hold: 3800, art: frame('last-stand'), cam: 'whip', fx: ['shake', 'flash', 'dust', 'debris', 'embers'],
-      sfx: { text: 'THOOM!', x: 8, y: 42, rot: -6, size: 70 },
-      sound: [['whoosh', 0], ['roar', 500], ['crit', 900], ['death', 1700]],
-    }),
-    full({
-      hold: 4200, art: frame('fallen'), cam: 'push', fx: ['desaturate', 'mist'],
-      sfx: { text: 'tok… tok… tok…', x: 30, y: 20, rot: 0, size: 20 },
+      // The Hollow One is already there in the dark: a small silhouette, no spotlight.
+      hold: 4600, art: frame('hollow-watch'), artPos: '15% center', cam: 'push', fx: ['mist'], sfx: { text: 'tok… tok… tok…', x: 30, y: 20, rot: 0, size: 20 },
       sound: [['wind', 0], ['knock', 900], ['knock', 1550], ['knock', 2200]],
     }),
-    // The mark wakes faintly under the body, the first hint of the loop.
+    full({ hold: 4400, art: frame('mark-awakens'), cam: 'push', fx: ['mist', 'breath'], sound: [['summon', 600]] }),
+    // The return: why he lives, and why he walks into the crypt fight.
+    full({ hold: 4400, art: frame('altar-glow'), cam: 'push', fx: ['mist', 'flicker'], caption: { text: 'Ashen Crypt.' }, sound: [['levelUp', 600]] }),
     full({
-      hold: 4000, art: frame('fallen'), cam: 'push', fx: ['desaturate', 'glow', 'mist', 'breath'],
-      glow: { x: 52, y: 66, size: 100, flat: true, dim: true }, caption: { text: 'And then — nothing.', at: 'bottom' },
+      hold: 3600, art: frame('eyes-open'), cam: 'whip', fx: ['flash'], sound: [['heartbeat', 0]],
+      bubbles: [{ text: 'I died. I know I did.', x: 8, y: 14, tail: 'down-right', kind: 'thought' }],
     }),
     full({
-      hold: 4400, art: frame('altar-wake'), cam: 'push', fx: ['mist', 'flicker', 'breath'],
-      caption: { text: 'Ashen Crypt.' }, bubbles: [{ text: 'I died. I know I did.', x: 40, y: 44, tail: 'down-left', kind: 'thought' }],
-      sound: [['wind', 0], ['heartbeat', 200], ['levelUp', 900]],
+      hold: 4000, art: frame('altar-wake'), cam: 'push', fx: ['mist', 'flicker', 'breath'],
+      bubbles: [{ text: 'How am I still alive?', x: 40, y: 44, tail: 'down-left', kind: 'thought' }], sound: [['wind', 0]],
     }),
     full({
-      hold: 3800, art: frame('crypt-exit'), cam: 'push', fx: ['mist', 'flicker'],
+      hold: 4200, art: frame('healed-wound'), cam: 'push', fx: ['flicker'],
+      bubbles: [{ text: 'The wound is gone. Only this mark.', x: 8, y: 12, tail: 'down-right', kind: 'thought' }],
+    }),
+    full({ hold: 4000, art: frame('sword-found'), cam: 'drift', fx: ['mist', 'flicker'], caption: { text: 'My sword was gone. The dead had one to spare.' } }),
+    full({
+      hold: 3600, art: frame('crypt-exit'), cam: 'push', fx: ['mist', 'flicker'],
       bubbles: [{ text: 'No answers. Move.', x: 8, y: 16, tail: 'down-right', kind: 'thought' }],
     }),
+    full({ hold: 3800, art: frame('skeletons-rise'), cam: 'pull', fx: ['shake', 'mist', 'flicker'], caption: { text: 'The crypt was not empty.' }, sound: [['knock', 300], ['knock', 700], ['roar', 1400]] }),
   ];
 }
 
@@ -154,7 +154,7 @@ export function fallenPages(): ComicPage[] {
       hold: 4600, art: frame('came-back'), cam: 'push', fx: ['embers', 'flicker', 'breath'],
       caption: { text: 'He was waiting for me.', at: 'bottom' },
       bubbles: [{ who: 'Morvane', text: 'You came back.', x: 46, y: 10, tail: 'down-left', kind: 'whisper' }],
-      sound: [['roar', 200], ['heartbeat', 3000]], voice: ['m-came-back', 900],
+      sound: [['roar', 200], ['heartbeat', 3000]],
     }),
     full({
       hold: 3800, art: frame('altar-wake'), cam: 'push', fx: ['mist', 'flicker'],
@@ -176,7 +176,7 @@ export function victoryPages(): ComicPage[] {
       hold: 5000, art: frame('morvane-kneels'), cam: 'whip', fx: ['shake', 'flash', 'dust', 'debris', 'embers'],
       sfx: { text: 'KRRAK!', x: 6, y: 18, rot: -8, size: 62 },
       bubbles: [{ who: 'Morvane', text: 'At last… silence…', x: 46, y: 10, tail: 'down-left', kind: 'whisper' }],
-      sound: [['crit', 0], ['roar', 300]], voice: ['m-silence', 1300],
+      sound: [['crit', 0], ['roar', 300]],
     }),
     full({
       hold: 4400, art: frame('trio-victory'), cam: 'pull', fx: ['embers', 'flicker'],
