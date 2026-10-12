@@ -17,7 +17,7 @@ HeroLoop is an idle team RPG: you assemble a hero squad, it fights through locat
 
 The pitch deck is included in this source snapshot.
 
-**Install the app:** [heroloop-seeker-0.2.21-lab-25.apk](https://seeker.heroloop.xyz/download/heroloop-seeker-0.2.21-lab-25.apk) (version 0.2.21, versionCode 25, SHA-256 `a2898a6e7c5c72e7ea4f928f918ba2871914057435d846de4a46240ef2ae3d70`). The installed app updates itself from `https://seeker.heroloop.xyz/download/latest.json` and verifies the SHA-256 before installing.
+**Install the app:** [heroloop-seeker-0.2.21-lab-25.apk](https://heroloop.xyz/download/heroloop-seeker-0.2.21-lab-25.apk) (version 0.2.21, versionCode 25, SHA-256 `a2898a6e7c5c72e7ea4f928f918ba2871914057435d846de4a46240ef2ae3d70`). The installed app updates itself from `https://seeker.heroloop.xyz/download/latest.json` and verifies the SHA-256 before installing.
 
 ## Why HeroLoop is different
 
