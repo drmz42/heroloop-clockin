@@ -119,6 +119,7 @@ Usage since the Seeker backend opened on 1 October 2026, team testing included: 
 - AFK squad combat with a three-hero formation: 45 heroes (5 classes × 9 rarity tiers), star promotion up to 20 stars, 54 items across 9 gear slots, gear upgrades and enchanting up to +20.
 - 20 locations (10 standard, 10 endgame) with content from level 1 to 200; Training Camp and Ranks.
 - Bosses, Boss Keys and four-room dungeons; 28-day login calendar and weekly events; Ranks.
+- Battle Pass Season 1: 100 levels with Free, Empowered and Collector reward tracks and daily quests.
 - SKR economy: on-chain deposits, player Market, SKR Store, BOOST MAX quests and withdrawals (an operator approves each withdrawal; the payout is then signed and verified automatically).
 - ORE Mine (beta): heroes enter real ORE protocol rounds paid from the player's in-game SOL.
 
@@ -128,7 +129,7 @@ Usage since the Seeker backend opened on 1 October 2026, team testing included: 
 - ORE Mine: claiming ORE winnings to the player balance.
 - More endgame progression on top of the live endgame locations, with many more upgrades.
 - 20 story-driven regions, 200+ enemies and 20 Bosses; story chapter two.
-- Season 2: PvP arena, Season Pass, Guilds and Pets.
+- Season 2: Battle Pass v2, PvP arena, Guilds and Pets.
 - New animations, better graphics and sound, performance work.
 - Solana dApp Store release.
 
