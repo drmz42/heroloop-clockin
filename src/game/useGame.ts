@@ -399,7 +399,7 @@ export function useGame() {
   const [battleResult, setBattleResult] = useState<BattleResult | null>(null);
   const [combatRecovery, setCombatRecovery] = useState<CombatRecoveryState>(HEALTHY_COMBAT);
   const [autoProgress, setAutoProgress] = useState(true);
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(isolatedHackathon);
   const [respawnCountdowns, setRespawnCountdowns] = useState<Record<string, number>>({});
   const [chestOpenResult, setChestOpenResult] = useState<OwnedItem[] | null>(null);
   const [chestRewardsMailed, setChestRewardsMailed] = useState(false);
