@@ -91,6 +91,7 @@ function App() {
     if (story !== undefined && storyEpochRef.current === epoch) return;
     storyEpochRef.current = epoch;
     const start = storyStartStage(game.state);
+    if (start) writeStory(storyAccount(game.state), start, epoch);
     const replay = isolatedHackathon ? storyReplayRequest() : null;
     setStory(start);
     setStoryStarted(false);
@@ -655,6 +656,8 @@ function App() {
     if (accountGate === 'landing') return <LandingScreen game={game} legacyWalletMode={legacyWalletMode} onAccountReady={() => setAccountCheckAttempt((value) => value + 1)} />;
     return <AppLoadingScreen onRetry={accountGate === 'error' ? () => setAccountCheckAttempt((value) => value + 1) : undefined} />;
   }
+
+  if (isolatedHackathon && story === undefined) return <AppLoadingScreen />;
 
   if (storyScene) {
     return (

@@ -103,7 +103,7 @@ export function storyStartStage(state: GameState): StoryStage | null {
   // Saves from before the hero binding carry no hero: on that same early state they are treated alike once.
   const early = state.tutorial.questOrdinal <= 1 && !state.tutorial.questCompleted && state.ownedHeroes.length === 1 && state.totalBossKills === 0;
   const unbound = (() => { try { return !(window.localStorage.getItem(storageKey(storyAccount(state))) ?? '').includes('@'); } catch { return false; } })();
-  const reset = early && (!saved ? readStory(storyAccount(state)) !== null : unbound && saved !== 'intro' && saved !== 'hunt' && saved !== 'done');
+  const reset = early && (!saved ? readStory(storyAccount(state)) !== null : unbound);
   const fresh = isFreshStoryAccount(state) || reset || (early && !heroGeared(state) && !saved);
   // A reset account is fresh again while this device still remembers a later stage: start over.
   if (reset) return 'intro';
