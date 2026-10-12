@@ -2,9 +2,18 @@
 
 HeroLoop is an idle team RPG: you assemble a hero squad, it fights through locations on its own (also while you are away), and you return to collect rewards, open chests, equip and enchant items and push into dungeons. This repository is the **Seeker edition** built for Solana Mobile: an Android app for the Seeker phone with Solana wallet sign-in and an isolated, SKR-only economy.
 
-> **About this repository.** HeroLoop is developed in our private main repository since July 2026. This is a filtered export of the Seeker edition: it keeps the original commits, dates and messages for the game client, backend and Android app, and leaves out internal operations, infrastructure and planning files. Work during CLOCK IN (from 8 September 2026) focused on the Android app, Solana wallet sign-in through the Mobile Wallet Adapter and the SKR economy.
+> **About this repository.** HeroLoop is developed in our private main repository since July 2026. This is a filtered export of the Seeker edition: it preserves the development chronology and commit dates for the game client, backend and Android app, and leaves out internal operations, infrastructure and planning files. Exported commit IDs differ from the private repository; author identities are normalized and messages and source text are sanitized and translated into English where needed. Work during CLOCK IN (from 8 September 2026) focused on the Android app, Solana wallet sign-in through the Mobile Wallet Adapter and the SKR economy.
 
 **Pitch deck:** [pitch/HeroLoop-Pitch-Deck.pdf](pitch/HeroLoop-Pitch-Deck.pdf)
+
+## Judge review guide
+
+1. Build the client and debug APK with the commands below. Both use the hosted Seeker game by default; a local backend is a separate, optional engineering review environment.
+2. Start with `android/seeker-app/` for the native WebView and wallet handoff, then `src/game/solanaWalletAuth.ts` for the wallet flow.
+3. Review `selfhosted/api/siws_verify_endpoint.ts` for wallet authentication, `selfhosted/api/seeker_edition.ts` for edition boundaries, and `selfhosted/seeker/` for the separate SKR ledger.
+4. Run the wallet and SKR tests below. The debug APK and these automated checks are separate from physical-device acceptance of the submitted release APK.
+
+The pitch deck is included in this source snapshot. The final signed APK, demo video and submission links are supplied with the hackathon entry.
 
 ## What is in the box
 
@@ -22,7 +31,7 @@ HeroLoop is an idle team RPG: you assemble a hero squad, it fights through locat
 ### Solana integration
 
 - **Sign in with Solana** through the Mobile Wallet Adapter (`@solana-mobile/wallet-standard-mobile`). The server issues a one-time challenge and verifies the wallet signature (`SIWS_*` settings) before it creates a session.
-- **SKR token** (`SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3`, 6 decimals, mainnet) is the only currency of this edition. Amounts are integers in minimal units; the ledger is idempotent and balanced per event.
+- **SKR token** (`SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3`, 6 decimals, mainnet) is the only on-chain token used by this edition; gameplay resources such as Gold remain in-game. Amounts are integers in minimal units; the ledger is idempotent and balanced per event.
 - **The server is the authority.** Rewards, balances, inventory and combat results are computed on the server; the client never sends values the server trusts.
 
 ## Requirements
@@ -49,22 +58,23 @@ npm run apk:debug
 # -> android/seeker-app/app/build/outputs/apk/debug/app-debug.apk (SHA-256 printed)
 ```
 
-Install it with `adb install -r android/seeker-app/app/build/outputs/apk/debug/app-debug.apk`. The app opens the hosted Seeker game; signing in asks your wallet app to approve the Solana sign-in message. The release APK we submit is signed with a separate key that is not part of this repository.
+On a device without the release app installed, install it with `adb install android/seeker-app/app/build/outputs/apk/debug/app-debug.apk`. The debug APK uses the same application ID as the release app and a different signing key, so it cannot update an installed release APK. Use a separate review device; removing an existing installation clears its local app data. The app opens the hosted Seeker game; signing in asks your wallet app to approve the Solana sign-in message. The release APK we submit is signed with a separate key that is not part of this repository.
 
 ## 3. Run the backend locally
 
 ```bash
 npm run backend:local -- up       # Postgres, Auth, wallet Auth, API, worker and the SKR ledger
 npm run backend:local -- status
-npm run backend:local -- down     # stops everything and deletes the local database volume
+# Destructive local reset: deletes this Compose project's database volume.
+npm run backend:local -- down
 ```
 
-The first `up` generates fresh random secrets into `selfhosted/clockin.env.local` (git-ignored), applies the database baseline, installs the Seeker 200-level progression policy in the local game database and creates the separate SKR ledger schema. Repeated `up` preserves the installed progression policy; an incompatible policy version stops startup. This local helper does not install or migrate a hosted backend. When it prints `Backend ready`, the API answers on `http://127.0.0.1:28081/api/v1/health` and Auth on `http://127.0.0.1:29999/health`. Ports can be changed with `HL_LOCAL_API_PORT`, `HL_LOCAL_AUTH_PORT` and `HL_LOCAL_DB_PORT`.
+The first `up` generates fresh random secrets into `selfhosted/clockin.env.local` (git-ignored), applies the database baseline, installs the Seeker 200-level progression policy in the local game database and creates the separate SKR ledger schema. Repeated `up` preserves the installed progression policy; an incompatible policy version stops startup. This local helper does not install or migrate a hosted backend. It starts backend services only: `build:web` and the default Android APK continue to use the hosted Seeker game. Connecting a local client also requires routing both `/api/v1/` and `/auth/v1/` to the local services and matching the wallet origin configuration; this helper does not provide that frontend gateway. When it prints `Backend ready`, the API answers on `http://127.0.0.1:28081/api/v1/health` and Auth on `http://127.0.0.1:29999/health`. Ports can be changed with `HL_LOCAL_API_PORT`, `HL_LOCAL_AUTH_PORT` and `HL_LOCAL_DB_PORT`.
 
 ## Tests
 
 ```bash
-npx tsx --tsconfig tsconfig.app.json --test test/solanaWallet*.test.ts test/authTransient.test.ts     # wallet sign-in and session (30 tests)
+npx tsx --tsconfig tsconfig.app.json --test test/solanaWallet*.test.ts test/authTransient.test.ts     # wallet sign-in and session tests
 docker run --rm -v "$PWD/selfhosted:/app:ro" -w /app denoland/deno:2.9.4 \
   test --config=/app/deno.json --cached-only seeker/ api/skr_quote_test.ts api/seeker_edition_test.ts   # SKR ledger, quotes, edition gate
 ```
