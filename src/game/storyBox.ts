@@ -71,9 +71,11 @@ export function storyReplayRequest(): StorySceneStage | null {
 export function storyStartStage(state: GameState): StoryStage | null {
   if (!isolatedHackathon) return null;
   const saved = readStory(storyAccount(state));
-  if (saved) return saved === 'done' ? null : saved;
   const fresh = state.totalKills === 0 && state.totalBossKills === 0 && !state.tutorial.questCompleted
     && state.tutorial.questOrdinal <= 1 && state.ownedHeroes.length === 1;
+  // A reset account is fresh again while this device still remembers a later stage: start over.
+  if (fresh && saved !== 'intro' && saved !== 'hunt') return 'intro';
+  if (saved) return saved === 'done' ? null : saved;
   return fresh ? 'intro' : null;
 }
 
