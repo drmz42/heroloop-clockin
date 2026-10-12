@@ -29,6 +29,8 @@ export function tutorialGuide(state: GameState): TutorialGuide | null {
   return GUIDE_BY_QUEST[objective.id] ?? null;
 }
 
+// The 'battle' guide no longer pulses the Battle tab (Founder 2026-10-12: it glowed through every
+// kill-count step); the Next-step card still sends the player to Battle.
 // Where the Next-step card sends the player for each guide.
 export const TUTORIAL_GO_EVENT = 'hl:tutorial-go';
 export type TutorialDestination = { section: 'battle' | 'quests' | 'bag' } | { tab: 'summon' | 'heroes' };

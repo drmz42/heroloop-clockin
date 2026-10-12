@@ -117,7 +117,7 @@ export function MobileTabBar({
       {count > 0 ? <b className="hl-tabbar-badge">{count > 99 ? '99+' : count}</b> : alert ? <b className="hl-tabbar-alert">!</b> : tag && <b className="hl-mine-badge">{tag}</b>}
     </i>
   );
-  const guideFor = (id: MobileSection | Tab) => ({ battle: 'battle boss', quests: 'claim open-chests', bag: 'equip', summon: 'summon', heroes: 'formation' } as Partial<Record<MobileSection | Tab, string>>)[id];
+  const guideFor = (id: MobileSection | Tab) => ({ battle: 'boss', quests: 'claim open-chests', bag: 'equip', summon: 'summon', heroes: 'formation' } as Partial<Record<MobileSection | Tab, string>>)[id];
   const sectionButton = (id: MobileSection, label: string, Icon: typeof Shield) => {
     const active = tab === 'main' && !moreOpen && !mineOpen && section === id;
     const count = countFor(id);
